@@ -60,6 +60,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Server } from 'node:http'
 import { expect, test, type Page, type TestInfo } from '@playwright/test'
+import { BF_KEY, BF_KEY_PREFIX } from '@barefootjs/shared'
 import { createFixture, type JSXFixture } from '../src/types'
 import { startFixtureServer, fixtureUrl, type HostMode } from './fixture-host'
 import { captureDomState, diffDomState, type DomStateSnapshot } from './dom-state'
@@ -116,8 +117,10 @@ interface TransitionCapture {
   incremental: DomStateSnapshot
   fresh: DomStateSnapshot
   errors: BrowserErrors
-  /** Keyed rows (`<attr>=<key>`) that existed before the clicks and after, but as a different DOM node. */
+  /** Keyed rows (`<attr>=<key>`) present before the clicks and after them, but as a different DOM node. */
   recreatedRows: string[]
+  /** `<attr>=<key>` values carried by more than one element before the clicks (the identity check needs them unique). */
+  duplicateKeys: string[]
 }
 
 /**
@@ -127,25 +130,33 @@ interface TransitionCapture {
  * `<attr>=<key>`; after the last click, any element whose `<attr>=<key>`
  * was present at the start but which lacks the matching expando is a row
  * the reconciler rebuilt instead of moving. A keyed loop must keep the
- * node for a key that survives (`cloneAll`'s "equal-looking values" and
- * every reorder included) — the DOM-vs-fresh comparison cannot see this,
- * since a rebuilt row serializes identically.
+ * node for a key present both before and after the sequence (`cloneAll`'s
+ * "equal-looking values" and every reorder included) — the DOM-vs-fresh
+ * comparison cannot see this, since a rebuilt row serializes identically.
+ *
+ * Only the two endpoints are compared, and `<attr>=<key>` is matched
+ * document-wide, so a scenario must not reuse a key: one removed and
+ * re-added mid-sequence, or the same inner key under two outer rows,
+ * would read as a rebuilt row. Duplicates at the start are reported
+ * (`duplicateKeys`) instead of being compared.
  */
-const KEY_ATTR_PATTERN = '^data-key(-\\d+)?$'
+const KEY_ATTR_PATTERN = `^(${BF_KEY}|${BF_KEY_PREFIX}\\d+)$`
 
-async function markKeyedRows(page: Page): Promise<string[]> {
+async function markKeyedRows(page: Page): Promise<{ marked: string[]; duplicateKeys: string[] }> {
   return page.evaluate(pattern => {
     const re = new RegExp(pattern)
-    const ids: string[] = []
+    const marked: string[] = []
+    const duplicates = new Set<string>()
     for (const el of Array.from(document.querySelectorAll('*'))) {
       for (const attr of el.getAttributeNames()) {
         if (!re.test(attr)) continue
         const id = `${attr}=${el.getAttribute(attr)}`
+        if (marked.includes(id)) duplicates.add(id)
         ;(el as unknown as Record<string, unknown>).__bfExploreRow = id
-        ids.push(id)
+        marked.push(id)
       }
     }
-    return ids
+    return { marked, duplicateKeys: [...duplicates] }
   }, KEY_ATTR_PATTERN)
 }
 
@@ -183,7 +194,12 @@ async function captureTransition(
   const errors = collectBrowserErrors(page)
   await page.goto(fixtureUrl(baseUrl, start.id, mode))
   await waitOneFrame(page)
-  const marked = await markKeyedRows(page)
+  const { marked, duplicateKeys } = await markKeyedRows(page)
+  // Only the clicked leg's errors count: the start page's own load is the
+  // per-state oracles' concern, and the fresh end-state load below is not
+  // part of the sequence.
+  errors.pageErrors.length = 0
+  errors.consoleErrors.length = 0
   for (const action of actions) {
     // Bounded well under the test timeout so a genuinely missing button
     // (a real divergence) fails fast inside the quarantine wrapper's
@@ -194,15 +210,17 @@ async function captureTransition(
   await waitOneFrame(page)
   const incremental = await captureDomState(page)
   const recreatedRows = await findRecreatedRows(page, marked)
+  const legErrors: BrowserErrors = { pageErrors: [...errors.pageErrors], consoleErrors: [...errors.consoleErrors] }
 
   await page.goto(fixtureUrl(baseUrl, end.id, mode))
   await waitOneFrame(page)
   const fresh = await captureDomState(page)
-  return { incremental, fresh, errors, recreatedRows }
+  return { incremental, fresh, errors: legErrors, recreatedRows, duplicateKeys }
 }
 
 function assertKeyedIdentity(label: string, capture: TransitionCapture): void {
-  expect(capture.recreatedRows, `${label}: keyed rows rebuilt instead of kept (key survived the sequence)`).toEqual([])
+  expect(capture.duplicateKeys, `${label}: keyed rows share a key at the start — the identity oracle needs unique keys`).toEqual([])
+  expect(capture.recreatedRows, `${label}: keyed rows rebuilt instead of kept (key present before and after the sequence)`).toEqual([])
 }
 
 function assertTransitionAgrees(label: string, capture: TransitionCapture): void {
@@ -256,6 +274,8 @@ function writeFailureArtifact(testInfo: TestInfo, input: FailureArtifactInput): 
           incremental: { raw: capture.incremental, normalized: normalizeForCompare(capture.incremental.html) },
           fresh: { raw: capture.fresh, normalized: normalizeForCompare(capture.fresh.html) },
           stateDiff: diffDomState(capture.incremental, capture.fresh),
+          recreatedRows: capture.recreatedRows,
+          duplicateKeys: capture.duplicateKeys,
         }
       : null,
     browser: capture?.errors ?? null,
@@ -394,9 +414,12 @@ test.describe('bounded state-space exploration', () => {
             } catch (error) {
               captureError = error
             }
+            // Identity is only defined once the clicked leg completed: a
+            // capture failure (a missing button, a failed load) is the
+            // transition oracle's alone.
             const checks: Array<{ kind: ExploreOracleKind; assert: (c: TransitionCapture) => void }> = [
               { kind: oracle, assert: c => assertTransitionAgrees(label, c) },
-              { kind: identityOracle, assert: c => assertKeyedIdentity(label, c) },
+              ...(captureError === undefined ? [{ kind: identityOracle, assert: (c: TransitionCapture) => assertKeyedIdentity(label, c) }] : []),
             ]
             const failures: unknown[] = []
             for (const { kind, assert } of checks) {
