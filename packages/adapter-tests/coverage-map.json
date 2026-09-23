@@ -1477,6 +1477,16 @@
         "text"
       ]
     },
+    "component-root-client-scope": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-row-loop-preamble-handler": {
       "kinds": [
         "array-literal",
@@ -1613,6 +1623,25 @@
       "axes": [
         "literal:boolean",
         "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "conditional-child-listener-cleanup": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:null",
+        "literal:number"
       ],
       "contexts": [
         "condition",
@@ -4421,6 +4450,20 @@
         "text"
       ]
     },
+    "nested-prop-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "nested-prop-object-array-with-component": {
       "kinds": [
         "binary",
@@ -4435,6 +4478,17 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "nested-prop-signal-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },
@@ -7088,15 +7142,15 @@
   "kindCounts": {
     "array-literal": 120,
     "array-method": 72,
-    "arrow": 76,
-    "binary": 111,
-    "call": 296,
+    "arrow": 77,
+    "binary": 112,
+    "call": 300,
     "conditional": 36,
-    "identifier": 418,
+    "identifier": 422,
     "index-access": 15,
-    "literal": 332,
+    "literal": 333,
     "logical": 53,
-    "member": 245,
+    "member": 247,
     "object-literal": 96,
     "template-literal": 32,
     "unary": 30,
@@ -7131,16 +7185,16 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 15,
-    "binary:+": 26,
+    "binary:+": 27,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
     "binary:===": 56,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 73,
-    "literal:null": 26,
-    "literal:number": 154,
+    "literal:boolean": 74,
+    "literal:null": 27,
+    "literal:number": 155,
     "literal:string": 223,
     "logical:&&": 7,
     "logical:??": 44,

@@ -30,6 +30,7 @@
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/jinja": "workspace:*",
     "@barefootjs/mojolicious": "workspace:*",
+    "@barefootjs/pebble": "workspace:*",
     "@barefootjs/rust": "workspace:*",
     "@barefootjs/test": "workspace:*",
     "@barefootjs/twig": "workspace:*",

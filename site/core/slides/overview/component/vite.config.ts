@@ -4,8 +4,8 @@ import { CSRAdapter } from '@barefootjs/client/csr-adapter'
 
 // barefoot() names each component's own entry after its path (e.g.
 // "components/Arcade.tsx"), which rollup would emit as a components/
-// subdirectory — flattened so the build stays one directory deep, the shape
-// build-slides.ts copies into the deck's flat assets/.
+// subdirectory — flattened so the build stays one directory deep, which is
+// what build-slides.ts re-bundles mount.js from.
 function flattenName(name: string): string {
   return name.replace(/\.tsx$/, '').replaceAll('/', '-')
 }
@@ -15,8 +15,8 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      // 日記の tetris/component と同じ理由でオブジェクト形式。
-      // mount と各コンポーネントが同じ runtime チャンクを共有する必要がある。
+      // Object form, for the same reason as the diary repo's tetris/component:
+      // mount and every component must share one runtime chunk.
       input: { mount: 'mount.ts', narration: 'narration.ts' },
       output: {
         // mount.js/narration.js are referenced by path, never through a
@@ -60,7 +60,7 @@ export default defineConfig({
       // `assertNoRealTemplateOutput` refuses to compile without `templates`
       // set. Point it at a throwaway dir under the already-gitignored
       // `dist/` — nothing in the deck build reads it; only the resulting
-      // client JS files (build-slides.ts copies dist/ as-is) matter.
+      // client JS files (build-slides.ts bundles mount.js from them) matter.
       templates: 'dist/templates',
     }),
   ],

@@ -245,7 +245,7 @@ export async function renderXslateComponent(options: RenderOptions): Promise<str
     }
 
     // Build props hash for Perl.
-    const propsPerl = buildPerlProps(componentName, props, ir)
+    const { propsPerl, userPropsPerl } = buildPerlProps(componentName, props, ir)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -279,6 +279,19 @@ my $bf = BarefootJS->new(undef, { backend => $backend });
 $bf->_scope_id('${rootScopeId}');
 
 my $props = ${propsPerl};
+# Mirrors production's \`props_attr\` contract (BarefootJS.pm's \`_props\`
+# accessor; integrations/xslate/app.psgi calls \`$bf->_props($props)\`): the
+# caller is expected to seed it before rendering the root component, so
+# this harness must call it explicitly.
+#
+# \$user_props — NOT \$props above — is what \`_props\` gets: \$props is
+# this harness's internal vars hash (scope_id, \`undef\` placeholders,
+# signal/memo seed values, and — when the component imports searchParams —
+# a SearchParams reader object), none of which a real Plack route handler
+# has or passes. Production's bf-p carries none of those, only the
+# caller-facing props.
+my $user_props = ${userPropsPerl};
+$bf->_props($user_props);
 
 ${childRenderers}
 
@@ -495,13 +508,20 @@ function toSnakeCase(name: string): string {
 }
 
 /**
- * Build a Perl hash literal from props (+ signal / memo seeds).
+ * Build a Perl hash literal from props (+ signal / memo seeds), PLUS
+ * `userPropsPerl` — the exact raw fixture props (no defaults, no
+ * null-fill, no signal/memo seeding), mirroring production's route-handler
+ * call `$bf->_props($props)` verbatim. `propsPerl` stays the full internal
+ * vars hash the compiled template renders against; `userPropsPerl` is for
+ * `$bf->_props(...)` (bf-p hydration payload) only — it must NOT be
+ * derived from `entries` or the defaulted stash: production's own bf-p
+ * carries only what the caller actually passed in, unmodified.
  */
 function buildPerlProps(
   _componentName: string,
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
-): string {
+): { propsPerl: string; userPropsPerl: string } {
   const entries: string[] = []
 
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
@@ -574,6 +594,24 @@ function buildPerlProps(
     }
   }
 
+  // `$bf->_props(...)` payload (bf-p hydration): mirrors production's
+  // route-handler call `$bf->_props($props)` verbatim — the caller's raw
+  // props hash, unmodified. No default-filling, no signal/memo seeding,
+  // no rest-bag nesting: a real Plack route handler never rearranges the
+  // hash it received before handing it to `_props`. Excludes internal
+  // harness-only keys (`__instanceId` etc.), which are never a real
+  // caller-facing prop. Keys are single-quoted (not fat-comma barewords)
+  // because a raw caller key can be any string — e.g. a rest-bag
+  // `aria-label` — not just a Perl identifier.
+  const userEntries: string[] = []
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      userEntries.push(`${perlSingleQuote(key)} => ${toPerlLiteral(value)}`)
+    }
+  }
+  const userPropsPerl = `{${userEntries.join(', ')}}`
+
   // No initializer re-evaluation against raw props — production's
   // before_render seeds only from `deriveStashFromDefaults` (#2696).
   for (const signal of ir.metadata.signals) {
@@ -622,7 +660,7 @@ function buildPerlProps(
     entries.push(`searchParams => BarefootJS->search_params('')`)
   }
 
-  return `{${entries.join(', ')}}`
+  return { propsPerl: `{${entries.join(', ')}}`, userPropsPerl }
 }
 
 

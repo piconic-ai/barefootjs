@@ -2726,6 +2726,68 @@ describe('Client JS generation', () => {
       // Should have initChild with props in the bindEvents callback
       expect(content).toMatch(/initChild\('Alert'/)
     })
+
+    test('a branch-owned child is initialized only by the branch, and still imported', () => {
+      // The branch is active at hydration: `insert()`'s first run adopts
+      // (or re-renders) it and its bindEvents inits the child. A second,
+      // static `initChild` on the `$c` handle would init the same child a
+      // second time — on a node the branch may already have replaced — so
+      // its onMount/effects would run in two instances.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { Spinner } from './spinner'
+
+        export function Parent() {
+          const [show, setShow] = createSignal(true)
+          return (
+            <div>
+              <button onClick={() => setShow(!show())}>Toggle</button>
+              {show() && <Spinner />}
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'Parent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+      const content = result.files.find(f => f.type === 'clientJs')!.content
+
+      expect(content.match(/initChild\('Spinner'/g)).toHaveLength(1)
+      expect(content).toMatch(/bindEvents:.*\n[\s\S]*?initChild\('Spinner'/)
+      expect(content).not.toContain('$c(__scope')
+      // The bundler still needs the child's module: the import marker is
+      // collected from the branch, not from the (now absent) static init.
+      expect(content).toContain("import '/* @bf-child:Spinner */'")
+    })
+
+    test('a client-only branch-owned child is initialized only by the branch', () => {
+      // Same ownership rule on the `/* @client */` path, which records its
+      // conditional through `clientOnlyConditionals` instead.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { Spinner } from './spinner'
+
+        export function Parent() {
+          const [show, setShow] = createSignal(true)
+          return (
+            <div>
+              <button onClick={() => setShow(!show())}>Toggle</button>
+              {/* @client */ show() && <Spinner />}
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'Parent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+      const content = result.files.find(f => f.type === 'clientJs')!.content
+
+      expect(content.match(/initChild\('Spinner'/g)).toHaveLength(1)
+      expect(content).not.toContain('$c(__scope')
+      expect(content).toContain("import '/* @bf-child:Spinner */'")
+    })
   })
 
   describe('reactive props.xxx detection (#789)', () => {

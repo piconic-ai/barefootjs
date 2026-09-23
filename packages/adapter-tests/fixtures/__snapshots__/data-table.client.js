@@ -3088,7 +3088,6 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
   const columnHeaderClasses = 'inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none'
 
   const [_s6, _s1] = $(__scope, 's6', 's1')
-  const [_s2, _s4, _s5] = $c(__scope, 's2', 's4', 's5')
 
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
@@ -3143,11 +3142,6 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
   if (_s6) applyRestAttrs(_s6, _p, ["title","sorted","onSort","className","data-slot","type","class"])
 
   if (_s6) _s6.addEventListener('click', _p.onSort)
-
-  // Initialize child components with props
-  initChild('ChevronUpIcon', _s2, { size: "sm" })
-  initChild('ChevronDownIcon', _s4, { size: "sm" })
-  initChild('ArrowUpDownIcon', _s5, { size: "sm" })
 }
 
 hydrate('DataTableColumnHeader', { init: initDataTableColumnHeader, template: (_p) => `<button data-slot="data-table-column-header" type="button" ${(`${('inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none')} ${(_p.className ?? '')}`) + '"' : ''} bf="s6"><!--bf:s0-->${escapeTextOrMarkup(_p.title)}<!--/-->${(_p.sorted ?? false) === 'asc' ? `<!--bf-cond-start:s1-->${renderChild('ChevronUpIcon', {size: "sm"}, undefined, 's2')}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${(_p.sorted ?? false) === 'desc' ? `<!--bf-cond-start:s3-->${renderChild('ChevronDownIcon', {size: "sm"}, undefined, 's4')}<!--bf-cond-end:s3-->` : `<!--bf-cond-start:s3-->${renderChild('ArrowUpDownIcon', {size: "sm"}, undefined, 's5')}<!--bf-cond-end:s3-->`}<!--bf-cond-end:s1-->`}</button>` })
@@ -3246,7 +3240,6 @@ export function initCheckbox(__scope, _p = {}) {
   }
 
   const [_s2, _s0] = $(__scope, 's2', 's0')
-  const [_s1] = $c(__scope, 's1')
 
   { const __l = []
   createEffect(() => {
@@ -3298,9 +3291,6 @@ export function initCheckbox(__scope, _p = {}) {
   })
 
   if (_s2) _s2.addEventListener('click', handleClick)
-
-  // Initialize child components with props
-  initChild('CheckIcon', _s1, { "data-slot": "checkbox-indicator", className: "size-3.5 text-current" })
 }
 
 hydrate('Checkbox', { init: initCheckbox, template: (_p) => `<button data-slot="checkbox" ${(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) != null ? 'data-state="' + escapeAttr(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) + '"' : ''} role="checkbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) != null ? 'aria-checked="' + escapeAttr(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) + '"' : ''} ${_p.error ? 'aria-invalid' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${((`${('peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50')} ${('focus-visible:border-ring focus-visible:ring-ring/50')} ${('aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive')} ${([

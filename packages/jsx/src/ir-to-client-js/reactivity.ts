@@ -2,7 +2,7 @@
  * Reactivity detection: reactive expression checking, event/ref collection.
  */
 
-import { type IRNode, type IRElement, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types.ts'
+import { type IRNode, type IRElement, type IRComponent, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types.ts'
 import type {
   ClientJsContext,
   ConditionalBranchEvent,
@@ -654,16 +654,23 @@ export function collectConditionalBranchChildComponents(
   node: IRNode,
   skipConditionals = false,
 ): Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }> {
-  const components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }> = []
-  traverseForComponents(node, components, skipConditionals)
-  return components
+  return collectConditionalBranchComponentNodes(node, skipConditionals).map(c => ({
+    name: c.name,
+    slotId: c.slotId,
+    props: c.props,
+    children: c.children,
+  }))
 }
 
-function traverseForComponents(
-  node: IRNode,
-  components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }>,
-  skipConditionals = false,
-): void {
+/**
+ * The component nodes a conditional branch's `bindEvents` initializes —
+ * THE definition of which children a branch owns. `collectConditionalBranchChildComponents`
+ * (what the branch emits `initChild` for) and the main collector's static
+ * child-init pass (which must skip exactly these, or the child is
+ * initialized twice) both read it.
+ */
+export function collectConditionalBranchComponentNodes(node: IRNode, skipConditionals = false): IRComponent[] {
+  const components: IRComponent[] = []
   // Loops never contain collected components via this walker; halting there
   // matches the pre-walker behaviour (no 'loop' case in the switch).
   // skipConditionals also halts at nested conditionals / if-statements.
@@ -673,16 +680,12 @@ function traverseForComponents(
   walkIR(node, null, {
     ...stops,
     component: ({ node, descend }) => {
-      components.push({
-        name: node.name,
-        slotId: node.slotId,
-        props: node.props,
-        children: node.children,
-      })
+      components.push(node)
       // Recurse into children passed to this component.
       descend()
     },
   })
+  return components
 }
 
 /**

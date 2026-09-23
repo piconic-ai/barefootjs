@@ -3235,7 +3235,6 @@ export function initDropdownMenuCheckboxItem(__scope, _p = {}) {
   const isDisabled = createMemo(() => _p.disabled ?? false)
 
   const [_s0, _s3] = $(__scope, 's0', 's3')
-  const [_s1] = $c(__scope, 's1')
 
   { const __l = []
   createEffect(() => {
@@ -3282,9 +3281,6 @@ export function initDropdownMenuCheckboxItem(__scope, _p = {}) {
   })
 
   if (_s3) (handleMount)(_s3)
-
-  // Initialize child components with props
-  initChild('CheckIcon', _s1, { className: "size-4" })
 }
 
 hydrate('DropdownMenuCheckboxItem', { init: initDropdownMenuCheckboxItem, template: (_p) => `<div data-slot="dropdown-menu-item" role="menuitemcheckbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(String(_p.checked ?? false)) != null ? 'aria-checked="' + escapeAttr(String(_p.checked ?? false)) + '"' : ''} ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s3"><span ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} bf="s2">${(_p.checked ?? false) ? `<!--bf-cond-start:s0-->${renderChild('CheckIcon', {className: "size-4"}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}</span>${markupOrEmpty(_p.children)}</div>` })

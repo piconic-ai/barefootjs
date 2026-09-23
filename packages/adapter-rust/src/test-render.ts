@@ -312,6 +312,20 @@ export async function renderMinijinjaComponent(options: RenderOptions): Promise<
     if (importsSearchParams(ir.metadata)) {
       payload.search_params = ''
     }
+    // bf-p hydration payload (`BfInstance::props`): mirrors
+    // `integrations/axum`'s `render_root` seeding `root.props` with the
+    // route's props verbatim — the caller's raw props, unmodified. No
+    // default-filling, no signal/memo seeding, no rest-bag nesting (that is
+    // `vars`, above). Excludes internal harness-only keys (`__instanceId`
+    // etc.), which are never a real caller-facing prop.
+    const userProps: Record<string, unknown> = {}
+    if (props) {
+      for (const [key, value] of Object.entries(props)) {
+        if (key.startsWith('__')) continue
+        userProps[key] = value
+      }
+    }
+    payload.props = userProps
 
     await Bun.write(resolve(tempDir, 'payload.json'), JSON.stringify(encodeSpecials(payload)))
 

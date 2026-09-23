@@ -115,7 +115,6 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   const [_s0] = $(__scope, 's0')
-  const [_s1] = $c(__scope, 's1')
 
   insert(__scope, 's0', () => isLoggedIn(), {
     template: () => { const __slots = []; return { html: \`<!--bf-cond-start:s0-->\${renderChild('Dashboard__b3c36eee', {}, undefined, 's1')}<!--bf-cond-end:s0-->\`, slots: __slots } },
@@ -129,9 +128,6 @@ export function initExample(__scope, _p = {}) {
     }
   })
 
-
-  // Initialize child components with props
-  initChild('Dashboard__b3c36eee', _s1, {})
 }
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s2">\${(false) ? \`<!--bf-cond-start:s0-->\${renderChild('Dashboard__b3c36eee', {}, undefined, 's1')}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0--><!--bf-cond-end:s0-->\`}</div>\` })

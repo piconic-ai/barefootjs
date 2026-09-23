@@ -66,6 +66,15 @@ export interface Scenario<S, A extends string = string> {
    * ever involved.
    */
   stateSignals: readonly string[]
+  /**
+   * Actions whose button reaches the state only INDIRECTLY — e.g. it
+   * dispatches a DOM event that a child's listener turns into a setter
+   * call. The IR smoke cannot follow that hop, so it only checks these
+   * buttons exist; the browser oracle still checks their effect. Use
+   * sparingly: the direct-setter check is the cheap analyzer-vs-runtime
+   * classifier, and every action listed here gives it up.
+   */
+  indirectActions?: readonly A[]
   /** Pure model of the component's transitions. Must not mutate `state`. */
   reduce(state: S, action: A): S
   bounds: ExploreBounds
@@ -132,6 +141,9 @@ export function assertScenarioShape<S, A extends string>(scenario: Scenario<S, A
         `explore: scenario '${scenario.id}' declares action '${action}' but its source renders no <button data-action="${action}">`,
       )
     }
+  }
+  for (const action of scenario.indirectActions ?? []) {
+    if (!seen.has(action)) throw new Error(`explore: scenario '${scenario.id}' lists undeclared indirect action '${action}'`)
   }
   if (!Number.isInteger(scenario.bounds.maxDepth) || scenario.bounds.maxDepth < 0) {
     throw new Error(`explore: scenario '${scenario.id}' bounds.maxDepth must be a non-negative integer`)

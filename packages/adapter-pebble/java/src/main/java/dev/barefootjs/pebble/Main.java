@@ -121,7 +121,16 @@ public final class Main {
     if (rawSearchParams instanceof String) {
       context.put("searchParams", new SearchParams((String) rawSearchParams));
     }
-    Bf bf = new Bf(scopeId, engine, manifest);
+    // The root's `bf-p` hydration payload: the conformance harness seeds
+    // the caller's RAW props under this reserved key (never a template
+    // var), mirroring `integrations/spring`'s `Render.renderRoot` handing
+    // its route's `props` to the `(String, PebbleEngine, Map, Object)`
+    // constructor. Empty / absent → `null`, same rule `renderRoot` applies.
+    Object rootProps = context.remove("__bf_root_props");
+    if (rootProps instanceof Map && ((Map<?, ?>) rootProps).isEmpty()) {
+      rootProps = null;
+    }
+    Bf bf = new Bf(scopeId, engine, manifest, rootProps);
     context.put("bf", bf);
 
     StringWriter writer = new StringWriter();

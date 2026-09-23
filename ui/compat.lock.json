@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 440,
+    "totalFixtures": 444,
     "fixtures": {
       "combobox": {
         "blade": {
@@ -2055,6 +2055,56 @@
           "kind": "render",
           "limitations": [
             "ref-effect-attr-state-ssr"
+          ]
+        }
+      },
+      "component-root-client-scope": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "component-root-client-scope-comment"
           ]
         }
       },
@@ -4020,6 +4070,22 @@
           ]
         }
       },
+      "nested-prop-member-signal-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nested-prop-member-signal-seed"
+          ]
+        }
+      },
+      "nested-prop-signal-child-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nested-prop-member-signal-seed"
+          ]
+        }
+      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "render",
@@ -5164,6 +5230,10 @@
         "description": "site/ui Combobox demo — typed filtering hides items via the hidden attribute; selection closes and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/combobox.ts"
       },
+      "component-root-client-scope": {
+        "description": "a client component whose root is a child-component call renders its own scope comment so it hydrates",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-root-client-scope.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -5239,6 +5309,14 @@
       "namespace-import-primitive": {
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
+      },
+      "nested-prop-member-signal-seed": {
+        "description": "signals seeded from nested prop members render their seed at SSR (text, conditional, keyed loop)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-member-signal-seed.ts"
+      },
+      "nested-prop-signal-child-prop": {
+        "description": "a signal seeded from a nested prop member reaches a child component prop at SSR",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-signal-child-prop.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -5488,6 +5566,26 @@
         "BF101"
       ]
     },
+    "component-root-client-scope-comment": {
+      "title": "Client component whose root is a child-component call",
+      "kind": "silent",
+      "given": "a `'use client'` component whose entire JSX return is a single child-component call (no wrapping element), with its own state or handlers (e.g. buttons forwarded as the child's `children`)",
+      "expected": "the server HTML wraps the child's output in the parent's `<!--bf-scope:...-->` / `<!--bf-/scope:...-->` comment pair carrying the parent's props, so the parent hydrates and its handlers and reactive props reach the child",
+      "actual": "omits the parent's scope comment pair and renders only the child's output, with no diagnostic, so the parent never hydrates on the client: its forwarded handlers do nothing and the child's prop never updates",
+      "fixtures": [
+        "component-root-client-scope"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
       "kind": "refusal",
@@ -5679,6 +5777,20 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "nested-prop-member-signal-seed": {
+      "title": "Signal seeded from a member of an object-typed prop",
+      "kind": "silent",
+      "given": "a `createSignal` whose initial value is a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`), read by the component as text, a conditional, or a loop source, or forwarded to a child component prop",
+      "expected": "the server HTML renders the seeded value, as if the member had been passed as a top-level prop",
+      "actual": "emits a `nil` seed for the signal, with no diagnostic: its own reads render the zero value (empty text, the falsy branch, an empty loop), and forwarding it to a child prop typed as a primitive makes the generated server code fail to compile",
+      "fixtures": [
+        "nested-prop-member-signal-seed",
+        "nested-prop-signal-child-prop"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "off-subset-callback-body": {

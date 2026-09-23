@@ -47,6 +47,7 @@ describe('explore scenarios — IR smoke', () => {
       })
 
       for (const action of scenario.actions) {
+        if (scenario.indirectActions?.includes(action)) continue
         test(`[${action}] click handler reaches a state setter`, () => {
           const button = result.findAll({ tag: 'button' }).find((b: TestNode) => b.props['data-action'] === action)!
           const handler = button.onClick
