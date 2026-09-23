@@ -4,6 +4,7 @@ import { createContext, useContext, createSignal, createMemo, createEffect, crea
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon } from '../icon'
+import { setTextPreservingMarkers } from '../../../lib/set-text-preserving-markers'
 import { collectSsrPortalElement } from '@barefootjs/hono/portals'
 
 interface SelectContextValue {

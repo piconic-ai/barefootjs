@@ -2,6 +2,7 @@
 import { serializeHydrationProps, bfText, bfTextEnd, bfComment } from '@barefootjs/hono/utils'
 import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, createPortal, isSSRPortal, findSiblingSlot, provideContextSSR } from '@barefootjs/hono/client-shim'
 import { trackPosition } from '../../../lib/track-position'
+import { setTextPreservingMarkers } from '../../../lib/set-text-preserving-markers'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'

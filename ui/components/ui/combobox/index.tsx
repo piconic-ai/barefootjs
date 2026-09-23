@@ -40,6 +40,7 @@
 
 import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
 import { trackPosition } from '../../../lib/track-position'
+import { setTextPreservingMarkers } from '../../../lib/set-text-preserving-markers'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
@@ -390,18 +391,28 @@ function ComboboxValue(props: ComboboxValueProps) {
     // JSX) already gives the server HTML the right `data-placeholder`
     // value for the initial state; this effect keeps it correct as the
     // value changes afterward.
+    //
+    // Writes via `setTextPreservingMarkers` rather than `el.textContent =`
+    // (#3160): `el`'s own JSX child (`{props.placeholder ?? ''}` below) is
+    // a compiler-managed text slot wrapped in `<!--bf:sN-->…<!--/-->`
+    // markers at SSR, and the compiled client template claims that same
+    // marker pair at hydrate time. A bare `textContent` write replaces
+    // ALL of `el`'s children — including those markers — with a single
+    // text node, a permanent SSR-vs-hydrated DOM structural mismatch
+    // (caught by the `[snap]`/`[three-point]` oracles) even though the
+    // rendered text itself is correct.
     createEffect(() => {
       const val = ctx.value()
       if (val) {
         // Query the portaled content for the matching item's label
         const itemEl = document.querySelector(`[data-slot="combobox-item"][data-value="${val}"]`) as HTMLElement
         const label = itemEl?.textContent ?? val
-        el.textContent = label
+        setTextPreservingMarkers(el, label)
         // Remove placeholder attribute when value is selected
         const trigger = el.closest('[data-slot="combobox-trigger"]')
         trigger?.removeAttribute('data-placeholder')
       } else {
-        el.textContent = props.placeholder ?? ''
+        setTextPreservingMarkers(el, props.placeholder ?? '')
         // Set placeholder attribute for styling
         const trigger = el.closest('[data-slot="combobox-trigger"]')
         if (props.placeholder) {

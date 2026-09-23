@@ -52,14 +52,16 @@ export const renderDivergences: RenderDivergences = {
   // instead of rendering inline — see `wrapSsrPortalElement`
   // (`adapter/erb-adapter.ts`) and `register_portal_element`/`portals`
   // (`lib/barefoot_js.rb`).
-  // `combobox` / `select` carry the SAME #3059 portal-position divergence
-  // (their Content element is the same `ref`-callback SSR-portal pattern),
-  // but the registry lists a fixture on exactly one entry and these two
-  // are already claimed by `nested-child-static-prop-text-slot-elided` (the
-  // text-slot-marker divergence) — cite that one instead; see
-  // `ref-callback-portal-content-inline-at-ssr`'s own comment.
-  combobox: { limitation: 'nested-child-static-prop-text-slot-elided' },
-  select: { limitation: 'nested-child-static-prop-text-slot-elided' },
+  // `combobox` / `select` carry the SAME portal-position divergence
+  // (their `Content` element is the same `ref`-callback SSR-portal
+  // pattern) — tracked under the registry's own
+  // `ref-callback-portal-content-inline-at-ssr` entry. They used to cite
+  // `nested-child-static-prop-text-slot-elided` instead (a fixture can
+  // only be listed on one entry, and these two were "already claimed"
+  // by an unrelated text-slot-marker mismatch); that entry graduated
+  // (#3160), so this is their entry again.
+  combobox: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  select: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
   // A client component whose whole return is a child-component call: the
   // reference wraps the child's output in the parent's `<!--bf-scope:...-->`
   // comment pair (with the parent's props) so the parent hydrates; this

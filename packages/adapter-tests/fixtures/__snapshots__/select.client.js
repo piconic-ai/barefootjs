@@ -2991,18 +2991,28 @@ export function initSelectValue(__scope, _p = {}) {
     // JSX) already gives the server HTML the right `data-placeholder`
     // value for the initial state; this effect keeps it correct as the
     // value changes afterward.
+    //
+    // Writes via `setTextPreservingMarkers` rather than `el.textContent =`
+    // (#3160): `el`'s own JSX child (`{props.placeholder ?? ''}` below) is
+    // a compiler-managed text slot wrapped in `<!--bf:sN-->…<!--/-->`
+    // markers at SSR, and the compiled client template claims that same
+    // marker pair at hydrate time. A bare `textContent` write replaces
+    // ALL of `el`'s children — including those markers — with a single
+    // text node, a permanent SSR-vs-hydrated DOM structural mismatch
+    // (caught by the `[snap]`/`[three-point]` oracles) even though the
+    // rendered text itself is correct.
     createEffect(() => {
       const val = ctx.value()
       if (val) {
         // Query the portaled content for the matching item's label
         const itemEl = document.querySelector(`[data-slot="select-item"][data-value="${val}"]`)
         const label = itemEl?.textContent ?? val
-        el.textContent = label
+        setTextPreservingMarkers(el, label)
         // Remove placeholder attribute when value is selected
         const trigger = el.closest('[data-slot="select-trigger"]')
         trigger?.removeAttribute('data-placeholder')
       } else {
-        el.textContent = _p.placeholder ?? ''
+        setTextPreservingMarkers(el, _p.placeholder ?? '')
         // Set placeholder attribute for styling
         const trigger = el.closest('[data-slot="select-trigger"]')
         if (_p.placeholder) {
@@ -3611,3 +3621,67 @@ export function initSelectGroupedDemo(__scope, _p = {}) {
 
 hydrate('SelectGroupedDemo', { init: initSelectGroupedDemo, template: (_p) => `<div class="space-y-3">${renderChild('Select', {value: (''), children: `${renderChild('SelectTrigger', {className: "w-[280px]", showPlaceholder: !(''), children: `${renderChild('SelectValue', {placeholder: "Select timezone..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('SelectContent', {children: `${renderChild('SelectGroup', {children: `${renderChild('SelectLabel', {children: `North America`}, undefined, 's2')}${renderChild('SelectItem', {value: "est", children: `Eastern Standard Time (EST)`}, undefined, 's3')}${renderChild('SelectItem', {value: "cst", children: `Central Standard Time (CST)`}, undefined, 's4')}${renderChild('SelectItem', {value: "mst", children: `Mountain Standard Time (MST)`}, undefined, 's5')}${renderChild('SelectItem', {value: "pst", children: `Pacific Standard Time (PST)`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('SelectSeparator', {}, undefined, 's8')}${renderChild('SelectGroup', {children: `${renderChild('SelectLabel', {children: `Europe`}, undefined, 's9')}${renderChild('SelectItem', {value: "gmt", children: `Greenwich Mean Time (GMT)`}, undefined, 's10')}${renderChild('SelectItem', {value: "cet", children: `Central European Time (CET)`}, undefined, 's11')}${renderChild('SelectItem', {value: "eet", children: `Eastern European Time (EET)`}, undefined, 's12')}`}, undefined, 's13')}${renderChild('SelectSeparator', {}, undefined, 's14')}${renderChild('SelectGroup', {children: `${renderChild('SelectLabel', {children: `Asia`}, undefined, 's15')}${renderChild('SelectItem', {value: "ist", children: `India Standard Time (IST)`}, undefined, 's16')}${renderChild('SelectItem', {value: "cst_china", children: `China Standard Time (CST)`}, undefined, 's17')}${renderChild('SelectItem', {value: "jst", children: `Japan Standard Time (JST)`}, undefined, 's18')}`}, undefined, 's19')}`}, undefined, 's20')}`}, undefined, 's21')}<p class="text-sm text-muted-foreground"> Selected: <span class="selected-timezone font-medium" bf="s23"><!--bf:s22-->${escapeTextOrMarkup(('') || 'None')}<!--/--></span></p></div>` })
 export function SelectGroupedDemo(_p, __bfKey) { return createComponent('SelectGroupedDemo', _p, __bfKey) }
+
+// ---- inlined ui/lib/set-text-preserving-markers.ts ----
+/**
+ * BarefootJS UI - marker-preserving imperative text writes
+ *
+ * A compiled `{expr}` JSX text child is wrapped in a `<!--bf:sN-->…<!--/-->`
+ * comment marker pair (both at SSR and by the client hydration template),
+ * and the compiler emits its OWN `createEffect` that keeps the text node
+ * between those markers in sync with `expr`. When a component's own `ref`/
+ * mount effect ALSO needs to write that same text imperatively — because
+ * the real value depends on something the compiler can't see inside the
+ * render function itself (e.g. a DOM query against portaled content driven
+ * by a `useContext` read, the `ComboboxValue`/`SelectValue` pattern) — a
+ * plain `el.textContent = …` clobbers ALL of `el`'s children, markers
+ * included, leaving a bare text node where SSR (and the compiler's own
+ * writer) left a marker-wrapped one. That's a permanent SSR-vs-hydrated
+ * structural mismatch, not a value change (#3160).
+ *
+ * This helper writes only the text NODE between any existing sibling
+ * comment markers, leaving the markers themselves untouched — the same
+ * discipline the compiler's own slot writer already follows
+ * (`@barefootjs/client/runtime/claim-slots.ts`).
+ */
+/**
+ * Set `el`'s text content without disturbing any comment-node children
+ * (slot markers). Assumes `el`'s only non-comment child, if any, is the
+ * single text node this position owns — true for any element whose JSX
+ * content is exactly one `{expr}` text child, which is the only shape a
+ * component would pair with this helper.
+ *
+ * @param el - The element whose text content to set.
+ * @param text - The new text. Passing `''` clears an existing text node's
+ *   data but does not remove it, and does not create one where none
+ *   existed (matching `escapeTextOrMarkup`'s empty-render behavior).
+ */
+export function setTextPreservingMarkers(el, text) {
+    let textNode = null;
+    let endMarker = null;
+    for (const child of Array.from(el.childNodes)) {
+        if (child.nodeType === Node.TEXT_NODE) {
+            textNode = child;
+        }
+        else if (child.nodeType === Node.COMMENT_NODE) {
+            if (child.nodeValue === '/')
+                endMarker = child;
+        }
+        else {
+            // Not a marker-wrapped single text position after all (an unexpected
+            // element/other child is present) — fall back to a plain replace
+            // rather than guessing where to splice.
+            el.textContent = text;
+            return;
+        }
+    }
+    if (textNode) {
+        textNode.data = text;
+    }
+    else if (text !== '') {
+        // No text node yet (SSR rendered nothing between the markers, e.g. an
+        // initially empty value) — insert one, before the closing marker when
+        // one is present so a marker pair stays paired, or at the end otherwise.
+        el.insertBefore(document.createTextNode(text), endMarker);
+    }
+}

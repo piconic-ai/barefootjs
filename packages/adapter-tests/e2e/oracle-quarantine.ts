@@ -119,27 +119,22 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // `ComboboxTrigger`/`SelectTrigger` now take an explicit
   // `showPlaceholder` prop (mirroring those fixes) and that mismatch is
   // gone, but un-quarantining revealed the `ComboboxValue`/`SelectValue`
-  // text node itself was ALSO diverging for an entirely different reason
-  // (`nested-child-static-prop-text-slot-elided`, new entry): its SSR
-  // position, nested inside `ComboboxTrigger`/`SelectTrigger`, drops the
-  // `<!--bf:sN-->…<!--/-->` slot markers the client hydration template
-  // always emits for it, because the compiler reads the caller's static
-  // `placeholder="…"` literal as proof the position never changes — which
-  // only covers the PROP's own reactivity, not `ComboboxValue`'s
-  // independent `ref` effect that also targets that node. Confirmed
-  // pre-existing and unrelated to the `showPlaceholder` fix by reproducing
-  // it against the pre-fix component source (same structural diff).
-  combobox: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      "ComboboxValue's placeholder text renders as a bare string when SSR'd nested inside ComboboxTrigger (a sibling passing a static literal), but the client hydration template always wraps that position in <!--bf:sN--> slot markers — hydration adds a marker pair with no matching SSR structure.",
-    limitation: 'nested-child-static-prop-text-slot-elided',
-  },
-  select: {
-    oracles: ['snap', 'three-point'],
-    reason: 'The SelectValue placeholder text has the same nested-child slot-marker mismatch as combobox.',
-    limitation: 'nested-child-static-prop-text-slot-elided',
-  },
+  // text node itself was ALSO diverging, for an entirely different reason
+  // (`nested-child-static-prop-text-slot-elided`, now graduated too —
+  // #3160): SSR already wrapped this position in the same `<!--bf:sN-->
+  // …<!--/-->` markers the client hydration template claims (the two were
+  // never in disagreement — the original diagnosis was wrong); the actual
+  // cause was the SAME `ref` effect above ALSO writing this node's text
+  // via a bare `el.textContent = …`, which replaces every child of the
+  // element — the slot markers included — with a single text node on its
+  // first run, a structural mismatch independent of whether the caller's
+  // `placeholder="…"` argument is a literal. `ComboboxValue`/`SelectValue`
+  // now write through `setTextPreservingMarkers`
+  // (`ui/lib/set-text-preserving-markers.ts`), which updates only the text
+  // node between the markers, mirroring the discipline the compiler's own
+  // slot writer already follows. `combobox`/`select` still carry an
+  // UNRELATED portal-positioning divergence on every adapter but
+  // Hono — see `ref-callback-portal-content-inline-at-ssr`.
   // Minimal, component-agnostic repro of `ref-effect-attr-state-ssr`
   // itself — added once accordion/radio-group/command/combobox/select all
   // graduated off it, so the entry keeps a live, named fixture in this
