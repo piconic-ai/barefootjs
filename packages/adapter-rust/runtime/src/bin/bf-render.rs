@@ -42,6 +42,10 @@ struct Payload {
     vars: JsonValue,
     #[serde(default)]
     search_params: Option<String>,
+    /// The caller's RAW props -- the root's `bf-p` hydration payload
+    /// (`BfInstance::props`), NOT template vars (those are `vars` above).
+    #[serde(default)]
+    props: JsonValue,
     #[serde(default)]
     children: Vec<ChildPayload>,
 }
@@ -108,7 +112,13 @@ fn run(payload_path: &str) -> Result<String, String> {
         );
     }
 
-    let root = BfInstance::root(Arc::clone(&session), payload.scope_id.clone());
+    let mut root = BfInstance::root(Arc::clone(&session), payload.scope_id.clone());
+    // Mirrors `integrations/axum`'s `render_root`: seed the root's `bf-p`
+    // payload with the caller's props whenever they're non-empty.
+    let props = decode_value(&payload.props);
+    if props.as_object().is_some_and(|m| !m.is_empty()) {
+        root.props = Some(props);
+    }
     let vars = decode_value(&payload.vars);
 
     let mut extra: Vec<(String, MjValue)> = Vec::new();

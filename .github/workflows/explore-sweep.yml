@@ -19,7 +19,7 @@ permissions:
 jobs:
   explore-sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -70,4 +70,145 @@ jobs:
         with:
           name: playwright-traces-explore-sweep
           path: packages/adapter-tests/test-results/
+          retention-days: 30
+
+  # Adapter axis (#3046): the same scenarios, SSR-rendered through each
+  # non-Hono adapter's REAL backend (`explore/adapters.ts`) and hydrated by
+  # the shared client JS. One matrix leg per adapter so each installs only
+  # its own toolchain (the setup steps mirror that adapter's own CI
+  # workflow) and a slow or broken backend never blocks the others. Only
+  # the adapter's describes run here (`-g "[<id>]"`); the Hono reference
+  # run is the job above.
+  explore-sweep-adapter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { adapter: blade, pkg: '@barefootjs/blade' }
+          - { adapter: erb, pkg: '@barefootjs/erb' }
+          - { adapter: go-template, pkg: '@barefootjs/go-template' }
+          - { adapter: jinja, pkg: '@barefootjs/jinja' }
+          - { adapter: minijinja, pkg: '@barefootjs/rust' }
+          - { adapter: mojolicious, pkg: '@barefootjs/mojolicious' }
+          - { adapter: pebble, pkg: '@barefootjs/pebble' }
+          - { adapter: twig, pkg: '@barefootjs/twig' }
+          - { adapter: xslate, pkg: '@barefootjs/xslate' }
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Go
+        if: matrix.adapter == 'go-template'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25'
+
+      - name: Setup Ruby
+        if: matrix.adapter == 'erb'
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.3'
+
+      - name: Install gem dependencies
+        if: matrix.adapter == 'erb'
+        working-directory: packages/adapter-erb
+        run: bundle install
+
+      - name: Setup Python
+        if: matrix.adapter == 'jinja'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Jinja2
+        if: matrix.adapter == 'jinja'
+        run: pip install jinja2
+
+      - name: Setup Perl
+        if: matrix.adapter == 'mojolicious' || matrix.adapter == 'xslate'
+        uses: shogo82148/actions-setup-perl@ac3202722f5744e62a8fa3af3e1aaaebb08861f3 # v1
+        with:
+          perl-version: '5.40'
+
+      - name: Install Mojolicious
+        if: matrix.adapter == 'mojolicious'
+        run: cpanm --notest Mojolicious DateTime
+
+      - name: Install Text::Xslate
+        if: matrix.adapter == 'xslate'
+        run: cpanm --notest Text::Xslate DateTime
+
+      - name: Setup Java
+        if: matrix.adapter == 'pebble'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle dependencies and build artifacts
+        if: matrix.adapter == 'pebble'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            packages/adapter-pebble/java/build
+          key: gradle-${{ runner.os }}-${{ hashFiles('packages/adapter-pebble/java/**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Install PHP runtime (Composer)
+        if: matrix.adapter == 'blade' || matrix.adapter == 'twig'
+        run: composer install --no-interaction --working-dir=packages/adapter-php
+
+      - name: Install Blade backend (Composer)
+        if: matrix.adapter == 'blade'
+        run: composer install --no-interaction --working-dir=packages/adapter-blade/php
+
+      - name: Install Twig backend (Composer)
+        if: matrix.adapter == 'twig'
+        run: composer install --no-interaction --working-dir=packages/adapter-twig/php
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '${{ matrix.pkg }}' build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Generate explore states (Hono reference + ${{ matrix.adapter }})
+        env:
+          EXPLORE_ADAPTERS: ${{ matrix.adapter }}
+        run: bun run --filter '@barefootjs/adapter-tests' explore:generate
+
+      - name: Run explore sweep (${{ matrix.adapter }} only)
+        working-directory: packages/adapter-tests
+        run: bunx playwright test --config=playwright.config.ts e2e/explore.playwright.ts -g "\[${{ matrix.adapter }}\]"
+
+      - name: Upload failure artifacts (explore-sweep ${{ matrix.adapter }})
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: explore-failures-${{ matrix.adapter }}
+          path: packages/adapter-tests/.explore/failures/
+          if-no-files-found: ignore
           retention-days: 30

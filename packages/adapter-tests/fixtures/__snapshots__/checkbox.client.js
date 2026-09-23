@@ -2921,7 +2921,6 @@ export function initCheckbox(__scope, _p = {}) {
   }
 
   const [_s2, _s0] = $(__scope, 's2', 's0')
-  const [_s1] = $c(__scope, 's1')
 
   { const __l = []
   createEffect(() => {
@@ -2973,9 +2972,6 @@ export function initCheckbox(__scope, _p = {}) {
   })
 
   if (_s2) _s2.addEventListener('click', handleClick)
-
-  // Initialize child components with props
-  initChild('CheckIcon', _s1, { "data-slot": "checkbox-indicator", className: "size-3.5 text-current" })
 }
 
 hydrate('Checkbox', { init: initCheckbox, template: (_p) => `<button data-slot="checkbox" ${(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) != null ? 'data-state="' + escapeAttr(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) + '"' : ''} role="checkbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) != null ? 'aria-checked="' + escapeAttr(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) + '"' : ''} ${_p.error ? 'aria-invalid' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${((`${('peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50')} ${('focus-visible:border-ring focus-visible:ring-ring/50')} ${('aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive')} ${([

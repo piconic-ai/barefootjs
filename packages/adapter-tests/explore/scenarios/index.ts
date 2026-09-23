@@ -12,6 +12,14 @@ import { conditionalToggle } from './conditional-toggle'
 import { childMountUnmount } from './child-mount-unmount'
 import { childPropSlots } from './child-prop-slots'
 import { commentRootChildSlot } from './comment-root-child-slot'
+import { keyedLoopPositions } from './keyed-loop-positions'
+import { childPropLoopPositions } from './child-prop-loop-positions'
+import { fragmentRootToggle } from './fragment-root-toggle'
+import { childListenerCleanup } from './child-listener-cleanup'
+import { childEffectDisposal } from './child-effect-disposal'
+import { nestedLoop } from './nested-loop'
+import { grandchildPropChain } from './grandchild-prop-chain'
+import { loopRowHandlers } from './loop-row-handlers'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const SCENARIOS: ReadonlyArray<Scenario<any, string>> = [
@@ -21,4 +29,12 @@ export const SCENARIOS: ReadonlyArray<Scenario<any, string>> = [
   childMountUnmount,
   childPropSlots,
   commentRootChildSlot,
+  keyedLoopPositions,
+  childPropLoopPositions,
+  fragmentRootToggle,
+  childListenerCleanup,
+  childEffectDisposal,
+  nestedLoop,
+  grandchildPropChain,
+  loopRowHandlers,
 ]

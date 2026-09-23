@@ -273,8 +273,13 @@ export async function renderTwigComponent(options: RenderOptions): Promise<strin
     // Build the JSON-transportable props payload + any literal PHP
     // assignments for values JSON can't carry (non-finite numbers, the
     // `searchParams` object binding).
-    const { data: propsData, literalAssignments } = buildTwigProps(props, ir)
+    const { data: propsData, literalAssignments, userProps } = buildTwigProps(props, ir)
     await Bun.write(resolve(tempDir, 'props.json'), JSON.stringify(propsData))
+    // Separate from `props.json`: the caller-facing subset only (no
+    // scope_id / signal / memo bookkeeping) — what `$bf->_props(...)` below
+    // feeds `props_attr`'s bf-p payload, matching what a production
+    // Twig route handler passes, not this harness's internal vars array.
+    await Bun.write(resolve(tempDir, 'user_props.json'), JSON.stringify(userProps))
 
     // Build child-renderer registration PHP.
     const childRenderers = buildChildRenderersPhp(childTemplates)
@@ -302,6 +307,18 @@ $bf->_scope_id(${phpStr(rootScopeIdRaw)});
 $bf->_portal_elements(new \\ArrayObject());
 
 $vars = (array) json_decode(file_get_contents('props.json'));
+// Mirrors production's \`props_attr\` contract (BarefootJS.php's \`_props\`
+// accessor; integrations/php/index.php calls \`$bf->_props($props)\`): the
+// caller is expected to seed it before rendering the root component, so
+// this harness must call it explicitly.
+//
+// \`user_props.json\` — NOT \`$vars\` above — is what \`_props\` gets: \`$vars\`
+// is this harness's internal vars array (scope_id, signal/memo seed
+// values), which a real route handler never has and never passes.
+// Production's bf-p carries neither scope_id nor signal state, only the
+// caller-facing props. Decoded WITHOUT assoc (same as \`$vars\`) so a
+// nested \`{}\` stays a stdClass and re-encodes as \`{}\`, not \`[]\`.
+$bf->_props(json_decode(file_get_contents('user_props.json')));
 ${literalAssignments.join('\n')}
 
 ${childRenderers}
@@ -529,7 +546,7 @@ function buildChildRenderersPhp(
 function buildTwigProps(
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
-): { data: Record<string, unknown>; literalAssignments: string[] } {
+): { data: Record<string, unknown>; literalAssignments: string[]; userProps: Record<string, unknown> } {
   const data: Record<string, unknown> = {}
   const literalAssignments: string[] = []
 
@@ -661,7 +678,22 @@ function buildTwigProps(
     literalAssignments.push(`$vars['searchParams'] = new \\Barefoot\\SearchParams('');`)
   }
 
-  return { data, literalAssignments }
+  // `$bf->_props(...)` payload (bf-p hydration): mirrors production's
+  // route-handler call `$bf->_props($props)` verbatim — the caller's raw
+  // props array, unmodified. No default-filling, no signal/memo seeding,
+  // no rest-bag nesting: a real Twig route handler never rearranges
+  // the array it received before handing it to `_props`. Excludes
+  // internal harness-only keys (`__instanceId` etc.), which are never a
+  // real caller-facing prop.
+  const userProps: Record<string, unknown> = {}
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      userProps[key] = value
+    }
+  }
+
+  return { data, literalAssignments, userProps }
 }
 
 

@@ -30,6 +30,12 @@
  * TSX source into the manifest, so a failure artifact can carry both
  * without the browser leg re-compiling anything.
  *
+ * Adapter axis: with `EXPLORE_ADAPTERS=<id>[,<id>…]` (or `all`), every
+ * state of every `ok` scenario is ALSO rendered through those adapters'
+ * real backends (`explore/adapters.ts`) and recorded under
+ * `adapterRuns`; the browser suite then hydrates each adapter's markup
+ * with the same client JS. Unset, only the Hono reference run happens.
+ *
  * Usage: `bun run explore:generate` (see `package.json`).
  */
 
@@ -43,6 +49,7 @@ import { explore } from '../explore/explorer'
 import { SCENARIOS } from '../explore/scenarios'
 import type { Scenario } from '../explore/scenario'
 import { generateSharedComponentSnapshotCore, seedFromId } from '../src/snapshot-generator'
+import { selectExploreAdapters, type LoadedExploreAdapter } from '../explore/adapters'
 import type { SharedFixtureSpec } from '../fixtures/_helpers'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -89,14 +96,47 @@ export interface ExploreManifestEntry {
   paths?: ExplorePathEntry[]
 }
 
+/** One reachable state rendered through a non-Hono adapter's real backend. */
+export interface ExploreAdapterStateEntry {
+  index: number
+  fixtureId: string
+  htmlFile: string
+  /** The Hono run's client JS for the same state — client JS is adapter-independent. */
+  clientJsFile: string
+}
+
+/**
+ * One scenario rendered through one non-Hono adapter (the adapter axis,
+ * `explore/adapters.ts`). Only produced for scenarios whose Hono run is
+ * `ok`; `refused` / `broken` carry the same meaning as for the Hono run,
+ * and `unavailable` means the adapter's backend toolchain isn't installed.
+ * The browser sweep turns `broken` and `unavailable` into a failing
+ * `render` case: an adapter explicitly requested via `EXPLORE_ADAPTERS`
+ * must actually be exercised.
+ */
+export interface ExploreAdapterRun {
+  adapter: string
+  scenarioId: string
+  status: 'ok' | 'refused' | 'broken' | 'unavailable'
+  diagnosticCodes?: string[]
+  reason?: string
+  states?: ExploreAdapterStateEntry[]
+}
+
 export interface ExploreManifest {
   /** `git rev-parse HEAD` at generation time, or `'unknown'` outside a checkout. */
   commit: string
   scenarios: ExploreManifestEntry[]
+  /** Non-Hono SSR runs requested via `EXPLORE_ADAPTERS` (empty when unset). */
+  adapterRuns: ExploreAdapterRun[]
 }
 
 export function stateFixtureId(scenarioId: string, index: number): string {
   return `explore__${scenarioId}__s${index}`
+}
+
+export function adapterStateFixtureId(adapter: string, scenarioId: string, index: number): string {
+  return `explore__${adapter}__${scenarioId}__s${index}`
 }
 
 function gitHead(): string {
@@ -188,11 +228,57 @@ async function sweepOne(scenario: Scenario<unknown, string>): Promise<ExploreMan
   return { ...base, status: 'ok', irFile, states, paths }
 }
 
+/**
+ * Render every state of an `ok` Hono run through one adapter's real
+ * backend. The root scope id is pinned to `<Component>_test` — the id the
+ * Hono snapshot path emits — via the renderers' `__instanceId` hook, so
+ * the shared client runtime resolves and hydrates the adapter's markup
+ * exactly as it does the reference's (the conformance harness's default
+ * `test` scope id names no component and would never hydrate).
+ */
+async function sweepAdapter(
+  loaded: LoadedExploreAdapter,
+  scenario: Scenario<unknown, string>,
+  entry: ExploreManifestEntry,
+): Promise<ExploreAdapterRun> {
+  const base = { adapter: loaded.id, scenarioId: scenario.id }
+  const probe = compileJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: loaded.create() })
+  const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
+  if (errorDiagnostics.length > 0) {
+    return { ...base, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }
+  }
+  const states: ExploreAdapterStateEntry[] = []
+  for (const state of entry.states!) {
+    const fixtureId = adapterStateFixtureId(loaded.id, scenario.id, state.index)
+    let html: string
+    try {
+      html = await loaded.render({
+        source: scenario.source,
+        adapter: loaded.create(),
+        props: { initial: state.state, __instanceId: `${scenario.componentName}_test` },
+        componentName: scenario.componentName,
+      })
+    } catch (err) {
+      if (loaded.isUnavailable(err)) return { ...base, status: 'unavailable', reason: (err as Error).message }
+      return { ...base, status: 'broken', reason: `state s${state.index}: ${(err as Error).message}` }
+    }
+    if (html.trim() === '') return { ...base, status: 'broken', reason: `state s${state.index} rendered empty HTML with no diagnostic` }
+    writeFileSync(resolve(EXPLORE_DIR, `${fixtureId}.html`), html)
+    states.push({ index: state.index, fixtureId, htmlFile: `${fixtureId}.html`, clientJsFile: state.clientJsFile })
+  }
+  return { ...base, status: 'ok', states }
+}
+
 async function main(): Promise<void> {
   rmSync(EXPLORE_DIR, { recursive: true, force: true })
   mkdirSync(EXPLORE_DIR, { recursive: true })
 
-  const manifest: ExploreManifest = { commit: gitHead(), scenarios: [] }
+  const adapterSpecs = selectExploreAdapters(process.env.EXPLORE_ADAPTERS)
+  const loadedAdapters: LoadedExploreAdapter[] = []
+  for (const spec of adapterSpecs) loadedAdapters.push(await spec.load())
+  const unavailableAdapters = new Set<string>()
+
+  const manifest: ExploreManifest = { commit: gitHead(), scenarios: [], adapterRuns: [] }
   const counts: Record<ExploreStatus, number> = { ok: 0, refused: 0, broken: 0, inapplicable: 0 }
   let totalStates = 0
   let totalPaths = 0
@@ -212,6 +298,25 @@ async function main(): Promise<void> {
       totalPaths += entry.paths!.length
     }
     console.log(`[${entry.status}] ${entry.scenarioId}${detail}`)
+
+    if (entry.status !== 'ok') continue
+    // Adapters render concurrently (each spawns its own backend process
+    // per render, so they don't contend on anything but CPU); each
+    // adapter's own states stay sequential. Results are recorded in the
+    // registry's adapter order, so the manifest is deterministic.
+    const pending = loadedAdapters.filter(loaded => !unavailableAdapters.has(loaded.id))
+    const runs = await Promise.all(pending.map(loaded => sweepAdapter(loaded, scenario, entry)))
+    for (const run of runs) {
+      manifest.adapterRuns.push(run)
+      if (run.status === 'unavailable') unavailableAdapters.add(run.adapter)
+      const runDetail =
+        run.status === 'ok'
+          ? ` — ${run.states!.length} states`
+          : run.status === 'refused'
+            ? ` [${run.diagnosticCodes?.join(',')}]`
+            : ` — ${run.reason}`
+      console.log(`    [${run.adapter}] [${run.status}]${runDetail}`)
+    }
   }
 
   writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n')

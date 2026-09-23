@@ -665,6 +665,9 @@ import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
 // twin of `select-value-no-match-ssr`.
 import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
 import { fixture as signalOptionalInit } from './signal-optional-init'
+import { fixture as nestedPropSignalChildProp } from './nested-prop-signal-child-prop'
+import { fixture as nestedPropMemberSignalSeed } from './nested-prop-member-signal-seed'
+import { fixture as componentRootClientScope } from './component-root-client-scope'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
@@ -723,6 +726,12 @@ import { fixture as compositeRowChildRestBagPropHoisted } from './composite-row-
 // `fixture-hydrate-quarantine.ts` (fixture-only, per CLAUDE.md's
 // "reproducible defect lands as a fixture" rule — not fixed here).
 import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-attrs'
+// A child inside a reactive conditional branch that is active at
+// hydration must be initialized once, by its branch (it used to be
+// initialized twice: its onMount listener double-counted and one instance
+// survived the branch's removal). Found by the explore sweep's
+// `child-listener-cleanup` scenario.
+import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1173,6 +1182,9 @@ export const jsxFixtures: JSXFixture[] = [
   keyedLoopIndexReorder,
   selectOutOfRangeHydration,
   signalOptionalInit,
+  nestedPropSignalChildProp,
+  nestedPropMemberSignalSeed,
+  componentRootClientScope,
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,
@@ -1190,4 +1202,5 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildRestBagProp,
   compositeRowChildRestBagPropHoisted,
   loopRowChildChildrenAttrs,
+  conditionalChildListenerCleanup,
 ]

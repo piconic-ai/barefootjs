@@ -532,6 +532,22 @@ export async function renderPebbleComponent(options: RenderOptions): Promise<str
     if (importsSearchParams(ir.metadata)) {
       vars.__bf_search_params = ''
     }
+    // bf-p hydration payload: mirrors `integrations/spring`'s
+    // `Render.renderRoot` handing its route's `props` to the root `Bf`
+    // verbatim — the caller's raw props, unmodified (no defaults, no
+    // signal/memo seeding, no rest-bag nesting, no `pebbleIdent` mangling:
+    // the client reads bf-p by JS prop name). Excludes internal harness-only
+    // keys (`__instanceId` etc.), which are never a real caller-facing prop.
+    // `Main.render` pops this reserved key off the context into the root
+    // `Bf`'s `rootProps`, so it never becomes a template var.
+    const userProps: Record<string, unknown> = {}
+    if (props) {
+      for (const [key, value] of Object.entries(props)) {
+        if (key.startsWith('__')) continue
+        userProps[key] = value
+      }
+    }
+    vars.__bf_root_props = userProps
 
     const varsPath = resolve(tempDir, 'vars.json')
     await Bun.write(varsPath, JSON.stringify(encodeSpecials(vars)))
