@@ -76,7 +76,7 @@ describe('BF029 — fragment-wrapped branch of a conditional return', () => {
     expect(findBF029(result.errors)).toHaveLength(0)
   })
 
-  test('does not fire for a non-"use client" component (never hydrates)', () => {
+  test('does not fire for a non-"use client" component whose fragment branch renders no child component', () => {
     const source = `
       export function StaticFragmentBranch(props: { x: boolean }) {
         if (props.x) return <a>link</a>
@@ -84,6 +84,34 @@ describe('BF029 — fragment-wrapped branch of a conditional return', () => {
       }
     `
     const result = compileJSX(source, 'StaticFragmentBranch.tsx', { adapter })
+    expect(findBF029(result.errors)).toHaveLength(0)
+  })
+
+  test('fires for a non-"use client" component whose fragment branch renders a child component', () => {
+    // The parent still gets `needsInit` and an `initChild` for the child,
+    // which only runs if hydration claims this branch's scope.
+    const source = `
+      import { Counter } from './counter'
+
+      export function ChildInFragmentBranch(props: { x: boolean }) {
+        if (props.x) return <a>link</a>
+        return <><Counter /><span>x</span></>
+      }
+    `
+    const result = compileJSX(source, 'ChildInFragmentBranch.tsx', { adapter })
+    expect(findBF029(result.errors)).toHaveLength(1)
+  })
+
+  test('does not fire for a non-"use client" component whose child component sits only in a non-fragment branch', () => {
+    const source = `
+      import { Counter } from './counter'
+
+      export function ChildInElementBranch(props: { x: boolean }) {
+        if (props.x) return <div><Counter /></div>
+        return <><span>static</span></>
+      }
+    `
+    const result = compileJSX(source, 'ChildInElementBranch.tsx', { adapter })
     expect(findBF029(result.errors)).toHaveLength(0)
   })
 

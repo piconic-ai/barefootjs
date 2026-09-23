@@ -54,6 +54,7 @@ import {
 } from './prop-rewrite.ts'
 import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
+import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -284,6 +285,15 @@ function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFil
   return false
 }
 
+/** Whether `node`'s subtree renders any child component (a `component` IR node). */
+function irSubtreeRendersComponent(node: IRNode): boolean {
+  let found = false
+  walkIR(node, null, {
+    component: () => { found = true },
+  })
+  return found
+}
+
 /**
  * #3063: refuse a fragment-wrapped branch of a multi-return client
  * component loudly instead of silently shipping a branch whose events
@@ -295,22 +305,23 @@ function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFil
  * `transformNode`'s output doesn't retain a pointer back to it), `node` is
  * what that transform produced.
  *
- * A non-client component never hydrates, so it can't hit this — gated on
- * `hasUseClientDirective` rather than the fuller `needsInit`-inclusive
- * `hasClientInteractivity` formula (`component-root-scope-comment.ts`)
- * both because a bare fragment branch has no nested component call to
- * force `needsInit` the way #3141's shape structurally does, and because
- * scoping this to the directive keeps the refusal narrow and predictable
- * for authors (event handlers inside a non-"use client" file already fail
- * earlier, at `BF001`).
+ * Fires when the component hydrates this branch: either it is a
+ * `'use client'` component, or the fragment branch itself renders a child
+ * component. In the second case a non-client parent still gets
+ * `needsInit` and an `initChild` for that child, which runs only if the
+ * branch's scope is claimed, so the child's own events never bind either.
+ * A non-client component whose fragment branch renders no component has
+ * nothing to initialize there and compiles as before. The check is
+ * branch-local on purpose: a child component in a DIFFERENT branch doesn't
+ * make this branch's missing claim observable.
  */
 function checkFragmentWrappedConditionalReturnBranch(
   node: IRNode | null,
   rawNode: ts.Expression | null | undefined,
   ctx: TransformContext
 ): void {
-  if (!ctx.analyzer.hasUseClientDirective) return
   if (!node || node.type !== 'fragment' || !(node as IRFragment).needsScopeComment) return
+  if (!ctx.analyzer.hasUseClientDirective && !irSubtreeRendersComponent(node)) return
   if (!rawNode || hasLeadingClientDirective(rawNode, ctx.sourceFile)) return
   ctx.analyzer.errors.push(
     createError(ErrorCodes.FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH, node.loc, {
