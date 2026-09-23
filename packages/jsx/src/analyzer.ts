@@ -6117,7 +6117,33 @@ function validateReactiveFactoryArity(ctx: AnalyzerContext): void {
     : (ts.isBlock(ctx.componentNode.body) ? ctx.componentNode.body : null)
   if (!body) return
 
+  checkStatementsForReactiveFactoryArity(body.statements, ctx)
+
+  // Conditional early-return branches get their own signal collection path
+  // (#1414 cell #8 — `collectBranchSignals`, called from the "if statement
+  // with JSX return" case in `visitComponentBody` above): a top-level `if`
+  // whose then-branch returns JSX has its *direct* statements scanned for
+  // `createSignal` declarations too, so a bad-arity call there mis-compiles
+  // exactly like a top-level one would, and needs the same diagnostic — not
+  // just the top-level scan above, which the branch's statements are never
+  // members of.
   for (const stmt of body.statements) {
+    if (!ts.isIfStatement(stmt)) continue
+    if (!findJsxReturnInBlock(stmt.thenStatement)) continue
+    if (!ts.isBlock(stmt.thenStatement)) continue
+    checkStatementsForReactiveFactoryArity(stmt.thenStatement.statements, ctx)
+  }
+}
+
+/**
+ * BF115/BF116 over one flat list of statements — shared by the component
+ * body's top-level scan and the conditional-branch scan above, both of
+ * which only ever look at direct variable-statement children (never
+ * recursing further), matching exactly what `collectSignal`/`collectMemo`
+ * are reachable from in each case.
+ */
+function checkStatementsForReactiveFactoryArity(statements: readonly ts.Statement[], ctx: AnalyzerContext): void {
+  for (const stmt of statements) {
     if (!ts.isVariableStatement(stmt)) continue
     for (const decl of stmt.declarationList.declarations) {
       if (!decl.initializer || !ts.isCallExpression(decl.initializer)) continue
@@ -6138,11 +6164,16 @@ function validateReactiveFactoryArity(ctx: AnalyzerContext): void {
           ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_ARITY_MISMATCH, loc, {
             severity: 'error',
             message: kind === 'signal'
-              ? `'${calleeText}(...)' returns a 2-element tuple '[getter, setter]' (a ` +
-                `1-element destructure keeps just the getter) — this destructure has ` +
-                `${elementCount} element${elementCount === 1 ? '' : 's'}. The extra binding(s) ` +
-                `are silently dropped from the compiled output today. Use ` +
-                `'const [get, set] = ${calleeText}(...)' or 'const [get] = ${calleeText}(...)'.`
+              ? (elementCount === 0
+                  ? `'${calleeText}(...)' returns a 2-element tuple '[getter, setter]' — this ` +
+                    `destructure binds 0 elements, so neither the getter nor the setter is ` +
+                    `reachable. Use 'const [get, set] = ${calleeText}(...)' or ` +
+                    `'const [get] = ${calleeText}(...)'.`
+                  : `'${calleeText}(...)' returns a 2-element tuple '[getter, setter]' (a ` +
+                    `1-element destructure keeps just the getter) — this destructure has ` +
+                    `${elementCount} elements. The extra binding(s) are silently dropped from ` +
+                    `the compiled output today. Use 'const [get, set] = ${calleeText}(...)' or ` +
+                    `'const [get] = ${calleeText}(...)'.`)
               : `'${calleeText}(...)' returns a single getter function, not a tuple — this ` +
                 `destructures ${elementCount} element${elementCount === 1 ? '' : 's'} from it. ` +
                 `Use 'const value = ${calleeText}(...)' instead.`,
