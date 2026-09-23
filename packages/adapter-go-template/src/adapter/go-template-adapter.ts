@@ -2047,11 +2047,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * baking in `emitStaticBodyWrappers`, element-shape detection in
    * `resolveLoopArraySourceParsed`) so they can't drift on what counts as a
    * safely-bakeable const: never a name an enclosing loop's own callback
-   * param shadows (`staticLoopSourceBoundNames`, the coarse whole-component
-   * Set this class already computes for the SAME reason
-   * `getBakedStaticChildLoop` does — this runs both inside and outside the
-   * live tree walk), never a binding mutated after its declaration (#2910 —
-   * its initializer is a stale snapshot).
+   * param shadows (the same coarse whole-component shadow-name set
+   * `getBakedStaticChildLoop` already consults, for the same reason — this
+   * runs both inside and outside the live tree walk), never a binding
+   * mutated after its declaration (#2910 — its initializer is a stale
+   * snapshot).
    */
   private resolveLoopArraySourceConst(name: string | undefined): ConstantInfo | null {
     if (!name || this.state.staticLoopSourceBoundNames.has(name)) return null
