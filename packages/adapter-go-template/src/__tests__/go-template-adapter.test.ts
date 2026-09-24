@@ -2108,6 +2108,22 @@ export function Demo() {
       expect(bf101.length).toBeGreaterThan(0)
       expect(bf101[0].message).toContain("Loop array `opts` is an object-literal array whose rows don't share one shape")
     })
+
+    test('a spread row keeps the one pre-existing computed-value BF101', () => {
+      const { bf101 } = compileLoop(
+        `const defaults = { kind: 'x' }\nconst opts = [{ ...defaults, id: 'a', label: 'A' }, { ...defaults, id: 'b', label: 'B' }]`,
+      )
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('computed value')
+    })
+
+    test('rows with the same keys but an untypeable field name the field, not the shape', () => {
+      const { bf101 } = compileLoop(
+        `const opts = [{ id: 'a', label: 'A', meta: { x: 1 } }, { id: 'b', label: 'B', meta: { x: 2 } }]`,
+      )
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain("with a field the Go template adapter can't give a Go type")
+    })
   })
 
   describe('nullish optional-attribute omission (textarea rows)', () => {

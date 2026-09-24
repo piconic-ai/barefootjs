@@ -204,6 +204,20 @@ type RepropsSpec = {
  * the rest fold into `array-method`. Module-level so `isStringExpr` (which
  * recurses over expression trees) reuses one set instead of allocating per call.
  */
+/**
+ * Whether every row of an object-literal array names the same keys, in any
+ * order. Only picks the BF101 wording when `resolveNestedLoopItemTypes`
+ * can't synthesize a struct for an untyped loop array (#3178).
+ */
+function rowsShareKeys(rows: ParsedExpr[]): boolean {
+  const keySet = (row: ParsedExpr) =>
+    row.kind === 'object-literal'
+      ? row.properties.flatMap(p => (p.kind === 'prop' ? [p.key] : [])).sort().join('\0')
+      : null
+  const first = keySet(rows[0])
+  return rows.every(row => keySet(row) === first)
+}
+
 const STRING_METHODS: ReadonlySet<string> = new Set([
   'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
   'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
@@ -644,6 +658,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.templateReadRootFields = new Set()
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
+    this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
     this.primeCompileState(ir)
     this.state.stringValueNames = collectStringValueNames(ir)
@@ -1286,6 +1301,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.usesFmt = false
     if (!preserveTemplateReadRootFields) {
       this.state.templateReadRootFields = new Set()
+      this.state.refusedLoopArrayConsts = new Set()
     }
     // Prime identically to `generate()` so the standalone `generateTypes` entry
     // can't drift the structs (e.g. a `{...props}` bag field in one entry only).
@@ -3635,9 +3651,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             memo, ir.metadata.signals,
           )
           if (blockReturn) {
-            const constant = this.state.localConstants.find(
-              c => c.name === blockReturn.constName && c.origin?.scope === 'module',
-            )
+            const constant = this.findModuleScopeConst(blockReturn.constName)
             if (constant?.type?.elementType) {
               nested.loopItemType = constant.type.elementType
             }
@@ -3647,9 +3661,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       // Case 2/3: direct module-const array reference (`opts`/`payments`)
-      const directConst = this.state.localConstants.find(
-        c => c.name === nested.loopArray && c.origin?.scope === 'module',
-      )
+      const directConst = this.findModuleScopeConst(nested.loopArray)
       if (directConst?.type?.elementType) {
         nested.loopItemType = directConst.type.elementType
         continue
@@ -3683,13 +3695,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           parsed.elements.length > 0 &&
           parsed.elements.every(e => e.kind === 'object-literal')
         ) {
-          // Rows that don't share one shape (e.g. a key present on only some
-          // rows) have no single Go struct to bake against, so the array
-          // would bake to `nil` and the loop would silently render empty.
+          // No Go struct to bake the rows against, so the array would bake to
+          // `nil` and the loop would silently render empty. Skipped when
+          // `renderLoop` already refused this loop array (a spread, shorthand
+          // or function-valued row reads as a computed value there).
+          if (this.state.refusedLoopArrayConsts.has(directConst.name)) continue
           this.state.errors.push({
             code: 'BF101',
             severity: 'error',
-            message: `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
+            message: rowsShareKeys(parsed.elements)
+              ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give a Go type (a nested object, a non-identifier key, …), so it can't render its rows at SSR.`
+              : `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
             loc: this.makeLoc(),
             suggestion: {
               message: `Give every row the same keys, or annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`).`,
@@ -3716,6 +3732,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
       }
     }
+  }
+
+  /**
+   * A module-scope const by name, read through `this.state.localConstants`
+   * so a type `resolveNestedLoopItemTypes` already folded onto an untyped
+   * const (#3178) is seen by a later loop over the same const, which then
+   * doesn't synthesize (and declare) its Go struct a second time. One
+   * shared lookup keeps this file's linear-scan count in
+   * `binding-scope-ratchet.test.ts`'s shrink-only ledger from growing.
+   */
+  private findModuleScopeConst(name: string): ConstantInfo | undefined {
+    return this.state.localConstants.find(c => c.name === name && c.origin?.scope === 'module')
+  }
+
+  /**
+   * A non-module local const that has an initializer, by name. The one
+   * lookup shared by `computeDerivedConstFields` and `isStringExpr`, which
+   * used the same predicate at two sites.
+   */
+  private findValuedLocalConst(name: string): ConstantInfo | undefined {
+    return this.state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
   }
 
   /**
@@ -5576,7 +5613,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const name of this.state.referencedDerivedConsts) {
       const fieldName = capitalizeFieldName(name)
       if (takenFieldNames.has(fieldName)) continue
-      const c = this.state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
+      const c = this.findValuedLocalConst(name)
       if (!c?.value) continue
       const expr = c.parsed
       if (!expr) continue
@@ -5638,7 +5675,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (node.kind === 'identifier') {
       if (seen.has(node.name)) return false
-      const c = this.state.localConstants.find(lc => lc.name === node.name && !lc.isModule && lc.value)
+      const c = this.findValuedLocalConst(node.name)
       if (c?.value) {
         const inner = c.parsed
         if (inner) return this.isStringExpr(inner, new Set([...seen, node.name]))
@@ -8460,6 +8497,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
       const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
       if (arrayConst && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
+        this.state.refusedLoopArrayConsts.add(arrayName)
         this.state.errors.push({
           code: 'BF101',
           severity: 'error',
