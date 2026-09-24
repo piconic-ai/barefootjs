@@ -8,11 +8,19 @@ export default defineLimitation({
   expected: 'the server HTML and the hydrated DOM carry the same attribute value',
   actual:
     'renders the compile-time literal (or no attribute at all) in the server HTML — a `ref` callback never runs at SSR — and the first client effect pass then writes the computed value, so pre- and post-hydration DOM differ — a visible snap at the hydrate boundary',
-  // accordion / radio-group graduated (#3065): both now thread the
-  // parent-known initial state down as an explicit, compiler-analyzable
-  // prop (AccordionTrigger's `open`, RadioGroupItem's `defaultChecked`)
-  // instead of a hard-coded literal, mirroring the carousel precedent
-  // (data-orientation). command / combobox / select still compute their
-  // real attribute state only inside a ref/mount effect.
-  fixtures: ['command', 'combobox', 'select'],
+  // accordion / radio-group / command / combobox / select graduated
+  // (#3065) for the ATTRIBUTE half of this mechanism: all five now
+  // thread the parent-known initial state down as an explicit,
+  // compiler-analyzable prop (AccordionTrigger's `open`,
+  // RadioGroupItem's `defaultChecked`, CommandItem's `defaultSelected` +
+  // `value`, ComboboxTrigger's/SelectTrigger's `showPlaceholder`,
+  // ComboboxItem's `defaultSelected`) instead of a hard-coded literal or
+  // an imperative `setAttribute`, mirroring the carousel precedent
+  // (data-orientation). `ref-mount-attr` is a minimal, component-agnostic
+  // fixture pinning the underlying mechanism itself, added once none of
+  // the named UI components exhibited it anymore — the general shape is
+  // still real (the pairwise sweep's `…event-ref-callback…` rows
+  // reproduce the same `data-mounted` shape independently, on generated
+  // cases outside this corpus).
+  fixtures: ['ref-mount-attr'],
 })

@@ -29,13 +29,13 @@ export function ComboboxBasicDemo() {
   return (
     <div className="space-y-3">
       <Combobox value={value()} onValueChange={setValue}>
-        <ComboboxTrigger className="w-[280px]">
+        <ComboboxTrigger className="w-[280px]" showPlaceholder={!value()}>
           <ComboboxValue placeholder="Select framework..." />
         </ComboboxTrigger>
         <ComboboxContent>
           <ComboboxInput placeholder="Search framework..." />
           <ComboboxEmpty>No framework found.</ComboboxEmpty>
-          <ComboboxItem value="next">Next.js</ComboboxItem>
+          <ComboboxItem value="next" defaultSelected>Next.js</ComboboxItem>
           <ComboboxItem value="svelte">SvelteKit</ComboboxItem>
           <ComboboxItem value="nuxt">Nuxt</ComboboxItem>
           <ComboboxItem value="remix">Remix</ComboboxItem>
@@ -71,13 +71,13 @@ export function ComboboxFormDemo() {
         <div className="space-y-1">
           <span className="text-sm text-muted-foreground">Language</span>
           <Combobox value={language()} onValueChange={setLanguage}>
-            <ComboboxTrigger>
+            <ComboboxTrigger showPlaceholder={!language()}>
               <ComboboxValue placeholder="Select language..." />
             </ComboboxTrigger>
             <ComboboxContent>
               <ComboboxInput placeholder="Search language..." />
               <ComboboxEmpty>No language found.</ComboboxEmpty>
-              <ComboboxItem value="TypeScript">TypeScript</ComboboxItem>
+              <ComboboxItem value="TypeScript" defaultSelected>TypeScript</ComboboxItem>
               <ComboboxItem value="JavaScript">JavaScript</ComboboxItem>
               <ComboboxItem value="Python">Python</ComboboxItem>
               <ComboboxItem value="Go">Go</ComboboxItem>
@@ -88,13 +88,13 @@ export function ComboboxFormDemo() {
         <div className="space-y-1">
           <span className="text-sm text-muted-foreground">Framework</span>
           <Combobox value={framework()} onValueChange={setFramework}>
-            <ComboboxTrigger>
+            <ComboboxTrigger showPlaceholder={!framework()}>
               <ComboboxValue placeholder="Select framework..." />
             </ComboboxTrigger>
             <ComboboxContent>
               <ComboboxInput placeholder="Search framework..." />
               <ComboboxEmpty>No framework found.</ComboboxEmpty>
-              <ComboboxItem value="Next.js">Next.js</ComboboxItem>
+              <ComboboxItem value="Next.js" defaultSelected>Next.js</ComboboxItem>
               <ComboboxItem value="Remix">Remix</ComboboxItem>
               <ComboboxItem value="Hono">Hono</ComboboxItem>
               <ComboboxItem value="FastAPI">FastAPI</ComboboxItem>
@@ -120,14 +120,14 @@ export function ComboboxGroupedDemo() {
   return (
     <div className="space-y-3">
       <Combobox value={timezone()} onValueChange={setTimezone}>
-        <ComboboxTrigger className="w-[320px]">
+        <ComboboxTrigger className="w-[320px]" showPlaceholder={!timezone()}>
           <ComboboxValue placeholder="Select timezone..." />
         </ComboboxTrigger>
         <ComboboxContent>
           <ComboboxInput placeholder="Search timezone..." />
           <ComboboxEmpty>No timezone found.</ComboboxEmpty>
           <ComboboxGroup heading="North America">
-            <ComboboxItem value="est">Eastern Standard Time (EST)</ComboboxItem>
+            <ComboboxItem value="est" defaultSelected>Eastern Standard Time (EST)</ComboboxItem>
             <ComboboxItem value="cst">Central Standard Time (CST)</ComboboxItem>
             <ComboboxItem value="mst">Mountain Standard Time (MST)</ComboboxItem>
             <ComboboxItem value="pst">Pacific Standard Time (PST)</ComboboxItem>

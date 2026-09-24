@@ -4379,6 +4379,24 @@
         "text"
       ]
     },
+    "nested-child-negated-prop": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nested-elements": {
       "kinds": [
         "call",
@@ -5201,6 +5219,13 @@
         "text"
       ]
     },
+    "ref-mount-attr": {
+      "kinds": [
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": []
+    },
     "region-boundary": {
       "kinds": [],
       "axes": [],
@@ -5460,6 +5485,7 @@
         "logical:??",
         "logical:||",
         "member:computed",
+        "unary:!",
         "unary:-"
       ],
       "contexts": [
@@ -7218,17 +7244,17 @@
     "array-method": 72,
     "arrow": 77,
     "binary": 114,
-    "call": 301,
-    "conditional": 37,
-    "identifier": 426,
+    "call": 302,
+    "conditional": 38,
+    "identifier": 427,
     "index-access": 15,
-    "literal": 337,
+    "literal": 338,
     "logical": 53,
-    "member": 250,
+    "member": 251,
     "object-literal": 99,
     "template-literal": 33,
-    "unary": 30,
-    "unsupported": 51
+    "unary": 31,
+    "unsupported": 52
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -7269,7 +7295,7 @@
     "literal:boolean": 75,
     "literal:null": 27,
     "literal:number": 155,
-    "literal:string": 227,
+    "literal:string": 228,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
@@ -7286,7 +7312,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 22,
+    "unary:!": 24,
     "unary:-": 11
   },
   "uncoveredKinds": [

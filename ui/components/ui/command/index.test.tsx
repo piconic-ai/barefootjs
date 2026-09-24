@@ -182,7 +182,15 @@ describe('CommandItem', () => {
   })
 
   test('has data-selected attribute', () => {
-    expect(result.root.props['data-selected']).toBe('false')
+    // renderToTest models a zero-props render; `defaultSelected` has no
+    // literal destructure default, so the ternary stays unresolved
+    // expression text rather than a concrete literal (see CLAUDE.md's
+    // `renderToTest` resolution semantics) — presence is what matters here.
+    expect(result.root.props).toHaveProperty('data-selected')
+  })
+
+  test('has data-value attribute wired to the value prop', () => {
+    expect(result.root.props).toHaveProperty('data-value')
   })
 
   test('has resolved CSS classes', () => {

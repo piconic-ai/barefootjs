@@ -2218,6 +2218,44 @@ export function Demo() {
     })
   })
 
+  describe('#3174 negated child-component prop', () => {
+    const childSource = `
+export function Trigger(props: { showPlaceholder?: boolean }) {
+  return <button data-placeholder={props.showPlaceholder ? '' : undefined}>x</button>
+}
+`
+    function compileParent(propValue: string) {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+import { Trigger } from './trigger'
+export function Demo() {
+  const [value] = createSignal('')
+  const [ready] = createSignal(true)
+  return <div><Trigger showPlaceholder={${propValue}} /></div>
+}
+`, adapter)
+      const types = adapter.generateTypes(ir) ?? ''
+      adapter.generate(ir)
+      return { types, bf101: ir.errors.filter(e => e.code === 'BF101') }
+    }
+
+    test('a negated getter call reaches the child through bf.Truthy', () => {
+      const { types, bf101 } = compileParent('!value()')
+      expect(types).toContain('ShowPlaceholder: !bf.Truthy(')
+      expect(bf101).toHaveLength(0)
+    })
+
+    test('a negated operand the recursion cannot lower refuses with BF101', () => {
+      const { types, bf101 } = compileParent('!(value() && ready())')
+      expect(types).not.toContain('ShowPlaceholder:')
+      expect(bf101.length).toBeGreaterThan(0)
+      expect(bf101[0].message).toContain("Prop 'showPlaceholder' on <Trigger> is a negated expression")
+    })
+  })
+
   describe('nullish optional-attribute omission (textarea rows)', () => {
     // An optional, no-default prop whose Go field type resolves to
     // `interface{}` (nillable) is emitted with a `ne .X nil` guard so an

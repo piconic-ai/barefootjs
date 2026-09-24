@@ -61,12 +61,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // writes landing one frame after the item `hidden` writes; the root now
   // derives all of them synchronously from an item-registry signal (see
   // `IDEMPOTENCE_EXCLUDED`'s docstring in `oracle.playwright.ts`).
-  command: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
-    limitation: 'ref-effect-attr-state-ssr',
-  },
+  // `command` graduated (#3065): CommandItem's `data-value` now comes
+  // straight from `props.value` (already the common case in every real
+  // usage) and a new `defaultSelected` prop — the caller marks whichever
+  // item is first in document order — renders `data-selected` instead of
+  // the hard-coded `"false"` literal, mirroring the accordion/radio-group
+  // fix. The mount effect still keeps both correct once the search
+  // narrows the auto-selected item.
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
   // direction and mechanism corrected 2026-08-26): `emitReactiveChildProps`
   // (emit-reactive.ts) mirrors a non-standard NAMED child prop onto the
@@ -99,26 +100,46 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the
   // pair bimodal on the `combobox-empty` row's `hidden` attribute — the
-  // same rAF-deferred write as `command` (#2827), fixed the same way. The
-  // remaining oracles are the `ComboboxValue`/`SelectValue` `ref` effect
-  // that imperatively adds `data-placeholder` to the trigger on hydrate —
-  // originally miscategorized here as an instance of the compiler's
-  // named-prop child-root mirror; once that mirror was fixed these rows
-  // were the survivors, still failing for the hand-written-effect reason,
-  // which is the registry's `ref-effect-attr-state-ssr` mechanism (an
-  // attribute whose real state is computed in a `ref` callback never
-  // reaches SSR), the same entry `accordion` / `radio-group` / `command`
-  // cite.
-  combobox: {
+  // same rAF-deferred write as `command` (#2827), fixed the same way.
+  // `snap`/`three-point` graduated one mechanism (#3065) and immediately
+  // uncovered a second, unrelated one underneath: the
+  // `ComboboxValue`/`SelectValue` `ref` effect used to imperatively add
+  // `data-placeholder` to the trigger on hydrate — that was the
+  // registry's `ref-effect-attr-state-ssr` mechanism (an attribute whose
+  // real state is computed in a `ref` callback never reaches SSR), the
+  // same entry `accordion` / `radio-group` / `command` graduated under.
+  // `ComboboxTrigger`/`SelectTrigger` now take an explicit
+  // `showPlaceholder` prop (mirroring those fixes) and that mismatch is
+  // gone, but un-quarantining revealed the `ComboboxValue`/`SelectValue`
+  // text node itself was ALSO diverging, for an entirely different reason
+  // (`nested-child-static-prop-text-slot-elided`, now graduated too —
+  // #3160): SSR already wrapped this position in the same `<!--bf:sN-->
+  // …<!--/-->` markers the client hydration template claims (the two were
+  // never in disagreement — the original diagnosis was wrong); the actual
+  // cause was the SAME `ref` effect above ALSO writing this node's text
+  // via a bare `el.textContent = …`, which replaces every child of the
+  // element — the slot markers included — with a single text node on its
+  // first run, a structural mismatch independent of whether the caller's
+  // `placeholder="…"` argument is a literal. `ComboboxValue`/`SelectValue`
+  // now write through `setTextPreservingMarkers`
+  // (`ui/lib/set-text-preserving-markers.ts`), which updates only the text
+  // node between the markers, mirroring the discipline the compiler's own
+  // slot writer already follows. `combobox`/`select` do NOT carry the
+  // portal-positioning divergence dialog/dropdown-menu/popover/portal
+  // used to (#3169 found the `ref-callback-portal-content-inline-at-ssr`
+  // citation added for them was stale — never re-verified against a real
+  // render — and every non-Hono adapter already places their portaled
+  // `Content` correctly), and Go's remaining unary-not prop drop
+  // (`showPlaceholder={!value()}`) is fixed too.
+  // Minimal, component-agnostic repro of `ref-effect-attr-state-ssr`
+  // itself — added once accordion/radio-group/command/combobox/select all
+  // graduated off it, so the entry keeps a live, named fixture in this
+  // corpus (the pairwise sweep's `…event-ref-callback…` rows reproduce
+  // the same `data-mounted` shape independently, on generated cases this
+  // ledger doesn't cover).
+  'ref-mount-attr': {
     oracles: ['snap', 'three-point'],
-    reason:
-      'The ComboboxValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it.',
-    limitation: 'ref-effect-attr-state-ssr',
-  },
-  select: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The SelectValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it (same shape as combobox).',
+    reason: "The mount ref callback's data-mounted attribute never reaches SSR; hydration adds it.",
     limitation: 'ref-effect-attr-state-ssr',
   },
   // `data-table`'s two masked mechanisms both graduated: the mirrored
@@ -153,11 +174,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // itself could not be executed in this sandbox (Playwright's Chromium
   // download is network-blocked here) — CI's `oracle.playwright.ts` run
   // on the PR is the outstanding verification for this graduation.
-  // `idempotence` graduated earlier (#2717) for the same fixture group —
-  // see the registry entry `ref-callback-portal-content-inline-at-ssr`
-  // for the adapters (every one but Hono) that still exhibit the
-  // original divergence; their `expectedHtml`-vs-adapter-render
-  // conformance pins live in each adapter's `render-divergences.ts`.
+  // `idempotence` graduated earlier (#2717) for the same fixture group.
+  // The registry entry that used to track the remaining `dialog`/
+  // `dropdown-menu`/`popover`/`portal` divergence on every non-Hono
+  // adapter (`ref-callback-portal-content-inline-at-ssr`) is deleted —
+  // #3119 fixed the emission on all eight, and #3169 found its
+  // combobox/select citations (added afterward on an unverified
+  // assumption) were never actually broken, so nothing cites it anymore.
   // `tabs` graduated (#2728): fixed in `materializeComponent`
   // (`packages/client/src/runtime/component.ts`) — see the changeset for
   // the root-cause narrative. Verified with the real oracle run.

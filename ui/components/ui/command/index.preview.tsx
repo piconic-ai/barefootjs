@@ -10,7 +10,7 @@ export function Default() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Suggestions">
-          <CommandItem>Calendar</CommandItem>
+          <CommandItem value="Calendar" defaultSelected>Calendar</CommandItem>
           <CommandItem>Search</CommandItem>
         </CommandGroup>
       </CommandList>

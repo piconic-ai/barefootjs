@@ -1986,6 +1986,26 @@
       }
     }
   ],
+  "nested-child-negated-prop": [
+    {
+      "name": "gen:v:empty",
+      "props": {
+        "v": ""
+      }
+    },
+    {
+      "name": "gen:v:markup",
+      "props": {
+        "v": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:v:multibyte",
+      "props": {
+        "v": "日本語"
+      }
+    }
+  ],
   "nullish-coalescing-destructured": [
     {
       "name": "gen:label:absent",

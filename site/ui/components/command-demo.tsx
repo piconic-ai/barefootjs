@@ -31,7 +31,7 @@ export function CommandPreviewDemo() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Suggestions">
-          <CommandItem value="Calendar">
+          <CommandItem value="Calendar" defaultSelected>
             <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
             <span>Calendar</span>
           </CommandItem>
@@ -108,7 +108,7 @@ export function CommandDialogDemo() {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
-            <CommandItem value="Calendar">
+            <CommandItem value="Calendar" defaultSelected>
               <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
               <span>Calendar</span>
             </CommandItem>
@@ -160,7 +160,7 @@ export function CommandFilterDemo() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Fruits">
-          <CommandItem value="Apple">Apple</CommandItem>
+          <CommandItem value="Apple" defaultSelected>Apple</CommandItem>
           <CommandItem value="Apricot">Apricot</CommandItem>
           <CommandItem value="Banana">Banana</CommandItem>
           <CommandItem value="Blueberry">Blueberry</CommandItem>

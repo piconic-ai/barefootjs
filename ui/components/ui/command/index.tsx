@@ -168,6 +168,19 @@ interface CommandItemProps extends HTMLBaseAttributes {
   keywords?: string[]
   /** Whether disabled */
   disabled?: boolean
+  /**
+   * Whether this item is the list's initial auto-selection. Pass `true` on
+   * the first `CommandItem` rendered (in document order, across groups) so
+   * `data-selected` renders correctly in the server-rendered HTML instead
+   * of "unselected" being corrected by the root `Command`'s mount effect
+   * only after hydration — the root always auto-selects the first visible
+   * item once its item registry settles, and with an empty initial search
+   * every item is visible, so the first-rendered item is always that
+   * initial pick. Give that item an explicit `value` as well: the
+   * textContent fallback only resolves after hydration, so a value-less
+   * item's `data-value` still appears only then.
+   */
+  defaultSelected?: boolean
   /** Callback when selected */
   onSelect?: (value: string) => void
   /** Children */
@@ -439,6 +452,8 @@ function CommandGroup(props: CommandGroupProps) {
 /**
  * Individual selectable item in the command menu.
  * Self-filters based on search context. Shows data-selected highlight.
+ *
+ * @param props.defaultSelected - Whether this is the list's initial pick (see prop doc)
  */
 function CommandItem(props: CommandItemProps) {
   const handleMount = (el: HTMLElement) => {
@@ -449,7 +464,10 @@ function CommandItem(props: CommandItemProps) {
       return props.value ?? el.textContent?.trim() ?? ''
     }
 
-    // Set data-value for keyboard nav
+    // Set data-value for keyboard nav. Already correct in the server HTML
+    // when `props.value` was passed (the common case — see the JSX below);
+    // this re-affirms it and additionally covers the textContent-fallback
+    // path, which SSR cannot resolve.
     const value = resolveValue()
     el.setAttribute('data-value', value)
 
@@ -468,7 +486,10 @@ function CommandItem(props: CommandItemProps) {
       el.hidden = !ctx.isVisible(entry)
     })
 
-    // Selected state
+    // Selected state. `defaultSelected` (rendered directly in the JSX
+    // below) already gives the server HTML the right value for the
+    // initial pick; this effect keeps it correct as the search narrows
+    // the visible/auto-selected item afterward.
     createEffect(() => {
       const isSelected = ctx.selectedValue() === resolveValue()
       el.setAttribute('data-selected', String(isSelected))
@@ -498,7 +519,8 @@ function CommandItem(props: CommandItemProps) {
       id={props.id}
       role="option"
       data-disabled={isDisabled() || undefined}
-      data-selected="false"
+      data-value={props.value}
+      data-selected={props.defaultSelected ? 'true' : 'false'}
       className={`${commandItemClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >

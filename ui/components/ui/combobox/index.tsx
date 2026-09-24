@@ -40,6 +40,7 @@
 
 import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
 import { trackPosition } from '../../../lib/track-position'
+import { setTextPreservingMarkers } from '../../../lib/set-text-preserving-markers'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
@@ -167,6 +168,19 @@ interface ComboboxProps extends HTMLBaseAttributes {
 }
 
 interface ComboboxTriggerProps extends ButtonHTMLAttributes {
+  /**
+   * Whether no value is selected yet. Pass `!value()` (the same
+   * expression given to the parent `Combobox`'s `value` prop) so
+   * `data-placeholder` renders correctly in the server-rendered HTML
+   * instead of being added imperatively by `ComboboxValue`'s mount
+   * effect only after hydration. Falls back to that effect when omitted.
+   *
+   * Only correct when the child `ComboboxValue` has a non-empty
+   * `placeholder` (the common case) — its mount effect sets
+   * `data-placeholder` solely when its OWN `placeholder` prop is truthy,
+   * so `!value()` alone over-fires SSR if `ComboboxValue` has none.
+   */
+  showPlaceholder?: boolean
   /** Trigger content (typically ComboboxValue) */
   children?: Child
 }
@@ -200,6 +214,20 @@ interface ComboboxItemProps extends HTMLBaseAttributes {
   value: string
   /** Whether this item is disabled */
   disabled?: boolean
+  /**
+   * Whether this item is the list's initial keyboard-nav highlight. Pass
+   * `true` on the first `ComboboxItem` rendered (in document order, across
+   * groups) so `data-selected` renders correctly in the server-rendered
+   * HTML instead of "unselected" being corrected by `ComboboxContent`'s
+   * mount effect only after hydration — with no value selected yet, that
+   * effect always falls back to the first visible item, and with an empty
+   * initial search every item is visible, so the first-rendered item is
+   * always that fallback highlight. Leave unset (or `false` on every item)
+   * when the combobox's initial `value` is non-empty, since then the
+   * effect highlights the CHECKED item instead — pass `defaultSelected`
+   * on that item in that case.
+   */
+  defaultSelected?: boolean
   /** Item content (label text) */
   children?: Child
 }
@@ -302,6 +330,8 @@ function Combobox(props: ComboboxProps) {
 /**
  * Button that toggles the combobox dropdown.
  * Shows a chevron icon and reads state from context.
+ *
+ * @param props.showPlaceholder - Whether no value is selected yet (see prop doc)
  */
 function ComboboxTrigger(props: ComboboxTriggerProps) {
   const handleMount = (el: HTMLElement) => {
@@ -339,6 +369,7 @@ function ComboboxTrigger(props: ComboboxTriggerProps) {
       aria-haspopup="listbox"
       aria-autocomplete="list"
       data-state="closed"
+      data-placeholder={props.showPlaceholder ? '' : undefined}
       className={classes}
       ref={handleMount}
     >
@@ -356,18 +387,32 @@ function ComboboxValue(props: ComboboxValueProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(ComboboxContext)
 
+    // `ComboboxTrigger`'s `showPlaceholder` prop (rendered directly in its
+    // JSX) already gives the server HTML the right `data-placeholder`
+    // value for the initial state; this effect keeps it correct as the
+    // value changes afterward.
+    //
+    // Writes via `setTextPreservingMarkers` rather than `el.textContent =`
+    // (#3160): `el`'s own JSX child (`{props.placeholder ?? ''}` below) is
+    // a compiler-managed text slot wrapped in `<!--bf:sN-->…<!--/-->`
+    // markers at SSR, and the compiled client template claims that same
+    // marker pair at hydrate time. A bare `textContent` write replaces
+    // ALL of `el`'s children — including those markers — with a single
+    // text node, a permanent SSR-vs-hydrated DOM structural mismatch
+    // (caught by the `[snap]`/`[three-point]` oracles) even though the
+    // rendered text itself is correct.
     createEffect(() => {
       const val = ctx.value()
       if (val) {
         // Query the portaled content for the matching item's label
         const itemEl = document.querySelector(`[data-slot="combobox-item"][data-value="${val}"]`) as HTMLElement
         const label = itemEl?.textContent ?? val
-        el.textContent = label
+        setTextPreservingMarkers(el, label)
         // Remove placeholder attribute when value is selected
         const trigger = el.closest('[data-slot="combobox-trigger"]')
         trigger?.removeAttribute('data-placeholder')
       } else {
-        el.textContent = props.placeholder ?? ''
+        setTextPreservingMarkers(el, props.placeholder ?? '')
         // Set placeholder attribute for styling
         const trigger = el.closest('[data-slot="combobox-trigger"]')
         if (props.placeholder) {
@@ -507,7 +552,10 @@ function ComboboxContent(props: ComboboxContentProps) {
     // the currently checked item, fall back to the first visible. Reads
     // the root's filtered-list memo and the value signal directly rather
     // than the items' `hidden`/`data-state` attributes, so it does not
-    // depend on running after the item effects.
+    // depend on running after the item effects. `ComboboxItem`'s own
+    // `defaultSelected` prop (rendered directly in its JSX) already gives
+    // the server HTML the right initial highlight when no value is
+    // selected yet; this effect keeps it correct afterward.
     createEffect(() => {
       const visible = ctx.visibleItems()
       const checked = ctx.value()
@@ -608,6 +656,8 @@ function ComboboxEmpty(props: ComboboxEmptyProps) {
  * Individual selectable item in the combobox.
  * Self-filters based on search. Shows check indicator when selected.
  * On select: update value, close dropdown.
+ *
+ * @param props.defaultSelected - Whether this is the list's initial keyboard-nav highlight (see prop doc)
  */
 function ComboboxItem(props: ComboboxItemProps) {
   const handleMount = (el: HTMLElement) => {
@@ -675,7 +725,7 @@ function ComboboxItem(props: ComboboxItemProps) {
       data-slot="combobox-item"
       data-value={props.value}
       data-state="unchecked"
-      data-selected="false"
+      data-selected={props.defaultSelected ? 'true' : 'false'}
       role="option"
       id={props.id}
       aria-selected="false"

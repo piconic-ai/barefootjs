@@ -28,7 +28,7 @@ export function SelectBasicDemo() {
   return (
     <div className="space-y-3">
       <Select value={value()} onValueChange={setValue}>
-        <SelectTrigger className="w-[280px]">
+        <SelectTrigger className="w-[280px]" showPlaceholder={!value()}>
           <SelectValue placeholder="Select a fruit..." />
         </SelectTrigger>
         <SelectContent>
@@ -70,7 +70,7 @@ export function SelectFormDemo() {
         <div className="space-y-1">
           <span className="text-sm text-muted-foreground">Framework</span>
           <Select value={framework()} onValueChange={setFramework}>
-            <SelectTrigger>
+            <SelectTrigger showPlaceholder={!framework()}>
               <SelectValue placeholder="Select framework..." />
             </SelectTrigger>
             <SelectContent>
@@ -84,7 +84,7 @@ export function SelectFormDemo() {
         <div className="space-y-1">
           <span className="text-sm text-muted-foreground">Role</span>
           <Select value={role()} onValueChange={setRole}>
-            <SelectTrigger>
+            <SelectTrigger showPlaceholder={!role()}>
               <SelectValue placeholder="Select role..." />
             </SelectTrigger>
             <SelectContent>
@@ -98,7 +98,7 @@ export function SelectFormDemo() {
         <div className="space-y-1">
           <span className="text-sm text-muted-foreground">Experience</span>
           <Select value={experience()} onValueChange={setExperience}>
-            <SelectTrigger>
+            <SelectTrigger showPlaceholder={!experience()}>
               <SelectValue placeholder="Select experience..." />
             </SelectTrigger>
             <SelectContent>
@@ -127,7 +127,7 @@ export function SelectGroupedDemo() {
   return (
     <div className="space-y-3">
       <Select value={timezone()} onValueChange={setTimezone}>
-        <SelectTrigger className="w-[280px]">
+        <SelectTrigger className="w-[280px]" showPlaceholder={!timezone()}>
           <SelectValue placeholder="Select timezone..." />
         </SelectTrigger>
         <SelectContent>

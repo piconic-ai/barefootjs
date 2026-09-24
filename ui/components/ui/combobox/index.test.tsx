@@ -74,6 +74,11 @@ describe('ComboboxTrigger', () => {
     const trigger = result.find({ role: 'combobox' })!
     expect(trigger.aria).toHaveProperty('autocomplete')
   })
+
+  test('has data-placeholder attribute wired to the showPlaceholder prop', () => {
+    const trigger = result.find({ role: 'combobox' })!
+    expect(trigger.props).toHaveProperty('data-placeholder')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -210,7 +215,11 @@ describe('ComboboxItem', () => {
   })
 
   test('has data-selected attribute', () => {
-    expect(result.root.props['data-selected']).toBe('false')
+    // renderToTest models a zero-props render; `defaultSelected` has no
+    // literal destructure default, so the ternary stays unresolved
+    // expression text rather than a concrete literal (see CLAUDE.md's
+    // `renderToTest` resolution semantics) — presence is what matters here.
+    expect(result.root.props).toHaveProperty('data-selected')
   })
 })
 

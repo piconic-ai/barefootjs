@@ -396,12 +396,9 @@ export interface IRElement {
    * True when this element's `ref` callback is the recognized SSR-portal
    * pattern (#3059): a local named callback whose body directly calls
    * `createPortal(<this element>, document.body, { ownerScope })` — see
-   * `isSsrPortalRefCallback` in `jsx-to-ir.ts`. An adapter with an SSR
-   * portal outlet (only Hono today) places the element's SSR markup
-   * there instead of inline, matching where hydration's `createPortal`
-   * moves it; an adapter without one ignores the flag and renders
-   * inline as before (see the `ref-callback-portal-content-inline-at-ssr`
-   * known-limitation entry for those adapters).
+   * `isSsrPortalRefCallback` in `jsx-to-ir.ts`. Every adapter's own SSR
+   * portal outlet (#3119) places the element's SSR markup there instead
+   * of inline, matching where hydration's `createPortal` moves it.
    */
   ssrPortalOwnerScope?: boolean
   loc: SourceLocation

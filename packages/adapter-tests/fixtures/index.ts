@@ -665,6 +665,13 @@ import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
 // twin of `select-value-no-match-ssr`.
 import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
 import { fixture as signalOptionalInit } from './signal-optional-init'
+// Minimal, component-agnostic repro of the `ref-effect-attr-state-ssr`
+// registry entry's mechanism: a `ref` mount callback's `setAttribute`
+// never runs at SSR. Added once every named UI component that used to
+// exhibit it (accordion, radio-group, command, combobox, select)
+// graduated to an explicit prop instead, so the entry keeps a live
+// fixture in this corpus.
+import { fixture as refMountAttr } from './ref-mount-attr'
 import { fixture as nestedPropSignalChildProp } from './nested-prop-signal-child-prop'
 import { fixture as nestedPropMemberSignalSeed } from './nested-prop-member-signal-seed'
 import { fixture as componentRootClientScope } from './component-root-client-scope'
@@ -744,6 +751,7 @@ import { fixture as loopRowChildChildrenUntypedArray } from './loop-row-child-ch
 // survived the branch's removal). Found by the explore sweep's
 // `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
+import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // Diamond propagation: one signal read through two memos by one effect.
 // The runtime dispatches synchronously in subscription order, so the
 // effect's first re-run sees a half-updated memo pair and it runs three
@@ -1201,6 +1209,7 @@ export const jsxFixtures: JSXFixture[] = [
   keyedLoopIndexReorder,
   selectOutOfRangeHydration,
   signalOptionalInit,
+  refMountAttr,
   nestedPropSignalChildProp,
   nestedPropMemberSignalSeed,
   componentRootClientScope,
@@ -1226,5 +1235,6 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedReactiveProp,
   loopRowChildChildrenUntypedArray,
   conditionalChildListenerCleanup,
+  nestedChildNegatedProp,
   diamondPropagation,
 ]
