@@ -4,7 +4,7 @@ compatibility_date = "2024-01-01"
 
 # Workers Cache: Cloudflare consults the cache before running this Worker,
 # so a hit never invokes it (no CPU time billed). What is cacheable, and for
-# how long, is decided by the response headers the `cacheControl`
+# how long, is decided by the response headers the `workersCacheControl`
 # middleware (site/shared/lib/cache-control.ts) sets on every HTML response.
 # Requires Wrangler 4.69.0+ (developers.cloudflare.com/workers/cache/configuration/).
 #
