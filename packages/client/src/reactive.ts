@@ -402,6 +402,16 @@ function updateIfNecessary(node: EffectContext, queued = false): void {
 }
 
 /**
+ * Distinct nodes still pending in `Queue`. A node pulled clean by a read and
+ * re-marked appears twice, and a pulled one that stayed clean not at all.
+ */
+function pendingCount(): number {
+  const pending = new Set<EffectContext>()
+  for (const node of Queue) if (node.state !== CLEAN) pending.add(node)
+  return pending.size
+}
+
+/**
  * Process `Queue` until it is empty, including nodes appended while it runs.
  * A node that throws does not stop the others — every queued node is still
  * brought up to date, so the graph stays consistent — and the first error is
@@ -896,7 +906,7 @@ export function batch<T>(fn: () => T): T {
     // already joined that flush's queue; it processes them once the current
     // node returns.
     if (BatchDepth === 0 && !Flushing && Queue.length > 0) {
-      if (profilerSink) profilerSink.batchFlush(Queue.length)
+      if (profilerSink) profilerSink.batchFlush(pendingCount())
       flush()
     }
   }
@@ -951,6 +961,8 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   const id = __bfId ?? (profilerSink ? `m${++subscriberSeq}` : '')
   const [value, setValue] = createSignal<T>(undefined as T, id)
   const subs = LastSignalSubs!
+  // Drop the handoff so it doesn't keep this memo's subscribers alive.
+  LastSignalSubs = null
 
   // Memo output fingerprint (§4.2.2): a recompute that yields an `Object.is`-equal
   // value is a wasted re-run. Tracked here (not via the private signal's bail)

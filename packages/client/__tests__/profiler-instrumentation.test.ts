@@ -283,3 +283,21 @@ describe('instrumentation is off by default (SR8)', () => {
     expect(events.length).toBe(mark) // no new events recorded
   })
 })
+
+describe('batchFlush count', () => {
+  test('counts each pending node once, excluding memos a read already pulled clean', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [count, setCount] = createSignal(0)
+    const doubled = createMemo(() => count() * 2)
+    createEffect(() => { doubled() })
+    batch(() => {
+      setCount(1)  // queues the memo and the effect
+      doubled()    // pulls the memo clean inside the batch
+      setCount(2)  // re-queues the memo
+    })
+    setProfilerSink(null)
+    // The memo and the effect: 2 distinct nodes, not 3 queue entries.
+    expect(events.filter(e => e[0] === 'batchFlush')).toEqual([['batchFlush', 2]])
+  })
+})
