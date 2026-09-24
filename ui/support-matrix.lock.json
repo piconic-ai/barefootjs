@@ -2647,9 +2647,15 @@
       "total": 300,
       "cells": {
         "hono": {
-          "pass": 297,
+          "pass": 296,
           "total": 300,
           "gaps": [
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -2681,9 +2687,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -2837,9 +2843,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -2977,13 +2983,19 @@
           ]
         },
         "go-template": {
-          "pass": 271,
+          "pass": 270,
           "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -3167,9 +3179,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -3323,9 +3335,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -3479,9 +3491,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -3629,9 +3641,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -3785,9 +3797,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -3941,9 +3953,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -4461,9 +4473,15 @@
       "total": 422,
       "cells": {
         "hono": {
-          "pass": 417,
+          "pass": 416,
           "total": 422,
           "gaps": [
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -4507,9 +4525,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -4687,9 +4705,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -4851,13 +4869,19 @@
           ]
         },
         "go-template": {
-          "pass": 388,
+          "pass": 387,
           "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -5071,9 +5095,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -5251,9 +5275,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -5431,9 +5455,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -5617,9 +5641,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -5797,9 +5821,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -5977,9 +6001,9 @@
               ]
             },
             {
-              "fixture": "component-root-client-scope",
+              "fixture": "conditional-return-fragment-branch",
               "limitations": [
-                "component-root-client-scope-comment"
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -6357,9 +6381,15 @@
       "total": 333,
       "cells": {
         "hono": {
-          "pass": 331,
+          "pass": 330,
           "total": 333,
           "gaps": [
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
             {
               "fixture": "format-date",
               "limitations": [
@@ -6375,13 +6405,19 @@
           ]
         },
         "blade": {
-          "pass": 314,
+          "pass": 313,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -6495,13 +6531,19 @@
           ]
         },
         "erb": {
-          "pass": 314,
+          "pass": 313,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -6615,13 +6657,19 @@
           ]
         },
         "go-template": {
-          "pass": 310,
+          "pass": 309,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -6759,13 +6807,19 @@
           ]
         },
         "jinja": {
-          "pass": 314,
+          "pass": 313,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -6879,13 +6933,19 @@
           ]
         },
         "minijinja": {
-          "pass": 314,
+          "pass": 313,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -6999,13 +7059,19 @@
           ]
         },
         "mojolicious": {
-          "pass": 312,
+          "pass": 311,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -7131,13 +7197,19 @@
           ]
         },
         "pebble": {
-          "pass": 314,
+          "pass": 313,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -7251,13 +7323,19 @@
           ]
         },
         "twig": {
-          "pass": 314,
+          "pass": 313,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -7371,13 +7449,19 @@
           ]
         },
         "xslate": {
-          "pass": 312,
+          "pass": 311,
           "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -7809,9 +7893,15 @@
       "total": 247,
       "cells": {
         "hono": {
-          "pass": 244,
+          "pass": 243,
           "total": 247,
           "gaps": [
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -7833,13 +7923,19 @@
           ]
         },
         "blade": {
-          "pass": 226,
+          "pass": 225,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -7965,13 +8061,19 @@
           ]
         },
         "erb": {
-          "pass": 227,
+          "pass": 226,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8091,13 +8193,19 @@
           ]
         },
         "go-template": {
-          "pass": 221,
+          "pass": 220,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8253,13 +8361,19 @@
           ]
         },
         "jinja": {
-          "pass": 226,
+          "pass": 225,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8385,13 +8499,19 @@
           ]
         },
         "minijinja": {
-          "pass": 226,
+          "pass": 225,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8517,13 +8637,19 @@
           ]
         },
         "mojolicious": {
-          "pass": 225,
+          "pass": 224,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8655,13 +8781,19 @@
           ]
         },
         "pebble": {
-          "pass": 226,
+          "pass": 225,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8787,13 +8919,19 @@
           ]
         },
         "twig": {
-          "pass": 226,
+          "pass": 225,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -8919,13 +9057,19 @@
           ]
         },
         "xslate": {
-          "pass": 224,
+          "pass": 223,
           "total": 247,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -14696,17 +14840,31 @@
       "total": 155,
       "cells": {
         "hono": {
-          "pass": 155,
-          "total": 155
+          "pass": 154,
+          "total": 155,
+          "gaps": [
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            }
+          ]
         },
         "blade": {
-          "pass": 144,
+          "pass": 143,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -14772,13 +14930,19 @@
           ]
         },
         "erb": {
-          "pass": 144,
+          "pass": 143,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -14844,13 +15008,19 @@
           ]
         },
         "go-template": {
-          "pass": 142,
+          "pass": 141,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -14928,13 +15098,19 @@
           ]
         },
         "jinja": {
-          "pass": 144,
+          "pass": 143,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -15000,13 +15176,19 @@
           ]
         },
         "minijinja": {
-          "pass": 144,
+          "pass": 143,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -15072,13 +15254,19 @@
           ]
         },
         "mojolicious": {
-          "pass": 142,
+          "pass": 141,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -15156,13 +15344,19 @@
           ]
         },
         "pebble": {
-          "pass": 144,
+          "pass": 143,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -15228,13 +15422,19 @@
           ]
         },
         "twig": {
-          "pass": 144,
+          "pass": 143,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {
@@ -15300,13 +15500,19 @@
           ]
         },
         "xslate": {
-          "pass": 142,
+          "pass": 141,
           "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
               ]
             },
             {

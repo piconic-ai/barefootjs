@@ -57,6 +57,14 @@ export interface TwigEmitContext {
   _isStringValueName(name: string): boolean
 
   /** Record a BF101 unsupported-expression diagnostic. */
+  /**
+   * #3144: whether `name` is a component-body local bound to an opaque
+   * call (`const label = makeLabel()`) -- invoking it (`label()`) has no
+   * Twig template lowering, unlike a genuine signal/memo getter. See
+   * `isOpaqueLocalAccessorName` (`@barefootjs/jsx`).
+   */
+  _isOpaqueLocalAccessorCall(name: string): boolean
+
   _recordExprBF101(message: string, reason?: string): void
 
   /** Lower a filter/predicate body to its Twig form, bound to `param`. */
