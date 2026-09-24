@@ -143,9 +143,10 @@ export const renderer = jsxRenderer(
                   re-hydrate), the mobile prev/next, the layout wrapper whose
                   classes depend on the route, the page itself, and the portal
                   outlet (portal content belongs to the page's islands).
-              `page` comes first in document order on purpose: after a swap the
-              router moves focus into the first swapped region, which must be
-              the page content, not the (fixed-position) sidebar.
+              The sidebar stays before the page in document order (tab and
+              landmark order reach the navigation first); after a swap the
+              router focuses the first swapped region with a heading, i.e. the
+              page, not the sidebar.
               `/gallery/*` renders no sidebar region, so a navigation between
               it and the docs pages has a different region set and the router
               falls back to a full page load.
@@ -155,24 +156,6 @@ export const renderer = jsxRenderer(
               into or out of it (including back/forward, which a per-link
               `data-bf-router="false"` could not cover) is a full page load.
             */}
-            <div bf-region={isStudio ? undefined : 'page'}>
-              <MobileMenu />
-              <MobilePageNav prev={navLinks.prev} next={navLinks.next} />
-              <div className={isChrome ? 'sm:pl-56' : ''}>
-                <main
-                  className={
-                    isStudio
-                      ? ''
-                      : isGallery
-                      ? 'max-w-[1200px] mx-auto px-2 sm:px-4 py-4'
-                      : 'max-w-[1000px] mx-auto px-0 sm:px-4'
-                  }
-                >
-                  {children}
-                </main>
-              </div>
-              <BfPortals />
-            </div>
             {isChrome && (
               <nav
                 bf-region="sidebar"
@@ -192,6 +175,24 @@ export const renderer = jsxRenderer(
                 ))}
               </nav>
             )}
+            <div bf-region={isStudio ? undefined : 'page'}>
+              <MobileMenu />
+              <MobilePageNav prev={navLinks.prev} next={navLinks.next} />
+              <div className={isChrome ? 'sm:pl-56' : ''}>
+                <main
+                  className={
+                    isStudio
+                      ? ''
+                      : isGallery
+                      ? 'max-w-[1200px] mx-auto px-2 sm:px-4 py-4'
+                      : 'max-w-[1000px] mx-auto px-0 sm:px-4'
+                  }
+                >
+                  {children}
+                </main>
+              </div>
+              <BfPortals />
+            </div>
             <BfScripts />
             <script type="module" src={Assets.RouterEntry} />
           </body>

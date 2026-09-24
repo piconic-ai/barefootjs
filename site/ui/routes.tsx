@@ -8,7 +8,7 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
 import { createOgRoute } from './og-route'
-import { cacheControl } from '@barefootjs/site-shared/lib/cache-control'
+import { workersCacheControl } from '@barefootjs/site-shared/lib/cache-control'
 
 // Component pages
 import { AspectRatioRefPage } from './pages/components/aspect-ratio'
@@ -158,7 +158,7 @@ export function createApp() {
   // what Workers Cache (`[cache] enabled = true` in wrangler.toml) reads to
   // decide whether, and for how long, a response is served without
   // invoking this Worker.
-  app.use('*', cacheControl)
+  app.use('*', workersCacheControl)
 
   app.use(renderer)
 

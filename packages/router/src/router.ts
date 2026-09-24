@@ -29,7 +29,7 @@ import {
   hardNavigate,
   pushSearchSeam,
 } from './seams.ts'
-import { announceNavigation, focusRegion } from './a11y.ts'
+import { announceNavigation, focusSwappedRegions } from './a11y.ts'
 import type {
   NavigateOptions,
   PageSnapshot,
@@ -369,11 +369,12 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     // now stale content.
     if (controller.signal.aborted) return
 
-    // Accessibility: move focus into the first swapped region (the broadest /
-    // topmost in document order) and announce the route. A navigation with no
-    // changed region (targets empty) still committed history + title above.
+    // Accessibility: move focus into the swapped content — the first swapped
+    // region with a heading, else the first swapped region — and announce the
+    // route. A navigation with no changed region (targets empty) still
+    // committed history + title above.
     if (state.manageFocus && swapped.length > 0) {
-      focusRegion(swapped[0].region)
+      focusSwappedRegions(swapped.map(({ region }) => region))
       announceNavigation(title)
     }
   } finally {

@@ -183,18 +183,20 @@ export const renderer = jsxRenderer(
               swaps the `bf-region`s; everything outside them (header, command
               palette, theme) stays mounted. The router matches regions by id
               and swaps only those whose server-rendered content changed:
-                - `page` carries everything per-route: the mobile menu island
-                  (it reads the current path on mount, so it must re-hydrate),
-                  the mobile prev/next, and the doc itself. It comes first in
-                  document order on purpose: after a swap the router moves
-                  focus into the first swapped region, which must be the doc,
-                  not the (fixed-position) sidebar.
                 - `sidebar` swaps when the active link moves. The <aside> is
                   the region element and the scroll container, so it survives
                   the swap and keeps its scroll position.
+                - `page` carries everything per-route: the mobile menu island
+                  (it reads the current path on mount, so it must re-hydrate),
+                  the mobile prev/next, and the doc itself.
+              The sidebar stays before the doc in document order (tab and
+              landmark order reach the navigation first); after a swap the
+              router focuses the first swapped region with a heading, i.e. the
+              doc, not the sidebar.
               The landing layout (`/`, `/integrations`) has a different region
               set, so crossing between the two layouts is a full page load.
             */}
+            <Sidebar currentSlug={currentSlug} />
             <div bf-region="page">
               <MobileMenu />
               <MobilePageNav prev={prev} next={next} />
@@ -215,7 +217,6 @@ export const renderer = jsxRenderer(
                 </div>
               </main>
             </div>
-            <Sidebar currentSlug={currentSlug} />
 
             <BfScripts />
             <script type="module" src={Assets.RouterEntry} />

@@ -38,6 +38,9 @@ test.describe('Soft navigation', () => {
     await expect(sidebarLink(page, '/components/dialog')).toHaveClass(ACTIVE)
     await expect(sidebarLink(page, '/components/alert-dialog')).not.toHaveClass(ACTIVE)
 
+    // Focus moved into the page content, not the sidebar that precedes it.
+    await expect(page.locator('main h1')).toBeFocused()
+
     // The mobile prev/next moved too (it lives in the page region).
     await expect(page.locator('a[aria-label^="Next:"]')).toHaveAttribute('href', '/components/empty')
     await expect(page.locator('a[aria-label^="Next:"]')).toHaveCount(1)
@@ -111,6 +114,39 @@ test.describe('Soft navigation', () => {
     await sidebarLink(page, '/gallery/admin').click()
     await expect(page).toHaveURL(/\/gallery\/admin/)
     await expect(page.locator('nav[bf-region="sidebar"]')).toHaveCount(0)
+    expect(await hasReloadMarker(page)).toBe(false)
+  })
+
+  test('the sidebar precedes the page content in document order', async ({ page }) => {
+    await page.goto('/components/alert-dialog')
+    const sidebarFirst = await page.evaluate(() => {
+      const nav = document.querySelector('nav[bf-region="sidebar"]')!
+      const main = document.querySelector('[bf-region="page"]')!
+      return Boolean(nav.compareDocumentPosition(main) & Node.DOCUMENT_POSITION_FOLLOWING)
+    })
+    expect(sidebarFirst).toBe(true)
+  })
+
+  test('/studio renders no region, so entering it from a single-region page is a full load', async ({ page, request }) => {
+    // /studio's behaviour ships as inline <script>s, which swapped-in markup
+    // never runs; it must never be a soft-navigation target.
+    const html = await (await request.get('/studio')).text()
+    expect(html).not.toContain('bf-region')
+
+    // /gallery/* has a single root region, the one shape the router could
+    // otherwise swap from; the docs pages already differ by their sidebar.
+    await page.goto('/gallery/admin')
+    await plantReloadMarker(page)
+    await page.evaluate(() => {
+      const a = document.createElement('a')
+      a.href = '/studio'
+      a.id = 'to-studio'
+      a.textContent = 'studio'
+      document.querySelector('[bf-region="page"]')!.prepend(a)
+    })
+    await page.locator('#to-studio').click()
+    await expect(page).toHaveURL(/\/studio$/)
+    await page.waitForLoadState('load')
     expect(await hasReloadMarker(page)).toBe(false)
   })
 })
