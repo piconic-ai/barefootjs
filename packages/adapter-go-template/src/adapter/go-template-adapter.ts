@@ -2992,9 +2992,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * no path back to the parent's signal fields (Go's `$` resets on every
    * `ExecuteTemplate` call — `runtime/bf.go`'s `TemplateFuncMap`). Baking
    * the array anyway would let `go run` crash at template-EXECUTE time
-   * (`can't evaluate field ... in type ...`) instead of the existing,
-   * already-pinned silent-empty-loop fallback (`loop-row-child-children-attrs-frozen`)
-   * — a regression from silently-incomplete to loudly-broken-at-runtime.
+   * (`can't evaluate field ... in type ...`), so `emitStaticBodyWrappers`
+   * refuses the loop with BF101 instead (`loop-row-child-children-attrs-frozen`).
    * The walk descends through every node shape that already bakes and
    * renders correctly here (a nested component's children, a
    * conditional and both branches, a nested loop, a fragment) and flags
@@ -3070,11 +3069,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const nested of staticWithBody) {
       // A forwarded child element reading an outer signal/memo (or, on a
       // scalar-item row, a nested component) has no path back to it from
-      // the row's own companion define — keep the existing
-      // silent-empty-loop fallback for that shape rather than baking Go
-      // source that crashes at `go run` time (see the doc comment above).
+      // the row's own companion define. Baking the rows would crash at
+      // `go run` time and skipping them would silently drop the loop from
+      // SSR, so refuse loudly instead (see the doc comment above).
       const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
       if (nested.bodyChildren && this.bodyChildrenReferenceOuterReactiveState(nested.bodyChildren, !!scalarLoopType)) {
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop-row child component '${nested.name}' forwards JSX children that read an outer signal/memo (or, on a scalar-item row, nest a component). A static loop's forwarded children render through a per-row companion template that can't reach the parent component's own state on the Go template adapter.`,
+          loc: this.makeLoc(),
+          suggestion: {
+            message: 'Mark the loop /* @client */ so it renders in the browser, or pass the outer value into the loop-body component as its own prop.',
+          },
+        })
         continue
       }
       const found = this.resolveLoopArraySourceConst(nested.loopArray)

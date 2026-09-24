@@ -3285,10 +3285,16 @@
       },
       "loop-row-child-children-attrs": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "loop-row-child-children-attrs-frozen"
-          ]
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "loop-row-child-children-nested-reactive-prop": {
@@ -5691,15 +5697,18 @@
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a static `.map()` loop row that calls a child component passing a JSX element as `children`, where that element reads an OUTER signal/memo — not just the row's own item (e.g. `<Chip><a href={active() === item ? …}>…</a></Chip>` inside `items.map(item => …)`, module- or function-scope array alike)",
       "expected": "the row's markup — including the forwarded child element, evaluated against the signal's initial value — renders at SSR the same way a non-loop reference to the same signal does",
-      "actual": "drops the whole loop from SSR silently on an adapter whose per-row forwarded-children rendering has no path back to the enclosing component's own reactive state (go-template: the row's forwarded children render through a companion template executed as a fresh, independent invocation — `bf_tmpl`/`ExecuteTemplate`, `runtime/bf.go` — whose data is the row's own item only, so the signal's field is unreachable from inside it; the adapter detects this and conservatively leaves the loop unbaked rather than emit Go source that would crash at `go run` time)",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "loop-row-child-children-attrs"
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "loop-row-child-nested-component-reactive-prop-dropped": {

@@ -42,12 +42,13 @@ export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuaranti
   // builder never wired the row's own `reactiveAttrs`/`reactiveTexts` into
   // an effect. Fixed (`build-component-loop.ts`'s `reactiveEffects`); the
   // fixture's `interactions` now pass against the Hono reference this spec
-  // runs, so the row is gone. Go-template's OWN separate SSR-construction
-  // bug on the same fixture (a function-body-local source array never
-  // reaches the generated constructor) is unaffected by that fix and stays
-  // pinned via `render-divergences.ts` under the same (narrowed) entry —
-  // that's an adapter-conformance divergence, not a hydration-interactions
-  // one, so it has no row here.
+  // runs, so the row is gone. Go-template's OWN separate gap on the same
+  // fixture (a loop-forwarded child reading an outer signal has no path
+  // back to it from its per-row companion template) is unaffected by that
+  // fix and stays pinned under the same (narrowed) entry — now a loud
+  // BF101 build-time refusal (`conformance-pins.ts`, #3170) rather than a
+  // render divergence, but still an adapter-conformance concern, not a
+  // hydration-interactions one, so it has no row here.
   // A diamond (one signal → two memos → one effect) is dispatched
   // synchronously in subscription order with no topological stage, so the
   // effect's first re-run sees the first memo updated and the second

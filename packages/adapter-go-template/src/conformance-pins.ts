@@ -161,4 +161,20 @@ export const conformancePins: ConformancePins = {
   'module-helper-boolcontext-call': [
     { code: 'BF102', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
+  // #3170: a static loop row that calls a child component, forwarding a
+  // JSX element as `children`, where that element reads an OUTER
+  // signal/memo (not just the row's own item). Used to compile clean and
+  // silently drop the whole loop from SSR (`render-divergences.ts`); now
+  // a loud BF101 instead — see `emitStaticBodyWrappers`'s
+  // `bodyChildrenReferenceOuterReactiveState` guard in
+  // `go-template-adapter.ts`. No verified escape twin exists yet;
+  // `/* @client */` on the loop should work in principle (it bypasses
+  // `emitStaticBodyWrappers` entirely, and the client-JS reactive-effect
+  // gap this same fixture used to pin for forwarded children is fixed —
+  // see `loop-row-child-children-attrs-frozen`'s history) but isn't
+  // pinned as a corpus fixture yet — same `unescapable` shape as
+  // `module-const-arrow-helper` above.
+  'loop-row-child-children-attrs': [
+    { code: 'BF101', severity: 'error', limitation: 'loop-row-child-children-attrs-frozen', unescapable: true },
+  ],
 }

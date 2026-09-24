@@ -114,34 +114,22 @@ export const renderDivergences: RenderDivergences = {
   // `ref-callback-portal-content-inline-at-ssr`'s own comment.
   combobox: { limitation: 'ref-effect-attr-state-ssr' },
   select: { limitation: 'ref-effect-attr-state-ssr' },
-  // Go's manifestation is more severe than the shared entry's `actual`
-  // describes (a frozen-but-present attribute): `NewLoopRowChildChildrenAttrsProps`
-  // never populates the `Chips []...Ctx` slice field at all for this
-  // fixture. #3164 fixed the ORIGINAL cause this comment used to cite here
-  // (the constructor's array-source lookup accepted a MODULE-scope const
-  // only, so a function-body-local `const opts = [...]` baked nothing) —
-  // `emitStaticBodyWrappers`/`resolveLoopArraySourceConst` now bake a
-  // function-scope array the same way as a module-scope one. That fix
-  // alone does NOT clear this fixture, though: hoisting `opts` out to
-  // module scope and actually running `go run` (not just reading the
-  // constructor's own source) surfaces a SEPARATE, deeper gap the earlier
-  // "verified directly" note missed — the row's forwarded `<a>` reads the
-  // OUTER `active()` signal, and a static loop's forwarded children render
-  // through a companion `{{define}}` executed via `bf_tmpl`
-  // (`runtime/bf.go`'s `TemplateFuncMap`), a FRESH `ExecuteTemplate` call
-  // whose data is the row's own item — Go's `$` resets on every such call,
-  // so nothing inside that define can reach the parent's `.Active` field at
-  // all, module- or function-scope array alike. Baking the array data
-  // regardless would trade this silent empty loop for `go run` crashing at
-  // template-EXECUTE time (`can't evaluate field Active in type string`) —
-  // worse, not better — so `emitStaticBodyWrappers` now conservatively
-  // detects a loop-forwarded child that calls a signal/memo getter
-  // (`bodyChildrenReferenceOuterReactiveState`, keyed off the analyzer's
-  // existing `callsReactiveGetters` flag) and leaves the loop unbaked, same
-  // as before #3164, for EITHER scope. Reaching outer reactive state from a
-  // static loop's forwarded children on Go is its own capability gap,
-  // out of #3164's scope — tracked separately as #3170.
-  'loop-row-child-children-attrs': { limitation: 'loop-row-child-children-attrs-frozen' },
+  // `loop-row-child-children-attrs` used to sit here: #3164 fixed the loop-
+  // array-source lookup (a function-body-local `const opts = [...]` now
+  // bakes the same as a module-scope one), but `go run`-verifying the
+  // fixture surfaced a SEPARATE, deeper gap — the row's forwarded `<a>`
+  // reads the OUTER `active()` signal, and a static loop's forwarded
+  // children render through a companion `{{define}}` executed via
+  // `bf_tmpl` (`runtime/bf.go`'s `TemplateFuncMap`), a FRESH
+  // `ExecuteTemplate` call whose data is the row's own item — Go's `$`
+  // resets on every such call, so nothing inside that define can reach the
+  // parent's `.Active` field at all. #3170 turned this from a silent
+  // empty-loop divergence into a loud BF101 refusal
+  // (`emitStaticBodyWrappers`'s `bodyChildrenReferenceOuterReactiveState`
+  // guard) — the fixture no longer "compiles clean but renders divergent"
+  // (this table's own definition), so it moved to `conformance-pins.ts`
+  // instead. Reaching outer reactive state from a static loop's forwarded
+  // children on Go remains its own, unsolved capability gap.
   // A component nested in a loop-row child's forwarded children gets its
   // props from the row's baked child construction in `emitStaticBodyWrappers`,
   // which only lowers literal and boolean props, so `on={highlight()}` falls

@@ -57,6 +57,7 @@ describe('compileForCompat', () => {
           'client-only-loop-in-static-loop',
           'computed-const-loop-source',
           'derived-object-literal-signal',
+          'loop-row-child-children-attrs-frozen',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
           'off-subset-callback-body',
