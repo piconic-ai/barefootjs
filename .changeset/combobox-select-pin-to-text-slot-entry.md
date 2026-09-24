@@ -10,4 +10,4 @@
 "@barefootjs/xslate": patch
 ---
 
-Move the `combobox` and `select` render-divergence declarations from `ref-effect-attr-state-ssr` to `nested-child-static-prop-text-slot-elided`. With `data-placeholder` / `data-selected` now rendered at SSR from the new `showPlaceholder` / `defaultSelected` props, the remaining divergence on these two fixtures is the value text slot. Declared, not fixed here.
+Move the `combobox` and `select` render-divergence declarations from `ref-effect-attr-state-ssr` to `nested-child-static-prop-text-slot-elided`. `data-placeholder` / `data-selected` now render at SSR from the new `showPlaceholder` / `defaultSelected` props, so `ref-effect-attr-state-ssr` no longer lists these fixtures, and each fixture is listed on only one registry entry. Their portal-position divergence is unchanged. Declared, not fixed here.
