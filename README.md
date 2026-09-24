@@ -78,7 +78,7 @@ BarefootJS ships an agent skill that gives AI deep knowledge of the compiler, IR
 install the barefootjs skill from piconic-ai/barefootjs
 ```
 
-Once installed, the agent can use the `bf` CLI, write IR tests, trace signal graphs, and scaffold components — all without reading source files. See [AI-native Development](./docs/core/core-concepts/ai-native.md) for the full workflow.
+Once installed, the agent can use the `bf` CLI, write IR tests, trace signal graphs, and scaffold components — all without reading source files. See [Testing & CLI](./docs/core/advanced/testing-and-cli.md) for the full workflow.
 
 ---
 
@@ -111,7 +111,7 @@ BarefootJS compiles JSX into your backend's native template format — no Node.j
 | — | [CSR (browser only)](docs/core/adapters/csr.md) | `@barefootjs/client` |
 <!-- ADAPTER-TABLE:END -->
 
-The IR contract is stable — see [Backend Freedom](./docs/core/core-concepts/backend-freedom.md) and [write a custom adapter](./docs/core/adapters/custom-adapter.md) for any backend not listed here.
+The IR contract is stable — see [Adapters](./docs/core/adapters.md) and [write a custom adapter](./docs/core/adapters/custom-adapter.md) for any backend not listed here.
 
 ---
 

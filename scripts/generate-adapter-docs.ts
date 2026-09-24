@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 //
-// Regenerate the adapter tables in README.md,
-// docs/core/core-concepts/backend-freedom.md, and docs/core/adapters.md
+// Regenerate the adapter tables in README.md and docs/core/adapters.md
 // from the single source of truth: ADAPTER_ENTRIES
 // (packages/compat/src/adapter-doc-catalog.ts), which is itself
 // floor-checked against the compiled adapter registry
@@ -37,7 +36,6 @@ interface Target {
 
 const TARGETS: Target[] = [
   { path: 'README.md', docPathPrefix: 'docs/core/' },
-  { path: 'docs/core/core-concepts/backend-freedom.md', docPathPrefix: '../' },
   { path: 'docs/core/adapters.md', docPathPrefix: './' },
 ]
 

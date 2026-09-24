@@ -5,20 +5,29 @@ description: Generate Go html/template files and type definitions from the compi
 
 # Go Template Adapter
 
-Generates Go `html/template` files (`.tmpl`) and type definitions (`_types.go`) from the compiler's IR.
+Generates Go `html/template` files (`.tmpl`) and type definitions (`_types.go`) from the compiler's IR. The output is plain `html/template`, so any Go server can render it.
 
-```
+```sh
 npm install @barefootjs/go-template
 ```
 
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/go-template/vite'
+
+export default defineConfig({
+  plugins: barefoot({ components: ['components'], templates: 'dist/templates' }),
+})
+```
 
 ## Server integration
 
-The adapter is **web-framework-agnostic** — it emits plain Go `html/template`
-files plus a small runtime (`FuncMap`, `Renderer`), so any server that can
-parse and execute `html/template` can render the output. The scaffolder
-(`npm create barefootjs@latest -- --adapter <name>`) ships runnable starters
-for four Go servers, all built on this adapter:
+The scaffolder ships runnable starters for four Go servers, all built on this adapter:
+
+```sh
+npm create barefootjs@latest -- --adapter <name>
+```
 
 | `--adapter` | Framework | Router |
 |-------------|-----------|--------|
@@ -27,69 +36,36 @@ for four Go servers, all built on this adapter:
 | `chi` | [Chi](https://go-chi.io/) | `chi.Router` (net/http) |
 | `nethttp` | Go standard library | `http.ServeMux` |
 
-Each scaffold loads the generated `.tmpl` files into a `template.Template`
-with `bf.FuncMap()`, then renders a component through `bf.NewRenderer(...)`.
-Runnable end-to-end examples for all four live under
-[`integrations/`](https://github.com/piconic-ai/barefootjs/tree/main/integrations).
+Each scaffold parses the generated `.tmpl` files into a `template.Template` with `bf.FuncMap()`, then renders through `bf.NewRenderer(templates, layout)`. The layout is a `bf.LayoutFunc` that receives the rendered component, the collected scripts, and portals:
 
+```go
+root := template.New("").Funcs(bf.FuncMap())
+template.Must(root.New("Tag").Parse("")) // stub referenced by the generated Slot template
+template.Must(root.ParseGlob("dist/templates/*.tmpl"))
 
-## Basic Usage
+renderer := bf.NewRenderer(root, func(ctx *bf.RenderContext) string {
+    return "<!doctype html><body>" + string(ctx.ComponentHTML) + string(ctx.Scripts) + "</body>"
+})
 
-```typescript
-import { compile } from '@barefootjs/jsx'
-import { GoTemplateAdapter } from '@barefootjs/go-template'
-
-const adapter = new GoTemplateAdapter()
-const result = compile(source, { adapter })
-
-// result.template  → .tmpl file content
-// result.types     → _types.go file content
-// result.clientJs  → .client.js file content
+html := renderer.Render(bf.RenderOptions{
+    ComponentName: "Counter",
+    Props:         &components.CounterProps{Initial: 0},
+})
 ```
 
+`Render` collects every client script the page needs and passes the `<script>` tags to the layout as `ctx.Scripts`, each at most once. Runnable examples for all four servers live under [`integrations/`](https://github.com/piconic-ai/barefootjs/tree/main/integrations).
 
 ## Options
 
 ```typescript
-const adapter = new GoTemplateAdapter({
-  packageName: 'views',
-})
+const adapter = new GoTemplateAdapter({ packageName: 'views' })
 ```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `packageName` | `string` | `'components'` | Go package name for generated type files |
 
-
-## Output Format
-
-### Server Component
-
-**Source:**
-
-```tsx
-export function Greeting(props: { name: string }) {
-  return <p>Hello, {props.name}!</p>
-}
-```
-
-**Output (.tmpl):**
-
-```go-template
-{{define "Greeting"}}
-<p bf-s="{{bfScopeAttr .}}" {{bfPropsAttr .}} bf="s1">
-  Hello, {{bfTextStart "s0"}}{{.Name}}{{bfTextEnd}}!
-</p>
-{{end}}
-```
-
-- `bfScopeAttr` — generates the `bf-s` scope ID
-- `bfPropsAttr` — serializes props for client hydration
-- `bfTextStart` / `bfTextEnd` — text node markers (rendered as `<!--bf:s0-->...<!--/-->`)
-
-### Client Component
-
-**Source:**
+## Compiled output
 
 ```tsx
 "use client"
@@ -107,8 +83,6 @@ export function Counter(props: { initial?: number }) {
 }
 ```
 
-**Output (.tmpl):**
-
 ```go-template
 {{define "Counter"}}
 {{if .Scripts}}{{.Scripts.Register "/static/client/barefoot.js"}}{{.Scripts.Register "/static/client/Counter.client.js"}}{{end}}
@@ -119,107 +93,31 @@ export function Counter(props: { initial?: number }) {
 {{end}}
 ```
 
+Props become capitalized struct fields (`props.user.email` → `.User.Email`); operators, `.filter()`/`.sort()`/`.map()` chains and the other array methods translate to `bf_*` template functions from `bf.FuncMap()`. Vendor code-splitting is stock Vite `manualChunks` — see [Vite Plugin](../advanced/vite-plugin.md#code-splitting-vendors).
 
-## Expression Translation
+## Type generation
 
-### Property Access
+For each component the adapter generates an input struct (the external API), a props struct (adds the hydration fields), and a `New{Component}Props()` constructor that applies defaults:
 
+```go
+// The input type you construct: hydration fields are optional.
+type CounterInput struct {
+    ScopeID  string // Optional: if empty, a random ID is generated
+    BfParent string // Optional: parent scope id
+    BfMount  string // Optional: slot id in parent
+    Initial  int
+}
+
+// The props type the template receives; hydration fields are `json:"-"`.
+type CounterProps struct {
+    ScopeID string `json:"-"`
+    Scripts *bf.ScriptCollector `json:"-"`
+    Initial int    `json:"initial"`
+    // ... BfIsRoot, BfIsChild, BfParent, BfMount, BfDataKey, Portals, BfCallerProps (all `json:"-"`)
+}
+
+func NewCounterProps(input CounterInput) CounterProps
 ```
-props.name       →  .Name
-props.user.email →  .User.Email
-```
-
-Field names are automatically capitalized to follow Go conventions.
-
-### Comparisons
-
-| JavaScript | Go Template |
-|-----------|-------------|
-| `a === b` | `eq .A .B` |
-| `a !== b` | `ne .A .B` |
-| `a > b` | `gt .A .B` |
-| `a < b` | `lt .A .B` |
-| `a >= b` | `ge .A .B` |
-| `a <= b` | `le .A .B` |
-
-### Arithmetic
-
-| JavaScript | Go Template |
-|-----------|-------------|
-| `a + b` | `bf_add .A .B` |
-| `a - b` | `bf_sub .A .B` |
-| `a * b` | `bf_mul .A .B` |
-| `a / b` | `bf_div .A .B` |
-
-### Logical Operators
-
-| JavaScript | Go Template |
-|-----------|-------------|
-| `a && b` | `and .A .B` |
-| `a \|\| b` | `or .A .B` |
-| `!a` | `not .A` |
-
-
-## Array Methods
-
-### `.map()`
-
-```tsx
-{items().map(item => <li key={item}>{item}</li>)}
-```
-
-```go-template
-{{range $_, $item := .Items}}
-<li>{{bfTextStart "s0"}}{{.Item}}{{bfTextEnd}}</li>
-{{end}}
-```
-
-### `.filter().map()`
-
-```tsx
-{items().filter(item => item.active).map(item => <li key={item.id}>{item.name}</li>)}
-```
-
-```go-template
-{{range $_, $item := .Items}}{{if .Active}}
-<li>{{bfTextStart "s0"}}{{.Item.Name}}{{bfTextEnd}}</li>
-{{end}}{{end}}
-```
-
-For complex filter predicates, the adapter generates template block functions.
-
-### `.sort().map()` / `.toSorted().map()`
-
-```tsx
-{items().toSorted((a, b) => a.priority - b.priority).map(t => <li key={t.id}>{t.name}</li>)}
-```
-
-```go-template
-{{range bf_sort .Items "Priority" "asc"}}
-<li>{{bfTextStart "s0"}}{{.Name}}{{bfTextEnd}}</li>
-{{end}}
-```
-
-### Other Array Methods
-
-| JavaScript | Go Template |
-|-----------|-------------|
-| `arr.find(fn)` | `bf_find` |
-| `arr.findIndex(fn)` | `bf_find_index` |
-| `arr.every(fn)` | `bf_every` |
-| `arr.some(fn)` | `bf_some` |
-| `arr.length` | `len .Arr` |
-
-
-## Type Generation
-
-For each component, the adapter generates:
-
-1. **Input struct** — external API
-2. **Props struct** — internal representation (includes hydration fields)
-3. **Constructor** — `New{Component}Props()` with defaults
-
-### Type Mapping
 
 | TypeScript | Go |
 |-----------|-----|
@@ -230,74 +128,4 @@ For each component, the adapter generates:
 | `T \| undefined` | Pointer type `*T` or zero value |
 | Object type | Named struct |
 
-### Nested Components
-
-```tsx
-export function TodoList({ items }: { items: TodoItem[] }) {
-  return (
-    <ul>
-      {items.map(item => <TodoItem key={item.id} {...item} />)}
-    </ul>
-  )
-}
-```
-
-Child component props carry a `ScopeID` used for hydration. You don't have to
-mint these by hand: `bf.Renderer.Render` backfills a unique
-`<Component>_<random>` id for any child (in a slice or a single field) whose
-`ScopeID` is empty — the same shape the generated `New{Component}Props()`
-constructor uses. Build child props with just the data they need (e.g.
-`TodoItemProps{Todo: t}`) and the runtime fills in the rest. Setting `ScopeID`
-explicitly still works and is preserved when you need a stable id.
-
-## Conditional Rendering
-
-Ternaries become `{{if}}...{{else}}...{{end}}`:
-
-**Source:**
-
-```tsx
-{loggedIn() ? <span>Welcome back!</span> : <span>Please log in</span>}
-```
-
-**Output:**
-
-```go-template
-{{if .LoggedIn}}<span bf-c="s0">Welcome back!</span>{{else}}<span bf-c="s0">Please log in</span>{{end}}
-```
-
-Element branches use `bf-c` for conditional markers. Text-only ternaries use `bfComment` markers instead.
-
-
-## Script Registration
-
-Client components register their scripts via the `.Scripts` interface:
-
-```go-template
-{{if .Scripts}}{{.Scripts.Register "/static/client/barefoot.js"}}{{.Scripts.Register "/static/client/Counter.client.js"}}{{end}}
-```
-
-The `ScriptCollector` tracks needed scripts and renders `<script>` tags at page end. Each script loads at most once.
-
-
-## Vendor code-splitting
-
-Vendor code-splitting is Vite's job now, via stock `build.rollupOptions.output.manualChunks` — see [Vendor code-splitting](../advanced/code-splitting.md). There is no BarefootJS-specific importmap manifest to generate or include: Vite resolves and bundles component + vendor chunks ahead of time, and `combineGoTypes`'s generated `components.go` only carries type definitions, not asset URLs.
-
-
-## Go Helper Functions
-
-These helper functions must be in the Go template `FuncMap`:
-
-| Function | Purpose |
-|----------|---------|
-| `bf_add`, `bf_sub`, `bf_mul`, `bf_div` | Arithmetic operations |
-| `bf_neg` | Unary negation |
-| `bf_filter` | Filter a slice by field/value |
-| `bf_sort` | Sort a slice by field/direction |
-| `bf_find`, `bf_find_index` | Find element/index in a slice |
-| `bf_every`, `bf_some` | Test if all/any elements match |
-| `bf_json` | JSON-encode a value for props serialization |
-| `bf_concat` | String concatenation |
-
-Provided by the BarefootJS Go runtime package.
+Child component props carry a `ScopeID` used for hydration. You do not mint these by hand: `Renderer.Render` backfills a unique `<Component>_<random>` id for any child (in a slice or a single field) whose `ScopeID` is empty, so build child props with just their data (`TodoItemProps{Todo: t}`). An explicit `ScopeID` is preserved when you need a stable id.

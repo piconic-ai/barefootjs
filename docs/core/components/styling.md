@@ -5,7 +5,7 @@ description: How user-supplied classes override component base classes via CSS C
 
 # Style Overrides
 
-User-supplied classes always override component base classes — guaranteed by CSS Cascade Layers. No runtime JS, no merge functions, no class-order concerns.
+User-supplied classes always override component base classes, guaranteed by CSS Cascade Layers. No runtime JS, no merge functions, no class-order concerns.
 
 Styles in a named `@layer` lose to un-layered styles regardless of specificity. BarefootJS puts component base classes into `@layer components`:
 
@@ -23,7 +23,7 @@ const baseClasses = 'inline-flex items-center bg-primary text-primary-foreground
 const baseClasses = 'layer-components:inline-flex layer-components:items-center layer-components:bg-primary layer-components:text-primary-foreground'
 ```
 
-User classes remain un-layered and always win:
+User classes stay un-layered and win:
 
 ```
 <Button className="bg-red-500">
@@ -34,4 +34,4 @@ User classes remain un-layered and always win:
 Result: bg-red-500 wins.
 ```
 
-Zero runtime cost. Prefixing applies to the IR, so all adapters benefit.
+Prefixing applies to the IR, so every adapter gets the same result. Set the option per library entry in the [Vite plugin](../advanced/vite-plugin.md).

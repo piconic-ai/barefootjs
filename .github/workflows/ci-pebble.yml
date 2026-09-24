@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     # The adapter's unit + conformance suite alone runs ~11-14 min on a
     # shared runner, so a 15-minute cap cancels passing runs under load.
-    timeout-minutes: 25
+    timeout-minutes: 30
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
@@ -68,7 +68,8 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             packages/adapter-pebble/java/build
-          key: gradle-${{ runner.os }}-${{ hashFiles('packages/adapter-pebble/java/**/*.gradle.kts') }}
+            integrations/spring/build
+          key: gradle-${{ runner.os }}-${{ hashFiles('packages/adapter-pebble/java/**/*.gradle.kts', 'integrations/spring/**/*.gradle.kts') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -103,45 +104,10 @@ jobs:
       - name: Run unit tests
         run: bun test packages/adapter-pebble
 
-  e2e-spring:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: test
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Setup Java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Cache Gradle dependencies and build artifacts
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            packages/adapter-pebble/java/build
-            integrations/spring/build
-          key: gradle-${{ runner.os }}-${{ hashFiles('packages/adapter-pebble/java/**/*.gradle.kts', 'integrations/spring/**/*.gradle.kts') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-
-      - name: Setup Bun
-        uses: ./.github/actions/setup-bun
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build packages
-        run: |
-          bun run --filter '@barefootjs/jsx' build
-          bun run --filter '@barefootjs/vite' build
-          bun run --filter '@barefootjs/client' build
-          bun run --filter '@barefootjs/pebble' build
-
+      # E2E runs in this job, after the unit tests, instead of in its own
+      # `needs: test` job: a separate job queued a second time for a runner
+      # and repeated checkout + install + build for ~1 min of Playwright
+      # (#3155). A unit-test failure still skips it, as `needs:` did.
       - name: Build integrations/spring
         run: cd integrations/spring && bun run build
 

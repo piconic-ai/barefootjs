@@ -1,11 +1,9 @@
 ---
 title: Quick Start
-description: Scaffold a BarefootJS app in under five minutes — Counter component, dev server, deploy.
+description: Scaffold a BarefootJS app, run it locally, and make your first change in about five minutes.
 ---
 
 # Quick Start
-
-Scaffold a BarefootJS app, run it locally, and tour the generated project. About five minutes.
 
 ## Prerequisites
 
@@ -16,12 +14,7 @@ Scaffold a BarefootJS app, run it locally, and tour the generated project. About
 
 <PackageManagerTabs command="barefootjs@latest" mode="create" />
 
-Press Enter at the prompts to accept the defaults (Hono on Cloudflare Workers, UnoCSS).
-
-The CSS prompt has two options:
-
-- **UnoCSS** (default) — wires up UnoCSS and pulls a starter `<Button>` from the BarefootJS UI registry. The rest of this guide follows this path.
-- **None (bring your own CSS)** — no UnoCSS, no UI components, no stylesheets. You get just the JSX→template+signals compiler output and a dependency-free starter `Counter` built from native `<button>` elements. Pick this when you want to wire up your own styling. Pass `--css none` to select it non-interactively.
+Press Enter at the prompts to accept the defaults (Hono on Cloudflare Workers, UnoCSS). The CSS prompt also offers **None**, which skips UnoCSS and the UI registry and starts you with a dependency-free `Counter`; pass `--css none` to pick it non-interactively.
 
 ## 2. Install and run
 
@@ -31,13 +24,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` runs three processes in parallel:
-
-- `vite dev` — the BarefootJS compiler, wired in as a Vite plugin. Watches `components/` and serves marked templates plus client JS from `public/components/`.
-- `unocss --watch` — scans your JSX for utility classes and writes `public/uno.css`.
-- `wrangler dev --live-reload` — Cloudflare's local Workers runtime. Serves the app and reloads the browser on rebuilds.
-
-Open the URL Wrangler prints. You should see a counter card with **+1**, **-1**, and **Reset** buttons.
+`npm run dev` runs the compiler (as a Vite plugin), the UnoCSS watcher, and `wrangler dev` in parallel. Open the URL Wrangler prints. You should see a counter card with **+1**, **-1**, and **Reset** buttons.
 
 ## 3. Look at what was generated
 
@@ -88,7 +75,7 @@ export function Counter(props: CounterProps) {
 }
 ```
 
-See [Client Directive](./rendering/client-directive.md), [`createSignal`](./reactivity/create-signal.md), and [`createMemo`](./reactivity/create-memo.md) for what each piece does. Props are read via `props.initial` here, but destructuring them in the function parameter (`function Counter({ initial }: CounterProps)`) works identically — both forms compile to the same live read, so pick whichever reads better. [Props Reactivity](./reactivity/props-reactivity.md) covers the full rule.
+`"use client"` marks the component as interactive ([Component Authoring](./components/component-authoring.md)); [`createSignal`](./reactivity/create-signal.md) holds the count and [`createMemo`](./reactivity/create-memo.md) derives from it. Reading `props.initial` or destructuring `{ initial }` in the parameter compiles to the same live read ([Props Reactivity](./reactivity/props-reactivity.md)).
 
 The Counter is mounted in `server.tsx`:
 
@@ -113,7 +100,7 @@ app.get('/', (c) =>
 export default app
 ```
 
-Same `Counter` import, two outputs: server renders HTML, client hydrates the buttons.
+Same import, two outputs: the server renders HTML, the client hydrates the buttons.
 
 ## 4. Make a change
 
@@ -130,37 +117,28 @@ app.get('/', (c) =>
 )
 ```
 
-Save. The browser reloads and the counter starts at **5**. The server rendered `5` into the HTML, and hydration picked it up on the client — the same JSX, evaluated in both places.
+Save. The browser reloads and the counter starts at **5** — the server rendered it into the HTML and hydration picked it up.
 
-Now add a new button to `Counter.tsx`:
+Then add a button to `Counter.tsx`:
 
 ```tsx
 <Button onClick={() => setCount(n => n * 2)} variant="ghost">×2</Button>
 ```
 
-Save and watch the browser update. No virtual DOM, no diff — the compiler generated an effect that updates only the `<p>` text node when `count` changes.
+Save and watch the browser update. The compiler generated an effect that updates only the `<p>` text node when `count` changes.
 
 ## 5. Deploy (optional)
-
-When you're ready to ship:
 
 ```bash
 npm run deploy
 ```
 
-This runs `vite build`, generates the final `uno.css`, and calls `wrangler deploy`. The first deploy will prompt you to log into Cloudflare. After that, your app is live on `*.workers.dev`.
+This runs `vite build`, generates the final `uno.css`, and calls `wrangler deploy`. The first deploy prompts you to log into Cloudflare; after that the app is live on `*.workers.dev`.
 
 ## Next steps
 
-- **[Agent Skill](./core-concepts/ai-native.md#agent-skill)** — Install the BarefootJS skill for Claude Code or Codex and let the agent build components, write IR tests, and debug signals for you.
-- **[Core Concepts](./core-concepts.md)** — the four design principles behind BarefootJS: backend freedom, MPA-style rendering, fine-grained reactivity, and AI-native workflows.
-- **[`createSignal`](./reactivity/create-signal.md)** and **[`createMemo`](./reactivity/create-memo.md)** — the reactivity primitives you just used.
-- **[Client Directive](./rendering/client-directive.md)** — exactly what `"use client"` does and when to reach for it.
-- **[Hono Adapter](./adapters/hono-adapter.md)** — adapter-specific configuration and output details.
-- Pick a different backend by passing `--adapter` to the scaffolder. Supported values today: `hono` (default — Cloudflare Workers), `hono-node`, `echo` (Go / Echo), `gin` (Go / Gin), `chi` (Go / Chi), `nethttp` (Go / net/http stdlib), `mojo` (Mojolicious / Perl), `csr` (no backend — pure client render). For example:
-
-  ```bash
-  npm create barefootjs@latest -- --adapter hono-node
-  ```
-
-  See [Adapter Architecture](./adapters/adapter-architecture.md) for the architectural overview, and the per-adapter pages under [`docs/core/adapters/`](./adapters/) for output details. The four Go scaffolds (`echo`, `gin`, `chi`, `nethttp`) all build on the `@barefootjs/go-template` adapter, which generates Go `html/template` files; see [Go Template Adapter](./adapters/go-template-adapter.md) for its programmatic API.
+- [Agent Skill](./advanced/testing-and-cli.md#agent-skill) — let Claude Code or Codex build components, write IR tests, and debug signals.
+- [How It Works](./how-it-works.mdx) — what the compiler emits and how hydration attaches to it.
+- [Components](./components.md) — authoring, children, context, portals.
+- [Reactivity](./reactivity.md) — signals, memos, effects.
+- [Adapters](./adapters.md) — `--adapter` picks a backend: `hono` (default), `hono-node`, `echo`, `gin`, `chi`, `nethttp`, `mojo`, `csr`.
