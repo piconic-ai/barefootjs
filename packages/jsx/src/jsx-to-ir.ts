@@ -237,6 +237,14 @@ interface TransformContext {
    * aliased `import { Async as Boundary }` maps `<Boundary>` to the built-in.
    */
   _clientBuiltinTags?: Map<string, ClientBuiltinTag>
+  /** Lazily computed local name → export name of every `@barefootjs/client` value import. */
+  _clientValueImports?: ReadonlyMap<string, string>
+  /**
+   * BF063 candidates keyed by element position (`line:column`), recorded
+   * while transforming and reported by `reportRefAttrsAbsentAtSsr` once the
+   * IR shows which elements SSR renders.
+   */
+  _refAttrAbsences?: Map<string, RefAttrAbsence>
   /**
    * Cached `datePlugin` matcher (#2292), bound once to this component's
    * metadata. `undefined` = not yet computed; `null` = computed and
@@ -1174,19 +1182,20 @@ function resolveRootKeyAttr(node: IRNode | null): void {
 }
 
 export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
-  const root = buildIRRoot(analyzer)
+  const ctx = createTransformContext(analyzer)
+  const root = buildIRRoot(analyzer, ctx)
   if (root) {
+    reportRefAttrsAbsentAtSsr(root, ctx)
     attachParsedExpressions(root, analyzer)
     resolveRootKeyAttr(root)
   }
   return root
 }
 
-function buildIRRoot(analyzer: AnalyzerContext): IRNode | null {
+function buildIRRoot(analyzer: AnalyzerContext, ctx: TransformContext): IRNode | null {
   // If there are conditional returns (if statements with JSX returns),
   // build an if-statement chain instead of a single node
   if (analyzer.conditionalReturns.length > 0) {
-    const ctx = createTransformContext(analyzer)
     // #2463: a chain whose conditions are ALL reactive (signal/memo reads)
     // is semantically the root ternary, and the IRIfStatement contract
     // ("client JS handles all branches and switches at runtime") demands
@@ -1222,7 +1231,6 @@ function buildIRRoot(analyzer: AnalyzerContext): IRNode | null {
 
   if (!analyzer.jsxReturn) return null
 
-  const ctx = createTransformContext(analyzer)
   const jsxReturn = analyzer.jsxReturn
 
   // Direct JSX return — the IR root is an `IRElement` / `IRFragment` that
@@ -1417,21 +1425,34 @@ function transformNode(node: ts.Node, ctx: TransformContext): IRNode | null {
 function clientBuiltinTags(ctx: TransformContext): Map<string, ClientBuiltinTag> {
   if (ctx._clientBuiltinTags) return ctx._clientBuiltinTags
   const map = new Map<string, ClientBuiltinTag>()
-  for (const imp of ctx.analyzer.imports) {
-    // Require a *value* import: the tag is used as a JSX value, and the design
-    // is import-value-required. `import type { Async }` brings no value binding
-    // into scope (and is never a runtime import), so it does not scope the
-    // built-in — `<Async>` then falls through to BF054 (#1915 review).
-    if (imp.source !== CLIENT_BUILTIN_SOURCE || imp.isTypeOnly) continue
-    for (const spec of imp.specifiers) {
-      // Skip per-specifier `import { type Async }` — no value binding.
-      if (spec.isDefault || spec.isNamespace || spec.isTypeOnly) continue
-      if (isClientBuiltinName(spec.name)) {
-        map.set(spec.alias ?? spec.name, spec.name)
-      }
-    }
+  for (const [local, name] of clientValueImports(ctx)) {
+    if (isClientBuiltinName(name)) map.set(local, name)
   }
   ctx._clientBuiltinTags = map
+  return map
+}
+
+/**
+ * Local name → export name of every named VALUE import from
+ * `@barefootjs/client` (`import { createEffect as ce }` → `ce` →
+ * `createEffect`), from the analyzer's import metadata. The one answer to
+ * "is this identifier that client export" for import-scoped recognition — a
+ * same-named local declaration never matches. Value imports only: `import
+ * type { Async }` / `import { type Async }` bring no value binding into scope
+ * (and are never runtime imports) (#1915 review). Memoized on `ctx`; the
+ * import list is fixed for the compile.
+ */
+function clientValueImports(ctx: TransformContext): ReadonlyMap<string, string> {
+  if (ctx._clientValueImports) return ctx._clientValueImports
+  const map = new Map<string, string>()
+  for (const imp of ctx.analyzer.imports) {
+    if (imp.source !== CLIENT_BUILTIN_SOURCE || imp.isTypeOnly) continue
+    for (const spec of imp.specifiers) {
+      if (spec.isDefault || spec.isNamespace || spec.isTypeOnly) continue
+      map.set(spec.alias ?? spec.name, spec.name)
+    }
+  }
+  ctx._clientValueImports = map
   return map
 }
 
@@ -6610,7 +6631,6 @@ function processAttributes(
   const events: IREvent[] = []
   let ref: string | null = null
   let refExpr: ts.Expression | null = null
-  let ssrPortalOwnerScope = false
   let hasSpread = false
 
   for (const attr of attributes.properties) {
@@ -6633,7 +6653,6 @@ function processAttributes(
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         ref = ctx.getJS(attr.initializer.expression)
         refExpr = attr.initializer.expression
-        ssrPortalOwnerScope = isSsrPortalRefCallback(attr.initializer.expression, ctx)
       }
       continue
     }
@@ -6705,9 +6724,15 @@ function processAttributes(
     })
   }
 
-  // BF063 runs after the loop so it sees every attribute this element's
-  // JSX renders, regardless of whether `ref` came before or after it.
-  if (refExpr && !hasSpread) checkRefAttrAbsentAtSsr(refExpr, attrs, ctx)
+  // The ref callback is resolved once, for both the SSR-portal recognition
+  // and BF063. BF063 runs after the loop so it sees every attribute this
+  // element's JSX renders, whether `ref` came before or after it.
+  let ssrPortalOwnerScope = false
+  if (refExpr) {
+    const refCallback = resolveRefCallback(refExpr)
+    ssrPortalOwnerScope = isSsrPortalRefCallback(refCallback)
+    if (!hasSpread) recordRefAttrsAbsentAtSsr(refExpr, refCallback, attributes, attrs, ctx)
+  }
 
   return { attrs, events, ref, ssrPortalOwnerScope }
 }
@@ -6717,103 +6742,121 @@ function processAttributes(
 // =============================================================================
 
 /**
- * Refuse (BF063) a `ref` callback that unconditionally writes an attribute
- * at mount which the element's own JSX never renders. A `ref` callback
- * never runs at SSR, so the server HTML always lacks that attribute and
- * the first client pass adds it — the pre- and post-hydration DOM differ,
- * a visible snap at the hydrate boundary.
+ * BF063: a `ref` callback that unconditionally writes an attribute at mount
+ * which the element's own JSX never renders. A `ref` callback never runs at
+ * SSR, so the server HTML always lacks that attribute and the first client
+ * pass adds it — the pre- and post-hydration DOM differ, a visible snap at
+ * the hydrate boundary.
  *
  * Deliberately narrow, so it only fires where the divergence is certain:
  *
- *   - Only writes to the callback's own element parameter count —
- *     `el.setAttribute('<string literal>', …)` or `el.dataset.<x> = …`
- *     (`el.dataset['<x>'] = …` too). Writes to any other node
- *     (`root.dataset.x`, `el.querySelector(…).setAttribute(…)`) say
- *     nothing about THIS element's server HTML.
- *   - Only UNCONDITIONAL writes count: a statement at the top level of
- *     the ref body, or at the top level of a `createEffect` / `onMount`
- *     body that is itself a top-level statement of the ref body. Every
- *     such write runs on mount. Writes nested in an `if`, a loop, an
- *     event listener, a timer or any other closure may never run on
- *     mount, so they are skipped.
- *   - An attribute the JSX renders in any form is skipped. For a literal
- *     or an expression SSR emits it, and whether an effect's first run
- *     agrees with the rendered value is not decidable here —
- *     `data-state="closed"` overwritten by an effect that computes `closed`
- *     on mount is the correct, common case. A `/* @client *\/` attribute
- *     value is an explicit opt-in to hydrate-time rendering already.
- *   - An element with a spread (`{...props}`) is skipped: the spread may
- *     render the attribute.
- *   - A leading `/* @client *\/` on the ref expression opts out (the
- *     author accepts the attribute appearing only after hydration).
+ *   - The callback resolves statically (`resolveRefCallback`): an inline
+ *     arrow / function expression, or a named local function. Anything else
+ *     — an imported helper, a prop, a call result — is opaque.
+ *   - Only mount-time writes to the callback's own element parameter count
+ *     (see `collectMountAttrWrites`), and only those no later removal
+ *     cancels.
+ *   - An attribute the JSX renders in any form is skipped: SSR emits it, and
+ *     whether an effect's first run agrees with the rendered value is not
+ *     decidable here — `data-state="closed"` overwritten by an effect that
+ *     computes `closed` on mount is the correct, common case.
+ *   - An element with a spread (`{...props}`, which may render the
+ *     attribute) is skipped by the caller, and a leading `/* @client *\/` on
+ *     the ref expression opts out (the author accepts the attribute
+ *     appearing only after hydration).
  *
- * The callback is resolved structurally: an inline arrow / function
- * expression, or an identifier naming a function declared in the
- * enclosing component body (`findNamedCallbackInScope`, the same
- * resolution `isSsrPortalRefCallback` uses). Anything else — an imported
- * helper, a prop, a call result — is opaque and never fires.
+ * Whether SSR renders the element at all is only known once the IR is built
+ * (a client-only conditional or loop around it), so this records a
+ * candidate and `reportRefAttrsAbsentAtSsr` decides.
  */
-function checkRefAttrAbsentAtSsr(
+function recordRefAttrsAbsentAtSsr(
   refExpr: ts.Expression,
+  callback: RefCallback | undefined,
+  attributes: ts.JsxAttributes,
   attrs: readonly IRAttribute[],
   ctx: TransformContext,
 ): void {
-  if (hasLeadingClientDirective(refExpr, ctx.sourceFile)) return
-  const callback = resolveRefCallback(refExpr)
-  if (!callback?.param) return
-
+  if (!callback?.param || hasLeadingClientDirective(refExpr, ctx.sourceFile)) return
   const rendered = new Set(attrs.map(a => a.name.toLowerCase()))
-  const reported = new Set<string>()
-  for (const write of collectUnconditionalRefAttrWrites(callback.body, callback.param)) {
-    if (rendered.has(write.name) || reported.has(write.name)) continue
-    reported.add(write.name)
+  const writes = collectMountAttrWrites(callback.body, callback.param, ctx).filter(w => !rendered.has(w.name))
+  if (writes.length === 0) return
+  const element = attributes.parent
+  const key = sourcePositionKey(getSourceLocation(element, ctx.sourceFile, ctx.filePath))
+  ctx._refAttrAbsences ??= new Map()
+  ctx._refAttrAbsences.set(key, { element: `<${element.tagName.getText(ctx.sourceFile)}> at ${key}`, writes })
+}
+
+/** `line:column` of a location's start — the `-->` notation `formatError` prints. */
+function sourcePositionKey(loc: SourceLocation): string {
+  return `${loc.start.line}:${loc.start.column}`
+}
+
+/**
+ * Report the candidates `recordRefAttrsAbsentAtSsr` recorded on elements SSR
+ * actually renders. An element inside a client-only conditional or loop (a
+ * `/* @client *\/` child, a module-level client signal, an auto-deferred
+ * reactive-brand condition — whatever set the IR's `clientOnly`) never
+ * reaches the server HTML, so there is nothing for hydration to diverge
+ * from. One error per write site: a handler shared by several elements is
+ * reported once, naming every element that lacks the attribute.
+ */
+function reportRefAttrsAbsentAtSsr(root: IRNode, ctx: TransformContext): void {
+  const pending = ctx._refAttrAbsences
+  if (!pending) return
+  const bySite = new Map<string, { write: RefAttrWrite; elements: string[] }>()
+  walkIR<boolean>(root, false, {
+    element: ({ node, scope: clientOnly, descend }) => {
+      const key = sourcePositionKey(node.loc)
+      const absence = clientOnly ? undefined : pending.get(key)
+      if (absence) {
+        // A source element transformed more than once (an inlined JSX
+        // helper) is still one element.
+        pending.delete(key)
+        for (const write of absence.writes) {
+          const site = `${write.node.getStart(ctx.sourceFile)}:${write.name}`
+          const group = bySite.get(site) ?? { write, elements: [] }
+          group.elements.push(absence.element)
+          bySite.set(site, group)
+        }
+      }
+      descend()
+    },
+    conditional: ({ node, scope, descend }) => descend(scope || !!node.clientOnly),
+    loop: ({ node, scope, descend }) => descend(scope || !!node.clientOnly),
+    async: ({ node, walk, descend }) => {
+      walk(node.fallback)
+      descend()
+    },
+    component: ({ descend, descendJsxChildren }) => {
+      descend()
+      descendJsxChildren()
+    },
+  })
+  for (const { write, elements } of bySite.values()) {
     ctx.analyzer.errors.push(
-      createError(
-        ErrorCodes.REF_ATTR_ABSENT_AT_SSR,
-        getSourceLocation(write.node, ctx.sourceFile, ctx.filePath),
-        {
+      createError(ErrorCodes.REF_ATTR_ABSENT_AT_SSR, getSourceLocation(write.node, ctx.sourceFile, ctx.filePath), {
+        message:
+          `The ref callback writes '${write.name}' on mount, but the JSX of ${elements.join(' and ')} never renders it. ` +
+          'A ref callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it — ' +
+          'the DOM visibly changes at the hydrate boundary.',
+        suggestion: {
           message:
-            `The ref callback writes '${write.name}' on mount, but this element's JSX never renders it. ` +
-            'A ref callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it — ' +
-            'the DOM visibly changes at the hydrate boundary.',
-          suggestion: {
-            message:
-              `Render '${write.name}' in the element's JSX from props or signals (e.g. \`${write.name}={…}\`) so SSR ` +
-              'and hydration agree — the ref may keep writing it afterwards. Or add /* @client */ before the ref ' +
-              'expression to accept the attribute appearing only after hydration.',
-            escape: [{ kind: 'rewrite' }, { kind: 'client-directive' }],
-          },
+            `Render '${write.name}' in the element's JSX from props or signals (e.g. \`${write.name}={…}\`) so SSR ` +
+            'and hydration agree — the ref may keep writing it afterwards. Or add /* @client */ before the ref ' +
+            'expression to accept the attribute appearing only after hydration.',
+          escape: [{ kind: 'rewrite' }, { kind: 'client-directive' }],
         },
-      ),
+      }),
     )
   }
 }
 
-/** Resolve a `ref={…}` expression to the callback's first param + body, when statically visible. */
-function resolveRefCallback(refExpr: ts.Expression): LocalCallback | undefined {
-  const expr = skipOuterExpressionWrappers(refExpr)
-  if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
-    return { param: firstSimpleParamName(expr), body: expr.body }
-  }
-  if (!ts.isIdentifier(expr)) return undefined
-  const owner = findEnclosingFunctionLike(expr)
-  if (!owner?.body) return undefined
-  return findNamedCallbackInScope(expr.text, owner.body)
-}
-
-/** Strip parentheses, `as` / `satisfies` casts and non-null assertions. */
-function skipOuterExpressionWrappers(expr: ts.Expression): ts.Expression {
-  let current = expr
-  while (
-    ts.isParenthesizedExpression(current) ||
-    ts.isAsExpression(current) ||
-    ts.isSatisfiesExpression(current) ||
-    ts.isNonNullExpression(current) ||
-    ts.isTypeAssertionExpression(current)
-  ) {
-    current = current.expression
-  }
-  return current
+/** A BF063 candidate awaiting `reportRefAttrsAbsentAtSsr`. */
+interface RefAttrAbsence {
+  /** `<tag> at line:column`, naming the element in the diagnostic. */
+  element: string
+  /** Mount-time writes of attributes this element's JSX never renders. */
+  writes: RefAttrWrite[]
 }
 
 interface RefAttrWrite {
@@ -6822,95 +6865,137 @@ interface RefAttrWrite {
   node: ts.Node
 }
 
-/** Callee names whose callback runs synchronously-or-on-mount and whose top-level writes therefore count. */
-const MOUNT_BODY_CALLEES = new Set(['createEffect', 'onMount'])
+/** Mount-time primitives: both run their callback synchronously on creation. */
+const MOUNT_TIME_PRIMITIVES: ReadonlySet<string> = new Set(['createEffect', 'onMount'])
 
 /**
- * The unconditional attribute writes to `param` in a ref body — see
- * {@link checkRefAttrAbsentAtSsr} for exactly which statements count.
+ * The writes to `param` in a ref body that are certain to have happened, and
+ * not been undone, when the ref's mount-time run ends — first write per
+ * attribute, in order.
+ *
+ * The run is the ref body's top-level statements plus, inline at their call
+ * position, the top-level statements of a `createEffect` / `onMount` callback
+ * that is itself a top-level statement of the ref body (both run
+ * synchronously on creation). Within it:
+ *
+ *   - A write is a top-level `param.setAttribute('<lit>', …)`,
+ *     `param.dataset.<key> = …` or `param.dataset['<key>'] = …`; writes
+ *     anywhere else (under an `if`, in a listener, a timer, any closure) may
+ *     never run on mount and are ignored.
+ *   - A top-level `param.removeAttribute('<lit>')` / `delete
+ *     param.dataset.<key>` cancels the earlier write; a removal under an
+ *     `if`, a loop, … makes it uncertain, so cancels it too.
+ *   - A statement holding a `return` / `throw` of its function (an early-exit
+ *     guard, a `try` / loop / `switch` that can return) may skip everything
+ *     after it, so collection stops there — for the whole run, since a
+ *     `throw` in a nested callback propagates out of the ref.
+ *   - A body that redeclares `param` (a `const` / `var` / `function` /
+ *     destructuring, or a nested callback parameter) writes some other
+ *     node, so contributes nothing.
  */
-function collectUnconditionalRefAttrWrites(body: ts.ConciseBody, param: string): RefAttrWrite[] {
-  const writes: RefAttrWrite[] = []
-  const visitStatements = (fnBody: ts.ConciseBody, allowNestedMountBody: boolean): void => {
-    // A block body's top-level expression statements, or a concise arrow's
-    // single expression. Any other statement kind (`if`, loops, `const`,
-    // `return`, …) is either conditional or not a write — skipped.
-    const exprs: ReadonlyArray<ts.Expression | undefined> = ts.isBlock(fnBody)
-      ? fnBody.statements.map(s => (ts.isExpressionStatement(s) ? s.expression : undefined))
-      : [fnBody]
-    for (const expr of exprs) {
-      if (!expr) continue
-      const write = matchRefAttrWrite(expr, param)
-      if (write) {
-        writes.push(write)
+function collectMountAttrWrites(body: ts.ConciseBody, param: string, ctx: TransformContext): RefAttrWrite[] {
+  const live = new Map<string, RefAttrWrite>()
+  const apply = (effect: RefAttrEffect): void => {
+    if (effect.kind === 'remove') live.delete(effect.name)
+    else if (!live.has(effect.name)) live.set(effect.name, effect)
+  }
+  // Removals anywhere in `node` outside nested closures; true when it can
+  // end the run early.
+  const scan = (node: ts.Node): boolean => {
+    let exits = false
+    const visit = (n: ts.Node): void => {
+      if (ts.isFunctionLike(n) || ts.isClassLike(n)) return
+      if (ts.isReturnStatement(n) || ts.isThrowStatement(n)) exits = true
+      const effect = matchRefAttrEffect(n, param)
+      if (effect?.kind === 'remove') live.delete(effect.name)
+      ts.forEachChild(n, visit)
+    }
+    visit(node)
+    return exits
+  }
+  // False when the run may have ended before this body's end.
+  const run = (fnBody: ts.ConciseBody, allowNested: boolean): boolean => {
+    if (findScopeDeclaration(param, fnBody)) return true
+    const units: readonly ts.Node[] = ts.isBlock(fnBody) ? fnBody.statements : [fnBody]
+    for (const unit of units) {
+      const expr = ts.isExpressionStatement(unit) ? unit.expression : ts.isExpression(unit) ? unit : undefined
+      const effect = expr && matchRefAttrEffect(expr, param)
+      if (effect) {
+        apply(effect)
         continue
       }
-      if (allowNestedMountBody) {
-        const nested = matchMountBodyCall(expr, param)
-        if (nested) visitStatements(nested, false)
-      }
+      const nested = expr && allowNested ? mountCallbackBody(expr, param, ctx) : undefined
+      if (nested ? !run(nested, false) : scan(unit)) return false
     }
+    return true
   }
-  visitStatements(body, true)
-  return writes
+  run(body, true)
+  return [...live.values()]
 }
 
-/** `createEffect(() => {…})` / `onMount(function () {…})` → the callback body, unless it shadows `param`. */
-function matchMountBodyCall(expr: ts.Expression, param: string): ts.ConciseBody | undefined {
-  const call = skipOuterExpressionWrappers(expr)
+/**
+ * `createEffect(() => {…})` / `onMount(function () {…})` → the callback body,
+ * unless its parameters rebind `param`. The callee must be a value import of
+ * the primitive from `@barefootjs/client` (an alias included), so a local
+ * function that happens to be named `onMount` is not one.
+ */
+function mountCallbackBody(expr: ts.Expression, param: string, ctx: TransformContext): ts.ConciseBody | undefined {
+  const call = unwrapTransparentTsWrappers(expr)
   if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return undefined
-  if (!MOUNT_BODY_CALLEES.has(call.expression.text)) return undefined
-  const fn = call.arguments[0] && skipOuterExpressionWrappers(call.arguments[0])
+  const primitive = clientValueImports(ctx).get(call.expression.text)
+  if (!primitive || !MOUNT_TIME_PRIMITIVES.has(primitive)) return undefined
+  const fn = call.arguments[0] && unwrapTransparentTsWrappers(call.arguments[0])
   if (!fn || !(ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) return undefined
-  if (fn.parameters.some(p => ts.isIdentifier(p.name) && p.name.text === param)) return undefined
+  if (fn.parameters.some(p => bindingDeclares(p.name, param))) return undefined
   return fn.body
 }
 
-function isParamReference(expr: ts.Expression, param: string): boolean {
-  const inner = skipOuterExpressionWrappers(expr)
-  return ts.isIdentifier(inner) && inner.text === param
+interface RefAttrEffect extends RefAttrWrite {
+  kind: 'set' | 'remove'
 }
 
-/** `param.setAttribute('<lit>', …)` or `param.dataset.<x> = …` → the attribute written. */
-function matchRefAttrWrite(expr: ts.Expression, param: string): RefAttrWrite | undefined {
-  const node = skipOuterExpressionWrappers(expr)
-
-  if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
-    const callee = node.expression
-    const [nameArg] = node.arguments
-    if (
-      callee.name.text === 'setAttribute' &&
-      isParamReference(callee.expression, param) &&
-      nameArg &&
-      ts.isStringLiteralLike(nameArg)
-    ) {
-      return { name: nameArg.text.toLowerCase(), node }
+/**
+ * `param.setAttribute('<lit>', …)` / `param.dataset.<key> = …` (a set) or
+ * `param.removeAttribute('<lit>')` / `delete param.dataset.<key>` (a remove).
+ */
+function matchRefAttrEffect(node: ts.Node, param: string): RefAttrEffect | undefined {
+  if (!ts.isExpression(node)) return undefined
+  const expr = unwrapTransparentTsWrappers(node)
+  if (ts.isCallExpression(expr)) {
+    const callee = expr.expression
+    if (!ts.isPropertyAccessExpression(callee)) return undefined
+    const kind = callee.name.text === 'setAttribute' ? 'set' : callee.name.text === 'removeAttribute' ? 'remove' : undefined
+    const [nameArg] = expr.arguments
+    if (kind && nameArg && ts.isStringLiteralLike(nameArg) && isParamReference(callee.expression, param)) {
+      return { kind, name: nameArg.text.toLowerCase(), node: expr }
     }
     return undefined
   }
+  const target =
+    ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.EqualsToken ? { kind: 'set' as const, lhs: expr.left }
+    : ts.isDeleteExpression(expr) ? { kind: 'remove' as const, lhs: expr.expression }
+    : undefined
+  const name = target && datasetAttrName(target.lhs, param)
+  return name ? { kind: target.kind, name, node: expr } : undefined
+}
 
-  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-    const target = skipOuterExpressionWrappers(node.left)
-    let key: string | undefined
-    let datasetExpr: ts.Expression | undefined
-    if (ts.isPropertyAccessExpression(target)) {
-      key = target.name.text
-      datasetExpr = target.expression
-    } else if (ts.isElementAccessExpression(target) && ts.isStringLiteralLike(target.argumentExpression)) {
-      key = target.argumentExpression.text
-      datasetExpr = target.expression
-    }
-    if (!key || !datasetExpr) return undefined
-    const dataset = skipOuterExpressionWrappers(datasetExpr)
-    if (
-      ts.isPropertyAccessExpression(dataset) &&
-      dataset.name.text === 'dataset' &&
-      isParamReference(dataset.expression, param)
-    ) {
-      return { name: datasetKeyToAttrName(key), node }
-    }
-  }
-  return undefined
+/** `param.dataset.<key>` / `param.dataset['<key>']` → the `data-*` attribute it maps to. */
+function datasetAttrName(target: ts.Expression, param: string): string | undefined {
+  const access = unwrapTransparentTsWrappers(target)
+  const key = ts.isPropertyAccessExpression(access)
+    ? access.name.text
+    : ts.isElementAccessExpression(access) && ts.isStringLiteralLike(access.argumentExpression)
+      ? access.argumentExpression.text
+      : undefined
+  if (key === undefined) return undefined
+  const dataset = unwrapTransparentTsWrappers((access as ts.PropertyAccessExpression | ts.ElementAccessExpression).expression)
+  if (!ts.isPropertyAccessExpression(dataset) || dataset.name.text !== 'dataset') return undefined
+  return isParamReference(dataset.expression, param) ? datasetKeyToAttrName(key) : undefined
+}
+
+function isParamReference(expr: ts.Expression, param: string): boolean {
+  const inner = unwrapTransparentTsWrappers(expr)
+  return ts.isIdentifier(inner) && inner.text === param
 }
 
 /** `nmOpenDelay` → `data-nm-open-delay` (the DOMStringMap camelCase → attribute mapping). */
@@ -6920,6 +7005,118 @@ function datasetKeyToAttrName(key: string): string {
     out += ch >= 'A' && ch <= 'Z' ? `-${ch.toLowerCase()}` : ch
   }
   return out
+}
+
+// =============================================================================
+// Ref callback resolution
+// =============================================================================
+
+interface LocalCallback {
+  param: string | undefined
+  body: ts.ConciseBody
+}
+
+interface RefCallback extends LocalCallback {
+  /** Bound by name (`ref={handleMount}`) rather than written inline. */
+  named: boolean
+}
+
+/**
+ * Resolve a `ref={…}` expression to its callback's first param + body, when
+ * statically visible: an inline arrow / function expression, or an
+ * identifier naming a local function (`findNamedCallback`). Resolved once per
+ * element and shared by the SSR-portal recognition and BF063.
+ */
+function resolveRefCallback(refExpr: ts.Expression): RefCallback | undefined {
+  const expr = unwrapTransparentTsWrappers(refExpr)
+  if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
+    return { param: firstSimpleParamName(expr), body: expr.body, named: false }
+  }
+  if (!ts.isIdentifier(expr)) return undefined
+  const callback = findNamedCallback(expr)
+  return callback && { ...callback, named: true }
+}
+
+type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration
+
+function isFunctionLike(node: ts.Node): node is FunctionLike {
+  return ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node)
+}
+
+/**
+ * Walk `.parent` links up from `node` to the nearest enclosing function
+ * (arrow, function expression, or `function` declaration).
+ */
+function findEnclosingFunctionLike(node: ts.Node): FunctionLike | undefined {
+  let current: ts.Node | undefined = node.parent
+  while (current) {
+    if (isFunctionLike(current)) return current
+    current = current.parent
+  }
+  return undefined
+}
+
+/**
+ * Resolve `ident` to a NAMED local function (`const name = (…) => {…}`,
+ * `const name = function (…) {…}`, or `function name(…) {…}`), searching the
+ * enclosing function scopes innermost-first up to the outermost — the
+ * component — so a `ref` inside a `.map()` row arrow still finds a handler
+ * declared in the component body. The first scope binding the name decides:
+ * a parameter, or a declaration that is not a function, makes it opaque.
+ * Never searches a nested function's own body: two sibling components in the
+ * same file can each declare their own, unrelated `handleMount`, and reaching
+ * into the wrong one's closure would misattribute its behavior to this `ref`.
+ */
+function findNamedCallback(ident: ts.Identifier): LocalCallback | undefined {
+  for (let fn = findEnclosingFunctionLike(ident); fn; fn = findEnclosingFunctionLike(fn)) {
+    if (fn.parameters.some(p => bindingDeclares(p.name, ident.text))) return undefined
+    const decl = fn.body && findScopeDeclaration(ident.text, fn.body)
+    if (!decl) continue
+    if (ts.isFunctionDeclaration(decl)) return decl.body && { param: firstSimpleParamName(decl), body: decl.body }
+    const init = ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && decl.initializer
+      ? unwrapTransparentTsWrappers(decl.initializer)
+      : undefined
+    return init && (ts.isArrowFunction(init) || ts.isFunctionExpression(init))
+      ? { param: firstSimpleParamName(init), body: init.body }
+      : undefined
+  }
+  return undefined
+}
+
+/**
+ * The first declaration of `name` in `scopeBody` — a `const` / `let` / `var`
+ * (destructuring included), a `function` with a body (not an overload
+ * signature) or a `class` — at any block depth, but never inside a nested
+ * function or class, which scope their own names. Block depth is not
+ * distinguished (a `const` inside an `if` block counts too): both callers
+ * want a conservative "is this name rebound here" answer.
+ */
+function findScopeDeclaration(
+  name: string,
+  scopeBody: ts.Node,
+): ts.VariableDeclaration | ts.FunctionDeclaration | ts.ClassDeclaration | undefined {
+  let found: ts.VariableDeclaration | ts.FunctionDeclaration | ts.ClassDeclaration | undefined
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    if (ts.isVariableDeclaration(node) && bindingDeclares(node.name, name)) {
+      found = node
+      return
+    }
+    if (((ts.isFunctionDeclaration(node) && node.body) || ts.isClassDeclaration(node)) && node.name?.text === name) {
+      found = node
+      return
+    }
+    if (ts.isFunctionLike(node) || ts.isClassLike(node)) return
+    ts.forEachChild(node, visit)
+  }
+  visit(scopeBody)
+  return found
+}
+
+function bindingDeclares(binding: ts.BindingName, name: string): boolean {
+  const names = new Set<string>()
+  collectBindingNames(binding, names)
+  return names.has(name)
 }
 
 // =============================================================================
@@ -6950,82 +7147,8 @@ function datasetKeyToAttrName(key: string): string {
  * (#3119) uses to place the element's SSR markup at its own portal
  * outlet instead of inline.
  */
-function isSsrPortalRefCallback(refExpr: ts.Expression, ctx: TransformContext): boolean {
-  if (!ts.isIdentifier(refExpr)) return false
-  const owner = findEnclosingFunctionLike(refExpr)
-  if (!owner || !owner.body) return false
-  const callback = findNamedCallbackInScope(refExpr.text, owner.body)
-  if (!callback) return false
-  const { param, body } = callback
-  if (!param) return false
-  return containsSsrPortalPlacementCall(body, param)
-}
-
-interface LocalCallback {
-  param: string | undefined
-  body: ts.ConciseBody
-}
-
-type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration
-
-function isFunctionLike(node: ts.Node): node is FunctionLike {
-  return ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node)
-}
-
-/**
- * Walk `.parent` links up from `node` to the nearest enclosing function
- * (arrow, function expression, or `function` declaration) — the
- * component (or nested callback) whose own body directly contains the
- * JSX this `ref` sits in.
- */
-function findEnclosingFunctionLike(node: ts.Node): FunctionLike | undefined {
-  let current: ts.Node | undefined = node.parent
-  while (current) {
-    if (isFunctionLike(current)) return current
-    current = current.parent
-  }
-  return undefined
-}
-
-/**
- * Find a NAMED function (`const name = (…) => {…}`, `const name =
- * function (…) {…}`, or `function name(…) {…}`) declared directly in
- * `scopeBody` — the enclosing component/callback's own body — and
- * return its first parameter's name (when it's a plain identifier) and
- * body. Deliberately scope-limited to ONE enclosing function level
- * (real component functions declare their portal callback in their own
- * body, never in an outer closure), and never descends into a NESTED
- * function/arrow's own body while searching: two sibling components in
- * the same file can each declare their own same-named callback (e.g.
- * `DialogTrigger`'s and `DialogOverlay`'s own, unrelated `handleMount`),
- * and reaching into the wrong one's closure would misattribute its
- * behavior to this `ref`.
- */
-function findNamedCallbackInScope(name: string, scopeBody: ts.Node): LocalCallback | undefined {
-  let found: LocalCallback | undefined
-  const visit = (node: ts.Node, isScopeRoot: boolean): void => {
-    if (found) return
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.name.text === name &&
-      node.initializer &&
-      (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))
-    ) {
-      found = { param: firstSimpleParamName(node.initializer), body: node.initializer.body }
-      return
-    }
-    if (ts.isFunctionDeclaration(node) && node.name?.text === name && node.body) {
-      found = { param: firstSimpleParamName(node), body: node.body }
-      return
-    }
-    // A nested function/arrow other than `scopeBody` itself is a separate
-    // lexical scope — stop, don't search inside it.
-    if (!isScopeRoot && isFunctionLike(node)) return
-    ts.forEachChild(node, child => visit(child, false))
-  }
-  visit(scopeBody, true)
-  return found
+function isSsrPortalRefCallback(callback: RefCallback | undefined): boolean {
+  return !!callback?.named && !!callback.param && containsSsrPortalPlacementCall(callback.body, callback.param)
 }
 
 function firstSimpleParamName(
@@ -7044,7 +7167,7 @@ function firstSimpleParamName(
  * SSR/hydration mismatch instead of closing the existing one.
  *
  * Deliberately does NOT stop at a nested function/arrow boundary the way
- * `findNamedCallbackInScope` does: `SelectContent`
+ * `findNamedCallback` does: `SelectContent`
  * (`ui/components/ui/select/index.tsx`) defers its call through
  * `queueMicrotask(() => createPortal(el, document.body, { ownerScope
  * }))` — still the SAME `ref` callback's own call, just scheduled async,
@@ -7057,7 +7180,7 @@ function firstSimpleParamName(
  * no-op exactly like the direct-call components. The "DIRECT call only"
  * guarantee `isSsrPortalRefCallback`'s docstring describes is about NOT
  * crossing into a separately-declared helper function's own body (see
- * `findNamedCallbackInScope`'s scope limit for that), not about this
+ * `findNamedCallback`'s scope limit for that), not about this
  * same-callback scheduling deferral.
  */
 function containsSsrPortalPlacementCall(body: ts.Node, paramName: string): boolean {

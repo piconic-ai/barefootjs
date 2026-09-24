@@ -9,7 +9,7 @@ import { createFixture } from '../src/types'
  *
  * Used to be a browser-tested `defineSharedFixture` quarantined in
  * `oracle-quarantine.ts`; the shape is now a loud BF063 compile-time
- * refusal (`checkRefAttrAbsentAtSsr`, `jsx-to-ir.ts`), so this fixture
+ * refusal (`recordRefAttrsAbsentAtSsr`, `jsx-to-ir.ts`), so this fixture
  * asserts the refusal (`conformancePins`, every adapter including Hono — a
  * shared jsx-to-ir.ts refusal fires ahead of any adapter's
  * `adapter.generate()`) rather than comparing rendered HTML. The

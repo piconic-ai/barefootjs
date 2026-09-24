@@ -59,7 +59,7 @@ export function BranchRefRows() {
       <ul id="list">{rows().map(row => (
         <li key={row.key}>
           {row.kind === 'a' ? (
-            <span ref={el => { el.dataset.mounted = 'yes' }}>{row.label}</span>
+            <span data-mounted="no" ref={el => { el.dataset.mounted = 'yes' }}>{row.label}</span>
           ) : (
             <span>placeholder</span>
           )}
@@ -84,7 +84,7 @@ export function BranchRefRowsStartsB() {
       <ul id="list">{rows().map(row => (
         <li key={row.key}>
           {row.kind === 'a' ? (
-            <span ref={el => { el.dataset.mounted = 'yes' }}>{row.label}</span>
+            <span data-mounted="no" ref={el => { el.dataset.mounted = 'yes' }}>{row.label}</span>
           ) : (
             <span>placeholder</span>
           )}

@@ -1300,28 +1300,42 @@ A `ref` callback is a client-only binding: it never runs at SSR. An attribute
 that only the callback writes is therefore always missing from the server HTML
 and always added by the first client pass — the DOM visibly changes at the
 hydrate boundary. BF063 refuses the one shape of this where the divergence is
-certain, decided structurally (TS AST, `checkRefAttrAbsentAtSsr` in
+certain, decided structurally (TS AST, `recordRefAttrsAbsentAtSsr` in
 `jsx-to-ir.ts`) on each intrinsic element carrying a `ref`:
 
 - **The callback resolves statically** — an inline arrow / function expression,
-  or an identifier naming a function declared in the enclosing component body.
-  Anything else (an imported helper, a prop) is opaque and never fires.
+  or an identifier naming a function declared in an enclosing function scope,
+  innermost first up to the component body (so a handler declared in the
+  component resolves from inside a `.map()` row). Anything else (an imported
+  helper, a prop) is opaque and never fires.
 - **The write targets the callback's own element parameter** —
   `el.setAttribute('<string literal>', …)`, `el.dataset.<key> = …` or
   `el.dataset['<key>'] = …` (the key maps to `data-<kebab-case>`). Writes to
-  any other node are ignored.
+  any other node are ignored, as is a body that redeclares the parameter's
+  name (`const el = …`, a destructuring, a `function el`).
 - **The write is unconditional** — a top-level expression statement of the ref
-  body, or of a `createEffect` / `onMount` callback that is itself a top-level
-  statement of the ref body. Writes inside an `if`, a loop, an event listener,
-  a timer or any other closure are ignored.
+  body, or of a `createEffect` / `onMount` callback (a value import from
+  `@barefootjs/client`, aliases included) that is itself a top-level statement
+  of the ref body. Writes inside an `if`, a loop, an event listener, a timer or
+  any other closure are ignored, and so is every write after a statement that
+  can `return` / `throw` early (an early-return guard, a `try` / loop /
+  `switch` that can return).
+- **Nothing undoes it** — a later `el.removeAttribute('<name>')` /
+  `delete el.dataset.<key>` (conditional or not) cancels the write.
 - **The element's JSX does not render that attribute in any form.** An
   attribute the JSX renders (e.g. a `data-state="closed"` literal an effect
   later overwrites) is out of scope: its first effect run commonly computes
   the same value, so the divergence is not decidable here.
 - **The element has no spread** (`{...rest}` could render the attribute).
+- **SSR renders the element** — one inside a client-only conditional or loop
+  (the IR's `clientOnly`, e.g. `{/* @client */ open() && <span ref={…} />}`)
+  never reaches the server HTML, so the check runs on the finished IR.
+
+A handler shared by several elements reports each write once, at the write,
+naming every element whose JSX lacks the attribute.
 
 ```
-error[BF063]: The ref callback writes 'data-mounted' on mount, but this element's JSX never renders it.
+error[BF063]: The ref callback writes 'data-mounted' on mount, but the JSX of <div> at 5:9 never renders it.
 
   --> src/components/Panel.tsx:3:5
    |

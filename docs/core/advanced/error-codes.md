@@ -328,7 +328,7 @@ See [API Reference](./api-reference.md).
 
 ### BF063 — Ref Callback Writes an Attribute the JSX Never Renders
 
-An element's `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` or `el.dataset.<key> = …`, at the top level of the ref body or of a `createEffect` / `onMount` directly inside it), and the element's JSX never renders that attribute. A `ref` callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it. Fires on every adapter, including Hono. Not triggered by a conditional or deferred write (an `if`, an event listener, a timer), a write to another node, an attribute the JSX renders in any form, or an element with a spread.
+An element's `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` or `el.dataset.<key> = …`, at the top level of the ref body or of a `createEffect` / `onMount` directly inside it), and the element's JSX never renders that attribute. A `ref` callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it. Fires on every adapter, including Hono. Not triggered by a conditional or deferred write (an `if`, a write after an early `return` / `throw`, an event listener, a timer), a write a later `removeAttribute` / `delete el.dataset.<key>` undoes, a write to another node, an attribute the JSX renders in any form, an element with a spread, or an element inside a `/* @client */` conditional or loop (SSR never renders it). A handler shared by several elements is reported once per write, naming each element.
 
 ```tsx
 // ❌ BF063

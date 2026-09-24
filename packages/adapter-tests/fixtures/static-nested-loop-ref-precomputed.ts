@@ -43,7 +43,7 @@ export function StaticNestedLoopRefPrecomputed(props: { items: Item[] }) {
       {props.items.map(item => (
         <li key={item.id}>
           {item.children.map(child => (
-            <span key={child.id} ref={trackMount}>{child.id}:{count()}</span>
+            <span key={child.id} data-tracked="0" ref={trackMount}>{child.id}:{count()}</span>
           ))}
         </li>
       ))}
@@ -55,6 +55,6 @@ export function StaticNestedLoopRefPrecomputed(props: { items: Item[] }) {
     items: [{ id: 1, children: [{ id: 11 }, { id: 12 }] }],
   },
   expectedHtml: `
-    <ul bf-s="test" bf="s4"><li bf="s3" data-key="1"><span bf="s2" data-key-1="11"><!--bf:s0-->11<!--/-->:<!--bf:s1-->0<!--/--></span><span bf="s2" data-key-1="12"><!--bf:s0-->12<!--/-->:<!--bf:s1-->0<!--/--></span></li></ul>
+    <ul bf-s="test" bf="s4"><li bf="s3" data-key="1"><span bf="s2" data-key-1="11" data-tracked="0"><!--bf:s0-->11<!--/-->:<!--bf:s1-->0<!--/--></span><span bf="s2" data-key-1="12" data-tracked="0"><!--bf:s0-->12<!--/-->:<!--bf:s1-->0<!--/--></span></li></ul>
   `,
 })
