@@ -121,19 +121,16 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'The SelectValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it (same shape as combobox).',
     limitation: 'ref-effect-attr-state-ssr',
   },
-  // The mirrored `sorted` attribute this row used to record is fixed; what
-  // the quarantine masked underneath is a second, unrelated mechanism: each
-  // keyed row's hydration effect rewrites the forwarded cell text with
-  // `textContent`, which discards the `<!--bf:^sN-->…<!--/-->` slot markers
-  // the server emitted around `{payment.id}` etc. Measured on the base
-  // commit with the quarantine bypassed: both diffs were present; only the
-  // marker one remains.
-  'data-table': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'Row hydration rewrites each forwarded cell text with textContent, dropping the <!--bf:^sN--> slot markers SSR emitted; the text itself is unchanged.',
-    limitation: 'loop-row-child-text-children-markers-dropped',
-  },
+  // `data-table`'s two masked mechanisms both graduated: the mirrored
+  // `sorted` attribute (fixed earlier), then (#3064) each keyed row's
+  // forwarded-cell hydration effect, which used to rewrite the cell with
+  // `.textContent =` on every run — including its own first run — discarding
+  // the `<!--bf:^sN-->…<!--/-->` slot markers the server emitted around
+  // `{payment.id}` etc. Fixed by patching through the marker (`$t`'s
+  // resolved Text node, `.data =`) instead
+  // (`control-flow/shared.ts`'s `buildChildrenTextEffect`/
+  // `stringifyChildrenTextEffect`); the fixture's regenerated snapshots are
+  // this fix's regression test.
   // `dialog` / `dropdown-menu` / `popover` / `portal` graduated (#3059):
   // the compiler now recognizes the `ref`-callback SSR-portal pattern
   // structurally (`ssrPortalOwnerScope`, `isSsrPortalRefCallback` in

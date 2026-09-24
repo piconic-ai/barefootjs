@@ -12,8 +12,8 @@
  *   control-flow.ts -> control-flow/{plan,stringify}/* -> shared.ts
  */
 
-import type { LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
-import type { IRLoopChildComponent, LoopParamBinding } from '../../types.ts'
+import type { LoopChildBindings, LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
+import type { IRLoopChildComponent, IRExpression, IRNode, LoopParamBinding } from '../../types.ts'
 import { preambleAnalysisText } from '../../types.ts'
 import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
 import { irChildrenToJsExpr, jsxChildrenPropGetterExpr } from '../html-template.ts'
@@ -21,7 +21,7 @@ import { spliceChildValue } from '../safe-html.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
-import type { LoopChildRefBinding, PreambleRegionPlan } from './plan/loop.ts'
+import type { LoopChildRefBinding, PreambleRegionPlan, NestedChildrenTextEffect } from './plan/loop.ts'
 import type { PreambleRegionSource } from '../../types.ts'
 import {
   extractFreeIdentifiersFromText,
@@ -406,12 +406,85 @@ export function buildCompSelector(comp: { slotId?: string | null; name: string }
  * For new elements (CSR): replaces placeholders with createComponent.
  * For SSR elements (hydration): finds scope elements and calls initChild.
  */
+/**
+ * Whether a loop row's collected bindings need a `ReactiveEffectsPlan` at
+ * all (#3143). The three-field check (`reactiveAttrs` / `reactiveTexts` /
+ * `conditionals`) was independently duplicated across the plain, static,
+ * composite and component-root loop builders — see CLAUDE.md's "One
+ * decision, two implementations" note. This is the single implementation;
+ * builders that build their own `LoopChildBindings`-shaped value (e.g. a
+ * `BranchLoop`'s `.bindings`) call it too since the field shape is shared.
+ */
+export function hasReactiveLoopBindings(bindings: LoopChildBindings): boolean {
+  return bindings.reactiveAttrs.length > 0
+    || bindings.reactiveTexts.length > 0
+    || bindings.conditionals.length > 0
+}
+
 /** Check if an IR node is a conditional whose branches are text/expression only. */
 export function isTextOnlyConditional(node: { type: string; [k: string]: any }): boolean {
   if (node.type !== 'conditional') return false
   const checkNode = (n: { type: string; [k: string]: any }): boolean =>
     n.type === 'text' || n.type === 'expression' || (n.type === 'conditional' && isTextOnlyConditional(n))
   return checkNode(node.whenTrue) && checkNode(node.whenFalse)
+}
+
+/**
+ * Decide which `NestedChildrenTextEffect` shape (`./plan/loop.ts`) applies to a nested/forwarded
+ * child component's text-only `children` (#3064). Called only once the
+ * caller has already confirmed the children are text-only AND reference the
+ * loop's item/index (`childrenRefsLoop` at both call sites below) — this is
+ * the single implementation both used to duplicate (`build-component-loop.ts`'s
+ * `nestedComps` map and `emitComponentAndEventSetup` here), one for
+ * component-root loops, one for composite loops.
+ *
+ * `rawChildrenExpr` is the already-computed `irChildrenToJsExpr(children)`
+ * (both call sites need it for their own `childrenFreeIds` gate too, so it's
+ * passed in rather than recomputed) — used verbatim for the `'textContent'`
+ * fallback; each `'markers'` patch instead re-derives its OWN wrapped
+ * expression from just that one child, not the joined array.
+ */
+export function buildChildrenTextEffect(
+  children: readonly IRNode[],
+  rawChildrenExpr: string,
+  wrap: (expr: string) => string,
+): NestedChildrenTextEffect {
+  const exprChildren = children.filter((c): c is IRExpression => c.type === 'expression')
+  const hasConditional = children.some(c => c.type === 'conditional')
+  if (!hasConditional && exprChildren.length > 0 && exprChildren.every(c => c.slotId != null)) {
+    return {
+      kind: 'markers',
+      slotPatches: exprChildren.map(c => ({ slotId: c.slotId!, wrappedExpr: wrap(c.expr) })),
+    }
+  }
+  return { kind: 'textContent', wrappedChildren: wrap(rawChildrenExpr) }
+}
+
+/**
+ * Stringify a `NestedChildrenTextEffect` into the effect-only snippet
+ * (everything after `initChild(...)`/`upsertChild(...)` inside the
+ * `if (__c) { ... }` guard) — callers embed it in their own surrounding
+ * `{ const __c = <lookup>; if (__c) { ...; <this> } }` wrapper, since how
+ * `__c` is obtained differs (component-root loops resolve it via
+ * `qsa` + an explicit `initChild`; composite loops resolve AND init it in
+ * one `upsertChild` call).
+ *
+ * The `'textContent'` branch is byte-identical to the pre-#3064 inline
+ * emission at both call sites, so a row whose forwarded children mix in a
+ * text-only conditional (the one shape this fix doesn't cover, see
+ * `NestedChildrenTextEffect`'s docstring) keeps its exact prior output.
+ */
+export function stringifyChildrenTextEffect(effect: NestedChildrenTextEffect): string {
+  if (effect.kind === 'markers') {
+    const { slotPatches } = effect
+    const ids = slotPatches.map(p => `'${p.slotId}'`).join(', ')
+    const varNames = slotPatches.map((_, i) => `__ct${i}`)
+    const writes = slotPatches
+      .map((p, i) => `if (${varNames[i]}) ${varNames[i]}.data = String(${p.wrappedExpr} ?? '')`)
+      .join('; ')
+    return `{ const [${varNames.join(', ')}] = $t(__c, ${ids}); createEffect(() => { ${writes} }) }`
+  }
+  return `createEffect(() => { const __v = ${effect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') })`
 }
 
 /**
@@ -465,8 +538,8 @@ export function emitComponentAndEventSetup(
     const upsertCall = `${upsertFn}(${elVar}, '${nameForRegistryRef(comp.name)}', ${slotIdLit}, ${propsExpr}${keyArg}, __scope)`
 
     if (childrenRefsLoop) {
-      const wrappedChildren = wrap(rawChildrenExpr!)
-      ls.push(`${indent}{ const __c = ${upsertCall}; if (__c) { createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+      const effect = buildChildrenTextEffect(comp.children!, rawChildrenExpr!, wrap)
+      ls.push(`${indent}{ const __c = ${upsertCall}; if (__c) { ${stringifyChildrenTextEffect(effect)} } }`)
     } else {
       ls.push(`${indent}${upsertCall}`)
     }

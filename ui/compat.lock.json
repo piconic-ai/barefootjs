@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 444,
+    "totalFixtures": 447,
     "fixtures": {
       "combobox": {
         "blade": {
@@ -3327,9 +3327,23 @@
       },
       "loop-row-child-children-attrs": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "loop-row-child-children-attrs-frozen"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "loop-row-child-children-nested-reactive-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-nested-component-reactive-prop-dropped"
           ]
         }
       },
@@ -5399,6 +5413,10 @@
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
+      "loop-row-child-children-nested-reactive-prop": {
+        "description": "A nested component inside a loop-row child's forwarded children receives an outer signal's value as…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-reactive-prop.ts"
+      },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
@@ -5793,28 +5811,33 @@
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
     "loop-row-child-children-attrs-frozen": {
-      "title": "Reactive attributes on a JSX element passed as a loop-row child component's children are never patched after hydration",
-      "kind": "silent",
-      "given": "a `.map()` loop row that calls a child component passing a JSX element as `children`, where that element carries its own reactive attributes (e.g. `<Chip><a href={sig() === item ? …}>…</a></Chip>` inside `items.map(item => …)`)",
-      "expected": "the row's markup re-renders on every signal update the same way it does outside a loop: the forwarded element's attributes track the live signal value",
-      "actual": "keeps the attribute at whichever value the signal held when the row was built during SSR/CSR-template construction (no effect is ever emitted for it, so nothing touches it again after that), or on an adapter whose loop-array construction the shape also defeats (go-template: a function-body-local const array), drops the row entirely from SSR — same underlying gap, caught earlier",
+      "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
+      "kind": "refusal",
+      "given": "a static `.map()` loop row that calls a child component passing a JSX element as `children`, where that element reads an OUTER signal/memo — not just the row's own item (e.g. `<Chip><a href={active() === item ? …}>…</a></Chip>` inside `items.map(item => …)`, module- or function-scope array alike)",
+      "expected": "the row's markup — including the forwarded child element, evaluated against the signal's initial value — renders at SSR the same way a non-loop reference to the same signal does",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "loop-row-child-children-attrs"
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
-    "loop-row-child-text-children-markers-dropped": {
-      "title": "Forwarded text children of a child component inside a keyed loop row lose their SSR slot markers on hydration",
+    "loop-row-child-nested-component-reactive-prop-dropped": {
+      "title": "A reactive prop on a component nested in a loop-row child's forwarded children is dropped at SSR",
       "kind": "silent",
-      "given": "a keyed `.map()` row whose child component call receives parent-owned reactive text as `children` (`<TableRow><TableCell>{payment.id}</TableCell></TableRow>`)",
-      "expected": "the server HTML and the hydrated DOM carry the same `<!--bf:^sN-->…<!--/-->` slot markers around the forwarded text",
-      "actual": "drops the markers: the row hydration effect rewrites each child root with `textContent` on its first run, so the hydrated cell holds a bare text node where the server HTML had the marker pair (the text itself is unchanged)",
+      "given": "a static `.map()` loop row that calls a child component with forwarded JSX `children`, where those children nest another component whose prop reads a signal or memo (e.g. `<Chip><Mark on={highlight()}>{o.label}</Mark></Chip>` inside `opts.map(o => …)`)",
+      "expected": "the nested component renders with the prop's initial value at SSR, the same as outside a loop",
+      "actual": "renders the nested component with the prop's zero value instead (the attribute it guards is missing), because the row's baked child-component construction only carries literal and boolean-shorthand props",
       "fixtures": [
-        "data-table"
+        "loop-row-child-children-nested-reactive-prop"
       ],
-      "adapters": []
+      "adapters": [
+        "go-template"
+      ]
     },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",

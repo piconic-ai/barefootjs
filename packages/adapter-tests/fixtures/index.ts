@@ -726,6 +726,13 @@ import { fixture as compositeRowChildRestBagPropHoisted } from './composite-row-
 // `fixture-hydrate-quarantine.ts` (fixture-only, per CLAUDE.md's
 // "reproducible defect lands as a fixture" rule — not fixed here).
 import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-attrs'
+// #3164: the same forwarded-JSX-children shape as `loopRowChildChildrenAttrs`
+// above, but the forwarded children reference only the row's own item — no
+// outer signal — and the loop's source array is a function-body-local
+// const. Regression pin for go-template's array-source-scope fix.
+import { fixture as loopRowChildChildrenFnScopeArray } from './loop-row-child-children-fn-scope-array'
+import { fixture as loopRowChildChildrenNestedShapes } from './loop-row-child-children-nested-shapes'
+import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-child-children-nested-reactive-prop'
 // A child inside a reactive conditional branch that is active at
 // hydration must be initialized once, by its branch (it used to be
 // initialized twice: its onMount listener double-counted and one instance
@@ -1209,6 +1216,9 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildRestBagProp,
   compositeRowChildRestBagPropHoisted,
   loopRowChildChildrenAttrs,
+  loopRowChildChildrenFnScopeArray,
+  loopRowChildChildrenNestedShapes,
+  loopRowChildChildrenNestedReactiveProp,
   conditionalChildListenerCleanup,
   diamondPropagation,
 ]

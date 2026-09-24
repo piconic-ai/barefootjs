@@ -2,27 +2,29 @@
  * Stringify a `ComponentLoopPlan` to source lines.
  *
  * Two output shapes (preserved byte-identical from the legacy
- * `emitComponentLoopReconciliation`):
+ * `emitComponentLoopReconciliation` for the case it covered):
  *
- *   nestedComps.length === 0 (simple) — two-line renderItem body:
+ *   nestedComps.length === 0 AND reactiveEffects === null (simple) —
+ *   two-line renderItem body:
  *     <i>mapArray(() => <arr>, <container>, <keyFn>, (<head>, <idx>, __existing) => {
  *     <i>  <unwrap?>
  *     <i>  if (__existing) { initChild('<C>', __existing, <props>); return __existing }
  *     <i>  return createComponent('<C>', <props>, <key>)
  *     <i>})
  *
- *   nestedComps.length >  0 (nested) — SSR/CSR split:
+ *   otherwise (nested comps and/or the root's own reactiveEffects) —
+ *   SSR/CSR split:
  *     <i>mapArray(...) => {
  *     <i>  <unwrap?>
  *     <i>  if (__existing) {
  *     <i>    initChild('<C>', __existing, <props>)
  *     <i>    {<each nested initChild + optional createEffect>}
- *     <i>    <stringifyReactiveEffects on __existing if childConditionals>
+ *     <i>    <stringifyReactiveEffects on __existing if reactiveEffects>
  *     <i>    return __existing
  *     <i>  }
  *     <i>  const __csrEl = createComponent('<C>', <props>, <key>)
  *     <i>  {<each nested initChild + optional createEffect>}
- *     <i>  <stringifyReactiveEffects on __csrEl if childConditionals>
+ *     <i>  <stringifyReactiveEffects on __csrEl if reactiveEffects>
  *     <i>  return __csrEl
  *     <i>})
  *
@@ -33,6 +35,7 @@
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
+import { stringifyChildrenTextEffect } from '../shared.ts'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {
@@ -47,7 +50,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     componentPropsExpr,
     keyExpr,
     nestedComps,
-    childConditionalEffects,
+    reactiveEffects,
     profileLoopId,
     mapPreambleWrapped,
   } = plan
@@ -64,7 +67,17 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
 
   const scopedComp = nameForRegistryRef(componentName)
 
-  if (nestedComps.length === 0) {
+  // #3143: the "simple" 2-line shape must be reserved for a row with
+  // NEITHER nested comps NOR any reactive effect of its own (attrs/texts on
+  // an element forwarded as ITS OWN `children`, or a reactive conditional
+  // in the row) — it returns straight from `initChild`/`createComponent`
+  // with no handle to run an effect against. Gating on `nestedComps.length
+  // === 0` alone (the pre-#3143 condition) silently skipped `reactiveEffects`
+  // whenever a component-root loop had no nested child COMPONENTS, which is
+  // exactly the `<Chip><a href={...}>...</a></Chip>` shape: `<a>` isn't a
+  // component, so `nestedComps` was always empty, and the "simple" path
+  // never even looked at `reactiveEffects`.
+  if (nestedComps.length === 0 && !reactiveEffects) {
     lines.push(`    if (__existing) { initChild('${scopedComp}', __existing, ${componentPropsExpr}); return __existing }`)
     lines.push(`    return createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
     lines.push(`  }, '${markerId}'${loopBfId})`)
@@ -75,8 +88,8 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   lines.push(`    if (__existing) {`)
   lines.push(`      initChild('${scopedComp}', __existing, ${componentPropsExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '      ', '__existing', nc)
-  if (childConditionalEffects) {
-    stringifyReactiveEffects(lines, childConditionalEffects, { indent: '      ', elVar: '__existing' })
+  if (reactiveEffects) {
+    stringifyReactiveEffects(lines, reactiveEffects, { indent: '      ', elVar: '__existing' })
   }
   lines.push(`      return __existing`)
   lines.push(`    }`)
@@ -84,8 +97,8 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   // CSR side
   lines.push(`    const __csrEl = createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '    ', '__csrEl', nc)
-  if (childConditionalEffects) {
-    stringifyReactiveEffects(lines, childConditionalEffects, { indent: '    ', elVar: '__csrEl' })
+  if (reactiveEffects) {
+    stringifyReactiveEffects(lines, reactiveEffects, { indent: '    ', elVar: '__csrEl' })
   }
   lines.push(`    return __csrEl`)
   lines.push(`  }, '${markerId}'${loopBfId})`)
@@ -94,7 +107,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
 function emitNestedInit(lines: string[], indent: string, parentVar: string, nc: NestedComponentInit): void {
   const scopedNc = nameForRegistryRef(nc.componentName)
   if (nc.childrenTextEffect) {
-    lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); createEffect(() => { const __v = ${nc.childrenTextEffect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+    lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); ${stringifyChildrenTextEffect(nc.childrenTextEffect)} } }`)
   } else {
     lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) initChild('${scopedNc}', __c, ${nc.propsExpr}) }`)
   }

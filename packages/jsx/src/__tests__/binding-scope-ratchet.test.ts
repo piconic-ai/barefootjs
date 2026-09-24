@@ -120,7 +120,7 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // for a follow-up rather than fixed speculatively here.
   'packages/adapter-go-template/src/adapter/expr/helper-inline.ts': { 'localConstants.find(': 1 },
   'packages/adapter-go-template/src/adapter/go-template-adapter.ts': {
-    // FLOOR: of the 5 `.find(` sites — `resolveDynamicPropValue` (child-prop
+    // FLOOR: of the 6 `.find(` sites — `resolveDynamicPropValue` (child-prop
     // passthrough, called only from `generateNewPropsFunction`'s
     // `emitStaticChildInstances`), `computeDerivedConstFields` and
     // `isStringExpr` (same `generateNewPropsFunction` constructor-context
@@ -132,17 +132,28 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
     // Stage 4 (a real gap: an enclosing loop's own item param could shadow
     // a same-named module const and misfire a BF101) — MIGRATED in place,
     // the `.find(` call itself stays as the legitimate lookup once shadow
-    // is ruled out.
-    'localConstants.find(': 5,
+    // is ruled out. The 6th (#3164) is `resolveLoopArraySourceConst`'s own
+    // `.find(` — it REPLACES an ad-hoc `.find()` that `emitStaticBodyWrappers`
+    // used to inline directly (module-scope-only, and with no shadow guard
+    // at all), routing it through the same shape-1 shadow-name check as
+    // `getBakedStaticChildLoop` below instead — a consolidation onto the
+    // existing floor bucket, not a new unguarded use.
+    'localConstants.find(': 6,
     // #2482 Stage 3: `loopParamStack` eliminated entirely (0, down from 35)
     // — replaced by the threaded `this.scope: BindingScope`. The remaining
-    // 2 `staticLoopSourceBoundNames` uses (down from 3) are the
-    // `getBakedStaticChildLoop` shadow guard shared with two call sites
-    // OUTSIDE the live `renderLoop` tree walk (no live `scope` to consult
-    // there — shape 1) — a genuinely-legitimate surviving use, confirmed
-    // FLOOR in Stage 4 (`primeCompileState`'s own comment documents the
-    // three-call-site agreement requirement).
-    staticLoopSourceBoundNames: 2,
+    // 3 `staticLoopSourceBoundNames` uses (down from 3, then #3164 added a
+    // third) are the `getBakedStaticChildLoop` shadow guard PLUS (#3164)
+    // `resolveLoopArraySourceConst`'s own guard, shared across call sites
+    // OUTSIDE the live `renderLoop` tree walk as well as inside it (no live
+    // `scope` to consult in the `emitStaticBodyWrappers` prepass — shape 1;
+    // reused as-is, rather than threaded, at the one live-walk call site
+    // for the same reason `getBakedStaticChildLoop` already is: the coarser
+    // whole-component check only ever over-excludes, never silently wrong,
+    // per this ledger's shape-1 rule) — a genuinely-legitimate surviving
+    // use, confirmed FLOOR in Stage 4 (`primeCompileState`'s own comment
+    // documents the three-call-site agreement requirement) and extended by
+    // one more call site in #3164.
+    staticLoopSourceBoundNames: 3,
   },
   // FLOOR (shape 1 for the field; the doc-only `loopParamStack` mention this
   // file's top-level comment used to carry was reworded in Stage 4 — that

@@ -15,8 +15,13 @@
 // declared props patch correctly, only the attributes on the *elements
 // passed to the child as `children`* are missing.
 //
-// `compileJSX` returns zero diagnostics for this shape (`kind: 'silent'`
-// on the registry entry) — see
+// That CSR-hydration gap is fixed (#3143). What the registry entry now
+// tracks is narrower and go-template-specific: that adapter's own
+// per-row forwarded-children rendering (a companion `{{define}}`
+// executed via `bf_tmpl`) has no path back to the parent component's
+// signal at all, so it refuses to compile this shape with a loud BF101
+// (`kind: 'refusal'`) rather than silently dropping the loop from SSR
+// (#3170) — see
 // `packages/adapter-tests/limitations/loop-row-child-children-attrs-frozen.ts`.
 
 import { createSignal } from '@barefootjs/client'
