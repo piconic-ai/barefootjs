@@ -136,7 +136,7 @@ helper render_component => sub ($c, $component, %opts) {
     }
 
     my $bf = $c->bf;
-    my $scope_id = $component . '_' . substr(rand() =~ s/^0\.//r, 0, 6);
+    my $scope_id = $component . '_' . BarefootJS::scope_id_suffix();
     $bf->_scope_id($scope_id);
 
     # Set props for bf-p attribute (used by client JS for hydration)
@@ -156,7 +156,7 @@ helper render_component => sub ($c, $component, %opts) {
             my $slot_id = delete $props->{_bf_slot};
             my $child_scope = $slot_id
                 ? $scope_id . '_' . $slot_id
-                : $child_template . '_' . substr(rand() =~ s/^0\.//r, 0, 6);
+                : $child_template . '_' . BarefootJS::scope_id_suffix();
             $child_bf->_scope_id($child_scope);
             $child_bf->_is_child(1);
             # Share script collector with parent
@@ -497,7 +497,6 @@ my $BLOG_DATA = do {
     my $f = app->home->child('dist/blog-data.json');
     -r $f ? decode_json($f->slurp) : { posts => [], listItems => [], allTags => [] };
 };
-sub _rand6 { return substr(rand() =~ s/^0\.//r, 0, 6) }
 
 # Register a renderer for a flat (non-`ui/*`) child component the build manifest
 # knows about (`post_list_item` → PostListItem, `reader_toolbar` → ReaderToolbar).
@@ -516,7 +515,7 @@ sub _register_blog_child ($c, $parent_bf, $slot, $component, $extra_seed = {}) {
         my $slot_id  = delete $props->{_bf_slot};
         my $data_key = delete $props->{key};
         $child->_data_key($data_key) if defined $data_key;
-        $child->_scope_id($slot_id ? $host_scope . '_' . $slot_id : $component . '_' . _rand6());
+        $child->_scope_id($slot_id ? $host_scope . '_' . $slot_id : $component . '_' . BarefootJS::scope_id_suffix());
         $child->_is_child(1);
         if ($slot_id) { $child->_bf_parent($host_scope); $child->_bf_mount($slot_id) }
         $child->_child_renderers($parent_bf->_child_renderers);
@@ -555,7 +554,7 @@ sub _register_blog_child ($c, $parent_bf, $slot, $component, $extra_seed = {}) {
 helper blog_island => sub ($c, $component, $props = {}, $extra = {}, $children = {}) {
     my $root = $c->bf;
     my $bf = BarefootJS->new($c, { backend => $root->backend });
-    $bf->_scope_id($component . '_' . _rand6());
+    $bf->_scope_id($component . '_' . BarefootJS::scope_id_suffix());
     $bf->_props($props) if %$props;
     $bf->_scripts($root->_scripts);
     $bf->_script_seen($root->_script_seen);

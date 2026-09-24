@@ -431,7 +431,7 @@ function buildChildRenderers(
     lines.push(`    if (defined $slot) {`)
     lines.push(`      $child_bf->_scope_id($host_scope . "_$slot");`)
     lines.push(`    } else {`)
-    lines.push(`      $child_bf->_scope_id('${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
+    lines.push(`      $child_bf->_scope_id('${componentName}_' . BarefootJS::scope_id_suffix());`)
     lines.push(`    }`)
     // Seed statically-derived defaults under the caller's props (#1897) so
     // undeclared optional props / signals don't abort strict vars — through

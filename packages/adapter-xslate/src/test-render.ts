@@ -427,7 +427,7 @@ function buildChildRenderers(
     // A loop child (no slot) gets a fresh `<ComponentName>_<rand>` id per
     // iteration — the PascalCase name is what `normalizeHTML` canonicalises to
     // `<ComponentName>_*`; a slotted child derives from the parent scope.
-    lines.push(`    $child_bf->_scope_id($slot_id ? $host_scope . '_' . $slot_id : '${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
+    lines.push(`    $child_bf->_scope_id($slot_id ? $host_scope . '_' . $slot_id : '${componentName}_' . BarefootJS::scope_id_suffix());`)
     lines.push(`    $child_bf->_is_child(1);`)
     lines.push(`    if ($slot_id) { $child_bf->_bf_parent($host_scope); $child_bf->_bf_mount($slot_id); }`)
     // (#1897) A child template may itself call `$bf.render_child(...)`
