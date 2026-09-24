@@ -89,6 +89,7 @@ import {
   buildMetadata,
   listComponentFunctions,
   resolveRelativeImportToFile,
+  isOpaqueLocalAccessorName,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -2041,22 +2042,65 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * `'interface{}'` for a loop over an inline primitive-literal array whose body
-   * renders the bare item (`[1,2,3,4,5].map(n => …{n}…)`), else null. Such
-   * scalar-item loops have no datum fields, so the value is carried on the
-   * wrapper's synthetic `BfLoopItem`; object/field loops and non-literal sources
-   * keep the datum-field path.
+   * Resolve a loop's array-source NAME to the local const it references —
+   * module-scope or function-scope alike (#2946/#3164). The one shared
+   * lookup every loop-array-baking call site uses (constructor-time value
+   * baking in `emitStaticBodyWrappers`, element-shape detection in
+   * `resolveLoopArraySourceParsed`) so they can't drift on what counts as a
+   * safely-bakeable const: never a name an enclosing loop's own callback
+   * param shadows (the same coarse whole-component shadow-name set
+   * `getBakedStaticChildLoop` already consults, for the same reason — this
+   * runs both inside and outside the live tree walk), never a binding
+   * mutated after its declaration (#2910 — its initializer is a stale
+   * snapshot).
+   */
+  private resolveLoopArraySourceConst(name: string | undefined): ConstantInfo | null {
+    if (!name || this.state.staticLoopSourceBoundNames.has(name)) return null
+    return (
+      this.state.localConstants.find(
+        c =>
+          c.name === name &&
+          (c.origin?.scope === 'module' || c.origin?.scope === 'init') &&
+          !c.mutatedAfterDeclaration,
+      ) ?? null
+    )
+  }
+
+  /**
+   * A loop-array-source `ParsedExpr` is either an inline array-literal
+   * (`[1,2,3].map(...)`) or a bare identifier naming a local const whose
+   * initializer IS an array-literal. Resolves the latter to the former
+   * (via `resolveLoopArraySourceConst`) so every caller that needs to
+   * inspect the array's element shape (`scalarLiteralLoopGoType`) sees
+   * through the named reference the same way constructor-time baking does,
+   * instead of only working for an inline literal with no name.
+   */
+  private resolveLoopArraySourceParsed(arrayParsed: ParsedExpr | undefined): ParsedExpr | undefined {
+    if (!arrayParsed || arrayParsed.kind !== 'identifier') return arrayParsed
+    const local = this.resolveLoopArraySourceConst(arrayParsed.name)
+    return local?.parsed ?? arrayParsed
+  }
+
+  /**
+   * `'interface{}'` for a loop over a primitive-literal array — inline
+   * (`[1,2,3,4,5].map(n => …{n}…)`) or a named local const resolved through
+   * `resolveLoopArraySourceParsed` (module- or function-scope, #3164) —
+   * whose body renders the bare item, else null. Such scalar-item loops have
+   * no datum fields, so the value is carried on the wrapper's synthetic
+   * `BfLoopItem`; object/field loops and non-literal sources keep the
+   * datum-field path.
    */
   private scalarLiteralLoopGoType(
     arrayParsed: ParsedExpr | undefined,
     itemType: TypeInfo | null | undefined,
   ): string | null {
     if (this.resolveLoopDatumFields(itemType).length > 0) return null
-    if (!arrayParsed) return null
-    if (arrayParsed.kind !== 'array-literal' || arrayParsed.elements.length === 0) {
+    const resolved = this.resolveLoopArraySourceParsed(arrayParsed)
+    if (!resolved) return null
+    if (resolved.kind !== 'array-literal' || resolved.elements.length === 0) {
       return null
     }
-    for (const el of arrayParsed.elements) {
+    for (const el of resolved.elements) {
       const isStr = el.kind === 'literal' && el.literalType === 'string'
       // A numeric literal, or a unary-minus wrapping one (`-1`).
       const isNum =
@@ -2938,6 +2982,75 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
+  /**
+   * Does anything inside a static loop's forwarded body-children tree call
+   * a signal getter or memo (`callsReactiveGetters`, computed by the
+   * analyzer — #940/#942)?
+   * Such a reference has no live binding once `emitStaticBodyWrappers` bakes
+   * this static array's rows ahead of time: the row's forwarded children
+   * render through a SEPARATE `bf_tmpl`-executed companion define
+   * (`queueLoopBodyChildrenDefine`) whose data is the row's own item, with
+   * no path back to the parent's signal fields (Go's `$` resets on every
+   * `ExecuteTemplate` call — `runtime/bf.go`'s `TemplateFuncMap`). Baking
+   * the array anyway would let `go run` crash at template-EXECUTE time
+   * (`can't evaluate field ... in type ...`), so `emitStaticBodyWrappers`
+   * refuses the loop with BF101 instead (`loop-row-child-children-attrs-frozen`).
+   * The walk descends through every node shape that already bakes and
+   * renders correctly here (a nested component's children, a
+   * conditional and both branches, a nested loop, a fragment) and flags
+   * only an actual reactive read on the way — flagging those shapes
+   * wholesale would silently empty loops that render fine on `main`
+   * (e.g. `<Chip><Badge>{o.label}</Badge></Chip>`). Only shapes it can't
+   * see into (a slot, a provider, an async boundary, an if-statement) are
+   * treated as unsafe. Reaching outer reactive state from a loop-forwarded
+   * child on Go is a separate, unsolved capability gap (#3164 fixes the
+   * array-source scope only), not something this check attempts to
+   * resolve.
+   */
+  private bodyChildrenReferenceOuterReactiveState(nodes: readonly IRNode[], scalarRow = false): boolean {
+    for (const node of nodes) {
+      switch (node.type) {
+        case 'text':
+          continue
+        case 'expression':
+          if (node.callsReactiveGetters) return true
+          continue
+        case 'element':
+          if (node.attrs.some(a => a.callsReactiveGetters)) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        case 'component':
+          // A scalar-item row's companion define runs with the bare item as
+          // its data (`bf_tmpl … .BfLoopItem`), so a nested component's
+          // slot field on the row wrapper is out of reach there. Its props
+          // are not checked: the row's child construction below
+          // (`collectBodyChildInstances`) happens in the parent's constructor,
+          // never inside the companion define, so an outer read cannot crash
+          // it. It only carries literal and boolean props, though, so a
+          // reactive prop is dropped to its zero value — a known gap
+          // (`loop-row-child-nested-component-reactive-prop-dropped`), the
+          // same as on `main`, and far narrower than emptying the loop.
+          if (scalarRow) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        case 'conditional':
+          if (node.callsReactiveGetters) return true
+          if (this.bodyChildrenReferenceOuterReactiveState([node.whenTrue, node.whenFalse], scalarRow)) return true
+          continue
+        case 'loop':
+          if (node.callsReactiveGetters) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        case 'fragment':
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        default:
+          return true
+      }
+    }
+    return false
+  }
+
   private emitStaticBodyWrappers(
     lines: string[],
     ir: ComponentIR,
@@ -2945,18 +3058,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     staticWithBody: NestedComponentInfo[],
     emittedWrapperVars: Set<string>,
   ): void {
-    // Bake the module-const array into the constructor so wrappers get their
+    // Bake the array-source const into the constructor so wrappers get their
     // datum fields from the data (Input items carry only child-component params).
+    // The const can live at module scope OR be local to the component
+    // function body (#2946/#3164, `resolveLoopArraySourceConst`) — Go's
+    // `convertInitialValue` only needs the initializer's text/type, not
+    // where it's declared. This path used to accept module scope only, so
+    // a function-body-local array (`const opts = [...]` inside the
+    // component) baked nothing and the whole loop silently dropped from
+    // SSR (#3164).
     for (const nested of staticWithBody) {
-      const loopArray = nested.loopArray
-      const moduleConst = loopArray
-        ? (ir.metadata.localConstants ?? []).find(
-            c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
-          )
-        : null
+      // A forwarded child element reading an outer signal/memo (or, on a
+      // scalar-item row, a nested component) has no path back to it from
+      // the row's own companion define. Baking the rows would crash at
+      // `go run` time and skipping them would silently drop the loop from
+      // SSR, so refuse loudly instead (see the doc comment above).
       const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
-      let bakedValue = moduleConst?.type
-        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams, moduleConst.parsed)
+      if (nested.bodyChildren && this.bodyChildrenReferenceOuterReactiveState(nested.bodyChildren, !!scalarLoopType)) {
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop-row child component '${nested.name}' forwards JSX children that read an outer signal/memo (or, on a scalar-item row, nest a component). A static loop's forwarded children render through a per-row companion template that can't reach the parent component's own state on the Go template adapter.`,
+          loc: this.makeLoc(),
+          suggestion: {
+            message: 'Mark the loop /* @client */ so it renders in the browser, or pass the outer value into the loop-body component as its own prop.',
+          },
+        })
+        continue
+      }
+      const found = this.resolveLoopArraySourceConst(nested.loopArray)
+      const localConst = found?.value && found.type ? found : null
+      let bakedValue = localConst?.type
+        ? convertInitialValue(this.emitCtx, localConst.value!, localConst.type, ir.metadata.propsParams, localConst.parsed)
         : null
       // Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no named const,
       // so bake the literal slice directly (else SSR renders an empty loop).
@@ -5599,6 +5732,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // primitives.
     const lowered = lowerRegisteredCallNode(this.emitCtx, callee, args)
     if (lowered !== null) return lowered
+    // #3144: a zero-arg call to a component-body local bound to an opaque
+    // call (`const label = makeLabel(); {label()}`) is NOT a signal getter
+    // — checked before the signal-getter branch below, which would
+    // otherwise treat it as one and emit a struct field reference with no
+    // corresponding field.
+    if (
+      callee.kind === 'identifier' &&
+      args.length === 0 &&
+      isOpaqueLocalAccessorName(callee.name, this.state.localConstants)
+    ) {
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Call to '${callee.name}(...)' has no Go template lowering — '${callee.name}' is a local bound to an opaque call (not a signal/memo getter), so there is no struct field for its result in template scope.`,
+        loc: this.makeLoc(),
+        suggestion: {
+          message: `The reference adapter runs '${callee.name}()' at render time. Add /* @client */ to defer this read to the client, or pre-compute the value in the backend.`,
+        },
+      })
+      return ''
+    }
     // Signal call: count() -> .Count (or $.Count inside a loop). An env-signal
     // binding (`searchParams()`, or an aliased `sp()`) resolves to the canonical
     // `.SearchParams` field regardless of the JS name.
@@ -8759,9 +8913,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // A root component in a client component needs a scope comment for the
-    // hydration boundary.
+    // hydration boundary. #3141: this used to emit ONLY the opening marker
+    // — the missing end marker is the #2289 sibling-leak shape (queries
+    // from this scope could read into later siblings the parent owns).
+    // Matches `comp.needsScopeComment` (`IRComponent.needsScopeComment`,
+    // #3141's shared IR flag) whenever `comp` is literally the render root,
+    // which is the only case `ctx?.isRootOfClientComponent` is set true for
+    // outside an if-statement branch.
     if (ctx?.isRootOfClientComponent) {
-      return `{{bfScopeComment .}}${templateCall}`
+      return this.wrapComponentRootScopeComment(templateCall)
     }
     return templateCall
   }
@@ -8795,9 +8955,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Comment-based scope marker for fragment roots. The end marker
       // bounds the scope range so client-side queries don't leak onto
       // later siblings (#2289).
-      return `{{bfScopeComment .}}${children}{{bfScopeCommentEnd .}}`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a root component call
+   * (#3141) — both are "this scope has no DOM element of its own to carry
+   * a struct-derived scope id", so both lean on the same runtime helpers.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `{{bfScopeComment .}}${rendered}{{bfScopeCommentEnd .}}`
   }
 
   private renderSlot(slot: IRSlot): string {

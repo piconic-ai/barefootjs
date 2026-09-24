@@ -98,6 +98,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
+import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
@@ -564,7 +565,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   }
 
   emitComponent(node: IRComponent, _ctx: ErbRenderCtx, _emit: EmitIRNode<ErbRenderCtx>): string {
-    return this.renderComponent(node)
+    const rendered = this.renderComponent(node)
+    // #3141: see `wrapComponentRootScopeComment`'s docstring.
+    return node.needsScopeComment ? this.wrapComponentRootScopeComment(rendered) : rendered
   }
 
   emitFragment(node: IRFragment, _ctx: ErbRenderCtx, _emit: EmitIRNode<ErbRenderCtx>): string {
@@ -1498,9 +1501,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // End marker bounds the scope's sibling range -- without it, queries
       // from the fragment scope leak onto later siblings owned by the
       // parent (#2289). See `scope_comment_end` in barefoot_js.rb.
-      return `<%= bf.scope_comment %>${children}<%= bf.scope_comment_end %>`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a `needsScopeComment`
+   * component root (#3141) — both are "this scope has no DOM element of its
+   * own to carry bf-s/bf-p", so both lean on the same runtime helper pair.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `<%= bf.scope_comment %>${rendered}<%= bf.scope_comment_end %>`
   }
 
   private renderSlot(_slot: IRSlot): string {
@@ -1965,6 +1978,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       isLoopBoundName: (name) => this.isLoopBoundName(name),
       _isStringValueName: (name) => this._isStringValueName(name),
+      _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
     }

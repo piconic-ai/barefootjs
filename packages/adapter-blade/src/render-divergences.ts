@@ -41,12 +41,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A component-body const bound to an opaque call (`const label =
-  // makeLabel()`) and invoked in text position lowers to a bare template
-  // variable named after the const, with no diagnostic — the reference runs
-  // the accessor at render time. Escape twin:
-  // `opaque-local-accessor-call-client`.
-  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through
   // `BarefootJS::register_portal_element` / `bf.portals()` (an
@@ -64,12 +58,4 @@ export const renderDivergences: RenderDivergences = {
   // (#3160), so this is their entry again.
   combobox: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
   select: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  // A client component whose whole return is a child-component call: the
-  // reference wraps the child's output in the parent's `<!--bf-scope:...-->`
-  // comment pair (with the parent's props) so the parent hydrates; this
-  // adapter renders the child's output bare. `normalizeHTML` strips scope
-  // comments, so the byte comparison alone cannot see it — the explore
-  // adapter axis (`comment-root-child-slot`) shows the parent's forwarded
-  // handler doing nothing after hydration.
-  'component-root-client-scope': { limitation: 'component-root-client-scope-comment' },
 }

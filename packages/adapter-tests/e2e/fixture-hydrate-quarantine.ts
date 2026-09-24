@@ -36,14 +36,28 @@ export interface HydrateQuarantineEntry {
 }
 
 export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuarantineEntry>> = {
-  // #3107: a .map() loop row calls a child component with a JSX element
-  // as `children`; that element's own reactive attributes never get an
-  // effect at all, so they stay frozen at whatever the SSR render held.
-  // The fixture's `interactions` describe the CORRECT post-click state
-  // (see `fixtures/loop-row-child-children-attrs.ts`) and fail today.
-  'loop-row-child-children-attrs': {
+  // #3107/#3143: `loop-row-child-children-attrs` used to be quarantined
+  // here too — the forwarded `<a>`'s href/data-current attributes never
+  // patched after the toggle click, because the component-root loop
+  // builder never wired the row's own `reactiveAttrs`/`reactiveTexts` into
+  // an effect. Fixed (`build-component-loop.ts`'s `reactiveEffects`); the
+  // fixture's `interactions` now pass against the Hono reference this spec
+  // runs, so the row is gone. Go-template's OWN separate gap on the same
+  // fixture (a loop-forwarded child reading an outer signal has no path
+  // back to it from its per-row companion template) is unaffected by that
+  // fix and stays pinned under the same (narrowed) entry — now a loud
+  // BF101 build-time refusal (`conformance-pins.ts`, #3170) rather than a
+  // render divergence, but still an adapter-conformance concern, not a
+  // hydration-interactions one, so it has no row here.
+  // A diamond (one signal → two memos → one effect) is dispatched
+  // synchronously in subscription order with no topological stage, so the
+  // effect's first re-run sees the first memo updated and the second
+  // stale, and it runs three times per write. The fixture's `interactions`
+  // describe the CONTRACT (one run per write, consistent reads — see
+  // `fixtures/diamond-propagation.ts`) and fail today.
+  'diamond-propagation': {
     reason:
-      "the <a> children element's href/data-current attributes never patch after the toggle click — no effect is ever emitted for them, so they stay at their SSR values",
-    limitation: 'loop-row-child-children-attrs-frozen',
+      'after one click `.runs` reads 3 and `.glitches` reads 1 — the effect re-runs once per memo recompute plus once for its own subscription, and its first re-run observes `b` updated while `c` is stale',
+    limitation: 'diamond-propagation-glitch',
   },
 }
