@@ -477,9 +477,6 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
     }
 }
 
-# PascalCase → snake_case, mirroring the Mojo adapter's `toTemplateName`
-# (prefix every uppercase letter with `_`, lowercase the whole string,
-# strip the leading `_`): `ToastProvider` → `toast_provider`.
 # Random suffix for a scope id with no slot to derive it from
 # (`<Template>_<suffix>`). Always six digits: stringifying `rand()` and
 # stripping its `0.` breaks when Perl prints a small value in exponent form
@@ -489,6 +486,9 @@ sub scope_id_suffix () {
     return sprintf('%06d', int(rand(1_000_000)));
 }
 
+# PascalCase → snake_case, mirroring the Mojo adapter's `toTemplateName`
+# (prefix every uppercase letter with `_`, lowercase the whole string,
+# strip the leading `_`): `ToastProvider` → `toast_provider`.
 sub _snake_case ($name) {
     my $s = $name;
     $s =~ s/([A-Z])/_$1/g;
