@@ -83,4 +83,4 @@ jobs:
         run: cd packages/adapter-mojolicious && prove -lv -I ../adapter-perl/lib t/
 
       - name: Run unit tests
-        run: bun test packages/adapter-mojolicious
+        run: bun test --max-concurrency=8 packages/adapter-mojolicious
