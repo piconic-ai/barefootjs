@@ -161,4 +161,46 @@ export const conformancePins: ConformancePins = {
   'module-helper-boolcontext-call': [
     { code: 'BF102', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
+  // #3170: a static loop row that calls a child component, forwarding a
+  // JSX element as `children`, where that element reads an OUTER
+  // signal/memo (not just the row's own item). Used to compile clean and
+  // silently drop the whole loop from SSR (`render-divergences.ts`); now
+  // a loud BF101 instead — see `emitStaticBodyWrappers`'s
+  // `bodyChildrenReferenceOuterReactiveState` guard in
+  // `go-template-adapter.ts`. No verified escape twin exists yet;
+  // `/* @client */` on the loop should work in principle (it bypasses
+  // `emitStaticBodyWrappers` entirely, and the client-JS reactive-effect
+  // gap this same fixture used to pin for forwarded children is fixed —
+  // see `loop-row-child-children-attrs-frozen`'s history) but isn't
+  // pinned as a corpus fixture yet — same `unescapable` shape as
+  // `module-const-arrow-helper` above.
+  'loop-row-child-children-attrs': [
+    { code: 'BF101', severity: 'error', limitation: 'loop-row-child-children-attrs-frozen', unescapable: true },
+  ],
+  // #3063: a client-interactive component with a multi-return chain
+  // where one branch is a bare JSX fragment refuses ahead of
+  // `adapter.generate()` in the shared jsx-to-ir.ts phase (the client
+  // hydration claim can't tell branches apart — see the registry entry),
+  // so it is pinned identically on every adapter including Hono.
+  'conditional-return-fragment-branch': [
+    { code: 'BF029', severity: 'error', limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  ],
+  // #3144: a component-body local bound to an opaque call
+  // (`const label = makeLabel(); {label()}`), invoked in text position,
+  // refuses ahead of the generic signal-getter fallback in this
+  // adapter's own `call()` (`adapter/expr/emitters.ts` /
+  // `go-template-adapter.ts`) -- not a shared jsx-to-ir.ts refusal, since
+  // Hono's real JS runtime evaluates this shape correctly and must keep
+  // doing so.
+  'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
+  // #3142: a signal seeded from a member of an object-typed prop
+  // (`createSignal(initial.label)`) refuses in `convertInitialValue`
+  // (`adapter/value/value-lowering.ts`) instead of silently baking `nil` —
+  // go-template-only: the object prop's own Go type is `interface{}` (or,
+  // for a nested array of named types, would need a synthesized struct
+  // this baker doesn't build yet), so there is no `in.Initial.Label`
+  // field path to bake. The other eight DSL adapters and Hono already
+  // render this shape correctly.
+  'nested-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed', unescapable: true }],
+  'nested-prop-signal-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed', unescapable: true }],
 }

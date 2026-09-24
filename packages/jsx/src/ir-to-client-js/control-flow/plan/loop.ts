@@ -192,12 +192,17 @@ interface PlainLoopVariant extends DynamicLoopCommon {
  * Loop body is a single child component (with or without nested child
  * components inside it).
  *
- * `nestedComps.length === 0`  → simple two-line renderItem.
- * `nestedComps.length > 0`    → SSR/CSR split that initialises both the
- *                               outer component and each nested child.
+ * `nestedComps.length === 0 && reactiveEffects === null` → simple two-line
+ *                               renderItem.
+ * otherwise                   → SSR/CSR split that initialises the outer
+ *                               component, each nested child, and any
+ *                               reactive effect on the outer component's
+ *                               own forwarded children / conditionals.
  *
- * `childConditionalEffects` is non-null when the body contains reactive
- * conditionals; same plan shape as plain/composite `reactiveEffects`.
+ * `reactiveEffects` is non-null when the row has a reactive attr/text on an
+ * element forwarded as the ROOT component's own `children` (#3143) or a
+ * reactive conditional in the body; same plan shape as plain/composite
+ * `reactiveEffects`.
  */
 interface ComponentLoopVariant extends DynamicLoopCommon {
   kind: 'component'
@@ -209,8 +214,15 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
   keyExpr: string
   /** Nested child component initialisers; empty for the simple case. */
   nestedComps: NestedComponentInit[]
-  /** Reactive-effects plan for `childConditionals` inside the loop body. */
-  childConditionalEffects: ReactiveEffectsPlan | null
+  /**
+   * Reactive-effects plan for the loop ROOT component's own reactive attrs /
+   * texts / conditionals — i.e. bindings on elements forwarded as the root
+   * component's `children` (`<Chip><a href={...}>...</a></Chip>`, #3143),
+   * plus any reactive conditional in the row. Named to match
+   * `PlainLoopVariant.reactiveEffects` (not just `childConditionalEffects` —
+   * it used to carry only conditionals, before #3143 widened it).
+   */
+  reactiveEffects: ReactiveEffectsPlan | null
   /**
    * Profile-mode loop id (#1690, #1795 Phase 3) for the component loop's
    * `mapArray`. Undefined off → byte-identical (SR8).
@@ -321,10 +333,39 @@ export type CompositeLoopPlan = Extract<LoopPlan, { kind: 'composite' }>
 export type StaticLoopPlan = Extract<LoopPlan, { kind: 'static' }>
 
 /**
+ * How a loop-row nested/forwarded child component's text-only `children`
+ * should be kept in sync with the loop's per-row signal (#3064).
+ *
+ * `'markers'` (preferred): one patch per `expression`-type child, each
+ * writing through its own SSR-emitted `<!--bf:^sN-->…<!--/-->` marker pair
+ * via the marker-aware `$t` primitive — the row's own text markers and
+ * static text siblings (e.g. the `"$"` in a `${amount}` cell) are left
+ * untouched, matching how a parent-owned text patches everywhere else.
+ *
+ * `'textContent'` (legacy fallback): the whole joined value is written with
+ * a single `.textContent =` assignment, discarding any marker/text
+ * structure in the child root. Used only when the children mix in a
+ * text-only CONDITIONAL (`isTextOnlyConditional`) — which patches through
+ * its own `insert()`, not a stable per-slot marker this scheme can target —
+ * or, defensively, if some `expression` child was never granted a slot id.
+ *
+ * Built by `buildChildrenTextEffect` and stringified by
+ * `stringifyChildrenTextEffect` (both `../shared.ts`) — defined here, not
+ * there, so `shared.ts` (which the whole `plan`/`stringify` tree feeds data
+ * through, per this file's one-way dependency note) doesn't need a type
+ * import pointing back at `plan/loop.ts`, mirroring how `shared.ts` already
+ * imports `LoopChildRefBinding`/`PreambleRegionPlan` FROM here.
+ */
+export type NestedChildrenTextEffect =
+  | { readonly kind: 'markers'; readonly slotPatches: ReadonlyArray<{ readonly slotId: string; readonly wrappedExpr: string }> }
+  | { readonly kind: 'textContent'; readonly wrappedChildren: string }
+
+/**
  * One nested child component to initialise inside a renderItem body.
  * `childrenTextEffect` is non-null when the component's children are
  * text-equivalent AND reference the outer loop param — in that case the
- * stringifier emits a `createEffect` that updates the child's `textContent`.
+ * stringifier emits a reactive effect (marker-scoped where possible, #3064)
+ * that keeps the child's forwarded text in sync alongside `initChild`.
  */
 export interface NestedComponentInit {
   componentName: string
@@ -332,8 +373,8 @@ export interface NestedComponentInit {
   selector: string
   /** Pre-built props object expression for the nested component. */
   propsExpr: string
-  /** When non-null, emit a reactive textContent effect alongside `initChild`. */
-  childrenTextEffect: { wrappedChildren: string } | null
+  /** When non-null, emit a reactive children-text effect alongside `initChild` — see `NestedChildrenTextEffect` (../shared.ts). */
+  childrenTextEffect: NestedChildrenTextEffect | null
 }
 
 /**

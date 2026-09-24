@@ -152,4 +152,20 @@ export const conformancePins: ConformancePins = {
   'module-helper-boolcontext-call': [
     { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
+  // #3063: a client-interactive component with a multi-return chain
+  // where one branch is a bare JSX fragment refuses ahead of
+  // `adapter.generate()` in the shared jsx-to-ir.ts phase (the client
+  // hydration claim can't tell branches apart — see the registry entry),
+  // so it is pinned identically on every adapter including Hono.
+  'conditional-return-fragment-branch': [
+    { code: 'BF029', severity: 'error', limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  ],
+  // #3144: a component-body local bound to an opaque call
+  // (`const label = makeLabel(); {label()}`), invoked in text position,
+  // refuses ahead of the generic signal-getter fallback in this
+  // adapter's own `call()` (`adapter/expr/emitters.ts` /
+  // `go-template-adapter.ts`) -- not a shared jsx-to-ir.ts refusal, since
+  // Hono's real JS runtime evaluates this shape correctly and must keep
+  // doing so.
+  'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
 }

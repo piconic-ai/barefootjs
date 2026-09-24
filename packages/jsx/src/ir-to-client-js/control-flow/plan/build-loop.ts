@@ -33,6 +33,7 @@ import {
   loopKeyFn,
   buildChildRefBindings,
   buildStaticChildRefBindings,
+  hasReactiveLoopBindings,
 } from '../shared.ts'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildPlainRowCore } from './build-plain-row.ts'
@@ -112,9 +113,7 @@ export function buildPlainLoopPlan(
   profileComponentName?: string,
   lazyScope?: LazyRowScopeInfo,
 ): PlainLoopPlan {
-  const hasReactive = elem.bindings.reactiveAttrs.length > 0
-    || elem.bindings.reactiveTexts.length > 0
-    || elem.bindings.conditionals.length > 0
+  const hasReactive = hasReactiveLoopBindings(elem.bindings)
 
   // flatMap descriptor mode: reconcile the FLATTENED leaves. The source
   // accessor runs the flatMap body (plain items — per-item signals don't
@@ -216,16 +215,29 @@ export function buildPlainLoopPlan(
 export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<string>, profileComponentName?: string): StaticLoopPlan {
   // Group reactive attrs by their child slot id, preserving the legacy
   // declaration-order Map-iteration semantics.
+  //
+  // #3143: this used to skip the whole loop (`if (!elem.childComponent)`)
+  // whenever the static array's row root is a child component
+  // (`<Chip>...</Chip>`, e.g. `opts.map(opt => <Chip>...)` for a plain
+  // array `opts`) — a migration-era artifact from when this builder was
+  // mechanically split out of the legacy `emitStaticArrayUpdates` emitter
+  // (#1253), not a deliberate exclusion: `texts` a few lines below has
+  // never had the equivalent guard, and the stringifier
+  // (`stringifyStaticLoop`) patches both through the exact same
+  // `qsa(__iterEl, '[bf="<slot>"]')` lookup — a descendant CSS query that
+  // reaches an attribute on an element forwarded as the child component's
+  // OWN `children` (`^`-prefixed slot id) just as readily as one on
+  // `__iterEl` itself. Dropping the guard lets the forwarded `<a>`'s
+  // `href`/`data-current` (this fixture) get the same reactive-attribute
+  // effect a plain-element static row's own attrs already get.
   const attrsBySlotMap = new Map<string, LoopChildReactiveAttr[]>()
-  if (!elem.childComponent) {
-    for (const attr of elem.bindings.reactiveAttrs) {
-      let bucket = attrsBySlotMap.get(attr.childSlotId)
-      if (!bucket) {
-        bucket = []
-        attrsBySlotMap.set(attr.childSlotId, bucket)
-      }
-      bucket.push(attr)
+  for (const attr of elem.bindings.reactiveAttrs) {
+    let bucket = attrsBySlotMap.get(attr.childSlotId)
+    if (!bucket) {
+      bucket = []
+      attrsBySlotMap.set(attr.childSlotId, bucket)
     }
+    bucket.push(attr)
   }
 
   const indexParam = elem.index || '__idx'
