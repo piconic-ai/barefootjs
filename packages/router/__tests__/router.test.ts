@@ -388,6 +388,44 @@ describe('@barefootjs/router v0', () => {
     expect(region().textContent).toContain('page 2 body')
   })
 
+  test('popstate from an in-page anchor (hash-only change) does not swap', async () => {
+    let rehydrated = 0
+    router = startRouter({ rehydrate: () => { rehydrated++ }, dispose: () => {} })
+    // The browser fires popstate when a same-document fragment link is followed
+    // (and on back/forward between such entries); it scrolls to the anchor itself.
+    setURL('https://example.test/blog/1#usage')
+    window.dispatchEvent(new window.PopStateEvent('popstate'))
+    await flush()
+    setURL('https://example.test/blog/1')
+    window.dispatchEvent(new window.PopStateEvent('popstate'))
+    await flush()
+    expect(fetchCalls.length).toBe(0)
+    expect(rehydrated).toBe(0)
+    expect(region().textContent).toContain('page 1 body')
+  })
+
+  test('popstate from an in-page anchor after a soft navigation does not swap', async () => {
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    await navigate('/blog/2')
+    await flush()
+    expect(fetchCalls.length).toBe(1)
+    setURL('https://example.test/blog/2#usage')
+    window.dispatchEvent(new window.PopStateEvent('popstate'))
+    await flush()
+    expect(fetchCalls.length).toBe(1)
+    expect(region().textContent).toContain('page 2 body')
+  })
+
+  test('popstate to the same path with a different query still swaps (legacy)', async () => {
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    setURL('https://example.test/blog/1?x=1')
+    mockFetch((url) => (url.includes('/blog/1') ? fullPage('<p>q body</p>', { title: 'q' }) : null))
+    window.dispatchEvent(new window.PopStateEvent('popstate'))
+    await flush()
+    expect(fetchCalls.length).toBe(1)
+    expect(region().textContent).toContain('q body')
+  })
+
   test('requests ordinary HTML without a router-specific navigation protocol', async () => {
     router = startRouter({ rehydrate: () => {}, dispose: () => {} })
     await navigate('/blog/2')

@@ -53,6 +53,10 @@ setup step.
 - **Module-aware**: a response's new island modules are imported *before* the
   re-hydration walk, and deduped across navigations.
 - **Redirect-aware**: history commits at the response's final URL.
+- **In-page anchors stay the browser's**: a same-page `#hash` link is not
+  intercepted, and the `popstate` the browser fires for it (and for
+  back/forward between such entries) swaps nothing — the page is already
+  displayed, so island state and scroll position are kept.
 - **History.state preserved**: a router replace merges rather than clobbers
   existing state (scroll-restoration libs, framework state).
 - **A11y**: focus moves into the swapped content — the first swapped region that

@@ -81,6 +81,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     // (captured before islands mutate the DOM). Refreshed after each navigation.
     regionBaselines: captureRegionBaselines(document, options.region ?? `[${BF_REGION}]`),
     currentPath: window.location.pathname,
+    currentSearch: window.location.search,
     inflight: null,
     hoverTimer: null,
     hoverAnchor: null,
@@ -190,6 +191,17 @@ function defaultShouldIntercept(anchor: HTMLAnchorElement): boolean {
 
 function onPopState(): void {
   if (!active) return
+  // Same route, only the fragment differs: an in-page anchor was followed (the
+  // browser fires popstate for those too) or back/forward moved between such
+  // entries. The displayed page is already this one and the browser scrolls to
+  // the anchor itself — a swap would re-fetch it, reset island state and
+  // scroll to the top.
+  if (
+    window.location.pathname === active.currentPath &&
+    window.location.search === active.currentSearch
+  ) {
+    return
+  }
   // A query-only back/forward on the same route doesn't need a swap: push the
   // new query into the env signal (if a consumer registered the seam) and let
   // islands react fine-grained. A pathname change does need a swap, but the
@@ -198,6 +210,7 @@ function onPopState(): void {
     window.location.pathname === active.currentPath &&
     pushSearchSeam(window.location.search)
   ) {
+    active.currentSearch = window.location.search
     return
   }
   void navigate(window.location.href, { history: false })
@@ -233,6 +246,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     pushSearchSeam(target.search)
   ) {
     state.inflight?.abort()
+    state.currentSearch = target.search
     if (mode === 'push') commitHistory('push', target.href)
     else if (mode === 'replace') commitHistory('replace', target.href)
     return
@@ -355,6 +369,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
 
     const committed = new URL(finalUrl, window.location.href)
     state.currentPath = committed.pathname
+    state.currentSearch = committed.search
     pushSearchSeam(committed.search)
 
     if (state.scrollToTop) window.scrollTo(0, 0)

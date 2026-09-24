@@ -105,6 +105,26 @@ test.describe('Soft navigation', () => {
     expect(await hasReloadMarker(page)).toBe(true)
   })
 
+  test('an On This Page link scrolls in place and moves the active marker there', async ({ page }) => {
+    await page.goto('/components/button')
+    await plantReloadMarker(page)
+
+    // #examples is a short section directly followed by #size: the active item
+    // must be the one clicked, not the next section that also ends up in view.
+    const toc = page.locator('nav[aria-label="Table of contents"]')
+    const links = toc.locator('a')
+    const index = await links.evaluateAll((as) => as.findIndex((a) => a.getAttribute('href') === '#examples'))
+    await toc.locator('a[href="#examples"]').click()
+
+    await expect(page).toHaveURL(/\/components\/button#examples$/)
+    await expect(page.locator('#examples')).toBeInViewport()
+    await expect(toc.locator('a[href="#examples"]')).toHaveClass(/font-semibold/)
+    await expect(toc.locator('[data-toc-indicator]')).toHaveAttribute('style', new RegExp(`translate\\(0px, ${index * 28}px\\)`))
+    // An in-page anchor never re-fetches the page.
+    expect(await hasReloadMarker(page)).toBe(true)
+    await expect(page.locator('html[data-bf-navigating]')).toHaveCount(0)
+  })
+
   test('a page with a different region set (gallery) is a full load', async ({ page }) => {
     await page.goto('/components/alert-dialog')
     await plantReloadMarker(page)
