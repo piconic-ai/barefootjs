@@ -107,7 +107,7 @@ sub register ($self, $app, $config = {}) {
         }
         $c->stash->{'bf.auto_init_done'} = 1;
 
-        $bf->_scope_id($template . '_' . substr(rand() =~ s/^0\.//r, 0, 6));
+        $bf->_scope_id($template . '_' . BarefootJS::scope_id_suffix());
         $bf->register_components_from_manifest($m);
 
         # Seed each ssrDefault into the stash unless the caller has already

@@ -24,6 +24,7 @@ t/props_attr.t
 t/query.t
 t/render_child.t
 t/scope_comment.t
+t/scope_id_suffix.t
 t/search_params.t
 t/spread_attrs.t
 t/template_primitives.t
