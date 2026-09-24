@@ -245,6 +245,21 @@ const cases: RegionCase[] = [
     textAfter: { mp: 'A' }, // no partial swap happened
   },
   {
+    name: 'single root region → incoming sibling regions: hard-navigates',
+    // The live page has one region (a root), the incoming page two siblings
+    // (e.g. a sidebar-less gallery layout → a docs layout with a sidebar
+    // region). The incoming page's first match is the sidebar, not a root
+    // containing the rest, so swapping it into the live root would put the
+    // sidebar's markup where the page content was and drop the incoming
+    // content region entirely.
+    current: `<header>shell</header><main bf-region="page" id="main"><p id="mp">A</p></main>`,
+    incoming:
+      `<nav bf-region="sidebar" id="nav"><p id="np">N</p></nav>` +
+      `<main bf-region="page" id="main"><p id="mp">B</p></main>`,
+    fallsBackToReload: true,
+    textAfter: { mp: 'A' }, // no partial swap happened
+  },
+  {
     name: 'nested region set diverges but a root contains all: the root rebuilds',
     current:
       `<header>shell</header>` +

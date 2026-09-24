@@ -276,10 +276,17 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       // root containing every other region (one swap rebuilds them all — the v0
       // single-region behaviour). If the regions are siblings, a single swap
       // would half-update the page, so hard-navigate instead (never worse than
-      // an MPA).
+      // an MPA). Both sides must be roots: a live root region swapped with an
+      // incoming page's first *sibling* region would put that sibling's markup
+      // where the whole page was and drop the rest of the incoming regions.
       const current = document.querySelector(state.regionSelector)
       const incoming = incomingDoc.querySelector(state.regionSelector)
-      if (!current || !incoming || !isRootRegion(current, state.regionSelector)) {
+      if (
+        !current ||
+        !incoming ||
+        !isRootRegion(current, state.regionSelector) ||
+        !isRootRegion(incoming, state.regionSelector)
+      ) {
         hardNavigate(finalUrl)
         return
       }
