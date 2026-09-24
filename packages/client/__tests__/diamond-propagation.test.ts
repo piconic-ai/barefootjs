@@ -243,6 +243,22 @@ describe('circular dependency detection with deferred propagation', () => {
 })
 
 describe('errors during a flush', () => {
+  test('a memo that throws while an observer pulls it leaves the observer live for later writes', () => {
+    const painted: string[] = []
+    const [items, setItems] = createSignal([{ name: 'a' }])
+    const [idx, setIdx] = createSignal(0)
+    // Unchanged by the failing write, so the effect is only CHECK, never DIRTY.
+    const hasItems = createMemo(() => items().length > 0)
+    const current = createMemo(() => items()[idx()]!.name)
+    createEffect(() => { painted.push(`${hasItems()}:${current()}`) })
+    expect(painted).toEqual(['true:a'])
+
+    expect(() => batch(() => { setItems([{ name: 'b' }]); setIdx(5) })).toThrow()
+
+    setIdx(0)
+    expect(painted).toEqual(['true:a', 'true:b'])
+  })
+
   test('an effect that throws does not drop the updates other effects queued in the same flush', () => {
     const [t, setT] = createSignal(0)
     const [x, setX] = createSignal(0)

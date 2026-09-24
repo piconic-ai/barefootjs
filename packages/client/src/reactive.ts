@@ -415,7 +415,12 @@ function pendingCount(): number {
  * Process `Queue` until it is empty, including nodes appended while it runs.
  * A node that throws does not stop the others — every queued node is still
  * brought up to date, so the graph stays consistent — and the first error is
- * rethrown once the queue is drained, to whoever wrote.
+ * rethrown once the queue is drained, to whoever wrote; later ones are logged.
+ *
+ * A throw from a memo pulled during a CHECK leaves the observer non-CLEAN, and
+ * `mark` only enqueues a CLEAN node, so it would never run again. Every
+ * non-CLEAN node is in `Queue`, so resetting the whole queue before clearing it
+ * keeps each one reachable by the next write.
  */
 function flush(): void {
   Flushing = true
@@ -426,12 +431,14 @@ function flush(): void {
     try {
       updateIfNecessary(Queue[i]!, true)
     } catch (err) {
-      if (!failed) {
+      if (failed) console.error(err)
+      else {
         failed = true
         error = err
       }
     }
   }
+  for (let i = 0; i < Queue.length; i++) Queue[i]!.state = CLEAN
   Queue.length = 0
   Flushing = false
   if (failed) throw error
