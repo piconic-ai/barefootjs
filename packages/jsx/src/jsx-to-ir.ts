@@ -54,6 +54,7 @@ import {
 } from './prop-rewrite.ts'
 import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
+import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -282,6 +283,53 @@ function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFil
     if (CLIENT_DIRECTIVE_INTERIOR_RE.test(m[1])) return true
   }
   return false
+}
+
+/** Whether `node`'s subtree renders any child component (a `component` IR node). */
+function irSubtreeRendersComponent(node: IRNode): boolean {
+  let found = false
+  walkIR(node, null, {
+    component: () => { found = true },
+  })
+  return found
+}
+
+/**
+ * #3063: refuse a fragment-wrapped branch of a multi-return client
+ * component loudly instead of silently shipping a branch whose events
+ * never bind after hydrating existing SSR markup (see
+ * `ErrorCodes.FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH`'s docstring for
+ * the mechanism). Called once per branch from `buildIfStatementChain`,
+ * right after that branch transforms — `rawNode` is the branch's own raw
+ * JSX return expression (needed for the `/* @client *\/` escape check;
+ * `transformNode`'s output doesn't retain a pointer back to it), `node` is
+ * what that transform produced.
+ *
+ * Fires when the component hydrates this branch: either it is a
+ * `'use client'` component, or the fragment branch itself renders a child
+ * component. In the second case a non-client parent still gets
+ * `needsInit` and an `initChild` for that child, which runs only if the
+ * branch's scope is claimed, so the child's own events never bind either.
+ * A non-client component whose fragment branch renders no component has
+ * nothing to initialize there and compiles as before. The check is
+ * branch-local on purpose: a child component in a DIFFERENT branch doesn't
+ * make this branch's missing claim observable.
+ */
+function checkFragmentWrappedConditionalReturnBranch(
+  node: IRNode | null,
+  rawNode: ts.Expression | null | undefined,
+  ctx: TransformContext
+): void {
+  if (!node || node.type !== 'fragment' || !(node as IRFragment).needsScopeComment) return
+  if (!ctx.analyzer.hasUseClientDirective && !irSubtreeRendersComponent(node)) return
+  if (!rawNode || hasLeadingClientDirective(rawNode, ctx.sourceFile)) return
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH, node.loc, {
+      suggestion: {
+        message: 'Add /* @client */ immediately before this branch\'s JSX to compile it anyway.',
+      },
+    })
+  )
 }
 
 /**
@@ -8839,6 +8887,14 @@ function buildIfStatementChain(
   if (analyzer.jsxReturn) {
     ctx.isRoot = !asConditional
     alternate = transformNode(analyzer.jsxReturn, ctx)
+    // #3063: only the `if-statement` chain shape is at risk — in
+    // `asConditional` mode (#2463) branches sit inside the caller's
+    // synthetic `display:contents` wrapper element and never claim their
+    // own root scope, so the per-component `comment`/`fragmentRoot` flag
+    // this refusal exists for doesn't apply.
+    if (!asConditional) {
+      checkFragmentWrappedConditionalReturnBranch(alternate, analyzer.jsxReturn, ctx)
+    }
   }
 
   // Build the if-else chain from the last conditional to the first
@@ -8971,6 +9027,9 @@ function buildIfStatementChain(
     let consequent: IRNode | null
     try {
       consequent = transformNode(condReturn.jsxReturn, ctx)
+      if (!asConditional) {
+        checkFragmentWrappedConditionalReturnBranch(consequent, condReturn.jsxReturn, ctx)
+      }
     } finally {
       if (branchNames.length > 0) {
         ctx.getJS = prevCtxGetJS

@@ -82,15 +82,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // the deferred runtime region work (spec/router.md), not this lowering
   // spike. SSR emit is pinned by the `region-boundary` JSX conformance test.
   'region-boundary',
-  // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
-  // SSR wraps the fragment-wrapped default branch in a `<!--bf-scope:-->`
-  // comment pair, but the emitted client JS carries no `comment: true`
-  // (the flag is decided once per component, not per branch), so a pure
-  // client mount puts `bf-s` on the `<button>` root instead. That SSR-vs-
-  // csr-mount split IS the limitation (quarantined against the
-  // `'three-point'` oracle in `oracle-quarantine.ts`); per-adapter render
-  // conformance pins the SSR contract, which every adapter matches.
-  'conditional-return-fragment-branch',
+  // `conditional-return-fragment-branch` graduated out of this set (#3063):
+  // the shape now refuses to compile (BF029) instead of silently diverging
+  // between SSR and a pure client mount, so the fixture carries no
+  // `expectedHtml` and the CSR conformance loop's own `!fixture.expectedHtml`
+  // guard already skips it — no skip entry needed.
   // Priority-12 sweep: REAL SSR/CSR divergences (not harness artifacts),
   // skipped until the pipeline reconciles the two paths.
   // `jsx-element-prop` graduated (#2651 fixed): a non-children JSX prop now
@@ -106,12 +102,16 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // child needs no `$c` lookup at all (it IS `__scope`) — see
   // `ClientJsContext.commentScopeRootSlotId` and
   // `comment-wrapper-grandchild-slot-collision.test.ts`.
-  // Known limitation `opaque-local-accessor-call`: `label` is an init-scope
-  // local bound to an opaque call (`makeLabel()`), so the CSR template lambda
-  // (module scope, evaluated before init) has no value for `{label()}` and
-  // emits an empty slot — the same silent gap the DSL adapters pin in their
-  // `renderDivergences`. The reference runs the accessor at render time. Its
-  // `/* @client */` twin (`opaque-local-accessor-call-client`) is NOT skipped.
+  // `opaque-local-accessor-call` (`kind: 'refusal'`, BF101 on every DSL
+  // adapter): a harness-configuration artifact, not a runtime gap. Whether
+  // the CSR template may evaluate the opaque call inline (`label` →
+  // `(makeLabel())()`) is decided by the adapter's `acceptsTemplateCall`
+  // capability. The real pipeline always has one: `compileJSX` passes
+  // Hono's (accepts any call, so production CSR renders `ready`, matching
+  // `expectedHtml`), and every DSL adapter refuses the shape at compile
+  // time. This harness compiles with NO adapter capabilities, so the call
+  // is not inlined and the slot is emitted empty. Its `/* @client */` twin
+  // (`opaque-local-accessor-call-client`) is NOT skipped.
   'opaque-local-accessor-call',
   // #3059: `renderCsrComponent`'s harness stubs `createPortal` as a no-op
   // (`csr-render.ts`: `const createPortal = () => {}`) — it never moves

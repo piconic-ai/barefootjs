@@ -35,7 +35,7 @@ export const ErrorCodes = {
   // JSX errors (BF021-BF029). BF022 was retired (see
   // `invalid-jsx-attribute.audit.test.ts`) and BF026 is reserved by
   // `spec/callback-fidelity.md` for a future `.map()`-callback-shape
-  // diagnostic — BF027 is the next free slot.
+  // diagnostic — BF029 is the next free slot.
   UNSUPPORTED_JSX_PATTERN: 'BF021',
   MISSING_KEY_IN_LIST: 'BF023',
   MISSING_KEY_IN_NESTED_LIST: 'BF024',
@@ -50,6 +50,20 @@ export const ErrorCodes = {
   // no IR and no diagnostic (#2720). Loud stopgap until the analyzer learns
   // to resolve the identifier at return position too.
   RETURN_VALUE_NOT_JSX: 'BF027',
+  // #3063: a `'use client'` (or otherwise client-interactive) component
+  // whose multi-return `if`/`else` chain has at least one branch wrapped in
+  // a bare JSX fragment (`return <>…</>`, no wrapping element). The
+  // `ComponentDef`'s `comment: true` / `fragmentRoot: true` client-JS flags
+  // (`emit-registration.ts`) are decided ONCE per component from
+  // `ir.root.type`, which is always `'if-statement'` here regardless of any
+  // individual branch's shape — so the client hydration claim
+  // (`materializeComponent`, `packages/client/src/runtime/component.ts`)
+  // never learns to look for that branch's comment-scope boundary. SSR and
+  // a fresh CSR mount both render the branch correctly; only claiming
+  // existing SSR markup during hydration misses it (no `bf-s`, so the
+  // branch's own events never bind). See
+  // `packages/adapter-tests/limitations/fragment-wrapped-conditional-return-branch-scope.ts`.
+  FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH: 'BF029',
 
   // Component errors (BF043-BF049). BF043 is retired (it warned that props
   // destructuring broke reactivity, which it no longer does) and is the next
@@ -189,6 +203,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.RETURN_VALUE_NOT_JSX]:
     "Component's return value is not recognized as JSX — return the JSX expression directly instead of binding it to a local variable first.",
+
+  [ErrorCodes.FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH]:
+    'A fragment-wrapped branch of a multi-return client component is never hydrated: the client only decides once per component whether its root scope is comment-based, so this branch renders correctly at SSR and on a fresh client mount, but its events never bind after hydrating existing server HTML. Wrap this branch\'s JSX in a real element instead of a bare fragment (`<>…</>` → `<div>…</div>`), or add /* @client */ immediately before the fragment to compile it anyway and accept the known hydration gap.',
 
   [ErrorCodes.SIGNAL_GETTER_NOT_CALLED]:
     'Signal/memo getter passed without calling it. Use getter() to read the value.',

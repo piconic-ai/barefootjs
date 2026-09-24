@@ -35,4 +35,12 @@ export const conformancePins: ConformancePins = {
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
   'namespace-import-primitive': [{ code: 'BF013', severity: 'error', limitation: 'namespace-import-primitive-without-program' }],
+  // #3063: a client-interactive component with a multi-return chain
+  // where one branch is a bare JSX fragment refuses ahead of
+  // `adapter.generate()` in the shared jsx-to-ir.ts phase (the client
+  // hydration claim can't tell branches apart — see the registry entry),
+  // so it is pinned identically on every adapter including Hono.
+  'conditional-return-fragment-branch': [
+    { code: 'BF029', severity: 'error', limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  ],
 }
