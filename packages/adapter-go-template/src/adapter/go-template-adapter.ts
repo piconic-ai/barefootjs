@@ -1308,7 +1308,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const nestedComponents = findNestedComponents(ir.root)
 
-    this.resolveNestedLoopItemTypes(ir, nestedComponents)
+    this.resolveNestedLoopItemTypes(lines, ir, componentName, nestedComponents)
 
     for (const nested of nestedComponents) {
       if (!nested.bodyChildren || nested.bodyChildren.length === 0) continue
@@ -3608,12 +3608,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
-  private resolveNestedLoopItemTypes(ir: ComponentIR, nestedComponents: NestedComponentInfo[]): void {
+  private resolveNestedLoopItemTypes(
+    lines: string[],
+    ir: ComponentIR,
+    componentName: string,
+    nestedComponents: NestedComponentInfo[],
+  ): void {
     // When a loop's `itemType` is null, resolve the element type from the source
-    // array so wrapper structs get correct datum fields. Two cases:
+    // array so wrapper structs get correct datum fields. Three cases:
     //   1. Memo-derived: `sortedData()` → resolve through the memo's SSR path to
     //      the module const it returns (block-body memo baking).
-    //   2. Direct module const: `payments` → look up the constant directly.
+    //   2. Direct module const with a DECLARED element type (`const opts: Opt[]`)
+    //      → look up the constant directly.
+    //   3. Direct module const with NO declared type at all (`const opts = [{…}]`,
+    //      #3178) → same shape as (2) structurally, but nothing already resolved
+    //      an element type to borrow — synthesize one from the literal itself.
     for (const nested of nestedComponents) {
       if (nested.loopItemType || !nested.loopArray) continue
 
@@ -3626,7 +3635,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             memo, ir.metadata.signals,
           )
           if (blockReturn) {
-            const constant = (ir.metadata.localConstants ?? []).find(
+            const constant = this.state.localConstants.find(
               c => c.name === blockReturn.constName && c.origin?.scope === 'module',
             )
             if (constant?.type?.elementType) {
@@ -3637,14 +3646,112 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         continue
       }
 
-      // Case 2: direct module-const array reference (`payments`)
-      const directConst = (ir.metadata.localConstants ?? []).find(
+      // Case 2/3: direct module-const array reference (`opts`/`payments`)
+      const directConst = this.state.localConstants.find(
         c => c.name === nested.loopArray && c.origin?.scope === 'module',
       )
       if (directConst?.type?.elementType) {
         nested.loopItemType = directConst.type.elementType
+        continue
+      }
+
+      // Case 3 (#3178): an UNTYPED object-literal array const has no
+      // declared element type for (2) to borrow — `inferTypeFromValue`
+      // (the analyzer's text-shaped fallback for an unannotated
+      // declaration) only ever produces the bare `{kind:'array', raw:
+      // 'unknown[]'}`, never a per-row shape. But when every row IS an
+      // object literal sharing the same keys, that shape is just as
+      // inferrable as a typed one — the same fast path `emitSynthStructs`
+      // already applies to an untyped object-array SIGNAL (#2800).
+      // Synthesizing + registering a named struct here (a) gives
+      // `resolveLoopDatumFields` real datum fields for the wrapper struct,
+      // and (b) — by folding the synthesized type back onto the constant's
+      // OWN `type.elementType` below — gives `emitStaticBodyWrappers`'s
+      // `convertInitialValue` → `parsedLiteralToGo` a concrete struct to
+      // bake each row's object literal against. Without this, that bake
+      // requires a pre-registered struct, finds none, defers the WHOLE
+      // array to `nil`, and the loop silently drops from SSR with no
+      // diagnostic. A non-uniform shape (mismatched keys, a spread, …)
+      // still returns `null` here and falls through to that same
+      // pre-existing `nil` fallback, unchanged.
+      if (directConst && directConst.type?.kind === 'array' && !directConst.type.elementType) {
+        const elementType = this.synthesizeModuleConstArrayItemType(lines, directConst, componentName)
+        const parsed = directConst.parsed
+        if (
+          !elementType &&
+          parsed?.kind === 'array-literal' &&
+          parsed.elements.length > 0 &&
+          parsed.elements.every(e => e.kind === 'object-literal')
+        ) {
+          // Rows that don't share one shape (e.g. a key present on only some
+          // rows) have no single Go struct to bake against, so the array
+          // would bake to `nil` and the loop would silently render empty.
+          this.state.errors.push({
+            code: 'BF101',
+            severity: 'error',
+            message: `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
+            loc: this.makeLoc(),
+            suggestion: {
+              message: `Give every row the same keys, or annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`).`,
+            },
+          })
+          continue
+        }
+        if (elementType) {
+          nested.loopItemType = elementType
+          // Rebuild rather than mutate `directConst` in place (#2674's own
+          // rule for `ir.metadata`-backed structures): `this.state
+          // .localConstants` still aliases `ir.metadata.localConstants`
+          // (`primeCompileState`) at this point, and mutating an element of
+          // it in place would corrupt the CALLER's IR for any later re-read
+          // (`generateTypes` can run more than once over the same `ir`, for
+          // siblings). A fresh array with a fresh entry keeps every OTHER
+          // consumer's reference to the original object (and array)
+          // intact, while every LATER lookup through `this.state
+          // .localConstants` — the only place `resolveLoopArraySourceConst`
+          // ever reads from — sees the augmented type.
+          this.state.localConstants = this.state.localConstants.map(c =>
+            c === directConst ? { ...c, type: { ...c.type!, elementType } } : c,
+          )
+        }
       }
     }
+  }
+
+  /**
+   * The module-const twin of `synthesizeStructFromSignal`/#2800 (#3178):
+   * synthesize + register a named Go struct for an UNTYPED module-const
+   * array's per-row shape, reusing the exact same `synthesizeStructsFromElements`
+   * fast path and `registerSynthStruct` emission so the two synthesis call
+   * sites — one for an untyped object-array SIGNAL, one for an untyped
+   * object-array module CONST — can't independently drift on what counts as
+   * a safely-synthesizable shape. Returns the top-level struct's `TypeInfo`
+   * (an `interface` reference by name, the same shape `resolveNestedLoopItemTypes`'s
+   * other two cases hand back) for the caller to fold onto the constant's
+   * own `type.elementType`, or `null` when the elements don't share one
+   * bakeable shape — the caller's existing `nil`-bake fallback covers that
+   * case unchanged.
+   */
+  private synthesizeModuleConstArrayItemType(
+    lines: string[],
+    constant: ConstantInfo,
+    componentName: string,
+  ): TypeInfo | null {
+    const node = constant.parsed
+    if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
+    const name = `${componentName}${capitalizeFieldName(constant.name)}Item`
+    const synth = this.synthesizeStructsFromElements(node.elements, name)
+    if (!synth) return null
+    for (const s of synth) {
+      this.registerSynthStruct(
+        lines,
+        s.name,
+        s.fields,
+        s.properties,
+        `// ${s.name} is a synthesised element type for the ${constant.name} constant.`,
+      )
+    }
+    return { kind: 'interface', raw: name }
   }
 
   private composeFileHeader(lines: string[]): string {
