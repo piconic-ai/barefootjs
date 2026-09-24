@@ -79,7 +79,7 @@ export default defineConfig({
 })
 ```
 
-`barefoot` is both a named and the default export in every builder, so switching adapters changes only the import specifier. Each builder returns a `Plugin[]` and types its options on its subpath (`GoTemplateViteOptions`, ...). The [API Reference](./api-reference.md#vite-plugin) lists each export with its stability tier.
+`barefoot` is both a named and the default export in every builder, so switching adapters changes only the import specifier. Each builder returns a `Plugin[]` and types its options on its subpath (`GoTemplateViteOptions`, ...). The [API Reference](./api-reference.md#vite-plugin) lists each export with its stability tier — the core options are beta, the builders and re-exported helpers alpha — and documents the `BarefootPluginApi` hook the `bf` CLI uses to find the plugin.
 
 ## Code-splitting vendors
 

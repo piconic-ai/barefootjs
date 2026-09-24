@@ -100,13 +100,20 @@ Props become capitalized struct fields (`props.user.email` → `.User.Email`); o
 For each component the adapter generates an input struct (the external API), a props struct (adds the hydration fields), and a `New{Component}Props()` constructor that applies defaults:
 
 ```go
+// The input type you construct: hydration fields are optional.
 type CounterInput struct {
-    Initial int `json:"initial"`
+    ScopeID  string // Optional: if empty, a random ID is generated
+    BfParent string // Optional: parent scope id
+    BfMount  string // Optional: slot id in parent
+    Initial  int
 }
 
+// The props type the template receives; hydration fields are `json:"-"`.
 type CounterProps struct {
+    ScopeID string `json:"-"`
+    Scripts *bf.ScriptCollector `json:"-"`
     Initial int    `json:"initial"`
-    ScopeID string `json:"scopeId"`
+    // ... BfIsRoot, BfIsChild, BfParent, BfMount, BfDataKey, Portals, BfCallerProps (all `json:"-"`)
 }
 
 func NewCounterProps(input CounterInput) CounterProps

@@ -19,7 +19,7 @@ Standard JSX works. Components run once — there is no re-render — so read si
 
 ## List rendering
 
-Every `.map()` row needs a `key`. `.filter()`, `.sort()`, and `.toSorted()` chain before it; block-body predicates and comparators are fine.
+Every `.map()` row needs a `key`. `.filter()`, `.sort()`, and `.toSorted()` chain before it; a block-body predicate or comparator works when the body produces a value (see [Adapter limits](#adapter-limits)).
 
 ```tsx
 {todos().map(todo => (
@@ -75,8 +75,8 @@ Every `.map()` row needs a `key`. `.filter()`, `.sort()`, and `.toSorted()` chai
 
 JS-runtime adapters (Hono, CSR) execute any callback at SSR, so everything above compiles there. Template-language adapters (Go, Mojolicious, Xslate, ERB, Jinja, Twig, Blade, minijinja, Pebble) lower a defined subset into their template grammar and refuse the rest loudly:
 
-- **BF021** — an unsupported predicate or comparator *shape*: an imperative block body, `typeof`, a comparator referenced from an import or through an alias.
-- **BF101** — an expression with no lowering at all: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()` inside a predicate, or a loop over a component-scope `const` computed at render time.
+- **BF021** — an unsupported predicate or comparator *shape*: a genuinely imperative block body (one that reassigns a local, loops, or `break`s — a value-producing block normalizes and lowers everywhere), `typeof`, a comparator referenced from an import or through an alias.
+- **BF101** — an expression with no lowering at all: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()` inside a predicate, a loop over a component-scope `const` computed at render time, a destructured predicate parameter (`({ done }) => done`), or a `function`-keyword callback.
 
 Both are escapable with [`/* @client */`](./client-directive.md), which renders nothing for that region until hydration. When the value can be computed server-side, pass it as a prop instead — that keeps SSR.
 

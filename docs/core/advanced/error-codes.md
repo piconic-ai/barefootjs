@@ -158,6 +158,9 @@ See [List rendering](../rendering/jsx-compatibility.md#list-rendering).
 In a client component with several `return` statements, one branch returns a bare fragment. The client decides once per component whether its root scope is comment-based, so that branch is never claimed during hydration and its events do not bind.
 
 ```tsx
+// ❌ BF029
+'use client'
+import { createSignal } from '@barefootjs/client'
 export function Toggle(props: { x: boolean }) {
   const [count, setCount] = createSignal(0)
   if (props.x) return <a>link</a>
@@ -184,7 +187,7 @@ See [Fragments](../rendering/jsx-compatibility.md#fragments).
 
 ### BF101 — No Template-Language Lowering
 
-A template-language adapter (Go, Mojolicious, Xslate, ERB, Jinja, Twig, Blade, minijinja, Pebble) has no lowering for the expression: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()`/`.reduce()` inside a filter predicate, or a `.map()` over a component-scope `const` computed at render time. JS-runtime adapters run it verbatim. Nested `.filter()`/`.map()` and `.flatMap()` JSX projections compile everywhere.
+A template-language adapter (Go, Mojolicious, Xslate, ERB, Jinja, Twig, Blade, minijinja, Pebble) has no lowering for the expression: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()`/`.reduce()` inside a filter predicate, a `.map()` over a component-scope `const` computed at render time, a module-scope helper called in a text position, a destructured predicate parameter (`({ done }) => done`), or a `function`-keyword callback. JS-runtime adapters run it verbatim. Nested `.filter()`/`.map()` and `.flatMap()` JSX projections compile everywhere.
 
 ```tsx
 // ❌ BF101 on Go/Mojo
@@ -208,9 +211,10 @@ Per-adapter table: [compatibility matrix](/docs/advanced/compatibility-matrix); 
 
 ### BF102 — Adapter-Specific Condition Not Supported
 
-A template-language adapter (today the Go adapter) meets a condition it cannot lower where its template grammar has no place for a helper: a complex predicate in an `else if`, or a module-scope helper called from a template position.
+The Go adapter meets a condition it cannot lower in a boolean-test position, where its template grammar has no place for a helper: a complex predicate in an `else if`, or a module-scope helper called from an `if` condition.
 
 ```tsx
+// ❌ BF102 on Go
 function isVip(user: User) { return user.tier === 'gold' && user.active }
 
 export function Badge({ user }: { user: User }) {
@@ -222,7 +226,7 @@ export function Badge({ user }: { user: User }) {
 
 #### Fix
 
-Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: { user: User; vip: boolean }`), or defer the condition with `/* @client */`. See [Go Template Adapter](../adapters/go-template-adapter.md).
+Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: { user: User; vip: boolean }`). A condition has no `/* @client */` escape: forcing it to a fixed value at SSR would be a correctness hazard. See [Go Template Adapter](../adapters/go-template-adapter.md).
 
 ---
 

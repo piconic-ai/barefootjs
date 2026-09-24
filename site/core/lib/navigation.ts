@@ -131,4 +131,5 @@ export const redirects: Record<string, string> = {
   'advanced/ir-schema': 'how-it-works',
   'advanced/performance': 'how-it-works',
   'advanced/code-splitting': 'advanced/vite-plugin',
+  'advanced/xyflow-browser-bundle': 'advanced/vite-plugin',
 }

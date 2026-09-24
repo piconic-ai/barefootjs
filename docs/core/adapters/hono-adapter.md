@@ -30,14 +30,16 @@ export default defineConfig({
 
 ## Options
 
-Pass a constructed adapter as `adapter` to `barefoot()` when you need to change the paths:
+`barefoot()` constructs the `HonoAdapter` itself; pass adapter options under `adapterOptions` when you need to change the paths:
 
 ```typescript
-import { HonoAdapter } from '@barefootjs/hono'
-
-const adapter = new HonoAdapter({
-  clientJsBasePath: '/static/components/',
-  barefootJsPath: '/static/components/barefoot.js',
+barefoot({
+  components: ['components'],
+  templates: 'dist/components',
+  adapterOptions: {
+    clientJsBasePath: '/static/components/',
+    barefootJsPath: '/static/components/barefoot.js',
+  },
 })
 ```
 

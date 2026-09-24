@@ -1705,7 +1705,7 @@ hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Cou
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/hono-adapter.md doc-examples L55 — (no label) 1`] = `
+exports[`docs/core/adapters/hono-adapter.md doc-examples L57 — (no label) 1`] = `
 "import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
@@ -1734,7 +1734,7 @@ hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">C
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/hono-adapter.md doc-examples L94 — (no label) 1`] = `
+exports[`docs/core/adapters/hono-adapter.md doc-examples L96 — (no label) 1`] = `
 "import { $c, createComponent, hydrate, initChild, markupOrEmpty, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:BfScripts */'
 
