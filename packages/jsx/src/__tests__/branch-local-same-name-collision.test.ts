@@ -43,13 +43,13 @@ describe('same-name branch-local const referenced from nested function decl (#14
           function attachA(el: HTMLElement) {
             el.dataset.size = size
           }
-          return <div ref={attachA}>A</div>
+          return <div ref={attachA} data-size="small">A</div>
         }
         const size = 'large'
         function attachB(el: HTMLElement) {
           el.dataset.size = size
         }
-        return <div ref={attachB}>B</div>
+        return <div ref={attachB} data-size="large">B</div>
       }
     `
     const result = compileJSX(source, 'TwoBranches.tsx', { adapter })
@@ -82,20 +82,20 @@ describe('same-name branch-local const referenced from nested function decl (#14
           function attachA(el: HTMLElement) {
             el.dataset.size = size
           }
-          return <div ref={attachA}>A</div>
+          return <div ref={attachA} data-size="small">A</div>
         }
         if (props.mode === 'b') {
           const size = 'medium'
           function attachB(el: HTMLElement) {
             el.dataset.size = size
           }
-          return <div ref={attachB}>B</div>
+          return <div ref={attachB} data-size="medium">B</div>
         }
         const size = 'large'
         function attachC(el: HTMLElement) {
           el.dataset.size = size
         }
-        return <div ref={attachC}>C</div>
+        return <div ref={attachC} data-size="large">C</div>
       }
     `
     const result = compileJSX(source, 'ThreeBranches.tsx', { adapter })
@@ -129,20 +129,20 @@ describe('same-name branch-local const referenced from nested function decl (#14
           function attachA(el: HTMLElement) {
             el.dataset.value = String(value)
           }
-          return <div ref={attachA}>A</div>
+          return <div ref={attachA} data-value="string-value">A</div>
         }
         if (props.mode === 'b') {
           const value = 42
           function attachB(el: HTMLElement) {
             el.dataset.value = String(value)
           }
-          return <div ref={attachB}>B</div>
+          return <div ref={attachB} data-value="42">B</div>
         }
         const value = true
         function attachC(el: HTMLElement) {
           el.dataset.value = String(value)
         }
-        return <div ref={attachC}>C</div>
+        return <div ref={attachC} data-value="true">C</div>
       }
     `
     const result = compileJSX(source, 'MixedKinds.tsx', { adapter })
@@ -244,7 +244,7 @@ describe('same-name branch-local const referenced from nested function decl (#14
           function attach(el: HTMLElement) {
             el.dataset.value = String(b)
           }
-          return <div ref={attach}>A</div>
+          return <div ref={attach} data-value="2">A</div>
         }
         return <div>B</div>
       }

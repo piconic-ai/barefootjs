@@ -38,7 +38,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
@@ -75,34 +75,15 @@ jobs:
         run: cd packages/adapter-go-template/runtime && GOTOOLCHAIN=local go test ./...
 
       - name: Run unit tests
-        run: bun test packages/adapter-go-template
+        id: unit
+        run: bun test --max-concurrency=8 packages/adapter-go-template
 
-  e2e-echo:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: test
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: '1.25'
-
-      - name: Setup Bun
-        uses: ./.github/actions/setup-bun
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build packages
-        run: |
-          bun run --filter '@barefootjs/jsx' build
-          bun run --filter '@barefootjs/vite' build
-          bun run --filter '@barefootjs/client' build
-          bun run --filter '@barefootjs/go-template' build
-
+      # E2E runs in this job, after the unit tests, instead of in its own
+      # `needs: test` job: a separate job queued a second time for a runner
+      # and repeated checkout + install + build for ~1 min of Playwright
+      # (#3155). A unit-test failure still skips it, as `needs:` did. The
+      # accepted cost: re-running a flaky E2E step re-runs the whole job,
+      # unit suite included, instead of a ~1 min E2E job.
       - name: Build integrations/echo
         run: cd integrations/echo && bun run build
 
@@ -143,11 +124,12 @@ jobs:
         run: bunx playwright install chromium
 
       - name: Run integrations/echo E2E tests
+        id: e2e_echo
         run: cd integrations/echo && bun run test:e2e
 
       - name: Upload Playwright report (integrations/echo)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.e2e_echo.outcome != 'skipped' }}
         with:
           name: playwright-report-integrations-echo
           path: integrations/echo/playwright-report/

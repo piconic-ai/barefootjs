@@ -118,7 +118,7 @@ describe('branch-local references inside raw-captured JS (#1414 follow-ups)', ()
         const [count] = createSignal(0)
         if (props.kind === 'a') {
           const label = 'highlighted'
-          return <div ref={(el) => { el.dataset.flag = label }}>A: {count()}</div>
+          return <div ref={(el) => { el.dataset.flag = label }} data-flag="highlighted">A: {count()}</div>
         }
         return <div>B: {count()}</div>
       }

@@ -38,7 +38,7 @@ export function StaticNestedLoopRefClient() {
       {/* @client */ items.map(item => (
         <li key={item.id}>
           {item.children.map(child => (
-            <span key={child.id} ref={trackMount}>{child.id}:{count()}</span>
+            <span key={child.id} data-tracked="0" ref={trackMount}>{child.id}:{count()}</span>
           ))}
         </li>
       ))}

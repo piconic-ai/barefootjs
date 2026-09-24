@@ -1,11 +1,11 @@
 ---
 title: Error Codes Reference
-description: BF-prefixed compiler error codes with explanations and fixes.
+description: BF-prefixed compiler error codes, what triggers each one, and the fix.
 ---
 
 # Error Codes Reference
 
-Errors follow the format `BF` + 3-digit code with source location and fix suggestions.
+Errors are `BF` + a 3-digit code, reported with a source location and a fix hint.
 
 ## Format
 
@@ -28,7 +28,7 @@ error[BF001]: 'use client' directive required for components with createSignal
 
 ### BF001 — Missing `"use client"` Directive
 
-**Trigger:** Reactive APIs used without `"use client"`.
+A reactive API is used in a file without `"use client"`.
 
 ```tsx
 // ❌ BF001
@@ -39,22 +39,19 @@ export function Counter() {
 }
 ```
 
-**Fix:**
+#### Fix
 
-```tsx
-// ✅ Fixed
-"use client"
-import { createSignal } from '@barefootjs/client'
-export function Counter() { ... }
-```
+Add `"use client"` as the first line of the file. See [Component Authoring](../components/component-authoring.md).
 
 <a id="bf003"></a>
 
 ### BF003 — Client Component Importing Server Component
 
-**Trigger:** Client component imports from a file without `"use client"`.
+A `"use client"` component imports a component from a file without the directive.
 
-**Fix:** Add `"use client"` to the imported file, or import only types/constants.
+#### Fix
+
+Add `"use client"` to the imported file, or import only types and constants from it.
 
 ---
 
@@ -64,7 +61,7 @@ export function Counter() { ... }
 
 ### BF011 — Module-Level Reactive Declaration
 
-**Trigger:** A `createSignal` or `createMemo` call at module scope without a leading `/* @client */` directive.
+A `createSignal` or `createMemo` call at module scope without a leading `/* @client */`.
 
 ```tsx
 'use client'
@@ -76,39 +73,22 @@ export function Counter() {
 }
 ```
 
-**Fix (option A):** Move the declaration inside the component function so each mount gets its own state.
+#### Fix
+
+Move the declaration into the component so each mount gets its own state. For a store shared across components, put `/* @client */` on the line before the declaration instead: the signal lives in the client bundle and SSR renders a placeholder for every read.
 
 ```tsx
-'use client'
-import { createSignal } from '@barefootjs/client'
-
-export function Counter() {
-  const [count, setCount] = createSignal(0)
-  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
-}
-```
-
-**Fix (option B):** Prefix the declaration with `/* @client */` to opt into client-only module-scope state. The signal is emitted at module scope in the client bundle and SSR renders a placeholder for any reference. Intended for "global signal" / "store" patterns shared across components.
-
-```tsx
-'use client'
-import { createSignal } from '@barefootjs/client'
-
 /* @client */
 const [count, setCount] = createSignal(0)
-
-export function Counter() {
-  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
-}
 ```
 
----
+See [Context API](../components/context-api.md) for sharing state across files.
 
 <a id="bf013"></a>
 
 ### BF013 — Reactive Primitive Called Through a Namespace Import
 
-**Trigger:** A reactive primitive (`createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `createSearchParams`) invoked through a namespace import of `@barefootjs/client` (`import * as ns from '@barefootjs/client'`) that the analyzer could not resolve. Without a shared `ts.Program` (`CompileOptions.program`), the analyzer's fast path only recognizes a bare identifier callee — `ns.createSignal(...)` is dropped from the compiled output, and every reference to it throws `ReferenceError` at hydrate.
+A reactive primitive (`createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `createSearchParams`) is called as `ns.createSignal(...)` through a namespace import; the declaration is dropped from the compiled output and every reference throws at hydration.
 
 ```tsx
 'use client'
@@ -120,255 +100,163 @@ export function Counter() {
 }
 ```
 
-**Fix:** Import the primitive by name instead of through the namespace.
+#### Fix
 
-```tsx
-'use client'
-import { createSignal } from '@barefootjs/client'
-
-export function Counter() {
-  const [count, setCount] = createSignal(0)
-  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
-}
-```
-
-A shared `ts.Program` passed via `CompileOptions.program` (as `@barefootjs/vite` always supplies) lets the analyzer resolve the namespace-qualified form through the TypeScript `TypeChecker` — this diagnostic only fires when no such program is available.
+Import the primitive by name: `import { createSignal } from '@barefootjs/client'`. See [Reactivity](../reactivity.md).
 
 ---
 
-## JSX Errors (BF021–BF023)
+## JSX Errors (BF021–BF029)
 
 <a id="bf021"></a>
 
 ### BF021 — Unsupported JSX Pattern
 
-**Trigger:** Array method chain before `.map()` cannot compile to SSR template.
-
-#### SSR-Compatible Chains
-
-- `.filter().map()`
-- `.sort().map()` / `.toSorted().map()`
-- `.filter().sort().map()`
-- `.sort().filter().map()`
-
-Other chains (`.reduce()`, `.slice()`, `.flatMap()`) fall back to client-side evaluation.
-
-#### filter: Supported Predicates
-
-- Property access: `t.done`, `t.price`
-- Literals: `'active'`, `5`, `true`
-- Comparison: `===`, `!==`, `>`, `<`, `>=`, `<=`
-- Arithmetic: `+`, `-`, `*`, `/`, `%`
-- Logical: `&&`, `||`, `!`
-- Ternary: `cond ? a : b`
+A `.filter()` predicate or `.sort()` comparator has a shape a template-language adapter cannot lower: an imperative block body, `typeof`, a call to a user function, or a comparator referenced from an import, a prop, or an alias. JS-runtime adapters (Hono, CSR) run the callback at SSR. Every adapter raises it for a method call on a prop typed `Date`, `Map`, `Set`, or another host type with no catalogued lowering (`createdAt.toISOString()`).
 
 ```tsx
-// ✅ SSR-compilable
-{items().filter(t => !t.done).map(t => <li>{t.name}</li>)}
-{items().filter(t => t.price > 100 && t.active).map(t => <li>{t.name}</li>)}
-
-// ❌ BF021 — typeof, function calls, nested higher-order methods are not supported
+// ❌ BF021 on Go/Mojo
 {items().filter(t => typeof t === 'string').map(...)}
-{items().filter(t => customFn(t)).map(...)}
-{items().filter(t => t.tags.some(tag => tag.featured)).map(...)}
-```
-
-#### sort: Supported Comparators
-
-Simple subtraction: `(a, b) => a.field - b.field`:
-
-```tsx
-// ✅ SSR-compilable
-{items().sort((a, b) => a.price - b.price).map(...)}     // ascending
-{items().toSorted((a, b) => b.date - a.date).map(...)}   // descending
-{items().sort((a, b) => { return a.price - b.price }).map(...)}     // single-return block body
-{items().sort((a, b) => a.name.localeCompare(b.name)).map(...)}     // zero-arg localeCompare
-
-// A bare identifier reference to a same-file const/function comparator
-// resolves one hop and compiles like the inline arrow above (#2090):
-const byPrice = (a, b) => a.price - b.price
-{items().sort(byPrice).map(...)}
-
-// ❌ BF021 — locale/options localeCompare, and an unresolved comparator
-// (imported, a prop, or an alias chain) are not supported
-{items().sort((a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true })).map(...)}
 {items().sort(importedCmp).map(...)}
 ```
 
-#### Workaround
+#### Fix
+
+Rewrite the predicate as a plain expression, declare the comparator in the same file, or defer with `/* @client */`. For a rich-typed prop, format the value in the backend and pass a string.
 
 ```tsx
-{/* @client */ todos().filter(t => t.items.some(i => i.done)).map(t => (
-  <li>{t.name}</li>
-))}
+// ✅ Fixed
+{/* @client */ items().sort(importedCmp).map(t => <li key={t.id}>{t.name}</li>)}
 ```
 
-#### Host rich-typed prop method calls (#2273)
-
-**Trigger:** A method call on a prop provably typed as a built-in host rich
-type — `Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, `URL`, `URLSearchParams`,
-`RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function` — with no
-catalogued lowering.
-
-```tsx
-// ❌ BF021 — Date.prototype.toISOString has no catalogued lowering
-function Post({ createdAt }: { createdAt: Date }) {
-  return <div>{createdAt.toISOString()}</div>
-}
-```
-
-The receiver's type must be provable from the component's declared props
-(destructured prop, `props.x` member chain, loop item field, `Date | null`
-union) — an untyped, generic, or call-result receiver (`d().toISOString()`
-where `d` is a signal) has no evidence and is not flagged.
-
-#### Workaround
-
-```tsx
-// ✅ Format in the backend and pass a string prop
-function Post({ createdAt }: { createdAt: string }) {
-  return <div>{createdAt}</div>
-}
-
-// ✅ Or defer to the client — but revive the receiver first
-{/* @client */ new Date(createdAt).toISOString()}
-```
-
-The string-prop variant moves the formatting to where full language power
-already exists — the backend that populates the template data (Go handler,
-Rails controller, …) formats the `Date` and passes the finished string. Note
-that a component-body local (`const iso = createdAt.toISOString()`) is NOT a
-workaround: it lowers to a template variable whose value the template
-backend cannot compute, and dies at render time the same way.
-
-The `/* @client */` block must wrap the receiver in `new Date(...)` — a
-BARE `{/* @client */ createdAt.toISOString()}` compiles clean but crashes
-at real hydrate with a `TypeError`. Props cross the hydration boundary as
-JSON with no type-aware revival, so `createdAt` arrives at hydrate as its
-`toJSON()` ISO string, not a `Date` instance; wrapping it in `new Date(...)`
-revives it first, since `Date`'s `toJSON()` output round-trips through its
-own constructor (#2636). This revival trick only works for `Date` and
-`URL` — every other host rich type (`Map`, `Set`, …) has no safe
-`/* @client */` escape at all; pre-compute server-side instead.
+See [Adapter limits](../rendering/jsx-compatibility.md#adapter-limits).
 
 <a id="bf023"></a>
 
 ### BF023 — Missing Key in List
 
-**Trigger:** `.map()` loop without `key` prop.
+A `.map()` loop renders elements without a `key`.
 
 ```tsx
 // ❌ BF023
 {items().map(item => <li>{item.name}</li>)}
 ```
 
-**Fix:**
+#### Fix
 
 ```tsx
 // ✅ Add key
 {items().map(item => <li key={item.id}>{item.name}</li>)}
 ```
 
+See [List rendering](../rendering/jsx-compatibility.md#list-rendering).
+
+<a id="bf029"></a>
+
+### BF029 — Fragment-Wrapped Conditional Return Branch
+
+In a client component with several `return` statements, one branch returns a bare fragment. The client decides once per component whether its root scope is comment-based, so that branch is never claimed during hydration and its events do not bind.
+
+```tsx
+// ❌ BF029
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Toggle(props: { x: boolean }) {
+  const [count, setCount] = createSignal(0)
+  if (props.x) return <a>link</a>
+  return <><button onClick={() => setCount(count() + 1)}>{count()}</button></>
+}
+```
+
+#### Fix
+
+Wrap the branch in a real element, or put `/* @client */` immediately before the fragment (`return /* @client */ <>…</>`) to accept the gap.
+
+```tsx
+// ✅ Fixed
+return <div><button onClick={() => setCount(count() + 1)}>{count()}</button></div>
+```
+
+See [Fragments](../rendering/jsx-compatibility.md#fragments).
+
 ---
 
-## Template Adapter Errors (BF101)
+## Template Adapter Errors (BF101–BF102)
 
 <a id="bf101"></a>
 
 ### BF101 — No Template-Language Lowering
 
-**Trigger:** An expression that a JS-runtime adapter (Hono, CSR) executes verbatim has no lowering on a non-JS template adapter (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja). Every such refusal is an instance of a registered [known limitation](/docs/advanced/compatibility-matrix#known-limitations); two common shapes:
-
-**A nested `.some()` / `.find()` inside a filter predicate** ([`nested-callback-in-filter-predicate`](/docs/advanced/compatibility-matrix#limitation-nested-callback-in-filter-predicate)) — `find`-family methods return an element, not a boolean, so degrading them to their receiver would silently change predicate semantics:
+A template-language adapter (Go, Mojolicious, Xslate, ERB, Jinja, Twig, Blade, minijinja, Pebble) has no lowering for the expression: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()`/`.reduce()` inside a filter predicate, a `.map()` over a component-scope `const` computed at render time, or a module-scope helper called in a text position. JS-runtime adapters run it verbatim. Nested `.filter()`/`.map()` and `.flatMap()` JSX projections compile everywhere.
 
 ```tsx
-// ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja
+// ❌ BF101 on Go/Mojo
 {items().filter(t => picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.name}</li>)}
 ```
 
-**A `.map()` loop array bound to a component-scope `const` with a computed initializer** ([`computed-const-loop-source`](/docs/advanced/compatibility-matrix#limitation-computed-const-loop-source)) — no template adapter binds an arbitrary computed local, only a prop/param it passes straight through:
+#### Fix
+
+Pass the computed value as a prop (keeps SSR), or defer with `/* @client */` (empty until hydration):
 
 ```tsx
-// ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja
-function ReactionBar(props: { reactions: Record<string, string[]> }) {
-  const entries = Object.entries(props.reactions).filter(([, users]) => users.length > 0)
-  return <div>{entries.map(([emoji, users]) => <span key={emoji}>{emoji}</span>)}</div>
-}
-```
-
-**Escapes** — each verified by a conformance twin that compiles clean on the refusing adapter, listed best-SSR-first:
-
-- **Pass the computed result as a prop** (`prop-precompute`) — available for the loop-source shape, wherever the array is already computable server-side. **Full server render**: the rendered result is present in the server HTML.
-- **`/* @client */`** (`client-directive`) — available for both shapes, and compiles clean on every adapter. **Client-render**: the region is *empty in server HTML until hydration*. That trade is the cost of the escape, not a bug — the twin fixtures pin the empty region in their own committed `expectedHtml`.
-
-```tsx
-// ✅ Best for the loop-source shape: pass the computed array as a prop
-function ReactionBar({ entries }: { entries: [string, string[]][] }) {
-  return <div>{entries.map(([emoji, users]) => <span key={emoji}>{emoji}</span>)}</div>
-}
-
-// ✅ Either shape: defer to the client
+// ✅ Fixed
 {/* @client */ items().filter(t => picked().some(p => p.id === t.id)).map(t => (
   <li key={t.id}>{t.name}</li>
 ))}
 ```
 
-See [JSX Compatibility](../rendering/jsx-compatibility.md) for the full worked examples.
+Per-adapter table: [compatibility matrix](/docs/advanced/compatibility-matrix); worked examples in [Adapter limits](../rendering/jsx-compatibility.md#adapter-limits).
+
+<a id="bf102"></a>
+
+### BF102 — Adapter-Specific Condition Not Supported
+
+The Go adapter meets a condition it cannot lower in a boolean-test position, where its template grammar has no place for a helper: a complex predicate in an `else if`, or a module-scope helper called from an `if` condition.
+
+```tsx
+// ❌ BF102 on Go
+function isVip(user: User) { return user.tier === 'gold' && user.active }
+
+export function Badge({ user }: { user: User }) {
+  if (user.banned) return <span>Banned</span>
+  else if (isVip(user)) return <span>VIP</span>
+  return <span>Member</span>
+}
+```
+
+#### Fix
+
+Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: { user: User; vip: boolean }`). A condition has no `/* @client */` escape: forcing it to a fixed value at SSR would be a correctness hazard. See [Go Template Adapter](../adapters/go-template-adapter.md).
 
 ---
 
-## Component Errors (BF044–BF049)
-
-<!--
-  BF043 (Props Destructuring warning) is retired: destructured props read
-  live, the same as `props.xxx` access, so there is no reactivity difference
-  left to warn about. See [Props Reactivity](../reactivity/props-reactivity.md).
--->
+## Component Errors (BF044–BF063)
 
 <a id="bf044"></a>
 
 ### BF044 — Signal/Memo Getter Not Called
 
-**Trigger:** Signal/memo getter passed without calling it in a RENDERED
-position — a DOM element attribute or a JSX text child, where the value
-becomes literal output.
+A signal or memo getter is passed uncalled in a rendered position — a DOM attribute or a JSX text child. A component prop (`<Child count={count} />`) is fine: the child calls it at its own read site.
 
 ```tsx
 // ❌ BF044
 <div count={count} />  // Passing getter function, not the value
 ```
 
-**Fix:**
+#### Fix
 
 ```tsx
 // ✅ Fixed
 <div count={count()} />
 ```
 
-**Not triggered on a component prop:** `<Child count={count} />` compiles —
-a component prop is an opaque value handed to the child, not rendered
-output, and passing a live getter there is this codebase's deliberate
-Context-Provider idiom (the child calls it at its own read site). See
-[`spec/compiler.md`'s BF044 section](https://github.com/piconic-ai/barefootjs/blob/main/spec/compiler.md#signalmemo-getter-not-called-bf044)
-for the full rule.
+See [createSignal](../reactivity/create-signal.md).
 
 <a id="bf049"></a>
 
 ### BF049 — Rich-Typed Prop Not Hydratable
 
-**Trigger:** A prop typed as a JSON-unsafe host rich type — `Map`, `Set`,
-`WeakMap`, `WeakSet`, `URLSearchParams`, `RegExp`, `Promise`, `Error`,
-`Symbol`, `BigInt`, `Function` — is used anywhere in this component's own
-client code (an event handler, an effect), regardless of whether a method is
-called on it. This is the sibling of [BF021](#bf021)'s host-rich-type
-refusal for a different shape: BF021 only walks expression positions
-reachable through template lowering (JSX text/attribute positions rendered
-at SSR); a handler or effect body is a different code path BF021 never
-analyzes, so even a method call there (like `data.get(...)` below) is just
-as invisible to it as a bare read. Either way the prop crosses the `bf-p`
-hydration boundary as JSON, where a `Map`/`Set` arrives de-riched (`{}`,
-every entry silently dropped) and a `BigInt` fails to serialize at all
-(`TypeError` at SSR render, failing the whole page).
+A prop typed as a JSON-unsafe host type (`Map`, `Set`, `WeakMap`, `WeakSet`, `URLSearchParams`, `RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function`) is used in the component's own client code. Props cross the hydration boundary as JSON, so a `Map` arrives as `{}` and a `BigInt` fails to serialize. `Date` and `URL` are exempt.
 
 ```tsx
 // ❌ BF049 — a Map prop used by client code cannot survive hydration
@@ -378,8 +266,9 @@ export function Foo({ data }: { data: Map<string, number> }) {
 }
 ```
 
-**Fix:** Pre-compute a JSON-serializable value server-side and rebuild the
-rich value client-side where it's actually needed.
+#### Fix
+
+Pass a JSON-serializable value and rebuild the rich value on the client:
 
 ```tsx
 // ✅ Fixed
@@ -389,26 +278,13 @@ export function Foo({ entries }: { entries: [string, number][] }) {
 }
 ```
 
-> `Date` and `URL` props are exempt — their `toJSON()` output round-trips
-> through their own constructor, so they're not JSON-unsafe (see BF021's
-> host-rich-type section above).
->
-> This is a compile-time check: it only fires when the prop's type is
-> provable from the component's own props type (same evidence
-> `checkRichTypeMethodCalls` uses). An imported/aliased type alias, or a
-> prop typed too loosely to resolve statically, isn't caught here — on the
-> Hono adapter, an unsound value reaching hydration serialization throws a
-> clear runtime error naming the prop and this code instead of failing
-> silently or with an opaque `JSON.stringify` error.
+See [Props Reactivity](../reactivity/props-reactivity.md).
 
 <a id="bf054"></a>
 
 ### BF054 — Built-in `<Async>` / `<Region>` Used Without Import
 
-**Trigger:** A bare `<Async>` or `<Region>` tag is used without importing it
-from `@barefootjs/client`, and no other binding with that name is in scope.
-These compiler built-ins are recognised by their import (not by tag name), so
-an unimported tag is treated as an undeclared component.
+A bare `<Async>` or `<Region>` tag is used without importing it from `@barefootjs/client`. The built-ins are recognised by their import, not by tag name; your own component with that name is fine as long as it is imported or declared.
 
 ```tsx
 // ❌ BF054
@@ -417,31 +293,15 @@ export function Page() {
 }
 ```
 
-**Fix:** Import the built-in from `@barefootjs/client`.
+#### Fix
 
-```tsx
-// ✅ Fixed
-import { Async } from '@barefootjs/client'
-
-export function Page() {
-  return <Async fallback={<p>Loading…</p>}><Body /></Async>
-}
-```
-
-> A component of your own named `Async` / `Region` does **not** trip BF054 as
-> long as it is imported or declared — the built-in only applies to the
-> `@barefootjs/client` import.
+Add `import { Async } from '@barefootjs/client'`. See [API Reference](./api-reference.md).
 
 <a id="bf056"></a>
 
 ### BF056 — Authored Call to `formatDate`
 
-**Trigger:** A template-position call to `formatDate` imported by name from
-`@barefootjs/client` (or its `/runtime` subpath). `formatDate` is compiler
-ABI — the lowering target the `.toLocaleDateString(locale, { timeZone, ... })`
-sugar rewrites to, emitted by the compiler itself — never an authored API.
-This fires identically on every adapter, including Hono: it is a policy
-decision, not a per-adapter capability gap.
+`formatDate` from `@barefootjs/client` is called in a template position. It is the compiler's own lowering target for `.toLocaleDateString()`, not an authored API, and this fires on every adapter.
 
 ```tsx
 // ❌ BF056
@@ -451,9 +311,9 @@ export function Post({ createdAt }: { createdAt: Date }) {
 }
 ```
 
-**Fix:** Use the sanctioned `.toLocaleDateString()` sugar with literal
-options — it compiles to the same `format_date` helper every adapter
-already ships:
+#### Fix
+
+Use `.toLocaleDateString()` with literal options, which compiles to the same helper on every adapter, or defer the call with `{/* @client */ formatDate(createdAt, 'YYYY-MM-DD')}`.
 
 ```tsx
 // ✅ Fixed
@@ -462,29 +322,56 @@ export function Post({ createdAt }: { createdAt: Date }) {
 }
 ```
 
-Or defer the whole read to the client, which can call any date-formatting
-API you like since it runs as real JS in the browser:
+See [API Reference](./api-reference.md).
+
+<a id="bf063"></a>
+
+### BF063 — Ref Callback Writes an Attribute the JSX Never Renders
+
+An element's `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` or `el.dataset.<key> = …`, at the top level of the ref body or of a `createEffect` / `onMount` directly inside it), and the element's JSX never renders that attribute. A `ref` callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it. Fires on every adapter, including Hono. Not triggered by a conditional or deferred write (an `if`, a write after an early `return` / `throw`, an event listener, a timer), a write a later `removeAttribute` / `delete el.dataset.<key>` undoes, a write to another node, an attribute the JSX renders in any form, an element with a spread, or an element inside a `/* @client */` conditional or loop (SSR never renders it). A handler shared by several elements is reported once per write, naming each element.
 
 ```tsx
-// ✅ Also fixed
-export function Post({ createdAt }: { createdAt: Date }) {
-  return <time>{/* @client */ formatDate(createdAt, 'YYYY-MM-DD')}</time>
+// ❌ BF063
+'use client'
+export function Panel(props: { delay?: number }) {
+  const handleMount = (el: HTMLElement) => {
+    el.dataset.delay = String(props.delay ?? 200)
+  }
+  return <div ref={handleMount}>…</div>
 }
 ```
 
+#### Fix
+
+Render the attribute in JSX from props or signals, so SSR already carries it:
+
+```tsx
+// ✅ Fixed
+'use client'
+export function Panel(props: { delay?: number }) {
+  return <div data-delay={props.delay ?? 200}>…</div>
+}
+```
+
+Or mark the ref `/* @client */` to accept the attribute appearing only after hydration: `<div ref={/* @client */ handleMount}>`.
+
 ---
 
-## Error Code Quick Reference
+## Quick Reference
 
-| Code | Severity | Description |
-|------|----------|-------------|
-| BF001 | Error | Missing `"use client"` directive |
-| BF003 | Error | Client component importing server component |
-| BF011 | Error | Module-level reactive declaration without `/* @client */` |
-| BF013 | Error | Reactive primitive called through an unresolved namespace import |
-| BF021 | Error | Unsupported JSX pattern for SSR |
-| BF023 | Error | Missing key in list |
-| BF044 | Error | Signal/memo getter passed without calling it |
-| BF049 | Error | Rich-typed prop read by client code cannot survive hydration |
-| BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |
-| BF056 | Error | Authored call to `formatDate` (compiler ABI, not an authored API) |
+| Code | Description |
+|------|-------------|
+| BF001 | Missing `"use client"` directive |
+| BF003 | Client component importing server component |
+| BF011 | Module-level reactive declaration without `/* @client */` |
+| BF013 | Reactive primitive called through a namespace import |
+| BF021 | Unsupported predicate/comparator shape |
+| BF023 | Missing key in list |
+| BF029 | Fragment-wrapped conditional return branch never hydrates |
+| BF044 | Signal/memo getter passed without calling it |
+| BF049 | Rich-typed prop not hydratable |
+| BF054 | Built-in `<Async>` / `<Region>` used without import |
+| BF056 | Authored call to `formatDate` |
+| BF063 | Ref callback writes an attribute the JSX never renders |
+| BF101 | No template-language lowering for the expression |
+| BF102 | Adapter-specific condition not supported |

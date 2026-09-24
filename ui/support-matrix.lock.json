@@ -8754,15 +8754,23 @@
       }
     },
     "unsupported": {
-      "total": 52,
+      "total": 54,
       "cells": {
         "hono": {
-          "pass": 52,
-          "total": 52
+          "pass": 53,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            }
+          ]
         },
         "blade": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8798,6 +8806,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -8827,8 +8841,8 @@
           ]
         },
         "erb": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8864,6 +8878,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -8893,8 +8913,8 @@
           ]
         },
         "go-template": {
-          "pass": 41,
-          "total": 52,
+          "pass": 42,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8930,6 +8950,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -8965,8 +8991,8 @@
           ]
         },
         "jinja": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9002,6 +9028,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9031,8 +9063,8 @@
           ]
         },
         "minijinja": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9068,6 +9100,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9097,8 +9135,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9134,6 +9172,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9163,8 +9207,8 @@
           ]
         },
         "pebble": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9200,6 +9244,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9229,8 +9279,8 @@
           ]
         },
         "twig": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9266,6 +9316,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9295,8 +9351,8 @@
           ]
         },
         "xslate": {
-          "pass": 42,
-          "total": 52,
+          "pass": 43,
+          "total": 54,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9332,6 +9388,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "ref-mount-attr",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9368,7 +9430,7 @@
       },
       "example": {
         "fixture": "ref-mount-attr",
-        "description": "a ref mount callback writes an attribute via setAttribute, which never reaches SSR",
+        "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       }
     }

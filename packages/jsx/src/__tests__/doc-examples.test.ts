@@ -283,48 +283,37 @@ const PAGES: PageSpec[] = [
       return undefined
     },
   },
-  { path: 'core/rendering/fragment.md' },
   { path: 'core/reactivity/create-signal.md' },
   { path: 'core/reactivity/create-effect.md' },
   { path: 'core/reactivity/create-memo.md' },
   { path: 'core/reactivity/on-mount.md' },
   { path: 'core/reactivity/on-cleanup.md' },
   { path: 'core/reactivity/untrack.md' },
+  { path: 'core/reactivity/batch.md' },
   { path: 'core/reactivity/props-reactivity.md' },
-  { path: 'core/components/component-authoring.mdx' },
+  { path: 'core/components/component-authoring.md' },
   { path: 'core/components/children-slots.md' },
-  { path: 'core/components/context-api.md' },
+  {
+    path: 'core/components/context-api.md',
+    pageSkip: (body: string) => {
+      if (/\bapp\.get\b/.test(body)) return 'server route example (not a component)'
+      return undefined
+    },
+  },
   { path: 'core/components/portals.md' },
-  { path: 'core/components/props-type-safety.md' },
   { path: 'core/components/styling.md' },
-  { path: 'core/core-concepts/how-it-works.mdx' },
-  { path: 'core/core-concepts/reactivity.md' },
-  { path: 'core/core-concepts/mpa-style.md' },
-  { path: 'core/core-concepts/ai-native.md' },
+  { path: 'core/how-it-works.mdx' },
+  { path: 'core/advanced/testing-and-cli.md' },
   { path: 'core/adapters/hono-adapter.md' },
   { path: 'core/adapters/go-template-adapter.md' },
   { path: 'core/adapters/custom-adapter.md' },
-  // `core/advanced/code-splitting.md` is deliberately absent: it documents
-  // stock Vite/Rollup build config (`manualChunks`) and carries no
-  // component code, while this extractor only reads ```tsx fences. Adding
-  // a token component there purely to keep the page listed here would
-  // hollow out the check rather than extend it.
-  { path: 'core/advanced/compiler-internals.md' },
   // `core/advanced/error-codes.md` is handled by the per-BFxxx
   // matcher (see bottom of file) rather than the general extractor:
   // its `negative-all-adapters` strictness ("BFxxx must be the ONLY
   // fatal") doesn't fit a reference page whose minimal reproductions
   // routinely trip unrelated checks, and the per-section walker can
   // tie each ❌ snippet to its parent `### BFxxx —` H3.
-  { path: 'core/advanced/performance.md' },
   { path: 'core/reactivity.md' },
-  {
-    path: 'core/reactivity/shared-state.md',
-    pageSkip: (body: string) => {
-      if (/\bapp\.get\b/.test(body)) return 'server route example (not a component)'
-      return undefined
-    },
-  },
   { path: 'core/introduction.mdx' },
 ]
 
@@ -458,6 +447,7 @@ interface ErrorCodeContract {
 const ERROR_CODES_DOC_TOO_MINIMAL: Record<string, string> = {
   BF021: 'BF021 has multiple ❌ snippets in placeholder form (`.map(...)`) — covered concretely by `jsx-compatibility.md` tests; the doc-form snippets here remain placeholder',
   BF044: 'BF044 fires only when a real signal getter is bound. The doc snippet `<Child count={count} />` references an undeclared `count`, so the check is silent — doc snippet needs enrichment',
+  BF102: 'BF102 is raised only by the Go adapter, from a boolean-test position its template grammar cannot host (an `else if` predicate, a module-scope helper in an `if` condition) — `TestAdapter` is JS-runtime-style and executes the condition verbatim, so the check is correctly silent here. Covered by the Go adapter\'s conformance pins (`module-helper-boolcontext-call`).',
   BF101: 'BF101 is raised by the non-JS template adapters\' own per-adapter checks (Go/Mojo/Xslate/… `renderLoop` / callback lowering), not by the shared `isSupported` gate every adapter shares — `TestAdapter` here is JS-runtime-style like Hono and executes both doc snippets verbatim, so the check is correctly silent. Covered concretely (compiled against the real 8 template adapters, with verbatim diagnostic text) by `jsx-compatibility.md`\'s doc-examples coverage and the `filter-nested-callback-predicate` / `filter-nested-find-predicate` / `static-array-from-props` adapter-conformance fixtures.',
 }
 

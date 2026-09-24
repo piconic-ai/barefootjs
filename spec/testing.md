@@ -341,6 +341,10 @@ function MyComponent() {
 
 Then register in `fixtures/index.ts` and both adapter test suites will automatically pick it up.
 
+A fixture change also moves four committed ledgers, each with its own CI drift gate: `expectedHtml`, `packages/adapter-tests/coverage-map.json`, `ui/compat.lock.json` and `ui/support-matrix.lock.json`. Run `bun run fixtures:regen` before pushing; it rebuilds the adapters and regenerates all four in dependency order.
+
+Conformance cases that render through a real backend run as `test.concurrent` (`packages/adapter-tests/src/render-test.ts`), so several render processes are in flight at once. Set `BF_CONFORMANCE_SERIAL=1` to run them one by one when a failure looks order-dependent.
+
 ### Adapter test runner
 
 Each adapter calls `runJSXConformanceTests()`:

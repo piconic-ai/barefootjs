@@ -928,6 +928,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF060 | Reactive binding (signal/memo getter) referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF061 | Init-scope local referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF062 | AwaitExpression in template scope (staged-IR; reserved for Phase 1 dispatcher) |
+| BF063 | A `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` / `el.dataset.<key> = …`) that the element's JSX never renders — a ref never runs at SSR, so the attribute is always absent from the server HTML and added at hydration. See "Ref-Written Attribute Absent at SSR (BF063)" below. |
 
 ### Error Format
 
@@ -1071,7 +1072,7 @@ error[BF101]: Loop array `entries` is a local computed value (`Object.entries(pr
   = help: Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.
 ```
 
-See "Computed loop array" and "Nested higher-order methods" in [`jsx-compatibility.md`](../docs/core/rendering/jsx-compatibility.md) for the full worked examples, including what SSR output looks like for each escape (a plain-prop array still server-renders; `/* @client */` does not).
+See "Adapter limits" in [`jsx-compatibility.md`](../docs/core/rendering/jsx-compatibility.md#adapter-limits) for the user-facing worked examples, including what SSR output looks like for each escape (a plain-prop array still server-renders; `/* @client */` does not).
 
 ### Known limitations — methods that don't lower to the template adapters
 
@@ -1293,6 +1294,72 @@ payload weight in practice, rather than staying in the hundreds-of-bytes-per-com
 
 **Reproduce:** `bun run packages/adapter-hono/bench/hydration-props-bench.ts`.
 
+### Ref-Written Attribute Absent at SSR (BF063)
+
+A `ref` callback is a client-only binding: it never runs at SSR. An attribute
+that only the callback writes is therefore always missing from the server HTML
+and always added by the first client pass — the DOM visibly changes at the
+hydrate boundary. BF063 refuses the one shape of this where the divergence is
+certain, decided structurally (TS AST, `recordRefAttrsAbsentAtSsr` in
+`jsx-to-ir.ts`) on each intrinsic element carrying a `ref`:
+
+- **The callback resolves statically** — an inline arrow / function expression,
+  or an identifier naming a function declared in an enclosing function scope,
+  innermost first up to the component body (so a handler declared in the
+  component resolves from inside a `.map()` row). Anything else (an imported
+  helper, a prop) is opaque and never fires. The SSR-portal recognition
+  (`ssrPortalOwnerScope`) shares this resolution but accepts only a callback
+  declared in the `ref`'s innermost function scope — the limit it had before
+  BF063, kept so sharing the resolution does not widen portal recognition.
+  This is not a `.map()`-row guard: a portal element inside a row is broken
+  either way (a row-declared callback is still recognized), a pre-existing
+  defect tracked separately.
+- **The write targets the callback's own element parameter** —
+  `el.setAttribute('<string literal>', …)`, `el.dataset.<key> = …` or
+  `el.dataset['<key>'] = …` (the key maps to `data-<kebab-case>`). Writes to
+  any other node are ignored, as is a body that redeclares the parameter's
+  name (`const el = …`, a destructuring, a `function el`).
+- **The write is unconditional** — a top-level expression statement of the ref
+  body, or of a `createEffect` / `onMount` callback (a value import from
+  `@barefootjs/client`, aliases included) that is itself a top-level statement
+  of the ref body. Writes inside an `if`, a loop, an event listener, a timer or
+  any other closure are ignored, and so is every write after a statement that
+  can `return` / `throw` early (an early-return guard, a `try` / loop /
+  `switch` that can return).
+- **Nothing undoes it** — a later `el.removeAttribute('<name>')` /
+  `delete el.dataset.<key>` (conditional or not) cancels the write.
+- **The element's JSX does not render that attribute in any form.** An
+  attribute the JSX renders (e.g. a `data-state="closed"` literal an effect
+  later overwrites) is out of scope: its first effect run commonly computes
+  the same value, so the divergence is not decidable here.
+- **The element has no spread** (`{...rest}` could render the attribute).
+- **SSR renders the element** — one inside a client-only conditional or loop
+  (the IR's `clientOnly`, e.g. `{/* @client */ open() && <span ref={…} />}`)
+  never reaches the server HTML, so the check runs on the finished IR.
+
+A handler shared by several elements reports each write once, at the write,
+naming every element whose JSX lacks the attribute.
+
+```
+error[BF063]: The ref callback writes 'data-mounted' on mount, but the JSX of <div> at 5:9 never renders it.
+
+  --> src/components/Panel.tsx:3:5
+   |
+ 3 |     el.setAttribute('data-mounted', '1')
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Render 'data-mounted' in the element's JSX from props or signals
+```
+
+Escapes (`suggestion.escape`): `rewrite` — render the attribute in JSX from
+props or signals (the ref may keep writing it afterwards), so SSR already
+carries it; `client-directive` — a leading `/* @client */` on the ref
+expression (`ref={/* @client */ handleMount}`) accepts the attribute appearing
+only after hydration. Registry entry:
+`packages/adapter-tests/limitations/ref-effect-attr-state-ssr.ts`; fixtures
+`ref-mount-attr` (refused), `ref-mount-attr-rendered` / `ref-mount-attr-client`
+(escape twins).
+
 ### class= vs className= in JSX
 
 JSX requires `className` for CSS class attributes. `class` is a reserved keyword in JavaScript and cannot be used as a JSX attribute name.
@@ -1381,6 +1448,63 @@ createEffect(() => {
   if (_slot_0) _slot_0.textContent = String(props.count)
 })
 ```
+
+### Phase 2b: client JS generation (`ir-to-client-js/`)
+
+Contributor notes on how `init<Name>` and the `hydrate()` registration are assembled. Entry points: `compileJSX(entryPath, readFile, options)` (async, reads from disk) and `compileJSX(source, filePath, options)` (sync); both handle multi-component files.
+
+**Element collection** (`collect-elements.ts`). The IR is walked once into per-kind lists on `ClientJsContext`, each of which feeds one emission phase: `interactiveElements` (event handlers), `dynamicElements` (reactive text), `conditionalElements`, `loopElements`, `refElements`, `reactiveAttrs`, `clientOnlyElements` (`/* @client */` expressions, absent from SSR), `restAttrElements` (`{...props}` spreads).
+
+**Early / late constants** (`init-declarations.ts`). Component-body `const`s are classified by reactive dependency: an *early* constant (no signal, memo, or prop read) is emitted before the signals; a *late* constant (any reactive read) after signal and memo creation, in dependency order (`declaration-sort.ts`). Declarations marked `isModule` (module-scope signals, memos, constants, functions) leave `init*` entirely and are emitted at module scope by `emitModuleLevelDeclarations`.
+
+**Controlled-signal sync.** A signal whose initial value reads a prop of the same name (`getControlledPropName`; e.g. `const [checked, setChecked] = createSignal(props.checked ?? false)`) is *controlled*. Beside its `createSignal` the emitter adds an effect that writes the live prop back into the signal whenever the prop is defined:
+
+```javascript
+const [checked, setChecked] = createSignal(_p.checked ?? false)
+createEffect(() => {
+  const __val = _p.checked
+  if (__val !== undefined) setChecked(__val)
+})
+```
+
+**Emission order** (`generate-init.ts` → `phases.ts`). The `init*` body is produced by a declarative phase pipeline: every phase declares `dependsOn`, and `runPhases` executes them in a stable topological order (registry order whenever no dependency forces otherwise; a cycle or unknown id throws at registry validation). The registry:
+
+1. `props-extraction`
+2. `sorted-declarations` — early constants, local functions (before signals, so `createSignal(toArray(_p.x))` can call them), signals and memos with controlled sync, late constants
+3. `init-statements`
+4. `props-event-handlers`
+5. `element-refs` — `const [_s3] = $(__scope, 's3')`
+6. `dynamic-text-updates` — `lazySlots()` claim plans and their effects
+7. `client-only-expressions`
+8. `reactive-attribute-updates`
+9. `conditional-updates`
+10. `client-only-conditionals`
+11. `rest-attr-applications`
+12. `event-handlers` — `addEventListener`
+13. `reactive-prop-bindings`
+14. `reactive-child-props`
+15. `ref-callbacks`
+16. `effects-and-on-mounts` — user `createEffect` / `onMount`
+17. `provider-and-child-inits`
+18. `loop-updates` — `mapArray`; depends on 17 so a parent has provided its context before loop children call `useContext()`
+19. `static-array-child-inits`
+
+Finalisation runs over the joined body, in this order: `rewritePropsObjectRef` (props parameter → `_p`, AST-based), `rewriteDestructuredPropReads` (see [Props Access](#props-access)), the `hydrate()` line is appended, module-level declarations are spliced at `MODULE_CONSTANTS_PLACEHOLDER`, `pruneUnusedPropExtractions`, then `resolveFinalImports` — only the runtime helpers the emitted code references are imported from `@barefootjs/client/runtime`.
+
+**Template registration** (`emit-registration.ts`). Each component ends with `hydrate('<key>', { init: init<Name>, ... })`, which registers it and initialises every instance on the page. The def carries a `template: (_p) => \`...\`` entry in one of two forms:
+
+- *Static template* — when `canGenerateStaticTemplate` holds (no signal- or memo-dependent expression): the markup is rendered from props alone, `irToComponentTemplate`.
+- *CSR fallback* — otherwise, `generateCsrTemplate` substitutes signal initial values, memo bodies, and chain-resolved constant inlines (`ctx.csrInlinable`) so `renderChild()` and a pure CSR `render()` can still materialise markup for a component that has no server HTML.
+
+When a template lowering plugin's getter (e.g. `createSearchParams`) is in scope, the template lambda gets a block-body prelude that re-creates the getter, because the lambda runs at module scope, outside `init*`. `comment: true` / `fragmentRoot: true` flag comment-scoped roots (see [Hydration Markers](#hydration-markers)); a file-scoped registry key (`Name__<8hex>`, for a non-exported component) additionally carries `name: '<Name>'` so `bf-s` keeps the documented `Name_xxx` form. A callable shim named after the component follows, delegating to `createComponent`, so the component can be passed as a value (`renderNode={Bridge}`).
+
+### Multi-component files
+
+`compiler.ts` compiles a file with several components in two passes:
+
+1. **Pass 1** — `analyzeComponent` + `jsxToIR` for every component, sharing one per-file `ts.Program` (a caller-supplied program is reused only while its cached `SourceFile` still matches the — possibly preprocessed — source).
+2. **Between passes** — every component's IR is walked (`collectComponentNamesFromIR`) for references to a top-level sibling that produced no template (a multi-return JSX dispatch, for instance); such a reference is **BF048** (`SIBLING_COMPONENT_NOT_COMPILED`), since it would be a `ReferenceError` at SSR/hydrate time. The union of sibling inline exports is also collected so each per-component emit writes an identical trailing `export { ... }` block.
+3. **Pass 2** — `adapter.generate` + `generateClientJs` per component. Templates are merged with imports and types deduplicated; client JS is combined into one `.client.js` (named after the default export when there is one) with imports merged and module-scope statements deduplicated at the top-level-statement level via a TS parse of each block, not by whole-block or per-line string matching.
 
 ### Known Issues
 

@@ -26,6 +26,10 @@ import { createFixture } from '../src/types'
  * `packages/jsx/src/__tests__/issue-2798-static-nested-loop-bindings.test.ts`
  * (this fixture proves the SAME source compiles to correct SSR markup
  * across every adapter; that test proves the client JS wiring).
+ *
+ * The span renders `data-tracked="0"` so the attribute the ref writes is
+ * already in the SSR markup — without it the shape is a BF063 refusal (a
+ * ref-written attribute the JSX never renders), not what this pins.
  */
 export const fixture = createFixture({
   id: 'static-nested-loop-ref',
@@ -42,7 +46,7 @@ export function StaticNestedLoopRef() {
       {items.map(item => (
         <li key={item.id}>
           {item.children.map(child => (
-            <span key={child.id} ref={trackMount}>{child.id}:{count()}</span>
+            <span key={child.id} data-tracked="0" ref={trackMount}>{child.id}:{count()}</span>
           ))}
         </li>
       ))}
@@ -51,7 +55,7 @@ export function StaticNestedLoopRef() {
 }
 `,
   expectedHtml: `
-    <ul bf-s="test" bf="s4"><li bf="s3" data-key="1"><span bf="s2" data-key-1="11"><!--bf:s0-->11<!--/-->:<!--bf:s1-->0<!--/--></span><span bf="s2" data-key-1="12"><!--bf:s0-->12<!--/-->:<!--bf:s1-->0<!--/--></span></li></ul>
+    <ul bf-s="test" bf="s4"><li bf="s3" data-key="1"><span bf="s2" data-key-1="11" data-tracked="0"><!--bf:s0-->11<!--/-->:<!--bf:s1-->0<!--/--></span><span bf="s2" data-key-1="12" data-tracked="0"><!--bf:s0-->12<!--/-->:<!--bf:s1-->0<!--/--></span></li></ul>
   `,
   // Go template adapter refuses this shape with BF101 (#2909 — the inner
   // row's `count()` signal read in TEXT position has no item-independent

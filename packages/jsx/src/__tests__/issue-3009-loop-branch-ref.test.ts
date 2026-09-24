@@ -27,7 +27,7 @@ const BRANCH_REF_SOURCE = `
       <ul>{rows().map(row => (
         <li key={row.key}>
           {row.kind === 'a' ? (
-            <span ref={el => { el.dataset.mounted = 'yes' }}>{row.label}</span>
+            <span ref={el => { el.dataset.mounted = 'yes' }} data-mounted="yes">{row.label}</span>
           ) : (
             <span>placeholder</span>
           )}
@@ -68,7 +68,7 @@ describe('issue-3009 — loop-row conditional branch ref emission', () => {
       export function C() {
         const [rows] = createSignal<Row[]>([])
         return <ul>{rows().map(row => (
-          <li key={row.key} ref={el => { el.dataset.mounted = 'yes' }}>{row.label}</li>
+          <li key={row.key} ref={el => { el.dataset.mounted = 'yes' }} data-mounted="yes">{row.label}</li>
         ))}</ul>
       }
     `)
