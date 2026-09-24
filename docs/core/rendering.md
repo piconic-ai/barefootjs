@@ -1,14 +1,17 @@
 ---
 title: Templates & Rendering
-description: BarefootJS-specific JSX behavior covering compatibility, fragments, and client directives.
+description: What JSX the compiler accepts, and how to defer one expression to the client.
 ---
 
 # Templates & Rendering
 
-## Pages
+Standard JSX compiles to a server template plus client JS; one directive defers an expression to the browser.
 
-| Topic | Description |
-|-------|-------------|
-| [JSX Compatibility](./rendering/jsx-compatibility.md) | What works, what doesn't, and what differs from React |
-| [Fragment](./rendering/fragment.md) | Fragment support and hydration behavior |
-| [`/* @client */` Directive](./rendering/client-directive.md) | Skip server evaluation for client-only expressions |
+```tsx
+{/* @client */ items().reduce((sum, x) => sum + x.price, 0)}
+```
+
+| Page | Description |
+|------|-------------|
+| [JSX Compatibility](./rendering/jsx-compatibility.md) | What compiles, and each adapter's limits |
+| [`/* @client */` Directive](./rendering/client-directive.md) | Skip server evaluation |

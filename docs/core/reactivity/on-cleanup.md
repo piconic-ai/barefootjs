@@ -5,16 +5,13 @@ description: Registers a cleanup function that runs when the owning effect re-ru
 
 # onCleanup
 
-Registers a cleanup function. Called when the owning effect re-runs or the component is destroyed.
+Registers a cleanup function. It runs before the owning effect re-runs and when the component is destroyed.
 
-```tsx
+```ts
 import { onCleanup } from '@barefootjs/client'
 
 onCleanup(fn: () => void): void
 ```
-
-
-## Basic Usage
 
 ```tsx
 createEffect(() => {
@@ -23,45 +20,14 @@ createEffect(() => {
 })
 ```
 
-On re-run, the cleanup function runs first, clearing the previous interval before creating a new one.
+On re-run the previous interval is cleared before a new one is created. `onCleanup` can be called several times in one effect; cleanups run in reverse registration order (last registered, first called).
 
+## Where it works
 
-## Multiple Cleanups
+`onCleanup` needs a reactive context:
 
-`onCleanup` can be called multiple times. Cleanups execute in reverse order (last registered, first called):
+- inside `createEffect`
+- inside [`onMount`](./on-mount.md)
+- during component initialization (runs when the component is destroyed)
 
-```tsx
-createEffect(() => {
-  const controller = new AbortController()
-  onCleanup(() => controller.abort())
-
-  const listener = () => setHash(window.location.hash)
-  window.addEventListener('hashchange', listener)
-  onCleanup(() => window.removeEventListener('hashchange', listener))
-})
-// On cleanup: removeEventListener runs first, then abort
-```
-
-
-## With `onMount`
-
-`onCleanup` works inside `onMount` for one-time setup/teardown:
-
-```tsx
-onMount(() => {
-  const handleResize = () => setWidth(window.innerWidth)
-  window.addEventListener('resize', handleResize)
-  onCleanup(() => window.removeEventListener('resize', handleResize))
-})
-```
-
-
-## Where It Works
-
-`onCleanup` must be called within a reactive context:
-
-- Inside `createEffect`
-- Inside `onMount`
-- During component initialization
-
-Calling it outside these contexts has no effect.
+Outside these it is a no-op.

@@ -1,50 +1,47 @@
 ---
 title: Children & Slots
-description: Accept nested JSX content via the children prop and enable polymorphic rendering with the Slot component.
+description: Accept nested JSX through the children prop, and let callers choose the rendered element with Slot and asChild.
 ---
 
 # Children & Slots
 
-Nested JSX content is passed via the `children` prop. The `Slot` component enables polymorphic rendering with `asChild`.
-
-
-## Children
+Nested JSX arrives in the `children` prop, typed as `Child` — JSX elements, strings, numbers, and arrays of those.
 
 ```tsx
-<Card>
-  <h2>Title</h2>
-  <p>Body text</p>
-</Card>
-```
-
-```tsx
-function Card(props: { children?: Child }) {
-  return <div className="card">{props.children}</div>
-}
-```
-
-`children` is typed as `Child`, which covers JSX elements, strings, numbers, and arrays.
-
-
-## Passing Children Through
-
-```tsx
-function Panel(props: { title: string; children?: Child }) {
+function Card(props: { title: string; children?: Child }) {
   return (
-    <section>
+    <section className="card">
       <h2>{props.title}</h2>
-      <div className="panel-body">{props.children}</div>
+      {props.children}
     </section>
   )
 }
 ```
 
-Wrapping `children` in a fragment (`<>{props.children}</>`) is **transparent** — the compiler skips the fragment without extra hydration markers. See [Fragment](../rendering/fragment.md).
+```tsx
+<Card title="Status">
+  <p>All systems go</p>
+</Card>
+```
+
+Passing `children` on to another component, or wrapping it in a fragment (`<>{props.children}</>`), adds no hydration markers. Compound components such as `Dialog` share state between the root and its children through the [Context API](./context-api.md); lists rendered with `.map()` are covered in [JSX Compatibility](../rendering/jsx-compatibility.md).
 
 
-## The `Slot` Component
+## `Slot` and `asChild`
 
-`Slot` merges props and classes onto its child element, enabling the **`asChild` pattern**:
+`Slot` renders its child element in place of a tag of its own: it merges `className` (space-separated) and spreads its remaining props onto that child. When the child is not an element (a string, for example), `Slot` falls back to rendering it inside a fragment.
+
+```tsx
+// Input
+<Slot className="btn" onClick={handleClick}>
+  <a href="/home">Home</a>
+</Slot>
+
+// Output
+<a href="/home" className="btn" onClick={handleClick}>Home</a>
+```
+
+A component exposes this through an `asChild` prop. With `asChild`, the caller picks the element and the component contributes its classes and props:
 
 ```tsx
 import { Slot } from './slot'
@@ -59,92 +56,11 @@ function Button({ className, asChild, children, ...props }: ButtonProps) {
 }
 ```
 
-### How `Slot` Works
-
-`Slot` extracts the child's tag, merges `className` (space-separated), spreads remaining props, and renders the child's tag with the merged result.
-
 ```tsx
-// Input
-<Slot className="btn" onClick={handleClick}>
-  <a href="/home">Home</a>
-</Slot>
-
-// Output
-<a href="/home" className="btn" onClick={handleClick}>Home</a>
-```
-
-If `children` is not a valid element (e.g., a string), `Slot` falls back to rendering it inside a fragment.
-
-
-## The `asChild` Pattern
-
-`asChild` delegates rendering to the child element — the component's styling without its default HTML tag.
-
-### Default rendering (no `asChild`)
-
-```tsx
-<Button variant="primary">Click me</Button>
-// Renders: <button className="btn btn-primary">Click me</button>
-```
-
-### With `asChild`
-
-```tsx
-<Button variant="primary" asChild>
+<Button asChild>
   <a href="/dashboard">Go to Dashboard</a>
 </Button>
 // Renders: <a href="/dashboard" className="btn btn-primary">Go to Dashboard</a>
 ```
 
-The `<a>` tag receives Button's classes and props. The component controls styling; the caller controls the element.
-
-### When to Use `asChild`
-
-- Navigation buttons (render `<a>` with button styling)
-- Custom triggers (dialog or dropdown)
-- Semantic elements with reused component styles
-
-```tsx
-// Dialog trigger as a custom element
-<DialogTrigger asChild>
-  <span role="button" tabIndex={0}>Open</span>
-</DialogTrigger>
-```
-
-
-## Compound Components
-
-```tsx
-<Dialog open={open()} onOpenChange={setOpen}>
-  <DialogTrigger>Open</DialogTrigger>
-  <DialogOverlay />
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Confirm</DialogTitle>
-      <DialogDescription>Are you sure?</DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <DialogClose>Cancel</DialogClose>
-      <Button onClick={handleConfirm}>Yes</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-```
-
-Sub-components read shared state from a context provider. See [Context API](./context-api.md).
-
-
-## List Rendering
-
-```tsx
-{todos().map(todo => (
-  <TodoItem
-    key={todo.id}
-    todo={todo}
-    onToggle={() => handleToggle(todo.id)}
-    onDelete={() => handleDelete(todo.id)}
-  />
-))}
-```
-
-`key` is required for efficient list updates (warning `BF023` if missing).
+Use `asChild` for navigation buttons (an `<a>` with button styling), custom dialog or dropdown triggers, and anywhere the caller needs a different semantic element with the component's styling.

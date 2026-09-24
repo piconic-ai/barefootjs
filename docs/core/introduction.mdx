@@ -1,15 +1,13 @@
 ---
 title: Introduction
-description: What is BarefootJS — JSX to server template + client JS compiler
+description: BarefootJS compiles JSX components into your backend's native template plus a small client script for the interactive parts.
 ---
 
 # Introduction
 
 ## What is BarefootJS?
 
-BarefootJS is a compiler that transforms JSX components into server-rendered templates and minimal client-side JavaScript.
-
-Write familiar JSX with fine-grained reactivity — the compiler splits it into a **marked template** for your backend and a **tiny hydration script** for the browser.
+BarefootJS is a compiler. It takes a JSX component and splits it into a **marked template** for your server and a **client script** for the browser.
 
 ```tsx
 "use client"
@@ -26,12 +24,10 @@ export function Counter() {
 }
 ```
 
-This single file compiles into two outputs:
+The marked template renders the HTML with `bf-*` attributes that tell the client script where to attach:
 
 <Tabs id="adapter" default="Hono">
 <Tab label="Hono" />
-
-**Marked template** — Renders static HTML with hydration markers:
 
 ```tsx
 export function Counter({ __instanceId, ... }) {
@@ -48,8 +44,6 @@ export function Counter({ __instanceId, ... }) {
 
 <Tab label="Go Template" />
 
-**Marked template** — Go `html/template` with hydration markers:
-
 ```go-template
 {{define "Counter"}}
 <button bf-s="{{bfScopeAttr .}}" bf="s1">
@@ -60,31 +54,34 @@ export function Counter({ __instanceId, ... }) {
 
 </Tabs>
 
-**Client script** — Wires up only the interactive parts:
+The client script creates the signal, wires an effect to the `s0` text slot, and binds the click handler to `s1` — [How It Works](./how-it-works.mdx) shows the generated code.
 
-```js
-import { $, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+## Why BarefootJS
 
-export function initCounter(__scope, _p = {}) {
-  if (!__scope) return
+- **Backend freedom.** The compiler emits native templates for Hono, Go, Perl, Ruby, Python, PHP, Rust and Java, so no Node.js runs at serving time. [Adapters](./adapters.md) lists every backend.
+- **MPA-style.** Components are server-rendered by default; `"use client"` opts a component into shipping JavaScript. Your routing, data fetching and deployment stay as they are.
+- **Fine-grained reactivity.** Components run once. The compiler connects each signal to the DOM nodes that read it, and an update touches only those nodes — no virtual DOM, no re-render. See [Reactivity](./reactivity.md).
 
-  const [count, setCount] = createSignal(0)
+Only the components you mark ship JavaScript:
 
-  const [_s1] = $(__scope, 's1')       // find element with bf="s1"
+```tsx
+// ProductPage.tsx — server component
+import { AddToCart } from './AddToCart'    // "use client"
+import { ReviewStars } from './ReviewStars' // "use client"
 
-  // Claim the content slot between <!--bf:s0--> and <!--/--> on first
-  // write; later writes reuse the claimed reference (no re-scanning)
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = count()
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
+export function ProductPage({ product }) {
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      <img src={product.image} />
+      <ReviewStars rating={product.rating} />
+      <AddToCart productId={product.id} />
+    </div>
+  )
 }
-
-hydrate('Counter', {
-  init: initCounter,
-  template: (_p) => `<button bf="s1"> Count: <!--bf:s0-->${escapeText((0))}<!--/--></button>`
-})
 ```
+
+`h1`, `p` and `img` produce zero JS. `ReviewStars` and `AddToCart` become interactive after hydration; the HTML is visible before that.
+
+Continue with the [Quick Start](./quick-start.mdx) to scaffold an app, or [How It Works](./how-it-works.mdx) for compilation and hydration in detail.

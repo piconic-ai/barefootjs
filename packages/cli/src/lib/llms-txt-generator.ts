@@ -12,7 +12,7 @@ function capitalize(s: string): string {
 }
 
 /**
- * Format a category name for display (e.g., "core-concepts" → "Core Concepts").
+ * Format a category name for display (e.g., "reactivity" → "Reactivity").
  */
 function formatCategory(category: string): string {
   return category.split('-').map(capitalize).join(' ')
@@ -40,7 +40,7 @@ export function generateCoreLlmsTxt(docs: CoreDocMeta[], baseUrl: string): strin
   }
 
   // Desired category order
-  const categoryOrder = ['core-concepts', 'reactivity', 'rendering', 'components', 'adapters', 'advanced']
+  const categoryOrder = ['components', 'reactivity', 'rendering', 'adapters', 'advanced']
 
   for (const category of categoryOrder) {
     const entries = groups.get(category)

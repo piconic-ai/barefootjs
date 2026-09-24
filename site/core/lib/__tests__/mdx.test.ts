@@ -8,8 +8,7 @@ const DOCS_ROOT = resolve(import.meta.dir, '../../../../docs/core')
 
 const QUICK_START_MDX = readFileSync(resolve(DOCS_ROOT, 'quick-start.mdx'), 'utf-8')
 const INTRODUCTION_MDX = readFileSync(resolve(DOCS_ROOT, 'introduction.mdx'), 'utf-8')
-const COMPONENT_AUTHORING_MDX = readFileSync(resolve(DOCS_ROOT, 'components/component-authoring.mdx'), 'utf-8')
-const HOW_IT_WORKS_MDX = readFileSync(resolve(DOCS_ROOT, 'core-concepts/how-it-works.mdx'), 'utf-8')
+const HOW_IT_WORKS_MDX = readFileSync(resolve(DOCS_ROOT, 'how-it-works.mdx'), 'utf-8')
 const README_MDX = readFileSync(resolve(DOCS_ROOT, 'README.mdx'), 'utf-8')
 
 beforeAll(async () => {
@@ -134,32 +133,6 @@ describe('projectMdxToMarkdown (introduction)', () => {
   test('preserves H2 headings', () => {
     const projected = projectMdxToMarkdown(INTRODUCTION_MDX, defaultMdxProjectors)
     expect(projected).toContain('## What is BarefootJS?')
-  })
-})
-
-describe('renderMdx (component-authoring)', () => {
-  test('extracts frontmatter', async () => {
-    const result = await renderMdx(COMPONENT_AUTHORING_MDX)
-    expect(result.frontmatter.title).toBe('Component Authoring')
-  })
-
-  test('contains a Tabs block-component for adapter output', async () => {
-    const result = await renderMdx(COMPONENT_AUTHORING_MDX)
-    const block = result.parts.find((p) => p.type === 'block-component')!
-    expect(block).toBeDefined()
-    if (block.type === 'block-component') {
-      expect(block.name).toBe('Tabs')
-      expect(block.children).toHaveLength(2)
-    }
-  })
-})
-
-describe('projectMdxToMarkdown (component-authoring)', () => {
-  test('projects cleanly with default tab', () => {
-    const projected = projectMdxToMarkdown(COMPONENT_AUTHORING_MDX, defaultMdxProjectors)
-    expect(projected).toContain('## Compilation Output')
-    expect(projected).not.toContain('<Tabs')
-    expect(projected).not.toContain('<Tab ')
   })
 })
 

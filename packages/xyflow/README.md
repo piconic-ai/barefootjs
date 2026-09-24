@@ -112,6 +112,59 @@ source directly into their app, can edit it, and own their own copy
 (shadcn pattern). This avoids the JSX-runtime resolution headaches
 that come from publishing `.tsx` directly from a workspace package.
 
+## Browser bundle (importmap)
+
+`bun run build` also emits `dist/xyflow.browser.min.js`: a minified ESM build
+with `@barefootjs/client`, `@barefootjs/client/runtime` and
+`@barefootjs/client/reactive` left as externals (`build:browser` in
+`package.json`). Serve it as an independently cached static asset instead of
+re-bundling xyflow into every client entry. Re-bundling by hand needs all three
+externals — missing one silently inlines a second copy of the reactive
+primitives, and signals stop propagating across the boundary (`fitView`
+becomes a no-op, `FlowContext` reads from the wrong owner).
+
+The file is also the `umd` export condition and the `unpkg` / `jsdelivr`
+top-level fields, so `https://unpkg.com/@barefootjs/xyflow` serves it.
+
+Copy it next to your client build and map it in an importmap:
+
+```sh
+cp node_modules/@barefootjs/xyflow/dist/xyflow.browser.min.js public/static/components/xyflow.js
+cp node_modules/@barefootjs/xyflow/dist/xyflow.browser.min.js.map public/static/components/xyflow.js.map  # optional
+```
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@barefootjs/client":          "/static/components/barefoot.js",
+    "@barefootjs/client/runtime":  "/static/components/barefoot.js",
+    "@barefootjs/client/reactive": "/static/components/barefoot.js",
+    "@barefootjs/xyflow":          "/static/components/xyflow.js"
+  }
+}
+</script>
+```
+
+All three `@barefootjs/client*` entries point at one file so the browser keeps
+a single module instance and the reactive primitives share one
+`Listener` / `Owner`.
+
+- **Escape `<` inside the importmap JSON.** A mapped URL containing
+  `</script>` would close the `<script type="importmap">` element early.
+  When serializing the map dynamically, replace every `<` with `\u003c`
+  before writing it into the tag — JSON decodes it back to `<`.
+- **Add `crossorigin` to a cross-origin `modulepreload`**, e.g. when pointing
+  at the unpkg URL instead of a copied file:
+
+  ```html
+  <link rel="modulepreload" href="https://unpkg.com/@barefootjs/xyflow" crossorigin>
+  ```
+
+  A module `import` is always a CORS fetch; without `crossorigin` the preload
+  does not match it and the browser fetches the module twice. It is harmless
+  on a same-origin preload.
+
 ## Related
 
 - [`@xyflow/system`](https://www.npmjs.com/package/@xyflow/system) — upstream pan/zoom + edge-path math library this package wraps.
