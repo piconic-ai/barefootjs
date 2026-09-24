@@ -131,17 +131,11 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // render — and every non-Hono adapter already places their portaled
   // `Content` correctly), and Go's remaining unary-not prop drop
   // (`showPlaceholder={!value()}`) is fixed too.
-  // Minimal, component-agnostic repro of `ref-effect-attr-state-ssr`
-  // itself — added once accordion/radio-group/command/combobox/select all
-  // graduated off it, so the entry keeps a live, named fixture in this
-  // corpus (the pairwise sweep's `…event-ref-callback…` rows reproduce
-  // the same `data-mounted` shape independently, on generated cases this
-  // ledger doesn't cover).
-  'ref-mount-attr': {
-    oracles: ['snap', 'three-point'],
-    reason: "The mount ref callback's data-mounted attribute never reaches SSR; hydration adds it.",
-    limitation: 'ref-effect-attr-state-ssr',
-  },
+  // `ref-mount-attr` graduated off this ledger: its shape (a `ref` mount
+  // callback writing an attribute the JSX never renders) is now a loud
+  // BF063 compile-time refusal, so it has no SSR/hydration pair left to
+  // compare. Its `rewrite` escape twin `ref-mount-attr-rendered` runs
+  // every oracle unquarantined.
   // `data-table`'s two masked mechanisms both graduated: the mirrored
   // `sorted` attribute (fixed earlier), then (#3064) each keyed row's
   // forwarded-cell hydration effect, which used to rewrite the cell with

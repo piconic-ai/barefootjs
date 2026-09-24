@@ -472,6 +472,53 @@ export function Post({ createdAt }: { createdAt: Date }) {
 }
 ```
 
+<a id="bf063"></a>
+
+### BF063 — Ref Callback Writes an Attribute the JSX Never Renders
+
+**Trigger:** An element's `ref` callback unconditionally writes an attribute on
+mount — `el.setAttribute('<name>', …)` or `el.dataset.<key> = …`, at the top
+level of the ref body or of a `createEffect` / `onMount` directly inside it —
+and the element's own JSX never renders that attribute. A `ref` callback never
+runs at SSR, so the server HTML always lacks the attribute and hydration adds
+it: the DOM visibly changes at the hydrate boundary. This fires identically on
+every adapter, including Hono.
+
+```tsx
+// ❌ BF063
+'use client'
+export function Panel(props: { delay?: number }) {
+  const handleMount = (el: HTMLElement) => {
+    el.dataset.delay = String(props.delay ?? 200)
+  }
+  return <div ref={handleMount}>…</div>
+}
+```
+
+**Fix:** Render the attribute in JSX from props or signals, so SSR already
+carries it (the ref may keep writing it afterwards). **Full server render.**
+
+```tsx
+// ✅ Fixed
+'use client'
+export function Panel(props: { delay?: number }) {
+  return <div data-delay={props.delay ?? 200}>…</div>
+}
+```
+
+Or add `/* @client */` before the ref expression to accept the attribute
+appearing only after hydration. **Client-render**: the attribute is absent
+from the server HTML until hydration.
+
+```tsx
+// ✅ Also compiles — attribute added at hydration, by choice
+<div ref={/* @client */ handleMount}>…</div>
+```
+
+> Not triggered when the write is conditional (inside an `if`), deferred (an
+> event listener, a timer), targets another node, when the JSX renders the
+> attribute in any form, or when the element has a spread (`{...rest}`).
+
 ---
 
 ## Error Code Quick Reference
@@ -488,3 +535,4 @@ export function Post({ createdAt }: { createdAt: Date }) {
 | BF049 | Error | Rich-typed prop read by client code cannot survive hydration |
 | BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |
 | BF056 | Error | Authored call to `formatDate` (compiler ABI, not an authored API) |
+| BF063 | Error | Ref callback writes an attribute on mount that the element's JSX never renders |

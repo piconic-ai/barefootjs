@@ -6609,10 +6609,13 @@ function processAttributes(
   const attrs: IRAttribute[] = []
   const events: IREvent[] = []
   let ref: string | null = null
+  let refExpr: ts.Expression | null = null
   let ssrPortalOwnerScope = false
+  let hasSpread = false
 
   for (const attr of attributes.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
+      hasSpread = true
       attrs.push(...expandSpreadAttribute(attr, ctx))
       continue
     }
@@ -6629,6 +6632,7 @@ function processAttributes(
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         ref = ctx.getJS(attr.initializer.expression)
+        refExpr = attr.initializer.expression
         ssrPortalOwnerScope = isSsrPortalRefCallback(attr.initializer.expression, ctx)
       }
       continue
@@ -6701,7 +6705,221 @@ function processAttributes(
     })
   }
 
+  // BF063 runs after the loop so it sees every attribute this element's
+  // JSX renders, regardless of whether `ref` came before or after it.
+  if (refExpr && !hasSpread) checkRefAttrAbsentAtSsr(refExpr, attrs, ctx)
+
   return { attrs, events, ref, ssrPortalOwnerScope }
+}
+
+// =============================================================================
+// Ref-written attribute absent at SSR (BF063)
+// =============================================================================
+
+/**
+ * Refuse (BF063) a `ref` callback that unconditionally writes an attribute
+ * at mount which the element's own JSX never renders. A `ref` callback
+ * never runs at SSR, so the server HTML always lacks that attribute and
+ * the first client pass adds it — the pre- and post-hydration DOM differ,
+ * a visible snap at the hydrate boundary.
+ *
+ * Deliberately narrow, so it only fires where the divergence is certain:
+ *
+ *   - Only writes to the callback's own element parameter count —
+ *     `el.setAttribute('<string literal>', …)` or `el.dataset.<x> = …`
+ *     (`el.dataset['<x>'] = …` too). Writes to any other node
+ *     (`root.dataset.x`, `el.querySelector(…).setAttribute(…)`) say
+ *     nothing about THIS element's server HTML.
+ *   - Only UNCONDITIONAL writes count: a statement at the top level of
+ *     the ref body, or at the top level of a `createEffect` / `onMount`
+ *     body that is itself a top-level statement of the ref body. Every
+ *     such write runs on mount. Writes nested in an `if`, a loop, an
+ *     event listener, a timer or any other closure may never run on
+ *     mount, so they are skipped.
+ *   - An attribute the JSX renders in any form is skipped. For a literal
+ *     or an expression SSR emits it, and whether an effect's first run
+ *     agrees with the rendered value is not decidable here —
+ *     `data-state="closed"` overwritten by an effect that computes `closed`
+ *     on mount is the correct, common case. A `/* @client *\/` attribute
+ *     value is an explicit opt-in to hydrate-time rendering already.
+ *   - An element with a spread (`{...props}`) is skipped: the spread may
+ *     render the attribute.
+ *   - A leading `/* @client *\/` on the ref expression opts out (the
+ *     author accepts the attribute appearing only after hydration).
+ *
+ * The callback is resolved structurally: an inline arrow / function
+ * expression, or an identifier naming a function declared in the
+ * enclosing component body (`findNamedCallbackInScope`, the same
+ * resolution `isSsrPortalRefCallback` uses). Anything else — an imported
+ * helper, a prop, a call result — is opaque and never fires.
+ */
+function checkRefAttrAbsentAtSsr(
+  refExpr: ts.Expression,
+  attrs: readonly IRAttribute[],
+  ctx: TransformContext,
+): void {
+  if (hasLeadingClientDirective(refExpr, ctx.sourceFile)) return
+  const callback = resolveRefCallback(refExpr)
+  if (!callback?.param) return
+
+  const rendered = new Set(attrs.map(a => a.name.toLowerCase()))
+  const reported = new Set<string>()
+  for (const write of collectUnconditionalRefAttrWrites(callback.body, callback.param)) {
+    if (rendered.has(write.name) || reported.has(write.name)) continue
+    reported.add(write.name)
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.REF_ATTR_ABSENT_AT_SSR,
+        getSourceLocation(write.node, ctx.sourceFile, ctx.filePath),
+        {
+          message:
+            `The ref callback writes '${write.name}' on mount, but this element's JSX never renders it. ` +
+            'A ref callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it — ' +
+            'the DOM visibly changes at the hydrate boundary.',
+          suggestion: {
+            message:
+              `Render '${write.name}' in the element's JSX from props or signals (e.g. \`${write.name}={…}\`) so SSR ` +
+              'and hydration agree — the ref may keep writing it afterwards. Or add /* @client */ before the ref ' +
+              'expression to accept the attribute appearing only after hydration.',
+            escape: [{ kind: 'rewrite' }, { kind: 'client-directive' }],
+          },
+        },
+      ),
+    )
+  }
+}
+
+/** Resolve a `ref={…}` expression to the callback's first param + body, when statically visible. */
+function resolveRefCallback(refExpr: ts.Expression): LocalCallback | undefined {
+  const expr = skipOuterExpressionWrappers(refExpr)
+  if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
+    return { param: firstSimpleParamName(expr), body: expr.body }
+  }
+  if (!ts.isIdentifier(expr)) return undefined
+  const owner = findEnclosingFunctionLike(expr)
+  if (!owner?.body) return undefined
+  return findNamedCallbackInScope(expr.text, owner.body)
+}
+
+/** Strip parentheses, `as` / `satisfies` casts and non-null assertions. */
+function skipOuterExpressionWrappers(expr: ts.Expression): ts.Expression {
+  let current = expr
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
+    ts.isNonNullExpression(current) ||
+    ts.isTypeAssertionExpression(current)
+  ) {
+    current = current.expression
+  }
+  return current
+}
+
+interface RefAttrWrite {
+  /** Lower-cased HTML attribute name (`data-*` for a `dataset` write). */
+  name: string
+  node: ts.Node
+}
+
+/** Callee names whose callback runs synchronously-or-on-mount and whose top-level writes therefore count. */
+const MOUNT_BODY_CALLEES = new Set(['createEffect', 'onMount'])
+
+/**
+ * The unconditional attribute writes to `param` in a ref body — see
+ * {@link checkRefAttrAbsentAtSsr} for exactly which statements count.
+ */
+function collectUnconditionalRefAttrWrites(body: ts.ConciseBody, param: string): RefAttrWrite[] {
+  const writes: RefAttrWrite[] = []
+  const visitStatements = (fnBody: ts.ConciseBody, allowNestedMountBody: boolean): void => {
+    // A block body's top-level expression statements, or a concise arrow's
+    // single expression. Any other statement kind (`if`, loops, `const`,
+    // `return`, …) is either conditional or not a write — skipped.
+    const exprs: ReadonlyArray<ts.Expression | undefined> = ts.isBlock(fnBody)
+      ? fnBody.statements.map(s => (ts.isExpressionStatement(s) ? s.expression : undefined))
+      : [fnBody]
+    for (const expr of exprs) {
+      if (!expr) continue
+      const write = matchRefAttrWrite(expr, param)
+      if (write) {
+        writes.push(write)
+        continue
+      }
+      if (allowNestedMountBody) {
+        const nested = matchMountBodyCall(expr, param)
+        if (nested) visitStatements(nested, false)
+      }
+    }
+  }
+  visitStatements(body, true)
+  return writes
+}
+
+/** `createEffect(() => {…})` / `onMount(function () {…})` → the callback body, unless it shadows `param`. */
+function matchMountBodyCall(expr: ts.Expression, param: string): ts.ConciseBody | undefined {
+  const call = skipOuterExpressionWrappers(expr)
+  if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return undefined
+  if (!MOUNT_BODY_CALLEES.has(call.expression.text)) return undefined
+  const fn = call.arguments[0] && skipOuterExpressionWrappers(call.arguments[0])
+  if (!fn || !(ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) return undefined
+  if (fn.parameters.some(p => ts.isIdentifier(p.name) && p.name.text === param)) return undefined
+  return fn.body
+}
+
+function isParamReference(expr: ts.Expression, param: string): boolean {
+  const inner = skipOuterExpressionWrappers(expr)
+  return ts.isIdentifier(inner) && inner.text === param
+}
+
+/** `param.setAttribute('<lit>', …)` or `param.dataset.<x> = …` → the attribute written. */
+function matchRefAttrWrite(expr: ts.Expression, param: string): RefAttrWrite | undefined {
+  const node = skipOuterExpressionWrappers(expr)
+
+  if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+    const callee = node.expression
+    const [nameArg] = node.arguments
+    if (
+      callee.name.text === 'setAttribute' &&
+      isParamReference(callee.expression, param) &&
+      nameArg &&
+      ts.isStringLiteralLike(nameArg)
+    ) {
+      return { name: nameArg.text.toLowerCase(), node }
+    }
+    return undefined
+  }
+
+  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+    const target = skipOuterExpressionWrappers(node.left)
+    let key: string | undefined
+    let datasetExpr: ts.Expression | undefined
+    if (ts.isPropertyAccessExpression(target)) {
+      key = target.name.text
+      datasetExpr = target.expression
+    } else if (ts.isElementAccessExpression(target) && ts.isStringLiteralLike(target.argumentExpression)) {
+      key = target.argumentExpression.text
+      datasetExpr = target.expression
+    }
+    if (!key || !datasetExpr) return undefined
+    const dataset = skipOuterExpressionWrappers(datasetExpr)
+    if (
+      ts.isPropertyAccessExpression(dataset) &&
+      dataset.name.text === 'dataset' &&
+      isParamReference(dataset.expression, param)
+    ) {
+      return { name: datasetKeyToAttrName(key), node }
+    }
+  }
+  return undefined
+}
+
+/** `nmOpenDelay` → `data-nm-open-delay` (the DOMStringMap camelCase → attribute mapping). */
+function datasetKeyToAttrName(key: string): string {
+  let out = 'data-'
+  for (const ch of key) {
+    out += ch >= 'A' && ch <= 'Z' ? `-${ch.toLowerCase()}` : ch
+  }
+  return out
 }
 
 // =============================================================================
@@ -6745,7 +6963,7 @@ function isSsrPortalRefCallback(refExpr: ts.Expression, ctx: TransformContext): 
 
 interface LocalCallback {
   param: string | undefined
-  body: ts.Node
+  body: ts.ConciseBody
 }
 
 type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration

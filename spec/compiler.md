@@ -928,6 +928,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF060 | Reactive binding (signal/memo getter) referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF061 | Init-scope local referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF062 | AwaitExpression in template scope (staged-IR; reserved for Phase 1 dispatcher) |
+| BF063 | A `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` / `el.dataset.<key> = …`) that the element's JSX never renders — a ref never runs at SSR, so the attribute is always absent from the server HTML and added at hydration. See "Ref-Written Attribute Absent at SSR (BF063)" below. |
 
 ### Error Format
 
@@ -1292,6 +1293,52 @@ payload weight in practice, rather than staying in the hundreds-of-bytes-per-com
 (see "Why `"use client"` is cheap here" for the analogous client-JS-bundle-size figure).
 
 **Reproduce:** `bun run packages/adapter-hono/bench/hydration-props-bench.ts`.
+
+### Ref-Written Attribute Absent at SSR (BF063)
+
+A `ref` callback is a client-only binding: it never runs at SSR. An attribute
+that only the callback writes is therefore always missing from the server HTML
+and always added by the first client pass — the DOM visibly changes at the
+hydrate boundary. BF063 refuses the one shape of this where the divergence is
+certain, decided structurally (TS AST, `checkRefAttrAbsentAtSsr` in
+`jsx-to-ir.ts`) on each intrinsic element carrying a `ref`:
+
+- **The callback resolves statically** — an inline arrow / function expression,
+  or an identifier naming a function declared in the enclosing component body.
+  Anything else (an imported helper, a prop) is opaque and never fires.
+- **The write targets the callback's own element parameter** —
+  `el.setAttribute('<string literal>', …)`, `el.dataset.<key> = …` or
+  `el.dataset['<key>'] = …` (the key maps to `data-<kebab-case>`). Writes to
+  any other node are ignored.
+- **The write is unconditional** — a top-level expression statement of the ref
+  body, or of a `createEffect` / `onMount` callback that is itself a top-level
+  statement of the ref body. Writes inside an `if`, a loop, an event listener,
+  a timer or any other closure are ignored.
+- **The element's JSX does not render that attribute in any form.** An
+  attribute the JSX renders (e.g. a `data-state="closed"` literal an effect
+  later overwrites) is out of scope: its first effect run commonly computes
+  the same value, so the divergence is not decidable here.
+- **The element has no spread** (`{...rest}` could render the attribute).
+
+```
+error[BF063]: The ref callback writes 'data-mounted' on mount, but this element's JSX never renders it.
+
+  --> src/components/Panel.tsx:3:5
+   |
+ 3 |     el.setAttribute('data-mounted', '1')
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Render 'data-mounted' in the element's JSX from props or signals
+```
+
+Escapes (`suggestion.escape`): `rewrite` — render the attribute in JSX from
+props or signals (the ref may keep writing it afterwards), so SSR already
+carries it; `client-directive` — a leading `/* @client */` on the ref
+expression (`ref={/* @client */ handleMount}`) accepts the attribute appearing
+only after hydration. Registry entry:
+`packages/adapter-tests/limitations/ref-effect-attr-state-ssr.ts`; fixtures
+`ref-mount-attr` (refused), `ref-mount-attr-rendered` / `ref-mount-attr-client`
+(escape twins).
 
 ### class= vs className= in JSX
 

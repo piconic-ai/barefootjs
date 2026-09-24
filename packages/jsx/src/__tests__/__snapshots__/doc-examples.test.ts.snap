@@ -3979,7 +3979,7 @@ export function initDialogOverlay(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => \`<div data-slot="dialog-overlay" bf="s0"></div>\`, name: 'DialogOverlay' })
+hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => \`<div data-slot="dialog-overlay" data-state="closed" bf="s0"></div>\`, name: 'DialogOverlay' })
 export function DialogOverlay(_p, __bfKey) { return createComponent('DialogOverlay__b3c36eee', _p, __bfKey) }"
 `;
 

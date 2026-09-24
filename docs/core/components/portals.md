@@ -157,7 +157,7 @@ function DialogOverlay() {
     })
   }
 
-  return <div data-slot="dialog-overlay" ref={handleMount} />
+  return <div data-slot="dialog-overlay" data-state="closed" ref={handleMount} />
 }
 ```
 
