@@ -3,7 +3,7 @@
  * a Worker-generated response only when its `Cache-Control` header allows
  * it. barefootjs.dev and ui.barefootjs.dev render docs/landing/gallery pages
  * that are identical for every visitor and only change on the next deploy,
- * so they're safe to cache — but nothing in either app sets the header today.
+ * so they're safe to cache.
  *
  * Shorter-lived than `integrations/shared/lib/cache-control.ts`'s: this repo
  * pushes to `main` several times a day, and a stale docs page is a worse
@@ -32,6 +32,17 @@
 import type { MiddlewareHandler } from 'hono'
 
 const CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600'
+// The edge's own freshness for the same responses, read by Workers Cache
+// (`[cache] enabled = true` in both sites' wrangler.toml) and stripped
+// before the response reaches the browser. It can be far longer than the
+// browser's: the Worker version is part of the Workers Cache key by
+// default, so every deploy starts from an empty edge cache and a page can
+// never outlive the deploy that rendered it there — while a browser's copy
+// is only bounded by `CACHE_CONTROL` above. The longer this is, the fewer
+// requests reach the Worker at all (a cache hit costs no CPU time). If
+// `cross_version_cache` is ever turned on, this stops being invalidated by
+// deploys and must come down (or be purged on deploy).
+const CDN_CACHE_CONTROL = 'public, max-age=86400, stale-while-revalidate=604800'
 // The default. Must be set explicitly (not just "no Cache-Control")
 // because an absent header still gets Cloudflare's heuristic-freshness
 // default TTL.
@@ -56,9 +67,13 @@ export const cacheControl: MiddlewareHandler = async (c, next) => {
   // Default: do not cache. The one case below must explicitly opt in.
   let cacheControlValue = PRIVATE_CACHE_CONTROL
 
+  let cdnCacheControlValue: string | null = null
+
   if (c.res.ok && !c.req.header('Cookie') && !c.res.headers.has('Set-Cookie')) {
     cacheControlValue = CACHE_CONTROL
+    cdnCacheControlValue = CDN_CACHE_CONTROL
   }
 
   c.res.headers.set('Cache-Control', cacheControlValue)
+  if (cdnCacheControlValue) c.res.headers.set('Cloudflare-CDN-Cache-Control', cdnCacheControlValue)
 }

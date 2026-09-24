@@ -20,6 +20,27 @@ describe('cacheControl middleware', () => {
     expect(res.headers.get('Cache-Control')).toBe('public, max-age=300, stale-while-revalidate=3600')
   })
 
+  test('gives the edge (Workers Cache) a longer TTL than browsers on a cacheable response', async () => {
+    const res = await buildApp().request('/docs/quick-start')
+    expect(res.headers.get('Cloudflare-CDN-Cache-Control')).toBe('public, max-age=86400, stale-while-revalidate=604800')
+  })
+
+  test('never gives the edge a TTL on a response that is not cacheable', async () => {
+    for (const [path, init] of [
+      ['/missing', undefined],
+      ['/login', undefined],
+      ['/account', { headers: { Cookie: 'session=abc' } }],
+    ] as const) {
+      const res = await buildApp().request(path, init)
+      expect(res.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
+    }
+  })
+
+  test('leaves the edge TTL of a route that set its own Cache-Control alone', async () => {
+    const res = await buildApp().request('/og')
+    expect(res.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
+  })
+
   test('leaves a route that already set its own Cache-Control alone', async () => {
     const res = await buildApp().request('/og')
     expect(res.headers.get('Cache-Control')).toBe('public, max-age=86400, immutable')

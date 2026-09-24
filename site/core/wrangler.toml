@@ -2,18 +2,25 @@ name = "barefootjs-site"
 main = "worker.ts"
 compatibility_date = "2024-01-01"
 
+# Workers Cache: Cloudflare consults the cache before running this Worker,
+# so a hit never invokes it (no CPU time billed). What is cacheable, and for
+# how long, is decided by the response headers the `cacheControl`
+# middleware (site/shared/lib/cache-control.ts) sets on every HTML response.
+# Requires Wrangler 4.69.0+.
+#
+# The catch this config is shaped around: with caching enabled, EVERY
+# request to this Worker is billed at the standard request rate — including
+# static asset requests that are otherwise free. So this Worker must not be
+# the one serving the static assets. `wrangler.static.toml` deploys the
+# same `dist/` as a separate, assets-only Worker (no cache, so its requests
+# stay free) on routes for the static paths — `barefootjs.dev/static/*` and
+# `barefootjs.dev/slides/*` — and a route takes precedence over this Worker's
+# Custom Domain on the same hostname. Same origin, same URLs, no CORS.
+#
+# `[assets]` stays here for the few root-level files outside those routes
+# (favicon, robots.txt, llms.txt …) and for `wrangler dev`.
+[cache]
+enabled = true
+
 [assets]
 directory = "./dist"
-
-# Workers Cache ([cache] enabled = true) is intentionally NOT turned on here yet.
-# Verified against developers.cloudflare.com/workers/cache/#pricing: "When
-# caching is enabled, every request to your Worker is charged at the standard
-# Workers request rate, including requests that are normally free: static
-# asset requests..." — this is unconditional, not something `exports`-based
-# per-entrypoint caching can scope around, because `[assets]` static-file
-# serving isn't a WorkerEntrypoint. For an asset-heavy docs/gallery site like
-# this one, that's a real net cost INCREASE, the opposite of why this file
-# was touched (piconic-ai/barefootjs#2789). The `cacheControl` middleware
-# (site/shared/lib/cache-control.ts) is still mounted and sets Cache-Control
-# on HTML responses, so flipping this on later is a one-line change once the
-# asset-vs-HTML request volume against a live account justifies it.
