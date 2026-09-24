@@ -42,12 +42,20 @@ test.describe('static site', () => {
     const res = await request.get(new URL(ogImage!).pathname)
     expect(res.status()).toBe(200)
     expect(res.headers()['content-type']).toContain('image/png')
+    expect(res.headers()['cache-control']).toBe('public, max-age=86400, immutable')
   })
 
-  test('build intermediates are not served', async ({ request }) => {
+  test('build intermediates and dev-only copies are not served', async ({ request }) => {
     expect((await request.get('/bf-assets.ts')).status()).toBe(404)
     expect((await request.get('/components/theme-switcher.tsx')).status()).toBe(404)
-    // …while the client chunks under /static/components/ are.
+    // The dev server's unprefixed copies of /static/* files are not served…
+    for (const path of ['/globals.css', '/uno.css', '/playground/page.js']) {
+      expect((await request.get(path)).status(), path).toBe(404)
+    }
+    // …while the /static/ files themselves are, client chunks included.
+    for (const path of ['/static/globals.css', '/static/uno.css', '/static/playground/page.js']) {
+      expect((await request.get(path)).status(), path).toBe(200)
+    }
     const html = await (await request.get('/docs/quick-start')).text()
     const chunk = html.match(/\/static\/components\/assets\/router-entry-[\w-]+\.js/)?.[0]
     expect(chunk).toBeTruthy()

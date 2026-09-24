@@ -54,6 +54,15 @@ function atOrigin(app: Hono, origin: string): Hono {
   return view
 }
 
+// ── Drop the previous run's output ──────────────────────────
+// dist/ is not cleaned between local builds; a page or OG title that no
+// longer exists would otherwise stay behind and be deployed.
+await fs.rm(resolve(DIST_DIR, 'docs'), { recursive: true, force: true })
+await fs.rm(resolve(DIST_DIR, 'og'), { recursive: true, force: true })
+for (const entry of await fs.readdir(DIST_DIR)) {
+  if (entry.endsWith('.html')) await fs.rm(resolve(DIST_DIR, entry))
+}
+
 const { pages, content, mdx } = await loadContentFromDisk(CONTENT_DIR)
 const app = await createApp(content, pages, mdx)
 
