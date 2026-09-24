@@ -2996,7 +2996,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * already-pinned silent-empty-loop fallback (`loop-row-child-children-attrs-frozen`)
    * — a regression from silently-incomplete to loudly-broken-at-runtime.
    * The walk descends through every node shape that already bakes and
-   * renders correctly here (a nested component and its props, a
+   * renders correctly here (a nested component's children, a
    * conditional and both branches, a nested loop, a fragment) and flags
    * only an actual reactive read on the way — flagging those shapes
    * wholesale would silently empty loops that render fine on `main`
@@ -3022,9 +3022,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         case 'component':
           // A scalar-item row's companion define runs with the bare item as
           // its data (`bf_tmpl … .BfLoopItem`), so a nested component's
-          // slot field on the row wrapper is out of reach there.
+          // slot field on the row wrapper is out of reach there. Its props
+          // are not checked: they are evaluated in the parent's constructor
+          // (`collectBodyChildInstances`), never inside the companion
+          // define, so an outer read there cannot hit the missing field.
           if (scalarRow) return true
-          if (node.props.some(p => p.callsReactiveGetters)) return true
           if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
           continue
         case 'conditional':
