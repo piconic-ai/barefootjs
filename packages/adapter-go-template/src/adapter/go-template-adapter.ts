@@ -2982,9 +2982,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Conservative check: does any element attribute or text expression inside
-   * a static loop's forwarded body-children tree call a signal getter or
-   * memo (`callsReactiveGetters`, computed by the analyzer — #940/#942)?
+   * Does anything inside a static loop's forwarded body-children tree call
+   * a signal getter or memo (`callsReactiveGetters`, computed by the
+   * analyzer — #940/#942)?
    * Such a reference has no live binding once `emitStaticBodyWrappers` bakes
    * this static array's rows ahead of time: the row's forwarded children
    * render through a SEPARATE `bf_tmpl`-executed companion define
@@ -2995,15 +2995,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * (`can't evaluate field ... in type ...`) instead of the existing,
    * already-pinned silent-empty-loop fallback (`loop-row-child-children-attrs-frozen`)
    * — a regression from silently-incomplete to loudly-broken-at-runtime.
-   * Any node shape this walk doesn't specifically clear (a conditional, a
-   * nested loop, a component, a slot) is treated as unsafe too, matching
-   * `analyzeBakeableStaticElementLoop`'s own "a loud/safe refusal beats
-   * silently wrong output" conservatism — reaching outer reactive state
-   * from a loop-forwarded child on Go is a separate, unsolved capability
-   * gap (#3164 fixes the array-source scope only), not something this
-   * narrow check attempts to resolve.
+   * The walk descends through every node shape that already bakes and
+   * renders correctly here (a nested component and its props, a
+   * conditional and both branches, a nested loop, a fragment) and flags
+   * only an actual reactive read on the way — flagging those shapes
+   * wholesale would silently empty loops that render fine on `main`
+   * (e.g. `<Chip><Badge>{o.label}</Badge></Chip>`). Only shapes it can't
+   * see into (a slot, a provider, an async boundary, an if-statement) are
+   * treated as unsafe. Reaching outer reactive state from a loop-forwarded
+   * child on Go is a separate, unsolved capability gap (#3164 fixes the
+   * array-source scope only), not something this check attempts to
+   * resolve.
    */
-  private bodyChildrenReferenceOuterReactiveState(nodes: readonly IRNode[]): boolean {
+  private bodyChildrenReferenceOuterReactiveState(nodes: readonly IRNode[], scalarRow = false): boolean {
     for (const node of nodes) {
       switch (node.type) {
         case 'text':
@@ -3013,7 +3017,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           continue
         case 'element':
           if (node.attrs.some(a => a.callsReactiveGetters)) return true
-          if (this.bodyChildrenReferenceOuterReactiveState(node.children)) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        case 'component':
+          // A scalar-item row's companion define runs with the bare item as
+          // its data (`bf_tmpl … .BfLoopItem`), so a nested component's
+          // slot field on the row wrapper is out of reach there.
+          if (scalarRow) return true
+          if (node.props.some(p => p.callsReactiveGetters)) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        case 'conditional':
+          if (node.callsReactiveGetters) return true
+          if (this.bodyChildrenReferenceOuterReactiveState([node.whenTrue, node.whenFalse], scalarRow)) return true
+          continue
+        case 'loop':
+          if (node.callsReactiveGetters) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
+          continue
+        case 'fragment':
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
           continue
         default:
           return true
@@ -3039,16 +3062,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // component) baked nothing and the whole loop silently dropped from
     // SSR (#3164).
     for (const nested of staticWithBody) {
-      // A forwarded child element reading an outer signal/memo has no path
-      // back to it from the row's own companion define — keep the existing
+      // A forwarded child element reading an outer signal/memo (or, on a
+      // scalar-item row, a nested component) has no path back to it from
+      // the row's own companion define — keep the existing
       // silent-empty-loop fallback for that shape rather than baking Go
       // source that crashes at `go run` time (see the doc comment above).
-      if (nested.bodyChildren && this.bodyChildrenReferenceOuterReactiveState(nested.bodyChildren)) {
+      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
+      if (nested.bodyChildren && this.bodyChildrenReferenceOuterReactiveState(nested.bodyChildren, !!scalarLoopType)) {
         continue
       }
       const found = this.resolveLoopArraySourceConst(nested.loopArray)
       const localConst = found?.value && found.type ? found : null
-      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
       let bakedValue = localConst?.type
         ? convertInitialValue(this.emitCtx, localConst.value!, localConst.type, ir.metadata.propsParams, localConst.parsed)
         : null
