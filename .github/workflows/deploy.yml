@@ -92,14 +92,6 @@ jobs:
       - name: Build site (includes slide decks)
         run: cd site/core && bun run build
 
-      # Static Worker first: it serves /static/* and /slides/* (assets-only,
-      # free), and the HTML Worker deployed next references its new chunks.
-      # See site/core/wrangler.static.toml.
-      - name: Deploy static assets Worker to Cloudflare Workers
-        run: cd site/core && bunx wrangler deploy -c wrangler.static.toml
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
       - name: Deploy to Cloudflare Workers
         run: cd site/core && bunx wrangler deploy
         env:

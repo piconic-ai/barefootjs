@@ -33,7 +33,7 @@ import type { MiddlewareHandler } from 'hono'
 
 const CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600'
 // The edge's own freshness for the same responses, read by Workers Cache
-// (`[cache] enabled = true` in both sites' wrangler.toml) and stripped
+// (`[cache] enabled = true` in site/ui's wrangler.toml) and stripped
 // before the response reaches the browser. It can be far longer than the
 // browser's: the Worker version is part of the Workers Cache key by
 // default, so every deploy starts from an empty edge cache and a page can

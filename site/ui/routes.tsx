@@ -154,10 +154,10 @@ function blockMeta(slug: string): { title: string; description: string } {
 export function createApp() {
   const app = new Hono()
 
-  // Sets Cache-Control on every route below that doesn't set its own. Inert
-  // today — wrangler.toml deliberately leaves `[cache]` off (see the
-  // comment there) — but mounted first so enabling it later is a one-line
-  // wrangler.toml change with the middleware already wired and tested.
+  // Sets Cache-Control on every route below that doesn't set its own —
+  // what Workers Cache (`[cache] enabled = true` in wrangler.toml) reads to
+  // decide whether, and for how long, a response is served without
+  // invoking this Worker.
   app.use('*', cacheControl)
 
   app.use(renderer)

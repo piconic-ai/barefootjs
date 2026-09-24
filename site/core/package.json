@@ -7,7 +7,7 @@
     "dev": "concurrently -k -n vite,server -c blue,yellow \"bunx vite dev\" \"bun run --watch server.tsx\"",
     "build": "bun run slides:build --all && bun run build.ts",
     "test:e2e": "playwright test",
-    "deploy": "bun run build && wrangler deploy -c wrangler.static.toml && wrangler deploy",
+    "deploy": "bun run build && wrangler deploy",
     "slides:build": "bun run scripts/build-slides.ts"
   },
   "dependencies": {
@@ -36,7 +36,7 @@
     "@unocss/preset-wind": "^66.0.0",
     "bun-types": "^1.1.0",
     "unocss": "^66.0.0",
-    "wrangler": "^4.69.0",
+    "wrangler": "^4.59.0",
     "vite": "^6.0.0",
     "concurrently": "^9.1.0"
   }
