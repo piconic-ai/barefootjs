@@ -5,7 +5,8 @@
  * Each adapter provides its own render function.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, expect } from 'bun:test'
+import { renderTest } from './render-test'
 import type { ComponentIR, CompilerError, TemplateAdapter } from '@barefootjs/jsx'
 import { compileJSX } from '@barefootjs/jsx'
 import { jsxFixtures } from '../fixtures'
@@ -175,7 +176,7 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
     for (const fixture of jsxFixtures) {
       if (skipSet.has(fixture.id)) continue
 
-      test(`[${fixture.id}] ${fixture.description}`, async () => {
+      renderTest(`[${fixture.id}] ${fixture.description}`, async () => {
         // expectedDiagnostics path: compile-only, no HTML comparison.
         // The adapter test file declares the contract per fixture id
         // (e.g. `static-array-children` → BF103 for this adapter).
