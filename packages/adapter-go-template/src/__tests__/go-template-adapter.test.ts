@@ -2197,7 +2197,7 @@ export function Demo() {
 
     test('rows with different keys refuse with BF101 instead of rendering an empty loop', () => {
       const { bf101 } = compileLoop(`const opts = [{ id: 'a', label: 'A' }, { id: 'b' }]`)
-      expect(bf101.length).toBeGreaterThan(0)
+      expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain("Loop array `opts` is an object-literal array whose rows don't share one shape")
     })
 
@@ -2214,7 +2214,20 @@ export function Demo() {
         `const opts = [{ id: 'a', label: 'A', meta: { x: 1 } }, { id: 'b', label: 'B', meta: { x: 2 } }]`,
       )
       expect(bf101).toHaveLength(1)
-      expect(bf101[0].message).toContain("with a field the Go template adapter can't give a Go type")
+      expect(bf101[0].message).toContain("with a field the Go template adapter can't give one Go type across its rows")
+      expect(bf101[0].suggestion?.message).toContain('the same type in every row')
+    })
+
+    test('rows with the same keys but a field whose type differs between rows get the field wording', () => {
+      const { bf101 } = compileLoop(`const opts = [{ id: 'a', label: 'A' }, { id: 'b', label: 2 }]`)
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('a value whose type differs between rows')
+    })
+
+    test('rows with an empty nested array in every row get the field wording', () => {
+      const { bf101 } = compileLoop(`const opts = [{ id: 'a', tags: [] }, { id: 'b', tags: [] }]`)
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('an empty nested array')
     })
   })
 
@@ -2251,7 +2264,7 @@ export function Demo() {
     test('a negated operand the recursion cannot lower refuses with BF101', () => {
       const { types, bf101 } = compileParent('!(value() && ready())')
       expect(types).not.toContain('ShowPlaceholder:')
-      expect(bf101.length).toBeGreaterThan(0)
+      expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain("Prop 'showPlaceholder' on <Trigger> is a negated expression")
     })
   })

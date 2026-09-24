@@ -64,6 +64,7 @@ describe('compileForCompat', () => {
           'off-subset-callback-body',
           'opaque-local-accessor-call',
           'signal-read-in-nested-static-loop',
+          'untyped-loop-array-no-row-struct',
         ],
       },
     ])

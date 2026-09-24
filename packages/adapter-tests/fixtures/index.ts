@@ -745,6 +745,13 @@ import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-ch
 // (#3178). Regression pin for go-template's untyped-object-array-const
 // element-type synthesis.
 import { fixture as loopRowChildChildrenUntypedArray } from './loop-row-child-children-untyped-array'
+// Untyped object-literal loop arrays with no single row shape: pinned
+// refusals on go-template (`untyped-loop-array-no-row-struct`), each with an
+// explicit-element-type rewrite escape.
+import { fixture as loopRowChildUntypedArrayNestedField } from './loop-row-child-untyped-array-nested-field'
+import { fixture as loopRowChildUntypedArrayNestedFieldTyped } from './loop-row-child-untyped-array-nested-field-typed'
+import { fixture as loopRowChildUntypedArrayMismatchedKeys } from './loop-row-child-untyped-array-mismatched-keys'
+import { fixture as loopRowChildUntypedArrayMismatchedKeysTyped } from './loop-row-child-untyped-array-mismatched-keys-typed'
 // A child inside a reactive conditional branch that is active at
 // hydration must be initialized once, by its branch (it used to be
 // initialized twice: its onMount listener double-counted and one instance
@@ -1234,6 +1241,10 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedShapes,
   loopRowChildChildrenNestedReactiveProp,
   loopRowChildChildrenUntypedArray,
+  loopRowChildUntypedArrayNestedField,
+  loopRowChildUntypedArrayNestedFieldTyped,
+  loopRowChildUntypedArrayMismatchedKeys,
+  loopRowChildUntypedArrayMismatchedKeysTyped,
   conditionalChildListenerCleanup,
   nestedChildNegatedProp,
   diamondPropagation,

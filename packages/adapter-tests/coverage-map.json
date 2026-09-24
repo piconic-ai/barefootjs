@@ -3833,6 +3833,72 @@
         "text"
       ]
     },
+    "loop-row-child-untyped-array-mismatched-keys": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-untyped-array-mismatched-keys-typed": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-untyped-array-nested-field": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-untyped-array-nested-field-typed": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-controlled-input": {
       "kinds": [
         "array-literal",
@@ -7240,18 +7306,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 124,
+    "array-literal": 128,
     "array-method": 72,
     "arrow": 77,
     "binary": 114,
     "call": 302,
     "conditional": 38,
-    "identifier": 427,
+    "identifier": 431,
     "index-access": 15,
-    "literal": 338,
+    "literal": 342,
     "logical": 53,
-    "member": 251,
-    "object-literal": 99,
+    "member": 255,
+    "object-literal": 103,
     "template-literal": 33,
     "unary": 31,
     "unsupported": 52
@@ -7294,8 +7360,8 @@
     "binary:>=": 1,
     "literal:boolean": 75,
     "literal:null": 27,
-    "literal:number": 155,
-    "literal:string": 228,
+    "literal:number": 157,
+    "literal:string": 232,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
