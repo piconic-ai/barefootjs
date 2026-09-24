@@ -2058,53 +2058,95 @@
           ]
         }
       },
-      "component-root-client-scope": {
+      "conditional-return-fragment-branch": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
           "limitations": [
-            "component-root-client-scope-comment"
+            "fragment-wrapped-conditional-return-branch-scope"
           ]
         }
       },
@@ -4086,74 +4128,149 @@
       },
       "nested-prop-member-signal-seed": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "nested-prop-member-signal-seed"
-          ]
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "nested-prop-signal-child-prop": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "nested-prop-member-signal-seed"
-          ]
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "opaque-local-accessor-call": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         }
       },
       "preamble-cells": {
@@ -5244,9 +5361,9 @@
         "description": "site/ui Combobox demo — typed filtering hides items via the hidden attribute; selection closes and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/combobox.ts"
       },
-      "component-root-client-scope": {
-        "description": "a client component whose root is a child-component call renders its own scope comment so it hydrates",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-root-client-scope.ts"
+      "conditional-return-fragment-branch": {
+        "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
       },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
@@ -5432,6 +5549,10 @@
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
       },
+      "opaque-local-accessor-call-client": {
+        "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call-client.ts"
+      },
       "reduce-right-typeof-body-client": {
         "description": "Off-subset `.reduceRight()` body deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-right-typeof-body-client.ts"
@@ -5584,26 +5705,6 @@
         "BF101"
       ]
     },
-    "component-root-client-scope-comment": {
-      "title": "Client component whose root is a child-component call",
-      "kind": "silent",
-      "given": "a `'use client'` component whose entire JSX return is a single child-component call (no wrapping element), with its own state or handlers (e.g. buttons forwarded as the child's `children`)",
-      "expected": "the server HTML wraps the child's output in the parent's `<!--bf-scope:...-->` / `<!--bf-/scope:...-->` comment pair carrying the parent's props, so the parent hydrates and its handlers and reactive props reach the child",
-      "actual": "omits the parent's scope comment pair and renders only the child's output, with no diagnostic, so the parent never hydrates on the client: its forwarded handlers do nothing and the child's prop never updates",
-      "fixtures": [
-        "component-root-client-scope"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
       "kind": "refusal",
@@ -5659,14 +5760,28 @@
     },
     "fragment-wrapped-conditional-return-branch-scope": {
       "title": "Fragment-wrapped branch of a conditional return is never hydrated",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a component with an early-return branch whose other branch is wrapped in a fragment (`if (x) return <a/>; return <><button/></>`)",
       "expected": "the rendered branch root carries the component scope id on every render path, so its events bind",
-      "actual": "renders the fragment-wrapped branch root without a scope id after hydration (the server HTML is correct, a pure client mount is correct), so its events never bind",
+      "actual": "the compiler refuses with BF029",
       "fixtures": [
         "conditional-return-fragment-branch"
       ],
-      "adapters": []
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF029"
+      ]
     },
     "jsx-wrapped-in-non-children-prop": {
       "title": "JSX wrapped in a ternary or array at a non-children prop",
@@ -5804,16 +5919,19 @@
     },
     "nested-prop-member-signal-seed": {
       "title": "Signal seeded from a member of an object-typed prop",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a `createSignal` whose initial value is a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`), read by the component as text, a conditional, or a loop source, or forwarded to a child component prop",
       "expected": "the server HTML renders the seeded value, as if the member had been passed as a top-level prop",
-      "actual": "emits a `nil` seed for the signal, with no diagnostic: its own reads render the zero value (empty text, the falsy branch, an empty loop), and forwarding it to a child prop typed as a primitive makes the generated server code fail to compile",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "nested-prop-member-signal-seed",
         "nested-prop-signal-child-prop"
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "off-subset-callback-body": {
@@ -5849,10 +5967,10 @@
     },
     "opaque-local-accessor-call": {
       "title": "Opaque local accessor invoked from a template position",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a component-body `const` bound to the result of a call the compiler cannot evaluate (a helper returning a function, or an accessor returned by a library), invoked with `()` in text position",
       "expected": "the accessor runs at render time and its result renders in the server HTML",
-      "actual": "emits the slot as a bare template-variable lookup named after the const (an empty slot in the CSR template lambda), with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "opaque-local-accessor-call"
       ],
@@ -5866,6 +5984,9 @@
         "pebble",
         "twig",
         "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "ref-effect-attr-state-ssr": {
