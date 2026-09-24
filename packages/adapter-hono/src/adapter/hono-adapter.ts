@@ -524,8 +524,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
 
     // Component roots of client components need comment-based scope markers.
     // Unlike element roots (which get bf-s directly), the root component is
-    // a plain function whose output has no hydration markers.
-    if (!isIfStatement && hasClientInteractivity && isRootComponent) {
+    // a plain function whose output has no hydration markers. #3141: read
+    // the shared IR flag (`decideComponentRootScopeComment`,
+    // `packages/jsx/src/component-root-scope-comment.ts`) instead of
+    // re-deriving `hasClientInteractivity && isRootComponent` locally — it's
+    // computed with this exact formula, so this stays behavior-preserving
+    // for Hono while giving the eight DSL adapters the same answer to read.
+    if (!isIfStatement && isRootComponent && (ir.root as IRComponent).needsScopeComment) {
       jsxBody = this.wrapWithScopeComment(jsxBody)
     }
 

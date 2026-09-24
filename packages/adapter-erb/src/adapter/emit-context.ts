@@ -68,6 +68,14 @@ export interface ErbEmitContext {
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string): boolean
 
+  /**
+   * #3144: whether `name` is a component-body local bound to an opaque
+   * call (`const label = makeLabel()`) -- invoking it (`label()`) has no
+   * ERB template lowering, unlike a genuine signal/memo getter. See
+   * `isOpaqueLocalAccessorName` (`@barefootjs/jsx`).
+   */
+  _isOpaqueLocalAccessorCall(name: string): boolean
+
   /** Record a BF101 unsupported-expression diagnostic. */
   _recordExprBF101(message: string, reason?: string): void
 

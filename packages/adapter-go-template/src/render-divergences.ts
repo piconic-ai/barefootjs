@@ -85,12 +85,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
 // undelivered.
 export const renderDivergences: RenderDivergences = {
-  // A component-body const bound to an opaque call (`const label =
-  // makeLabel()`) and invoked in text position lowers to a bare template
-  // variable named after the const, with no diagnostic — the reference runs
-  // the accessor at render time. Escape twin:
-  // `opaque-local-accessor-call-client`.
-  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback
@@ -147,14 +141,6 @@ export const renderDivergences: RenderDivergences = {
   // which only lowers literal and boolean props, so `on={highlight()}` falls
   // back to Go's zero value.
   'loop-row-child-children-nested-reactive-prop': { limitation: 'loop-row-child-nested-component-reactive-prop-dropped' },
-  // A signal seeded from an object prop's member (`createSignal(initial.label)`)
-  // bakes `nil` into its own `interface{}` field: text reads render empty,
-  // a conditional takes its falsy branch, a loop over it renders no rows.
-  // Forwarded to a child's `string` Input field (`Label: nil`), `go run`
-  // fails to compile `types.go`. Found by the explore harness's adapter
-  // axis, where every scenario seeds its signals from an `initial` prop.
-  'nested-prop-member-signal-seed': { limitation: 'nested-prop-member-signal-seed' },
-  'nested-prop-signal-child-prop': { limitation: 'nested-prop-member-signal-seed' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

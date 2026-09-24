@@ -55,6 +55,14 @@ export interface JinjaEmitContext {
   _resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
   /** Record a BF101 unsupported-expression diagnostic. */
+  /**
+   * #3144: whether `name` is a component-body local bound to an opaque
+   * call (`const label = makeLabel()`) -- invoking it (`label()`) has no
+   * Jinja template lowering, unlike a genuine signal/memo getter. See
+   * `isOpaqueLocalAccessorName` (`@barefootjs/jsx`).
+   */
+  _isOpaqueLocalAccessorCall(name: string): boolean
+
   _recordExprBF101(message: string, reason?: string): void
 
   /** Lower a filter/predicate body to its Jinja form, bound to `param`. */

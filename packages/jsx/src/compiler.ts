@@ -18,6 +18,7 @@ import { jsxToIR } from './jsx-to-ir.ts'
 import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
+import { decideComponentRootScopeComment } from './component-root-scope-comment.ts'
 import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
 import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest, renderUsedImportLines, mergeCompiledClientJsImports } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
@@ -211,6 +212,11 @@ function compileMultipleComponents(
     checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
     checkRichTypePropSerialization(componentIR.root, componentIR.metadata, errors, ctx.propsDestructuring?.loc)
     checkAuthoredFormatDateCalls(componentIR.root, componentIR.metadata, errors)
+
+    // #3141: decide once whether a component-call render root needs the
+    // comment-based scope marker pair, same "right after clientAnalysis"
+    // timing as Step B below.
+    decideComponentRootScopeComment(componentIR)
 
     // Slot unification Step B — see the single-component path's identical
     // call for why this must run before adapter.generate/generateClientJs.
@@ -782,6 +788,11 @@ export function compileJSX(
   checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
   checkRichTypePropSerialization(componentIR.root, componentIR.metadata, errors, ctx.propsDestructuring?.loc)
   checkAuthoredFormatDateCalls(componentIR.root, componentIR.metadata, errors)
+
+  // #3141: decide once whether a component-call render root needs the
+  // comment-based scope marker pair, same "right after clientAnalysis"
+  // timing as Step B below.
+  decideComponentRootScopeComment(componentIR)
 
   // Slot unification Step B (`spec/slot-unification.md` §5 Step B): decide
   // marker elision ONCE, mutating `componentIR.root` in place, before either
