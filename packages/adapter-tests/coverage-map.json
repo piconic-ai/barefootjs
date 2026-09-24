@@ -3833,42 +3833,68 @@
         "text"
       ]
     },
-    "loop-row-child-children-untyped-array-nested-field": {
+    "loop-row-child-untyped-array-mismatched-keys": {
       "kinds": [
         "array-literal",
-        "binary",
         "identifier",
         "literal",
         "member",
         "object-literal"
       ],
       "axes": [
-        "binary:+",
-        "literal:number",
         "literal:string"
       ],
       "contexts": [
-        "attribute",
         "loop",
         "text"
       ]
     },
-    "loop-row-child-children-untyped-array-nested-field-typed": {
+    "loop-row-child-untyped-array-mismatched-keys-typed": {
       "kinds": [
         "array-literal",
-        "binary",
         "identifier",
         "literal",
         "member",
         "object-literal"
       ],
       "axes": [
-        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-untyped-array-nested-field": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
         "literal:number",
         "literal:string"
       ],
       "contexts": [
-        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-untyped-array-nested-field-typed": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
         "loop",
         "text"
       ]
@@ -7280,18 +7306,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 126,
+    "array-literal": 128,
     "array-method": 72,
     "arrow": 77,
-    "binary": 116,
+    "binary": 114,
     "call": 302,
     "conditional": 38,
-    "identifier": 429,
+    "identifier": 431,
     "index-access": 15,
-    "literal": 340,
+    "literal": 342,
     "logical": 53,
-    "member": 253,
-    "object-literal": 101,
+    "member": 255,
+    "object-literal": 103,
     "template-literal": 33,
     "unary": 31,
     "unsupported": 52
@@ -7325,7 +7351,7 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 15,
-    "binary:+": 30,
+    "binary:+": 28,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
@@ -7335,7 +7361,7 @@
     "literal:boolean": 75,
     "literal:null": 27,
     "literal:number": 157,
-    "literal:string": 230,
+    "literal:string": 232,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
