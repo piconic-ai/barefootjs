@@ -38,22 +38,24 @@ JSX Source
 
 The `GoTemplateAdapter` is web-framework-agnostic: its `html/template` output runs on any Go server. `npm create barefootjs@latest` ships scaffolds for Echo, Gin, Chi, and net/http (via `--adapter`) — see [Go Template Adapter → Server integration](./adapters/go-template-adapter.md#server-integration).
 
-The Perl adapters share one engine-agnostic runtime (`BarefootJS`): `@barefootjs/mojolicious` targets Mojolicious EP, and `@barefootjs/xslate` targets Text::Xslate (Kolon) and runs under any PSGI/Plack app. See the [Perl Adapter](./adapters/perl-adapter.md) page.
+For a backend not listed here, see [Writing a Custom Adapter](./adapters/custom-adapter.md).
 
-The Ruby, Python, Rust, and Java adapters are each single-backend, engine-agnostic ports of that same runtime model to another language: `@barefootjs/erb` (Ruby/ERB), `@barefootjs/jinja` (Python/Jinja2), `@barefootjs/rust` (Rust/minijinja), and `@barefootjs/pebble` (Java/Pebble) — none of them require a specific web framework. The PHP adapters follow the same pattern but, like Perl, share one engine-agnostic runtime (`@barefootjs/php`) across two backends: `@barefootjs/twig` targets Twig and `@barefootjs/blade` targets Laravel Blade (via `illuminate/view` standalone). `@barefootjs/twig`, `@barefootjs/blade`, and `@barefootjs/rust` are themselves near-mechanical ports of `@barefootjs/jinja`'s Jinja2 syntax, so all emit near-identical templates; `@barefootjs/pebble` is a close port of the same syntax with a handful of documented divergences where Pebble's Twig-family grammar diverges from Jinja2's (see the [Java Adapter](./adapters/java-adapter.md) page). See the [PHP Adapter](./adapters/php-adapter.md) page.
+## How every backend renders
 
-## Pages
+Each adapter emits two things per component: a marked template in the backend's own template language, and the client JS that hydrates it. On the server, a small runtime object written in the host language — `bf` in every template — renders the template. It supplies the hydration markers, context propagation, child-component rendering, script registration, and a JS-compatible helper library (`string`, `truthy`, array and string helpers, `spread_attrs`, …) so the template evaluates expressions the way the browser does.
 
-| Topic | Description |
-|-------|-------------|
-| [Adapter Architecture](./adapters/adapter-architecture.md) | How adapters work, the `TemplateAdapter` interface, and the IR contract |
-| [Hono Adapter](./adapters/hono-adapter.md) | Configuration and output format for Hono / JSX-based servers |
-| [Go Template Adapter](./adapters/go-template-adapter.md) | Configuration and output format for Go `html/template` |
-| [Perl Adapter](./adapters/perl-adapter.md) | Mojolicious and Text::Xslate (PSGI/Plack) backends, sharing one runtime |
-| [Ruby Adapter](./adapters/ruby-adapter.md) | ERB backend, running under any Rack app |
-| [Python Adapter](./adapters/python-adapter.md) | Jinja2 backend, running under any Python web framework |
-| [PHP Adapter](./adapters/php-adapter.md) | Twig (any PHP web app) and Laravel Blade (`illuminate/view` standalone) backends |
-| [Rust Adapter](./adapters/rust-adapter.md) | minijinja backend, running under any Rust web framework |
-| [Java Adapter](./adapters/java-adapter.md) | Pebble backend, running under any JVM web framework |
-| [CSR](./adapters/csr.md) | Client-side rendering without a server-rendered template |
-| [Writing a Custom Adapter](./adapters/custom-adapter.md) | Step-by-step guide to implementing your own adapter |
+Perl and PHP each share one runtime across two engines (Mojolicious and Text::Xslate; Twig and Blade). None of the runtimes require a web framework: they take a template directory and return HTML, so any HTTP layer can call them.
+
+## Common Vite setup
+
+Every adapter package exports the same Vite plugin from `@barefootjs/<adapter>/vite`:
+
+```typescript
+import { barefoot } from '@barefootjs/erb/vite'
+
+export default defineConfig({
+  plugins: barefoot({ components: ['components'], templates: 'templates' }),
+})
+```
+
+`vite build` writes the compiled templates to `templates` and the client JS to Vite's own `build.outDir`. Serve `build.outDir` as static assets; `templates` is a server-side source directory that your app reads and must never be served. See [Vite Plugin](./advanced/vite-plugin.md) for the options.

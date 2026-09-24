@@ -1,20 +1,15 @@
 ---
-title: AI-native Development
-description: Millisecond IR tests and the bf CLI for human + agent workflows
+title: Testing & CLI
+description: IR tests with renderToTest(), the bf CLI loop for finding, adding, and debugging components, and the agent skill for Claude Code and Codex.
 ---
 
-# AI-native Development
+# Testing & CLI
 
-BarefootJS is designed so both humans and AI agents can build components without reading source files. Two pillars carry that:
+Two tools let you (or an agent) build components without reading framework source: IR tests that check a component's structure in milliseconds, and the `bf` CLI, whose every command takes `--json`.
 
-1. **IR tests** verify component structure in milliseconds, no browser required.
-2. **The `bf` CLI** drives discovery, scaffolding, testing, and debugging — every command supports `--json` for machine consumption.
+## IR tests
 
-## IR Tests
-
-`renderToTest()` verifies component structure, signals, events, and accessibility against the compiler's IR — in milliseconds, without a browser. Real interactions and visual behavior still need E2E tests, but structural issues are caught before you get there:
-
-> **Test runner**: the snippet below uses `bun:test`. `bf init` picks the runner that matches your package manager — bun users get `bun:test`, everyone else gets [Vitest](https://vitest.dev) (`from 'vitest'`). The surfaces are API-compatible, so swap the import line if you're following along under npm / pnpm / yarn. `bf gen test` and `bf gen component` emit the right line for you.
+`renderToTest()` compiles a component and returns its IR — signals, memos, errors, and a queryable element tree — with no browser involved:
 
 ```tsx
 import { describe, test, expect } from 'bun:test'
@@ -40,35 +35,27 @@ describe('Counter', () => {
 })
 ```
 
-`renderToTest(source, filePath)` takes the component source as a string and returns a queryable `TestResult` (`root`, `signals`, `memos`, `errors`, plus `find`/`findAll`/`findByText` for traversal). The same call shape is what `bf gen component` and `bf gen test` write — see the auto-generated `index.test.tsx` next to any component for a richer worked example.
+`renderToTest(source, filePath)` returns a `TestResult` with `root`, `signals`, `memos`, `errors`, and `find` / `findAll` / `findByText` for traversal. Use it for structure, signal wiring, event handlers, classes, and ARIA attributes. Real interactions (clicks, keyboard, hydration) still need an E2E test.
 
-See [IR Schema Reference](../advanced/ir-schema.md) for the full specification.
+`bf gen component` and `bf gen test` write this shape for you, using `bun:test` or `vitest` to match your package manager.
 
-## CLI Workflow
+## CLI workflow
 
-Install via `npm create barefootjs@latest`. Run `bf --help` for the full command surface — this section shows the daily loop, not the manual page.
-
-A typical component task is one straight line:
-
-```
-search → docs → add → <pm> test → debug
-```
+Install with `npm create barefootjs@latest`; `bf --help` lists every command. A component task is one straight line — search, docs, add, test, debug:
 
 ```bash
 bf search dialog          # find a component in the registry + docs
 bf docs dialog            # read its API (props, examples, a11y)
 bf add dialog             # copy it into your project
-<pm> test                 # verify the IR (bun test / npm test / pnpm test / yarn test)
-bf debug graph dialog     # inspect reactivity
+bun test                  # verify the IR (or npm / pnpm / yarn test)
+bf debug graph dialog     # inspect its signal graph
 ```
 
-When nothing in the registry fits, `bf gen component <name> <comps...>` scaffolds a new component composed from existing ones, with an IR test stub. When a signal doesn't update what you expect, `bf debug trace <comp> <signal>` walks the propagation path.
-
-**Visual preview**: hosted previews live at [ui.barefootjs.dev/components/&lt;name&gt;](https://ui.barefootjs.dev). Standalone `bf preview` for npm-installed projects is tracked in [#885](https://github.com/piconic-ai/barefootjs/issues/885).
+When nothing in the registry fits, `bf gen component <name> <comps...>` scaffolds a new component composed from existing ones, with an IR test stub. When a signal does not update what you expect, `bf debug trace <comp> <signal>` walks the propagation path. Every command accepts `--json`, so an agent runs the same loop (`bf search settings-form --json`, `bf docs field --json`, ...) without reading source files.
 
 ## Agent Skill
 
-BarefootJS publishes an agent skill that gives AI deep knowledge of the compiler, IR, CLI, and component system. Install it and the agent can build, test, and debug BarefootJS projects autonomously.
+The BarefootJS skill gives an agent the compiler, IR, CLI, and component conventions, so it can build, test, and debug components on its own.
 
 **Claude Code:**
 
@@ -82,21 +69,3 @@ BarefootJS publishes an agent skill that gives AI deep knowledge of the compiler
 ```
 install the barefootjs skill from piconic-ai/barefootjs
 ```
-
-With the skill active, the agent understands `bf` CLI commands, IR test patterns, signal graphs, adapter output, and error codes — no manual prompting needed.
-
-## Agent Loop
-
-The same workflow driven by an AI agent — say, "add a settings form":
-
-```bash
-bf search settings-form --json
-bf docs field --json
-bf docs switch --json
-bf gen component settings-form field switch label
-# edit components/ui/settings-form/index.tsx
-bun test components/ui/settings-form/index.test.tsx   # or `npm test -- <path>`, `pnpm test <path>`, etc.
-bf debug graph settings-form
-```
-
-No source files read — the CLI is the API.

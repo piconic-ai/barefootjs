@@ -2,13 +2,13 @@
 
 > JSX -> Marked Template + client JS compiler. Signal-based reactivity for any backend.
 
-## Core Concepts
+## Components
 
-- [AI-native Development](https://barefootjs.dev/docs/core-concepts/ai-native.md): Millisecond IR tests and the bf CLI for human + agent workflows
-- [Backend Freedom](https://barefootjs.dev/docs/core-concepts/backend-freedom.md): How adapters let the same JSX run on any server — Hono, Go, and beyond
-- [How It Works](https://barefootjs.dev/docs/core-concepts/how-it-works.md): Two-phase compilation and hydration markers
-- [MPA-style Development](https://barefootjs.dev/docs/core-concepts/mpa-style.md): Server-rendering by default, with client JavaScript only where you need it
-- [Fine-grained Reactivity](https://barefootjs.dev/docs/core-concepts/reactivity.md): Signal-based reactivity — no virtual DOM, updates at the DOM node level
+- [Children & Slots](https://barefootjs.dev/docs/components/children-slots.md): Accept nested JSX through the children prop, and let callers choose the rendered element with Slot and asChild.
+- [Component Authoring](https://barefootjs.dev/docs/components/component-authoring.md): Write server and client components, compose them, type their props, and reach the DOM with ref callbacks.
+- [Context API](https://barefootjs.dev/docs/components/context-api.md): Share state with nested components in the same file via createContext and useContext, and across files via events or server props.
+- [Portals](https://barefootjs.dev/docs/components/portals.md): Move an element to document.body or another container with createPortal, for tooltips, dialogs, and overlays.
+- [Style Overrides](https://barefootjs.dev/docs/components/styling.md): How user-supplied classes override component base classes via CSS Cascade Layers
 
 ## Reactivity
 
@@ -18,47 +18,31 @@
 - [createSignal](https://barefootjs.dev/docs/reactivity/create-signal.md): Creates a reactive getter/setter pair for managing state.
 - [onCleanup](https://barefootjs.dev/docs/reactivity/on-cleanup.md): Registers a cleanup function that runs when the owning effect re-runs or the component is destroyed.
 - [onMount](https://barefootjs.dev/docs/reactivity/on-mount.md): Runs a callback once when the component initializes, without tracking signal dependencies.
-- [Props Reactivity](https://barefootjs.dev/docs/reactivity/props-reactivity.md): How prop access patterns determine whether reactive updates propagate in BarefootJS components.
-- [Shared State Patterns](https://barefootjs.dev/docs/reactivity/shared-state.md): Patterns for sharing reactive state between components in separate files, and when to use each.
+- [Props Reactivity](https://barefootjs.dev/docs/reactivity/props-reactivity.md): Every way of reading a prop — props.x, parameter destructuring, body destructuring — compiles to a live read.
 - [untrack](https://barefootjs.dev/docs/reactivity/untrack.md): Executes a function without tracking signal dependencies in the current reactive context.
 
 ## Rendering
 
-- [/* @client */ Directive](https://barefootjs.dev/docs/rendering/client-directive.md): Mark JSX expressions for client-only evaluation when the compiler cannot translate them to server templates.
-- [Fragment](https://barefootjs.dev/docs/rendering/fragment.md): Using fragments to render children without a wrapper element, including transparent fragment behavior.
-- [JSX Compatibility](https://barefootjs.dev/docs/rendering/jsx-compatibility.md): Standard JSX syntax support in BarefootJS, including control flow and common patterns from React and SolidJS.
-
-## Components
-
-- [Children & Slots](https://barefootjs.dev/docs/components/children-slots.md): Accept nested JSX content via the children prop and enable polymorphic rendering with the Slot component.
-- [Component Authoring](https://barefootjs.dev/docs/components/component-authoring.md): Learn how to write server and client components in BarefootJS using JSX functions.
-- [Context API](https://barefootjs.dev/docs/components/context-api.md): Share state with deeply nested children without prop drilling using createContext and useContext.
-- [Portals](https://barefootjs.dev/docs/components/portals.md): Render elements outside their parent DOM hierarchy for overlays, modals, and tooltips.
-- [Props & Type Safety](https://barefootjs.dev/docs/components/props-type-safety.md): Type component props with TypeScript interfaces and preserve type information through compilation.
-- [Style Overrides](https://barefootjs.dev/docs/components/styling.md): How user-supplied classes override component base classes via CSS Cascade Layers
+- [/* @client */ Directive](https://barefootjs.dev/docs/rendering/client-directive.md): Mark one JSX expression for client-only evaluation when an adapter cannot render it on the server.
+- [JSX Compatibility](https://barefootjs.dev/docs/rendering/jsx-compatibility.md): Standard JSX control flow, lists, events, attributes, and fragments in BarefootJS, and the expressions template-language adapters refuse.
 
 ## Adapters
 
-- [Adapter Architecture](https://barefootjs.dev/docs/adapters/adapter-architecture.md): How adapters convert the compiler's IR into server-renderable template formats.
 - [CSR (Client-Side Rendering)](https://barefootjs.dev/docs/adapters/csr.md): Render BarefootJS components directly in the browser without a server-rendered template.
-- [Writing a Custom Adapter](https://barefootjs.dev/docs/adapters/custom-adapter.md): Step-by-step guide to building a custom adapter using the TestAdapter as a reference.
+- [Writing a Custom Adapter](https://barefootjs.dev/docs/adapters/custom-adapter.md): How adapters turn the compiler's IR into a marked template, and how to build one from the TestAdapter.
 - [Go Template Adapter](https://barefootjs.dev/docs/adapters/go-template-adapter.md): Generate Go html/template files and type definitions from the compiler's IR.
 - [Hono Adapter](https://barefootjs.dev/docs/adapters/hono-adapter.md): Generate Hono JSX templates from the compiler's IR for Hono-based servers.
 - [Java Adapter](https://barefootjs.dev/docs/adapters/java-adapter.md): Render BarefootJS components from Java via Pebble — no framework required (Spring Boot, Ktor, plain Servlet apps).
-- [Perl Adapter](https://barefootjs.dev/docs/adapters/perl-adapter.md): Render BarefootJS components from Perl — one engine-agnostic runtime with Mojolicious and Text::Xslate (PSGI/Plack) backends.
-- [PHP Adapter](https://barefootjs.dev/docs/adapters/php-adapter.md): Render BarefootJS components from PHP — one engine-agnostic runtime with Twig and Laravel Blade backends.
-- [Python Adapter](https://barefootjs.dev/docs/adapters/python-adapter.md): Render BarefootJS components from Python via Jinja2 — no framework required (Flask, Django, bare WSGI).
+- [Perl Adapter](https://barefootjs.dev/docs/adapters/perl-adapter.md): Render BarefootJS components from Perl — one runtime with Mojolicious and Text::Xslate (PSGI/Plack) backends.
+- [PHP Adapter](https://barefootjs.dev/docs/adapters/php-adapter.md): Render BarefootJS components from PHP — one runtime with Twig and Laravel Blade backends.
+- [Python Adapter](https://barefootjs.dev/docs/adapters/python-adapter.md): Render BarefootJS components from Python via Jinja2 — no framework required (Flask, Django, FastAPI, bare WSGI).
 - [Ruby Adapter](https://barefootjs.dev/docs/adapters/ruby-adapter.md): Render BarefootJS components from Ruby via ERB — runs under any Rack app (Sinatra, Rails).
 - [Rust Adapter](https://barefootjs.dev/docs/adapters/rust-adapter.md): Render BarefootJS components from Rust via minijinja — no framework required (axum, actix-web, warp).
 
 ## Advanced
 
-- [API Comparison](https://barefootjs.dev/docs/advanced/api-comparison.md): A Solid-baseline, row-by-row comparison of the runtime API against Solid and React — what BarefootJS calls the same concept, what it solves differently, and what it deliberately does not have.
+- [Coming from React or Solid](https://barefootjs.dev/docs/advanced/api-comparison.md): The BarefootJS name for each React and Solid concept, one row per concept, and what BarefootJS deliberately leaves out.
 - [API Reference](https://barefootjs.dev/docs/advanced/api-reference.md): Every public API with the release it first shipped in, its stability tier and a usage example — generated from the JSDoc on the exports themselves.
-- [Vendor code-splitting](https://barefootjs.dev/docs/advanced/code-splitting.md): Split large vendor libraries into separately-cached browser chunks via Vite's own `manualChunks`
-- [Compiler Internals](https://barefootjs.dev/docs/advanced/compiler-internals.md): How the BarefootJS compiler transforms JSX into marked templates and client JavaScript.
-- [Error Codes Reference](https://barefootjs.dev/docs/advanced/error-codes.md): BF-prefixed compiler error codes with explanations and fixes.
-- [IR Schema Reference](https://barefootjs.dev/docs/advanced/ir-schema.md): JSON tree structure of the Intermediate Representation consumed by adapters and client-JS generation.
-- [Performance Optimization](https://barefootjs.dev/docs/advanced/performance.md): Strategies to minimize bundle size, reduce hydration cost, and optimize runtime reactivity
-- [Vite Plugin](https://barefootjs.dev/docs/advanced/vite-plugin.md): The `@barefootjs/vite` plugin — its options, what it writes to disk in build and dev, and where the adapter-specific builders fit.
-- [xyflow browser bundle](https://barefootjs.dev/docs/advanced/xyflow-browser-bundle.md): How to serve @barefootjs/xyflow as a pre-built browser chunk via an importmap
+- [Error Codes Reference](https://barefootjs.dev/docs/advanced/error-codes.md): BF-prefixed compiler error codes, what triggers each one, and the fix.
+- [Testing & CLI](https://barefootjs.dev/docs/advanced/testing-and-cli.md): IR tests with renderToTest(), the bf CLI loop for finding, adding, and debugging components, and the agent skill for Claude Code and Codex.
+- [Vite Plugin](https://barefootjs.dev/docs/advanced/vite-plugin.md): The `@barefootjs/vite` plugin — its options, what it writes to disk, the adapter builders, and how to split vendor chunks.
