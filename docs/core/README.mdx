@@ -1,70 +1,53 @@
 # BarefootJS Documentation
 
+BarefootJS compiles JSX into a server template for your backend and a small client script for the browser. The chapters follow the order you'll need them in: start, understand the model, write components, add interactivity, pick a backend, look things up.
+
 ## Table of Contents
 
-### 1. [Introduction](./introduction.mdx)
+### Start
 
-- What is BarefootJS?
-- Why BarefootJS?
-- Design Philosophy
+- [Introduction](./introduction.mdx) — What BarefootJS is, what one component compiles to, and why it exists
+- [Quick Start](./quick-start.mdx) — Scaffold an app, edit the starter Counter, deploy
+- [How It Works](./how-it-works.mdx) — Two-phase compilation, hydration markers, inspecting the output
 
-### 2. [Quick Start](./quick-start.mdx)
+### [Components](./components.md)
 
-- Scaffold an app with `npm create barefootjs@latest`
-- Run the dev server and edit the starter Counter
-- Tour of the generated project structure
+- [Component Authoring](./components/component-authoring.md) — Server vs client components, `"use client"`, composition rules, props, refs
+- [Children & Slots](./components/children-slots.md) — The `children` prop, `Slot`, and `asChild`
+- [Context API](./components/context-api.md) — `createContext` / `useContext`, and sharing state across files
+- [Portals](./components/portals.md) — Rendering outside the parent DOM
+- [Style Overrides](./components/styling.md) — How user classes override component classes via cascade layers
 
-### 3. [Core Concepts](./core-concepts.md)
+### [Reactivity](./reactivity.md)
 
-- [Backend Freedom](./core-concepts/backend-freedom.md) — How adapters let the same JSX run on any server
-- [MPA-style Development](./core-concepts/mpa-style.md) — Server-rendering by default, JS only where marked
-- [Fine-grained Reactivity](./core-concepts/reactivity.md) — Signals, effects, memos — no virtual DOM needed
-- [AI-native Development](./core-concepts/ai-native.md) — Testable IR, CLI discovery, agent skill (Claude Code / Codex), AI-assisted workflows
-- [How It Works](./core-concepts/how-it-works.mdx) — Two-phase compilation, hydration markers, clean overrides
+- [`createSignal`](./reactivity/create-signal.md) — A reactive value
+- [`createEffect`](./reactivity/create-effect.md) — Run side effects when signals change
+- [`createMemo`](./reactivity/create-memo.md) — A cached derived value
+- [`onMount`](./reactivity/on-mount.md) — Run once when the component initializes
+- [`onCleanup`](./reactivity/on-cleanup.md) — Register teardown
+- [`untrack`](./reactivity/untrack.md) — Read a signal without subscribing
+- [`batch`](./reactivity/batch.md) — Group writes so dependents run once
+- [Props Reactivity](./reactivity/props-reactivity.md) — Every prop access form stays live
 
-### 4. [Reactivity](./reactivity.md)
+### [JSX & Templates](./rendering.md)
 
-- [`createSignal`](./reactivity/create-signal.md) — Create a reactive value
-- [`createEffect`](./reactivity/create-effect.md) — Run side effects when dependencies change
-- [`createMemo`](./reactivity/create-memo.md) — Create a cached derived value
-- [`onMount`](./reactivity/on-mount.md) — Run once on component initialization
-- [`onCleanup`](./reactivity/on-cleanup.md) — Register cleanup for effects and lifecycle
-- [`untrack`](./reactivity/untrack.md) — Read signals without tracking dependencies
-- [Props Reactivity](./reactivity/props-reactivity.md) — Gotchas with destructuring
-- [Shared State Patterns](./reactivity/shared-state.md) — Cross-file state sharing: consolidation, custom events, server props
+- [JSX Compatibility](./rendering/jsx-compatibility.md) — Control flow, lists, events, fragments, and what template adapters refuse
+- [`/* @client */` Directive](./rendering/client-directive.md) — Evaluate an expression on the client only
 
-### 5. [Templates & Rendering](./rendering.md)
+### [Adapters](./adapters.md)
 
-- [JSX Compatibility](./rendering/jsx-compatibility.md) — What works, what doesn't, and what differs
-- [Fragment](./rendering/fragment.md) — Fragment support and hydration behavior
-- [`/* @client */` Directive](./rendering/client-directive.md) — Skip server evaluation for client-only expressions
+- [Hono](./adapters/hono-adapter.md) · [Go Template](./adapters/go-template-adapter.md) · [Perl](./adapters/perl-adapter.md) · [Ruby](./adapters/ruby-adapter.md) · [Python](./adapters/python-adapter.md) · [PHP](./adapters/php-adapter.md) · [Rust](./adapters/rust-adapter.md) · [Java](./adapters/java-adapter.md) — Install, configure, render
+- [CSR](./adapters/csr.md) — Client-side rendering with no server template
+- [Writing a Custom Adapter](./adapters/custom-adapter.md) — The `TemplateAdapter` interface, checklist, conformance
 
-### 6. [Components](./components.md)
+### [Tooling & Reference](./advanced.md)
 
-- [Component Authoring](./components/component-authoring.mdx) — Server components, client components, and the compilation model
-- [Props & Type Safety](./components/props-type-safety.md) — Typing props, defaults, and rest spreading
-- [Children & Slots](./components/children-slots.md) — Children prop, the `Slot` component, and the `asChild` pattern
-- [Context API](./components/context-api.md) — Sharing state with `createContext` / `useContext`
-- [Portals](./components/portals.md) — Rendering elements outside their parent DOM hierarchy
-
-### 7. [Adapters](./adapters.md)
-
-- [Adapter Architecture](./adapters/adapter-architecture.md) — How adapters work, the `TemplateAdapter` interface, and the IR contract
-- [Hono Adapter](./adapters/hono-adapter.md) — Configuration and output format for Hono / JSX-based servers
-- [Go Template Adapter](./adapters/go-template-adapter.md) — Configuration and output format for Go `html/template`
-- [Perl Adapter](./adapters/perl-adapter.md) — Mojolicious and Text::Xslate (PSGI/Plack) backends, sharing one runtime
-- [CSR (Client-Side Rendering)](./adapters/csr.md) — Static-hosting renderer: emit client JS only, no SSR template
-- [Writing a Custom Adapter](./adapters/custom-adapter.md) — Step-by-step guide to implementing your own adapter
-
-### 8. [Advanced](./advanced.md)
-
-- [IR Schema Reference](./advanced/ir-schema.md) — Node types, metadata, hydration markers
-- [Compiler Internals](./advanced/compiler-internals.md) — Pipeline phases, reactivity analysis, code generation
-- [Error Codes Reference](./advanced/error-codes.md) — All BF-prefixed errors with solutions
-- [Performance Optimization](./advanced/performance.md) — Minimal client JS, fast hydration, efficient reactivity
-- [Vite Plugin](./advanced/vite-plugin.md) — `@barefootjs/vite` options, build and dev output, adapter builders
+- [Vite Plugin](./advanced/vite-plugin.md) — `@barefootjs/vite` options, output, adapter builders
+- [Testing & CLI](./advanced/testing-and-cli.md) — IR tests with `renderToTest`, the `bf` CLI, the agent skill
 - [API Reference](./advanced/api-reference.md) — Every public API with its first release and stability tier
-- [API Comparison](./advanced/api-comparison.md) — Solid / React / BarefootJS, one row per concept, what BarefootJS deliberately doesn't have
+- [Error Codes](./advanced/error-codes.md) — Every `BFxxx` diagnostic with its fix
+- [Compatibility Matrix](/docs/advanced/compatibility-matrix) — Which component patterns each adapter supports
+- [Coming from React or Solid](./advanced/api-comparison.md) — The same concepts, side by side
 
 ---
 
@@ -79,5 +62,3 @@ Code examples use **switchable tabs** for adapter output and package manager com
 **Package Manager** — npm (default), bun, pnpm, yarn, or deno:
 
 <Tabs id="pm" labels="npm (default),bun,pnpm,yarn,deno" />
-
-> Sections marked with 💡 explain JSX and TypeScript concepts for developers from Go, Python, or other backend languages.

@@ -1,6 +1,8 @@
 /**
  * Navigation structure for the documentation sidebar.
- * Mirrors the table of contents in docs/core/README.mdx.
+ * Mirrors the table of contents in docs/core/README.mdx. Chapters follow the
+ * reader's journey: start → understand → build → add interactivity → pick a
+ * backend → look things up.
  */
 
 export interface NavItem {
@@ -46,15 +48,16 @@ export function getDocsNavLinks(slug: string): {
 export const navigation: NavItem[] = [
   { title: 'Introduction', slug: 'introduction' },
   { title: 'Quick Start', slug: 'quick-start' },
+  { title: 'How It Works', slug: 'how-it-works' },
   {
-    title: 'Core Concepts',
-    slug: 'core-concepts',
+    title: 'Components',
+    slug: 'components',
     children: [
-      { title: 'Backend Freedom', slug: 'core-concepts/backend-freedom' },
-      { title: 'MPA-style Development', slug: 'core-concepts/mpa-style' },
-      { title: 'Fine-grained Reactivity', slug: 'core-concepts/reactivity' },
-      { title: 'AI-native Development', slug: 'core-concepts/ai-native' },
-      { title: 'How It Works', slug: 'core-concepts/how-it-works' },
+      { title: 'Component Authoring', slug: 'components/component-authoring' },
+      { title: 'Children & Slots', slug: 'components/children-slots' },
+      { title: 'Context API', slug: 'components/context-api' },
+      { title: 'Portals', slug: 'components/portals' },
+      { title: 'Style Overrides', slug: 'components/styling' },
     ],
   },
   {
@@ -72,52 +75,60 @@ export const navigation: NavItem[] = [
     ],
   },
   {
-    title: 'Templates & Rendering',
+    title: 'JSX & Templates',
     slug: 'rendering',
     children: [
       { title: 'JSX Compatibility', slug: 'rendering/jsx-compatibility' },
-      { title: 'Fragment', slug: 'rendering/fragment' },
       { title: 'Client Directive', slug: 'rendering/client-directive' },
-    ],
-  },
-  {
-    title: 'Components',
-    slug: 'components',
-    children: [
-      { title: 'Component Authoring', slug: 'components/component-authoring' },
-      { title: 'Props & Type Safety', slug: 'components/props-type-safety' },
-      { title: 'Children & Slots', slug: 'components/children-slots' },
-      { title: 'Context API', slug: 'components/context-api' },
-      { title: 'Portals', slug: 'components/portals' },
-      { title: 'Style Overrides', slug: 'components/styling' },
     ],
   },
   {
     title: 'Adapters',
     slug: 'adapters',
     children: [
-      { title: 'Adapter Architecture', slug: 'adapters/adapter-architecture' },
-      { title: 'Hono Adapter', slug: 'adapters/hono-adapter' },
-      { title: 'Go Template Adapter', slug: 'adapters/go-template-adapter' },
-      { title: 'Perl Adapter', slug: 'adapters/perl-adapter' },
-      { title: 'Ruby Adapter', slug: 'adapters/ruby-adapter' },
-      { title: 'Python Adapter', slug: 'adapters/python-adapter' },
-      { title: 'PHP Adapter', slug: 'adapters/php-adapter' },
-      { title: 'Rust Adapter', slug: 'adapters/rust-adapter' },
-      { title: 'Custom Adapter', slug: 'adapters/custom-adapter' },
+      { title: 'Hono', slug: 'adapters/hono-adapter' },
+      { title: 'Go Template', slug: 'adapters/go-template-adapter' },
+      { title: 'Perl', slug: 'adapters/perl-adapter' },
+      { title: 'Ruby', slug: 'adapters/ruby-adapter' },
+      { title: 'Python', slug: 'adapters/python-adapter' },
+      { title: 'PHP', slug: 'adapters/php-adapter' },
+      { title: 'Rust', slug: 'adapters/rust-adapter' },
+      { title: 'Java', slug: 'adapters/java-adapter' },
+      { title: 'CSR', slug: 'adapters/csr' },
+      { title: 'Writing a Custom Adapter', slug: 'adapters/custom-adapter' },
     ],
   },
   {
-    title: 'Advanced',
+    title: 'Tooling & Reference',
     slug: 'advanced',
     children: [
-      { title: 'Compiler Internals', slug: 'advanced/compiler-internals' },
-      { title: 'IR Schema', slug: 'advanced/ir-schema' },
-      { title: 'Error Codes', slug: 'advanced/error-codes' },
-      { title: 'Performance', slug: 'advanced/performance' },
-      { title: 'Compatibility Matrix', slug: 'advanced/compatibility-matrix' },
       { title: 'Vite Plugin', slug: 'advanced/vite-plugin' },
+      { title: 'Testing & CLI', slug: 'advanced/testing-and-cli' },
       { title: 'API Reference', slug: 'advanced/api-reference' },
+      { title: 'Error Codes', slug: 'advanced/error-codes' },
+      { title: 'Compatibility Matrix', slug: 'advanced/compatibility-matrix' },
+      { title: 'Coming from React or Solid', slug: 'advanced/api-comparison' },
     ],
   },
 ]
+
+/**
+ * Slugs of pages that were merged into another page. The docs app answers
+ * them with a 301 so old links (and `bf guide` habits) keep working.
+ */
+export const redirects: Record<string, string> = {
+  'core-concepts': 'introduction',
+  'core-concepts/backend-freedom': 'introduction',
+  'core-concepts/mpa-style': 'introduction',
+  'core-concepts/reactivity': 'reactivity',
+  'core-concepts/how-it-works': 'how-it-works',
+  'core-concepts/ai-native': 'advanced/testing-and-cli',
+  'reactivity/shared-state': 'components/context-api',
+  'rendering/fragment': 'rendering/jsx-compatibility',
+  'components/props-type-safety': 'components/component-authoring',
+  'adapters/adapter-architecture': 'adapters/custom-adapter',
+  'advanced/compiler-internals': 'how-it-works',
+  'advanced/ir-schema': 'how-it-works',
+  'advanced/performance': 'how-it-works',
+  'advanced/code-splitting': 'advanced/vite-plugin',
+}

@@ -283,48 +283,36 @@ const PAGES: PageSpec[] = [
       return undefined
     },
   },
-  { path: 'core/rendering/fragment.md' },
   { path: 'core/reactivity/create-signal.md' },
   { path: 'core/reactivity/create-effect.md' },
   { path: 'core/reactivity/create-memo.md' },
   { path: 'core/reactivity/on-mount.md' },
   { path: 'core/reactivity/on-cleanup.md' },
   { path: 'core/reactivity/untrack.md' },
+  { path: 'core/reactivity/batch.md' },
   { path: 'core/reactivity/props-reactivity.md' },
-  { path: 'core/components/component-authoring.mdx' },
+  { path: 'core/components/component-authoring.md' },
   { path: 'core/components/children-slots.md' },
-  { path: 'core/components/context-api.md' },
+  {
+    path: 'core/components/context-api.md',
+    pageSkip: (body: string) => {
+      if (/\bapp\.get\b/.test(body)) return 'server route example (not a component)'
+      return undefined
+    },
+  },
   { path: 'core/components/portals.md' },
-  { path: 'core/components/props-type-safety.md' },
   { path: 'core/components/styling.md' },
-  { path: 'core/core-concepts/how-it-works.mdx' },
-  { path: 'core/core-concepts/reactivity.md' },
-  { path: 'core/core-concepts/mpa-style.md' },
-  { path: 'core/core-concepts/ai-native.md' },
+  { path: 'core/how-it-works.mdx' },
   { path: 'core/adapters/hono-adapter.md' },
   { path: 'core/adapters/go-template-adapter.md' },
   { path: 'core/adapters/custom-adapter.md' },
-  // `core/advanced/code-splitting.md` is deliberately absent: it documents
-  // stock Vite/Rollup build config (`manualChunks`) and carries no
-  // component code, while this extractor only reads ```tsx fences. Adding
-  // a token component there purely to keep the page listed here would
-  // hollow out the check rather than extend it.
-  { path: 'core/advanced/compiler-internals.md' },
   // `core/advanced/error-codes.md` is handled by the per-BFxxx
   // matcher (see bottom of file) rather than the general extractor:
   // its `negative-all-adapters` strictness ("BFxxx must be the ONLY
   // fatal") doesn't fit a reference page whose minimal reproductions
   // routinely trip unrelated checks, and the per-section walker can
   // tie each ❌ snippet to its parent `### BFxxx —` H3.
-  { path: 'core/advanced/performance.md' },
   { path: 'core/reactivity.md' },
-  {
-    path: 'core/reactivity/shared-state.md',
-    pageSkip: (body: string) => {
-      if (/\bapp\.get\b/.test(body)) return 'server route example (not a component)'
-      return undefined
-    },
-  },
   { path: 'core/introduction.mdx' },
 ]
 

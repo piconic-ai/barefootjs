@@ -1,16 +1,37 @@
 ---
 title: Reactivity
-description: Fine-grained reactive primitives inspired by SolidJS, including signals, effects, memos, and lifecycle hooks.
+description: Signals, effects, memos, and lifecycle hooks — the reactive primitives that drive DOM updates.
 ---
 
 # Reactivity
 
-All reactive primitives are imported from `@barefootjs/client`:
+A signal is a getter/setter pair. Reading the getter inside an effect subscribes that effect; writing the setter re-runs it. The compiler finds which DOM nodes read which signals and wires one effect per node, so `setCount(1)` updates exactly the text node, attribute, or list row that reads `count()`. Components run once — there is no re-render and no virtual DOM.
+
+All primitives are imported from `@barefootjs/client`:
 
 ```tsx
 "use client"
 import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack, batch } from '@barefootjs/client'
 ```
+
+```tsx
+"use client"
+import { createSignal, createMemo } from '@barefootjs/client'
+
+export function Counter() {
+  const [count, setCount] = createSignal(0)
+  const doubled = createMemo(() => count() * 2)
+
+  return (
+    <div>
+      <p>{count()} doubled is {doubled()}</p>
+      <button onClick={() => setCount(n => n + 1)}>+1</button>
+    </div>
+  )
+}
+```
+
+The getter is a function call — `count()`, not `count`. Dependencies are tracked from those calls; there are no dependency arrays. Clicking the button re-runs only the effect the compiler generated for the `<p>` text.
 
 ## API Reference
 
@@ -26,5 +47,5 @@ import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack, ba
 
 ## Guides
 
-- [Props Reactivity](./reactivity/props-reactivity.md) — How props stay reactive, and when destructuring breaks it
-- [Shared State Patterns](./reactivity/shared-state.md) — Sharing state across components in separate files
+- [Props Reactivity](./reactivity/props-reactivity.md) — every way of reading a prop, including destructuring, is a live read
+- [Context API](./components/context-api.md) — sharing state between components

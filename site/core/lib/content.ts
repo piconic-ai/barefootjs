@@ -6,7 +6,7 @@
  */
 
 export interface Page {
-  /** URL slug, e.g. "advanced/performance". Empty string for index (README.md). */
+  /** URL slug, e.g. "advanced/vite-plugin". Empty string for index (README.md). */
   slug: string
   /** Filename without extension, e.g. "performance" */
   name: string

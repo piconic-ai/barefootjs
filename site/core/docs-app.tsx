@@ -12,7 +12,7 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
 import { initHighlighter, renderMarkdown } from './lib/markdown'
-import { getDocsNavLinks } from './lib/navigation'
+import { getDocsNavLinks, redirects } from './lib/navigation'
 import type { Page, ContentMap, MdxContentMap } from './lib/content'
 import { registerQuickStartRoutes } from './pages/quick-start'
 import { registerMdxDocsRoutes } from './pages/mdx-docs-page'
@@ -30,6 +30,12 @@ export async function createDocsApp(content: ContentMap, pages: Page[], mdx: Mdx
 
   const app = new Hono()
   app.use(renderer)
+
+  // Pages merged into another page keep answering at their old slug.
+  for (const [from, to] of Object.entries(redirects)) {
+    app.get(`/${from}`, (c) => c.redirect(`/docs/${to}`, 301))
+    app.get(`/${from}.md`, (c) => c.redirect(`/docs/${to}.md`, 301))
+  }
 
   const quickStartSource = mdx['quick-start']
   if (quickStartSource) registerQuickStartRoutes(app, quickStartSource)

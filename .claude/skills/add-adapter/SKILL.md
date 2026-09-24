@@ -190,8 +190,8 @@ easy to miss — check off each one:
 
 ## Phase 6 — Docs
 
-- [ ] `docs/core/adapters.md` — "Available Adapters" table, runtime-model paragraph, "Pages" table.
-- [ ] New `docs/core/adapters/<lang>-adapter.md` page (pattern: `ruby-adapter.md`).
+- [ ] `docs/core/adapters.md` — "Available Adapters" table (generated) and the runtime-model paragraph.
+- [ ] New `docs/core/adapters/<lang>-adapter.md` page (pattern: `ruby-adapter.md`), plus its entry in `site/core/lib/navigation.ts` and `site/core/components/mobile-menu.tsx`.
 - [ ] `spec/compiler.md` — "Available Adapters" list.
 - [ ] `spec/template-helpers.md` — helper naming column, if a new convention.
 - [ ] `packages/adapter-tests/vectors/README.md` — runners table.
