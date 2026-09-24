@@ -114,6 +114,12 @@
           "description": "Whether disabled"
         },
         {
+          "name": "defaultSelected",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether this item is the list's initial auto-selection. Pass `true` on the first `CommandItem` rendered (in document order, across groups) so `data-selected` renders correctly in the server-rendered HTML instead of \"unselected\" being corrected by the root `Command`'s mount effect only after hydration — the root always auto-selects the first visible item once its item registry settles, and with an empty initial search every item is visible, so the first-rendered item is always that initial pick. Give that item an explicit `value` as well: the textContent fallback only resolves after hydration, so a value-less item's `data-value` still appears only then."
+        },
+        {
           "name": "onSelect",
           "type": "(value: string) => void",
           "required": false,

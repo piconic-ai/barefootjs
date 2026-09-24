@@ -21,15 +21,9 @@
           "total": 123
         },
         "blade": {
-          "pass": 109,
+          "pass": 111,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -91,12 +85,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -111,15 +99,9 @@
           ]
         },
         "erb": {
-          "pass": 110,
+          "pass": 112,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -175,12 +157,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -195,15 +171,9 @@
           ]
         },
         "go-template": {
-          "pass": 105,
+          "pass": 107,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -277,12 +247,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -309,15 +273,9 @@
           ]
         },
         "jinja": {
-          "pass": 109,
+          "pass": 111,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -376,12 +334,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -399,15 +351,9 @@
           ]
         },
         "minijinja": {
-          "pass": 109,
+          "pass": 111,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -469,12 +415,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -489,15 +429,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 108,
+          "pass": 110,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -550,12 +484,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -585,15 +513,9 @@
           ]
         },
         "pebble": {
-          "pass": 109,
+          "pass": 111,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -652,12 +574,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -675,15 +591,9 @@
           ]
         },
         "twig": {
-          "pass": 109,
+          "pass": 111,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -742,12 +652,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -765,15 +669,9 @@
           ]
         },
         "xslate": {
-          "pass": 107,
+          "pass": 109,
           "total": 123,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -832,12 +730,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -887,15 +779,9 @@
           "total": 72
         },
         "blade": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -912,12 +798,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -929,15 +809,9 @@
           ]
         },
         "erb": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -954,12 +828,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -971,15 +839,9 @@
           ]
         },
         "go-template": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -996,12 +858,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1013,15 +869,9 @@
           ]
         },
         "jinja": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1038,12 +888,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1055,15 +899,9 @@
           ]
         },
         "minijinja": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1080,12 +918,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1097,15 +929,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1122,12 +948,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1139,15 +959,9 @@
           ]
         },
         "pebble": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1164,12 +978,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1181,15 +989,9 @@
           ]
         },
         "twig": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1206,12 +1008,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1223,15 +1019,9 @@
           ]
         },
         "xslate": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1248,12 +1038,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1285,15 +1069,9 @@
           "total": 77
         },
         "blade": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1340,12 +1118,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1363,15 +1135,9 @@
           ]
         },
         "erb": {
-          "pass": 66,
+          "pass": 68,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1412,12 +1178,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1435,15 +1195,9 @@
           ]
         },
         "go-template": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1490,12 +1244,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1513,15 +1261,9 @@
           ]
         },
         "jinja": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1568,12 +1310,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1591,15 +1327,9 @@
           ]
         },
         "minijinja": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1646,12 +1376,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1669,15 +1393,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 66,
+          "pass": 68,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1718,12 +1436,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1741,15 +1453,9 @@
           ]
         },
         "pebble": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1796,12 +1502,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1819,15 +1519,9 @@
           ]
         },
         "twig": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1874,12 +1568,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1897,15 +1585,9 @@
           ]
         },
         "xslate": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1952,12 +1634,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -1995,15 +1671,9 @@
           "total": 113
         },
         "blade": {
-          "pass": 102,
+          "pass": 104,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2047,12 +1717,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2067,15 +1731,9 @@
           ]
         },
         "erb": {
-          "pass": 103,
+          "pass": 105,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2113,12 +1771,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2133,15 +1785,9 @@
           ]
         },
         "go-template": {
-          "pass": 101,
+          "pass": 103,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2191,12 +1837,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2211,15 +1851,9 @@
           ]
         },
         "jinja": {
-          "pass": 102,
+          "pass": 104,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2260,12 +1894,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -2283,15 +1911,9 @@
           ]
         },
         "minijinja": {
-          "pass": 102,
+          "pass": 104,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2332,12 +1954,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -2355,15 +1971,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 103,
+          "pass": 105,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2398,12 +2008,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -2421,15 +2025,9 @@
           ]
         },
         "pebble": {
-          "pass": 102,
+          "pass": 104,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2470,12 +2068,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -2493,15 +2085,9 @@
           ]
         },
         "twig": {
-          "pass": 102,
+          "pass": 104,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2542,12 +2128,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -2565,15 +2145,9 @@
           ]
         },
         "xslate": {
-          "pass": 102,
+          "pass": 104,
           "total": 113,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2614,12 +2188,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -2650,11 +2218,11 @@
       }
     },
     "call": {
-      "total": 301,
+      "total": 302,
       "cells": {
         "hono": {
-          "pass": 297,
-          "total": 301,
+          "pass": 298,
+          "total": 302,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2683,15 +2251,9 @@
           ]
         },
         "blade": {
-          "pass": 276,
-          "total": 301,
+          "pass": 279,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -2807,12 +2369,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2839,15 +2395,9 @@
           ]
         },
         "erb": {
-          "pass": 277,
-          "total": 301,
+          "pass": 280,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -2957,12 +2507,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2989,15 +2533,9 @@
           ]
         },
         "go-template": {
-          "pass": 270,
-          "total": 301,
+          "pass": 273,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -3137,12 +2675,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -3181,15 +2713,9 @@
           ]
         },
         "jinja": {
-          "pass": 276,
-          "total": 301,
+          "pass": 279,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -3302,12 +2828,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -3337,15 +2857,9 @@
           ]
         },
         "minijinja": {
-          "pass": 276,
-          "total": 301,
+          "pass": 279,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -3458,12 +2972,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -3493,15 +3001,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 277,
-          "total": 301,
+          "pass": 280,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -3608,12 +3110,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -3643,15 +3139,9 @@
           ]
         },
         "pebble": {
-          "pass": 276,
-          "total": 301,
+          "pass": 279,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -3764,12 +3254,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -3799,15 +3283,9 @@
           ]
         },
         "twig": {
-          "pass": 276,
-          "total": 301,
+          "pass": 279,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -3920,12 +3398,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -3955,15 +3427,9 @@
           ]
         },
         "xslate": {
-          "pass": 276,
-          "total": 301,
+          "pass": 279,
+          "total": 302,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -4076,12 +3542,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -4124,11 +3584,11 @@
       }
     },
     "conditional": {
-      "total": 37,
+      "total": 38,
       "cells": {
         "hono": {
-          "pass": 36,
-          "total": 37,
+          "pass": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "format-date",
@@ -4139,15 +3599,9 @@
           ]
         },
         "blade": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4164,26 +3618,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4201,25 +3643,13 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
             }
           ]
         },
         "go-template": {
-          "pass": 30,
-          "total": 37,
+          "pass": 33,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4249,25 +3679,13 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
             }
           ]
         },
         "jinja": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4284,26 +3702,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4320,26 +3726,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4356,26 +3750,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4392,26 +3774,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4428,26 +3798,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 32,
-          "total": 37,
+          "pass": 35,
+          "total": 38,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4464,12 +3822,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
@@ -4488,11 +3840,11 @@
       }
     },
     "identifier": {
-      "total": 425,
+      "total": 426,
       "cells": {
         "hono": {
-          "pass": 419,
-          "total": 425,
+          "pass": 420,
+          "total": 426,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4533,15 +3885,9 @@
           ]
         },
         "blade": {
-          "pass": 396,
-          "total": 425,
+          "pass": 399,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -4681,12 +4027,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4713,15 +4053,9 @@
           ]
         },
         "erb": {
-          "pass": 397,
-          "total": 425,
+          "pass": 400,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -4855,12 +4189,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4887,15 +4215,9 @@
           ]
         },
         "go-template": {
-          "pass": 389,
-          "total": 425,
+          "pass": 392,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5056,12 +4378,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -5109,15 +4425,9 @@
           ]
         },
         "jinja": {
-          "pass": 396,
-          "total": 425,
+          "pass": 399,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5254,12 +4564,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -5289,15 +4593,9 @@
           ]
         },
         "minijinja": {
-          "pass": 396,
-          "total": 425,
+          "pass": 399,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5437,12 +4735,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5469,15 +4761,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 395,
-          "total": 425,
+          "pass": 398,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5608,12 +4894,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -5655,15 +4935,9 @@
           ]
         },
         "pebble": {
-          "pass": 396,
-          "total": 425,
+          "pass": 399,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5800,12 +5074,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -5835,15 +5103,9 @@
           ]
         },
         "twig": {
-          "pass": 396,
-          "total": 425,
+          "pass": 399,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5980,12 +5242,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -6015,15 +5271,9 @@
           ]
         },
         "xslate": {
-          "pass": 394,
-          "total": 425,
+          "pass": 397,
+          "total": 426,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6160,12 +5410,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -6227,166 +5471,40 @@
           "total": 15
         },
         "blade": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "erb": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "go-template": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "jinja": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "minijinja": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "pebble": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "twig": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "xslate": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         }
       },
       "source": {
@@ -6402,11 +5520,11 @@
       }
     },
     "literal": {
-      "total": 336,
+      "total": 337,
       "cells": {
         "hono": {
-          "pass": 333,
-          "total": 336,
+          "pass": 334,
+          "total": 337,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6429,15 +5547,9 @@
           ]
         },
         "blade": {
-          "pass": 316,
-          "total": 336,
+          "pass": 319,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6526,12 +5638,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -6555,15 +5661,9 @@
           ]
         },
         "erb": {
-          "pass": 316,
-          "total": 336,
+          "pass": 319,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6655,12 +5755,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6681,15 +5775,9 @@
           ]
         },
         "go-template": {
-          "pass": 311,
-          "total": 336,
+          "pass": 314,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6793,12 +5881,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -6837,15 +5919,9 @@
           ]
         },
         "jinja": {
-          "pass": 316,
-          "total": 336,
+          "pass": 319,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6934,12 +6010,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -6963,15 +6033,9 @@
           ]
         },
         "minijinja": {
-          "pass": 316,
-          "total": 336,
+          "pass": 319,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7060,12 +6124,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -7089,15 +6147,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 314,
-          "total": 336,
+          "pass": 317,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7186,12 +6238,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -7227,15 +6273,9 @@
           ]
         },
         "pebble": {
-          "pass": 316,
-          "total": 336,
+          "pass": 319,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7324,12 +6364,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -7353,15 +6387,9 @@
           ]
         },
         "twig": {
-          "pass": 316,
-          "total": 336,
+          "pass": 319,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7450,12 +6478,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -7479,15 +6501,9 @@
           ]
         },
         "xslate": {
-          "pass": 314,
-          "total": 336,
+          "pass": 317,
+          "total": 337,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7576,12 +6592,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -7637,21 +6647,9 @@
           "total": 53
         },
         "blade": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7667,21 +6665,9 @@
           ]
         },
         "erb": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7697,21 +6683,9 @@
           ]
         },
         "go-template": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7727,21 +6701,9 @@
           ]
         },
         "jinja": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7757,21 +6719,9 @@
           ]
         },
         "minijinja": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7787,21 +6737,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7817,21 +6755,9 @@
           ]
         },
         "pebble": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7847,21 +6773,9 @@
           ]
         },
         "twig": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7877,21 +6791,9 @@
           ]
         },
         "xslate": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7920,11 +6822,11 @@
       }
     },
     "member": {
-      "total": 249,
+      "total": 250,
       "cells": {
         "hono": {
-          "pass": 245,
-          "total": 249,
+          "pass": 246,
+          "total": 250,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7953,15 +6855,9 @@
           ]
         },
         "blade": {
-          "pass": 227,
-          "total": 249,
+          "pass": 230,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8059,12 +6955,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8091,15 +6981,9 @@
           ]
         },
         "erb": {
-          "pass": 228,
-          "total": 249,
+          "pass": 231,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8191,12 +7075,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8223,15 +7101,9 @@
           ]
         },
         "go-template": {
-          "pass": 221,
-          "total": 249,
+          "pass": 224,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8347,12 +7219,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -8397,15 +7263,9 @@
           ]
         },
         "jinja": {
-          "pass": 227,
-          "total": 249,
+          "pass": 230,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8500,12 +7360,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -8535,15 +7389,9 @@
           ]
         },
         "minijinja": {
-          "pass": 227,
-          "total": 249,
+          "pass": 230,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8641,12 +7489,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8673,15 +7515,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 226,
-          "total": 249,
+          "pass": 229,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8770,12 +7606,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -8817,15 +7647,9 @@
           ]
         },
         "pebble": {
-          "pass": 227,
-          "total": 249,
+          "pass": 230,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8920,12 +7744,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -8955,15 +7773,9 @@
           ]
         },
         "twig": {
-          "pass": 227,
-          "total": 249,
+          "pass": 230,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -9058,12 +7870,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9093,15 +7899,9 @@
           ]
         },
         "xslate": {
-          "pass": 225,
-          "total": 249,
+          "pass": 228,
+          "total": 250,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -9196,12 +7996,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9263,25 +8057,13 @@
           "total": 98
         },
         "blade": {
-          "pass": 93,
+          "pass": 95,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9299,25 +8081,13 @@
           ]
         },
         "erb": {
-          "pass": 93,
+          "pass": 95,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9335,15 +8105,9 @@
           ]
         },
         "go-template": {
-          "pass": 89,
+          "pass": 91,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "loop-row-child-children-nested-reactive-prop",
               "limitations": [
@@ -9354,12 +8118,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9395,25 +8153,13 @@
           ]
         },
         "jinja": {
-          "pass": 93,
+          "pass": 95,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9431,25 +8177,13 @@
           ]
         },
         "minijinja": {
-          "pass": 93,
+          "pass": 95,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9467,25 +8201,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 91,
+          "pass": 93,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9515,25 +8237,13 @@
           ]
         },
         "pebble": {
-          "pass": 93,
+          "pass": 95,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9551,25 +8261,13 @@
           ]
         },
         "twig": {
-          "pass": 93,
+          "pass": 95,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9587,25 +8285,13 @@
           ]
         },
         "xslate": {
-          "pass": 91,
+          "pass": 93,
           "total": 98,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9705,21 +8391,9 @@
           "total": 33
         },
         "blade": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9729,21 +8403,9 @@
           ]
         },
         "erb": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9753,25 +8415,13 @@
           ]
         },
         "go-template": {
-          "pass": 29,
+          "pass": 31,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -9783,21 +8433,9 @@
           ]
         },
         "jinja": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9807,21 +8445,9 @@
           ]
         },
         "minijinja": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9831,21 +8457,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9855,21 +8469,9 @@
           ]
         },
         "pebble": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9879,21 +8481,9 @@
           ]
         },
         "twig": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9903,21 +8493,9 @@
           ]
         },
         "xslate": {
-          "pass": 30,
+          "pass": 32,
           "total": 33,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9940,22 +8518,16 @@
       }
     },
     "unary": {
-      "total": 30,
+      "total": 31,
       "cells": {
         "hono": {
-          "pass": 30,
-          "total": 30
+          "pass": 31,
+          "total": 31
         },
         "blade": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -9966,50 +8538,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 27,
-          "total": 30,
+          "pass": 30,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "go-template": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10020,26 +8568,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10050,26 +8586,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10080,50 +8604,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 27,
-          "total": 30,
+          "pass": 30,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10134,26 +8634,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10164,26 +8652,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 26,
-          "total": 30,
+          "pass": 29,
+          "total": 31,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10194,12 +8670,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
@@ -10218,22 +8688,16 @@
       }
     },
     "unsupported": {
-      "total": 51,
+      "total": 52,
       "cells": {
         "hono": {
-          "pass": 51,
-          "total": 51
+          "pass": 52,
+          "total": 52
         },
         "blade": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10268,12 +8732,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10303,15 +8761,9 @@
           ]
         },
         "erb": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10346,12 +8798,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10381,15 +8827,9 @@
           ]
         },
         "go-template": {
-          "pass": 38,
-          "total": 51,
+          "pass": 41,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10424,12 +8864,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10465,15 +8899,9 @@
           ]
         },
         "jinja": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10508,12 +8936,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10543,15 +8965,9 @@
           ]
         },
         "minijinja": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10586,12 +9002,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10621,15 +9031,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10664,12 +9068,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10699,15 +9097,9 @@
           ]
         },
         "pebble": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10742,12 +9134,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10777,15 +9163,9 @@
           ]
         },
         "twig": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10820,12 +9200,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10855,15 +9229,9 @@
           ]
         },
         "xslate": {
-          "pass": 39,
-          "total": 51,
+          "pass": 42,
+          "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10898,12 +9266,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -10939,9 +9301,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L183"
       },
       "example": {
-        "fixture": "date-client-revival",
-        "description": "BF021 escape: /* @client */ with an explicit new Date(...) revival wrapper, hydrate-safe unlike a bare @client call",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-client-revival.ts"
+        "fixture": "ref-mount-attr",
+        "description": "a ref mount callback writes an attribute via setAttribute, which never reaches SSR",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       }
     }
   },
@@ -11178,166 +9540,40 @@
           "total": 12
         },
         "blade": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "jinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "pebble": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
@@ -11416,15 +9652,9 @@
           "total": 43
         },
         "blade": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11435,26 +9665,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11465,26 +9683,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "go-template": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11495,26 +9701,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11525,26 +9719,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11555,26 +9737,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11585,26 +9755,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11615,26 +9773,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11645,26 +9791,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11675,12 +9809,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
@@ -12394,112 +10522,40 @@
           "total": 4
         },
         "blade": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "erb": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "go-template": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "jinja": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "minijinja": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "mojolicious": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "pebble": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "twig": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "xslate": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         }
       },
       "source": {
@@ -12983,166 +11039,40 @@
           "total": 12
         },
         "blade": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "jinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "pebble": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
@@ -13573,15 +11503,9 @@
           "total": 57
         },
         "blade": {
-          "pass": 47,
+          "pass": 49,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13625,12 +11549,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13639,15 +11557,9 @@
           ]
         },
         "erb": {
-          "pass": 48,
+          "pass": 50,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13685,12 +11597,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13699,15 +11605,9 @@
           ]
         },
         "go-template": {
-          "pass": 46,
+          "pass": 48,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13757,12 +11657,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13771,15 +11665,9 @@
           ]
         },
         "jinja": {
-          "pass": 47,
+          "pass": 49,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13820,12 +11708,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -13837,15 +11719,9 @@
           ]
         },
         "minijinja": {
-          "pass": 47,
+          "pass": 49,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13886,12 +11762,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -13903,15 +11773,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 48,
+          "pass": 50,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13946,12 +11810,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -13963,15 +11821,9 @@
           ]
         },
         "pebble": {
-          "pass": 47,
+          "pass": 49,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -14012,12 +11864,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -14029,15 +11875,9 @@
           ]
         },
         "twig": {
-          "pass": 47,
+          "pass": 49,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -14078,12 +11918,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -14095,15 +11929,9 @@
           ]
         },
         "xslate": {
-          "pass": 47,
+          "pass": 49,
           "total": 57,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -14144,12 +11972,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -14181,166 +12003,40 @@
           "total": 11
         },
         "blade": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "erb": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "go-template": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "jinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "minijinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "mojolicious": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "pebble": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "twig": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "xslate": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         }
       },
       "source": {
@@ -14427,15 +12123,9 @@
           ]
         },
         "blade": {
-          "pass": 71,
+          "pass": 73,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14446,26 +12136,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 71,
+          "pass": 73,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14477,25 +12155,13 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
             }
           ]
         },
         "go-template": {
-          "pass": 69,
+          "pass": 71,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14515,12 +12181,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -14529,15 +12189,9 @@
           ]
         },
         "jinja": {
-          "pass": 71,
+          "pass": 73,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14548,26 +12202,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 71,
+          "pass": 73,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14578,26 +12220,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 69,
+          "pass": 71,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14608,12 +12238,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -14631,15 +12255,9 @@
           ]
         },
         "pebble": {
-          "pass": 71,
+          "pass": 73,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14650,26 +12268,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 71,
+          "pass": 73,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14680,26 +12286,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 69,
+          "pass": 71,
           "total": 75,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14710,12 +12304,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -14753,75 +12341,29 @@
           "total": 27
         },
         "blade": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "erb": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "go-template": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "jinja": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "minijinja": {
+          "pass": 27,
+          "total": 27
+        },
+        "mojolicious": {
           "pass": 26,
           "total": 27,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
-        },
-        "mojolicious": {
-          "pass": 25,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-loop-item-conditional",
               "limitations": [
@@ -14831,39 +12373,17 @@
           ]
         },
         "pebble": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "twig": {
+          "pass": 27,
+          "total": 27
+        },
+        "xslate": {
           "pass": 26,
           "total": 27,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
-        },
-        "xslate": {
-          "pass": 25,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-loop-item-conditional",
               "limitations": [
@@ -14900,15 +12420,9 @@
           ]
         },
         "blade": {
-          "pass": 143,
+          "pass": 145,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -14961,12 +12475,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -14978,15 +12486,9 @@
           ]
         },
         "erb": {
-          "pass": 143,
+          "pass": 145,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15039,12 +12541,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15056,15 +12552,9 @@
           ]
         },
         "go-template": {
-          "pass": 141,
+          "pass": 143,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15117,12 +12607,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15146,15 +12630,9 @@
           ]
         },
         "jinja": {
-          "pass": 143,
+          "pass": 145,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15207,12 +12685,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15224,15 +12696,9 @@
           ]
         },
         "minijinja": {
-          "pass": 143,
+          "pass": 145,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15285,12 +12751,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15302,15 +12762,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 141,
+          "pass": 143,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15363,12 +12817,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15392,15 +12840,9 @@
           ]
         },
         "pebble": {
-          "pass": 143,
+          "pass": 145,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15453,12 +12895,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15470,15 +12906,9 @@
           ]
         },
         "twig": {
-          "pass": 143,
+          "pass": 145,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15531,12 +12961,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15548,15 +12972,9 @@
           ]
         },
         "xslate": {
-          "pass": 141,
+          "pass": 143,
           "total": 155,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -15609,12 +13027,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15651,11 +13063,11 @@
       }
     },
     "literal:string": {
-      "total": 226,
+      "total": 227,
       "cells": {
         "hono": {
-          "pass": 225,
-          "total": 226,
+          "pass": 226,
+          "total": 227,
           "gaps": [
             {
               "fixture": "format-date",
@@ -15666,15 +13078,9 @@
           ]
         },
         "blade": {
-          "pass": 215,
-          "total": 226,
+          "pass": 218,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15715,12 +13121,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15738,15 +13138,9 @@
           ]
         },
         "erb": {
-          "pass": 215,
-          "total": 226,
+          "pass": 218,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15790,12 +13184,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -15810,15 +13198,9 @@
           ]
         },
         "go-template": {
-          "pass": 212,
-          "total": 226,
+          "pass": 215,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15874,12 +13256,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -15900,15 +13276,9 @@
           ]
         },
         "jinja": {
-          "pass": 215,
-          "total": 226,
+          "pass": 218,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15949,12 +13319,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -15972,15 +13336,9 @@
           ]
         },
         "minijinja": {
-          "pass": 215,
-          "total": 226,
+          "pass": 218,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -16021,12 +13379,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -16044,15 +13396,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 213,
-          "total": 226,
+          "pass": 216,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -16093,12 +13439,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -16128,15 +13468,9 @@
           ]
         },
         "pebble": {
-          "pass": 215,
-          "total": 226,
+          "pass": 218,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -16177,12 +13511,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -16200,15 +13528,9 @@
           ]
         },
         "twig": {
-          "pass": 215,
-          "total": 226,
+          "pass": 218,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -16249,12 +13571,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -16272,15 +13588,9 @@
           ]
         },
         "xslate": {
-          "pass": 213,
-          "total": 226,
+          "pass": 216,
+          "total": 227,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -16321,12 +13631,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
               ]
             },
             {
@@ -16432,21 +13736,9 @@
           "total": 44
         },
         "blade": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16462,21 +13754,9 @@
           ]
         },
         "erb": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16492,21 +13772,9 @@
           ]
         },
         "go-template": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16522,21 +13790,9 @@
           ]
         },
         "jinja": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16552,21 +13808,9 @@
           ]
         },
         "minijinja": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16582,21 +13826,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16612,21 +13844,9 @@
           ]
         },
         "pebble": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16642,21 +13862,9 @@
           ]
         },
         "twig": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16672,21 +13880,9 @@
           ]
         },
         "xslate": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16721,166 +13917,40 @@
           "total": 17
         },
         "blade": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "erb": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "go-template": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "jinja": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "minijinja": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "mojolicious": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "pebble": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "twig": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "xslate": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         }
       },
       "source": {
@@ -17068,166 +14138,40 @@
           "total": 8
         },
         "blade": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "erb": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "go-template": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "jinja": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "minijinja": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "mojolicious": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "pebble": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "twig": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "xslate": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         }
       },
       "source": {
@@ -17739,22 +14683,16 @@
       }
     },
     "unary:!": {
-      "total": 22,
+      "total": 24,
       "cells": {
         "hono": {
-          "pass": 22,
-          "total": 22
+          "pass": 24,
+          "total": 24
         },
         "blade": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17770,15 +14708,9 @@
           ]
         },
         "erb": {
-          "pass": 20,
-          "total": 22,
+          "pass": 23,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -17788,15 +14720,9 @@
           ]
         },
         "go-template": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17812,15 +14738,9 @@
           ]
         },
         "jinja": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17836,15 +14756,9 @@
           ]
         },
         "minijinja": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17860,15 +14774,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 20,
-          "total": 22,
+          "pass": 23,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -17878,15 +14786,9 @@
           ]
         },
         "pebble": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17902,15 +14804,9 @@
           ]
         },
         "twig": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17926,15 +14822,9 @@
           ]
         },
         "xslate": {
-          "pass": 19,
-          "total": 22,
+          "pass": 22,
+          "total": 24,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17970,166 +14860,40 @@
           "total": 11
         },
         "blade": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "erb": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "go-template": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "jinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "minijinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "mojolicious": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "pebble": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "twig": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "xslate": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         }
       },
       "source": {

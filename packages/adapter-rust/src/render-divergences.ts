@@ -48,12 +48,18 @@ export const renderDivergences: RenderDivergences = {
   // instead of rendering inline — see `wrapSsrPortalElement`
   // (`adapter/minijinja-adapter.ts`) and `register_portal_element`/
   // `portals` (`runtime/src/runtime.rs`'s `RenderSession`/`BfInstance`).
-  // `combobox` / `select` carry the SAME #3059 portal-position divergence
-  // (their Content element is the same `ref`-callback SSR-portal pattern),
-  // but the registry lists a fixture on exactly one entry and these two
-  // are already claimed by `ref-effect-attr-state-ssr` (the data-placeholder
-  // divergence) — cite that one instead; see
-  // `ref-callback-portal-content-inline-at-ssr`'s own comment.
-  combobox: { limitation: 'ref-effect-attr-state-ssr' },
-  select: { limitation: 'ref-effect-attr-state-ssr' },
+  // `combobox` / `select` were re-pinned here on the SAME assumption
+  // (their `Content` element uses the identical `ref`-callback
+  // SSR-portal pattern), but never re-verified against a real render.
+  // They in fact ALREADY render the portal correctly and match Hono
+  // byte-for-byte — `isSsrPortalRefCallback` (`jsx-to-ir.ts`) already
+  // covers `SelectContent`'s `queueMicrotask(() => createPortal(...))`
+  // deferral (see that function's own docstring), and this adapter
+  // renders `ssrPortalOwnerScope` through the same shared,
+  // component-agnostic path #3119 built for the other four. The portal
+  // divergence never applied here; the two stayed skipped only because
+  // the compiled fixture failed elsewhere the whole time (first the
+  // graduated `nested-child-static-prop-text-slot-elided` marker bug),
+  // so nobody re-ran them to notice. No divergence remains on this
+  // adapter (verified against a real render of both fixtures).
 }

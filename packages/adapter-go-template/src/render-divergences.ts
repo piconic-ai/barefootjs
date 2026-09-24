@@ -100,14 +100,15 @@ export const renderDivergences: RenderDivergences = {
   // below the page root — DialogOverlay/DialogContent live inside
   // Dialog — which is why propagation had to go recursive, not just to
   // direct children).
-  // `combobox` / `select` carry the SAME portal-position divergence
-  // (their Content element is the same `ref`-callback SSR-portal pattern),
-  // but the registry lists a fixture on exactly one entry and these two
-  // are already claimed by `ref-effect-attr-state-ssr` (the data-placeholder
-  // divergence) — cite that one instead; see
-  // `ref-callback-portal-content-inline-at-ssr`'s own comment.
-  combobox: { limitation: 'ref-effect-attr-state-ssr' },
-  select: { limitation: 'ref-effect-attr-state-ssr' },
+  // `combobox` / `select` use the same `ref`-callback SSR-portal pattern
+  // for their `Content`, and that part already renders `bf-po` correctly
+  // here (`isSsrPortalRefCallback` walks through `SelectContent`'s
+  // `queueMicrotask(() => createPortal(...))` deferral). They were pinned
+  // only for `SelectTrigger`'s (and `ComboboxTrigger`'s)
+  // `showPlaceholder={!value()}`, a unary-not prop value that used to be
+  // dropped on the way into a child component's SSR constructor
+  // (`emitStaticChildInstances` → `resolveDynamicPropValue`). Fixed: both
+  // now render byte-identical to Hono with no pin.
   // `loop-row-child-children-attrs` used to sit here: #3164 fixed the loop-
   // array-source lookup (a function-body-local `const opts = [...]` now
   // bakes the same as a module-scope one), but `go run`-verifying the

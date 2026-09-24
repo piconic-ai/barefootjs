@@ -67,7 +67,7 @@ function CommandPlayground(_props: {}) {
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Suggestions">
-              <CommandItem value="Calendar">Calendar</CommandItem>
+              <CommandItem value="Calendar" defaultSelected>Calendar</CommandItem>
               <CommandItem value="Search Emoji">Search Emoji</CommandItem>
             </CommandGroup>
             <CommandSeparator />
