@@ -120,6 +120,15 @@ export class CompileState {
   staticLoopSourceBoundNames: Set<string> = new Set()
 
   /**
+   * Loop array consts `renderLoop` already refused with its "computed
+   * value" BF101 in this pass. `generate()` renders the template before it
+   * calls `generateTypes()`, so `resolveNestedLoopItemTypes` reads this to
+   * skip its own untyped-object-array BF101 (#3178) for the same loop
+   * instead of reporting it twice.
+   */
+  refusedLoopArrayConsts: Set<string> = new Set()
+
+  /**
    * Names of component-scope arrow-const helpers (`const sortClass = …`),
    * eligible for call-site inlining.
    */

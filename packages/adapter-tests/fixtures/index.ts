@@ -740,6 +740,11 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 import { fixture as loopRowChildChildrenFnScopeArray } from './loop-row-child-children-fn-scope-array'
 import { fixture as loopRowChildChildrenNestedShapes } from './loop-row-child-children-nested-shapes'
 import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-child-children-nested-reactive-prop'
+// The UNTYPED twin of `loop-row-child-children-nested-shapes`: same forwarded-JSX-children shape,
+// but the loop's source array is an unannotated object-literal const
+// (#3178). Regression pin for go-template's untyped-object-array-const
+// element-type synthesis.
+import { fixture as loopRowChildChildrenUntypedArray } from './loop-row-child-children-untyped-array'
 // A child inside a reactive conditional branch that is active at
 // hydration must be initialized once, by its branch (it used to be
 // initialized twice: its onMount listener double-counted and one instance
@@ -1228,6 +1233,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenFnScopeArray,
   loopRowChildChildrenNestedShapes,
   loopRowChildChildrenNestedReactiveProp,
+  loopRowChildChildrenUntypedArray,
   conditionalChildListenerCleanup,
   nestedChildNegatedProp,
   diamondPropagation,

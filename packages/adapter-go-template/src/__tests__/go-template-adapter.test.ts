@@ -2168,6 +2168,56 @@ export function Host() {
     })
   })
 
+  describe('#3178 untyped object-array loop source', () => {
+    function compileLoop(decl: string) {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(`
+export function Chip(props: { children?: any }) {
+  return <span class="chip">{props.children}</span>
+}
+`, adapter))
+      const ir = compileToIR(`
+import { Chip } from './chip'
+${decl}
+export function Demo() {
+  return <div>{opts.map(o => (<Chip key={o.id}><a href={'/x/' + o.id}>{o.label}</a></Chip>))}</div>
+}
+`, adapter)
+      const types = adapter.generateTypes(ir) ?? ''
+      adapter.generate(ir)
+      return { types, bf101: ir.errors.filter(e => e.code === 'BF101') }
+    }
+
+    test('rows sharing one shape synthesize an element struct and bake the array', () => {
+      const { types, bf101 } = compileLoop(`const opts = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]`)
+      expect(types).toContain('type DemoOptsItem struct')
+      expect(types).toContain('chipsData := ')
+      expect(bf101).toHaveLength(0)
+    })
+
+    test('rows with different keys refuse with BF101 instead of rendering an empty loop', () => {
+      const { bf101 } = compileLoop(`const opts = [{ id: 'a', label: 'A' }, { id: 'b' }]`)
+      expect(bf101.length).toBeGreaterThan(0)
+      expect(bf101[0].message).toContain("Loop array `opts` is an object-literal array whose rows don't share one shape")
+    })
+
+    test('a spread row keeps the one pre-existing computed-value BF101', () => {
+      const { bf101 } = compileLoop(
+        `const defaults = { kind: 'x' }\nconst opts = [{ ...defaults, id: 'a', label: 'A' }, { ...defaults, id: 'b', label: 'B' }]`,
+      )
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('computed value')
+    })
+
+    test('rows with the same keys but an untypeable field name the field, not the shape', () => {
+      const { bf101 } = compileLoop(
+        `const opts = [{ id: 'a', label: 'A', meta: { x: 1 } }, { id: 'b', label: 'B', meta: { x: 2 } }]`,
+      )
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain("with a field the Go template adapter can't give a Go type")
+    })
+  })
+
   describe('#3174 negated child-component prop', () => {
     const childSource = `
 export function Trigger(props: { showPlaceholder?: boolean }) {
