@@ -187,7 +187,7 @@ See [Fragments](../rendering/jsx-compatibility.md#fragments).
 
 ### BF101 — No Template-Language Lowering
 
-A template-language adapter (Go, Mojolicious, Xslate, ERB, Jinja, Twig, Blade, minijinja, Pebble) has no lowering for the expression: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()`/`.reduce()` inside a filter predicate, a `.map()` over a component-scope `const` computed at render time, a module-scope helper called in a text position, a destructured predicate parameter (`({ done }) => done`), or a `function`-keyword callback. JS-runtime adapters run it verbatim. Nested `.filter()`/`.map()` and `.flatMap()` JSX projections compile everywhere.
+A template-language adapter (Go, Mojolicious, Xslate, ERB, Jinja, Twig, Blade, minijinja, Pebble) has no lowering for the expression: `.reduce()`, `.forEach()`, a nested `.some()`/`.find()`/`.reduce()` inside a filter predicate, a `.map()` over a component-scope `const` computed at render time, or a module-scope helper called in a text position. JS-runtime adapters run it verbatim. Nested `.filter()`/`.map()` and `.flatMap()` JSX projections compile everywhere.
 
 ```tsx
 // ❌ BF101 on Go/Mojo
