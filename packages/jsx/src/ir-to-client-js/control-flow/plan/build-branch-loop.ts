@@ -17,7 +17,7 @@ import { buildBranchLoopDelegationPlan } from './build-event-delegation.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildPlainRowCore } from './build-plain-row.ts'
 import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
-import { loopKeyFn, buildChildRefBindings } from '../shared.ts'
+import { loopKeyFn, buildChildRefBindings, hasReactiveLoopBindings } from '../shared.ts'
 import type {
   BranchCompositeLoopPlan,
   BranchLoopPlan,
@@ -43,9 +43,7 @@ export function buildBranchLoopPlan(
     return composite
   }
 
-  const hasReactiveEffects = loop.bindings.reactiveAttrs.length > 0
-    || loop.bindings.reactiveTexts.length > 0
-    || loop.bindings.conditionals.length > 0
+  const hasReactiveEffects = hasReactiveLoopBindings(loop.bindings)
 
   // flatMap descriptor mode — see buildPlainLoopPlan (build-loop.ts).
   const fm = loop.flatMapClient

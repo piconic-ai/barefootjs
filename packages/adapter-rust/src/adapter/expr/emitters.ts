@@ -413,6 +413,17 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // #3144: a zero-arg call to a component-body local bound to an
+    // opaque call (`const label = makeLabel(); {label()}`) is NOT a
+    // signal getter -- checked before the signal-getter branch below,
+    // which would otherwise treat it as one and emit an unbound name.
+    if (callee.kind === 'identifier' && args.length === 0 && this.ctx._isOpaqueLocalAccessorCall(callee.name)) {
+      this.ctx._recordExprBF101(
+        `Call to '${callee.name}(...)' has no minijinja template lowering — '${callee.name}' is a local bound to an opaque call (not a signal/memo getter), so there is no minijinja binding for its result in template scope.`,
+        `The reference adapter runs '${callee.name}()' at render time. Add /* @client */ to defer this read to the client, or pre-compute the value in the backend.`,
+      )
+      return "''"
+    }
     // Signal getter: count() → count
     if (callee.kind === 'identifier' && args.length === 0) {
       return minijinjaIdent(callee.name)

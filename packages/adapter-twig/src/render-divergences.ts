@@ -40,12 +40,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A component-body const bound to an opaque call (`const label =
-  // makeLabel()`) and invoked in text position lowers to a bare template
-  // variable named after the const, with no diagnostic — the reference runs
-  // the accessor at render time. Escape twin:
-  // `opaque-local-accessor-call-client`.
-  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`
@@ -67,12 +61,4 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
-  // A client component whose whole return is a child-component call: the
-  // reference wraps the child's output in the parent's `<!--bf-scope:...-->`
-  // comment pair (with the parent's props) so the parent hydrates; this
-  // adapter renders the child's output bare. `normalizeHTML` strips scope
-  // comments, so the byte comparison alone cannot see it — the explore
-  // adapter axis (`comment-root-child-slot`) shows the parent's forwarded
-  // handler doing nothing after hydration.
-  'component-root-client-scope': { limitation: 'component-root-client-scope-comment' },
 }

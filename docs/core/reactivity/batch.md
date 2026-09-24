@@ -96,6 +96,31 @@ doubled()   // 20  — recomputed after the batch ends
 
 If you need the recomputed value, read it after the batch.
 
+### Diamonds are not covered
+
+`batch` de-duplicates the subscribers of the signals written **inside** it. It does not
+change how a memo's own recompute propagates: the flush runs at batch depth 0, so when a
+memo recomputes, its subscribers run synchronously right then — before a sibling memo of
+the same signal has recomputed. An effect that reads one signal through two memos (a
+diamond) therefore still observes a half-updated pair, and still runs once per edge:
+
+```tsx
+const [a, setA] = createSignal(1)
+const b = createMemo(() => a() * 10)
+const c = createMemo(() => a() * 100)
+createEffect(() => log(a(), b(), c()))
+
+batch(() => setA(2))
+// logs: 2 20 100   ← b updated, c stale
+//       2 20 200
+//       2 20 200
+```
+
+The DOM is never painted mid-handler, so the intermediate state is invisible on screen;
+only an effect with a side effect (a fetch, a counter) observes it. This is a known
+limitation of the runtime, pinned by the `diamond-propagation` conformance fixture
+(registry entry `diamond-propagation-glitch`).
+
 ### `await` escapes the batch
 
 `batch` only covers the **synchronous** portion of `fn`. Wrapping an async

@@ -150,6 +150,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
+import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
@@ -479,7 +480,9 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   }
 
   emitComponent(node: IRComponent, _ctx: JinjaRenderCtx, _emit: EmitIRNode<JinjaRenderCtx>): string {
-    return this.renderComponent(node)
+    const rendered = this.renderComponent(node)
+    // #3141: see `wrapComponentRootScopeComment`'s docstring.
+    return node.needsScopeComment ? this.wrapComponentRootScopeComment(rendered) : rendered
   }
 
   emitFragment(node: IRFragment, _ctx: JinjaRenderCtx, _emit: EmitIRNode<JinjaRenderCtx>): string {
@@ -1355,9 +1358,19 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       // End marker bounds the scope's sibling range -- without it, queries
       // from the fragment scope leak onto later siblings owned by the
       // parent (#2289).
-      return `{{ bf.scope_comment() | safe }}${children}{{ bf.scope_comment_end() | safe }}`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a `needsScopeComment`
+   * component root (#3141) — both are "this scope has no DOM element of its
+   * own to carry bf-s/bf-p", so both lean on the same runtime helper pair.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `{{ bf.scope_comment() | safe }}${rendered}{{ bf.scope_comment_end() | safe }}`
   }
 
   private renderSlot(_slot: IRSlot): string {
@@ -1767,6 +1780,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
+      _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }
