@@ -666,12 +666,13 @@ import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
 import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
 import { fixture as signalOptionalInit } from './signal-optional-init'
 // Minimal, component-agnostic repro of the `ref-effect-attr-state-ssr`
-// registry entry's mechanism: a `ref` mount callback's `setAttribute`
-// never runs at SSR. Added once every named UI component that used to
-// exhibit it (accordion, radio-group, command, combobox, select)
-// graduated to an explicit prop instead, so the entry keeps a live
-// fixture in this corpus.
+// registry entry: a `ref` mount callback writing an attribute the JSX
+// never renders refuses with BF063. Its two escape twins: the attribute
+// also rendered in JSX (`rewrite`), and a `/* @client */` ref
+// (`client-directive`).
 import { fixture as refMountAttr } from './ref-mount-attr'
+import { fixture as refMountAttrRendered } from './ref-mount-attr-rendered'
+import { fixture as refMountAttrClient } from './ref-mount-attr-client'
 import { fixture as nestedPropSignalChildProp } from './nested-prop-signal-child-prop'
 import { fixture as nestedPropMemberSignalSeed } from './nested-prop-member-signal-seed'
 import { fixture as componentRootClientScope } from './component-root-client-scope'
@@ -1215,6 +1216,8 @@ export const jsxFixtures: JSXFixture[] = [
   selectOutOfRangeHydration,
   signalOptionalInit,
   refMountAttr,
+  refMountAttrRendered,
+  refMountAttrClient,
   nestedPropSignalChildProp,
   nestedPropMemberSignalSeed,
   componentRootClientScope,

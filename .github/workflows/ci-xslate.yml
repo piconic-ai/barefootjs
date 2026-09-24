@@ -77,4 +77,4 @@ jobs:
       # `.tx` through real Text::Xslate + the BarefootJS runtime (it skips
       # gracefully when Text::Xslate is absent — installed above so it runs).
       - name: Run unit tests (incl. live Text::Xslate render)
-        run: bun test packages/adapter-xslate
+        run: bun test --max-concurrency=8 packages/adapter-xslate
