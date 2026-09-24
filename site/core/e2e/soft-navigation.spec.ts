@@ -65,6 +65,23 @@ test.describe('docs layout soft navigation', () => {
     expect(await hasReloadMarker(page)).toBe(true)
   })
 
+  test('an On This Page link scrolls in place and moves the active marker there', async ({ page }) => {
+    await page.goto('/docs/quick-start')
+    await plantReloadMarker(page)
+
+    const toc = page.locator('nav[aria-label="Table of contents"]')
+    const target = toc.locator('a').nth(3)
+    const hash = (await target.getAttribute('href'))!
+    await target.click()
+
+    await expect(page).toHaveURL(new RegExp(`/docs/quick-start${hash}$`))
+    await expect(page.locator(`[id="${hash.slice(1)}"]`)).toBeInViewport()
+    await expect(target).toHaveClass(/font-semibold/)
+    await expect(toc.locator('[data-toc-indicator]')).toHaveAttribute('style', /translate\(0px, 84px\)/)
+    // An in-page anchor never re-fetches the page.
+    expect(await hasReloadMarker(page)).toBe(true)
+  })
+
   test('leaving the docs layout for the landing layout is a full load', async ({ page }) => {
     await page.goto('/docs/introduction')
     await plantReloadMarker(page)

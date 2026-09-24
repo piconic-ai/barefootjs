@@ -62,8 +62,19 @@ export function TableOfContents(props: TableOfContentsProps) {
       }
     }
 
+    // Sections currently inside the observed band. An observer callback only
+    // lists the sections whose visibility just changed, and a smooth scroll to
+    // an anchor delivers those changes over several callbacks, so the visible
+    // set is kept across callbacks rather than read from the latest batch.
+    const visibleIds = new Set<string>()
+
     const observer = new IntersectionObserver(
       (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visibleIds.add(entry.target.id)
+          else visibleIds.delete(entry.target.id)
+        }
+
         // Check if at bottom first
         const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100
         if (scrolledToBottom && lastItemId) {
@@ -71,13 +82,9 @@ export function TableOfContents(props: TableOfContentsProps) {
           return
         }
 
-        // Find the first visible section
-        const visibleEntries = entries.filter(entry => entry.isIntersecting)
-        if (visibleEntries.length > 0) {
-          // Sort by top position and take the first one
-          visibleEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-          setActiveId(visibleEntries[0].target.id)
-        }
+        // The first visible section in document order
+        const firstVisible = props.items.find(item => visibleIds.has(item.id))
+        if (firstVisible) setActiveId(firstVisible.id)
       },
       {
         rootMargin: '-80px 0px -70% 0px', // Account for header and prefer top sections
