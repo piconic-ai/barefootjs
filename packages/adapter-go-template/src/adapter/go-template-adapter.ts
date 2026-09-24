@@ -89,6 +89,7 @@ import {
   buildMetadata,
   listComponentFunctions,
   resolveRelativeImportToFile,
+  isOpaqueLocalAccessorName,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -5599,6 +5600,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // primitives.
     const lowered = lowerRegisteredCallNode(this.emitCtx, callee, args)
     if (lowered !== null) return lowered
+    // #3144: a zero-arg call to a component-body local bound to an opaque
+    // call (`const label = makeLabel(); {label()}`) is NOT a signal getter
+    // — checked before the signal-getter branch below, which would
+    // otherwise treat it as one and emit a struct field reference with no
+    // corresponding field.
+    if (
+      callee.kind === 'identifier' &&
+      args.length === 0 &&
+      isOpaqueLocalAccessorName(callee.name, this.state.localConstants)
+    ) {
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Call to '${callee.name}(...)' has no Go template lowering — '${callee.name}' is a local bound to an opaque call (not a signal/memo getter), so there is no struct field for its result in template scope.`,
+        loc: this.makeLoc(),
+        suggestion: {
+          message: `The reference adapter runs '${callee.name}()' at render time. Add /* @client */ to defer this read to the client, or pre-compute the value in the backend.`,
+        },
+      })
+      return ''
+    }
     // Signal call: count() -> .Count (or $.Count inside a loop). An env-signal
     // binding (`searchParams()`, or an aliased `sp()`) resolves to the canonical
     // `.SearchParams` field regardless of the JS name.
@@ -8759,9 +8781,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // A root component in a client component needs a scope comment for the
-    // hydration boundary.
+    // hydration boundary. #3141: this used to emit ONLY the opening marker
+    // — the missing end marker is the #2289 sibling-leak shape (queries
+    // from this scope could read into later siblings the parent owns).
+    // Matches `comp.needsScopeComment` (`IRComponent.needsScopeComment`,
+    // #3141's shared IR flag) whenever `comp` is literally the render root,
+    // which is the only case `ctx?.isRootOfClientComponent` is set true for
+    // outside an if-statement branch.
     if (ctx?.isRootOfClientComponent) {
-      return `{{bfScopeComment .}}${templateCall}`
+      return this.wrapComponentRootScopeComment(templateCall)
     }
     return templateCall
   }
@@ -8795,9 +8823,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Comment-based scope marker for fragment roots. The end marker
       // bounds the scope range so client-side queries don't leak onto
       // later siblings (#2289).
-      return `{{bfScopeComment .}}${children}{{bfScopeCommentEnd .}}`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a root component call
+   * (#3141) — both are "this scope has no DOM element of its own to carry
+   * a struct-derived scope id", so both lean on the same runtime helpers.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `{{bfScopeComment .}}${rendered}{{bfScopeCommentEnd .}}`
   }
 
   private renderSlot(slot: IRSlot): string {

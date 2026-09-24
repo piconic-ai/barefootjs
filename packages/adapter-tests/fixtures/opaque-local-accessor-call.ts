@@ -4,25 +4,24 @@ import { createFixture } from '../src/types'
  * A component-body `const` bound to the result of a call the compiler cannot
  * evaluate (`const label = makeLabel()` — a module helper returning a
  * function), then invoked with `()` in text position. The reference adapter
- * runs `label()` at render time and prints its result. Every DSL adapter
- * compiles the same source clean and emits the slot as a bare template
- * VARIABLE lookup named after the const (`{{.Label}}`, `v[:label]`,
- * `{{ label }}`, `$label`, …) — the `makeLabel()` binding never reaches the
- * template, so the backend sees an unbound name and renders an empty slot
- * (or fails at render), with no diagnostic anywhere. The CSR template lambda
- * has the same hole: `label` is an init-scope local it cannot see, so the slot
- * is emitted empty (pinned in `CSR_SKIP_FIXTURES`). Same shape as an
- * accessor returned by an imported library (`const posts = createQuery(…)`,
- * `{posts()}`); the same-file helper is the minimal reproduction.
+ * runs `label()` at render time and prints its result, and its CSR template
+ * inlines the call (`(makeLabel())()`) because Hono's `acceptsTemplateCall`
+ * accepts it. A DSL template cannot run the helper, so every DSL adapter
+ * refuses the shape with BF101 (pinned in each adapter's
+ * `conformancePins`) instead of lowering it to an unbound template variable.
+ * Same shape as an accessor returned by an imported library
+ * (`const posts = createQuery(…)`, `{posts()}`); the same-file helper is the
+ * minimal reproduction. The adapter-less CSR harness does not inline the
+ * call, so the fixture is in `CSR_SKIP_FIXTURES` (see the note there).
  *
  * The sibling signal read (`count()`) is here to keep the fixture an
- * ordinary hydrated island and to show the divergence is specific to the
+ * ordinary hydrated island and to show the refusal is specific to the
  * opaque accessor, not to text slots in general. `expectedHtml` is generated
  * from the reference adapter, which is correct for this shape.
  */
 export const fixture = createFixture({
   id: 'opaque-local-accessor-call',
-  description: 'Local accessor bound to an opaque helper call, invoked in text position, renders its result on the reference but lowers to a bare variable lookup on DSL adapters',
+  description: 'Local accessor bound to an opaque helper call, invoked in text position, renders its result on the reference and is refused (BF101) on DSL adapters',
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'
