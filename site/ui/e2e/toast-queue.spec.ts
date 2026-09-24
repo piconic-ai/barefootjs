@@ -11,8 +11,11 @@ test.describe('Toast Queue Block', () => {
   const demo = (page: any) =>
     page.locator('[bf-s^="ToastQueueDemo_"][bf-r]:not([data-slot])').first()
 
+  // The provider is portaled out of the demo to the layout's `<BfPortals />`
+  // outlet — the end of the `page` region (site/ui/renderer.tsx), so a soft
+  // navigation swaps it along with the page — not rendered inline.
   const toastProvider = (page: any) =>
-    page.locator('body > [data-slot="toast-provider"]')
+    page.locator('[bf-region="page"] > [data-slot="toast-provider"]')
 
   const portalToasts = (page: any) =>
     toastProvider(page).locator('[data-slot="toast"]')
