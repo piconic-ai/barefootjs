@@ -131,14 +131,24 @@ export interface ProfilerEventSink {
 
 /**
  * A signal's subscriber set, tagged with the signal's id for edge-removal
- * events. `__bfSnapshot` is a dispatch-order cache for `set()` (perf): the
- * array `[...subscribers]` would otherwise allocate on every write, but a
+ * events. `__bfSnapshot` is an iteration cache for `notify()` (perf): a
  * stable subscriber graph (the common case — see `runEffect`'s dependency
  * sweep) never mutates this Set between writes, so the same array can be
- * reused. `undefined`/`null` means "no valid cache, rebuild on next write";
- * every call site that adds or removes a member sets it back to `null`.
+ * reused instead of walking the Set's iterator on every write.
+ * `undefined`/`null` means "no valid cache, rebuild on next write"; every
+ * call site that adds or removes a member sets it back to `null`.
+ *
+ * `__bfMemo` is set only on a memo's private value signal and points back at
+ * the memo node that writes it. It is how the propagation walk crosses a memo
+ * (a write marks the memo, the memo's observers are marked CHECK through this
+ * set) and how `updateIfNecessary` finds which of a node's sources are memos
+ * that may need recomputing first.
  */
-type SubscriberSet = Set<EffectContext> & { __bfSignalId?: string; __bfSnapshot?: EffectContext[] | null }
+type SubscriberSet = Set<EffectContext> & {
+  __bfSignalId?: string
+  __bfSnapshot?: EffectContext[] | null
+  __bfMemo?: EffectContext
+}
 
 let profilerSink: ProfilerEventSink | null = null
 let signalSeq = 0
@@ -221,11 +231,11 @@ type EffectContext = {
   // unsubscribe/resubscribe churn a naive clear-and-rebuild pays on every
   // single run, while keeping dynamic dependency tracking exact).
   dependencies: Map<SubscriberSet, number>
-  // Monotonic per-effect run counter, bumped once per invocation (including
-  // reentrant/circular ones — each nested call gets its own higher value).
-  // Stamped onto `dependencies` entries in `get()`; compared against by the
-  // OUTERMOST invocation's end-of-run sweep to find entries the most recent
-  // run didn't touch. Never compared across effects.
+  // Monotonic per-effect run counter, bumped once per run. Stamped onto
+  // `dependencies` entries in `get()`; compared against by the end-of-run
+  // sweep to find entries the run didn't touch, and by `notify()` to tell
+  // whether a RUNNING node has already read a source in its current run.
+  // Never compared across effects.
   gen: number
   owner: EffectContext | null   // Parent scope for hierarchical disposal
   // Owned child effects/roots. A `Set` (not an array) so a single child's
@@ -240,7 +250,18 @@ type EffectContext = {
   // the common path (perf).
   children: Set<EffectContext> | null
   disposed: boolean
-  runCount: number              // Per-effect re-entry counter for circular dependency detection
+  // Propagation colour (see "Propagation" below): CLEAN = up to date,
+  // CHECK = some memo it reads may have changed, DIRTY = a source it read
+  // definitely changed. Every non-CLEAN node sits in `Queue`.
+  state: NodeState
+  running: boolean              // True while this node's body (or cleanup) is executing
+  // Circular-dependency guard: runs of this node from the flush queue in the
+  // flush numbered `epoch`. Reset lazily when a new flush first runs the node.
+  runCount: number
+  epoch: number
+  // Set on a memo node only: the subscriber set of the private signal it
+  // writes, i.e. the memo's observers (the inverse of `SubscriberSet.__bfMemo`).
+  memoSubs: SubscriberSet | null
   id: string                    // Dev instrumentation id ('' when profiling is off)
   kind: SubscriberKind          // effect | memo | root
   // Per-run output fingerprint accumulator (SR1, §4.2.2). Reset at the start of
@@ -265,8 +286,202 @@ function registerChild(owner: EffectContext, child: EffectContext): void {
   owner.children.add(child)
 }
 
+// -- Propagation ----------------------------------------------------------------
+//
+// A write is propagated in two phases (push-then-pull colouring, the scheme
+// Reactively and Solid 1.x use):
+//
+//   1. Push (`notify` / `mark`): the written signal's subscribers are marked
+//      DIRTY; for every marked memo, its observers are marked CHECK,
+//      transitively. Marking runs no user code — it only colours nodes and
+//      appends each newly non-CLEAN node to `Queue`.
+//   2. Pull (`flush` → `updateIfNecessary`): queued nodes are processed in
+//      order. A CHECK node first brings its memo sources up to date; if none
+//      of them produced a new value it is still CHECK and is marked CLEAN
+//      without running. A DIRTY node runs. A memo read (`createMemo`'s getter)
+//      that finds its memo not CLEAN pulls it the same way before returning.
+//
+// So an effect behind a diamond (`a` → memos `b`, `c` → effect) runs once per
+// write, and whichever memo it reads first, the other is recomputed before it
+// is returned — no run ever observes a half-updated memo pair.
+//
+// Memos stay eager: they are queued like effects, so a memo recomputes on
+// every change of its inputs even when nothing reads it.
+//
+// A flush starts when a write happens outside `batch()` and outside any
+// flush, when the outermost `batch()` ends, or around the first run of an
+// effect created outside both. Writes made while a flush is running (from an
+// effect body, a cleanup, or a `batch()` nested inside an effect) join that
+// flush: the nodes they mark run after the current node returns, never
+// re-entrantly inside it.
+
+type NodeState = 0 | 1 | 2
+const CLEAN = 0
+const CHECK = 1
+const DIRTY = 2
+
 let BatchDepth = 0
-const PendingEffects = new Set<EffectContext>()
+let Flushing = false
+// Bumped once per flush; compared with `EffectContext.epoch` to reset the
+// per-node run counter the first time a flush runs a node.
+let Epoch = 0
+// Every node that left CLEAN since the current flush (or batch) began, in
+// marking order. A node is appended once per CLEAN → non-CLEAN transition,
+// so it can appear twice (it was pulled early by a memo read, went CLEAN,
+// then got marked again); the second visit sees it CLEAN and skips it.
+const Queue: EffectContext[] = []
+// The subscriber set of the most recently created signal — read by
+// `createMemo` immediately after it creates its private value signal.
+let LastSignalSubs: SubscriberSet | null = null
+
+/**
+ * Mark every subscriber of `subs` with at least `state`. Skips a subscriber
+ * that is RUNNING and has not read `subs` yet in its current run: it will
+ * read the new value when it gets there, so re-running it would be wasted
+ * work (the case of an effect writing a signal before reading it).
+ */
+function notify(subs: SubscriberSet, state: NodeState): void {
+  let snapshot = subs.__bfSnapshot
+  if (!snapshot) snapshot = subs.__bfSnapshot = [...subs]
+  for (let i = 0; i < snapshot.length; i++) {
+    const sub = snapshot[i]!
+    if (sub.running && sub.dependencies.get(subs) !== sub.gen) continue
+    if (sub.state < state) mark(sub, state)
+  }
+}
+
+function mark(node: EffectContext, state: NodeState): void {
+  const wasClean = node.state === CLEAN
+  node.state = state
+  if (wasClean) {
+    Queue.push(node)
+    // A memo that may change makes its observers possibly stale too.
+    if (node.memoSubs) notify(node.memoSubs, CHECK)
+  }
+}
+
+/**
+ * Bring `node` up to date: pull its memo sources first, then run it only if
+ * one of them (or a plain signal it read) actually changed.
+ *
+ * `queued` is set only by `flush` for a node it takes off `Queue`: those runs
+ * are what a cycle repeats, so only they count against `MAX_EFFECT_RUNS`. A
+ * pull from a memo read is bounded by the reads of the run that made it — an
+ * effect that writes a signal and reads a memo of it in a loop pulls that memo
+ * once per iteration without being a cycle.
+ */
+function updateIfNecessary(node: EffectContext, queued = false): void {
+  if (node.state === CHECK) {
+    for (const dep of node.dependencies.keys()) {
+      const source = dep.__bfMemo
+      if (source && source.state !== CLEAN && !source.running) {
+        updateIfNecessary(source)
+        // The source produced a new value, and its write marked us DIRTY
+        // (the cast undoes TS's narrowing: `updateIfNecessary` mutated it).
+        if ((node.state as NodeState) === DIRTY) break
+      }
+    }
+  }
+  if (node.state !== DIRTY) {
+    node.state = CLEAN
+    return
+  }
+  if (queued) {
+    if (node.epoch !== Epoch) {
+      node.epoch = Epoch
+      node.runCount = 0
+    }
+    if (++node.runCount > MAX_EFFECT_RUNS) {
+      node.state = CLEAN
+      throw new Error(
+        `Circular dependency detected: effect ran more than ${MAX_EFFECT_RUNS} times in one update.`,
+      )
+    }
+  }
+  runEffect(node)
+}
+
+/**
+ * Distinct nodes still pending in `Queue`. A node pulled clean by a read and
+ * re-marked appears twice, and a pulled one that stayed clean not at all.
+ */
+function pendingCount(): number {
+  const pending = new Set<EffectContext>()
+  for (const node of Queue) if (node.state !== CLEAN) pending.add(node)
+  return pending.size
+}
+
+/**
+ * Process `Queue` until it is empty, including nodes appended while it runs.
+ * A node that throws does not stop the others — every queued node is still
+ * brought up to date, so the graph stays consistent — and the first error is
+ * rethrown once the queue is drained, to whoever wrote; later ones are logged.
+ *
+ * A throw from a memo pulled during a CHECK leaves the observer non-CLEAN, and
+ * `mark` only enqueues a CLEAN node, so it would never run again. Every
+ * non-CLEAN node is in `Queue`, so resetting the whole queue before clearing it
+ * keeps each one reachable by the next write.
+ */
+function flush(): void {
+  Flushing = true
+  Epoch++
+  let failed = false
+  let error: unknown
+  for (let i = 0; i < Queue.length; i++) {
+    try {
+      updateIfNecessary(Queue[i]!, true)
+    } catch (err) {
+      if (failed) console.error(err)
+      else {
+        failed = true
+        error = err
+      }
+    }
+  }
+  for (let i = 0; i < Queue.length; i++) Queue[i]!.state = CLEAN
+  Queue.length = 0
+  Flushing = false
+  if (failed) throw error
+}
+
+/**
+ * Run a freshly created node for the first time. Outside any flush or batch
+ * the run gets its own flush, so writes it makes propagate once it returns;
+ * inside one it runs inline and its writes join the enclosing flush/batch.
+ */
+function runInitial(node: EffectContext): void {
+  if (Flushing || BatchDepth > 0) {
+    runEffect(node)
+  } else {
+    mark(node, DIRTY)
+    flush()
+  }
+}
+
+function newNode(fn: EffectFn, id: string, kind: SubscriberKind): EffectContext {
+  const node: EffectContext = {
+    fn,
+    cleanup: null,
+    dependencies: new Map(),
+    gen: 0,
+    owner: Owner,
+    children: null,
+    disposed: false,
+    state: CLEAN,
+    running: false,
+    runCount: 0,
+    epoch: 0,
+    memoSubs: null,
+    id,
+    kind,
+    outputReported: false,
+    outputChanged: false,
+  }
+  if (profilerSink) profilerSink.effectCreate(id, kind)
+  // Register with parent owner for hierarchical disposal
+  if (Owner) registerChild(Owner, node)
+  return node
+}
 
 /**
  * Create a reactive value
@@ -290,6 +505,9 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
   // name the signal. Resolved once per creation; '' when profiling is off.
   const id = __bfId ?? (profilerSink ? `s${++signalSeq}` : '')
   subscribers.__bfSignalId = id
+  // Handed to `createMemo`, which links its private value signal's set to
+  // the memo node right after creating it (see `SubscriberSet.__bfMemo`).
+  LastSignalSubs = subscribers
 
   const get = () => {
     if (Listener) {
@@ -337,32 +555,14 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
 
     if (profilerSink) profilerSink.signalSet(id, BatchDepth > 0)
 
-    if (BatchDepth > 0) {
-      for (const effect of subscribers) {
-        PendingEffects.add(effect)
-      }
-    } else {
-      // Snapshot the subscriber list before dispatch so an effect that
-      // subscribes/unsubscribes DURING this write's dispatch (a nested
-      // re-run, or a disposal triggered from an effect body) can't change
-      // what THIS write runs — same fixed-at-dispatch-time semantics as the
-      // previous per-write `[...subscribers]` copy (pinned in
-      // reactive.test.ts's "dispatch snapshot" cases).
-      //
-      // The array is cached on the Set itself and only rebuilt when
-      // membership actually changes (`get()`'s new-dependency branch, the
-      // end-of-run sweep, and disposal all null it out) — a stable
-      // subscriber graph (effects that read the same signals every run,
-      // the common case) reuses the same array across every subsequent
-      // write instead of paying a fresh allocation + copy each time.
-      let snapshot = subscribers.__bfSnapshot
-      if (!snapshot) {
-        snapshot = subscribers.__bfSnapshot = [...subscribers]
-      }
-      for (let i = 0; i < snapshot.length; i++) {
-        runEffect(snapshot[i]!)
-      }
-    }
+    if (subscribers.size === 0) return
+
+    // Marking runs no user code, so the set of nodes THIS write affects is
+    // fixed before any of them runs: a subscriber added or disposed while
+    // the flush below is running cannot change it (pinned in
+    // dispatch-snapshot.test.ts).
+    notify(subscribers, DIRTY)
+    if (BatchDepth === 0 && !Flushing && Queue.length > 0) flush()
   }
 
   return [get, set] as Signal<T>
@@ -384,51 +584,18 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
  * @stability beta
  */
 export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: SubscriberKind = 'effect'): void {
-  // Note: Nested effects are now allowed. runEffect() properly saves/restores
-  // prevEffect, so nested effects correctly track their own dependencies.
-  // This enables synchronous component initialization inside loop reconcilers
-  // (mapArray/mapArrayAnchored).
-
-  const effect: EffectContext = {
-    fn,
-    cleanup: null,
-    dependencies: new Map(),
-    gen: 0,
-    owner: Owner,
-    children: null,
-    disposed: false,
-    runCount: 0,
-    id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
-    kind: __bfKind,
-    outputReported: false,
-    outputChanged: false,
-  }
-
-  if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
-
-  // Register with parent owner for hierarchical disposal
-  if (Owner) registerChild(Owner, effect)
-
-  runEffect(effect)
+  // Nested effects are allowed: `runEffect` saves/restores Owner/Listener, so a
+  // nested effect tracks its own dependencies. This enables synchronous
+  // component initialization inside loop reconcilers (mapArray/
+  // mapArrayAnchored) — a nested effect's FIRST run is always inline.
+  runInitial(newNode(fn, __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''), __bfKind))
 }
 
 function runEffect(effect: EffectContext): void {
+  // CLEAN from the start of the run: a write made during it that this node
+  // has already read marks it again, so it runs once more afterwards.
+  effect.state = CLEAN
   if (effect.disposed) return
-
-  effect.runCount++
-  if (effect.runCount > MAX_EFFECT_RUNS) {
-    effect.runCount = 0
-    throw new Error(`Circular dependency detected: effect re-entered itself ${MAX_EFFECT_RUNS} times.`)
-  }
-  // Captured right after the reentrancy counter above so a nested re-entrant
-  // run of this SAME effect (the circular-dependency guard above bounds how
-  // deep that can go) doesn't run the end-of-run dependency sweep against
-  // its own, shallower run: only the outermost call sweeps, using whatever
-  // `effect.gen` the deepest/most-recently-completed nested run left behind
-  // — that run's reads are the authoritative "current dependencies" for the
-  // whole reentrant chain, exactly like the old clear-at-every-entry code's
-  // last write won.
-  const isOutermostRun = effect.runCount === 1
 
   // `effectEnter` is emitted *before* cleanup so the whole run — cleanup
   // included — is bracketed by enter/exit. A `set()` performed inside a cleanup
@@ -438,45 +605,53 @@ function runEffect(effect: EffectContext): void {
   // is a no-op, so the run is byte-identical to the un-instrumented path.
   if (profilerSink) profilerSink.effectEnter(effect.id)
 
-  if (effect.cleanup) {
-    effect.cleanup()
-    effect.cleanup = null
-  }
-
-  if (profilerSink) {
-    // Dev-instrumented path only: reproduce the exact pre-optimization event
-    // contract by dropping every dependency up front, so `get()` re-adds (and
-    // re-fires `subscribeAdd` for) everything the run reads — including a
-    // signal read twice in one body. Profiling is dev-only and its cost
-    // doesn't matter; what matters is that turning it on never changes the
-    // event stream a consumer sees. The perf path below (no profiler) uses
-    // the cheaper end-of-run sweep instead.
-    for (const dep of effect.dependencies.keys()) {
-      dep.delete(effect)
-      // Membership changed — a dep this run doesn't re-read would otherwise
-      // leave a stale cached dispatch snapshot that still contains this
-      // effect (re-reads re-add via `get()`, which re-invalidates anyway).
-      dep.__bfSnapshot = null
-      profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
-    }
-    effect.dependencies.clear()
-  }
-
   const prevOwner = Owner
   const prevListener = Listener
-  Owner = effect
-  Listener = effect
+  // Bumped before the cleanup: every stamp is now stale, so a write made by
+  // the cleanup does not mark this node again (`notify`'s running check) —
+  // the body is about to run and will read the new value anyway.
   effect.gen++
-
-  // Fresh output fingerprint for this run (§4.2.2); `__bfReportOutput` fills it.
-  effect.outputReported = false
-  effect.outputChanged = false
-
-  // `start` stays here (after cleanup) so the reported duration measures the
-  // effect body only, unchanged by moving `effectEnter` above.
-  const start = profilerSink ? performance.now() : 0
+  effect.running = true
+  let start = 0
+  let bodyRan = false
 
   try {
+    if (effect.cleanup) {
+      effect.cleanup()
+      effect.cleanup = null
+    }
+
+    if (profilerSink) {
+      // Dev-instrumented path only: reproduce the exact pre-optimization event
+      // contract by dropping every dependency up front, so `get()` re-adds (and
+      // re-fires `subscribeAdd` for) everything the run reads — including a
+      // signal read twice in one body. Profiling is dev-only and its cost
+      // doesn't matter; what matters is that turning it on never changes the
+      // event stream a consumer sees. The perf path below (no profiler) uses
+      // the cheaper end-of-run sweep instead.
+      for (const dep of effect.dependencies.keys()) {
+        dep.delete(effect)
+        // Membership changed — a dep this run doesn't re-read would otherwise
+        // leave a stale cached dispatch snapshot that still contains this
+        // effect (re-reads re-add via `get()`, which re-invalidates anyway).
+        dep.__bfSnapshot = null
+        profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
+      }
+      effect.dependencies.clear()
+    }
+
+    Owner = effect
+    Listener = effect
+
+    // Fresh output fingerprint for this run (§4.2.2); `__bfReportOutput` fills it.
+    effect.outputReported = false
+    effect.outputChanged = false
+
+    // `start` is taken here (after cleanup) so the reported duration measures
+    // the effect body only, unchanged by moving `effectEnter` above.
+    if (profilerSink) start = performance.now()
+
+    bodyRan = true
     const result = effect.fn()
     if (typeof result === 'function') {
       effect.cleanup = result
@@ -484,14 +659,16 @@ function runEffect(effect: EffectContext): void {
   } finally {
     Owner = prevOwner
     Listener = prevListener
-    effect.runCount--
+    effect.running = false
 
-    if (!profilerSink && isOutermostRun) {
+    // Only after the body ran: a cleanup that threw left every stamp stale,
+    // and sweeping then would unsubscribe the node from everything.
+    if (!profilerSink && bodyRan) {
       // Sweep: a dependency whose stamp isn't the current `effect.gen`
-      // wasn't (re)read by the most recent run of this effect's body, so it
-      // must be dropped — this is what keeps dynamic dependency tracking
-      // exact (an effect that stops reading a signal stops depending on it).
-      // A dependency that IS still read every run (the overwhelmingly common
+      // wasn't (re)read by this run of the effect's body, so it must be
+      // dropped — this is what keeps dynamic dependency tracking exact (an
+      // effect that stops reading a signal stops depending on it). A
+      // dependency that IS still read every run (the overwhelmingly common
       // case: most effects' read set never changes) never reaches this
       // branch at all — `get()` above just refreshed its stamp, no
       // Set.delete/add round trip on the signal's subscriber Set.
@@ -505,7 +682,8 @@ function runEffect(effect: EffectContext): void {
     }
 
     if (profilerSink) {
-      profilerSink.effectExit(effect.id, performance.now() - start)
+      // A cleanup that threw: no body ran, so there is no body time.
+      profilerSink.effectExit(effect.id, bodyRan ? performance.now() - start : 0)
       if (effect.outputReported) profilerSink.effectOutput?.(effect.id, effect.outputChanged)
     }
   }
@@ -593,24 +771,7 @@ function disposeEffect(effect: EffectContext): void {
  * @stability alpha
  */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
-  const root: EffectContext = {
-    fn: () => {},
-    cleanup: null,
-    dependencies: new Map(),
-    gen: 0,
-    owner: Owner,
-    children: null,
-    disposed: false,
-    runCount: 0,
-    id: profilerSink ? `r${++subscriberSeq}` : '',
-    kind: 'root',
-    outputReported: false,
-    outputChanged: false,
-  }
-
-  if (profilerSink) profilerSink.effectCreate(root.id, 'root')
-
-  if (Owner) registerChild(Owner, root)
+  const root = newNode(() => {}, profilerSink ? `r${++subscriberSeq}` : '', 'root')
 
   const prevOwner = Owner
   const prevListener = Listener
@@ -648,29 +809,16 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
 export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => void {
   let disposed = false
 
-  const effect: EffectContext = {
-    fn: () => {
+  const effect = newNode(
+    () => {
       if (disposed) return  // Prevent re-activation after disposal
       return fn()
     },
-    cleanup: null,
-    dependencies: new Map(),
-    gen: 0,
-    owner: Owner,
-    children: null,
-    disposed: false,
-    runCount: 0,
-    id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
-    kind: 'effect',
-    outputReported: false,
-    outputChanged: false,
-  }
+    __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
+    'effect',
+  )
 
-  if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
-
-  if (Owner) registerChild(Owner, effect)
-
-  runEffect(effect)
+  runInitial(effect)
 
   return () => {
     disposeEffect(effect)
@@ -736,6 +884,8 @@ export function untrack<T>(fn: () => T): T {
  * regardless of how many times the source signal was written.
  *
  * Batches can be nested — effects flush when the outermost batch ends.
+ * A `batch()` inside an effect body adds its writes to the flush that is
+ * already running; they propagate after that effect returns.
  *
  * @param fn - Function containing signal writes to batch
  * @returns The return value of fn
@@ -759,19 +909,12 @@ export function batch<T>(fn: () => T): T {
     return fn()
   } finally {
     BatchDepth--
-    if (BatchDepth === 0) {
-      flushEffects()
-    }
-  }
-}
-
-function flushEffects(): void {
-  while (PendingEffects.size > 0) {
-    const effects = [...PendingEffects]
-    PendingEffects.clear()
-    if (profilerSink) profilerSink.batchFlush(effects.length)
-    for (const effect of effects) {
-      runEffect(effect)
+    // Inside a running flush (a `batch()` in an effect body) the writes have
+    // already joined that flush's queue; it processes them once the current
+    // node returns.
+    if (BatchDepth === 0 && !Flushing && Queue.length > 0) {
+      if (profilerSink) profilerSink.batchFlush(pendingCount())
+      flush()
     }
   }
 }
@@ -824,6 +967,9 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   // back into a single memo node (#1690).
   const id = __bfId ?? (profilerSink ? `m${++subscriberSeq}` : '')
   const [value, setValue] = createSignal<T>(undefined as T, id)
+  const subs = LastSignalSubs!
+  // Drop the handoff so it doesn't keep this memo's subscribers alive.
+  LastSignalSubs = null
 
   // Memo output fingerprint (§4.2.2): a recompute that yields an `Object.is`-equal
   // value is a wasted re-run. Tracked here (not via the private signal's bail)
@@ -831,7 +977,7 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   let prev: T
   let hasPrev = false
 
-  createEffect(() => {
+  const node = newNode(() => {
     const result = fn()
     if (profilerSink) {
       __bfReportOutput(!hasPrev || !Object.is(prev, result))
@@ -840,8 +986,20 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
     }
     setValue(() => result)
   }, id, 'memo')
+  // Link the node and its value signal both ways (see `SubscriberSet.__bfMemo`).
+  node.memoSubs = subs
+  subs.__bfMemo = node
 
-  return value
+  runInitial(node)
+
+  // Pull on read: a memo marked by a write that has not been propagated yet
+  // (read later in the same flush, inside `batch()`, or right after a write
+  // in the same effect body) is brought up to date before it is returned,
+  // so a read never observes a stale memo.
+  return (() => {
+    if (node.state !== CLEAN && !node.running) updateIfNecessary(node)
+    return value()
+  }) as Memo<T>
 }
 
 // ---------------------------------------------------------------------------

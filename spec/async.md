@@ -261,15 +261,13 @@ would wrap; that made `createQuery`'s argument the one place outside JSX where a
 is re-evaluated, so the explicit function stays — one token buys the absence of a special
 rule.
 
-**One send per tick.** The function is an effect body, and the reactive runtime dispatches a
-write synchronously in subscription order with no topological stage: behind a diamond (one
-signal read through two memos) the body is re-run once with a half-updated snapshot before
-the consistent one (pinned by the `diamond-propagation` fixture under the
-`diamond-propagation-glitch` registry limitation,
-`packages/adapter-tests/limitations/diamond-propagation-glitch.ts`). Because building a
-descriptor is pure (below), that extra evaluation is harmless as long as nothing is sent
-from inside the run: the runtime records the descriptor each run produces and sends once, at
-the end of the current tick (a microtask), so only the last key a tick produced goes out. This
+**One send per tick.** The function is an effect body. Behind a diamond (one signal read
+through two memos) the reactive runtime runs it once per write with a consistent snapshot
+(pinned by the `diamond-propagation` fixture), but several unbatched writes in one handler
+still run it once each. Because building a descriptor is pure (below), those extra
+evaluations are harmless as long as nothing is sent from inside the run: the runtime records
+the descriptor each run produces and sends once, at the end of the current tick (a
+microtask), so only the last key a tick produced goes out. This
 is the same "same tick" window §7.7's batcher uses, and it delays nothing the user can see —
 the send still leaves before the handler's frame is painted. A bare-`Promise` function (below)
 gets no such protection, which is one more reason to prefer descriptors.
