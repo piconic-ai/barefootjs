@@ -20,6 +20,7 @@ import {
   destructureLoopParam,
   buildDepthLevels,
   buildChildRefBindings,
+  hasReactiveLoopBindings,
 } from '../shared.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildInnerLoopsPlan } from './build-inner-loop.ts'
@@ -170,13 +171,9 @@ function filterCondCompsOut(
 }
 
 function hasReactive(elem: TopLevelLoop): boolean {
-  return elem.bindings.reactiveAttrs.length > 0
-    || elem.bindings.reactiveTexts.length > 0
-    || elem.bindings.conditionals.length > 0
+  return hasReactiveLoopBindings(elem.bindings)
 }
 
 function hasReactiveBranch(loop: BranchLoop): boolean {
-  return loop.bindings.reactiveAttrs.length > 0
-    || loop.bindings.reactiveTexts.length > 0
-    || loop.bindings.conditionals.length > 0
+  return hasReactiveLoopBindings(loop.bindings)
 }

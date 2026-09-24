@@ -43,7 +43,9 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The adapter's unit + conformance suite alone runs ~11-14 min on a
+    # shared runner, so a 15-minute cap cancels passing runs under load.
+    timeout-minutes: 25
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
