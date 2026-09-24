@@ -125,11 +125,21 @@ export const renderDivergences: RenderDivergences = {
   // (this table's own definition), so it moved to `conformance-pins.ts`
   // instead. Reaching outer reactive state from a static loop's forwarded
   // children on Go remains its own, unsolved capability gap.
-  // A component nested in a loop-row child's forwarded children gets its
-  // props from the row's baked child construction in `emitStaticBodyWrappers`,
-  // which only lowers literal and boolean props, so `on={highlight()}` falls
-  // back to Go's zero value.
-  'loop-row-child-children-nested-reactive-prop': { limitation: 'loop-row-child-nested-component-reactive-prop-dropped' },
+  // `loop-row-child-children-nested-reactive-prop` used to sit here: a
+  // component nested in a loop-row child's forwarded children got its props
+  // from a literal-only copy of the child-prop lowering, so `on={highlight()}`
+  // fell back to Go's zero value. Every loop-row construction site now shares
+  // `lowerChildInputFields` with the non-loop path; it renders like Hono.
+  // A prop there that reads the ROW ITEM is re-applied per row inside the
+  // row's forwarded-children define (`loop-row-child-children-nested-row-prop`
+  // passes), but that define is a separate `ExecuteTemplate` whose data is
+  // the row wrapper: the index (`{{range $index, …}}`) is out of reach, so a
+  // prop reading it keeps the shared instance's zero value.
+  'loop-row-child-children-nested-index-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
+  // `html/template` strips a `data-` prefix before classifying an attribute,
+  // so `data-on…` escapes as an `on…` event-handler (JS) attribute: a dynamic
+  // value renders as a quoted script string (`&#34;x&#34;`).
+  'data-on-attr-dynamic-value': { limitation: 'data-on-attr-value-script-escaped' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

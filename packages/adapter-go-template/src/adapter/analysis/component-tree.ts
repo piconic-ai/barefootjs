@@ -7,6 +7,7 @@
  * module-internal.
  */
 
+import { BindingScope } from '@barefootjs/jsx'
 import type {
   ComponentIR,
   IRNode,
@@ -113,13 +114,19 @@ function collectChildComponentNames(node: IRNode, names: Set<string>): void {
  */
 export function findNestedComponents(node: IRNode): NestedComponentInfo[] {
   const result: NestedComponentInfo[] = []
-  collectNestedComponents(node, result)
+  collectNestedComponents(node, result, BindingScope.EMPTY)
   return result
 }
 
-function collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): void {
+/**
+ * `scope` is the shared `BindingScope` of every loop enclosing `node`,
+ * threaded as a parameter so each loop's row scope is exactly the loops above
+ * it plus itself.
+ */
+function collectNestedComponents(node: IRNode, result: NestedComponentInfo[], scope: BindingScope): void {
   if (node.type === 'loop') {
     const loop = node as IRLoop
+    const rowScope = scope.enterLoopRow(loop)
     if (loop.childComponent) {
       if (!result.some(c => c.name === loop.childComponent!.name)) {
         const hasBodyChildren = loop.childComponent.children.length > 0
@@ -135,33 +142,37 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): v
           loopArrayParsed: loop.arrayParsed,
           loopMarkerId: loop.markerId,
           loopItemType: loop.itemType,
+          rowScope,
+          // `childComponent` is set only when the body is exactly this one
+          // component, so `loop.children[0]` is its full IR node.
+          rowProps: (loop.children[0] as IRComponent).props.filter(p => p.name !== 'key'),
         })
       }
     }
     for (const child of loop.children) {
-      collectNestedComponents(child, result)
+      collectNestedComponents(child, result, rowScope)
     }
   } else if (node.type === 'element') {
     const element = node as IRElement
     for (const child of element.children) {
-      collectNestedComponents(child, result)
+      collectNestedComponents(child, result, scope)
     }
   } else if (node.type === 'fragment') {
     const fragment = node as IRFragment
     for (const child of fragment.children) {
-      collectNestedComponents(child, result)
+      collectNestedComponents(child, result, scope)
     }
   } else if (node.type === 'conditional') {
     const cond = node as IRConditional
-    collectNestedComponents(cond.whenTrue, result)
+    collectNestedComponents(cond.whenTrue, result, scope)
     if (cond.whenFalse) {
-      collectNestedComponents(cond.whenFalse, result)
+      collectNestedComponents(cond.whenFalse, result, scope)
     }
   } else if (node.type === 'if-statement') {
     const stmt = node as IRIfStatement
-    collectNestedComponents(stmt.consequent, result)
+    collectNestedComponents(stmt.consequent, result, scope)
     if (stmt.alternate) {
-      collectNestedComponents(stmt.alternate, result)
+      collectNestedComponents(stmt.alternate, result, scope)
     }
   } else if (node.type === 'component') {
     // JSX children passed to an imported component render via a companion
@@ -169,7 +180,7 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): v
     // its `<Name>s` slice on THIS component's props like any other nested loop.
     const comp = node as IRComponent
     for (const child of comp.children) {
-      collectNestedComponents(child, result)
+      collectNestedComponents(child, result, scope)
     }
   }
 }

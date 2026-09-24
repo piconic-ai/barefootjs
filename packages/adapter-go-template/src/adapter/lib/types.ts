@@ -6,6 +6,7 @@
  */
 
 import type {
+  BindingScope,
   IRLoopChildComponent,
   IRNode,
   IRProp,
@@ -62,6 +63,21 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
   /** The loop item's TS type (`Payment` from `sortedData().map(payment => …)`),
    *  resolved to Go struct fields for the wrapper struct's datum fields. */
   loopItemType?: TypeInfo | null
+  /**
+   * The row scope of the loop whose body IS this component — every loop from
+   * the component root down to it, entered via `BindingScope.enterLoopRow`
+   * (`findNestedComponents`). A prop reading one of these names is row-
+   * dependent: the constructor runs once, outside the row, so the wrapper-
+   * construction sites skip it.
+   */
+  rowScope?: BindingScope
+  /**
+   * The loop-body component's own full `IRProp`s (minus `key`) — unlike the
+   * trimmed `props` copy on `IRLoopChildComponent`, these carry
+   * `freeIdentifiers`, `loc` and `clientOnly`, which the constructor-side
+   * prop lowering (`lowerChildInputFields`) needs.
+   */
+  rowProps?: readonly IRProp[]
 }
 
 export interface StaticChildInstance {
@@ -94,6 +110,14 @@ export interface StaticChildInstance {
    * the child isn't under any provider.
    */
   contextBindings?: ReadonlyMap<string, string>
+  /**
+   * The row scope enclosing this instance: the scope the collection walk
+   * started from (a loop-body component's `rowScope` for its forwarded
+   * children) plus every loop it descended through, entered via
+   * `BindingScope.enterLoopRow`. The loop-row wrapper sites read it to skip
+   * a row-dependent prop at constructor time.
+   */
+  rowScope: BindingScope
 }
 
 /**

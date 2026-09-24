@@ -81,6 +81,7 @@ import {
   collectLoopBoundNames,
   evaluateStaticLiteral,
   BindingScope,
+  freeIdentifiers,
   buildImportAliasMap,
   resolveGetterAliases,
   collectAliasableGetterNames,
@@ -2130,14 +2131,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return 'interface{}'
   }
 
-  /** Collect static child instances from loop body children for the wrapper struct. */
+  /**
+   * Collect static child instances from loop body children for the wrapper
+   * struct. `rowScope` is the loop-body component's own row scope
+   * (`NestedComponentInfo.rowScope`), so each instance's `rowScope` covers
+   * the row it is forwarded into as well as any loop nested below it.
+   */
   private collectBodyChildInstances(
     bodyChildren: IRNode[],
     propsParams: ReadonlyArray<{ name: string }> = [],
+    rowScope: BindingScope = BindingScope.EMPTY,
   ): StaticChildInstance[] {
     const result: StaticChildInstance[] = []
     for (const child of bodyChildren) {
-      this.collectStaticChildInstancesRecursive(child, result, false, new Map(), propsParams)
+      this.collectStaticChildInstancesRecursive(child, result, false, new Map(), propsParams, rowScope)
     }
     return result
   }
@@ -2247,8 +2254,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push('')
     }
 
-    this.emitStaticBodyWrappers(lines, ir, componentName, staticWithBody, emittedWrapperVars)
-
     // Signal-time prop fallbacks: `createSignal(props.X ?? N)` hoists `N` as a
     // local so the signal, any derived memo, and the prop field share one
     // fallback-applied value. Go zero values can't tell an explicit `Initial: 0`
@@ -2278,6 +2283,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (propFallbackVars.size > 0) lines.push('')
 
+    // After the prop-fallback locals: a loop-row child's prop can resolve to a
+    // signal seeded from one of them (`signalSeedGo`). Before this
+    // component's own sibling-memo hoisting below, so clear the previous
+    // component's hoisted locals first — a memo read here must never resolve
+    // to a local this function doesn't declare.
+    this.state.hoistedMemoLocals = new Map()
+    this.emitStaticBodyWrappers(lines, ir, componentName, staticWithBody, propFallbackVars, emittedWrapperVars)
     this.emitDynamicBodyWrappers(lines, ir, componentName, dynamicWithBody, propFallbackVars, emittedWrapperVars)
 
     // Sibling-memo hoisting (#2075/#2077 review finding 3): a filter-arm memo
@@ -2686,263 +2698,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
         }
       }
-      // Non-param attrs route into the child's rest bag (see
-      // `childComponentShapes`); `restBagEntries` collects `"jsx-attr-name":
-      // goValue` pairs for that map.
-      const childShape = this.childComponentShapes.get(declaredName)
-      const restBagEntries: string[] = []
-      const emitChildField = (jsxName: string, goValue: string): void => {
-        if (routesToRestBag(childShape, jsxName)) {
-          restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
-          return
-        }
-        // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
-        // bag to route it into, has nowhere to go — skip over emitting invalid Go.
-        if (jsxName.includes('-')) return
-        // `<Child>Input{...}` composite literal: Input fields are
-        // caller-facing and `jsxName` IS the caller-facing name, so no
-        // `childPropFieldNames` lookup — that map resolves the child's
-        // LOCAL/Props field for `loopRowChildPropOverrides`'s different
-        // struct.
-        const fieldName = capitalizeFieldName(jsxName)
-        lines.push(`\t\t\t${fieldName}: ${goValue},`)
-      }
-      for (const prop of child.props) {
-        switch (prop.value.kind) {
-          case 'literal':
-            emitChildField(prop.name, goLiteral(prop.value.value))
-            break
-          case 'boolean-shorthand':
-          case 'boolean-attr':
-            emitChildField(prop.name, 'true')
-            break
-          case 'expression':
-          case 'spread':
-          case 'template': {
-            // Prefer parsed template parts when present (carried on both
-            // `expression` and `template`): handles the shadcn variant lookup
-            // (`record-index-lookup-via-child-prop`) that
-            // `resolveDynamicPropValue` can't represent.
-            const parts =
-              prop.value.kind === 'template' || prop.value.kind === 'expression'
-                ? prop.value.parts
-                : undefined
-            if (parts) {
-              const goExpr = this.templatePartsToGoCode(parts, ir.metadata.propsParams)
-              if (goExpr !== null) {
-                emitChildField(prop.name, goExpr)
-                break
-              }
-              // Parts opted out (unsupported kind) → bare-expression path below.
-            }
-
-            // `template` kind has no raw expr string (discarded for the parts).
-            const exprText = prop.value.kind === 'template' ? '' : prop.value.expr
-            if (!exprText) break
-            // Inline object literal to a child's object-shaped prop
-            // (`opts={{ align: 'start' }}`, or #2925's `value={{ v: count }}`)
-            // bakes to a Go map or struct literal per the child's registered
-            // shape (`objectBakeTargetFor` — an OPTIONAL object prop's field
-            // is `map[string]interface{}`; a REQUIRED one is a synthesized
-            // struct, #2674). Only an `expression` attr carries `.parsed`.
-            // `resolveIdentifier` resolves a property value that's a bare
-            // local signal/memo getter (`{ v: count }`) against this SAME
-            // component's constructor-time seeding — #2925, the object-
-            // literal-wrapped twin of the bare-getter fix below.
-            const parsedValue =
-              prop.value.kind === 'expression' ? prop.value.parsed : undefined
-            // A ternary whose falsy branch is `undefined`/`null`
-            // (`tag={shown() ? tag() : undefined}`, #3060) has no arm in
-            // `templatePartsToGoCode` (it explicitly opts a `ternary` part
-            // out — see that function's docstring — reserving the shape for
-            // the element-attribute `{{if}}` path) NOR in
-            // `resolveDynamicPropValue` below (which only matches a bare
-            // getter call/comparison/passthrough, never a conditional). Both
-            // silently fell through to no field at all in the generated
-            // `<Child>Input{...}` literal, so the child's rest-bag/named-prop
-            // lookup saw no value on EITHER branch. Bake it as a Go
-            // `interface{}`-valued IIFE evaluated at constructor time — the
-            // same "what does this signal/prop expression evaluate to right
-            // now" question `resolveDynamicPropValue`/`resolveLocalGetterAsGo`
-            // already answer for a bare operand, just wrapped in the ternary's
-            // own test.
-            //
-            // Scoped to a REST-BAG destination on purpose (`routesToRestBag`):
-            // that field is always `map[string]any`-typed (`interface{}`
-            // values), so a `nil` alternate is always valid there. A NAMED
-            // field is concrete-typed (`string`, `int`, …) — a bare `interface{}`
-            // IIFE result fails to compile against it ("need type assertion",
-            // caught by `destructured-props-live`'s `label?: string` ternary
-            // prop, a pre-existing passing shape this must not regress). A
-            // named field's own conditional lowering is out of scope here;
-            // it keeps falling through to the unchanged paths below.
-            if (parsedValue?.kind === 'conditional' && routesToRestBag(childShape, prop.name)) {
-              const isUndef = (e: ParsedExpr): boolean =>
-                (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
-                (e.kind === 'literal' && (e.value === null || e.value === undefined))
-              if (isUndef(parsedValue.alternate) && !isUndef(parsedValue.consequent)) {
-                const testGo = this.resolveTernaryOperandAsGo(
-                  parsedValue.test,
-                  ir.metadata.signals,
-                  ir.metadata.memos,
-                  ir.metadata.propsParams,
-                  propFallbackVars,
-                )
-                const consequentGo = this.resolveTernaryOperandAsGo(
-                  parsedValue.consequent,
-                  ir.metadata.signals,
-                  ir.metadata.memos,
-                  ir.metadata.propsParams,
-                  propFallbackVars,
-                )
-                if (testGo !== null && consequentGo !== null) {
-                  // Go's `if` takes a `bool` and has no truthiness: a test that
-                  // resolves to anything but a bool literal (a string/number
-                  // signal seed, `tag={label() ? x : undefined}` over
-                  // `createSignal('x')` → `"x"`; a prop field of another
-                  // type) would embed `if "x" {` and fail to compile. Mirror
-                  // `lowerTernaryTest` (`expr/url-builder.ts`): a resolved
-                  // bool literal passes through, everything else goes through
-                  // `bf.Truthy` — JS `Boolean(x)` over string / number / bool
-                  // / nil, the same coercion the spread-bag conditionals use.
-                  const condGo = testGo === 'true' || testGo === 'false' ? testGo : `bf.Truthy(${testGo})`
-                  emitChildField(
-                    prop.name,
-                    `func() interface{} { if ${condGo} { return ${consequentGo} }; return nil }()`,
-                  )
-                  break
-                }
-              }
-            }
-            const objectTarget = objectBakeTargetFor(childShape, prop.name)
-            if (parsedValue && objectTarget) {
-              const goObj = objectLiteralToGoComposite(
-                this.emitCtx,
-                parsedValue,
-                objectTarget,
-                name => this.resolveLocalGetterAsGo(name, ir.metadata.signals, ir.metadata.memos, ir.metadata.propsParams, propFallbackVars),
-              )
-              if (goObj !== null) {
-                emitChildField(prop.name, goObj)
-                break
-              }
-            }
-            // A number/boolean JSX-EXPRESSION literal (`count={5}`,
-            // `active={true}`) — as opposed to a plain quoted string attr
-            // (`label="mail"`, which is `case 'literal':` above, an entirely
-            // different `AttrValue` kind) — is still `kind: 'expression'`
-            // here, since curly braces always parse to an expression
-            // container regardless of what's inside them. #2168
-            // child-primitive-props: `resolveDynamicPropValue` below only
-            // recognizes a getter call or a comparison against one; a bare
-            // `5`/`true` matches neither, so the field was silently OMITTED
-            // and the Badge's `Count`/`Active` fields defaulted to Go's zero
-            // value (`0`/`false`) regardless of the actual literal.
-            //
-            // Route through `parsedLiteralToGo` rather than hand-rolling a
-            // switch on `.value`/`.literalType`: a numeric literal needs its
-            // exact source `raw` token (Copilot review — `String(value)` can
-            // change spelling/precision, e.g. a large integer or `-0`), and
-            // `parsedLiteralToGo` also covers the LEADING-UNARY-MINUS shape
-            // (`count={-5}` parses as `kind: 'unary'` wrapping the literal,
-            // not `kind: 'literal'` itself — a case this branch's earlier
-            // `parsedValue?.kind === 'literal'` gate missed entirely and
-            // would have silently reintroduced the same omitted-field bug
-            // for a negative numeric literal).
-            if (parsedValue) {
-              const goVal = parsedLiteralToGo(this.emitCtx, parsedValue)
-              if (goVal !== null) {
-                emitChildField(prop.name, goVal)
-                break
-              }
-            }
-            const resolvedValue = this.resolveDynamicPropValue(
-              exprText,
-              ir.metadata.signals,
-              ir.metadata.memos,
-              ir.metadata.propsParams,
-              propFallbackVars,
-            )
-            if (resolvedValue !== null) {
-              emitChildField(prop.name, resolvedValue)
-            } else if (parsedValue?.kind === 'unary' && parsedValue.op === '!') {
-              // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
-              // recursion still can't lower (e.g. a multi-arg call, a deep
-              // member chain, `!(a && b)`) — refuse loudly instead of
-              // silently omitting the field, which left the child's own
-              // zero value (`false`) masquerading as a real answer at every
-              // call site with no diagnostic.
-              this.state.errors.push({
-                code: 'BF101',
-                severity: 'error',
-                message: `Prop '${prop.name}' on <${child.name}> is a negated expression ('${exprText}') the Go template adapter can't lower to SSR output`,
-                loc: prop.loc,
-                suggestion: {
-                  message: `Wrap <${child.name}> in /* @client */ so it renders on the client instead, or compute '${prop.name}' in the parent as its own signal/memo and pass that in as a plain prop.`,
-                  escape: [{ kind: 'client-directive' }],
-                },
-              })
-            }
-            break
-          }
-          case 'jsx-children':
-            // The RESERVED children slot (`comp.children.length > 0 ? comp.children
-            // : resolveJsxChildrenProp(...)`) is handled below via
-            // `child.childrenText` / `child.childrenHtml` and must not be
-            // re-emitted here. A JSX-valued prop under any OTHER name
-            // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) is a
-            // named slot — bake it the same way real children are baked
-            // (`extractTextChildren` / `extractHtmlChildren`) and emit it as
-            // its own struct field, mirroring the `Children` field's
-            // text-vs-HTML branching just below.
-            if (prop.name !== 'children') {
-              const text = this.extractTextChildren(prop.value.children)
-              if (text !== null) {
-                emitChildField(prop.name, JSON.stringify(text))
-              } else {
-                const html = this.extractHtmlChildren(prop.value.children)
-                if (html !== null) {
-                  this.state.usesHtmlTemplate = true
-                  emitChildField(prop.name, `template.HTML(${JSON.stringify(html)})`)
-                } else {
-                  // The value's root needs the PARENT's runtime scope id
-                  // (`<strong>` hoisted from the call site inherits the
-                  // caller's `bf-s`, not a bake-time constant) — same
-                  // needsScope case `childrenScopedHtmlExpr` handles for
-                  // the reserved children slot. The returned string is
-                  // already a Go concatenation expression (`"..." +
-                  // scopeID + "..."`), not a literal to re-quote.
-                  const scopedHtml = this.extractScopedHtmlChildren(prop.value.children)
-                  if (scopedHtml !== null) {
-                    this.state.usesHtmlTemplate = true
-                    emitChildField(prop.name, `template.HTML(${scopedHtml})`)
-                  }
-                  // Else: none of the three bake attempts produced a static
-                  // Go string — the value contains a template action that
-                  // survived (#2746) or is otherwise genuinely dynamic
-                  // (#2703). No field is emitted here; `queueDynamicPropDefine`
-                  // (called from `renderComponent`'s static-call-site branch)
-                  // detects the SAME unbakeable shape and delivers it at
-                  // template-execution time via `bf_with_props` + `bf_tmpl`,
-                  // mirroring how the reserved `children` field's null case
-                  // just above is filled in by `bf_with_children`. A
-                  // component nested in a loop row never reaches this
-                  // function (`collectStaticChildInstancesRecursive` only
-                  // collects `!inLoop` components), so there is no dynamic
-                  // named-prop delivery for that shape yet — out of scope
-                  // here, tracked separately if it turns up.
-                }
-              }
-            }
-            break
-        }
-      }
-      // Rest-bag entries → the child's open-ended bag field
-      // (`Props: map[string]any{...}`).
-      if (childShape?.restBagField && restBagEntries.length > 0) {
-        lines.push(
-          `\t\t\t${childShape.restBagField}: map[string]any{${restBagEntries.join(', ')}},`,
-        )
+      for (const { goField, goValue } of this.lowerChildInputFields(child, ir, propFallbackVars).fields) {
+        lines.push(`\t\t\t${goField}: ${goValue},`)
       }
       // JSX children → the child slot's `Children` input. Plain text uses
       // JSON.stringify (dodges `goLiteral`'s number branch, which would emit
@@ -2961,6 +2718,395 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       lines.push(`\t\t}),`)
     }
+  }
+
+  /**
+   * Lower one child-component call's props into the fields of its
+   * `New<Child>Props(<Child>Input{...})` composite literal — the ONE place
+   * that decides how a caller-side prop value becomes a constructor-time Go
+   * value. Shared by the non-loop child instances (`emitStaticChildInstances`)
+   * and every loop-row wrapper construction (`lowerLoopRowChildInputFields`:
+   * the loop-body component itself and the components nested in its
+   * forwarded children). Those sites used to carry their own literal-only
+   * copy, so a reactive prop there (`<Mark on={highlight()}>`) silently fell
+   * back to Go's zero value.
+   *
+   * Returns the `Field: value` pairs in emission order (the rest-bag map, when
+   * any prop routes into it, last) plus `unlowered`: the props that produced
+   * no field and no diagnostic of their own. What an unlowered prop means is
+   * the caller's decision — the non-loop site leaves it to the child's own
+   * default, the loop-row sites refuse it.
+   *
+   * `rowScope` (loop-row sites only) is the row scope enclosing the call; a
+   * prop reading a name bound there is skipped (see the loop below).
+   */
+  private lowerChildInputFields(
+    child: { name: string; props: readonly IRProp[] },
+    ir: ComponentIR,
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    rowScope?: BindingScope,
+  ): { fields: Array<{ goField: string; goValue: string }>; unlowered: IRProp[] } {
+    const fields: Array<{ goField: string; goValue: string }> = []
+    const unlowered: IRProp[] = []
+    // #2822: cross-file shapes are keyed by the child's own DECLARED name,
+    // not the caller-local alias — see `importAliases`.
+    const declaredName = this.resolveChildName(child.name)
+    // Non-param attrs route into the child's rest bag (see
+    // `childComponentShapes`); `restBagEntries` collects `"jsx-attr-name":
+    // goValue` pairs for that map.
+    const childShape = this.childComponentShapes.get(declaredName)
+    const restBagEntries: string[] = []
+    const emitChildField = (jsxName: string, goValue: string): void => {
+      if (routesToRestBag(childShape, jsxName)) {
+        restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
+        return
+      }
+      // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
+      // bag to route it into, has nowhere to go — skip over emitting invalid Go.
+      if (jsxName.includes('-')) return
+      // `<Child>Input{...}` composite literal: Input fields are
+      // caller-facing and `jsxName` IS the caller-facing name, so no
+      // `childPropFieldNames` lookup — that map resolves the child's
+      // LOCAL/Props field for `loopRowChildPropOverrides`'s different
+      // struct.
+      const fieldName = capitalizeFieldName(jsxName)
+      fields.push({ goField: fieldName, goValue })
+    }
+    for (const prop of child.props) {
+      // A prop reading the row (`tone={o.tone}`) can't be evaluated here: the
+      // constructor runs once, outside the row. It is delivered per row at
+      // template time instead (`loopRowChildPropOverrides`), under the same
+      // `isBound` question that delivery asks of the live scope.
+      if (rowScope && this.propReadsRow(prop, rowScope)) continue
+      switch (prop.value.kind) {
+        case 'literal':
+          emitChildField(prop.name, goLiteral(prop.value.value))
+          break
+        case 'boolean-shorthand':
+        case 'boolean-attr':
+          emitChildField(prop.name, 'true')
+          break
+        case 'expression':
+        case 'spread':
+        case 'template': {
+          // Prefer parsed template parts when present (carried on both
+          // `expression` and `template`): handles the shadcn variant lookup
+          // (`record-index-lookup-via-child-prop`) that
+          // `resolveDynamicPropValue` can't represent.
+          const parts =
+            prop.value.kind === 'template' || prop.value.kind === 'expression'
+              ? prop.value.parts
+              : undefined
+          if (parts) {
+            const goExpr = this.templatePartsToGoCode(parts, ir.metadata.propsParams)
+            if (goExpr !== null) {
+              emitChildField(prop.name, goExpr)
+              break
+            }
+            // Parts opted out (unsupported kind) → bare-expression path below.
+          }
+
+          // `template` kind has no raw expr string (discarded for the parts).
+          const exprText = prop.value.kind === 'template' ? '' : prop.value.expr
+          if (!exprText) {
+            unlowered.push(prop)
+            break
+          }
+          // Inline object literal to a child's object-shaped prop
+          // (`opts={{ align: 'start' }}`, or #2925's `value={{ v: count }}`)
+          // bakes to a Go map or struct literal per the child's registered
+          // shape (`objectBakeTargetFor` — an OPTIONAL object prop's field
+          // is `map[string]interface{}`; a REQUIRED one is a synthesized
+          // struct, #2674). Only an `expression` attr carries `.parsed`.
+          // `resolveIdentifier` resolves a property value that's a bare
+          // local signal/memo getter (`{ v: count }`) against this SAME
+          // component's constructor-time seeding — #2925, the object-
+          // literal-wrapped twin of the bare-getter fix below.
+          const parsedValue =
+            prop.value.kind === 'expression' ? prop.value.parsed : undefined
+          // A ternary whose falsy branch is `undefined`/`null`
+          // (`tag={shown() ? tag() : undefined}`, #3060) has no arm in
+          // `templatePartsToGoCode` (it explicitly opts a `ternary` part
+          // out — see that function's docstring — reserving the shape for
+          // the element-attribute `{{if}}` path) NOR in
+          // `resolveDynamicPropValue` below (which only matches a bare
+          // getter call/comparison/passthrough, never a conditional). Both
+          // silently fell through to no field at all in the generated
+          // `<Child>Input{...}` literal, so the child's rest-bag/named-prop
+          // lookup saw no value on EITHER branch. Bake it as a Go
+          // `interface{}`-valued IIFE evaluated at constructor time — the
+          // same "what does this signal/prop expression evaluate to right
+          // now" question `resolveDynamicPropValue`/`resolveLocalGetterAsGo`
+          // already answer for a bare operand, just wrapped in the ternary's
+          // own test.
+          //
+          // Scoped to a REST-BAG destination on purpose (`routesToRestBag`):
+          // that field is always `map[string]any`-typed (`interface{}`
+          // values), so a `nil` alternate is always valid there. A NAMED
+          // field is concrete-typed (`string`, `int`, …) — a bare `interface{}`
+          // IIFE result fails to compile against it ("need type assertion",
+          // caught by `destructured-props-live`'s `label?: string` ternary
+          // prop, a pre-existing passing shape this must not regress). A
+          // named field's own conditional lowering is out of scope here;
+          // it keeps falling through to the unchanged paths below.
+          if (parsedValue?.kind === 'conditional' && routesToRestBag(childShape, prop.name)) {
+            const isUndef = (e: ParsedExpr): boolean =>
+              (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
+              (e.kind === 'literal' && (e.value === null || e.value === undefined))
+            if (isUndef(parsedValue.alternate) && !isUndef(parsedValue.consequent)) {
+              const testGo = this.resolveTernaryOperandAsGo(
+                parsedValue.test,
+                ir.metadata.signals,
+                ir.metadata.memos,
+                ir.metadata.propsParams,
+                propFallbackVars,
+              )
+              const consequentGo = this.resolveTernaryOperandAsGo(
+                parsedValue.consequent,
+                ir.metadata.signals,
+                ir.metadata.memos,
+                ir.metadata.propsParams,
+                propFallbackVars,
+              )
+              if (testGo !== null && consequentGo !== null) {
+                // Go's `if` takes a `bool` and has no truthiness: a test that
+                // resolves to anything but a bool literal (a string/number
+                // signal seed, `tag={label() ? x : undefined}` over
+                // `createSignal('x')` → `"x"`; a prop field of another
+                // type) would embed `if "x" {` and fail to compile. Mirror
+                // `lowerTernaryTest` (`expr/url-builder.ts`): a resolved
+                // bool literal passes through, everything else goes through
+                // `bf.Truthy` — JS `Boolean(x)` over string / number / bool
+                // / nil, the same coercion the spread-bag conditionals use.
+                const condGo = testGo === 'true' || testGo === 'false' ? testGo : `bf.Truthy(${testGo})`
+                emitChildField(
+                  prop.name,
+                  `func() interface{} { if ${condGo} { return ${consequentGo} }; return nil }()`,
+                )
+                break
+              }
+            }
+          }
+          const objectTarget = objectBakeTargetFor(childShape, prop.name)
+          if (parsedValue && objectTarget) {
+            const goObj = objectLiteralToGoComposite(
+              this.emitCtx,
+              parsedValue,
+              objectTarget,
+              name => this.resolveLocalGetterAsGo(name, ir.metadata.signals, ir.metadata.memos, ir.metadata.propsParams, propFallbackVars),
+            )
+            if (goObj !== null) {
+              emitChildField(prop.name, goObj)
+              break
+            }
+          }
+          // A number/boolean JSX-EXPRESSION literal (`count={5}`,
+          // `active={true}`) — as opposed to a plain quoted string attr
+          // (`label="mail"`, which is `case 'literal':` above, an entirely
+          // different `AttrValue` kind) — is still `kind: 'expression'`
+          // here, since curly braces always parse to an expression
+          // container regardless of what's inside them. #2168
+          // child-primitive-props: `resolveDynamicPropValue` below only
+          // recognizes a getter call or a comparison against one; a bare
+          // `5`/`true` matches neither, so the field was silently OMITTED
+          // and the Badge's `Count`/`Active` fields defaulted to Go's zero
+          // value (`0`/`false`) regardless of the actual literal.
+          //
+          // Route through `parsedLiteralToGo` rather than hand-rolling a
+          // switch on `.value`/`.literalType`: a numeric literal needs its
+          // exact source `raw` token (Copilot review — `String(value)` can
+          // change spelling/precision, e.g. a large integer or `-0`), and
+          // `parsedLiteralToGo` also covers the LEADING-UNARY-MINUS shape
+          // (`count={-5}` parses as `kind: 'unary'` wrapping the literal,
+          // not `kind: 'literal'` itself — a case this branch's earlier
+          // `parsedValue?.kind === 'literal'` gate missed entirely and
+          // would have silently reintroduced the same omitted-field bug
+          // for a negative numeric literal).
+          if (parsedValue) {
+            const goVal = parsedLiteralToGo(this.emitCtx, parsedValue)
+            if (goVal !== null) {
+              emitChildField(prop.name, goVal)
+              break
+            }
+          }
+          const resolvedValue = this.resolveDynamicPropValue(
+            exprText,
+            ir.metadata.signals,
+            ir.metadata.memos,
+            ir.metadata.propsParams,
+            propFallbackVars,
+          )
+          if (resolvedValue !== null) {
+            emitChildField(prop.name, resolvedValue)
+          } else if (parsedValue?.kind === 'unary' && parsedValue.op === '!') {
+            // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
+            // recursion still can't lower (e.g. a multi-arg call, a deep
+            // member chain, `!(a && b)`) — refuse loudly instead of
+            // silently omitting the field, which left the child's own
+            // zero value (`false`) masquerading as a real answer at every
+            // call site with no diagnostic.
+            this.state.errors.push({
+              code: 'BF101',
+              severity: 'error',
+              message: `Prop '${prop.name}' on <${child.name}> is a negated expression ('${exprText}') the Go template adapter can't lower to SSR output`,
+              loc: prop.loc,
+              suggestion: {
+                message: `Wrap <${child.name}> in /* @client */ so it renders on the client instead, or compute '${prop.name}' in the parent as its own signal/memo and pass that in as a plain prop.`,
+                escape: [{ kind: 'client-directive' }],
+              },
+            })
+          } else {
+            unlowered.push(prop)
+          }
+          break
+        }
+        case 'jsx-children':
+          // The RESERVED children slot (`comp.children.length > 0 ? comp.children
+          // : resolveJsxChildrenProp(...)`) is handled by the caller via
+          // `child.childrenText` / `child.childrenHtml` and must not be
+          // re-emitted here. A JSX-valued prop under any OTHER name
+          // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) is a
+          // named slot — bake it the same way real children are baked
+          // (`extractTextChildren` / `extractHtmlChildren`) and emit it as
+          // its own struct field, mirroring the caller's `Children` field
+          // text-vs-HTML branching.
+          if (prop.name !== 'children') {
+            const text = this.extractTextChildren(prop.value.children)
+            if (text !== null) {
+              emitChildField(prop.name, JSON.stringify(text))
+            } else {
+              const html = this.extractHtmlChildren(prop.value.children)
+              if (html !== null) {
+                this.state.usesHtmlTemplate = true
+                emitChildField(prop.name, `template.HTML(${JSON.stringify(html)})`)
+              } else {
+                // The value's root needs the PARENT's runtime scope id
+                // (`<strong>` hoisted from the call site inherits the
+                // caller's `bf-s`, not a bake-time constant) — same
+                // needsScope case `childrenScopedHtmlExpr` handles for
+                // the reserved children slot. The returned string is
+                // already a Go concatenation expression (`"..." +
+                // scopeID + "..."`), not a literal to re-quote.
+                const scopedHtml = this.extractScopedHtmlChildren(prop.value.children)
+                if (scopedHtml !== null) {
+                  this.state.usesHtmlTemplate = true
+                  emitChildField(prop.name, `template.HTML(${scopedHtml})`)
+                }
+                // Else: none of the three bake attempts produced a static
+                // Go string — the value contains a template action that
+                // survived (#2746) or is otherwise genuinely dynamic
+                // (#2703). No field is emitted here; `queueDynamicPropDefine`
+                // (called from `renderComponent`'s static-call-site branch)
+                // detects the SAME unbakeable shape and delivers it at
+                // template-execution time via `bf_with_props` + `bf_tmpl`,
+                // mirroring how the reserved `children` field's null case
+                // just above is filled in by `bf_with_children`. A
+                // component nested in a loop-row child's forwarded children
+                // renders through that same static call-site branch inside
+                // its companion define, so it is covered too; the loop-body
+                // component itself (the wrapper-slice call) has no dynamic
+                // named-prop delivery yet.
+              }
+            }
+          }
+          break
+      }
+    }
+    // Rest-bag entries → the child's open-ended bag field
+    // (`Props: map[string]any{...}`).
+    if (childShape?.restBagField && restBagEntries.length > 0) {
+      fields.push({ goField: childShape.restBagField, goValue: `map[string]any{${restBagEntries.join(', ')}}` })
+    }
+    return { fields, unlowered }
+  }
+
+  /**
+   * Does `prop`'s value read a name `rowScope` binds? Reads the IR-computed
+   * `IRProp.freeIdentifiers` when it is a live `Set` — it does not survive the
+   * debug IR's JSON round trip, which `generateTypes` can be handed — and
+   * otherwise walks the parsed value (`freeIdentifiers`). False when neither
+   * can answer: the prop then goes through the ordinary lowering, which
+   * refuses it loudly at a loop-row site if it can't be lowered.
+   */
+  private propReadsRow(prop: IRProp, rowScope: BindingScope): boolean {
+    const irFree = prop.freeIdentifiers
+    const free: Iterable<string> | null =
+      irFree instanceof Set
+        ? irFree
+        : (prop.value.kind === 'expression' || prop.value.kind === 'spread') && prop.value.parsed
+          ? freeIdentifiers(prop.value.parsed)
+          : null
+    if (free === null) return false
+    for (const name of free) {
+      if (rowScope.isBound(name)) return true
+    }
+    return false
+  }
+
+  /**
+   * `lowerChildInputFields` for a child built once per loop in the parent's
+   * constructor and shared by every row (the loop-body component of a
+   * wrapper-slice loop, and each component nested in its forwarded
+   * children). Row-dependent props are skipped (delivered per row); a
+   * `/* @client *\/` prop never reaches SSR; `key` is the row's
+   * reconciliation key, not a prop. Any other prop the constructor can't
+   * lower is refused with BF101 — it used to be dropped silently, leaving the
+   * child's zero value in the SSR output.
+   */
+  private lowerLoopRowChildInputFields(
+    child: { name: string; props: readonly IRProp[] },
+    ir: ComponentIR,
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    rowScope: BindingScope,
+  ): Array<{ goField: string; goValue: string }> {
+    const props = child.props.filter(p => !p.clientOnly && p.name !== 'key')
+    const { fields, unlowered } = this.lowerChildInputFields(
+      { name: child.name, props },
+      ir,
+      propFallbackVars,
+      rowScope,
+    )
+    for (const prop of unlowered) {
+      // An event handler is wired on the client; it has no SSR value to lose.
+      if (prop.name.startsWith('on') && prop.name.length > 2) continue
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Prop '${prop.name}' on <${child.name}> inside a loop row can't be lowered to an SSR value by the Go template adapter`,
+        loc: prop.loc,
+        suggestion: {
+          message: `Mark the prop /* @client */ so it is applied on the client instead, or compute '${prop.name}' in the parent as its own signal/memo and pass that in.`,
+          escape: [{ kind: 'client-directive' }],
+        },
+      })
+    }
+    return fields
+  }
+
+  /**
+   * The `child_<Field> := New<Child>Props(...)` constructions for the
+   * components nested in a loop-body component's forwarded children, built
+   * once and shared by every row (identical scope IDs per row). Shared by the
+   * static and memo-baked wrapper paths.
+   */
+  private emitLoopRowBodyChildInstances(
+    lines: string[],
+    ir: ComponentIR,
+    bodyChildInstances: readonly StaticChildInstance[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): void {
+    for (const child of bodyChildInstances) {
+      const childDeclaredName = this.resolveChildName(child.name)
+      lines.push(`\tchild_${child.fieldName} := New${childDeclaredName}Props(${childDeclaredName}Input{`)
+      lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
+      lines.push(`\t\tBfParent: scopeID,`)
+      lines.push(`\t\tBfMount: "${child.slotId}",`)
+      for (const f of this.lowerLoopRowChildInputFields(child, ir, propFallbackVars, child.rowScope)) {
+        lines.push(`\t\t${f.goField}: ${f.goValue},`)
+      }
+      lines.push(`\t})`)
+    }
+    if (bodyChildInstances.length > 0) lines.push('')
   }
 
   private emitNewPropsDocComment(
@@ -3059,10 +3205,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // are not checked: the row's child construction below
           // (`collectBodyChildInstances`) happens in the parent's constructor,
           // never inside the companion define, so an outer read cannot crash
-          // it. It only carries literal and boolean props, though, so a
-          // reactive prop is dropped to its zero value — a known gap
-          // (`loop-row-child-nested-component-reactive-prop-dropped`), the
-          // same as on `main`, and far narrower than emptying the loop.
+          // it: a row-independent reactive prop is lowered to its initial
+          // value there (`lowerLoopRowChildInputFields`), or refused loudly.
           if (scalarRow) return true
           if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
           continue
@@ -3089,6 +3233,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     componentName: string,
     staticWithBody: NestedComponentInfo[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     emittedWrapperVars: Set<string>,
   ): void {
     // Bake the array-source const into the constructor so wrappers get their
@@ -3138,29 +3283,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams)
+      const rowScope = nested.rowScope ?? BindingScope.EMPTY
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, rowScope)
       // #2822 follow-up: matches `generateLoopBodyWrapperStruct`'s embedded
       // field — the composite-literal key here must be the SAME declared
       // name the wrapper struct's embedded field was declared under.
       const declaredName = this.resolveChildName(nested.name)
 
-      for (const child of bodyChildInstances) {
-        const childVar = `child_${child.fieldName}`
-        const childDeclaredName = this.resolveChildName(child.name)
-        lines.push(`\t${childVar} := New${childDeclaredName}Props(${childDeclaredName}Input{`)
-        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
-        lines.push(`\t\tBfParent: scopeID,`)
-        lines.push(`\t\tBfMount: "${child.slotId}",`)
-        for (const prop of child.props) {
-          if (prop.value.kind === 'literal') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
-          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: true,`)
-          }
-        }
-        lines.push(`\t})`)
-      }
-      if (bodyChildInstances.length > 0) lines.push('')
+      this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
       const dataVar = `${varName}Data`
       lines.push(`\t${dataVar} := ${bakedValue}`)
@@ -3170,15 +3300,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
       lines.push(`\t\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-      // Loop-body component's own static props. `key` → BfDataKey below; children
-      // flow through `bf_with_children`; hyphenated names have no Go field.
-      for (const prop of nested.props ?? []) {
-        if (prop.name === 'key' || prop.name === 'children' || prop.name.includes('-')) continue
-        if (prop.value.kind === 'literal') {
-          lines.push(`\t\t\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
-        } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
-          lines.push(`\t\t\t\t${capitalizeFieldName(prop.name)}: true,`)
-        }
+      // Loop-body component's own row-independent props (`key` → BfDataKey
+      // below; forwarded children flow through `bf_with_children`).
+      for (const f of this.lowerLoopRowChildInputFields(
+        { name: nested.name, props: nested.rowProps ?? [] },
+        ir,
+        propFallbackVars,
+        rowScope,
+      )) {
+        lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
       }
       lines.push(`\t\t\t}),`)
       for (const f of datumFields) {
@@ -3237,29 +3367,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams)
+      const rowScope = nested.rowScope ?? BindingScope.EMPTY
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, rowScope)
       // #2822 follow-up: matches `generateLoopBodyWrapperStruct`'s embedded
       // field — see the identical comment in `emitStaticBodyWrappers`.
       const declaredName = this.resolveChildName(nested.name)
 
       // Child sub-component instances created once (identical scope IDs per row).
-      for (const child of bodyChildInstances) {
-        const childVar = `child_${child.fieldName}`
-        const childDeclaredName = this.resolveChildName(child.name)
-        lines.push(`\t${childVar} := New${childDeclaredName}Props(${childDeclaredName}Input{`)
-        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
-        lines.push(`\t\tBfParent: scopeID,`)
-        lines.push(`\t\tBfMount: "${child.slotId}",`)
-        for (const prop of child.props) {
-          if (prop.value.kind === 'literal') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
-          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: true,`)
-          }
-        }
-        lines.push(`\t})`)
-      }
-      if (bodyChildInstances.length > 0) lines.push('')
+      this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
       lines.push(`\tbakedData := ${bakedValue}`)
       lines.push(`\t${varName} := make([]${wrapperType}, len(bakedData))`)
@@ -3268,6 +3383,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
       lines.push(`\t\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+      // Same row-independent own-prop lowering as the static wrapper path.
+      for (const f of this.lowerLoopRowChildInputFields(
+        { name: nested.name, props: nested.rowProps ?? [] },
+        ir,
+        propFallbackVars,
+        rowScope,
+      )) {
+        lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
+      }
       lines.push(`\t\t\t}),`)
       for (const f of datumFields) {
         lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
@@ -4210,6 +4334,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private bakingStaticChildren = false
 
+  /**
+   * Set only while rendering a wrapper-slice loop body component's forwarded
+   * children into their companion define (`queueLoopBodyChildrenDefine` with
+   * `wrapperRow`). A component nested there renders through the static
+   * `.NameSlotN` call-site branch of `renderComponent`, but that field is the
+   * single instance the constructor built for every row, so the branch must
+   * also re-apply the props that read the row (`loopRowChildPropOverrides`).
+   * A render-position flag like `inLoop`, not a record of bound names — which
+   * names read the row is still `this.scope`'s answer.
+   */
+  private renderingWrapperRowChildren = false
+
   private extractScopedHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
     if (children.every(c => c.type === 'text')) return null
@@ -4245,6 +4381,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     inLoop: boolean,
     providerCtx: ReadonlyMap<string, string>,
     propsParams: ReadonlyArray<{ name: string }> = [],
+    scope: BindingScope = BindingScope.EMPTY,
   ): void {
     if (node.type === 'component') {
       const comp = node as IRComponent
@@ -4254,7 +4391,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // child components nested inside still get their slot fields.
       if (comp.dynamicTag) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
         }
         return
       }
@@ -4278,6 +4415,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           childrenHtml: this.extractHtmlChildren(effectiveChildren),
           childrenScopedHtmlExpr: this.extractScopedHtmlChildren(effectiveChildren),
           contextBindings: providerCtx.size > 0 ? providerCtx : undefined,
+          rowScope: scope,
         })
         // Action-bearing JSX children render through a companion define with the
         // PARENT's data (see `queueDynamicChildrenDefine`), so component
@@ -4286,13 +4424,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // never contain components (any nested component renders a `{{template}}`
         // action, which the bake extractors reject), so recursing is a no-op.
         for (const child of effectiveChildren) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
         }
       }
       // Recurse into Portal's children to find nested components
       if (comp.name === 'Portal' && comp.children) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
         }
       }
     } else if (node.type === 'loop') {
@@ -4305,6 +4443,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // so it registers a normal once-per-slot instance (shared across rows,
       // like the wrapper's `bodyChildInstances`); per-item content reaches it
       // through the loop-body children define (see `renderComponent`).
+      const rowScope = scope.enterLoopRow(loop)
       for (const child of loop.children) {
         this.collectStaticChildInstancesRecursive(
           child,
@@ -4312,32 +4451,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           inLoop || !!loop.childComponent,
           providerCtx,
           propsParams,
+          rowScope,
         )
       }
     } else if (node.type === 'element') {
       const element = node as IRElement
       for (const child of element.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
       }
     } else if (node.type === 'fragment') {
       const fragment = node as IRFragment
       for (const child of fragment.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
       }
     } else if (node.type === 'conditional') {
       const cond = node as IRConditional
-      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx, propsParams)
+      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx, propsParams, scope)
       if (cond.whenFalse) {
-        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx, propsParams, scope)
       }
     } else if (node.type === 'if-statement') {
       // An early-return if-statement root (e.g. an asChild split) keeps its
       // subtrees in consequent/alternate — the non-asChild branch's nested icon
       // needs its slot field like any other static child.
       const stmt = node as IRIfStatement
-      this.collectStaticChildInstancesRecursive(stmt.consequent, result, inLoop, providerCtx, propsParams)
+      this.collectStaticChildInstancesRecursive(stmt.consequent, result, inLoop, providerCtx, propsParams, scope)
       if (stmt.alternate) {
-        this.collectStaticChildInstancesRecursive(stmt.alternate, result, inLoop, providerCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(stmt.alternate, result, inLoop, providerCtx, propsParams, scope)
       }
     } else if (node.type === 'provider') {
       // SSR context propagation: record the provider's value against its context
@@ -4348,16 +4488,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const p = node as IRProvider
       const childCtx = this.extendProviderContext(providerCtx, p, propsParams)
       for (const child of p.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx, propsParams, scope)
       }
     } else if (node.type === 'async') {
       // Async fallback + children render server-side via the OOS
       // protocol; static child components inside them still need slot
       // fields on the parent struct.
       const a = node as IRAsync
-      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx, propsParams)
+      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx, propsParams, scope)
       for (const child of a.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
       }
     }
   }
@@ -7615,6 +7755,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.scope.isBound(name) || this.loopVarRefCount.has(name)
   }
 
+  /** Whether `name` is the innermost enclosing loop's own item param. */
+  private isInnermostRowItem(name: string): boolean {
+    const hit = this.scope.lookup(name)
+    return hit !== null && hit.depth === 0 && hit.binding.source === 'item'
+  }
+
   /**
    * #2445: per-row Go pipeline arguments for a child component nested inside
    * a COMPOSITE loop row (row root is a plain element — `<li><Badge
@@ -7665,6 +7811,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private loopRowChildPropOverrides(
     comp: IRComponent,
+    rowItemOnly = false,
   ): {
     args: string | null
     helper: 'bf_with_props' | 'bf_reprops'
@@ -7702,6 +7849,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (prop.value.kind !== 'expression') continue
       const free = prop.freeIdentifiers
       if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
+      // `rowItemOnly` (a wrapper-slice row's forwarded-children define): the
+      // define runs as its own template with the row wrapper as its data, so
+      // only the innermost row item's fields (`.Field`) are reachable there.
+      // An index, a preamble local or an outer row's binding is a `{{range}}`
+      // variable of the calling template the define can't see — such a prop
+      // keeps the shared instance's value
+      // (`loop-row-child-nested-prop-reads-unreachable-row-binding`).
+      if (rowItemOnly && [...free].some(name => this.isLoopShadowedName(name) && !this.isInnermostRowItem(name))) {
+        continue
+      }
       // #2448's derived-field staleness check only applies to a NAMED FIELD
       // override — `bf_with_props` patches struct fields the constructor may
       // derive OTHER fields from. A rest-bag entry is an opaque
@@ -8963,8 +9120,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * companion define receives as its data context). The loop param stack
    * stays intact so datum-field references (`payment.id` → `.Id`) still
    * resolve.
+   *
+   * `wrapperRow`: the define runs with a wrapper-slice row as its data (the
+   * loop body IS `comp`), so a nested component's `.NameSlotN` is the ONE
+   * instance the constructor built for every row
+   * (`emitLoopRowBodyChildInstances`) and a prop reading the row must be
+   * re-applied per row — see `renderingWrapperRowChildren`.
    */
-  private queueLoopBodyChildrenDefine(comp: IRComponent): string | null {
+  private queueLoopBodyChildrenDefine(comp: IRComponent, wrapperRow: boolean): string | null {
     const effectiveChildren = comp.children.length > 0
       ? comp.children
       : resolveJsxChildrenProp(comp.props)
@@ -8975,12 +9138,43 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const name = `${this.state.componentName}__loop_children_${comp.slotId}`
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
       const wasInLoop = this.inLoop
+      const wasWrapperRow = this.renderingWrapperRowChildren
       this.inLoop = false
-      const content = this.renderChildren(effectiveChildren)
-      this.inLoop = wasInLoop
-      this.state.pendingChildrenDefines.push({ name, content })
+      this.renderingWrapperRowChildren = wrapperRow
+      try {
+        const content = this.renderChildren(effectiveChildren)
+        this.state.pendingChildrenDefines.push({ name, content })
+      } finally {
+        this.inLoop = wasInLoop
+        this.renderingWrapperRowChildren = wasWrapperRow
+      }
     }
     return name
+  }
+
+  /**
+   * Wrap a child call's props value in the per-row prop re-application
+   * `loopRowChildPropOverrides` asked for: `bf_reprops` (re-runs the child's
+   * constructor) or `bf_with_props` for named fields, then one `bf_with_bag`
+   * per rest-bag entry (#3062 — disjoint from the named fields, so the order
+   * between the two doesn't matter). Shared by every call site that renders
+   * a row's child through a once-built instance.
+   */
+  private wrapLoopRowPropOverrides(
+    base: string,
+    declaredName: string,
+    overrides: ReturnType<GoTemplateAdapter['loopRowChildPropOverrides']>,
+  ): string {
+    let out = base
+    if (overrides?.args) {
+      out = overrides.helper === 'bf_reprops'
+        ? `(bf_reprops ${JSON.stringify(declaredName)} ${out} ${overrides.args})`
+        : `(bf_with_props ${out} ${overrides.args})`
+    }
+    for (const entry of overrides?.bagEntries ?? []) {
+      out = `(bf_with_bag ${out} ${JSON.stringify(entry.bagField)} ${JSON.stringify(entry.key)} ${entry.go})`
+    }
+    return out
   }
 
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean }): string {
@@ -9019,7 +9213,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // normal non-loop rendering path (`.TableCellSlotN` fields on the
       // wrapper struct), while the loop param stack stays intact so datum
       // references resolve.
-      const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
+      const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, true)
       if (loopBodyDefine) {
         // Scalar-item loop: feed the body define the wrapper's `.BfLoopItem` (the
         // bare range value) so `{n}` → `{{.}}` renders it; object loops keep `.`
@@ -9048,24 +9242,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // contract the wrapper machinery's `bodyChildInstances` already uses.
       const suffix = slotIdToFieldSuffix(comp.slotId)
       const overrides = this.loopRowChildPropOverrides(comp)
-      const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
+      const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, false)
       // `bf_reprops` re-runs the child's constructor and so takes the
       // component name; `bf_with_props` patches fields and doesn't (#2448).
       // Either way the props helper stays INNER — `bf_with_children` applies
       // the row's children last, on the rebuilt value.
-      let base = overrides?.args
-        ? overrides.helper === 'bf_reprops'
-          ? `(bf_reprops ${JSON.stringify(declaredName)} $.${comp.name}${suffix} ${overrides.args})`
-          : `(bf_with_props $.${comp.name}${suffix} ${overrides.args})`
-        : `$.${comp.name}${suffix}`
-      // #3062: each loop-row rest-bag override (no declared field —
-      // `loopRowChildPropOverrides`'s `bagEntries`) wraps in its OWN
-      // `bf_with_bag` call, outside the (optional) `bf_with_props`/
-      // `bf_reprops` wrap — same disjoint-fields, order-doesn't-matter
-      // reasoning as the static call site's identical loop just below.
-      for (const entry of overrides?.bagEntries ?? []) {
-        base = `(bf_with_bag ${base} ${JSON.stringify(entry.bagField)} ${JSON.stringify(entry.key)} ${entry.go})`
-      }
+      const base = this.wrapLoopRowPropOverrides(`$.${comp.name}${suffix}`, declaredName, overrides)
       templateCall = loopBodyDefine
         ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`
         : `{{template "${declaredName}" ${base}}}`
@@ -9094,6 +9276,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // innermost only because it was already there.
       for (const entry of propResult.bagEntries) {
         base = `(bf_with_bag ${base} ${JSON.stringify(entry.bagField)} ${JSON.stringify(entry.key)} (bf_tmpl ${JSON.stringify(entry.defineName)} .))`
+      }
+      // Inside a wrapper-slice row's forwarded-children define, `.NameSlotN`
+      // is the one instance the constructor built for every row, so a prop
+      // reading the row (`<Mark tone={o.tone}>`) is re-applied per row here —
+      // the same delivery a component nested in an element row gets above.
+      if (this.renderingWrapperRowChildren) {
+        base = this.wrapLoopRowPropOverrides(base, declaredName, this.loopRowChildPropOverrides(comp, true))
       }
       templateCall = childrenDefine
         ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${childrenDefine}" .))}}`

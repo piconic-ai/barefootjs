@@ -1939,6 +1939,19 @@
         "attribute"
       ]
     },
+    "data-on-attr-dynamic-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "data-table": {
       "kinds": [
         "array-literal",
@@ -3775,6 +3788,23 @@
         "text"
       ]
     },
+    "loop-row-child-children-nested-index-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-nested-reactive-prop": {
       "kinds": [
         "array-literal",
@@ -3787,6 +3817,23 @@
       ],
       "axes": [
         "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-row-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
         "literal:string"
       ],
       "contexts": [
@@ -3810,6 +3857,32 @@
       ],
       "contexts": [
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-own-reactive-prop": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -7306,20 +7379,20 @@
     }
   },
   "kindCounts": {
-    "array-literal": 128,
+    "array-literal": 131,
     "array-method": 72,
-    "arrow": 77,
-    "binary": 114,
-    "call": 302,
-    "conditional": 38,
-    "identifier": 431,
+    "arrow": 78,
+    "binary": 115,
+    "call": 304,
+    "conditional": 39,
+    "identifier": 435,
     "index-access": 15,
-    "literal": 342,
+    "literal": 346,
     "logical": 53,
-    "member": 255,
-    "object-literal": 103,
+    "member": 258,
+    "object-literal": 106,
     "template-literal": 33,
-    "unary": 31,
+    "unary": 32,
     "unsupported": 52
   },
   "axisCounts": {
@@ -7355,13 +7428,13 @@
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 57,
+    "binary:===": 58,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 75,
-    "literal:null": 27,
+    "literal:boolean": 76,
+    "literal:null": 28,
     "literal:number": 157,
-    "literal:string": 232,
+    "literal:string": 236,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
@@ -7378,7 +7451,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 24,
+    "unary:!": 25,
     "unary:-": 11
   },
   "uncoveredKinds": [

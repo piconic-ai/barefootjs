@@ -180,6 +180,7 @@ import { fixture as fragmentLoopChildren } from './fragment-loop-children'
 // Priority 5: Elements and attributes
 import { fixture as voidElements } from './void-elements'
 import { fixture as dynamicAttributes } from './dynamic-attributes'
+import { fixture as dataOnAttrDynamicValue } from './data-on-attr-dynamic-value'
 import { fixture as classVsClassname } from './class-vs-classname'
 import { fixture as styleAttribute } from './style-attribute'
 import { fixture as styleObjectStatic } from './style-object-static'
@@ -740,6 +741,13 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 import { fixture as loopRowChildChildrenFnScopeArray } from './loop-row-child-children-fn-scope-array'
 import { fixture as loopRowChildChildrenNestedShapes } from './loop-row-child-children-nested-shapes'
 import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-child-children-nested-reactive-prop'
+// The per-row twin of the fixture above (`<Mark tone={o.tone}>`), and the
+// loop-body component's own row-independent reactive prop (`<Chip
+// on={highlight()}>`) — both built once per loop by backends that construct
+// a loop row's child components ahead of the rows.
+import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-children-nested-row-prop'
+import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
+import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
 // The UNTYPED twin of `loop-row-child-children-nested-shapes`: same forwarded-JSX-children shape,
 // but the loop's source array is an unannotated object-literal const
 // (#3178). Regression pin for go-template's untyped-object-array-const
@@ -883,6 +891,7 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 5: Elements and attributes
   voidElements,
   dynamicAttributes,
+  dataOnAttrDynamicValue,
   classVsClassname,
   styleAttribute,
   styleObjectStatic,
@@ -1240,6 +1249,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenFnScopeArray,
   loopRowChildChildrenNestedShapes,
   loopRowChildChildrenNestedReactiveProp,
+  loopRowChildChildrenNestedRowProp,
+  loopRowChildChildrenOwnReactiveProp,
+  loopRowChildChildrenNestedIndexProp,
   loopRowChildChildrenUntypedArray,
   loopRowChildUntypedArrayNestedField,
   loopRowChildUntypedArrayNestedFieldTyped,
