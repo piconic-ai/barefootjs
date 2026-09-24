@@ -133,9 +133,11 @@ export const renderDivergences: RenderDivergences = {
   // A prop there that reads the ROW ITEM is re-applied per row inside the
   // row's forwarded-children define (`loop-row-child-children-nested-row-prop`
   // passes), but that define is a separate `ExecuteTemplate` whose data is
-  // the row wrapper: the index (`{{range $index, …}}`) is out of reach, so a
-  // prop reading it keeps the shared instance's zero value.
+  // the row wrapper: the index (`{{range $index, …}}`) and a callback-body
+  // local (`{{$t := …}}`) are out of reach, so a prop reading either keeps
+  // the shared instance's zero value.
   'loop-row-child-children-nested-index-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
+  'loop-row-child-children-nested-preamble-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
   // `html/template` strips a `data-` prefix before classifying an attribute,
   // so `data-on…` escapes as an `on…` event-handler (JS) attribute: a dynamic
   // value renders as a quoted script string (`&#34;x&#34;`).

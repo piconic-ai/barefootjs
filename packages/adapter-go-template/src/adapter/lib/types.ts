@@ -70,14 +70,14 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
    * dependent: the constructor runs once, outside the row, so the wrapper-
    * construction sites skip it.
    */
-  rowScope?: BindingScope
+  rowScope: BindingScope
   /**
-   * The loop-body component's own full `IRProp`s (minus `key`) — unlike the
-   * trimmed `props` copy on `IRLoopChildComponent`, these carry
-   * `freeIdentifiers`, `loc` and `clientOnly`, which the constructor-side
-   * prop lowering (`lowerChildInputFields`) needs.
+   * The loop-body component's own full `IRProp`s — unlike the trimmed `props`
+   * copy on `IRLoopChildComponent`, these carry `freeIdentifiers`, `loc` and
+   * `clientOnly`, which the constructor-side prop lowering
+   * (`lowerChildInputFields`) needs.
    */
-  rowProps?: readonly IRProp[]
+  rowProps: readonly IRProp[]
 }
 
 export interface StaticChildInstance {

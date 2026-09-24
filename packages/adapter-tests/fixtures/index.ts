@@ -749,6 +749,7 @@ import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-ch
 import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-children-nested-row-prop'
 import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
+import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
 // The UNTYPED twin of `loop-row-child-children-nested-shapes`: same forwarded-JSX-children shape,
 // but the loop's source array is an unannotated object-literal const
 // (#3178). Regression pin for go-template's untyped-object-array-const
@@ -1255,6 +1256,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedRowProp,
   loopRowChildChildrenOwnReactiveProp,
   loopRowChildChildrenNestedIndexProp,
+  loopRowChildChildrenNestedPreambleProp,
   loopRowChildChildrenUntypedArray,
   loopRowChildUntypedArrayNestedField,
   loopRowChildUntypedArrayNestedFieldTyped,

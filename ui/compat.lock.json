@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 460,
+    "totalFixtures": 461,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -3292,6 +3292,14 @@
         }
       },
       "loop-row-child-children-nested-index-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-nested-prop-reads-unreachable-row-binding"
+          ]
+        }
+      },
+      "loop-row-child-children-nested-preamble-prop": {
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -5435,6 +5443,10 @@
         "description": "A nested component inside a loop-row child's forwarded children receives the row index as a prop at…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-index-prop.ts"
       },
+      "loop-row-child-children-nested-preamble-prop": {
+        "description": "A nested component inside a loop-row child's forwarded children receives a callback-local derived…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-preamble-prop.ts"
+      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows have…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-mismatched-keys.ts"
@@ -5874,13 +5886,14 @@
       ]
     },
     "loop-row-child-nested-prop-reads-unreachable-row-binding": {
-      "title": "A component in a loop-row child's forwarded children loses a prop read from the row index",
+      "title": "A component in a loop-row child's forwarded children loses a prop read from the row index or a callback-body local",
       "kind": "silent",
-      "given": "a `.map()` loop whose row is a single child component with forwarded JSX `children`, where those children nest another component whose prop reads the callback's index parameter rather than the row item (`opts.map((o, i) => <Chip><Mark pos={i}>…</Mark></Chip>)`)",
-      "expected": "each row renders the nested component with its own index (`data-pos=\"0\"`, `data-pos=\"1\"`)",
-      "actual": "renders every row's nested component with the prop's zero value instead (the attribute is missing), because the forwarded children render as a separate template that receives the row item but not the row index",
+      "given": "a `.map()` loop whose row is a single child component with forwarded JSX `children`, where those children nest another component whose prop reads a callback binding other than the row item itself: the index parameter (`opts.map((o, i) => <Chip><Mark pos={i}>…</Mark></Chip>)`) or a local the callback body declares (`const t = o.tone` → `<Mark tone={t}>`)",
+      "expected": "each row renders the nested component with its own value (`data-pos=\"0\"`, `data-pos=\"1\"`; `data-tone=\"warm\"`, `data-tone=\"cool\"`)",
+      "actual": "renders every row's nested component with the prop's zero value instead (the attribute is missing), because the forwarded children render as a separate template that receives the row item but not the row's other bindings",
       "fixtures": [
-        "loop-row-child-children-nested-index-prop"
+        "loop-row-child-children-nested-index-prop",
+        "loop-row-child-children-nested-preamble-prop"
       ],
       "adapters": [
         "go-template"

@@ -3805,6 +3805,23 @@
         "text"
       ]
     },
+    "loop-row-child-children-nested-preamble-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-nested-reactive-prop": {
       "kinds": [
         "array-literal",
@@ -7393,18 +7410,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 131,
+    "array-literal": 132,
     "array-method": 72,
     "arrow": 78,
     "binary": 115,
     "call": 304,
     "conditional": 39,
-    "identifier": 435,
+    "identifier": 436,
     "index-access": 15,
-    "literal": 346,
+    "literal": 347,
     "logical": 53,
-    "member": 258,
-    "object-literal": 106,
+    "member": 259,
+    "object-literal": 107,
     "template-literal": 33,
     "unary": 32,
     "unsupported": 54
@@ -7448,7 +7465,7 @@
     "literal:boolean": 76,
     "literal:null": 28,
     "literal:number": 157,
-    "literal:string": 236,
+    "literal:string": 237,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,

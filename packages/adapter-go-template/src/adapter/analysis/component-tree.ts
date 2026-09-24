@@ -145,7 +145,7 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[], sc
           rowScope,
           // `childComponent` is set only when the body is exactly this one
           // component, so `loop.children[0]` is its full IR node.
-          rowProps: (loop.children[0] as IRComponent).props.filter(p => p.name !== 'key'),
+          rowProps: (loop.children[0] as IRComponent).props,
         })
       }
     }

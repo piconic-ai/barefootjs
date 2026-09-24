@@ -226,6 +226,15 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
 }
 
 /**
+ * Whether a component prop is an event handler, which is wired on the
+ * client and has no SSR value — the same `isEventHandler` predicate
+ * `jsx-to-ir.ts` applies to component props.
+ */
+function isComponentEventProp(name: string): boolean {
+  return name.startsWith('on') && name.length > 2
+}
+
+/**
  * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
  * @since 0.1.0
@@ -2285,9 +2294,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // After the prop-fallback locals: a loop-row child's prop can resolve to a
     // signal seeded from one of them (`signalSeedGo`). Before this
-    // component's own sibling-memo hoisting below, so clear the previous
-    // component's hoisted locals first — a memo read here must never resolve
-    // to a local this function doesn't declare.
+    // component's own sibling-memo hoisting below, so drop the previous
+    // component's hoisted locals here — a memo read by the wrappers must
+    // never resolve to a local this function doesn't declare.
     this.state.hoistedMemoLocals = new Map()
     this.emitStaticBodyWrappers(lines, ir, componentName, staticWithBody, propFallbackVars, emittedWrapperVars)
     this.emitDynamicBodyWrappers(lines, ir, componentName, dynamicWithBody, propFallbackVars, emittedWrapperVars)
@@ -2304,7 +2313,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (not `:=`) because an unresolved computation can fall back to the bare
     // `nil` literal, which `:=` can't type-infer.
     const memoPropsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
-    this.state.hoistedMemoLocals = new Map()
     const hoistNames = new Set<string>()
     for (const memo of ir.metadata.memos) {
       for (const name of filterArmEarlierSiblingRefs(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams)) {
@@ -2727,9 +2735,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * value. Shared by the non-loop child instances (`emitStaticChildInstances`)
    * and every loop-row wrapper construction (`lowerLoopRowChildInputFields`:
    * the loop-body component itself and the components nested in its
-   * forwarded children). Those sites used to carry their own literal-only
-   * copy, so a reactive prop there (`<Mark on={highlight()}>`) silently fell
-   * back to Go's zero value.
+   * forwarded children).
    *
    * Returns the `Field: value` pairs in emission order (the rest-bag map, when
    * any prop routes into it, last) plus `unlowered`: the props that produced
@@ -3050,8 +3056,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * children). Row-dependent props are skipped (delivered per row); a
    * `/* @client *\/` prop never reaches SSR; `key` is the row's
    * reconciliation key, not a prop. Any other prop the constructor can't
-   * lower is refused with BF101 — it used to be dropped silently, leaving the
-   * child's zero value in the SSR output.
+   * lower, event handlers aside, is refused with BF101 rather than left at
+   * the child's zero value.
    */
   private lowerLoopRowChildInputFields(
     child: { name: string; props: readonly IRProp[] },
@@ -3067,8 +3073,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       rowScope,
     )
     for (const prop of unlowered) {
-      // An event handler is wired on the client; it has no SSR value to lose.
-      if (prop.name.startsWith('on') && prop.name.length > 2) continue
+      if (isComponentEventProp(prop.name)) continue
       this.state.errors.push({
         code: 'BF101',
         severity: 'error',
@@ -3107,6 +3112,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t})`)
     }
     if (bodyChildInstances.length > 0) lines.push('')
+  }
+
+  /**
+   * The wrapper row's embedded `<Name>Props: New<Name>Props(...)` for the
+   * loop-body component itself, with its own row-independent props (`key` →
+   * `BfDataKey`, forwarded children → `bf_with_children`, both applied by the
+   * caller). Shared by the static and memo-baked wrapper paths.
+   */
+  private emitLoopBodyComponentProps(
+    lines: string[],
+    ir: ComponentIR,
+    nested: NestedComponentInfo,
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): void {
+    // #2822 follow-up: the SAME declared name `generateLoopBodyWrapperStruct`
+    // declared the wrapper struct's embedded field under.
+    const declaredName = this.resolveChildName(nested.name)
+    lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
+    lines.push(`\t\t\t\tBfParent: scopeID,`)
+    lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+    const own = { name: nested.name, props: nested.rowProps }
+    for (const f of this.lowerLoopRowChildInputFields(own, ir, propFallbackVars, nested.rowScope)) {
+      lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
+    }
+    lines.push(`\t\t\t}),`)
   }
 
   private emitNewPropsDocComment(
@@ -3283,13 +3313,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const rowScope = nested.rowScope ?? BindingScope.EMPTY
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, rowScope)
-      // #2822 follow-up: matches `generateLoopBodyWrapperStruct`'s embedded
-      // field — the composite-literal key here must be the SAME declared
-      // name the wrapper struct's embedded field was declared under.
-      const declaredName = this.resolveChildName(nested.name)
-
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
       this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
       const dataVar = `${varName}Data`
@@ -3297,20 +3321,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${varName} := make([]${wrapperType}, len(${dataVar}))`)
       lines.push(`\tfor i, item := range ${dataVar} {`)
       lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
-      lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
-      lines.push(`\t\t\t\tBfParent: scopeID,`)
-      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-      // Loop-body component's own row-independent props (`key` → BfDataKey
-      // below; forwarded children flow through `bf_with_children`).
-      for (const f of this.lowerLoopRowChildInputFields(
-        { name: nested.name, props: nested.rowProps ?? [] },
-        ir,
-        propFallbackVars,
-        rowScope,
-      )) {
-        lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
-      }
-      lines.push(`\t\t\t}),`)
+      this.emitLoopBodyComponentProps(lines, ir, nested, propFallbackVars)
       for (const f of datumFields) {
         lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
       }
@@ -3367,12 +3378,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const rowScope = nested.rowScope ?? BindingScope.EMPTY
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, rowScope)
-      // #2822 follow-up: matches `generateLoopBodyWrapperStruct`'s embedded
-      // field — see the identical comment in `emitStaticBodyWrappers`.
-      const declaredName = this.resolveChildName(nested.name)
-
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
       // Child sub-component instances created once (identical scope IDs per row).
       this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
@@ -3380,19 +3386,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${varName} := make([]${wrapperType}, len(bakedData))`)
       lines.push(`\tfor i, item := range bakedData {`)
       lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
-      lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
-      lines.push(`\t\t\t\tBfParent: scopeID,`)
-      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-      // Same row-independent own-prop lowering as the static wrapper path.
-      for (const f of this.lowerLoopRowChildInputFields(
-        { name: nested.name, props: nested.rowProps ?? [] },
-        ir,
-        propFallbackVars,
-        rowScope,
-      )) {
-        lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
-      }
-      lines.push(`\t\t\t}),`)
+      this.emitLoopBodyComponentProps(lines, ir, nested, propFallbackVars)
       for (const f of datumFields) {
         lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
       }
@@ -7830,12 +7824,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     let needsRebuild = false
     for (const prop of comp.props) {
       // Client-only props never reach SSR output; `key`/`children` aren't
-      // Props-struct fields; event handlers have no Go field (same
-      // `isEventHandler` predicate `jsx-to-ir.ts` uses for component props);
-      // a hyphenated name can't be a Go field (same guard as `emitChildField`).
+      // Props-struct fields; event handlers have no Go field
+      // (`isComponentEventProp`); a hyphenated name can't be a Go field (same
+      // guard as `emitChildField`).
       if (prop.clientOnly) continue
       if (prop.name === 'key' || prop.name === 'children') continue
-      if (prop.name.startsWith('on') && prop.name.length > 2) continue
+      if (isComponentEventProp(prop.name)) continue
       if (prop.name.includes('-')) continue
       // A prop that routes into the child's rest bag (`routesToRestBag`,
       // `emitChildField`'s same routing rule) has no named Go field to
