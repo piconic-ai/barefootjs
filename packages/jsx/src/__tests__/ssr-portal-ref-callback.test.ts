@@ -175,4 +175,43 @@ export function Overlay() {
     // Overlay's own `handleMount` is flagged from ITS OWN closure.
     expect(flaggedRefs(rootFor(src, 'Overlay'))).toEqual(['handleMount'])
   })
+
+  // BF063 resolves a `ref` name outward through every enclosing function
+  // scope; the portal recognition keeps the pre-BF063 limit (the callback
+  // must be declared in the ref's innermost function scope) so sharing the
+  // resolution does not widen what is recognized. These two tests pin that
+  // scope limit only. A portal element inside a `.map()` row is broken
+  // either way — the second test's row-declared callback is still
+  // recognized and still breaks the row's hydration — which is a
+  // pre-existing, separately tracked defect: the control pins today's
+  // behaviour as a known gap, not as intended behaviour.
+  test('does not flag a .map() row ref naming a portal callback declared in the component body', () => {
+    const ir = root(`
+'use client'
+import { createPortal } from '@barefootjs/client'
+export function List(props: { rows: string[] }) {
+  const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
+  return <ul>{props.rows.map(r => (<li key={r}><div ref={mountContent}>{r}</div></li>))}</ul>
+}
+`)
+    expect(flaggedRefs(ir)).toEqual([])
+  })
+
+  test('still flags a .map() row ref naming a portal callback declared in the row callback itself', () => {
+    const ir = root(`
+'use client'
+import { createPortal } from '@barefootjs/client'
+export function List(props: { rows: string[] }) {
+  return (
+    <ul>
+      {props.rows.map(r => {
+        const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
+        return <li key={r}><div ref={mountContent}>{r}</div></li>
+      })}
+    </ul>
+  )
+}
+`)
+    expect(flaggedRefs(ir)).toEqual(['mountContent'])
+  })
 })

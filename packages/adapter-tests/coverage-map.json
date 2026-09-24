@@ -5292,6 +5292,20 @@
       "axes": [],
       "contexts": []
     },
+    "ref-mount-attr-client": {
+      "kinds": [
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": []
+    },
+    "ref-mount-attr-rendered": {
+      "kinds": [
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": []
+    },
     "region-boundary": {
       "kinds": [],
       "axes": [],
@@ -7320,7 +7334,7 @@
     "object-literal": 103,
     "template-literal": 33,
     "unary": 31,
-    "unsupported": 52
+    "unsupported": 54
   },
   "axisCounts": {
     "array-method:at": 2,

@@ -620,9 +620,20 @@ function buildEvent(value: EventValue, ctx: EventCtx): EventBuild {
     }
     case 'ref-callback': {
       const elParam = factory.createParameterDeclaration(undefined, undefined, 'el')
-      const body = [exprStmt(call(prop(id('el'), 'setAttribute'), [strLit('data-mounted'), call(id('String'), [state.readExpr])]))]
+      const mountedValue = () => call(id('String'), [state.readExpr])
+      const body = [exprStmt(call(prop(id('el'), 'setAttribute'), [strLit('data-mounted'), mountedValue()]))]
       const { decl, ref } = shapeCallback(callback, 'handleMount', [elParam], block(body))
-      return { attrs: [jsxAttrExpr('ref', ref)], declarations: decl ? [decl] : [], rowScopedDeclarations: [] }
+      // The element ALSO renders `data-mounted` from the same state read, so
+      // SSR already carries the value the ref writes on mount. A ref writing
+      // an attribute the JSX never renders is a BF063 compile-time refusal
+      // (it could never reach the server HTML); rendering it keeps this axis
+      // value exercising a real mount-time `ref` write across every
+      // structure without composing a refused case.
+      return {
+        attrs: [jsxAttrExpr('data-mounted', mountedValue()), jsxAttrExpr('ref', ref)],
+        declarations: decl ? [decl] : [],
+        rowScopedDeclarations: [],
+      }
     }
   }
 }

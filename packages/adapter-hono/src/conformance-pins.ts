@@ -43,4 +43,12 @@ export const conformancePins: ConformancePins = {
   'conditional-return-fragment-branch': [
     { code: 'BF029', severity: 'error', limitation: 'fragment-wrapped-conditional-return-branch-scope' },
   ],
+  // A `ref` callback writing an attribute on mount that the element's JSX
+  // never renders refuses (BF063) in the shared jsx-to-ir.ts phase, ahead
+  // of `adapter.generate()` — a ref never runs at SSR, so the attribute
+  // could never reach the server HTML on any backend — so it is pinned
+  // identically on every adapter including Hono.
+  'ref-mount-attr': [
+    { code: 'BF063', severity: 'error', limitation: 'ref-effect-attr-state-ssr' },
+  ],
 }

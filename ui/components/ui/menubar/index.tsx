@@ -128,7 +128,7 @@ function Menubar(props: MenubarProps) {
           const currentValue = activeMenu()
           setActiveMenu('')
           // Focus back to the trigger that was active
-          const trigger = el.querySelector(`[data-slot="menubar-trigger"][data-value="${currentValue}"]`) as HTMLElement
+          const trigger = el.querySelector(`[data-slot="menubar-menu"][data-value="${currentValue}"] [data-slot="menubar-trigger"]`) as HTMLElement
           trigger?.focus()
         }
       }
@@ -186,6 +186,14 @@ interface MenubarTriggerProps extends HTMLBaseAttributes {
 }
 
 /**
+ * A trigger's menu value: its owning MenubarMenu's `data-value`. Triggers
+ * are never portaled, so `closest()` always reaches the menu.
+ */
+function triggerMenuValue(trigger: Element): string {
+  return trigger.closest('[data-slot="menubar-menu"]')?.getAttribute('data-value') ?? ''
+}
+
+/**
  * Button that toggles its menu. Hover opens if any menu is already open.
  * ArrowLeft/Right navigates to adjacent triggers.
  * Derives menu value from parent MenubarMenu's data-value attribute.
@@ -193,9 +201,9 @@ interface MenubarTriggerProps extends HTMLBaseAttributes {
 function MenubarTrigger(props: MenubarTriggerProps) {
   const handleMount = (el: HTMLElement) => {
     const barCtx = useContext(MenubarContext)
-    const menuEl = el.closest('[data-slot="menubar-menu"]')
-    const menuValue = menuEl?.getAttribute('data-value') ?? ''
-    el.dataset.value = menuValue
+    // The value lives on the owning MenubarMenu (rendered at SSR); the
+    // trigger carries no copy of its own.
+    const menuValue = triggerMenuValue(el)
 
     // Reactive styling based on open state
     createEffect(() => {
@@ -237,7 +245,7 @@ function MenubarTrigger(props: MenubarTriggerProps) {
         nextTrigger.focus()
         // If a menu was open, open the new one
         if (barCtx.activeMenu() !== '') {
-          const nextValue = nextTrigger.dataset.value ?? ''
+          const nextValue = triggerMenuValue(nextTrigger)
           barCtx.onActiveMenuChange(nextValue)
         }
       }
@@ -291,7 +299,7 @@ function MenubarContent(props: MenubarContentProps) {
     // Menu value and trigger ref, resolved before portal (see the `value`
     // prop doc above for why closest() alone can't be trusted here).
     const menuValue = props.value ?? el.closest('[data-slot="menubar-menu"]')?.getAttribute('data-value') ?? ''
-    const triggerEl = findSiblingSlot(el, `[data-slot="menubar-trigger"][data-value="${menuValue}"]`)
+    const triggerEl = findSiblingSlot(el, `[data-slot="menubar-menu"][data-value="${menuValue}"] [data-slot="menubar-trigger"]`)
     if (triggerEl) contentTriggerMap.set(el, triggerEl)
 
     // Portal to body
@@ -377,7 +385,7 @@ function MenubarContent(props: MenubarContentProps) {
             const nextIndex = triggerIndex < triggers.length - 1 ? triggerIndex + 1 : 0
             const nextTrigger = triggers[nextIndex]
             nextTrigger.focus()
-            const nextValue = nextTrigger.dataset.value ?? ''
+            const nextValue = triggerMenuValue(nextTrigger)
             barCtx.onActiveMenuChange(nextValue)
           }
           break
@@ -393,7 +401,7 @@ function MenubarContent(props: MenubarContentProps) {
           const prevIndex = triggerIndex > 0 ? triggerIndex - 1 : triggers.length - 1
           const prevTrigger = triggers[prevIndex]
           prevTrigger.focus()
-          const prevValue = prevTrigger.dataset.value ?? ''
+          const prevValue = triggerMenuValue(prevTrigger)
           barCtx.onActiveMenuChange(prevValue)
           break
         }

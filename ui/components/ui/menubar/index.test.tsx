@@ -128,6 +128,14 @@ describe('MenubarTrigger', () => {
     expect(button.dataState).toBe('closed')
   })
 
+  // The trigger cannot know its menu's value at SSR, so it carries none;
+  // readers resolve it through the owning MenubarMenu's data-value instead
+  // of a mount-written trigger attribute (BF063).
+  test('carries no data-value of its own', () => {
+    const button = result.find({ tag: 'button' })!
+    expect(button.props).not.toHaveProperty('data-value')
+  })
+
   test('has resolved CSS classes', () => {
     const button = result.find({ tag: 'button' })!
     expect(button.classes).toContain('flex')
