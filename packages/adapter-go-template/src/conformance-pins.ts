@@ -57,6 +57,18 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // An untyped object-literal loop array whose rows share their keys but
+  // carry a nested-object field: there is no plain Go field type to
+  // synthesize for `meta`, so `resolveNestedLoopItemTypes` refuses instead
+  // of baking the array to `nil` and dropping the loop. Escape twin (an
+  // explicit element type): `loop-row-child-children-untyped-array-nested-field-typed`.
+  'loop-row-child-children-untyped-array-nested-field': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      limitation: 'untyped-loop-array-untypeable-field',
+    },
+  ],
   // #2038: `renderFilterExpr`'s `call` arm has no faithful Go form for a
   // nested arrow — loud BF101 instead of the old silent drop of the arrow
   // argument.

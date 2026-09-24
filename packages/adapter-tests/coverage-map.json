@@ -3833,6 +3833,46 @@
         "text"
       ]
     },
+    "loop-row-child-children-untyped-array-nested-field": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-untyped-array-nested-field-typed": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-controlled-input": {
       "kinds": [
         "array-literal",
@@ -7240,18 +7280,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 124,
+    "array-literal": 126,
     "array-method": 72,
     "arrow": 77,
-    "binary": 114,
+    "binary": 116,
     "call": 302,
     "conditional": 38,
-    "identifier": 427,
+    "identifier": 429,
     "index-access": 15,
-    "literal": 338,
+    "literal": 340,
     "logical": 53,
-    "member": 251,
-    "object-literal": 99,
+    "member": 253,
+    "object-literal": 101,
     "template-literal": 33,
     "unary": 31,
     "unsupported": 52
@@ -7285,7 +7325,7 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 15,
-    "binary:+": 28,
+    "binary:+": 30,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
@@ -7294,8 +7334,8 @@
     "binary:>=": 1,
     "literal:boolean": 75,
     "literal:null": 27,
-    "literal:number": 155,
-    "literal:string": 228,
+    "literal:number": 157,
+    "literal:string": 230,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
