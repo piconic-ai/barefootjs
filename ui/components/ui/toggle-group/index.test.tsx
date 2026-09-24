@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { renderToTest } from '@barefootjs/test'
+import siteUnoConfig from '../../../../site/ui/uno.config'
 
 const toggleGroupSource = readFileSync(resolve(__dirname, 'index.tsx'), 'utf-8')
 
@@ -81,5 +82,38 @@ describe('ToggleGroupItem', () => {
     expect(button.classes.filter(c => c.startsWith('data-[variant=') || c.startsWith('data-[size='))).toEqual([])
     expect(button.props).not.toHaveProperty('data-variant')
     expect(button.props).not.toHaveProperty('data-size')
+  })
+
+  // The class-string assertions above cannot see whether UnoCSS actually
+  // emits a rule for a named-group token — and the stacked forms
+  // (`…/toggle-group:hover:bg-accent`, `…/toggle-group:first:border-l`) are
+  // the only named-group + further-variant tokens in the repo. Run the
+  // site's real generator over every one, raw and with the
+  // `layer-components:` prefix the site build applies, and check each rule
+  // targets the item under the group root's `data-*` plus any stacked
+  // pseudo-class.
+  test('every group-data-[…]/toggle-group: token generates a rule under the group root', async () => {
+    const button = result.find({ tag: 'button' })!
+    const tokens = button.classes.filter(c => c.startsWith('group-data-[') && c.includes('/toggle-group:'))
+    expect(tokens.length).toBe(16)
+    // `unocss` is a dependency of `site/ui` (which owns this config), not of
+    // `ui` — resolve it from there, so the generator is the one the site
+    // build runs.
+    const { createGenerator } = (await import(
+      Bun.resolveSync('unocss', resolve(__dirname, '../../../../site/ui'))
+    )) as typeof import('unocss')
+    const uno = await createGenerator({ ...siteUnoConfig, preflights: [], safelist: [] })
+    for (const token of tokens) {
+      const [, attr, value, rest] = token.match(/^group-data-\[(\w+)=(\w+)\]\/toggle-group:(.+)$/)!
+      const pseudo = rest.startsWith('hover:') ? ':hover' : rest.startsWith('first:') ? ':first-child' : ''
+      for (const cls of [token, `layer-components:${token}`]) {
+        const { css, matched } = await uno.generate(new Set([cls]), { preflights: false })
+        expect(matched.has(cls)).toBe(true)
+        expect(css).toContain(`&:is(:where(.group\\/toggle-group)[data-${attr}=${value}] *){`)
+        const selectorLine = css.split('\n').find(l => l.startsWith('.') && l.includes('toggle-group'))!
+        expect(selectorLine).toMatch(pseudo ? new RegExp(`${pseudo}\\{`) : /[^:]\{/)
+        if (!pseudo) expect(selectorLine).not.toMatch(/:(hover|first-child)\{/)
+      }
+    }
   })
 })

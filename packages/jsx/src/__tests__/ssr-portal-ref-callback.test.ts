@@ -175,4 +175,42 @@ export function Overlay() {
     // Overlay's own `handleMount` is flagged from ITS OWN closure.
     expect(flaggedRefs(rootFor(src, 'Overlay'))).toEqual(['handleMount'])
   })
+
+  // BF063 resolves a `ref` name outward through every enclosing function
+  // scope; the portal recognition deliberately does not. Moving a `.map()`
+  // row's element to the portal outlet empties the `<li>` the client's
+  // `mapArray` hydrates — the ref's element and its slot markers are no
+  // longer under the row, so the ref never runs and the row's delegated
+  // events miss — and the Go adapter cannot reach its portal outlet from a
+  // `range` body at all. So a row-scoped `ref` naming a component-body
+  // portal callback stays inline, exactly as before BF063's widening.
+  test('does not flag a .map() row ref naming a portal callback declared in the component body', () => {
+    const ir = root(`
+'use client'
+import { createPortal } from '@barefootjs/client'
+export function List(props: { rows: string[] }) {
+  const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
+  return <ul>{props.rows.map(r => (<li key={r}><div ref={mountContent}>{r}</div></li>))}</ul>
+}
+`)
+    expect(flaggedRefs(ir)).toEqual([])
+  })
+
+  test('still flags a .map() row ref naming a portal callback declared in the row callback itself', () => {
+    const ir = root(`
+'use client'
+import { createPortal } from '@barefootjs/client'
+export function List(props: { rows: string[] }) {
+  return (
+    <ul>
+      {props.rows.map(r => {
+        const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
+        return <li key={r}><div ref={mountContent}>{r}</div></li>
+      })}
+    </ul>
+  )
+}
+`)
+    expect(flaggedRefs(ir)).toEqual(['mountContent'])
+  })
 })

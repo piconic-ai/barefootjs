@@ -7019,6 +7019,14 @@ interface LocalCallback {
 interface RefCallback extends LocalCallback {
   /** Bound by name (`ref={handleMount}`) rather than written inline. */
   named: boolean
+  /**
+   * True only for a named callback declared in the `ref`'s innermost
+   * enclosing function scope; false for an inline callback and for one
+   * `findNamedCallback`'s outward walk found further out (e.g. a `ref` in a
+   * `.map()` row naming a component-body handler). BF063 ignores this;
+   * `isSsrPortalRefCallback` requires it.
+   */
+  innermostScope: boolean
 }
 
 /**
@@ -7030,11 +7038,11 @@ interface RefCallback extends LocalCallback {
 function resolveRefCallback(refExpr: ts.Expression): RefCallback | undefined {
   const expr = unwrapTransparentTsWrappers(refExpr)
   if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
-    return { param: firstSimpleParamName(expr), body: expr.body, named: false }
+    return { param: firstSimpleParamName(expr), body: expr.body, named: false, innermostScope: false }
   }
   if (!ts.isIdentifier(expr)) return undefined
-  const callback = findNamedCallback(expr)
-  return callback && { ...callback, named: true }
+  const resolved = findNamedCallback(expr)
+  return resolved && { ...resolved.callback, named: true, innermostScope: resolved.innermostScope }
 }
 
 type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration
@@ -7066,21 +7074,35 @@ function findEnclosingFunctionLike(node: ts.Node): FunctionLike | undefined {
  * Never searches a nested function's own body: two sibling components in the
  * same file can each declare their own, unrelated `handleMount`, and reaching
  * into the wrong one's closure would misattribute its behavior to this `ref`.
+ * `innermostScope` reports whether the deciding scope was the `ref`'s own
+ * innermost one: BF063 accepts any scope, the SSR-portal recognition only
+ * that one (see `isSsrPortalRefCallback`).
  */
-function findNamedCallback(ident: ts.Identifier): LocalCallback | undefined {
-  for (let fn = findEnclosingFunctionLike(ident); fn; fn = findEnclosingFunctionLike(fn)) {
+function findNamedCallback(
+  ident: ts.Identifier,
+): { callback: LocalCallback; innermostScope: boolean } | undefined {
+  const innermost = findEnclosingFunctionLike(ident)
+  for (let fn = innermost; fn; fn = findEnclosingFunctionLike(fn)) {
     if (fn.parameters.some(p => bindingDeclares(p.name, ident.text))) return undefined
     const decl = fn.body && findScopeDeclaration(ident.text, fn.body)
     if (!decl) continue
-    if (ts.isFunctionDeclaration(decl)) return decl.body && { param: firstSimpleParamName(decl), body: decl.body }
-    const init = ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && decl.initializer
-      ? unwrapTransparentTsWrappers(decl.initializer)
-      : undefined
-    return init && (ts.isArrowFunction(init) || ts.isFunctionExpression(init))
-      ? { param: firstSimpleParamName(init), body: init.body }
-      : undefined
+    const callback = localCallbackOf(decl)
+    return callback && { callback, innermostScope: fn === innermost }
   }
   return undefined
+}
+
+/** The callback a scope declaration binds, when it binds a function at all. */
+function localCallbackOf(
+  decl: ts.VariableDeclaration | ts.FunctionDeclaration | ts.ClassDeclaration,
+): LocalCallback | undefined {
+  if (ts.isFunctionDeclaration(decl)) return decl.body && { param: firstSimpleParamName(decl), body: decl.body }
+  const init = ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && decl.initializer
+    ? unwrapTransparentTsWrappers(decl.initializer)
+    : undefined
+  return init && (ts.isArrowFunction(init) || ts.isFunctionExpression(init))
+    ? { param: firstSimpleParamName(init), body: init.body }
+    : undefined
 }
 
 /**
@@ -7143,12 +7165,27 @@ function bindingDeclares(binding: ts.BindingName, name: string): boolean {
  * (the "worth the scope-walk?" open question from #3059) is therefore
  * left for when a real caller needs it.
  *
+ * The callback must be declared in the `ref`'s INNERMOST enclosing
+ * function scope (`RefCallback.innermostScope`) — BF063 shares the
+ * resolution but may walk further out; this recognition may not. A `ref`
+ * in a `.map()` row naming a component-body portal callback therefore
+ * stays inline at SSR: moving a row's element to the portal outlet empties
+ * the row the client's `mapArray` then hydrates (its slot markers and the
+ * ref's own element are no longer under it, so the ref never runs and the
+ * row's delegated events miss), and the Go adapter's outlet call is not
+ * even reachable from inside a `range` body.
+ *
  * A match makes `element.ssrPortalOwnerScope` true, which every adapter
  * (#3119) uses to place the element's SSR markup at its own portal
  * outlet instead of inline.
  */
 function isSsrPortalRefCallback(callback: RefCallback | undefined): boolean {
-  return !!callback?.named && !!callback.param && containsSsrPortalPlacementCall(callback.body, callback.param)
+  return (
+    !!callback?.named &&
+    callback.innermostScope &&
+    !!callback.param &&
+    containsSsrPortalPlacementCall(callback.body, callback.param)
+  )
 }
 
 function firstSimpleParamName(
@@ -7167,7 +7204,7 @@ function firstSimpleParamName(
  * SSR/hydration mismatch instead of closing the existing one.
  *
  * Deliberately does NOT stop at a nested function/arrow boundary the way
- * `findNamedCallback` does: `SelectContent`
+ * `findScopeDeclaration` does: `SelectContent`
  * (`ui/components/ui/select/index.tsx`) defers its call through
  * `queueMicrotask(() => createPortal(el, document.body, { ownerScope
  * }))` — still the SAME `ref` callback's own call, just scheduled async,
@@ -7179,9 +7216,11 @@ function firstSimpleParamName(
  * before the microtask would even be scheduled, keeping the guard a
  * no-op exactly like the direct-call components. The "DIRECT call only"
  * guarantee `isSsrPortalRefCallback`'s docstring describes is about NOT
- * crossing into a separately-declared helper function's own body (see
- * `findNamedCallback`'s scope limit for that), not about this
- * same-callback scheduling deferral.
+ * crossing into a separately-declared helper function's own body — which
+ * this walk never does, because it does not resolve call targets: a
+ * `moveToBody(el)` call inside the callback is just a call node, and the
+ * helper's declaration is never visited — not about this same-callback
+ * scheduling deferral.
  */
 function containsSsrPortalPlacementCall(body: ts.Node, paramName: string): boolean {
   let found = false
