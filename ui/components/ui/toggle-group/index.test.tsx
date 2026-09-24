@@ -69,4 +69,17 @@ describe('ToggleGroupItem', () => {
     expect(button.dataState).not.toBeNull()
   })
 
+  // An item cannot know its group's variant/size at SSR (context is
+  // client-only), so its styling keys off the group root's own
+  // `data-variant` / `data-size` rather than item attributes a mount ref
+  // would add at hydration (BF063).
+  test('variant/size styling keys off the group root, not item data attributes', () => {
+    const button = result.find({ tag: 'button' })!
+    expect(button.classes).toContain('group-data-[variant=outline]/toggle-group:border')
+    expect(button.classes).toContain('group-data-[size=sm]/toggle-group:h-8')
+    expect(button.classes).toContain('group-data-[size=lg]/toggle-group:h-10')
+    expect(button.classes.filter(c => c.startsWith('data-[variant=') || c.startsWith('data-[size='))).toEqual([])
+    expect(button.props).not.toHaveProperty('data-variant')
+    expect(button.props).not.toHaveProperty('data-size')
+  })
 })

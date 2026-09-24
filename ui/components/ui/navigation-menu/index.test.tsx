@@ -40,6 +40,15 @@ describe('NavigationMenu', () => {
     expect(nav.classes).toContain('relative')
   })
 
+  // The timer helpers read the delays from the root's dataset. Rendered in
+  // JSX so SSR already carries them — a mount ref writing them would add
+  // them only at hydration (BF063).
+  test('renders the hover delays as data attributes from props', () => {
+    const nav = result.find({ tag: 'nav' })!
+    expect(nav.props['data-nm-open-delay']).toBe('props.delayDuration ?? 200')
+    expect(nav.props['data-nm-close-delay']).toBe('props.closeDelay ?? 300')
+  })
+
   test('toStructure() shows nav element', () => {
     const structure = result.toStructure()
     expect(structure).toContain('nav')
@@ -147,6 +156,14 @@ describe('NavigationMenuTrigger', () => {
   test('has data-state=closed initially', () => {
     const button = result.find({ tag: 'button' })!
     expect(button.dataState).toBe('closed')
+  })
+
+  // The trigger cannot know its item's value at SSR, so it carries none;
+  // readers resolve it through the owning NavigationMenuItem's data-value
+  // instead of a mount-written trigger attribute (BF063).
+  test('carries no data-value of its own', () => {
+    const button = result.find({ tag: 'button' })!
+    expect(button.props).not.toHaveProperty('data-value')
   })
 
   test('contains chevron icon', () => {
