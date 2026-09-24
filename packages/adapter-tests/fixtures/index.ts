@@ -760,11 +760,9 @@ import { fixture as loopRowChildUntypedArrayMismatchedKeysTyped } from './loop-r
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
 import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // Diamond propagation: one signal read through two memos by one effect.
-// The runtime dispatches synchronously in subscription order, so the
-// effect's first re-run sees a half-updated memo pair and it runs three
-// times per write — no diagnostic, silent, invisible in the settled DOM.
-// Registry limitation `diamond-propagation-glitch`; quarantined in
-// `fixture-hydrate-quarantine.ts` (fixture-only, not fixed here).
+// Regression test for glitch-free propagation — the effect runs once per
+// write and never observes a half-updated memo pair (its `interactions`
+// count the runs and the inconsistent ones in the DOM).
 import { fixture as diamondPropagation } from './diamond-propagation'
 
 import type { JSXFixture } from '../src/types'

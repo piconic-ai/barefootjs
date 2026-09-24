@@ -18,9 +18,10 @@ Returns the value produced by `fn`.
 
 ## Default behavior (no batch)
 
-BarefootJS propagates updates **synchronously**: each setter call immediately
-re-runs every subscriber. This keeps reads-after-writes predictable — after a
-setter returns, derived memos, effects, and the DOM already reflect the new value.
+BarefootJS propagates updates **synchronously**: each setter call made from
+an event handler (or any code outside an effect) re-runs every subscriber
+before it returns. This keeps reads-after-writes predictable — after a setter
+returns, derived memos, effects, and the DOM already reflect the new value.
 
 The cost is that writing N signals that share a subscriber re-runs that
 subscriber N times, and the subscriber briefly observes intermediate states
@@ -76,11 +77,12 @@ const reset = () => {
 
 ## Caveats
 
-### Derived values are stale *inside* the batch
+### Effect-driven values are stale *inside* the batch
 
-`batch` defers the work that recomputes derived values. Plain signal reads return
-the new value immediately, but **memos and effect-driven values stay stale until
-the batch ends**:
+`batch` defers running effects. Plain signal reads return the new value
+immediately, and so do memo reads — a memo whose inputs changed is recomputed
+when it is read. But **effects, and the DOM they update, stay stale until the
+batch ends**:
 
 ```tsx
 const [n, setN] = createSignal(1)
@@ -89,20 +91,18 @@ const doubled = createMemo(() => n() * 2)
 batch(() => {
   setN(10)
   n()       // 10  — plain signal read is fresh
-  doubled() // 2   — STALE; the memo hasn't recomputed yet
+  doubled() // 20  — the memo recomputes on read
+  // an effect showing doubled() in the DOM has not run yet
 })
-doubled()   // 20  — recomputed after the batch ends
+// effects have run; the DOM shows 20
 ```
 
-If you need the recomputed value, read it after the batch.
+If you need the DOM updated, read it after the batch.
 
-### Diamonds are not covered
+### Diamonds need no batch
 
-`batch` de-duplicates the subscribers of the signals written **inside** it. It does not
-change how a memo's own recompute propagates: the flush runs at batch depth 0, so when a
-memo recomputes, its subscribers run synchronously right then — before a sibling memo of
-the same signal has recomputed. An effect that reads one signal through two memos (a
-diamond) therefore still observes a half-updated pair, and still runs once per edge:
+An effect that reads one signal through two memos (a diamond) runs once per
+write and always sees both memos recomputed — with or without `batch`:
 
 ```tsx
 const [a, setA] = createSignal(1)
@@ -110,16 +110,21 @@ const b = createMemo(() => a() * 10)
 const c = createMemo(() => a() * 100)
 createEffect(() => log(a(), b(), c()))
 
-batch(() => setA(2))
-// logs: 2 20 100   ← b updated, c stale
-//       2 20 200
-//       2 20 200
+setA(2)
+// logs: 2 20 200   (once)
 ```
 
-The DOM is never painted mid-handler, so the intermediate state is invisible on screen;
-only an effect with a side effect (a fetch, a counter) observes it. This is a known
-limitation of the runtime, pinned by the `diamond-propagation` conformance fixture
-(registry entry `diamond-propagation-glitch`).
+`batch` is only needed when the writes themselves are separate — several
+setter calls that should reach their shared subscribers together.
+
+### Inside an effect, writes propagate after the effect returns
+
+A signal written from inside an effect body (or from a `batch` nested in one)
+does not re-run its subscribers right away: they run after the current effect
+returns, still before the setter call that started the update returns. Memo
+reads stay fresh, so an effect that writes a signal and then reads a memo
+derived from it sees the new value; what it cannot see yet is DOM updated by
+other effects.
 
 ### `await` escapes the batch
 

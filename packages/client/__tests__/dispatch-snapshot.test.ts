@@ -153,18 +153,14 @@ describe('write-dispatch snapshot', () => {
   })
 
   test('reentrant (circular) effect still throws, and — matching pre-existing behavior — a later write to the SAME signal re-throws too', () => {
-    // Regression guard for the end-of-run dependency sweep (only the
-    // OUTERMOST invocation of a reentrant chain sweeps stale dependencies,
-    // using the run's final `gen` — see `runEffect`). This pins TODAY's
-    // actual behavior, not an idealized one: the aborted effect's last
-    // completed (deepest) nested run legitimately re-read `count` right
-    // before erroring further down, so the sweep — correctly — does not
-    // treat `count` as stale and leaves the effect subscribed to it. That
-    // matches the pre-optimization code exactly (verified against it
-    // directly): a later write to `count` re-invokes the same broken effect
-    // and re-throws. This is a pre-existing quirk of the circular-dependency
-    // guard, not something this perf work changed — an UNRELATED signal
-    // remains completely unaffected.
+    // Regression guard for the end-of-run dependency sweep (see
+    // `runEffect`). The aborted effect's last completed run legitimately
+    // re-read `count` before the circular-dependency guard stopped the
+    // next one, so the sweep — correctly — does not treat `count` as stale
+    // and leaves the effect subscribed to it: a later write to `count`
+    // re-runs the same broken effect and re-throws. The throw also resets
+    // the flush's queue, so an UNRELATED signal remains completely
+    // unaffected.
     const [count, setCount] = createSignal(0)
     const [other, setOther] = createSignal(0)
 
