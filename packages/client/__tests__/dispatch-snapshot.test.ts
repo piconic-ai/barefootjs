@@ -158,9 +158,8 @@ describe('write-dispatch snapshot', () => {
     // re-read `count` before the circular-dependency guard stopped the
     // next one, so the sweep — correctly — does not treat `count` as stale
     // and leaves the effect subscribed to it: a later write to `count`
-    // re-runs the same broken effect and re-throws. The throw also resets
-    // the flush's queue, so an UNRELATED signal remains completely
-    // unaffected.
+    // re-runs the same broken effect and re-throws. An UNRELATED signal
+    // remains completely unaffected.
     const [count, setCount] = createSignal(0)
     const [other, setOther] = createSignal(0)
 

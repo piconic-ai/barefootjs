@@ -255,8 +255,8 @@ type EffectContext = {
   // definitely changed. Every non-CLEAN node sits in `Queue`.
   state: NodeState
   running: boolean              // True while this node's body (or cleanup) is executing
-  // Circular-dependency guard: runs of this node in the flush numbered
-  // `epoch`. Reset lazily when a new flush first runs the node.
+  // Circular-dependency guard: runs of this node from the flush queue in the
+  // flush numbered `epoch`. Reset lazily when a new flush first runs the node.
   runCount: number
   epoch: number
   // Set on a memo node only: the subscriber set of the private signal it
@@ -322,8 +322,8 @@ const DIRTY = 2
 
 let BatchDepth = 0
 let Flushing = false
-// Bumped once per flush; `runEffect` compares it with `EffectContext.epoch` to
-// reset the per-node run counter the first time a flush runs a node.
+// Bumped once per flush; compared with `EffectContext.epoch` to reset the
+// per-node run counter the first time a flush runs a node.
 let Epoch = 0
 // Every node that left CLEAN since the current flush (or batch) began, in
 // marking order. A node is appended once per CLEAN → non-CLEAN transition,
@@ -363,12 +363,14 @@ function mark(node: EffectContext, state: NodeState): void {
 /**
  * Bring `node` up to date: pull its memo sources first, then run it only if
  * one of them (or a plain signal it read) actually changed.
+ *
+ * `queued` is set only by `flush` for a node it takes off `Queue`: those runs
+ * are what a cycle repeats, so only they count against `MAX_EFFECT_RUNS`. A
+ * pull from a memo read is bounded by the reads of the run that made it — an
+ * effect that writes a signal and reads a memo of it in a loop pulls that memo
+ * once per iteration without being a cycle.
  */
-function updateIfNecessary(node: EffectContext): void {
-  if (node.disposed) {
-    node.state = CLEAN
-    return
-  }
+function updateIfNecessary(node: EffectContext, queued = false): void {
   if (node.state === CHECK) {
     for (const dep of node.dependencies.keys()) {
       const source = dep.__bfMemo
@@ -380,35 +382,49 @@ function updateIfNecessary(node: EffectContext): void {
       }
     }
   }
-  if (node.state === DIRTY) runEffect(node)
-  else node.state = CLEAN
+  if (node.state !== DIRTY) {
+    node.state = CLEAN
+    return
+  }
+  if (queued) {
+    if (node.epoch !== Epoch) {
+      node.epoch = Epoch
+      node.runCount = 0
+    }
+    if (++node.runCount > MAX_EFFECT_RUNS) {
+      node.state = CLEAN
+      throw new Error(
+        `Circular dependency detected: effect ran more than ${MAX_EFFECT_RUNS} times in one update.`,
+      )
+    }
+  }
+  runEffect(node)
 }
 
 /**
- * Run a flush: optionally run `first` (a newly created effect's first run),
- * then process `Queue` until it is empty, including nodes appended while it
- * runs. On a throw every queued node is reset to CLEAN and the queue is
- * dropped, so the error propagates to whoever wrote (as it always did) and
- * the graph is left consistent for the next write.
+ * Process `Queue` until it is empty, including nodes appended while it runs.
+ * A node that throws does not stop the others — every queued node is still
+ * brought up to date, so the graph stays consistent — and the first error is
+ * rethrown once the queue is drained, to whoever wrote.
  */
-function flush(first: EffectContext | null): void {
+function flush(): void {
   Flushing = true
   Epoch++
-  try {
-    if (first) runEffect(first)
-    for (let i = 0; i < Queue.length; i++) {
-      const node = Queue[i]!
-      // DIRTY straight to a run (the common case: a direct subscriber).
-      if (node.state === DIRTY) runEffect(node)
-      else if (node.state === CHECK) updateIfNecessary(node)
+  let failed = false
+  let error: unknown
+  for (let i = 0; i < Queue.length; i++) {
+    try {
+      updateIfNecessary(Queue[i]!, true)
+    } catch (err) {
+      if (!failed) {
+        failed = true
+        error = err
+      }
     }
-  } catch (err) {
-    for (let i = 0; i < Queue.length; i++) Queue[i]!.state = CLEAN
-    throw err
-  } finally {
-    Queue.length = 0
-    Flushing = false
   }
+  Queue.length = 0
+  Flushing = false
+  if (failed) throw error
 }
 
 /**
@@ -417,8 +433,12 @@ function flush(first: EffectContext | null): void {
  * inside one it runs inline and its writes join the enclosing flush/batch.
  */
 function runInitial(node: EffectContext): void {
-  if (Flushing || BatchDepth > 0) runEffect(node)
-  else flush(node)
+  if (Flushing || BatchDepth > 0) {
+    runEffect(node)
+  } else {
+    mark(node, DIRTY)
+    flush()
+  }
 }
 
 function newNode(fn: EffectFn, id: string, kind: SubscriberKind): EffectContext {
@@ -525,7 +545,7 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
     // the flush below is running cannot change it (pinned in
     // dispatch-snapshot.test.ts).
     notify(subscribers, DIRTY)
-    if (BatchDepth === 0 && !Flushing && Queue.length > 0) flush(null)
+    if (BatchDepth === 0 && !Flushing && Queue.length > 0) flush()
   }
 
   return [get, set] as Signal<T>
@@ -555,28 +575,10 @@ export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: Subscriber
 }
 
 function runEffect(effect: EffectContext): void {
-  if (effect.disposed) {
-    effect.state = CLEAN
-    return
-  }
   // CLEAN from the start of the run: a write made during it that this node
   // has already read marks it again, so it runs once more afterwards.
   effect.state = CLEAN
-
-  // Circular-dependency guard. Runs are never re-entrant any more (writes
-  // made during a run are propagated after it returns), so a cycle shows up
-  // as the same node being queued again and again within one flush.
-  if (Flushing) {
-    if (effect.epoch !== Epoch) {
-      effect.epoch = Epoch
-      effect.runCount = 0
-    }
-    if (++effect.runCount > MAX_EFFECT_RUNS) {
-      throw new Error(
-        `Circular dependency detected: effect ran more than ${MAX_EFFECT_RUNS} times in one update.`,
-      )
-    }
-  }
+  if (effect.disposed) return
 
   // `effectEnter` is emitted *before* cleanup so the whole run — cleanup
   // included — is bracketed by enter/exit. A `set()` performed inside a cleanup
@@ -663,7 +665,8 @@ function runEffect(effect: EffectContext): void {
     }
 
     if (profilerSink) {
-      profilerSink.effectExit(effect.id, performance.now() - start)
+      // A cleanup that threw: no body ran, so there is no body time.
+      profilerSink.effectExit(effect.id, bodyRan ? performance.now() - start : 0)
       if (effect.outputReported) profilerSink.effectOutput?.(effect.id, effect.outputChanged)
     }
   }
@@ -751,28 +754,7 @@ function disposeEffect(effect: EffectContext): void {
  * @stability alpha
  */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
-  const root: EffectContext = {
-    fn: () => {},
-    cleanup: null,
-    dependencies: new Map(),
-    gen: 0,
-    owner: Owner,
-    children: null,
-    disposed: false,
-    state: CLEAN,
-    running: false,
-    runCount: 0,
-    epoch: 0,
-    memoSubs: null,
-    id: profilerSink ? `r${++subscriberSeq}` : '',
-    kind: 'root',
-    outputReported: false,
-    outputChanged: false,
-  }
-
-  if (profilerSink) profilerSink.effectCreate(root.id, 'root')
-
-  if (Owner) registerChild(Owner, root)
+  const root = newNode(() => {}, profilerSink ? `r${++subscriberSeq}` : '', 'root')
 
   const prevOwner = Owner
   const prevListener = Listener
@@ -915,7 +897,7 @@ export function batch<T>(fn: () => T): T {
     // node returns.
     if (BatchDepth === 0 && !Flushing && Queue.length > 0) {
       if (profilerSink) profilerSink.batchFlush(Queue.length)
-      flush(null)
+      flush()
     }
   }
 }

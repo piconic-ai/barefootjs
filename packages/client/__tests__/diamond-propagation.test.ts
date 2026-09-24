@@ -10,7 +10,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { batch, createEffect, createMemo, createRoot, createSignal } from '../src/reactive'
+import { batch, createEffect, createMemo, createRoot, createSignal, untrack } from '../src/reactive'
 
 function diamond() {
   const [a, setA] = createSignal(1)
@@ -221,5 +221,44 @@ describe('circular dependency detection with deferred propagation', () => {
     })
     setX(2)
     expect(seen).toEqual([2, 4])
+  })
+
+  test('a memo pulled once per write in a loop inside one effect is not a cycle', () => {
+    // Only runs taken off the flush queue count against the limit; a memo
+    // read pulls at most once per read, so the effect's own loop bounds it.
+    const [a, setA] = createSignal(0)
+    const doubled = createMemo(() => a() * 2)
+    const [go, setGo] = createSignal(false)
+    let sum = 0
+    createEffect(() => {
+      if (!go()) return
+      for (let i = 1; i <= 150; i++) {
+        setA(i)
+        sum += untrack(doubled)
+      }
+    })
+    expect(() => setGo(true)).not.toThrow()
+    expect(sum).toBe(150 * 151)
+  })
+})
+
+describe('errors during a flush', () => {
+  test('an effect that throws does not drop the updates other effects queued in the same flush', () => {
+    const [t, setT] = createSignal(0)
+    const [x, setX] = createSignal(0)
+    const seen: number[] = []
+    createEffect(() => {
+      seen.push(x())
+    })
+    createEffect(() => {
+      if (t()) setX(t())
+    })
+    createEffect(() => {
+      if (t()) throw new Error('boom')
+    })
+    // The reader was queued by the second effect's write; the third effect's
+    // throw still reaches the caller, but only after the reader has run.
+    expect(() => setT(1)).toThrow('boom')
+    expect(seen).toEqual([0, 1])
   })
 })

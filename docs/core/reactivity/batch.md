@@ -43,4 +43,4 @@ When one handler writes several signals that feed the same effects or memos. `ba
 - Memos read inside the batch are fresh: a memo whose inputs changed recomputes when it is read. Effects, and the DOM they update, run when the batch ends.
 - `await` inside the callback ends the batch — only the writes before the first `await` are grouped. Wrap each synchronous group in its own `batch`.
 - One signal feeding an effect through two memos (a diamond) needs no `batch`: the effect runs once per write and sees both memos recomputed.
-- A write made inside an effect body re-runs its subscribers after that effect returns, still before the setter call that started the update returns.
+- A write made inside an effect body re-runs its subscribers after that effect (and any effect the same update already queued) returns, still before the setter call that started the update returns.
