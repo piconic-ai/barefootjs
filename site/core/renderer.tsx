@@ -115,6 +115,7 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import { MobileMenu } from '@/components/mobile-menu'
 import { MobilePageNav } from '../shared/components/mobile-page-nav'
 import { Assets } from '@/bf-assets'
+import { ogImagePath } from './lib/og-image'
 
 export const renderer = jsxRenderer(
   ({ children, title, description, meta, slug, toc, prev, next }) => {
@@ -128,7 +129,7 @@ export const renderer = jsxRenderer(
     const baseUrl = resolveCoreHref(requestUrl).replace(/\/$/, '')
     const ogTitle = title ?? 'BarefootJS'
     const ogDescription = description ?? 'TSX in. Your stack out.'
-    const ogImageUrl = `${baseUrl}/og?title=${encodeURIComponent(ogTitle)}`
+    const ogImageUrl = `${baseUrl}${ogImagePath(ogTitle)}`
 
     return (
       <WithPredictableIds>

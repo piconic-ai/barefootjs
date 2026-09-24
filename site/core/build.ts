@@ -7,7 +7,6 @@
  * JS into dist/static/components/. This script runs that build first,
  * then assembles everything else the site serves out of dist/:
  *
- * - dist/content.json (bundled markdown from docs/core/)
  * - dist/static/components/barefoot.js (standalone runtime for the
  *   playground iframe — the only consumer left that imports the runtime
  *   by fixed URL instead of through a bundled chunk)
@@ -19,12 +18,15 @@
  *   peitho isn't installed, since that step skips with a warning instead of
  *   failing)
  * - dist/playground/ (worker + page script + Monaco type bundle)
- * - dist/_headers, dist/llms.txt, dist/robots.txt
+ * - dist/_headers, dist/.assetsignore, dist/llms.txt, dist/robots.txt
+ *
+ * The pages themselves (HTML, per-page Markdown, OG images, _redirects) are
+ * written by scripts/generate-static.tsx, which `bun run build` runs after
+ * this script: it needs the compiled components this script produces.
  */
 
 import { mkdir, readdir } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
-import { loadContentFromDisk } from './lib/content-loader'
 
 const ROOT_DIR = dirname(import.meta.path)
 const CONTENT_DIR = resolve(ROOT_DIR, '../../docs/core')
@@ -43,11 +45,6 @@ console.log('Building BarefootJS site...\n')
 
 await mkdir(DIST_COMPONENTS_DIR, { recursive: true })
 await mkdir(DIST_STATIC_DIR, { recursive: true })
-
-// ── 1. Bundle markdown content ────────────────────────────────
-const { pages, content, mdx } = await loadContentFromDisk(CONTENT_DIR)
-await Bun.write(resolve(DIST_DIR, 'content.json'), JSON.stringify({ content, mdx }))
-console.log(`Bundled: ${pages.length} md pages + ${Object.keys(mdx).length} mdx pages → dist/content.json`)
 
 // ── 2. Compile components + bundle client JS via @barefootjs/vite ──
 // Emits dist/components/*.tsx (+ manifest.json) and content-hashed
@@ -369,6 +366,14 @@ const headersContent = `/static/components/*
 `
 await Bun.write(resolve(DIST_DIR, '_headers'), headersContent)
 console.log('Generated: dist/_headers')
+
+// ── 8d. Keep build intermediates out of the deployed assets ─────
+// dist/ is the Workers Assets directory, but it also holds what the build
+// itself consumes: the compiled SSR templates (dist/components/, read by
+// scripts/generate-static.tsx) and the Vite asset map. Nothing serves
+// them — the site is static files — so they are not uploaded.
+await Bun.write(resolve(DIST_DIR, '.assetsignore'), '/components/\n/bf-assets.ts\n')
+console.log('Generated: dist/.assetsignore')
 
 // ── 9. Generate llms.txt ──────────────────────────────────────
 const coreDocs = scanCoreDocs(CONTENT_DIR)
