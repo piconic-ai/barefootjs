@@ -7167,13 +7167,12 @@ function bindingDeclares(binding: ts.BindingName, name: string): boolean {
  *
  * The callback must be declared in the `ref`'s INNERMOST enclosing
  * function scope (`RefCallback.innermostScope`) — BF063 shares the
- * resolution but may walk further out; this recognition may not. A `ref`
- * in a `.map()` row naming a component-body portal callback therefore
- * stays inline at SSR: moving a row's element to the portal outlet empties
- * the row the client's `mapArray` then hydrates (its slot markers and the
- * ref's own element are no longer under it, so the ref never runs and the
- * row's delegated events miss), and the Go adapter's outlet call is not
- * even reachable from inside a `range` body.
+ * resolution but may walk further out; this recognition may not. The gate
+ * only restores the scope limit recognition had before BF063 widened the
+ * lookup, so sharing the resolution does not widen what is recognized. It
+ * is not a `.map()`-row guard: a portal element inside a row is broken
+ * either way (a row-declared callback is still recognized, and still
+ * breaks), a pre-existing defect tracked separately.
  *
  * A match makes `element.ssrPortalOwnerScope` true, which every adapter
  * (#3119) uses to place the element's SSR markup at its own portal

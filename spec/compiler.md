@@ -1309,9 +1309,11 @@ certain, decided structurally (TS AST, `recordRefAttrsAbsentAtSsr` in
   component resolves from inside a `.map()` row). Anything else (an imported
   helper, a prop) is opaque and never fires. The SSR-portal recognition
   (`ssrPortalOwnerScope`) shares this resolution but accepts only a callback
-  declared in the `ref`'s innermost function scope: a row-scoped `ref` naming
-  a component-body portal callback stays inline at SSR, because moving a
-  `.map()` row's element to the portal outlet breaks that row's hydration.
+  declared in the `ref`'s innermost function scope — the limit it had before
+  BF063, kept so sharing the resolution does not widen portal recognition.
+  This is not a `.map()`-row guard: a portal element inside a row is broken
+  either way (a row-declared callback is still recognized), a pre-existing
+  defect tracked separately.
 - **The write targets the callback's own element parameter** —
   `el.setAttribute('<string literal>', …)`, `el.dataset.<key> = …` or
   `el.dataset['<key>'] = …` (the key maps to `data-<kebab-case>`). Writes to

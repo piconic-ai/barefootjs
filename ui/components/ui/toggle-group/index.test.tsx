@@ -110,9 +110,10 @@ describe('ToggleGroupItem', () => {
         const { css, matched } = await uno.generate(new Set([cls]), { preflights: false })
         expect(matched.has(cls)).toBe(true)
         expect(css).toContain(`&:is(:where(.group\\/toggle-group)[data-${attr}=${value}] *){`)
-        const selectorLine = css.split('\n').find(l => l.startsWith('.') && l.includes('toggle-group'))!
-        expect(selectorLine).toMatch(pseudo ? new RegExp(`${pseudo}\\{`) : /[^:]\{/)
-        if (!pseudo) expect(selectorLine).not.toMatch(/:(hover|first-child)\{/)
+        // Match the whole CSS, not one line of it: the stacked pseudo-class
+        // must close the token's own class selector, however UnoCSS wraps it.
+        if (pseudo) expect(css).toMatch(new RegExp(String.raw`toggle-group\\:\S*${pseudo}\s*\{`))
+        else expect(css).not.toMatch(/:(hover|first-child)\s*\{/)
       }
     }
   })

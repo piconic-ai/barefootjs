@@ -177,13 +177,14 @@ export function Overlay() {
   })
 
   // BF063 resolves a `ref` name outward through every enclosing function
-  // scope; the portal recognition deliberately does not. Moving a `.map()`
-  // row's element to the portal outlet empties the `<li>` the client's
-  // `mapArray` hydrates — the ref's element and its slot markers are no
-  // longer under the row, so the ref never runs and the row's delegated
-  // events miss — and the Go adapter cannot reach its portal outlet from a
-  // `range` body at all. So a row-scoped `ref` naming a component-body
-  // portal callback stays inline, exactly as before BF063's widening.
+  // scope; the portal recognition keeps the pre-BF063 limit (the callback
+  // must be declared in the ref's innermost function scope) so sharing the
+  // resolution does not widen what is recognized. These two tests pin that
+  // scope limit only. A portal element inside a `.map()` row is broken
+  // either way — the second test's row-declared callback is still
+  // recognized and still breaks the row's hydration — which is a
+  // pre-existing, separately tracked defect: the control pins today's
+  // behaviour as a known gap, not as intended behaviour.
   test('does not flag a .map() row ref naming a portal callback declared in the component body', () => {
     const ir = root(`
 'use client'
