@@ -1,53 +1,28 @@
 ---
 title: Portals
-description: Render elements outside their parent DOM hierarchy for overlays, modals, and tooltips.
+description: Move an element to document.body or another container with createPortal, for tooltips, dialogs, and overlays.
 ---
 
 # Portals
 
-Portals render elements outside their parent DOM hierarchy — useful for overlays, modals, and tooltips that need to escape `overflow: hidden` or `z-index` stacking contexts.
+A portal moves an element out of its parent's DOM position, so overlays, dialogs, and tooltips escape `overflow: hidden` and `z-index` stacking contexts.
 
-```tsx
-"use client"
-import { createPortal } from '@barefootjs/client'
+```ts
+createPortal(children, container?, options?): { element, unmount }
 ```
 
+| Parameter | Description |
+|-----------|-------------|
+| `children` | The element (or string) to move |
+| `container` | Where to append it; default `document.body` |
+| `options.ownerScope` | The owning component's scope element (`el.closest('[bf-s]')`) |
 
-## `createPortal`
-
-Moves an element to a different DOM container.
-
-```tsx
-createPortal(children, container?, options?)
-```
-
-**Type:**
-
-```tsx
-type Portal = {
-  element: HTMLElement
-  unmount: () => void
-}
-
-interface PortalOptions {
-  ownerScope?: Element  // Component scope for scoped queries
-}
-
-function createPortal(
-  children: HTMLElement | string,
-  container?: HTMLElement,           // Default: document.body
-  options?: PortalOptions
-): Portal
-```
-
-**Returns** a `Portal` object with:
-- `element` — the mounted DOM element
-- `unmount()` — removes the element from the container
+It returns the mounted `element` and an `unmount()` function that removes it from the container.
 
 
-## Basic Usage
+## Example: Tooltip
 
-Create portals inside `ref` callbacks:
+Create the portal in a `ref` callback, once the element exists:
 
 ```tsx
 "use client"
@@ -57,7 +32,6 @@ export function Tooltip(props: { text: string; children?: Child }) {
   const [visible, setVisible] = createSignal(false)
 
   const handleMount = (el: HTMLElement) => {
-    // Move to document.body to avoid overflow/z-index issues
     if (el.parentNode !== document.body && !isSSRPortal(el)) {
       const ownerScope = el.closest('[bf-s]') ?? undefined
       createPortal(el, document.body, { ownerScope })
@@ -84,89 +58,12 @@ export function Tooltip(props: { text: string; children?: Child }) {
 }
 ```
 
-
-## SSR Portal Detection
-
-`isSSRPortal` checks whether an element was already portaled during SSR to prevent double-portaling:
-
-```tsx
-"use client"
-import { isSSRPortal, createPortal } from '@barefootjs/client'
-
-const handleMount = (el: HTMLElement) => {
-  // Skip if already portaled during SSR
-  if (el.parentNode !== document.body && !isSSRPortal(el)) {
-    createPortal(el, document.body)
-  }
-}
-```
-
-The server-rendered `<template bf-pp="...">` placeholder left behind at the
-portaled element's original position is inert — an untargeted `<template>`
-element renders nothing and needs no cleanup after hydration.
-
-## Owner Scope
-
-A portaled element is outside its original component's scope, so `find()` cannot locate it. The `ownerScope` option links it back:
-
-```tsx
-const handleMount = (el: HTMLElement) => {
-  const ownerScope = el.closest('[bf-s]') ?? undefined
-  createPortal(el, document.body, { ownerScope })
-}
-```
-
-`bf-po` on the moved element lets scoped queries from the owner still find it.
-
-`ownerScope` also fixes *where* the element ends up among the container's children. Portal content is always appended to the container immediately — it is in the document from the moment `createPortal` returns, so a `ref` callback can measure it (`offsetWidth`, `getBoundingClientRect()`) in the same tick — and its position settles once its owner is connected:
-
-- Owner already connected (hydration — the SSR markup is in the document before `init` runs), or no `ownerScope` given: a single append, at the container's end.
-- Owner not yet connected (a client-side mount — the component's `init`, and so the `ref` callback, runs before whoever called `createComponent()` appends the root): once the owner connects, the element is re-appended, which moves it to the container's end. Pending portals move in creation order, before the next paint.
-
-Both construction paths therefore land on the same `document.body` child order — the component root first, then its portals in the order they were created — which decides paint order between overlays with equal `z-index`, focus traversal, and `querySelector` results.
-
-
-## Dialog Example
-
-Dialog overlays are a common portal use case:
-
-```tsx
-"use client"
-import { createPortal, isSSRPortal, useContext, createEffect } from '@barefootjs/client'
-
-function DialogOverlay() {
-  const handleMount = (el: HTMLElement) => {
-    // Portal to body
-    if (el.parentNode !== document.body && !isSSRPortal(el)) {
-      const ownerScope = el.closest('[bf-s]') ?? undefined
-      createPortal(el, document.body, { ownerScope })
-    }
-
-    const ctx = useContext(DialogContext)
-
-    // Reactive visibility
-    createEffect(() => {
-      const isOpen = ctx.open()
-      el.dataset.state = isOpen ? 'open' : 'closed'
-      el.className = isOpen ? 'overlay overlay-visible' : 'overlay overlay-hidden'
-    })
-
-    // Click overlay to close
-    el.addEventListener('click', () => {
-      ctx.onOpenChange(false)
-    })
-  }
-
-  return <div data-slot="dialog-overlay" data-state="closed" ref={handleMount} />
-}
-```
-
-The overlay accesses `DialogContext` from the component tree but is moved to `document.body` to escape CSS containment.
+`isSSRPortal(el)` is true when the server already rendered the element at its portal destination, so the guard skips portaling it twice. `ownerScope` marks the moved element as belonging to its component, which keeps scoped queries finding it and keeps `document.body` child order stable (component root first, then its portals in creation order).
 
 
 ## Cleanup
 
-Combine `portal.unmount()` with `onCleanup`:
+Remove the portal when the component is disposed:
 
 ```tsx
 "use client"
@@ -181,12 +78,4 @@ const handleMount = (el: HTMLElement) => {
 }
 ```
 
-
-## Custom Container
-
-Specify a different container instead of the default `document.body`:
-
-```tsx
-const container = document.getElementById('modal-root')!
-createPortal(el, container)
-```
+To target a container other than `document.body`, pass it as the second argument: `createPortal(el, document.getElementById('modal-root')!)`.

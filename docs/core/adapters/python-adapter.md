@@ -1,103 +1,61 @@
 ---
 title: Python Adapter
-description: Render BarefootJS components from Python via Jinja2 — no framework required (Flask, Django, bare WSGI).
+description: Render BarefootJS components from Python via Jinja2 — no framework required (Flask, Django, FastAPI, bare WSGI).
 ---
 
 # Python Adapter
 
-Run the same JSX components on a Python backend. BarefootJS compiles your
-JSX into a **Jinja2 marked template** plus **client JS**; on the server, a
-small Python runtime (`barefootjs`) renders those templates through a plain
-`jinja2.Environment` — no framework is required, so Flask, Django, or bare
-WSGI all work the same way.
+`@barefootjs/jinja` compiles components to Jinja2 templates (`.jinja`) rendered by a small Python package (`barefootjs`) over a plain `jinja2.Environment`. Flask, Django, FastAPI or bare WSGI all work the same way.
 
-```
-JSX → IR → marked template (.jinja) + Component.client.js
-                 │
-                 ▼
-   BarefootJS runtime  ──delegates──▶  jinja2.Environment
-   (python/barefootjs/)
-```
+## Install
 
-This adapter is a near-mechanical port of `@barefootjs/xslate` (the
-Text::Xslate/Kolon adapter — see the [Perl Adapter](./perl-adapter.md)) to
-Jinja2 syntax, handling the JS/Python semantics divergences (truthiness,
-stringification, reserved-word identifier mangling, and evaluator-only
-higher-order-callback lowering, since Jinja has no lambda expression) in one
-uniform place rather than per fixture.
-
-## Template output shape
-
-- One `.jinja` file per component, named by snake-casing the PascalCase
-  component name (`UserCard` → `user_card.jinja`).
-- Hydration markers use the same runtime method names as every other
-  adapter's `bf.*` calls (`bf.scope_attr()`, `bf.hydration_attrs()`,
-  `bf.text_start`/`text_end`, `bf.comment(...)`, …).
-- Every text/attribute interpolation of a possibly-non-string value is
-  routed through `bf.string(...)` (or `bf.bool_str(...)` for boolean-shaped
-  values); every non-comparison condition position is routed through
-  `bf.truthy(...)`.
-
-## Python runtime
-
-`python/barefootjs/` (shipped inside `@barefootjs/jinja`) is a
-self-contained Python package with only one dependency, `jinja2`. It
-implements the engine-agnostic `bf` object every emitted template calls
-into: hydration markers, context propagation
-(`provide_context`/`use_context`), child-component rendering
-(`render_child`), script registration, and the JS-compatible helper library
-(`string`, `bool_str`, `truthy`, `number`, `floor`/`ceil`/`round`,
-array/string helpers, `spread_attrs`, `query`, …).
-
-## Usage
-
-```
+```sh
 npm install @barefootjs/jinja
 ```
 
-Configure the build (`vite.config.ts`):
-
 ```typescript
+// vite.config.ts
 import { defineConfig } from 'vite'
 import { barefoot } from '@barefootjs/jinja/vite'
 
 export default defineConfig({
-  plugins: barefoot({
-    components: ['./src/components'],
-    templates: './dist/templates',
-  }),
+  plugins: barefoot({ components: ['components'], templates: 'dist/templates' }),
 })
 ```
 
-`vite build` emits `.jinja` templates plus client JS under `templates` / Vite's own `build.outDir`. On the
-Python side, vendor `python/barefootjs/` (from `@barefootjs/jinja`) into
-your app and render a component by constructing a `jinja2.Environment` over
-a `FileSystemLoader` pointed at the emitted templates, with the exact
-settings this adapter's output assumes:
+## Render from your server
+
+Vendor `python/barefootjs/` from the npm package into your app; its only dependency is `jinja2`.
 
 ```python
-import jinja2
-from barefootjs import backend_jinja
+from barefootjs import BarefootJS
+from barefootjs.backend_jinja import JinjaBackend
 
-env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader("dist/templates"),
-    autoescape=True,
-    undefined=jinja2.ChainableUndefined,
-    trim_blocks=True,
-    lstrip_blocks=True,
+backend = JinjaBackend(
+    paths=["dist/templates"],
+    environment_options={"trim_blocks": True, "lstrip_blocks": True},
 )
 
-html = backend_jinja.render_named(env, "user_card", vars={"name": "Ada"})
+bf = BarefootJS(None, {"backend": backend})
+bf._scope_id("Counter_0")
+body = backend.render_named("counter", bf, {"initial": 0})
+html = f"<!doctype html><body>{body}{bf.scripts()}</body>"
 ```
 
-`trim_blocks`/`lstrip_blocks` are required because the adapter places
-`{% … %}` control tags on their own source line; `ChainableUndefined` is
-required so a missing nested attribute (`missing.deep`) renders as empty
-rather than raising.
+The templates assume four `Environment` settings. `JinjaBackend` applies the first two by default; pass the other two in `environment_options`, or set all four when you hand it a pre-built `Environment` via `env=`:
 
-## See also
+| Setting | Why |
+|---------|-----|
+| `autoescape=True` | Templates rely on engine escaping; helpers that emit markup return `Markup`. |
+| `undefined=ChainableUndefined` | A missing nested attribute (`missing.deep`) renders empty instead of raising. |
+| `trim_blocks=True` | `{% … %}` tags sit on their own source line; without this every tag leaks a newline into the HTML. |
+| `lstrip_blocks=True` | Same for the indentation before each tag. |
 
-- [Perl Adapter](./perl-adapter.md) — the Text::Xslate/Kolon adapter this port maps from
-- [Rust Adapter](./rust-adapter.md) — a near-verbatim port of this adapter targeting minijinja, with identical template output
-- [Adapter Architecture](./adapter-architecture.md) — the `TemplateAdapter` interface and IR contract
-- [Writing a Custom Adapter](./custom-adapter.md)
+## Notes
+
+- Template names are the snake_cased component name: `UserCard` → `user_card.jinja`.
+- `render_named` mangles prop names that collide with Jinja/Python reserved words, so a prop named `class` or `none` still works.
+- Interpolations and conditions route through `bf.string(...)` / `bf.truthy(...)` so the template follows JS truthiness and stringification, not Python's.
+- In development pass `"auto_reload": True, "cache_size": 0` in `environment_options` so rebuilt templates render on the next request.
+
+Examples: [`integrations/flask`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/flask), [`integrations/fastapi`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/fastapi) and [`integrations/django`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/django).

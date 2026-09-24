@@ -108,10 +108,9 @@ describe('resolveDoc', () => {
   })
 
   test('returns candidates for ambiguous name', () => {
-    // "reactivity" exists as both docs/core/reactivity.md
-    // and docs/core/core-concepts/reactivity.md
+    // "reactivity" is the chapter index docs/core/reactivity.md; the exact
+    // slug match wins over any filename match under a subdirectory.
     const { doc, candidates } = resolveDoc(docsDir, 'reactivity')
-    // Exact top-level match should win
     expect(doc).not.toBeNull()
     expect(doc!.slug).toBe('reactivity')
   })

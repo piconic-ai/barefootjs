@@ -215,7 +215,22 @@ export function MobileMenu() {
                 <div className="pl-2 py-1 space-y-0.5">
                   <a href="/docs/introduction" className={menuLinkClass}>Introduction</a>
                   <a href="/docs/quick-start" className={menuLinkClass}>Quick Start</a>
-                  <a href="/docs/core-concepts" className={menuLinkClass}>Core Concepts</a>
+                  <a href="/docs/how-it-works" className={menuLinkClass}>How It Works</a>
+                </div>
+              </details>
+
+              <details data-category="components" className="mb-2 group">
+                <summary className={summaryClass}>
+                  <span>Components</span>
+                  <span className={chevronClass}><ChevronRightIcon /></span>
+                </summary>
+                <div className="pl-2 py-1 space-y-0.5">
+                  <a href="/docs/components" className={menuLinkClass}>Components</a>
+                  <a href="/docs/components/component-authoring" className={menuLinkClass}>Component Authoring</a>
+                  <a href="/docs/components/children-slots" className={menuLinkClass}>Children & Slots</a>
+                  <a href="/docs/components/context-api" className={menuLinkClass}>Context API</a>
+                  <a href="/docs/components/portals" className={menuLinkClass}>Portals</a>
+                  <a href="/docs/components/styling" className={menuLinkClass}>Style Overrides</a>
                 </div>
               </details>
 
@@ -232,35 +247,20 @@ export function MobileMenu() {
                   <a href="/docs/reactivity/on-mount" className={menuLinkClass}>onMount</a>
                   <a href="/docs/reactivity/on-cleanup" className={menuLinkClass}>onCleanup</a>
                   <a href="/docs/reactivity/untrack" className={menuLinkClass}>untrack</a>
+                  <a href="/docs/reactivity/batch" className={menuLinkClass}>batch</a>
                   <a href="/docs/reactivity/props-reactivity" className={menuLinkClass}>Props Reactivity</a>
                 </div>
               </details>
 
               <details data-category="rendering" className="mb-2 group">
                 <summary className={summaryClass}>
-                  <span>Templates & Rendering</span>
+                  <span>JSX & Templates</span>
                   <span className={chevronClass}><ChevronRightIcon /></span>
                 </summary>
                 <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/docs/rendering" className={menuLinkClass}>Templates & Rendering</a>
+                  <a href="/docs/rendering" className={menuLinkClass}>JSX & Templates</a>
                   <a href="/docs/rendering/jsx-compatibility" className={menuLinkClass}>JSX Compatibility</a>
-                  <a href="/docs/rendering/fragment" className={menuLinkClass}>Fragment</a>
                   <a href="/docs/rendering/client-directive" className={menuLinkClass}>Client Directive</a>
-                </div>
-              </details>
-
-              <details data-category="components" className="mb-2 group">
-                <summary className={summaryClass}>
-                  <span>Components</span>
-                  <span className={chevronClass}><ChevronRightIcon /></span>
-                </summary>
-                <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/docs/components" className={menuLinkClass}>Components</a>
-                  <a href="/docs/components/component-authoring" className={menuLinkClass}>Component Authoring</a>
-                  <a href="/docs/components/props-type-safety" className={menuLinkClass}>Props & Type Safety</a>
-                  <a href="/docs/components/children-slots" className={menuLinkClass}>Children & Slots</a>
-                  <a href="/docs/components/context-api" className={menuLinkClass}>Context API</a>
-                  <a href="/docs/components/portals" className={menuLinkClass}>Portals</a>
                 </div>
               </details>
 
@@ -271,25 +271,32 @@ export function MobileMenu() {
                 </summary>
                 <div className="pl-2 py-1 space-y-0.5">
                   <a href="/docs/adapters" className={menuLinkClass}>Adapters</a>
-                  <a href="/docs/adapters/adapter-architecture" className={menuLinkClass}>Adapter Architecture</a>
-                  <a href="/docs/adapters/hono-adapter" className={menuLinkClass}>Hono Adapter</a>
-                  <a href="/docs/adapters/go-template-adapter" className={menuLinkClass}>Go Template Adapter</a>
-                  <a href="/docs/adapters/custom-adapter" className={menuLinkClass}>Custom Adapter</a>
+                  <a href="/docs/adapters/hono-adapter" className={menuLinkClass}>Hono</a>
+                  <a href="/docs/adapters/go-template-adapter" className={menuLinkClass}>Go Template</a>
+                  <a href="/docs/adapters/perl-adapter" className={menuLinkClass}>Perl</a>
+                  <a href="/docs/adapters/ruby-adapter" className={menuLinkClass}>Ruby</a>
+                  <a href="/docs/adapters/python-adapter" className={menuLinkClass}>Python</a>
+                  <a href="/docs/adapters/php-adapter" className={menuLinkClass}>PHP</a>
+                  <a href="/docs/adapters/rust-adapter" className={menuLinkClass}>Rust</a>
+                  <a href="/docs/adapters/java-adapter" className={menuLinkClass}>Java</a>
+                  <a href="/docs/adapters/csr" className={menuLinkClass}>CSR</a>
+                  <a href="/docs/adapters/custom-adapter" className={menuLinkClass}>Writing a Custom Adapter</a>
                 </div>
               </details>
 
               <details data-category="advanced" className="mb-2 group">
                 <summary className={summaryClass}>
-                  <span>Advanced</span>
+                  <span>Tooling & Reference</span>
                   <span className={chevronClass}><ChevronRightIcon /></span>
                 </summary>
                 <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/docs/advanced" className={menuLinkClass}>Advanced</a>
-                  <a href="/docs/advanced/compiler-internals" className={menuLinkClass}>Compiler Internals</a>
-                  <a href="/docs/advanced/ir-schema" className={menuLinkClass}>IR Schema</a>
+                  <a href="/docs/advanced" className={menuLinkClass}>Tooling & Reference</a>
+                  <a href="/docs/advanced/vite-plugin" className={menuLinkClass}>Vite Plugin</a>
+                  <a href="/docs/advanced/testing-and-cli" className={menuLinkClass}>Testing & CLI</a>
+                  <a href="/docs/advanced/api-reference" className={menuLinkClass}>API Reference</a>
                   <a href="/docs/advanced/error-codes" className={menuLinkClass}>Error Codes</a>
-                  <a href="/docs/advanced/performance" className={menuLinkClass}>Performance</a>
                   <a href="/docs/advanced/compatibility-matrix" className={menuLinkClass}>Compatibility Matrix</a>
+                  <a href="/docs/advanced/api-comparison" className={menuLinkClass}>Coming from React or Solid</a>
                 </div>
               </details>
             </div>

@@ -3,8 +3,7 @@
 // `adapter-registry.ts` is the ONE place TemplateAdapter packages are
 // enumerated for compiling; this file is the doc-facing counterpart — the
 // ONE place those same packages get a language/backend label for
-// README.md, docs/core/core-concepts/backend-freedom.md, and
-// docs/core/adapters.md, rendered as an adapter table via
+// README.md and docs/core/adapters.md, rendered as an adapter table via
 // `scripts/generate-adapter-docs.ts`. One row per package — a language
 // with two backends (Perl: Mojolicious + Xslate; PHP: Twig + Blade) gets
 // two rows, not one combined row.
@@ -46,9 +45,6 @@ export const ADAPTER_ENTRIES: readonly AdapterEntry[] = [
   { language: 'PHP', backend: 'Twig', pkg: '@barefootjs/twig', docPage: 'adapters/php-adapter.md' },
   { language: 'PHP', backend: 'Laravel Blade', pkg: '@barefootjs/blade', docPage: 'adapters/php-adapter.md' },
   { language: 'Rust', backend: 'minijinja', pkg: '@barefootjs/rust', docPage: 'adapters/rust-adapter.md' },
-  // `docs/core/adapters/java-adapter.md` is not written yet (Phase 6 of
-  // the add-adapter playbook, not landed alongside this Phase 5
-  // registration) — the generated table link 404s until that page ships.
   { language: 'Java', backend: 'Pebble', pkg: '@barefootjs/pebble', docPage: 'adapters/java-adapter.md' },
   // Not a server backend — renders in the browser only, no template engine
   // involved. Kept in the table (last row) since it's still a way to ship

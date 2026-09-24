@@ -38,7 +38,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
@@ -61,7 +61,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             packages/adapter-rust/runtime/target
-          key: rust-${{ runner.os }}-${{ hashFiles('packages/adapter-rust/runtime/Cargo.lock') }}
+            integrations/axum/target
+          key: rust-${{ runner.os }}-${{ hashFiles('packages/adapter-rust/runtime/Cargo.lock', 'integrations/axum/Cargo.lock') }}
           restore-keys: |
             rust-${{ runner.os }}-
 
@@ -92,44 +93,10 @@ jobs:
       - name: Run unit tests
         run: bun test packages/adapter-rust
 
-  e2e-axum:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: test
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      # See the note on the test job's Setup Rust step: rustup is
-      # preinstalled on ubuntu-latest, no third-party action needed.
-      - name: Setup Rust
-        run: rustup update stable && rustup default stable
-
-      - name: Cache Rust dependencies and build artifacts
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            packages/adapter-rust/runtime/target
-            integrations/axum/target
-          key: rust-${{ runner.os }}-${{ hashFiles('packages/adapter-rust/runtime/Cargo.lock', 'integrations/axum/Cargo.lock') }}
-          restore-keys: |
-            rust-${{ runner.os }}-
-
-      - name: Setup Bun
-        uses: ./.github/actions/setup-bun
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build packages
-        run: |
-          bun run --filter '@barefootjs/jsx' build
-          bun run --filter '@barefootjs/vite' build
-          bun run --filter '@barefootjs/client' build
-          bun run --filter '@barefootjs/rust' build
-
+      # E2E runs in this job, after the unit tests, instead of in its own
+      # `needs: test` job: a separate job queued a second time for a runner
+      # and repeated checkout + install + build for ~1 min of Playwright
+      # (#3155). A unit-test failure still skips it, as `needs:` did.
       - name: Build integrations/axum
         run: cd integrations/axum && bun run build
 

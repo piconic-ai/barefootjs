@@ -40,7 +40,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
@@ -95,27 +95,10 @@ jobs:
       - name: Run unit tests (incl. live Twig render + conformance)
         run: bun test packages/adapter-twig
 
-  e2e-php:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: test
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Setup Bun
-        uses: ./.github/actions/setup-bun
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build packages
-        run: |
-          bun run --filter '@barefootjs/jsx' build
-          bun run --filter '@barefootjs/vite' build
-          bun run --filter '@barefootjs/client' build
-          bun run --filter '@barefootjs/twig' build
-
+      # E2E runs in this job, after the unit tests, instead of in its own
+      # `needs: test` job: a separate job queued a second time for a runner
+      # and repeated checkout + install + build for ~1 min of Playwright
+      # (#3155). A unit-test failure still skips it, as `needs:` did.
       - name: Build integrations/php
         run: cd integrations/php && bun run build
 
