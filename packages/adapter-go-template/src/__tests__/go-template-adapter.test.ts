@@ -2197,7 +2197,7 @@ export function Demo() {
 
     test('rows with different keys refuse with BF101 instead of rendering an empty loop', () => {
       const { bf101 } = compileLoop(`const opts = [{ id: 'a', label: 'A' }, { id: 'b' }]`)
-      expect(bf101.length).toBeGreaterThan(0)
+      expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain("Loop array `opts` is an object-literal array whose rows don't share one shape")
     })
 
@@ -2222,6 +2222,12 @@ export function Demo() {
       const { bf101 } = compileLoop(`const opts = [{ id: 'a', label: 'A' }, { id: 'b', label: 2 }]`)
       expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain('a value whose type differs between rows')
+    })
+
+    test('rows with an empty nested array in every row get the field wording', () => {
+      const { bf101 } = compileLoop(`const opts = [{ id: 'a', tags: [] }, { id: 'b', tags: [] }]`)
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('an empty nested array')
     })
   })
 

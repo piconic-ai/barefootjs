@@ -3723,7 +3723,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             code: 'BF101',
             severity: 'error',
             message: sharedKeys
-              ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give one Go type across its rows (a nested object, a \`null\`, a non-identifier key, or a value whose type differs between rows), so it can't render its rows at SSR.`
+              ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give one Go type across its rows (for example a nested object, a \`null\`, a non-identifier key, an empty nested array, or a value whose type differs between rows), so it can't render its rows at SSR.`
               : `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
             loc: this.makeLoc(),
             suggestion: {

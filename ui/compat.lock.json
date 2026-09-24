@@ -5998,7 +5998,7 @@
     "untyped-loop-array-no-row-struct": {
       "title": "Untyped object-literal loop array with no single row shape",
       "kind": "refusal",
-      "given": "a `.map()` whose rows call a child component, over an unannotated module-scope `const` array of object literals whose rows do not share one set of fields with one plain type each: the rows have different keys, or a field is a nested object, a `null`, a non-identifier key, or a value whose type differs between rows",
+      "given": "a `.map()` whose rows call a child component, over an unannotated module-scope `const` array of object literals whose rows do not share one set of fields with one plain type each: for example the rows have different keys, or a field is a nested object, a `null`, a non-identifier key, an empty nested array, or a value whose type differs between rows",
       "expected": "the rows render in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
