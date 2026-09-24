@@ -204,6 +204,11 @@ type RepropsSpec = {
  * the rest fold into `array-method`. Module-level so `isStringExpr` (which
  * recurses over expression trees) reuses one set instead of allocating per call.
  */
+const STRING_METHODS: ReadonlySet<string> = new Set([
+  'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
+  'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
+])
+
 /**
  * Whether every row of an object-literal array names the same keys, in any
  * order. Only picks the BF101 wording when `resolveNestedLoopItemTypes`
@@ -217,11 +222,6 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
   const first = keySet(rows[0])
   return rows.every(row => keySet(row) === first)
 }
-
-const STRING_METHODS: ReadonlySet<string> = new Set([
-  'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
-  'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
-])
 
 /**
  * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
@@ -3700,15 +3700,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // `renderLoop` already refused this loop array (a spread, shorthand
           // or function-valued row reads as a computed value there).
           if (this.state.refusedLoopArrayConsts.has(directConst.name)) continue
+          const sharedKeys = rowsShareKeys(parsed.elements)
           this.state.errors.push({
             code: 'BF101',
             severity: 'error',
-            message: rowsShareKeys(parsed.elements)
+            message: sharedKeys
               ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give a Go type (a nested object, a non-identifier key, …), so it can't render its rows at SSR.`
               : `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
             loc: this.makeLoc(),
             suggestion: {
-              message: `Give every row the same keys, or annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`).`,
+              message: sharedKeys
+                ? `Annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`), or give every field a plain string, number or boolean literal.`
+                : `Give every row the same keys, or annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`).`,
             },
           })
           continue
