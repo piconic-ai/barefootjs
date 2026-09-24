@@ -25,6 +25,11 @@ describe('cacheControl middleware', () => {
     expect(res.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
   })
 
+  test('leaves a route that already set its own Cache-Control alone', async () => {
+    const res = await buildApp().request('/og')
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=86400, immutable')
+  })
+
   test('explicitly opts error responses out of caching', async () => {
     const res = await buildApp().request('/missing')
     expect(res.headers.get('Cache-Control')).toBe('private, no-store')
@@ -74,8 +79,9 @@ describe('workersCacheControl middleware', () => {
     }
   })
 
-  test('leaves the edge TTL of a route that set its own Cache-Control alone', async () => {
+  test('leaves a route that set its own Cache-Control alone, and adds no edge TTL to it', async () => {
     const res = await buildApp(workersCacheControl).request('/og')
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=86400, immutable')
     expect(res.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
   })
 })

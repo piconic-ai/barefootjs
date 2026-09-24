@@ -11,12 +11,7 @@
 
 const LIVE_REGION_ID = 'bf-route-announcer'
 
-/**
- * Move focus into the freshly swapped region so keyboard/AT users resume there
- * rather than at the top of a detached tree. Prefer the region's first heading
- * (gives a screen reader the page context); fall back to the region element
- * itself, made programmatically focusable without becoming a tab stop.
- */
+/** What counts as a region's heading — the focus target inside it. */
 const HEADING_SELECTOR = 'h1, h2, [role="heading"]'
 
 /**
@@ -32,7 +27,13 @@ export function focusSwappedRegions(regions: Element[]): void {
   if (target) focusRegion(target)
 }
 
-export function focusRegion(region: Element): void {
+/**
+ * Move focus into the freshly swapped region so keyboard/AT users resume there
+ * rather than at the top of a detached tree. Prefer the region's first heading
+ * (gives a screen reader the page context); fall back to the region element
+ * itself, made programmatically focusable without becoming a tab stop.
+ */
+function focusRegion(region: Element): void {
   if (typeof document === 'undefined') return
   const target =
     (region.querySelector(HEADING_SELECTOR) as HTMLElement | null) ??
