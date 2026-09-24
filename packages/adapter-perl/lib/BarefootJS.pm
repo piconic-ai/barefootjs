@@ -480,6 +480,15 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
 # PascalCase → snake_case, mirroring the Mojo adapter's `toTemplateName`
 # (prefix every uppercase letter with `_`, lowercase the whole string,
 # strip the leading `_`): `ToastProvider` → `toast_provider`.
+# Random suffix for a scope id with no slot to derive it from
+# (`<Template>_<suffix>`). Always six digits: stringifying `rand()` and
+# stripping its `0.` breaks when Perl prints a small value in exponent form
+# (`3.2247e-05` -> `3.2247`), which put a `.` into the id. Every Perl-side
+# producer of such an id calls this, so they cannot drift apart.
+sub scope_id_suffix () {
+    return sprintf('%06d', int(rand(1_000_000)));
+}
+
 sub _snake_case ($name) {
     my $s = $name;
     $s =~ s/([A-Z])/_$1/g;
@@ -531,7 +540,7 @@ sub _register_manifest_child ($self, $slot_key, $marked, $signal_init, $manifest
         $child_bf->_data_key($data_key) if defined $data_key;
         $child_bf->_scope_id(
             $slot_id ? $host_scope . '_' . $slot_id
-                     : $template_name . '_' . substr(rand() =~ s/^0\.//r, 0, 6)
+                     : $template_name . '_' . scope_id_suffix()
         );
         $child_bf->_is_child(1);
         # (#1249) Slot identity: host scope + slot id. Emitted as
