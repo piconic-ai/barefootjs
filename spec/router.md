@@ -91,7 +91,7 @@ On an interceptable same-origin click (or `navigate(href)`):
    relative `src` against the **response URL**, not `location`.
 5. `replaceChildren` + `rehydrateScope` on the incoming subtree; outer regions/shell untouched.
 6. Commit history + `<title>`, **preserving existing `history.state`**.
-7. Move focus to the swapped region and announce the route change.
+7. Move focus into the swapped content — the first swapped region (in document order) that has a heading, else the first swapped region — and announce the route change.
 
 Steps 1-7 run with `data-bf-navigating` set on `<html>`, cleared in the swap's
 `finally`. It exists because step 5 splits into two observable moments: the

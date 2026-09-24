@@ -76,6 +76,16 @@ test.describe('docs layout soft navigation', () => {
   })
 })
 
+test('the docs sidebar precedes the doc in document order', async ({ page }) => {
+  await page.goto('/docs/introduction')
+  const sidebarFirst = await page.evaluate(() => {
+    const aside = document.querySelector('aside[bf-region="sidebar"]')!
+    const doc = document.querySelector('[bf-region="page"]')!
+    return Boolean(aside.compareDocumentPosition(doc) & Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+  expect(sidebarFirst).toBe(true)
+})
+
 test.describe('landing layout soft navigation', () => {
   test('/integrations → / is soft and the demo pickers still work', async ({ page }) => {
     await page.goto('/integrations')

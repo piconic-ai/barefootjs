@@ -17,10 +17,25 @@ const LIVE_REGION_ID = 'bf-route-announcer'
  * (gives a screen reader the page context); fall back to the region element
  * itself, made programmatically focusable without becoming a tab stop.
  */
+const HEADING_SELECTOR = 'h1, h2, [role="heading"]'
+
+/**
+ * Pick where focus goes after a swap of one or more regions: the first swapped
+ * region (in document order) that has a heading, else the first swapped region.
+ * With sibling regions a layout keeps its natural document order — e.g. a
+ * `sidebar` region before the `page` region, so tab and landmark order reach
+ * the navigation first — and focus still lands in the content (the region with
+ * the page's heading) rather than in the navigation.
+ */
+export function focusSwappedRegions(regions: Element[]): void {
+  const target = regions.find((r) => r.querySelector(HEADING_SELECTOR) !== null) ?? regions[0]
+  if (target) focusRegion(target)
+}
+
 export function focusRegion(region: Element): void {
   if (typeof document === 'undefined') return
   const target =
-    (region.querySelector('h1, h2, [role="heading"]') as HTMLElement | null) ??
+    (region.querySelector(HEADING_SELECTOR) as HTMLElement | null) ??
     (region as HTMLElement)
   if (!target) return
   // `tabindex=-1` makes an otherwise non-focusable element focusable via script

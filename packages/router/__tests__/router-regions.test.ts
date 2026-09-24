@@ -275,6 +275,31 @@ const cases: RegionCase[] = [
   },
 ]
 
+describe('@barefootjs/router v2 — focus after a multi-region swap', () => {
+  test('focus goes to the first swapped region with a heading, not the first in document order', async () => {
+    // A docs layout: the sidebar comes first in document order (natural tab
+    // and landmark order) and has no heading; the page region does. Both
+    // change on this navigation (the active sidebar link moves).
+    document.body.innerHTML =
+      `<nav bf-region="sidebar" id="nav"><a href="/a" class="active">A</a><a href="/b">B</a></nav>` +
+      `<main bf-region="page" id="main"><h1 id="h">A</h1></main>`
+    mockFetch(
+      fullDoc(
+        `<nav bf-region="sidebar" id="nav"><a href="/a">A</a><a href="/b" class="active">B</a></nav>` +
+          `<main bf-region="page" id="main"><h1 id="h">B</h1></main>`,
+      ),
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+
+    await navigate('/b')
+    await flush()
+
+    expect(assigned).toBe('')
+    expect(document.getElementById('h')?.textContent).toBe('B')
+    expect(document.activeElement?.id).toBe('h')
+  })
+})
+
 describe('@barefootjs/router v2 — nested / sibling regions', () => {
   for (const c of cases) {
     test(c.name, async () => {
