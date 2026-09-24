@@ -11,6 +11,11 @@ export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutp
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
 export { extractSsrDefaults, deriveStashFromDefaults } from './ssr-defaults.ts'
 
+// #3144: shared "is this a component-body local bound to an opaque call"
+// check, consulted by every non-JS-runtime adapter's `call()` fallback
+// before it treats a zero-arg identifier call as a signal getter.
+export { isOpaqueLocalAccessorName } from './opaque-local-accessor.ts'
+
 // Shared props-destructure binding + alias-map helpers (#2524, #2788)
 export { propsDestructureBinding, buildPropAliasMap, isIdentifierName, resolveBodyDestructuredPropAliases } from './props-binding.ts'
 export type { SsrDefault } from './ssr-defaults.ts'

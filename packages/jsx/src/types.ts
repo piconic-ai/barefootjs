@@ -1163,6 +1163,21 @@ export interface IRComponent {
    * predicate every backend must consult instead of re-deriving this fact.
    */
   loopItemRoot?: boolean
+  /**
+   * True when this component IS the entire render root of a client-
+   * interactive component (`'use client'`, or otherwise needing client
+   * init) — no wrapping element of its own. Such a root has no DOM node
+   * to hang `bf-s`/`bf-p` on, so the adapter must wrap its rendered
+   * output in a comment-based scope marker pair instead, mirroring
+   * `IRFragment.needsScopeComment` (which handles the analogous
+   * multi-element-fragment-root case). Computed once, in `compiler.ts`
+   * (`decideComponentRootScopeComment`) right after `metadata.clientAnalysis`
+   * becomes available — NOT in `jsx-to-ir.ts`'s per-node transform, since
+   * "is this component client-interactive" isn't known until then. Every
+   * adapter renders the pair from this ONE flag (#3141) instead of each
+   * re-deriving the "root is a component" check locally.
+   */
+  needsScopeComment?: boolean
   loc: SourceLocation
 }
 

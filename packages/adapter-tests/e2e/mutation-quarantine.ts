@@ -58,10 +58,6 @@ function key(fixtureId: string, mutationId: string, oracle: OracleKind): string 
 // representative diff in the group; fixtures not individually traced are
 // flagged as "consistent with" rather than confirmed, honestly.
 
-/** G2c: a conditional-return branch independently fragment-wrapped has no per-branch CSR scope-shape declaration. */
-const FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID =
-  "fragment-wrap wraps EVERY `return <jsx>` it finds, including ones inside an if-statement — for a conditional-return component (`if (asChild) return <Slot/>; return <button>...`, `ir.root.type === 'if-statement'`) this independently fragment-wraps one branch while leaving the other untouched. `emit-registration.ts`'s `isFragmentRoot`/`isCommentScope` only inspects `_ir.root.type` at the WHOLE-COMPONENT level (never 'if-statement'), so the resulting `ComponentDef` carries neither `comment` nor `fragmentRoot` — a single static per-component flag can't express \"branch A is fragment-rooted, branch B isn't\". `materializeComponent`'s pure CSR mount (`createComponent()`, no SSR) then picks ONE treatment for the whole component regardless of which branch actually renders, so the wrapped branch's root element gets no scope id at all (mirrors the pre-#2722 symptom, but the def-level #2722 fix cannot reach this per-branch shape). Distinct from #2722 (confirmed: #2722's fix graduated every OTHER `fragment-wrap` entry in this ledger; only the conditional-return-rooted components remain). Registry limitation `fragment-wrapped-conditional-return-branch-scope` (its own fixture, `conditional-return-fragment-branch`, is the same shape as real source) — the fix needs a per-branch scope-shape declaration or a CSR-time probe of the rendered markup's own shape, not a bigger flag."
-
 const ENTRIES: readonly MutationQuarantineEntry[] = [
   // --- G1 (fixed, #2721) --------------------------------------------------
   // fragment-wrap hydration dropping loop/dynamic children — was
@@ -128,20 +124,19 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // to Playwright's scroll-into-view racing the page's async `scroll`
   // event and fixed in `oracle-core.ts`'s `settleScrollBeforeAction`.
 
-  // --- G2c (open, #2731) ---------------------------------------------------
-  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
-  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
-  { fixtureId: 'conditional-return-button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
-  { fixtureId: 'conditional-return-button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
-  { fixtureId: 'conditional-return-link', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
-  { fixtureId: 'conditional-return-link', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
-  {
-    fixtureId: 'kbd',
-    mutationId: 'fragment-wrap',
-    oracle: 'three-point',
-    reason: `${FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID} (kbd has no \`interactions\`, so only \`three-point\` runs for it — no \`idempotence\` triple.)`,
-    limitation: 'fragment-wrapped-conditional-return-branch-scope',
-  },
+  // --- G2c (fixed, #3063) ---------------------------------------------------
+  // `fragment-wrap` applied to a conditional-return component
+  // (`button` / `conditional-return-button` / `conditional-return-link` /
+  // `kbd`) independently wraps ONE branch in a fragment, leaving the other
+  // untouched — the exact shape `fragment-wrapped-conditional-return-branch-scope`
+  // names. #3063 made that shape a loud BF029 compile-time refusal instead
+  // of a silent CSR/hydration divergence: `scripts/mutation-generate.ts`
+  // probes each mutant before generating its snapshot, and a refusal is a
+  // PASS on its own (never reaches the oracle), so these four fixtures'
+  // `fragment-wrap` mutants no longer produce a `status: 'ok'` manifest
+  // entry for `mutation.playwright.ts` to even run against — the rows that
+  // used to quarantine their oracle failures are gone rather than graduated
+  // in place.
 
   // --- G3 (fixed, #2723) --------------------------------------------------
   // The issue body's original theory (CSR "build from scratch" assuming a

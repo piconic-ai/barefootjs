@@ -299,6 +299,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
+import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { BladeRenderCtx } from './lib/types.ts'
@@ -624,7 +625,14 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   }
 
   emitComponent(node: IRComponent, _ctx: BladeRenderCtx, _emit: EmitIRNode<BladeRenderCtx>): string {
-    return this.renderComponent(node)
+    const rendered = this.renderComponent(node)
+    // #3141: a client-interactive component whose entire render root is
+    // this single child-component call (no wrapping element) needs the
+    // same comment-based scope marker pair a `needsScopeComment` FRAGMENT
+    // root gets below — `IRComponent.needsScopeComment` is the shared flag
+    // (`packages/jsx/src/component-root-scope-comment.ts`) every adapter
+    // reads instead of re-deriving "root is a component" locally.
+    return node.needsScopeComment ? this.wrapComponentRootScopeComment(rendered) : rendered
   }
 
   emitFragment(node: IRFragment, _ctx: BladeRenderCtx, _emit: EmitIRNode<BladeRenderCtx>): string {
@@ -1522,9 +1530,19 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // End marker bounds the scope's sibling range — without it, queries
       // from the fragment scope leak onto later siblings owned by the
       // parent (#2289).
-      return `{!! $bf->scope_comment() !!}${children}{!! $bf->scope_comment_end() !!}`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a `needsScopeComment`
+   * component root (#3141) — both are "this scope has no DOM element of its
+   * own to carry bf-s/bf-p", so both lean on the same runtime helper pair.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `{!! $bf->scope_comment() !!}${rendered}{!! $bf->scope_comment_end() !!}`
   }
 
   private renderSlot(_slot: IRSlot): string {
@@ -1941,6 +1959,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name) => this._isStringValueName(name),
+      _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderBladeFilterExprPublic: (e, p) => this._renderBladeFilterExprPublic(e, p),
     }
