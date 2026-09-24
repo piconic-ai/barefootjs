@@ -16,7 +16,7 @@ describe('generateCoreLlmsTxt', () => {
     expect(result).toContain('# BarefootJS')
     expect(result).toContain('> JSX')
     expect(result).toContain('## Reactivity')
-    expect(result).toContain('## Core Concepts')
+    expect(result).toContain('## Components')
   })
 
   test('groups docs by category', () => {

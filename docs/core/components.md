@@ -1,19 +1,24 @@
 ---
 title: Components
-description: How to author, compose, and type components in BarefootJS, including props, children, context, and portals.
+description: How to author, compose, and type components, including props, children, context, and portals.
 ---
 
 # Components
 
-For the `"use client"` directive and the server/client boundary, see [Backend Freedom](./core-concepts/backend-freedom.md#the-use-client-directive).
+A component is a function that returns JSX. The `"use client"` directive that makes one interactive is explained in [Component Authoring](./components/component-authoring.md).
+
+```tsx
+export function Greeting({ name }: { name: string }) {
+  return <h1>Hello, {name}</h1>
+}
+```
 
 ## Pages
 
 | Topic | Description |
 |-------|-------------|
-| [Component Authoring](./components/component-authoring.mdx) | Server components, client components, and the compilation model |
-| [Props & Type Safety](./components/props-type-safety.md) | Typing props, defaults, and rest spreading |
-| [Children & Slots](./components/children-slots.md) | Children prop, the `Slot` component, and the `asChild` pattern |
-| [Context API](./components/context-api.md) | Sharing state across compound components with `createContext` / `useContext` |
+| [Component Authoring](./components/component-authoring.md) | Server vs. client components, composition, props, refs |
+| [Children & Slots](./components/children-slots.md) | The `children` prop, `Slot`, and `asChild` |
+| [Context API](./components/context-api.md) | `createContext` / `useContext`; sharing state across files |
 | [Portals](./components/portals.md) | Rendering elements outside their parent DOM hierarchy |
-| [Style Overrides](./components/styling.md) | How user-supplied classes override component base classes via CSS Cascade Layers |
+| [Style Overrides](./components/styling.md) | User classes override base classes via CSS Cascade Layers |

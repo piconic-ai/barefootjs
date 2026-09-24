@@ -1,14 +1,15 @@
 ---
-title: Advanced
-description: Compiler internals, IR schema, error codes, and performance optimization for contributors and adapter authors.
+title: Tooling & Reference
+description: Build tooling, test helpers, the CLI, and the reference tables — the pages you look up rather than read through.
 ---
 
-# Advanced
+# Tooling & Reference
 
-- [IR Schema Reference](./advanced/ir-schema.md) — The intermediate representation node types and metadata
-- [Compiler Internals](./advanced/compiler-internals.md) — Pipeline phases, reactivity analysis, and code generation
-- [Error Codes Reference](./advanced/error-codes.md) — All compiler errors and warnings with solutions
-- [Performance Optimization](./advanced/performance.md) — Best practices for minimal client JS and fast hydration
-- [Vite Plugin](./advanced/vite-plugin.md) — `@barefootjs/vite` options, build and dev output, and the adapter builders
-- [API Reference](./advanced/api-reference.md) — Every public API with its first release and stability tier, generated from JSDoc tags
-- [API Comparison](./advanced/api-comparison.md) — Solid / React / BarefootJS, one row per concept, what BarefootJS deliberately doesn't have
+Things you look up rather than read through.
+
+- [Vite Plugin](./advanced/vite-plugin.md) — `barefoot()` options, what the build writes, the adapter builders, vendor chunking
+- [Testing & CLI](./advanced/testing-and-cli.md) — `renderToTest()` IR tests, the `bf` command loop, the agent skill
+- [API Reference](./advanced/api-reference.md) — every public export with its first release and stability tier (generated)
+- [Error Codes](./advanced/error-codes.md) — every `BFxxx` diagnostic and its fix
+- [Compatibility Matrix](/docs/advanced/compatibility-matrix) — which JSX features each adapter supports
+- [Coming from React or Solid](./advanced/api-comparison.md) — the BarefootJS name for each concept, and what it leaves out on purpose
