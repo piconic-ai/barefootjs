@@ -25,7 +25,8 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, test, expect } from 'bun:test'
+import { describe, expect } from 'bun:test'
+import { renderTest } from './render-test'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import type { TemplateAdapter } from '../../jsx/src/types'
@@ -231,7 +232,7 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
         for (const point of runPointsForFixture(fixture)) {
           if (opts.skipDataPoints?.has(`${fixture.id}:${point.name}`)) continue
 
-          test(
+          renderTest(
             `point '${point.name}' matches the JS reference render`,
             async () => {
               const gateResult = await runGate()
@@ -260,7 +261,6 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
 
               expect(canonical(adapterHtml)).toBe(canonical(oracleHtml))
             },
-            30_000,
           )
         }
       })

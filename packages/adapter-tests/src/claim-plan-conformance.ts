@@ -40,6 +40,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import { renderTest } from './render-test'
 import * as ts from 'typescript'
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter } from '@barefootjs/jsx'
@@ -206,7 +207,7 @@ export function runClaimPlanConformance(opts: RunClaimPlanConformanceOptions): v
   describe(`[${opts.name}] claim-plan conformance (slot unification Step B, spec item (d))`, () => {
     for (const fixture of jsxFixtures) {
       const skipped = opts.skipFixtures?.has(fixture.id) ?? false
-      const t = skipped ? test.skip : test
+      const t = skipped ? test.skip : renderTest
       t(`${fixture.id}: claim-plan paths resolve against real SSR DOM`, async () => {
         const clientJs = compileJSX(fixture.source, `${fixture.id}.tsx`, { adapter: opts.factory() })
           .files.find(f => f.type === 'clientJs')?.content
