@@ -142,6 +142,11 @@ export const renderDivergences: RenderDivergences = {
   // static loop's forwarded children on Go is its own capability gap,
   // out of #3164's scope — tracked separately as #3170.
   'loop-row-child-children-attrs': { limitation: 'loop-row-child-children-attrs-frozen' },
+  // A component nested in a loop-row child's forwarded children gets its
+  // props from the row's baked child construction in `emitStaticBodyWrappers`,
+  // which only lowers literal and boolean props, so `on={highlight()}` falls
+  // back to Go's zero value.
+  'loop-row-child-children-nested-reactive-prop': { limitation: 'loop-row-child-nested-component-reactive-prop-dropped' },
   // A signal seeded from an object prop's member (`createSignal(initial.label)`)
   // bakes `nil` into its own `interface{}` field: text reads render empty,
   // a conditional takes its falsy branch, a loop over it renders no rows.

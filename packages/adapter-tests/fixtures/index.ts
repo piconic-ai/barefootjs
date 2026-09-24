@@ -732,6 +732,7 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 // const. Regression pin for go-template's array-source-scope fix.
 import { fixture as loopRowChildChildrenFnScopeArray } from './loop-row-child-children-fn-scope-array'
 import { fixture as loopRowChildChildrenNestedShapes } from './loop-row-child-children-nested-shapes'
+import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-child-children-nested-reactive-prop'
 // A child inside a reactive conditional branch that is active at
 // hydration must be initialized once, by its branch (it used to be
 // initialized twice: its onMount listener double-counted and one instance
@@ -1217,6 +1218,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenAttrs,
   loopRowChildChildrenFnScopeArray,
   loopRowChildChildrenNestedShapes,
+  loopRowChildChildrenNestedReactiveProp,
   conditionalChildListenerCleanup,
   diamondPropagation,
 ]

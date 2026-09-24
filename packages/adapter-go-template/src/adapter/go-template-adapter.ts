@@ -3023,9 +3023,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // A scalar-item row's companion define runs with the bare item as
           // its data (`bf_tmpl … .BfLoopItem`), so a nested component's
           // slot field on the row wrapper is out of reach there. Its props
-          // are not checked: they are evaluated in the parent's constructor
-          // (`collectBodyChildInstances`), never inside the companion
-          // define, so an outer read there cannot hit the missing field.
+          // are not checked: the row's child construction below
+          // (`collectBodyChildInstances`) happens in the parent's constructor,
+          // never inside the companion define, so an outer read cannot crash
+          // it. It only carries literal and boolean props, though, so a
+          // reactive prop is dropped to its zero value — a known gap
+          // (`loop-row-child-nested-component-reactive-prop-dropped`), the
+          // same as on `main`, and far narrower than emptying the loop.
           if (scalarRow) return true
           if (this.bodyChildrenReferenceOuterReactiveState(node.children, scalarRow)) return true
           continue
