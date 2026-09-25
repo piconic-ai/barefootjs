@@ -1,5 +1,15 @@
 # @barefootjs/router
 
+## 0.38.0
+
+### Patch Changes
+
+- 551ddcc: Hard-navigate instead of swapping when the region id sets diverge and the incoming page's first region is not a root. Previously a live single-region page navigating to a page with sibling regions (e.g. a sidebar-less layout → a layout with a sidebar region) swapped the incoming sidebar's markup into the live page region.
+- 283321a: After a swap of several sibling regions, focus now moves to the first swapped region that has a heading (falling back to the first swapped region), instead of always the first in document order. A layout can keep its navigation region before its content region — natural tab and landmark order — and focus still lands on the content's heading after a navigation.
+- d47882a: A `popstate` that changes only the URL hash no longer triggers a navigation. Browsers fire `popstate` when a same-page `#anchor` link is followed and on back/forward between such entries; the router treated it as a route change, re-fetched the displayed page, swapped it back in (resetting island state) and scrolled to the top, undoing the anchor jump.
+- 589e04c: Scroll to the top after a swap instantly. Under a page's `scroll-behavior: smooth`, `window.scrollTo(0, 0)` animated from the previous scroll position, so a navigation from far down a page first showed the new page from mid-way down.
+- @barefootjs/shared@0.38.0
+
 ## 0.37.1
 
 ### Patch Changes

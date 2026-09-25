@@ -1,5 +1,34 @@
 # @barefootjs/hono
 
+## 0.38.0
+
+### Patch Changes
+
+- 9b4802b: A client-interactive component whose entire JSX return is a single child-component call (no wrapping element) now renders the parent's `<!--bf-scope:...-->` / `<!--bf-/scope:...-->` comment marker pair on every adapter, so the parent hydrates and its forwarded handlers and reactive props reach the child. The decision (`IRComponent.needsScopeComment`) is now computed once in `@barefootjs/jsx`, right after client-JS analysis runs, instead of being re-derived per adapter: Hono reads it instead of its own local check, the eight DSL adapters gained the wrap they never had, and go-template's existing partial support now also emits the closing marker (previously missing, which could leak sibling content into the scope's query range).
+- 988106f: `@barefootjs/client`'s `formatDate` is now documentation-tier `@internal` and no longer appears in `docs/core/advanced/api-reference.md` or the API comparison table — it is compiler ABI (the lowering target of the `.toLocaleDateString(locale, { timeZone, ... })` sugar), not an authored API. This is a breaking behaviour change for anyone who imported it directly: **an authored `formatDate(...)` call in a template position now fails to compile with BF056**, on every adapter including Hono. Fix it by switching to `date.toLocaleDateString(locale, { timeZone, ... })` with literal options (compiles to the same `format_date` helper), or by deferring the whole read to the client with `/* @client */`.
+  
+  `@barefootjs/jsx` no longer registers a lowering plugin for authored `formatDate(...)` calls (`formatDatePlugin` removed) and instead refuses them with the new BF056 diagnostic, fired once in the shared IR-build phase ahead of every adapter's `generate()`. The `.toLocaleDateString()` sugar's own lowering is unaffected.
+  
+  Each of the nine template-language adapters (plus Hono) pins the new `format-date` conformance fixture's BF056 refusal in its own `conformance-pins.ts`.
+- 4c6f395: A component whose multi-return `if`/`else` chain has a branch wrapped in a bare JSX fragment (`return <>…</>`, no wrapping element) now refuses to compile with `BF029` whenever that branch hydrates, which is when the component is `'use client'` or the fragment branch renders a child component the parent must initialize. This replaces silently shipping a branch whose events never bind after hydrating existing server HTML. `ComponentDef`'s comment-scope flags are decided once per component, not per branch, so the client can't tell which branch needs the comment-scope boundary; SSR and a fresh client mount were already correct, only claiming existing SSR markup during hydration missed it. Wrap the branch in a real element instead of a bare fragment, or add `/* @client */` immediately before the fragment to compile it anyway and accept the known hydration gap.
+- 737ce71: Known limitations now live in an in-repo registry (`packages/adapter-tests/limitations/<id>.ts`) instead of the `known-limitation` GitHub label. `ConformancePin.issue` is replaced by the required `limitation` id, `unescapable` becomes a bare `true`, and `RenderDivergences` values cite a limitation id instead of a prose reason. Every adapter's `conformancePins` cites the registry accordingly.
+- 73e370b: Removed `trackPosition` (Alpha) from `@barefootjs/client`. It was floating-UI plumbing used only by `ui/` overlay components — it moved to `ui/lib/track-position.ts` as an internal helper (no longer a public runtime API, so its stability tag is dropped). If you called it directly, copy its implementation (it is a small, dependency-free function) or vendor `ui/lib/track-position.ts`.
+  
+  `@barefootjs/jsx`'s analyzer no longer recognises `trackPosition` as a known runtime import or a browser-only API imported from `@barefootjs/client`.
+  
+  `@barefootjs/hono`'s client shim no longer stubs `trackPosition`.
+- 877d61e: Removed `cleanupPortalPlaceholder` (Beta) from `@barefootjs/client`. It had zero in-repo callers, and nothing in the runtime or the compiler ever called it on the author's behalf. Delete any call you had — the server-rendered `<template bf-pp="...">` placeholder it removed is inert (an untargeted `<template>` renders nothing) and needs no cleanup. `createPortal`, `isSSRPortal` and `findSiblingSlot` are unaffected.
+  
+  `@barefootjs/jsx`'s analyzer no longer recognises `cleanupPortalPlaceholder` as a known runtime import or a browser-only API.
+  
+  `@barefootjs/hono`'s client shim no longer stubs `cleanupPortalPlaceholder`.
+- 6fc45fc: Removed `createSelector` (Alpha) from `@barefootjs/client`. It was SolidJS-compatible O(changed) selection primitive with zero authored call sites in `ui/`, `site/` or `integrations/`, and no conformance fixture exercised it. If you called it directly, replace it with a per-key `createMemo`: `const memos = new Map(); const isSelected = (key) => (memos.get(key) ?? memos.set(key, createMemo(() => selected() === key)).get(key))()`, or for a small/fixed key set just compare the signal inline (`selected() === row.id`).
+  
+  `@barefootjs/jsx`'s analyzer no longer recognises `createSelector` as a known runtime import or as a trigger for type-based reactivity detection.
+  
+  `@barefootjs/hono`'s client shim no longer stubs `createSelector`.
+- f68d4a4: Fix the `ref-callback-portal-content-inline-at-ssr` known limitation on the Hono adapter: a `ref` callback whose body calls `createPortal(el, document.body, { ownerScope })` (the pattern `dialog`/`dropdown-menu`/`popover`/`portal` use) is now recognized structurally by the compiler and the flagged element renders at its portal outlet (`<BfPortals />`) during SSR, matching where hydration's `createPortal` places it — so hydration is a structural no-op instead of a relocation. The client `isSSRPortal` guard also recognizes `bf-po` set directly on the element, not only a `bf-pi` wrapper ancestor. Every other template adapter still renders the flagged element inline (no SSR portal outlet yet) and is pinned with a `render-divergences.ts` entry citing the registry limitation.
+
 ## 0.37.1
 
 No changes in this release.
