@@ -63,8 +63,10 @@ type CacheEntry<T> = {
 // (or a second query instance with the same key, cross-island) never
 // refetches. `inflight` is tracked separately so two queries with the same
 // key in flight share one underlying `sendRequest` call (single-flight).
+// Each in-flight entry carries its URL so an invalidation can drop the ones
+// it matches (rule 10).
 const cache = new Map<string, CacheEntry<unknown>>()
-const inflight = new Map<string, Promise<unknown>>()
+const inflight = new Map<string, { promise: Promise<unknown>; url: string }>()
 
 function isStale(entry: CacheEntry<unknown>, ttl: number): boolean {
   return Date.now() - entry.timestamp >= ttl
@@ -86,7 +88,7 @@ function matchesAnyPrefix(url: string, prefixes: readonly string[]): boolean {
  * next. Populated by `createQuery` itself; removed via `onCleanup`.
  */
 interface LiveQuery {
-  /** Re-send now if the query isn't already fetching this exact key — the same path a stale cache hit takes in `flush()`. */
+  /** Re-send the current descriptor now — the same path a stale cache hit takes in `flush()`. */
   revalidate(): void
   /** The URL (method-agnostic) of the descriptor this instance is currently tracking, or `null` before the first effect run. */
   currentUrl(): string | null
@@ -98,9 +100,20 @@ const liveQueries = new Set<LiveQuery>()
 // invalidation. A prefix matches an entry when the entry's URL (method-
 // agnostic) starts with it; the full `requestKey` starts with the method
 // (`GET /api/posts?…`), so matching against it would never succeed.
+//
+// A matching in-flight request was issued before the invalidation and may
+// still resolve with pre-mutation data, so it is dropped from `inflight`
+// before any live query re-sends: every re-send below then issues (or, for
+// the second same-key instance onward, joins) a request made *after* the
+// invalidation, and the generation bump in `doSend` keeps the old response
+// from writing `value()` or the cache for any live instance — whichever
+// instance originally issued it.
 onInvalidate((prefixes) => {
   for (const entry of cache.values()) {
     if (matchesAnyPrefix(entry.url, prefixes)) markStale(entry)
+  }
+  for (const [key, entry] of inflight) {
+    if (matchesAnyPrefix(entry.url, prefixes)) inflight.delete(key)
   }
   for (const query of liveQueries) {
     if (query.currentUrl() !== null && matchesAnyPrefix(query.currentUrl() as string, prefixes)) {
@@ -158,19 +171,21 @@ const NOT_A_DESCRIPTOR_MESSAGE =
  * 8. **Action.** `action()` re-sends the current descriptor, bypassing
  *    freshness (but still single-flight), and returns `Promise<T>`.
  * 9. **Disposal.** Owned by the current reactive owner; in-flight
- *    resolutions are dropped after disposal and never write.
+ *    resolutions are dropped after disposal and never write. Called with no
+ *    owner, a query is never disposed — like an ownerless `createEffect`, its
+ *    tracking effect and its rule-10 registration live for the page. Real
+ *    call sites run inside `runInit`'s `createRoot`, which always has one.
  * 10. **Invalidation (#3199).** Subscribed once, at module level, to
  *     `@barefootjs/shared`'s invalidation bus. A cache entry whose URL
  *     (method-agnostic) starts with a published prefix is marked stale — the
  *     next read re-fetches it (same as rule 5's stale case). A *live*
  *     query currently tracking a matching key re-sends immediately, through
  *     the same path as a stale cache hit (generation guard, single-flight,
- *     `isPending`), rather than waiting for its next dependency change. If a
- *     send for that key is already in flight, single-flight means there is
- *     no new request to join it with — that in-flight response was
- *     requested before the invalidation and may still resolve with
- *     pre-mutation data, so one more send follows once it settles. A
- *     disposed query does nothing.
+ *     `isPending`), rather than waiting for its next dependency change. A
+ *     matching request already in flight was issued before the invalidation,
+ *     so it leaves single-flight: live queries re-send instead of joining it,
+ *     and its response writes neither `value()` nor the cache. A disposed
+ *     query does nothing.
  *
  * @since 0.38.0
  * @stability alpha
@@ -215,15 +230,6 @@ export function createQuery<T>(
   let liveDescriptor: HttpDescriptor<T> | null = null
   let liveKey: string | null = null
   let liveUrl: string | null = null
-  // Set when an invalidation matches this instance's key while a send for
-  // that same key is already in flight (see `revalidate` below). The
-  // in-flight response was necessarily *requested* before the invalidation,
-  // so it may carry pre-mutation data; single-flight means re-sending
-  // immediately would just rejoin that same promise rather than issue a new
-  // request. Instead this flags "send once more" for `doSend`'s own
-  // resolution handlers to act on, once the in-flight promise's `finally`
-  // has cleared it from `inflight` and a fresh request can actually happen.
-  let invalidatedWhileInFlight = false
 
   // Rule 9: owned by the *current* reactive owner — the scope active when
   // `createQuery()` itself is called, not the internal tracking effect below.
@@ -236,20 +242,11 @@ export function createQuery<T>(
   // Rule 10: register/unregister with the module-level live-query registry
   // that the invalidation subscriber (declared once, above) walks. `disposed`
   // is also checked inside `revalidate` itself, since disposal and an
-  // in-flight invalidation can race in the same tick.
+  // in-flight invalidation can race in the same tick. No same-key guard: the
+  // subscriber has already dropped any matching in-flight request, so this
+  // send is a new one even when this instance was already fetching this key.
   function revalidate(): void {
     if (disposed || liveDescriptor === null || liveKey === null) return
-    // Same guard `flush()`'s cache-hit branch applies: a send already in
-    // flight for this exact key would just be rejoined (single-flight) —
-    // starting a "new" one here sends no new request at all. But that
-    // in-flight response was requested before this invalidation and may
-    // still resolve with pre-mutation data, so flag it: `doSend`'s own
-    // resolution handlers re-check this flag and re-send once the in-flight
-    // promise actually settles and clears out of `inflight`.
-    if (liveKey === inflightKey) {
-      invalidatedWhileInFlight = true
-      return
-    }
     doSend(liveDescriptor, liveKey).catch(() => {})
   }
   const liveQuery: LiveQuery = { revalidate, currentUrl: () => liveUrl }
@@ -311,30 +308,18 @@ export function createQuery<T>(
     }
   }
 
-  // Rule 10 (in-flight race): called from both of `doSend`'s settlement
-  // handlers once a send actually finishes — success or failure, the
-  // invalidation itself doesn't care which. If an invalidation matched this
-  // key while that send was in flight, `inflight` has now cleared and a
-  // fresh request is possible, so send once more to pick up post-mutation
-  // data; otherwise this is a no-op.
-  function revalidateIfInvalidatedWhileInFlight(): void {
-    if (invalidatedWhileInFlight) {
-      invalidatedWhileInFlight = false
-      revalidate()
-    }
-  }
-
   function doSend(descriptor: HttpDescriptor<T>, key: string): Promise<T> {
     const myGeneration = ++generation
     inflightKey = key
     setIsPending(true)
 
-    let promise = inflight.get(key) as Promise<T> | undefined
+    let promise = inflight.get(key)?.promise as Promise<T> | undefined
     if (!promise) {
-      promise = sendRequest<T>(descriptor).finally(() => {
-        if (inflight.get(key) === promise) inflight.delete(key)
+      const sent: Promise<T> = sendRequest<T>(descriptor).finally(() => {
+        if (inflight.get(key)?.promise === sent) inflight.delete(key)
       })
-      inflight.set(key, promise)
+      promise = sent
+      inflight.set(key, { promise, url: requestUrl(descriptor) })
     }
 
     return promise.then(
@@ -347,7 +332,6 @@ export function createQuery<T>(
           setValue(() => result)
           setError(undefined)
           setIsPending(false)
-          revalidateIfInvalidatedWhileInFlight()
         }
         return result
       },
@@ -360,7 +344,6 @@ export function createQuery<T>(
           // else into a real `Error` rather than lying about the type.
           setError(err instanceof Error ? err : new Error(String(err)))
           setIsPending(false)
-          revalidateIfInvalidatedWhileInFlight()
         }
         throw err
       },

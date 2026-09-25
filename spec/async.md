@@ -406,7 +406,9 @@ that prefix stale on success and rides the router's invalidation bus, so the pag
 evicted with it (a mutation that only evicted the query cache would let a later navigation
 restore the pre-mutation HTML from the page cache). The router cannot tell which pages
 rendered data from an invalidated URL, so it evicts its whole page cache unconditionally
-rather than matching prefixes itself (#3199).
+rather than matching prefixes itself (#3199). A live query tracking a matching URL re-sends
+at once. A matching request already in flight was issued before the mutation, so no query
+joins it and its response writes neither a query's value nor the cache.
 
 ### 7.5 Options
 

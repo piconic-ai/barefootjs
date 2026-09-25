@@ -544,25 +544,55 @@ describe('rule 10: invalidation', () => {
     expect(posts()).toEqual({ page: 2 })
   })
 
-  test('an invalidation matching a key already in flight re-sends once that request settles', async () => {
+  test('an invalidation matching a key already in flight re-sends now; the old response never writes', async () => {
     // The in-flight request was sent *before* the invalidation, so it may
-    // resolve with pre-mutation data — single-flight means re-sending
-    // immediately would just rejoin that same promise (no new request), so
-    // the fix must send again only after it settles.
+    // resolve with pre-mutation data. It leaves single-flight: the re-send is
+    // a new request, and the old response writes neither value() nor cache.
     const { calls, resolveNth } = deferredFetch()
     const [value] = createQuery(() => http.get<{ v: number }>('/api/inflight-race'))
     await waitUntil(() => calls.length === 1) // the (no-`initial`) first send is in flight
 
     invalidate(['/api/inflight-race'])
-    await settle()
-    // No second request yet — single-flight, nothing to join it with.
-    expect(calls.length).toBe(1)
+    await waitUntil(() => calls.length === 2) // a new, post-invalidation request
 
-    // The in-flight (pre-mutation) response arrives.
+    // The pre-invalidation response arrives first and is dropped.
     resolveNth(0, { v: 1 })
-    // A follow-up request must now be sent to pick up post-mutation data.
-    await waitUntil(() => calls.length === 2)
+    await settle()
+    expect(value()).toBeUndefined()
+
     resolveNth(1, { v: 2 })
     await waitUntil(() => value()?.v === 2)
+  })
+
+  test('a sibling instance does not join the pre-invalidation request, and the cache is not re-stamped with it', async () => {
+    // `a` issues the request; `b` (same key, idle) would have joined it via
+    // single-flight. After the invalidation both must end on the
+    // post-invalidation response, sharing one new request.
+    const { calls, resolveNth } = deferredFetch()
+    const [a] = createQuery(() => http.get<{ v: number }>('/api/inflight-sibling'))
+    await waitUntil(() => calls.length === 1) // `a`'s first send is in flight
+    const [b] = createQuery(() => http.get<{ v: number }>('/api/inflight-sibling'))
+    await settle()
+    expect(calls.length).toBe(1) // `b` joined `a`'s request (single-flight)
+
+    invalidate(['/api/inflight-sibling'])
+    await waitUntil(() => calls.length === 2)
+    await settle()
+    expect(calls.length).toBe(2) // one new request, shared by `a` and `b`
+
+    resolveNth(0, { v: 1 }) // pre-invalidation response
+    await settle()
+    expect(a()).toBeUndefined()
+    expect(b()).toBeUndefined()
+
+    resolveNth(1, { v: 2 })
+    await waitUntil(() => a()?.v === 2 && b()?.v === 2)
+
+    // The cache holds the post-invalidation value as fresh: a third instance
+    // reads it with no send.
+    const [c] = createQuery(() => http.get<{ v: number }>('/api/inflight-sibling'))
+    await settle()
+    expect(c()).toEqual({ v: 2 })
+    expect(calls.length).toBe(2)
   })
 })
