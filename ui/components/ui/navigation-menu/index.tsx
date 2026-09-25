@@ -93,12 +93,6 @@ function NavigationMenu(props: NavigationMenuProps) {
   const [activeValue, setActiveValue] = createSignal('')
 
   const handleMount = (el: HTMLElement) => {
-    // Store delay config on root for timer helpers (reactive)
-    createEffect(() => {
-      el.dataset.nmOpenDelay = String(props.delayDuration ?? 200)
-      el.dataset.nmCloseDelay = String(props.closeDelay ?? 300)
-    })
-
     // Global click-outside handler
     const handleClickOutside = (e: MouseEvent) => {
       if (!el.contains(e.target as Node)) {
@@ -116,7 +110,7 @@ function NavigationMenu(props: NavigationMenuProps) {
           const currentValue = activeValue()
           setActiveValue('')
           // Focus back to the trigger that was active
-          const trigger = el.querySelector(`[data-slot="navigation-menu-trigger"][data-value="${currentValue}"]`) as HTMLElement
+          const trigger = el.querySelector(`[data-slot="navigation-menu-item"][data-value="${currentValue}"] [data-slot="navigation-menu-trigger"]`) as HTMLElement
           trigger?.focus()
         }
       }
@@ -135,6 +129,8 @@ function NavigationMenu(props: NavigationMenuProps) {
         data-slot="navigation-menu"
         id={props.id}
         className={`${navigationMenuClasses} ${props.className ?? ''}`}
+        data-nm-open-delay={props.delayDuration ?? 200}
+        data-nm-close-delay={props.closeDelay ?? 300}
         ref={handleMount}
       >
         {props.children}
@@ -191,6 +187,14 @@ interface NavigationMenuTriggerProps extends HTMLBaseAttributes {
 }
 
 /**
+ * A trigger's item value: its owning NavigationMenuItem's `data-value`.
+ * Triggers are never portaled, so `closest()` always reaches the item.
+ */
+function triggerItemValue(trigger: Element): string {
+  return trigger.closest('[data-slot="navigation-menu-item"]')?.getAttribute('data-value') ?? ''
+}
+
+/**
  * Button that toggles its content panel.
  * Hover opens with delay. Click toggles.
  * ArrowLeft/Right navigates between triggers.
@@ -199,9 +203,9 @@ interface NavigationMenuTriggerProps extends HTMLBaseAttributes {
 function NavigationMenuTrigger(props: NavigationMenuTriggerProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(NavigationMenuContext)
-    const itemEl = el.closest('[data-slot="navigation-menu-item"]')
-    const itemValue = itemEl?.getAttribute('data-value') ?? ''
-    el.dataset.value = itemValue
+    // The value lives on the owning NavigationMenuItem (rendered at SSR);
+    // the trigger carries no copy of its own.
+    const itemValue = triggerItemValue(el)
 
     const root = el.closest('[data-slot="navigation-menu"]') as HTMLElement
 
@@ -298,7 +302,7 @@ function NavigationMenuTrigger(props: NavigationMenuTriggerProps) {
         nextTrigger.focus()
         // If a menu was open, open the new one
         if (ctx.activeValue() !== '') {
-          const nextValue = nextTrigger.dataset.value ?? ''
+          const nextValue = triggerItemValue(nextTrigger)
           ctx.onActiveValueChange(nextValue)
         }
       }
@@ -351,7 +355,7 @@ function NavigationMenuContent(props: NavigationMenuContentProps) {
     // Item value and trigger/root refs, resolved before portal (see the
     // `value` prop doc above for why closest() alone can't be trusted here).
     const itemValue = props.value ?? el.closest('[data-slot="navigation-menu-item"]')?.getAttribute('data-value') ?? ''
-    const triggerEl = findSiblingSlot(el, `[data-slot="navigation-menu-trigger"][data-value="${itemValue}"]`)
+    const triggerEl = findSiblingSlot(el, `[data-slot="navigation-menu-item"][data-value="${itemValue}"] [data-slot="navigation-menu-trigger"]`)
     const rootEl = findSiblingSlot(el, '[data-slot="navigation-menu"]')
     if (triggerEl) contentTriggerMap.set(el, triggerEl)
     if (rootEl) contentRootMap.set(el, rootEl)

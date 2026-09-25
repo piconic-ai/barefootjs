@@ -4,12 +4,12 @@ import { defineConfig } from 'vite'
 import { barefoot } from '@barefootjs/hono/vite'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-// The catalog page's `@barefootjs/router` bootstrap (client/router-entry.ts)
+// The layout's `@barefootjs/router` bootstrap (site/shared/client/router-entry.ts)
 // is a hand-written script, not a `.tsx` component, so `barefoot()`'s own
 // discovery never sees it: `rollupOptions.input` below requests the bundling,
-// and `assets.RouterEntry` resolves the content-hashed URL `catalog.tsx`
+// and `assets.RouterEntry` resolves the content-hashed URL `renderer.tsx`
 // reads from `dist/bf-assets.ts`.
-const routerEntry = resolve(HERE, 'client/router-entry.ts')
+const routerEntry = resolve(HERE, '../shared/client/router-entry.ts')
 
 // `dist/` is simultaneously the Workers asset root ([assets] in
 // wrangler.toml) AND a source directory the Worker bundle imports from

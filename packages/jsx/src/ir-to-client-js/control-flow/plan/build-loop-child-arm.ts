@@ -63,6 +63,7 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
 }
 import { destructureLoopParam, loopKeyFn, buildCompSelector, nestedLoopIndexAlias } from '../shared.ts'
 import { BF_HOST, BF_AT } from '@barefootjs/shared'
+import { isEventHandlerName } from '../../../event-handler-name.ts'
 import type {
   BranchChildComponentInit,
   BranchChildComponentInitsPlan,
@@ -174,7 +175,7 @@ export function buildBranchChildComponentInitsPlan(
     const propsEntries = comp.props
       .filter(p => p.name !== 'key')
       .map(p => {
-        if (p.name.startsWith('on') && p.name.length > 2) {
+        if (isEventHandlerName(p.name)) {
           return `${quotePropName(p.name)}: ${wrap(attrValueToString(p.value) ?? 'undefined')}`
         }
         switch (p.value.kind) {

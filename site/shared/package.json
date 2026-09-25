@@ -21,6 +21,7 @@
   "dependencies": {
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/client": "workspace:*",
+    "@barefootjs/router": "workspace:*",
     "hono": "^4"
   }
 }

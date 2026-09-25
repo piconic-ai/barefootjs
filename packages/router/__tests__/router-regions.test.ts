@@ -245,6 +245,21 @@ const cases: RegionCase[] = [
     textAfter: { mp: 'A' }, // no partial swap happened
   },
   {
+    name: 'single root region → incoming sibling regions: hard-navigates',
+    // The live page has one region (a root), the incoming page two siblings
+    // (e.g. a sidebar-less gallery layout → a docs layout with a sidebar
+    // region). The incoming page's first match is the sidebar, not a root
+    // containing the rest, so swapping it into the live root would put the
+    // sidebar's markup where the page content was and drop the incoming
+    // content region entirely.
+    current: `<header>shell</header><main bf-region="page" id="main"><p id="mp">A</p></main>`,
+    incoming:
+      `<nav bf-region="sidebar" id="nav"><p id="np">N</p></nav>` +
+      `<main bf-region="page" id="main"><p id="mp">B</p></main>`,
+    fallsBackToReload: true,
+    textAfter: { mp: 'A' }, // no partial swap happened
+  },
+  {
     name: 'nested region set diverges but a root contains all: the root rebuilds',
     current:
       `<header>shell</header>` +
@@ -259,6 +274,31 @@ const cases: RegionCase[] = [
     textAfter: { ii: 'B' },
   },
 ]
+
+describe('@barefootjs/router v2 — focus after a multi-region swap', () => {
+  test('focus goes to the first swapped region with a heading, not the first in document order', async () => {
+    // A docs layout: the sidebar comes first in document order (natural tab
+    // and landmark order) and has no heading; the page region does. Both
+    // change on this navigation (the active sidebar link moves).
+    document.body.innerHTML =
+      `<nav bf-region="sidebar" id="nav"><a href="/a" class="active">A</a><a href="/b">B</a></nav>` +
+      `<main bf-region="page" id="main"><h1 id="h">A</h1></main>`
+    mockFetch(
+      fullDoc(
+        `<nav bf-region="sidebar" id="nav"><a href="/a">A</a><a href="/b" class="active">B</a></nav>` +
+          `<main bf-region="page" id="main"><h1 id="h">B</h1></main>`,
+      ),
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+
+    await navigate('/b')
+    await flush()
+
+    expect(assigned).toBe('')
+    expect(document.getElementById('h')?.textContent).toBe('B')
+    expect(document.activeElement?.id).toBe('h')
+  })
+})
 
 describe('@barefootjs/router v2 — nested / sibling regions', () => {
   for (const c of cases) {

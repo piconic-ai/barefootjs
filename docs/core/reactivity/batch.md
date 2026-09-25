@@ -13,7 +13,7 @@ import { batch } from '@barefootjs/client'
 batch<T>(fn: () => T): T
 ```
 
-Writes propagate synchronously. Without `batch`, each setter call re-runs its subscribers immediately, so a subscriber shared by two writes runs twice and sees a half-updated state in between:
+Writes from event handlers (and any other code outside an effect) propagate synchronously. Without `batch`, each setter call re-runs its subscribers immediately, so a subscriber shared by two writes runs twice and sees a half-updated state in between:
 
 ```tsx
 const [x, setX] = createSignal(40)
@@ -40,6 +40,7 @@ When one handler writes several signals that feed the same effects or memos. `ba
 
 ## Caveats
 
-- Memos read inside the batch are stale until it ends; read them after the batch.
+- Memos read inside the batch are fresh: a memo whose inputs changed recomputes when it is read. Effects, and the DOM they update, run when the batch ends.
 - `await` inside the callback ends the batch — only the writes before the first `await` are grouped. Wrap each synchronous group in its own `batch`.
-- One signal feeding an effect through two memos (a diamond) can still glitch once: `batch` de-duplicates the subscribers of the written signals, not of the memos they update.
+- One signal feeding an effect through two memos (a diamond) needs no `batch`: the effect runs once per write and sees both memos recomputed.
+- A write made inside an effect body re-runs its subscribers after that effect (and any effect the same update already queued) returns, still before the setter call that started the update returns.

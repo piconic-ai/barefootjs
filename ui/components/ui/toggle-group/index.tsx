@@ -36,15 +36,20 @@ type ToggleSize = 'default' | 'sm' | 'lg'
 // Base classes from shadcn/ui toggleVariants
 const toggleBaseClasses = 'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive whitespace-nowrap data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground'
 
-// Variant/size classes defined via data-attribute selectors so they stay in the
-// compiled className (with layer-components: prefix). This avoids CSS @layer
-// conflicts that occur when classes are added dynamically via classList.add().
-const toggleVariantClasses = 'bg-transparent data-[variant=outline]:border data-[variant=outline]:border-input data-[variant=outline]:shadow-xs data-[variant=outline]:hover:bg-accent data-[variant=outline]:hover:text-accent-foreground'
+// Variant/size classes key off the GROUP root's `data-variant` / `data-size`
+// (`group/toggle-group` + `group-data-[…]/toggle-group:`), which the root
+// renders from its own props at SSR. An item cannot know the group's
+// variant/size at SSR (context is client-only), so styling off item-level
+// attributes written on mount would change every item's size/border at the
+// hydrate boundary. Kept as static selectors so they stay in the compiled
+// className (with layer-components: prefix), avoiding the CSS @layer
+// conflicts classes added via classList.add() would hit.
+const toggleVariantClasses = 'bg-transparent group-data-[variant=outline]/toggle-group:border group-data-[variant=outline]/toggle-group:border-input group-data-[variant=outline]/toggle-group:shadow-xs group-data-[variant=outline]/toggle-group:hover:bg-accent group-data-[variant=outline]/toggle-group:hover:text-accent-foreground'
 
-const toggleSizeClasses = 'data-[size=default]:h-9 data-[size=default]:px-2 data-[size=default]:min-w-9 data-[size=sm]:h-8 data-[size=sm]:px-1.5 data-[size=sm]:min-w-8 data-[size=lg]:h-10 data-[size=lg]:px-2.5 data-[size=lg]:min-w-10'
+const toggleSizeClasses = 'group-data-[size=default]/toggle-group:h-9 group-data-[size=default]/toggle-group:px-2 group-data-[size=default]/toggle-group:min-w-9 group-data-[size=sm]/toggle-group:h-8 group-data-[size=sm]/toggle-group:px-1.5 group-data-[size=sm]/toggle-group:min-w-8 group-data-[size=lg]/toggle-group:h-10 group-data-[size=lg]/toggle-group:px-2.5 group-data-[size=lg]/toggle-group:min-w-10'
 
 // ToggleGroupItem extra classes from shadcn/ui (applied on top of toggle base)
-const toggleGroupItemClasses = 'w-auto min-w-0 shrink-0 rounded-none shadow-none first:rounded-l-md last:rounded-r-md focus:z-10 focus-visible:z-10 data-[variant=outline]:border-l-0 data-[variant=outline]:first:border-l'
+const toggleGroupItemClasses = 'w-auto min-w-0 shrink-0 rounded-none shadow-none first:rounded-l-md last:rounded-r-md focus:z-10 focus-visible:z-10 group-data-[variant=outline]/toggle-group:border-l-0 group-data-[variant=outline]/toggle-group:first:border-l'
 
 function normalizeToArray(value: string | string[] | undefined): string[] {
   if (value === undefined) return []
@@ -57,8 +62,6 @@ interface ToggleGroupContextValue {
   value: () => string[]
   onItemToggle: (itemValue: string) => void
   disabled: () => boolean
-  variant: () => ToggleVariant
-  size: () => ToggleSize
 }
 
 const ToggleGroupContext = createContext<ToggleGroupContextValue>()
@@ -142,8 +145,6 @@ function ToggleGroup(props: ToggleGroupProps) {
       value: currentValue,
       onItemToggle: handleItemToggle,
       disabled: () => props.disabled ?? false,
-      variant: () => (props.variant ?? 'default') as ToggleVariant,
-      size: () => (props.size ?? 'default') as ToggleSize,
     }}>
       <div
         data-slot="toggle-group"
@@ -180,20 +181,12 @@ function ToggleGroupItem(props: ToggleGroupItemProps) {
     const ctx = useContext(ToggleGroupContext)
 
     createEffect(() => {
-      const variant = ctx.variant()
-      const size = ctx.size()
       const isSelected = ctx.value().includes(props.value)
 
-      // Update selection state
+      // Update selection state. Variant/size styling needs no per-item
+      // attribute: it keys off the group root (see toggleVariantClasses).
       el.setAttribute('aria-pressed', String(isSelected))
       el.setAttribute('data-state', isSelected ? 'on' : 'off')
-
-      // Set data attributes — variant/size styling is driven by these via
-      // data-[variant=...] / data-[size=...] selectors in the static className.
-      // This keeps all classes in the compiled output with layer-components: prefix,
-      // avoiding CSS @layer specificity conflicts from runtime classList.add().
-      el.setAttribute('data-variant', variant)
-      el.setAttribute('data-size', size)
     })
 
     el.addEventListener('click', () => {

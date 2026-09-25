@@ -152,6 +152,19 @@ export const ErrorCodes = {
   STAGE_REACTIVE_IN_TEMPLATE: 'BF060',
   STAGE_INIT_LOCAL_IN_TEMPLATE: 'BF061',
   STAGE_AWAIT_IN_TEMPLATE: 'BF062',
+  // An element's `ref` callback unconditionally writes an attribute
+  // (`el.setAttribute('<name>', …)` / `el.dataset.<x> = …`) at mount —
+  // directly, or at the top level of a directly nested `createEffect` /
+  // `onMount` — that the element's own JSX never renders. A `ref` callback
+  // never runs at SSR, so the server HTML always lacks the attribute and
+  // the first client pass adds it: pre- and post-hydration DOM differ (a
+  // visible snap). Narrowed to that decidable, always-divergent shape: an
+  // attribute the JSX DOES render (e.g. a `data-state="closed"` literal an
+  // effect later overwrites) is out of scope, since the literal is often
+  // exactly the value the effect computes on its first run. Escapable with
+  // `/* @client */` before the ref expression. See
+  // `packages/adapter-tests/limitations/ref-effect-attr-state-ssr.ts`.
+  REF_ATTR_ABSENT_AT_SSR: 'BF063',
 
   // Inline JSX-callback synthesis errors (BF080-BF089) — raised by the
   // preprocess-inline-jsx-callbacks pass (#1211) when an inline JSX-
@@ -272,6 +285,8 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.STAGE_AWAIT_IN_TEMPLATE]:
     'AwaitExpression in template scope. The generated template and init functions are synchronous — a bare `await` produces a SyntaxError at parse time. Move the await into the component body (before the return) or into an onMount/effect callback, and pass the resolved value to JSX.',
+  [ErrorCodes.REF_ATTR_ABSENT_AT_SSR]:
+    'A ref callback writes an attribute on mount that the element\'s JSX never renders. A ref callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it — the DOM visibly changes at the hydrate boundary.',
 
   [ErrorCodes.INLINE_JSX_CALLBACK_CAPTURE]:
     "Inline JSX-returning arrow function captures a non-module identifier. Extract the callback into a top-level 'use client' component (e.g. `function MyNode(n) { return <div/> }` then `renderNode={MyNode}`) or pass captured values via component props.",

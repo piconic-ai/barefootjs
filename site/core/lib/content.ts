@@ -22,21 +22,3 @@ export type ContentMap = Record<string, string>
  * (e.g. `registerQuickStartRoutes`) that own their rendering.
  */
 export type MdxContentMap = Record<string, string>
-
-/**
- * Build page list from a pre-loaded content map (for Workers).
- */
-export function pagesFromContentMap(content: ContentMap): Page[] {
-  const pages: Page[] = Object.keys(content).map((slug) => ({
-    slug,
-    name: slug === '' ? 'README' : slug.split('/').pop() || '',
-  }))
-
-  pages.sort((a, b) => {
-    if (a.slug === '') return -1
-    if (b.slug === '') return 1
-    return a.slug.localeCompare(b.slug)
-  })
-
-  return pages
-}

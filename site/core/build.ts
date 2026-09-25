@@ -7,7 +7,6 @@
  * JS into dist/static/components/. This script runs that build first,
  * then assembles everything else the site serves out of dist/:
  *
- * - dist/content.json (bundled markdown from docs/core/)
  * - dist/static/components/barefoot.js (standalone runtime for the
  *   playground iframe — the only consumer left that imports the runtime
  *   by fixed URL instead of through a bundled chunk)
@@ -19,12 +18,15 @@
  *   peitho isn't installed, since that step skips with a warning instead of
  *   failing)
  * - dist/playground/ (worker + page script + Monaco type bundle)
- * - dist/_headers, dist/llms.txt, dist/robots.txt
+ * - dist/_headers, dist/.assetsignore, dist/llms.txt, dist/robots.txt
+ *
+ * The pages themselves (HTML, per-page Markdown, OG images, _redirects) are
+ * written by scripts/generate-static.tsx, which `bun run build` runs after
+ * this script: it needs the compiled components this script produces.
  */
 
 import { mkdir, readdir } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
-import { loadContentFromDisk } from './lib/content-loader'
 
 const ROOT_DIR = dirname(import.meta.path)
 const CONTENT_DIR = resolve(ROOT_DIR, '../../docs/core')
@@ -44,12 +46,7 @@ console.log('Building BarefootJS site...\n')
 await mkdir(DIST_COMPONENTS_DIR, { recursive: true })
 await mkdir(DIST_STATIC_DIR, { recursive: true })
 
-// ── 1. Bundle markdown content ────────────────────────────────
-const { pages, content, mdx } = await loadContentFromDisk(CONTENT_DIR)
-await Bun.write(resolve(DIST_DIR, 'content.json'), JSON.stringify({ content, mdx }))
-console.log(`Bundled: ${pages.length} md pages + ${Object.keys(mdx).length} mdx pages → dist/content.json`)
-
-// ── 2. Compile components + bundle client JS via @barefootjs/vite ──
+// ── 1. Compile components + bundle client JS via @barefootjs/vite ──
 // Emits dist/components/*.tsx (+ manifest.json) and content-hashed
 // client chunks under dist/static/components/ (emptyOutDir wipes only
 // that directory — see vite.config.ts).
@@ -63,7 +60,7 @@ if ((await viteProc.exited) !== 0) {
   throw new Error('vite build failed')
 }
 
-// ── 3. Build and copy barefoot.js runtime ─────────────────────
+// ── 2. Build and copy barefoot.js runtime ─────────────────────
 // Compiled components load the runtime as an ordinary bundled chunk; the
 // one remaining fixed-URL consumer is the playground's sandboxed iframe,
 // whose import map resolves `@barefootjs/client` to
@@ -97,7 +94,7 @@ if (!runtimeBuild.success || runtimeBuild.outputs.length === 0) {
 await Bun.write(resolve(DIST_STATIC_COMPONENTS_DIR, barefootFileName), runtimeBuild.outputs[0])
 console.log(`Generated: dist/static/components/${barefootFileName} (minified)`)
 
-// ── 4. Copy .ts modules from landing/components ───────────────
+// ── 3. Copy .ts modules from landing/components ───────────────
 // Non-component modules (landing/components/shared/*.ts) that emitted
 // templates import relatively — the compiler re-anchors `./shared/...`
 // imports to dist/components/shared/..., so the files must exist there.
@@ -117,7 +114,7 @@ async function copyTsModules(srcDir: string, destDir: string): Promise<void> {
 }
 await copyTsModules(LANDING_COMPONENTS_DIR, DIST_COMPONENTS_DIR)
 
-// ── 5. CSS: Generate tokens from JSON + globals.css + landing.css ─
+// ── 4. CSS: Generate tokens from JSON + globals.css + landing.css ─
 const { loadTokens, generateCSS } = await import('../shared/tokens/index')
 const baseTokens = await loadTokens(resolve(SHARED_DIR, 'tokens/tokens.json'))
 const tokensCSS = generateCSS(baseTokens)
@@ -128,7 +125,7 @@ await Bun.write(resolve(DIST_DIR, 'globals.css'), combinedCSS)
 await Bun.write(resolve(DIST_STATIC_DIR, 'globals.css'), combinedCSS)
 console.log('Generated: dist/static/globals.css (tokens + globals + landing)')
 
-// ── 6. Generate UnoCSS ───────────────────────────────────────
+// ── 5. Generate UnoCSS ───────────────────────────────────────
 // Scan globs come from uno.config.ts (content.filesystem) so the config is
 // the single source of truth — a page dir added there is picked up here too.
 // The CLI doesn't read content.filesystem itself, so pass them as arguments.
@@ -144,7 +141,7 @@ await unoProc.exited
 await Bun.write(resolve(DIST_STATIC_DIR, 'uno.css'), Bun.file(resolve(DIST_DIR, 'uno.css')))
 console.log('Generated: dist/static/uno.css')
 
-// ── 7. Copy icon files ───────────────────────────────────────
+// ── 6. Copy icon files ───────────────────────────────────────
 const IMAGES_DIR = resolve(ROOT_DIR, '../../images/logo')
 const icon32 = resolve(IMAGES_DIR, 'icon-32.png')
 const icon64 = resolve(IMAGES_DIR, 'icon-64.png')
@@ -189,7 +186,7 @@ for (const name of ['logo.svg', 'logo-for-dark.svg', 'logo-for-light.svg', 'text
   }
 }
 
-// ── 8. Copy LP assets (snippets + logos) ──────────────────────
+// ── 7. Copy LP assets (snippets + logos) ──────────────────────
 const SNIPPETS_SRC = resolve(ROOT_DIR, 'public/static/snippets')
 const SNIPPETS_DEST = resolve(DIST_STATIC_DIR, 'snippets')
 await mkdir(SNIPPETS_DEST, { recursive: true })
@@ -217,7 +214,7 @@ if (logoFiles.length > 0) {
   console.log(`Copied: dist/logos/, dist/static/logos/ (${logoFiles.length} files)`)
 }
 
-// ── 8a. Copy public/slides/** → dist/slides/** (peitho decks built by the
+// ── 8. Copy public/slides/** → dist/slides/** (peitho decks built by the
 // `slides:build --all` step that runs before this script as part of `bun
 // run build`; the directory may still be empty if peitho isn't installed,
 // since that step skips with a warning rather than failing) ───────────
@@ -245,7 +242,7 @@ if (slidesFileCount > 0) {
   console.log(`Copied: dist/slides/ (${slidesFileCount} files)`)
 }
 
-// ── 8b. Build playground worker + page script ─────────────────
+// ── 9. Build playground worker + page script ─────────────────
 const PLAYGROUND_SRC_DIR = resolve(ROOT_DIR, 'playground')
 const PLAYGROUND_DIST_DIR = resolve(DIST_DIR, 'playground')
 const PLAYGROUND_STATIC_DIR = resolve(DIST_STATIC_DIR, 'playground')
@@ -299,7 +296,7 @@ console.log('Generated: dist/playground/page.js (+ static copy)')
 // @barefootjs/client (signals API).
 const PKG_DIR = resolve(ROOT_DIR, '../../packages')
 
-// Ensure @barefootjs/client has its .d.ts built (step 3 builds the runtime
+// Ensure @barefootjs/client has its .d.ts built (step 2 builds the runtime
 // JS if missing, but we also need the declarations here).
 const clientDtsFile = resolve(PKG_DIR, 'client/dist/index.d.ts')
 if (!(await Bun.file(clientDtsFile).exists())) {
@@ -358,25 +355,59 @@ const typeBundle: Record<string, string> = {
 await writePlaygroundAsset('types-bundle.json', new Blob([JSON.stringify(typeBundle)]))
 console.log('Generated: dist/playground/types-bundle.json (+ static copy)')
 
-// ── 8c. Write _headers for Cloudflare Workers static assets ──────
+// ── 10. Write _headers for Cloudflare Workers static assets ──────
 // The playground iframe runs as `sandbox="allow-scripts"` (no
 // allow-same-origin), so its origin is opaque ("null"). When it imports
 // /static/components/barefoot.js the request is cross-origin and module
 // loading needs CORS. `Access-Control-Allow-Origin: *` makes the runtime
 // loadable without giving the iframe access to this site's origin.
+//
+// The OG images (dist/og/, written by scripts/generate-static.tsx) are named
+// by their page title, so a file only changes when the image design does;
+// a day's cache is what the dynamic /og route used to send.
+//
+// Workers Assets derives Content-Type from the extension and names no
+// charset (`text/markdown`, `text/plain`), so a browser decodes the per-page
+// Markdown and llms.txt in a legacy encoding and garbles their non-ASCII
+// text (—, ├──). The dynamic route sent `text/markdown; charset=utf-8`;
+// these restore that. HTML declares its own <meta charset>. (wrangler dev
+// adds the charset by itself, so only the deployed site shows the gap.)
 const headersContent = `/static/components/*
   Access-Control-Allow-Origin: *
+
+/og/*
+  Cache-Control: public, max-age=86400, immutable
+
+/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+/*.txt
+  Content-Type: text/plain; charset=utf-8
 `
 await Bun.write(resolve(DIST_DIR, '_headers'), headersContent)
 console.log('Generated: dist/_headers')
 
-// ── 9. Generate llms.txt ──────────────────────────────────────
+// ── 11. Keep build intermediates out of the deployed assets ─────
+// dist/ is the Workers Assets directory, but it also holds what the build
+// itself consumes: the compiled SSR templates (dist/components/, read by
+// scripts/generate-static.tsx) and the Vite asset map. Nothing serves
+// them — the site is static files — so they are not uploaded. Neither are
+// the copies at the dist/ root that only the dev server reads (server.tsx
+// serves /static/* from dist/ with the prefix stripped); production serves
+// the dist/static/ copies at their own paths.
+await Bun.write(
+  resolve(DIST_DIR, '.assetsignore'),
+  ['/components/', '/bf-assets.ts', '/globals.css', '/uno.css', '/playground/'].join('\n') + '\n',
+)
+console.log('Generated: dist/.assetsignore')
+
+// ── 12. Generate llms.txt ──────────────────────────────────────
 const coreDocs = scanCoreDocs(CONTENT_DIR)
 const coreLlmsTxt = generateCoreLlmsTxt(coreDocs, 'https://barefootjs.dev/docs')
 await Bun.write(resolve(DIST_DIR, 'llms.txt'), coreLlmsTxt)
 console.log('Generated: dist/llms.txt')
 
-// ── 10. Write robots.txt ──────────────────────────────────────
+// ── 13. Write robots.txt ──────────────────────────────────────
 // Everything under /integrations/<adapter>/ is a live demo server backed by a
 // Cloudflare Container, billed for every second it runs. A crawl of all of them
 // wakes fifteen containers to render what is, to a crawler, the same page

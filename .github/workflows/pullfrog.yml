@@ -58,11 +58,11 @@ jobs:
           # Curated alias; currently resolves to anthropic/claude-sonnet-5. Applies to
           # every trigger this workflow serves, not just review — today that is review
           # only. Move to Opus (`anthropic/claude-opus`) if review quality falls short.
-          model: anthropic/claude-sonnet
+          model: anthropic/claude-opus
           # Feature branches only — the agent can never push to `main` or move tags.
           push: restricted
           # Hard stop well under the action's 1h default.
-          timeout: 20m
+          timeout: 30m
           # `effort` stays unset: it is a repo setting in the Pullfrog console, so it can
           # be tuned without opening a PR. Setting it here would override the console.
           # ↑↑↑ EDIT ABOVE ↑↑↑

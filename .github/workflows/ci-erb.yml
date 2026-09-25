@@ -83,4 +83,4 @@ jobs:
       # through the real Ruby runtime installed above (skips gracefully when
       # `ruby` is absent from PATH — present here, so it runs for real).
       - name: Run unit tests (incl. live Ruby render)
-        run: bun test packages/adapter-erb
+        run: bun test --max-concurrency=8 packages/adapter-erb

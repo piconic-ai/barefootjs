@@ -91,12 +91,15 @@ jobs:
       # the emitted minijinja templates through the Rust BarefootJS runtime's
       # bf-render binary — built above by `cargo test`.
       - name: Run unit tests
-        run: bun test packages/adapter-rust
+        id: unit
+        run: bun test --max-concurrency=8 packages/adapter-rust
 
       # E2E runs in this job, after the unit tests, instead of in its own
       # `needs: test` job: a separate job queued a second time for a runner
       # and repeated checkout + install + build for ~1 min of Playwright
-      # (#3155). A unit-test failure still skips it, as `needs:` did.
+      # (#3155). A unit-test failure still skips it, as `needs:` did. The
+      # accepted cost: re-running a flaky E2E step re-runs the whole job,
+      # unit suite included, instead of a ~1 min E2E job.
       - name: Build integrations/axum
         run: cd integrations/axum && bun run build
 
@@ -117,11 +120,12 @@ jobs:
         run: bunx playwright install chromium
 
       - name: Run integrations/axum E2E tests
+        id: e2e_axum
         run: cd integrations/axum && bun run test:e2e
 
       - name: Upload Playwright report (integrations/axum)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.e2e_axum.outcome != 'skipped' }}
         with:
           name: playwright-report-integrations-axum
           path: integrations/axum/playwright-report/

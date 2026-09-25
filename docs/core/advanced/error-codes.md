@@ -230,7 +230,7 @@ Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: 
 
 ---
 
-## Component Errors (BF044–BF056)
+## Component Errors (BF044–BF063)
 
 <a id="bf044"></a>
 
@@ -324,6 +324,37 @@ export function Post({ createdAt }: { createdAt: Date }) {
 
 See [API Reference](./api-reference.md).
 
+<a id="bf063"></a>
+
+### BF063 — Ref Callback Writes an Attribute the JSX Never Renders
+
+An element's `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` or `el.dataset.<key> = …`, at the top level of the ref body or of a `createEffect` / `onMount` directly inside it), and the element's JSX never renders that attribute. A `ref` callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it. Fires on every adapter, including Hono. Not triggered by a conditional or deferred write (an `if`, a write after an early `return` / `throw`, an event listener, a timer), a write a later `removeAttribute` / `delete el.dataset.<key>` undoes, a write to another node, an attribute the JSX renders in any form, an element with a spread, or an element inside a `/* @client */` conditional or loop (SSR never renders it). A handler shared by several elements is reported once per write, naming each element.
+
+```tsx
+// ❌ BF063
+'use client'
+export function Panel(props: { delay?: number }) {
+  const handleMount = (el: HTMLElement) => {
+    el.dataset.delay = String(props.delay ?? 200)
+  }
+  return <div ref={handleMount}>…</div>
+}
+```
+
+#### Fix
+
+Render the attribute in JSX from props or signals, so SSR already carries it:
+
+```tsx
+// ✅ Fixed
+'use client'
+export function Panel(props: { delay?: number }) {
+  return <div data-delay={props.delay ?? 200}>…</div>
+}
+```
+
+Or mark the ref `/* @client */` to accept the attribute appearing only after hydration: `<div ref={/* @client */ handleMount}>`.
+
 ---
 
 ## Quick Reference
@@ -341,5 +372,6 @@ See [API Reference](./api-reference.md).
 | BF049 | Rich-typed prop not hydratable |
 | BF054 | Built-in `<Async>` / `<Region>` used without import |
 | BF056 | Authored call to `formatDate` |
+| BF063 | Ref callback writes an attribute the JSX never renders |
 | BF101 | No template-language lowering for the expression |
 | BF102 | Adapter-specific condition not supported |

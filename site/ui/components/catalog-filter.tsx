@@ -18,11 +18,9 @@
  * filtered by the server HTML at first paint, and a filter change flips one
  * attribute — nothing reaches outside this component's own DOM.
  *
- * Clicking a chip is a soft, same-route navigation: `client/router-entry.ts`
- * boots `@barefootjs/router` on the catalog page, scoped (`shouldIntercept`)
- * to the links inside `[data-catalog-filter]`, so the new `?tag=` is pushed
- * into `searchParams()` with no region swap and no page load. Site-wide
- * router adoption is #3105.
+ * Clicking a chip is a soft, same-route navigation: the layout boots
+ * `@barefootjs/router` (site/shared/client/router-entry.ts), which pushes the
+ * new `?tag=` into `searchParams()` with no region swap and no page load.
  *
  * The `<a>` is this component's own loop-row element and the `<Badge>` sits
  * INSIDE it (not `<Badge asChild>` wrapping the `<a>`): the link's reactive

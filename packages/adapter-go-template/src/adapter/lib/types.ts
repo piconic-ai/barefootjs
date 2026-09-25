@@ -6,6 +6,7 @@
  */
 
 import type {
+  BindingScope,
   IRLoopChildComponent,
   IRNode,
   IRProp,
@@ -62,6 +63,21 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
   /** The loop item's TS type (`Payment` from `sortedData().map(payment => …)`),
    *  resolved to Go struct fields for the wrapper struct's datum fields. */
   loopItemType?: TypeInfo | null
+  /**
+   * The row scope of the loop whose body IS this component — every loop from
+   * the component root down to it, entered via `BindingScope.enterLoopRow`
+   * (`findNestedComponents`). A prop reading one of these names is row-
+   * dependent: the constructor runs once, outside the row, so the wrapper-
+   * construction sites skip it.
+   */
+  rowScope: BindingScope
+  /**
+   * The loop-body component's own full `IRProp`s — unlike the trimmed `props`
+   * copy on `IRLoopChildComponent`, these carry `freeIdentifiers`, `loc` and
+   * `clientOnly`, which the constructor-side prop lowering
+   * (`lowerChildInputFields`) needs.
+   */
+  rowProps: readonly IRProp[]
 }
 
 export interface StaticChildInstance {
@@ -94,6 +110,14 @@ export interface StaticChildInstance {
    * the child isn't under any provider.
    */
   contextBindings?: ReadonlyMap<string, string>
+  /**
+   * The row scope enclosing this instance: the scope the collection walk
+   * started from (a loop-body component's `rowScope` for its forwarded
+   * children) plus every loop it descended through, entered via
+   * `BindingScope.enterLoopRow`. The loop-row wrapper sites read it to skip
+   * a row-dependent prop at constructor time.
+   */
+  rowScope: BindingScope
 }
 
 /**
@@ -143,6 +167,26 @@ export interface ChildComponentShape {
    * (`planSynthPropStructs`/`structFieldNamePairs`'s shared naming decision).
    */
   structTypedObjectParams: ReadonlyMap<string, { goType: string; fields: ReadonlyMap<string, string> }>
+  /**
+   * Caller-facing param names whose declared type can't hold a function:
+   * a primitive, an array, or a union of only those (`isCertainlyDataType`).
+   * Anything else — an object, a named/aliased type (an aliased function
+   * type resolves to `kind: 'interface'` with no member walk), `unknown` —
+   * is left out: absence means "can't tell", never "a function".
+   */
+  dataTypedParamNames: ReadonlySet<string>
+}
+
+/**
+ * Whether a declared prop type certainly can't hold a function: a primitive,
+ * an array, or a union made only of those. Conservative — any other kind
+ * answers false, since the analyzer's `TypeInfo` is syntactic (no checker)
+ * and a named type may alias a function type.
+ */
+export function isCertainlyDataType(type: TypeInfo): boolean {
+  if (type.kind === 'primitive' || type.kind === 'array') return true
+  if (type.kind === 'union') return (type.unionTypes ?? []).length > 0 && type.unionTypes!.every(isCertainlyDataType)
+  return false
 }
 
 /**

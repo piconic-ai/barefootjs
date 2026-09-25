@@ -52,13 +52,13 @@ describe("JSX return through TypeScript type assertion (#1405)", () => {
 
         if (isSmall) {
           return (
-            <div ref={attachHost}>
+            <div ref={attachHost} data-attached="true">
               <div>small: {count()}</div>
             </div>
           ) as unknown as HTMLElement
         }
         return (
-          <div ref={attachHost}>
+          <div ref={attachHost} data-attached="true">
             <div>large: {count()}</div>
           </div>
         ) as unknown as HTMLElement

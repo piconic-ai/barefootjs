@@ -49,15 +49,9 @@ export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuaranti
   // BF101 build-time refusal (`conformance-pins.ts`, #3170) rather than a
   // render divergence, but still an adapter-conformance concern, not a
   // hydration-interactions one, so it has no row here.
-  // A diamond (one signal → two memos → one effect) is dispatched
-  // synchronously in subscription order with no topological stage, so the
-  // effect's first re-run sees the first memo updated and the second
-  // stale, and it runs three times per write. The fixture's `interactions`
-  // describe the CONTRACT (one run per write, consistent reads — see
-  // `fixtures/diamond-propagation.ts`) and fail today.
-  'diamond-propagation': {
-    reason:
-      'after one click `.runs` reads 3 and `.glitches` reads 1 — the effect re-runs once per memo recompute plus once for its own subscription, and its first re-run observes `b` updated while `c` is stale',
-    limitation: 'diamond-propagation-glitch',
-  },
+  // `diamond-propagation` used to be quarantined here too — an effect
+  // behind a diamond (one signal → two memos) ran once per edge and its
+  // first re-run saw one memo stale. Fixed by the runtime's push-then-pull
+  // propagation (`packages/client/src/reactive.ts`); the fixture's
+  // `interactions` now pass and it is the fix's regression test.
 }

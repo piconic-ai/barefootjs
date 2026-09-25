@@ -91,7 +91,7 @@ On an interceptable same-origin click (or `navigate(href)`):
    relative `src` against the **response URL**, not `location`.
 5. `replaceChildren` + `rehydrateScope` on the incoming subtree; outer regions/shell untouched.
 6. Commit history + `<title>`, **preserving existing `history.state`**.
-7. Move focus to the swapped region and announce the route change.
+7. Move focus into the swapped content — the first swapped region (in document order) that has a heading, else the first swapped region — and announce the route change.
 
 Steps 1-7 run with `data-bf-navigating` set on `<html>`, cleared in the swap's
 `finally`. It exists because step 5 splits into two observable moments: the
@@ -102,6 +102,13 @@ attribute is the only thing that distinguishes "present" from "interactive";
 without it, "wait for the element, then click it" looks correct and fails
 intermittently under load. Only the CURRENT navigation clears it — a superseded
 one reaches its `finally` while its successor is still mid-swap.
+
+A `popstate` whose pathname and query equal the displayed page's does nothing:
+the browser fires one for a followed same-page `#hash` link and for
+back/forward between such entries, and it scrolls to the anchor itself. The
+displayed page is recorded when step 6 commits history, which is what makes
+it comparable to `location`. Swapping would re-fetch the page, reset island
+state and scroll to the top.
 
 Query-only navigations short-circuit before step 2, abort any in-flight swap
 (last-wins), update `searchParams()` + the URL, and do not swap — so they never

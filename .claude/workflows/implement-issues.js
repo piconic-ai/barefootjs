@@ -4,6 +4,9 @@
 //   args.issues — required, array of issue numbers (numbers, "#123", or full issue URLs all work)
 //   args.repo   — optional, "owner/repo", defaults to piconic-ai/barefootjs
 //   args.coauthor — required, "Name <email>" of the human every commit is co-authored with (the caller resolves it per CLAUDE.md's "Git Commit" section before invoking)
+//   args.base   — optional, the branch every group starts from and the first PR of each stack
+//                 targets, defaults to the repository's default branch. Pass an open PR's branch
+//                 to stack new work on top of it (e.g. a feature whose runtime is still in review).
 //
 // No reviewer-assignment step: this session's GitHub credentials author every PR it opens
 // (as "kfly8" in this repo), and GitHub refuses to let a PR's own author be requested as
@@ -99,6 +102,18 @@ function parseIssueNumber(x) {
 
 const repo = (args && args.repo) || 'piconic-ai/barefootjs'
 
+// Where every group starts and what the first PR of each stack targets. The default branch
+// unless the caller stacks this run on an existing branch (an open PR's head). A git ref name
+// only: no whitespace, no leading '-', so it cannot smuggle an option into a git command.
+const BASE_BRANCH = args && typeof args.base === 'string' ? args.base.trim() : ''
+if (BASE_BRANCH && !/^[A-Za-z0-9._\/-]+$/.test(BASE_BRANCH)) {
+  throw new Error(`args.base must be a plain branch name, got ${JSON.stringify(args.base)}`)
+}
+if (BASE_BRANCH.startsWith('-')) {
+  throw new Error(`args.base must not start with '-', got ${JSON.stringify(args.base)}`)
+}
+const BASE_DESC = BASE_BRANCH ? `the branch \`${BASE_BRANCH}\` (fetch it from origin first)` : "the repository's default branch"
+
 // The human collaborator every commit is co-authored with. CLAUDE.md's "Git Commit" section
 // says a remote session (git author `Claude`) must pick the human identity via
 // AskUserQuestion before the first commit. A workflow agent has no user to ask, so the
@@ -183,7 +198,7 @@ if (validIssues.length === 1) {
       groups: {
         type: 'array',
         description:
-          "Ordered list of groups. Groups run in PARALLEL with each other (each starting from the repo's default branch, in its own worktree). Issues within a group run STRICTLY SERIALLY, each PR stacked on the previous one's branch.",
+          `Ordered list of groups. Groups run in PARALLEL with each other (each starting from ${BASE_DESC}, in its own worktree). Issues within a group run STRICTLY SERIALLY, each PR stacked on the previous one's branch.`,
         items: {
           type: 'object',
           properties: {
@@ -206,7 +221,7 @@ ${JSON.stringify(validIssues, null, 2)}
 
 Decide:
 1. For every pair of issues, whether implementing them risks touching the same files or subsystems (a real conflict risk) — based on likelyFiles, title, and body, and your own knowledge of the codebase's structure.
-2. Group the issues into an ORDERED LIST OF GROUPS. Issues in the SAME group are implemented strictly serially, each PR stacked on top of the previous one's branch (later PR's base = earlier PR's branch). Issues in DIFFERENT groups are implemented in parallel, each starting from the repository's default branch in a separate git worktree.
+2. Group the issues into an ORDERED LIST OF GROUPS. Issues in the SAME group are implemented strictly serially, each PR stacked on top of the previous one's branch (later PR's base = earlier PR's branch). Issues in DIFFERENT groups are implemented in parallel, each starting from ${BASE_DESC} in a separate git worktree.
 3. Only place issues in different (parallel) groups when you are CONFIDENT they touch disjoint files/areas. If you are unsure, or the risk is ambiguous, keep them in the SAME group (serial) — when in doubt, serial.
 4. Every issue must appear in exactly one group.
 
@@ -285,12 +300,12 @@ You are implementing the following GitHub issue(s) from ${repo}, in this exact o
 ${issuesText}
 
 For each issue above, in order:
-1. Create a branch off the current HEAD: the FIRST issue's branch is created off the repository's default branch; each SUBSEQUENT issue's branch is created off the PREVIOUS issue's branch, so the PRs stack.
+1. Create a branch off the current HEAD: the FIRST issue's branch is created off ${BASE_DESC}; each SUBSEQUENT issue's branch is created off the PREVIOUS issue's branch, so the PRs stack.
 2. Implement it. If an issue naturally splits into more than one semantic unit of work, split it into multiple sequential commits and multiple stacked PRs instead of one large PR — use judgement, most issues are a single PR. Do not bundle unrelated cleanup into the same commit.
 3. Before writing tests, name the REAL entry point that will execute this change in production (e.g. \`bf build\` / the \`@barefootjs/vite\` plugin's real component-discovery and compile pipeline, not just the adapter/compiler API you're unit-testing directly). List every assumption the fix's correctness makes about state that entry point controls — iteration/call/compile order, timing, caching, cross-file or cross-request state. For each assumption, either (a) verify it against that REAL entry point's actual code (cite file:line for the guarantee — a hand-built unit test that happens to call things in a convenient order is NOT verification, since it can pass by accident even when the real pipeline's order differs), (b) change the fix so it no longer depends on that assumption, or (c) if fixing it in general is out of scope, file a \`known-limitation\` issue and scope this PR's body honestly to what it actually fixes, per CLAUDE.md's known-limitation policy — do not claim "Closes #N" for a case the fix doesn't actually cover.
 4. Run the relevant tests/typecheck for what you touched and confirm they pass before committing. Follow the CLAUDE.md testing decision guide to pick the right test layer. Prefer a test that exercises the real entry point from step 3 over one that calls the unit in isolation, whenever the fix's correctness depends on any assumption you listed in step 3. If the change touches a file shared by many components rather than one component's own source (\`packages/client/src/runtime/\`, \`packages/jsx/src/\`, or an adapter's shared render path) — "relevant" is not determinable by reading the diff, since any component on that shared path can be affected; run the FULL suite at that layer (e.g. the whole \`site/ui/e2e\` sweep, not a hand-picked subset) rather than guessing which specs are relevant. When the change touches component identity/context resolution specifically, also check the component instantiated once per \`.map()\` row, not just once at top level — a fix verified only against a single, non-looped instance can silently fail for every row after the first, or leak state across rows, with no error and no failing assertion in a narrower test (measured: #3099/#3115 — an SSR-portal fix that was fully green against every non-looped e2e spec still broke a looped, multi-level-forwarded \`<Select>\` in a way none of those specs could have caught).
 5. ${COMMIT_TRAILER_RULE}
-6. Push the branch with \`git push -u origin <branch>\` and open the PR as a DRAFT via the GitHub MCP tools, with base = the branch from the previous step (or the default branch for the first PR in the stack). Check the repo for a PR template first (there is none at the time of writing, but re-check). Put "Closes #<issue>" in the body for whichever issue(s) that PR resolves — only for the case(s) it genuinely covers, per step 3(c). Do NOT type any "Generated by/with Claude Code" attribution footer into the body you pass to the PR-creation tool — it auto-appends its own, and a footer you add yourself (in ANY wording) stacks with it instead of being deduplicated, producing two visible "Generated by Claude Code" blocks (measured on #3011 and #3013 — see the header comment above for the full mechanism).
+6. Push the branch with \`git push -u origin <branch>\` and open the PR as a DRAFT via the GitHub MCP tools, with base = the branch from the previous step (or, for the first PR in the stack, ${BASE_BRANCH ? `\`${BASE_BRANCH}\`` : 'the default branch'}). Check the repo for a PR template first (there is none at the time of writing, but re-check). Put "Closes #<issue>" in the body for whichever issue(s) that PR resolves — only for the case(s) it genuinely covers, per step 3(c). Do NOT type any "Generated by/with Claude Code" attribution footer into the body you pass to the PR-creation tool — it auto-appends its own, and a footer you add yourself (in ANY wording) stacks with it instead of being deduplicated, producing two visible "Generated by Claude Code" blocks (measured on #3011 and #3013 — see the header comment above for the full mechanism).
 
 Return the full list of PRs you opened, in the order you opened them: for each, the issue number(s) it addresses, its branch, its base branch, PR number, PR URL, title, the pipelineAssumptions list from step 3, and pipelineVerifiedAgainst.
 `.trim()
