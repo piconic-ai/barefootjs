@@ -367,7 +367,7 @@ export function createQuery<T>(
 
   function action(): Promise<T> {
     if (disposed) {
-      return Promise.reject(new Error('createQuery: action() called after the query was disposed.'))
+      return markRejectionHandled(Promise.reject(new Error('createQuery: action() called after the query was disposed.')))
     }
     // untrack: computing the descriptor to force-send must not register a
     // dependency on whatever reactive context called action() (e.g. a click

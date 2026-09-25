@@ -199,6 +199,24 @@ describe('rule 5: value retention', () => {
 // -- un-awaited failure -----------------------------------------------------
 
 describe('action(): un-awaited failure', () => {
+  test('an un-awaited call after disposal reports no unhandled rejection', async () => {
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, save] = createRoot((dispose) => {
+        const result = createMutation(() => http.post('/api/comments', {}))
+        dispose()
+        return result
+      })
+      save() // not awaited: a click racing teardown
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
   test('a fire-and-forget failed call reports no unhandled rejection; error() holds it', async () => {
     stubFetch({ message: 'nope' }, 500)
     const unhandled: unknown[] = []

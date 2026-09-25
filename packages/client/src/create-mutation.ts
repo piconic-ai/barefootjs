@@ -105,7 +105,7 @@ export function createMutation<T>(
 
   function action(): Promise<T> {
     if (disposed) {
-      return Promise.reject(new Error('createMutation: action() called after the mutation was disposed.'))
+      return markRejectionHandled(Promise.reject(new Error('createMutation: action() called after the mutation was disposed.')))
     }
     // Rule 1: untracked, so calling this from a tracked context (a memo, an
     // effect) never registers a dependency, and `fn` reads the signals'

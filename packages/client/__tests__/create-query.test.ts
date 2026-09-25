@@ -354,6 +354,24 @@ describe('rule 8: action', () => {
 // -- rule 9: disposal --------------------------------------------------
 
 describe('rule 8: un-awaited action failure', () => {
+  test('an un-awaited action() after disposal reports no unhandled rejection', async () => {
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, refetch] = createRoot((dispose) => {
+        const result = createQuery(() => http.get('/api/unawaited-disposed'), { initial: null })
+        dispose()
+        return result
+      })
+      refetch() // not awaited: a click racing teardown
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
   test('a fire-and-forget failed action() reports no unhandled rejection; error() holds it', async () => {
     stubFetch({ message: 'bad' }, 400)
     const unhandled: unknown[] = []
