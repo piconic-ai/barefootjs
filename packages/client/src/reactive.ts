@@ -431,7 +431,7 @@ function flush(): void {
     try {
       updateIfNecessary(Queue[i]!, true)
     } catch (err) {
-      if (failed) console.error(err)
+      if (failed) console.error('[BarefootJS] additional error during update:', err)
       else {
         failed = true
         error = err

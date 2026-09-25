@@ -1,7 +1,0 @@
----
-"@barefootjs/go-template": patch
----
-
-A static `.map()` loop whose body calls a child component with forwarded JSX `children` now bakes its source array into the constructor the same way whether the array is a module-scope const or local to the component function body — the lookup used to accept module scope only, so a function-body-local array (`const opts = [...]` inside the component) baked nothing and the whole loop silently dropped from SSR with no diagnostic. `scalarLiteralLoopGoType` resolves a named array reference through the same const lookup, so a scalar-item loop (`opts.map(opt => …)`, no per-item object fields) also gets its synthetic `BfLoopItem` wired correctly regardless of scope.
-
-Separately, when such a loop's forwarded children read an OUTER signal or memo (not just the row's own item), the adapter now detects it and leaves the loop unbaked rather than emit Go source that crashes `go run` at template-execute time — that shape's forwarded children render through an independent companion-template invocation with no path back to the parent's reactive fields, a capability gap this change does not attempt to close. `loop-row-child-children-attrs` (the one fixture combining both shapes) still renders an empty loop on Go and stays pinned in `render-divergences.ts` under `loop-row-child-children-attrs-frozen`, whose description now reflects the verified root cause.
