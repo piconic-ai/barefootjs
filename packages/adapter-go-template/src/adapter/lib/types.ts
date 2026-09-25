@@ -167,6 +167,26 @@ export interface ChildComponentShape {
    * (`planSynthPropStructs`/`structFieldNamePairs`'s shared naming decision).
    */
   structTypedObjectParams: ReadonlyMap<string, { goType: string; fields: ReadonlyMap<string, string> }>
+  /**
+   * Caller-facing param names whose declared type can't hold a function:
+   * a primitive, an array, or a union of only those (`isCertainlyDataType`).
+   * Anything else — an object, a named/aliased type (an aliased function
+   * type resolves to `kind: 'interface'` with no member walk), `unknown` —
+   * is left out: absence means "can't tell", never "a function".
+   */
+  dataTypedParamNames: ReadonlySet<string>
+}
+
+/**
+ * Whether a declared prop type certainly can't hold a function: a primitive,
+ * an array, or a union made only of those. Conservative — any other kind
+ * answers false, since the analyzer's `TypeInfo` is syntactic (no checker)
+ * and a named type may alias a function type.
+ */
+export function isCertainlyDataType(type: TypeInfo): boolean {
+  if (type.kind === 'primitive' || type.kind === 'array') return true
+  if (type.kind === 'union') return (type.unionTypes ?? []).length > 0 && type.unionTypes!.every(isCertainlyDataType)
+  return false
 }
 
 /**

@@ -134,7 +134,7 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { routesToRestBag, objectBakeTargetFor, restBagOverrideFields } from "./lib/types.ts"
+import { routesToRestBag, objectBakeTargetFor, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
@@ -1085,7 +1085,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         mapTypedParamNames.add(key)
       }
     }
-    this.childComponentShapes.set(name, { paramNames, restBagField, restBagSpreadFields, mapTypedParamNames, structTypedObjectParams })
+    // Params whose declared type can't hold a function — what lets the
+    // loop-row refusal tell an imported binding passed to it is data
+    // (`isUndeliveredSsrData`).
+    const dataTypedParamNames = new Set(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => !p.isRest && isCertainlyDataType(p.type))
+        .map(p => p.sourceName ?? p.name),
+    )
+    this.childComponentShapes.set(name, {
+      paramNames,
+      restBagField,
+      restBagSpreadFields,
+      mapTypedParamNames,
+      structTypedObjectParams,
+      dataTypedParamNames,
+    })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
     // IDENTIFIERS in the memo/signal body — those are the LOCAL bindings
@@ -3099,7 +3114,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * - an event handler (`isEventHandlerName`) or any other function-valued
    *   prop (a setter, a callback): behavior, which SSR never invokes;
    * - a hyphenated name with no rest bag to route into: no Go field can hold
-   *   it (`emitChildField` drops it even when its value lowers).
+   *   it (`emitChildField` drops it even when its value lowers);
+   * - an imported binding (`isImportedBindingValue`) passed to a param that
+   *   could hold a function: its value lives in another module, the IR
+   *   records no type for an import, and the adapter has no type checker,
+   *   so nothing here says whether it is a function or data. Refused only
+   *   when the child's declared type for the param can't hold a function
+   *   (`dataTypedParamNames`).
    */
   private isUndeliveredSsrData(prop: IRProp, childName: string, ir: ComponentIR): boolean {
     if (prop.clientOnly) return false
@@ -3107,7 +3128,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (isEventHandlerName(prop.name)) return false
     const shape = this.childComponentShapes.get(this.resolveChildName(childName))
     if (prop.name.includes('-') && !routesToRestBag(shape, prop.name)) return false
-    return !this.isFunctionValuedProp(prop, ir)
+    if (this.isFunctionValuedProp(prop, ir)) return false
+    if (this.isImportedBindingValue(prop, ir)) return shape?.dataTypedParamNames.has(prop.name) ?? false
+    return true
+  }
+
+  /**
+   * Whether a prop's value is an imported binding — a value-imported name
+   * (named, aliased, or default) or a member read off one (`utils.formatTone`
+   * off a namespace import), per `ir.metadata.imports`. A component-local
+   * binding of the same name shadows the import and is not one.
+   */
+  private isImportedBindingValue(prop: IRProp, ir: ComponentIR): boolean {
+    if (prop.value.kind !== 'expression') return false
+    let root = prop.value.parsed
+    while (root?.kind === 'member') root = root.object
+    if (root?.kind !== 'identifier') return false
+    const name = root.name
+    const { signals, memos, localFunctions, propsParams } = ir.metadata
+    if (
+      signals.some(s => s.getter === name || s.setter === name) ||
+      memos.some(m => m.name === name) ||
+      localFunctions.some(f => f.name === name) ||
+      propsParams.some(p => p.name === name) ||
+      this.findValuedLocalConst(name)
+    ) {
+      return false
+    }
+    return ir.metadata.imports.some(imp =>
+      !imp.isTypeOnly && imp.specifiers.some(spec => !spec.isTypeOnly && (spec.alias ?? spec.name) === name),
+    )
   }
 
   /**

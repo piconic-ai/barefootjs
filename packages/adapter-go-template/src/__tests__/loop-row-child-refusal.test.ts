@@ -141,6 +141,81 @@ describe('GoTemplateAdapter - loop-row child BF101 covers only undelivered SSR d
   })
 })
 
+// A prop whose value is an imported binding can't be lowered (the value lives
+// in a module this compile doesn't read), and nothing at this stage says
+// whether it is a function or data: the IR records no type for an import and
+// the adapter has no type checker. It is refused only when the receiving
+// param's own declared type can't hold a function (a primitive, an array, or
+// a union of those); otherwise it is left out silently, as at a non-loop call
+// site.
+describe('GoTemplateAdapter - loop-row child BF101 and imported bindings', () => {
+  const importSource = (imports: string, markProps: string, chipProps = '') => `
+'use client'
+${imports}
+type Formatter = (s: string) => string
+function Chip({ children, ...rest }: { children?: any; [key: string]: unknown }) {
+  return <span class="chip" {...rest}>{children}</span>
+}
+function Mark({ update, fmt, cb, items, label, children }: {
+  update?: (s: string) => string
+  fmt?: Formatter
+  cb?: unknown
+  items?: string[]
+  label?: string
+  children?: any
+}) {
+  return <em data-label={label}>{children}</em>
+}
+type Opt = { id: string; label: string }
+const opts: Opt[] = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
+export function Row() {
+  return (
+    <div>
+      {opts.map(o => (
+        <Chip key={o.id} ${chipProps}>
+          <Mark ${markProps}>{o.label}</Mark>
+        </Chip>
+      ))}
+    </div>
+  )
+}
+`
+
+  for (const [label, imports, props] of [
+    ['a named import', "import { formatTone } from './format'", 'update={formatTone}'],
+    ['an aliased named import', "import { formatTone as tone } from './format'", 'update={tone}'],
+    ['a default import', "import formatTone from './format'", 'update={formatTone}'],
+    ['a namespace member', "import * as utils from './format'", 'update={utils.formatTone}'],
+    ['a named import into an aliased function type', "import { formatTone } from './format'", 'fmt={formatTone}'],
+    ['a named import into an `unknown` param', "import { formatTone } from './format'", 'cb={formatTone}'],
+  ] as const) {
+    test(`${label} on a component nested in the row's forwarded children is not refused`, () => {
+      const { bf101 } = compile(importSource(imports, props))
+      expect(bf101).toEqual([])
+    })
+  }
+
+  test('a named import on the loop-body component itself is not refused', () => {
+    const { bf101 } = compile(importSource("import { formatTone } from './format'", '', 'data-fmt={formatTone}'))
+    expect(bf101).toEqual([])
+  })
+
+  // The param's declared type settles it: a `string[]` or `string`
+  // param can't hold a function, so the imported value is data the child
+  // should have received.
+  for (const [label, imports, props, name] of [
+    ['a named import into an array param', "import { ITEMS } from './format'", 'items={ITEMS}', 'items'],
+    ['a namespace member into a primitive param', "import * as utils from './format'", 'label={utils.LABEL}', 'label'],
+  ] as const) {
+    test(`${label} is refused`, () => {
+      const { bf101 } = compile(importSource(imports, props))
+      expect(bf101.map(e => e.message)).toEqual([
+        `Prop '${name}' on <Mark> inside a loop row can't be lowered to an SSR value by the Go template adapter`,
+      ])
+    })
+  }
+})
+
 // `propReadsRow` answers from the IR's own `IRProp.freeIdentifiers` when it is
 // a live `Set` (what `compileJSX` hands the adapter) and only falls back to
 // walking the parsed value when it isn't (the debug IR's JSON round trip,
