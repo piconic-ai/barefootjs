@@ -199,6 +199,12 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // the same as the absent-attribute default. If `initialTodos` ever became
   // all-done, `every()` would flip `true` and this region would start
   // diverging too.
+  'todo-app': {
+    oracles: ['snap', 'three-point'],
+    reason:
+      'SSR emits the four /* @client */ placeholders empty (<ul class="todo-list"> loop l0, <strong bf="s7"> count, cond s8 \'item\'/\'items\', cond s13 clear-completed button); hydration materializes them. Everything outside those regions is byte-identical, and the three-point\'s hydrated-vs-csr-mount leg agrees — by-design client-only rendering, not a hydration defect. (A fifth /* @client */ site, the toggle-all checkbox\'s `checked` binding, is untouched by this masking — SSR omits the attribute entirely and the fixture\'s seeded data happens to match that default; see the module comment above.)',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2719',
+  },
   // A `ref` callback declared in the component body that portals a
   // keyed-row `<button>` to `document.body`: SSR renders the button inside
   // its `<li>`, hydration's `ref` pass moves it out (so `snap`'s SSR-vs-
@@ -210,11 +216,5 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason:
       'SSR renders each row <button> inside its <li>; hydration moves it to document.body (bf-po stamped), leaving the <li> elements empty.',
     limitation: 'loop-row-ref-portal',
-  },
-  'todo-app': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR emits the four /* @client */ placeholders empty (<ul class="todo-list"> loop l0, <strong bf="s7"> count, cond s8 \'item\'/\'items\', cond s13 clear-completed button); hydration materializes them. Everything outside those regions is byte-identical, and the three-point\'s hydrated-vs-csr-mount leg agrees — by-design client-only rendering, not a hydration defect. (A fifth /* @client */ site, the toggle-all checkbox\'s `checked` binding, is untouched by this masking — SSR omits the attribute entirely and the fixture\'s seeded data happens to match that default; see the module comment above.)',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2719',
   },
 }

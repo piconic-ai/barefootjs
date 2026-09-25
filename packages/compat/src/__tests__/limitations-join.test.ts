@@ -39,7 +39,11 @@
 //   (g) the client-JS scope gate's `KNOWN_UNDECLARED` ledger
 //       (`client-js-scope-ledger.ts`) is a pin site of the same shape: a
 //       row is keyed by a corpus fixture whose emitted client JS reads an
-//       undeclared name, and must cite a `silent` entry listing it.
+//       undeclared name, and must cite a `silent` entry listing it;
+//   (h) every entry's published adapter list (`adaptersCiting`, fed the
+//       pins, the render divergences and the e2e quarantine rows) is
+//       non-empty — the docs page renders an empty list as "no adapter",
+//       which would misreport a live gap as affecting nothing.
 //
 // Same `loadCompatAdapters()` precedent as compat-pins.test.ts.
 
@@ -53,8 +57,10 @@ import { KNOWN_UNDECLARED } from '../../../adapter-tests/src/client-js-scope-led
 import { findLimitation, limitations } from '../../../adapter-tests/limitations'
 import { limitationDiagnostics } from '../../../adapter-tests/src/limitations'
 import { loadCompatAdapters } from '../adapter-registry'
+import { adaptersCiting, e2eQuarantineCitations } from '../limitations'
 
 const { loaded } = await loadCompatAdapters()
+const e2eCitations = await e2eQuarantineCitations()
 
 /** Corpus fixture ids the oracle quarantine cites under `limitationId`. */
 function oracleFixturesCiting(limitationId: string): string[] {
@@ -206,6 +212,10 @@ describe('limitation registry ↔ adapter declarations', () => {
       expect(named).toEqual([])
     })
 
+    test(`[${entry.id}] publishes at least one affected adapter`, () => {
+      expect(adaptersCiting(entry.id, loaded, e2eCitations)).not.toEqual([])
+    })
+
     test(`[${entry.id}] every listed fixture is pinned, divergent, or e2e-quarantined under this id`, () => {
       const quarantined = new Set([
         ...oracleFixturesCiting(entry.id),
@@ -230,4 +240,18 @@ describe('limitation registry ↔ adapter declarations', () => {
       }
     })
   }
+})
+
+describe('e2e quarantine citations', () => {
+  test('a row without an SSR adapter is a run over the Hono reference', () => {
+    const cited = e2eCitations.filter(c => c.limitation === 'loop-row-ref-portal')
+    expect(cited.length).toBeGreaterThan(0)
+    expect(new Set(cited.map(c => c.adapter))).toEqual(new Set(['hono']))
+  })
+
+  test('an e2e-only citation feeds the derived adapter list', () => {
+    expect(adaptersCiting('x', [], [{ adapter: 'erb', limitation: 'x' }, { adapter: 'hono', limitation: 'y' }])).toEqual([
+      'erb',
+    ])
+  })
 })

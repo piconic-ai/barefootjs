@@ -6114,7 +6114,9 @@
       "fixtures": [
         "row-portal-ref"
       ],
-      "adapters": []
+      "adapters": [
+        "hono"
+      ]
     },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",
@@ -6363,7 +6365,7 @@
     "static-literal-loop-component-row": {
       "title": "Child component in a row of a loop over a static literal array",
       "kind": "refusal",
-      "given": "a `.map()` over a module- or function-scope `const` initialized with a static array literal, whose row renders a child component nested inside an element",
+      "given": "a `.map()` over a module- or function-scope `const` initialized with a static array literal, whose row renders a child component anywhere other than as the row root (inside an element, a conditional branch or a nested loop)",
       "expected": "every row renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
