@@ -30,6 +30,7 @@ import { SearchButton } from '@/components/search-button'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { CommandPalette } from '@/components/command-palette'
 import { commandGroups } from './lib/command-groups'
+import { Assets } from '@/bf-assets'
 
 /**
  * Predictable instance ID generator for E2E testing.
@@ -86,7 +87,8 @@ export const renderer = jsxRenderer(
     const slugMatch = currentPath.match(/\/(?:docs\/)?components\/([^/]+)/)
     const navLinks = slugMatch ? getNavLinks(slugMatch[1]) : {}
     const isGallery = currentPath.startsWith('/gallery/')
-    const isChrome = currentPath !== '/studio' && !isGallery
+    const isStudio = currentPath === '/studio'
+    const isChrome = !isStudio && !isGallery
     return (
       <WithPredictableIds>
         <html lang="en">
@@ -127,11 +129,36 @@ export const renderer = jsxRenderer(
           </head>
           <body>
             <Header activePage="ui" logoHref={logoHref} coreHref={coreHref} uiHref="/" playgroundHref={playgroundHref} integrationsHref={integrationsHref} searchSlot={<SearchButton />} themeSwitcher={<ThemeSwitcher />} />
-            <MobileMenu />
-            <MobilePageNav prev={navLinks.prev} next={navLinks.next} />
             <CommandPalette groups={commandGroups} />
+            {/*
+              Soft navigation (@barefootjs/router, booted by RouterEntry below)
+              swaps the `bf-region`s; everything outside them (header, command
+              palette, theme) stays mounted. The router matches regions by id
+              and swaps only those whose server-rendered content changed:
+                - `sidebar` swaps when the active link moves. The <nav> itself
+                  is the region element (and the scroll container), so it
+                  survives the swap and keeps its scroll position.
+                - `page` carries everything else that is per-route: the mobile
+                  menu island (it reads the current path on mount, so it must
+                  re-hydrate), the mobile prev/next, the layout wrapper whose
+                  classes depend on the route, the page itself, and the portal
+                  outlet (portal content belongs to the page's islands).
+              The sidebar stays before the page in document order (tab and
+              landmark order reach the navigation first); after a swap the
+              router focuses the first swapped region with a heading, i.e. the
+              page, not the sidebar.
+              `/gallery/*` renders no sidebar region, so a navigation between
+              it and the docs pages has a different region set and the router
+              falls back to a full page load.
+              `/studio` renders no region at all: its behaviour ships as inline
+              <script>s in the page body, and markup the router swaps in never
+              executes its scripts. With no region to swap, every navigation
+              into or out of it (including back/forward, which a per-link
+              `data-bf-router="false"` could not cover) is a full page load.
+            */}
             {isChrome && (
               <nav
+                bf-region="sidebar"
                 className="hidden sm:block fixed top-14 left-0 w-56 h-[calc(100vh-56px)] overflow-y-auto border-r bg-background p-4"
                 aria-label="Main navigation"
                 data-sidebar-menu
@@ -148,21 +175,26 @@ export const renderer = jsxRenderer(
                 ))}
               </nav>
             )}
-            <div className={isChrome ? 'sm:pl-56' : ''}>
-              <main
-                className={
-                  currentPath === '/studio'
-                    ? ''
-                    : isGallery
-                    ? 'max-w-[1200px] mx-auto px-2 sm:px-4 py-4'
-                    : 'max-w-[1000px] mx-auto px-0 sm:px-4'
-                }
-              >
-                {children}
-              </main>
+            <div bf-region={isStudio ? undefined : 'page'}>
+              <MobileMenu />
+              <MobilePageNav prev={navLinks.prev} next={navLinks.next} />
+              <div className={isChrome ? 'sm:pl-56' : ''}>
+                <main
+                  className={
+                    isStudio
+                      ? ''
+                      : isGallery
+                      ? 'max-w-[1200px] mx-auto px-2 sm:px-4 py-4'
+                      : 'max-w-[1000px] mx-auto px-0 sm:px-4'
+                  }
+                >
+                  {children}
+                </main>
+              </div>
+              <BfPortals />
             </div>
-            <BfPortals />
             <BfScripts />
+            <script type="module" src={Assets.RouterEntry} />
           </body>
         </html>
       </WithPredictableIds>

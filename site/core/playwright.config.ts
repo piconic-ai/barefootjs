@@ -21,10 +21,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
+  // The E2E suite runs against what is deployed: the static site in dist/
+  // (`bun run build` first), served by Workers Assets' own local
+  // implementation — html_handling, _redirects and _headers included — not
+  // by the dynamic dev server (server.tsx).
   webServer: {
-    command: `PORT=${port} bun run server.tsx`,
+    command: `bunx wrangler dev --port ${port} --show-interactive-dev-session=false`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
+    timeout: 60000,
+    env: { WRANGLER_SEND_METRICS: 'false' },
   },
 })
