@@ -116,9 +116,8 @@ onInvalidate((prefixes) => {
     if (matchesAnyPrefix(entry.url, prefixes)) inflight.delete(key)
   }
   for (const query of liveQueries) {
-    if (query.currentUrl() !== null && matchesAnyPrefix(query.currentUrl() as string, prefixes)) {
-      query.revalidate()
-    }
+    const url = query.currentUrl()
+    if (url !== null && matchesAnyPrefix(url, prefixes)) query.revalidate()
   }
 })
 

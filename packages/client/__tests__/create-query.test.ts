@@ -74,6 +74,9 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = originalFetch
   setSystemTime()
+  // Also after: the last test's ownerless queries would otherwise stay
+  // registered for invalidations published by later files in this process.
+  __resetQueryCacheForTests()
 })
 
 // -- rule 1: descriptors only --------------------------------------------

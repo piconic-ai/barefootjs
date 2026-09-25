@@ -12,6 +12,7 @@ on:
       - 'packages/xyflow/**'
       - 'packages/adapter-tests/**'
       - 'packages/router/**'
+      - 'packages/shared/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
       - 'packages/adapter-hono/**'
@@ -45,6 +46,7 @@ on:
       - 'packages/xyflow/**'
       - 'packages/adapter-tests/**'
       - 'packages/router/**'
+      - 'packages/shared/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
       - 'packages/adapter-hono/**'
