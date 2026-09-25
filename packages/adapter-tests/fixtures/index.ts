@@ -800,6 +800,11 @@ import { fixture as rowPortalRef } from './row-portal-ref'
 import { fixture as textThenConditional } from './text-then-conditional'
 import { fixture as textThenConditionalStatic } from './text-then-conditional-static'
 import { fixture as conditionalThenText } from './conditional-then-text'
+// A child component inside a row of a loop over a static literal array
+// (registry: `static-literal-loop-component-row`), plus its escape twins.
+import { fixture as staticLiteralLoopComponentInRow } from './static-literal-loop-component-in-row'
+import { fixture as staticLiteralLoopComponentInRowClient } from './static-literal-loop-component-in-row-client'
+import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-literal-loop-component-in-row-precomputed'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1301,4 +1306,7 @@ export const jsxFixtures: JSXFixture[] = [
   textThenConditional,
   textThenConditionalStatic,
   conditionalThenText,
+  staticLiteralLoopComponentInRow,
+  staticLiteralLoopComponentInRowClient,
+  staticLiteralLoopComponentInRowPrecomputed,
 ]
