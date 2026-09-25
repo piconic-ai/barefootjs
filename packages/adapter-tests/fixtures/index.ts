@@ -805,6 +805,15 @@ import { fixture as conditionalThenText } from './conditional-then-text'
 import { fixture as staticLiteralLoopComponentInRow } from './static-literal-loop-component-in-row'
 import { fixture as staticLiteralLoopComponentInRowClient } from './static-literal-loop-component-in-row-client'
 import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-literal-loop-component-in-row-precomputed'
+// A literal-initialized `const` read as a conditional's test (registry:
+// `literal-const-conditional-test`).
+import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
+import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
+import { fixture as constStringConditionalTest } from './const-string-conditional-test'
+// Static text starting with `:` / `%` right after a ternary (registry:
+// `line-statement-sigil-text-after-conditional`).
+import { fixture as conditionalThenColonText } from './conditional-then-colon-text'
+import { fixture as conditionalThenPercentText } from './conditional-then-percent-text'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1309,4 +1318,9 @@ export const jsxFixtures: JSXFixture[] = [
   staticLiteralLoopComponentInRow,
   staticLiteralLoopComponentInRowClient,
   staticLiteralLoopComponentInRowPrecomputed,
+  constBooleanConditionalTest,
+  moduleConstBooleanConditionalTest,
+  constStringConditionalTest,
+  conditionalThenColonText,
+  conditionalThenPercentText,
 ]

@@ -4008,11 +4008,11 @@
       }
     },
     "identifier": {
-      "total": 451,
+      "total": 453,
       "cells": {
         "hono": {
-          "pass": 445,
-          "total": 451,
+          "pass": 447,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4053,8 +4053,8 @@
           ]
         },
         "blade": {
-          "pass": 421,
-          "total": 451,
+          "pass": 423,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4239,8 +4239,8 @@
           ]
         },
         "erb": {
-          "pass": 422,
-          "total": 451,
+          "pass": 424,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4419,8 +4419,8 @@
           ]
         },
         "go-template": {
-          "pass": 410,
-          "total": 451,
+          "pass": 412,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4671,8 +4671,8 @@
           ]
         },
         "jinja": {
-          "pass": 421,
-          "total": 451,
+          "pass": 423,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4857,8 +4857,8 @@
           ]
         },
         "minijinja": {
-          "pass": 421,
-          "total": 451,
+          "pass": 423,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5043,13 +5043,19 @@
           ]
         },
         "mojolicious": {
-          "pass": 420,
-          "total": 451,
+          "pass": 421,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-percent-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -5235,8 +5241,8 @@
           ]
         },
         "pebble": {
-          "pass": 422,
-          "total": 451,
+          "pass": 424,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5415,8 +5421,8 @@
           ]
         },
         "twig": {
-          "pass": 421,
-          "total": 451,
+          "pass": 423,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5601,13 +5607,19 @@
           ]
         },
         "xslate": {
-          "pass": 419,
-          "total": 451,
+          "pass": 420,
+          "total": 453,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-colon-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -5868,11 +5880,11 @@
       }
     },
     "literal": {
-      "total": 360,
+      "total": 365,
       "cells": {
         "hono": {
-          "pass": 357,
-          "total": 360,
+          "pass": 362,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5895,8 +5907,8 @@
           ]
         },
         "blade": {
-          "pass": 339,
-          "total": 360,
+          "pass": 342,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5908,6 +5920,12 @@
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -5956,6 +5974,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6027,8 +6051,8 @@
           ]
         },
         "erb": {
-          "pass": 339,
-          "total": 360,
+          "pass": 342,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6040,6 +6064,12 @@
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6088,6 +6118,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6159,13 +6195,25 @@
           ]
         },
         "go-template": {
-          "pass": 330,
-          "total": 360,
+          "pass": 332,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
+              "fixture": "const-string-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6265,6 +6313,12 @@
               ]
             },
             {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -6345,8 +6399,8 @@
           ]
         },
         "jinja": {
-          "pass": 339,
-          "total": 360,
+          "pass": 342,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6358,6 +6412,12 @@
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6406,6 +6466,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6477,8 +6543,8 @@
           ]
         },
         "minijinja": {
-          "pass": 339,
-          "total": 360,
+          "pass": 342,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6490,6 +6556,12 @@
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6538,6 +6610,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6609,8 +6687,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 337,
-          "total": 360,
+          "pass": 339,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6619,9 +6697,21 @@
               ]
             },
             {
+              "fixture": "conditional-then-percent-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
+              ]
+            },
+            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6670,6 +6760,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6753,13 +6849,19 @@
           ]
         },
         "pebble": {
-          "pass": 340,
-          "total": 360,
+          "pass": 343,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6808,6 +6910,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6879,8 +6987,8 @@
           ]
         },
         "twig": {
-          "pass": 339,
-          "total": 360,
+          "pass": 342,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6892,6 +7000,12 @@
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -6940,6 +7054,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -7011,8 +7131,8 @@
           ]
         },
         "xslate": {
-          "pass": 337,
-          "total": 360,
+          "pass": 339,
+          "total": 365,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7021,9 +7141,21 @@
               ]
             },
             {
+              "fixture": "conditional-then-colon-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
+              ]
+            },
+            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -7072,6 +7204,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -7350,11 +7488,11 @@
       }
     },
     "member": {
-      "total": 272,
+      "total": 274,
       "cells": {
         "hono": {
-          "pass": 268,
-          "total": 272,
+          "pass": 270,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7383,8 +7521,8 @@
           ]
         },
         "blade": {
-          "pass": 251,
-          "total": 272,
+          "pass": 253,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7515,8 +7653,8 @@
           ]
         },
         "erb": {
-          "pass": 252,
-          "total": 272,
+          "pass": 254,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7641,8 +7779,8 @@
           ]
         },
         "go-template": {
-          "pass": 240,
-          "total": 272,
+          "pass": 242,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7839,8 +7977,8 @@
           ]
         },
         "jinja": {
-          "pass": 251,
-          "total": 272,
+          "pass": 253,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7971,8 +8109,8 @@
           ]
         },
         "minijinja": {
-          "pass": 251,
-          "total": 272,
+          "pass": 253,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -8103,13 +8241,19 @@
           ]
         },
         "mojolicious": {
-          "pass": 250,
-          "total": 272,
+          "pass": 251,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-percent-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -8241,8 +8385,8 @@
           ]
         },
         "pebble": {
-          "pass": 251,
-          "total": 272,
+          "pass": 253,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -8373,8 +8517,8 @@
           ]
         },
         "twig": {
-          "pass": 251,
-          "total": 272,
+          "pass": 253,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -8505,13 +8649,19 @@
           ]
         },
         "xslate": {
-          "pass": 249,
-          "total": 272,
+          "pass": 250,
+          "total": 274,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-colon-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -12836,11 +12986,11 @@
       }
     },
     "literal:boolean": {
-      "total": 81,
+      "total": 83,
       "cells": {
         "hono": {
-          "pass": 80,
-          "total": 81,
+          "pass": 82,
+          "total": 83,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -12852,7 +13002,7 @@
         },
         "blade": {
           "pass": 77,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -12861,9 +13011,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -12882,7 +13044,7 @@
         },
         "erb": {
           "pass": 77,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -12891,9 +13053,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -12912,12 +13086,24 @@
         },
         "go-template": {
           "pass": 78,
-          "total": 81,
+          "total": 83,
           "gaps": [
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -12936,7 +13122,7 @@
         },
         "jinja": {
           "pass": 77,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -12945,9 +13131,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -12966,7 +13164,7 @@
         },
         "minijinja": {
           "pass": 77,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -12975,9 +13173,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -12996,7 +13206,7 @@
         },
         "mojolicious": {
           "pass": 75,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13005,9 +13215,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -13038,12 +13260,24 @@
         },
         "pebble": {
           "pass": 78,
-          "total": 81,
+          "total": 83,
           "gaps": [
+            {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -13062,7 +13296,7 @@
         },
         "twig": {
           "pass": 77,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13071,9 +13305,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -13092,7 +13338,7 @@
         },
         "xslate": {
           "pass": 75,
-          "total": 81,
+          "total": 83,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13101,9 +13347,21 @@
               ]
             },
             {
+              "fixture": "const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-boolean-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
               ]
             },
             {
@@ -13895,11 +14153,11 @@
       }
     },
     "literal:string": {
-      "total": 249,
+      "total": 252,
       "cells": {
         "hono": {
-          "pass": 248,
-          "total": 249,
+          "pass": 251,
+          "total": 252,
           "gaps": [
             {
               "fixture": "format-date",
@@ -13910,8 +14168,8 @@
           ]
         },
         "blade": {
-          "pass": 237,
-          "total": 249,
+          "pass": 240,
+          "total": 252,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13988,8 +14246,8 @@
           ]
         },
         "erb": {
-          "pass": 237,
-          "total": 249,
+          "pass": 240,
+          "total": 252,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -14066,9 +14324,15 @@
           ]
         },
         "go-template": {
-          "pass": 230,
-          "total": 249,
+          "pass": 232,
+          "total": 252,
           "gaps": [
+            {
+              "fixture": "const-string-conditional-test",
+              "limitations": [
+                "literal-const-conditional-test"
+              ]
+            },
             {
               "fixture": "data-on-attr-dynamic-value",
               "limitations": [
@@ -14186,8 +14450,8 @@
           ]
         },
         "jinja": {
-          "pass": 237,
-          "total": 249,
+          "pass": 240,
+          "total": 252,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -14264,8 +14528,8 @@
           ]
         },
         "minijinja": {
-          "pass": 237,
-          "total": 249,
+          "pass": 240,
+          "total": 252,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -14342,9 +14606,15 @@
           ]
         },
         "mojolicious": {
-          "pass": 235,
-          "total": 249,
+          "pass": 237,
+          "total": 252,
           "gaps": [
+            {
+              "fixture": "conditional-then-percent-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
+              ]
+            },
             {
               "fixture": "conditional-then-text",
               "limitations": [
@@ -14432,8 +14702,8 @@
           ]
         },
         "pebble": {
-          "pass": 238,
-          "total": 249,
+          "pass": 241,
+          "total": 252,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -14504,8 +14774,8 @@
           ]
         },
         "twig": {
-          "pass": 237,
-          "total": 249,
+          "pass": 240,
+          "total": 252,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -14582,9 +14852,15 @@
           ]
         },
         "xslate": {
-          "pass": 235,
-          "total": 249,
+          "pass": 237,
+          "total": 252,
           "gaps": [
+            {
+              "fixture": "conditional-then-colon-text",
+              "limitations": [
+                "line-statement-sigil-text-after-conditional"
+              ]
+            },
             {
               "fixture": "conditional-then-text",
               "limitations": [
@@ -14678,10 +14954,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
-        "fixture": "jsx-text-whitespace",
-        "description": "Explicit {\" \"} joiners and multi-line text trimming",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-text-whitespace.ts",
-        "code": "' '"
+        "fixture": "const-string-conditional-test",
+        "description": "A function-scope string-literal const compared in a ternary test renders the branch it selects",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-string-conditional-test.ts",
+        "code": "'a'"
       }
     },
     "logical:&&": {

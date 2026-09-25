@@ -53,4 +53,16 @@ export const renderDivergences: RenderDivergences = {
   'text-then-conditional': { limitation: 'text-adjacent-conditional-whitespace' },
   'text-then-conditional-static': { limitation: 'text-adjacent-conditional-whitespace' },
   'conditional-then-text': { limitation: 'text-adjacent-conditional-whitespace' },
+
+  // A boolean-literal `const` (module or function scope) read as a ternary
+  // test is emitted as an undeclared `$on`, so the template fails to
+  // compile under `use strict`: 'Global symbol "$on" requires explicit
+  // package name'. A string literal is inlined and renders like Hono.
+  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
+  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
+  // Text after a ternary lands at the start of its own template line
+  // (after `% }`). Starting with `%` (after optional spaces), that line is
+  // read as Perl code and the template fails to compile ("Missing right
+  // curly or square bracket").
+  'conditional-then-percent-text': { limitation: 'line-statement-sigil-text-after-conditional' },
 }
