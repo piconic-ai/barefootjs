@@ -460,8 +460,8 @@ const DEFAULT_CONTENT_TYPE: Partial<Record<BodyKind, string>> = {
  * response rejects with `HttpError`, `HEAD` included; a network failure rejects
  * with the underlying error unchanged.
  *
- * Internal to `@barefootjs/client` — `createQuery` (issue #3157) is the only
- * caller. Not exported from the package's public entry.
+ * Internal to `@barefootjs/client` — called by `createQuery` (#3157) and
+ * `createMutation` (#3200). Not exported from the package's public entry.
  *
  * @internal
  */

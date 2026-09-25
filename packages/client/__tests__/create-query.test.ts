@@ -11,57 +11,7 @@ import { createSignal, createMemo, createRoot } from '../src/reactive'
 import { http, type HttpDescriptor } from '../src/http'
 import { createQuery, __resetQueryCacheForTests } from '../src/create-query'
 import { invalidate } from '@barefootjs/shared'
-
-// -- fetch stubs --------------------------------------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
-
-/** Every call resolves immediately with `body`. */
-function stubFetch(body: unknown, status = 200): { calls: string[] } {
-  const calls: string[] = []
-  // @ts-expect-error — test stub
-  globalThis.fetch = (url: string) => {
-    calls.push(url)
-    return Promise.resolve(jsonResponse(body, status))
-  }
-  return { calls }
-}
-
-/** Calls are recorded but resolve only when `resolveNth` is invoked. */
-function deferredFetch(): {
-  calls: string[]
-  resolveNth: (n: number, body: unknown, status?: number) => void
-} {
-  const calls: string[] = []
-  const resolvers: Array<(r: Response) => void> = []
-  // @ts-expect-error — test stub
-  globalThis.fetch = (url: string) => {
-    calls.push(url)
-    return new Promise<Response>((resolve) => {
-      resolvers.push(resolve)
-    })
-  }
-  return {
-    calls,
-    resolveNth(n, body, status = 200) {
-      resolvers[n]!(jsonResponse(body, status))
-    },
-  }
-}
-
-async function waitUntil(predicate: () => boolean, maxIters = 200): Promise<void> {
-  for (let i = 0; i < maxIters; i++) {
-    if (predicate()) return
-    await Promise.resolve()
-  }
-  throw new Error(`waitUntil: condition not met after ${maxIters} microtask ticks`)
-}
-
-async function settle(): Promise<void> {
-  for (let i = 0; i < 20; i++) await Promise.resolve()
-}
+import { jsonResponse, stubFetch, deferredFetch, waitUntil, settle } from './http-test-helpers'
 
 const originalFetch = globalThis.fetch
 beforeEach(() => {
@@ -402,6 +352,43 @@ describe('rule 8: action', () => {
 })
 
 // -- rule 9: disposal --------------------------------------------------
+
+describe('rule 8: un-awaited action failure', () => {
+  test('an un-awaited action() after disposal reports no unhandled rejection', async () => {
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, refetch] = createRoot((dispose) => {
+        const result = createQuery(() => http.get('/api/unawaited-disposed'), { initial: null })
+        dispose()
+        return result
+      })
+      refetch() // not awaited: a click racing teardown
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
+  test('a fire-and-forget failed action() reports no unhandled rejection; error() holds it', async () => {
+    stubFetch({ message: 'bad' }, 400)
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, refetch] = createQuery(() => http.get('/api/unawaited-action'), { initial: null })
+      refetch() // not awaited, as in `onClick={() => refetch()}`
+      await waitUntil(() => refetch.error() !== undefined)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+      expect(refetch.error()).toMatchObject({ status: 400 })
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+})
 
 describe('rule 9: disposal', () => {
   test('a resolution that arrives after disposal is dropped', async () => {
