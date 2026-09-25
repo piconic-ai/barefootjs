@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 461,
+    "totalFixtures": 468,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -3277,6 +3277,14 @@
           ]
         }
       },
+      "loop-component-row-destructured-param": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-component-row-destructured-param"
+          ]
+        }
+      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -3289,6 +3297,14 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "loop-row-child-children-nested-destructured-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-component-row-destructured-param"
+          ]
         }
       },
       "loop-row-child-children-nested-index-prop": {
@@ -5435,9 +5451,17 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "loop-component-row-destructured-param": {
+        "description": "A component loop row whose callback destructures the row param renders every row with its own key…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-component-row-destructured-param.ts"
+      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
+      },
+      "loop-row-child-children-nested-destructured-prop": {
+        "description": "A nested component inside a loop-row child's forwarded children receives a destructured row field…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-destructured-prop.ts"
       },
       "loop-row-child-children-nested-index-prop": {
         "description": "A nested component inside a loop-row child's forwarded children receives the row index as a prop at…",
@@ -5857,6 +5881,20 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-component-row-destructured-param": {
+      "title": "A component loop row loses its row values when the callback destructures the row param",
+      "kind": "silent",
+      "given": "a `.map()` loop over a memo whose callback destructures its row param and whose row body is a component keyed by a destructured field, receiving a destructured field as a prop on itself or on a component in its forwarded children (`shown().map(({ id, tone }) => <Mark key={id} tone={tone} />)`, `shown().map(({ id, tone }) => <Chip key={id}><Mark tone={tone} /></Chip>)`)",
+      "expected": "one component per row, each with its own key and prop (`data-key=\"a\" data-tone=\"warm\"`, `data-key=\"b\" data-tone=\"cool\"`), hydrated with the same values",
+      "actual": "renders no rows at all, or rows without their `data-key` and without the destructured prop; and the emitted client JS reads the destructured name where it is not bound (`get tone() { return tone }`), so hydrating or creating a row throws a `ReferenceError`",
+      "fixtures": [
+        "loop-component-row-destructured-param",
+        "loop-row-child-children-nested-destructured-prop"
+      ],
+      "adapters": [
+        "go-template"
+      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
