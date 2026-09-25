@@ -543,4 +543,26 @@ describe('rule 10: invalidation', () => {
     await settle()
     expect(posts()).toEqual({ page: 2 })
   })
+
+  test('an invalidation matching a key already in flight re-sends once that request settles', async () => {
+    // The in-flight request was sent *before* the invalidation, so it may
+    // resolve with pre-mutation data — single-flight means re-sending
+    // immediately would just rejoin that same promise (no new request), so
+    // the fix must send again only after it settles.
+    const { calls, resolveNth } = deferredFetch()
+    const [value] = createQuery(() => http.get<{ v: number }>('/api/inflight-race'))
+    await waitUntil(() => calls.length === 1) // the (no-`initial`) first send is in flight
+
+    invalidate(['/api/inflight-race'])
+    await settle()
+    // No second request yet — single-flight, nothing to join it with.
+    expect(calls.length).toBe(1)
+
+    // The in-flight (pre-mutation) response arrives.
+    resolveNth(0, { v: 1 })
+    // A follow-up request must now be sent to pick up post-mutation data.
+    await waitUntil(() => calls.length === 2)
+    resolveNth(1, { v: 2 })
+    await waitUntil(() => value()?.v === 2)
+  })
 })

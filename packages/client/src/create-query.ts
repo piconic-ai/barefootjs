@@ -165,7 +165,11 @@ const NOT_A_DESCRIPTOR_MESSAGE =
  *     next read re-fetches it (same as rule 5's stale case). A *live*
  *     query currently tracking a matching key re-sends immediately, through
  *     the same path as a stale cache hit (generation guard, single-flight,
- *     `isPending`), rather than waiting for its next dependency change. A
+ *     `isPending`), rather than waiting for its next dependency change. If a
+ *     send for that key is already in flight, single-flight means there is
+ *     no new request to join it with — that in-flight response was
+ *     requested before the invalidation and may still resolve with
+ *     pre-mutation data, so one more send follows once it settles. A
  *     disposed query does nothing.
  *
  * @since 0.38.0
@@ -211,6 +215,15 @@ export function createQuery<T>(
   let liveDescriptor: HttpDescriptor<T> | null = null
   let liveKey: string | null = null
   let liveUrl: string | null = null
+  // Set when an invalidation matches this instance's key while a send for
+  // that same key is already in flight (see `revalidate` below). The
+  // in-flight response was necessarily *requested* before the invalidation,
+  // so it may carry pre-mutation data; single-flight means re-sending
+  // immediately would just rejoin that same promise rather than issue a new
+  // request. Instead this flags "send once more" for `doSend`'s own
+  // resolution handlers to act on, once the in-flight promise's `finally`
+  // has cleared it from `inflight` and a fresh request can actually happen.
+  let invalidatedWhileInFlight = false
 
   // Rule 9: owned by the *current* reactive owner — the scope active when
   // `createQuery()` itself is called, not the internal tracking effect below.
@@ -227,10 +240,16 @@ export function createQuery<T>(
   function revalidate(): void {
     if (disposed || liveDescriptor === null || liveKey === null) return
     // Same guard `flush()`'s cache-hit branch applies: a send already in
-    // flight for this exact key will write when it settles — don't start a
-    // second one (single-flight holds across an invalidation-triggered
-    // re-send too).
-    if (liveKey === inflightKey) return
+    // flight for this exact key would just be rejoined (single-flight) —
+    // starting a "new" one here sends no new request at all. But that
+    // in-flight response was requested before this invalidation and may
+    // still resolve with pre-mutation data, so flag it: `doSend`'s own
+    // resolution handlers re-check this flag and re-send once the in-flight
+    // promise actually settles and clears out of `inflight`.
+    if (liveKey === inflightKey) {
+      invalidatedWhileInFlight = true
+      return
+    }
     doSend(liveDescriptor, liveKey).catch(() => {})
   }
   const liveQuery: LiveQuery = { revalidate, currentUrl: () => liveUrl }
@@ -292,6 +311,19 @@ export function createQuery<T>(
     }
   }
 
+  // Rule 10 (in-flight race): called from both of `doSend`'s settlement
+  // handlers once a send actually finishes — success or failure, the
+  // invalidation itself doesn't care which. If an invalidation matched this
+  // key while that send was in flight, `inflight` has now cleared and a
+  // fresh request is possible, so send once more to pick up post-mutation
+  // data; otherwise this is a no-op.
+  function revalidateIfInvalidatedWhileInFlight(): void {
+    if (invalidatedWhileInFlight) {
+      invalidatedWhileInFlight = false
+      revalidate()
+    }
+  }
+
   function doSend(descriptor: HttpDescriptor<T>, key: string): Promise<T> {
     const myGeneration = ++generation
     inflightKey = key
@@ -315,6 +347,7 @@ export function createQuery<T>(
           setValue(() => result)
           setError(undefined)
           setIsPending(false)
+          revalidateIfInvalidatedWhileInFlight()
         }
         return result
       },
@@ -327,6 +360,7 @@ export function createQuery<T>(
           // else into a real `Error` rather than lying about the type.
           setError(err instanceof Error ? err : new Error(String(err)))
           setIsPending(false)
+          revalidateIfInvalidatedWhileInFlight()
         }
         throw err
       },
