@@ -65,6 +65,17 @@ export function isJavaToolchainAvailable(): boolean {
   return Bun.which('java') !== null
 }
 
+/**
+ * Flags for every render JVM. The rendered HTML is read from stdout, and
+ * the JVM's unified logging writes warnings to stdout by default, so a
+ * warning would be prepended to the HTML. One did in CI: with several
+ * render JVMs running at once, `[warning][perf,memops] Cannot use file
+ * /tmp/hsperfdata_runner/<pid> because it is locked by another process`.
+ * `-XX:-UsePerfData` stops the JVM from creating that per-PID file, and
+ * the `-Xlog` pair moves any other JVM warning to stderr.
+ */
+const JVM_FLAGS = ['-XX:-UsePerfData', '-Xlog:disable', '-Xlog:all=warning:stderr']
+
 function isGradleAvailable(): boolean {
   return Bun.which('gradle') !== null
 }
@@ -145,7 +156,7 @@ export async function renderPebbleTemplate(options: RenderPebbleTemplateOptions)
     if (options.scopeId) {
       args.push(options.scopeId)
     }
-    const proc = Bun.spawn(['java', '-jar', ...args], { stdout: 'pipe', stderr: 'pipe' })
+    const proc = Bun.spawn(['java', ...JVM_FLAGS, '-jar', ...args], { stdout: 'pipe', stderr: 'pipe' })
     const [stdout, stderr] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
@@ -553,7 +564,7 @@ export async function renderPebbleComponent(options: RenderOptions): Promise<str
     await Bun.write(varsPath, JSON.stringify(encodeSpecials(vars)))
 
     const args = [FAT_JAR, tempDir, toSnakeCase(componentName), varsPath, rootScopeIdRaw]
-    const proc = Bun.spawn(['java', '-jar', ...args], { stdout: 'pipe', stderr: 'pipe' })
+    const proc = Bun.spawn(['java', ...JVM_FLAGS, '-jar', ...args], { stdout: 'pipe', stderr: 'pipe' })
     const [stdout, stderr] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
