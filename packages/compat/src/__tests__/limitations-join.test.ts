@@ -39,7 +39,11 @@
 //   (g) the client-JS scope gate's `KNOWN_UNDECLARED` ledger
 //       (`client-js-scope-ledger.ts`) is a pin site of the same shape: a
 //       row is keyed by a corpus fixture whose emitted client JS reads an
-//       undeclared name, and must cite a `silent` entry listing it.
+//       undeclared name, and must cite a `silent` entry listing it;
+//   (h) every entry's published adapter list (`adaptersCiting`, fed the
+//       pins, the render divergences and the e2e quarantine rows) is
+//       non-empty — the docs page renders an empty list as "no adapter",
+//       which would misreport a live gap as affecting nothing.
 //
 // Same `loadCompatAdapters()` precedent as compat-pins.test.ts.
 
@@ -53,8 +57,11 @@ import { KNOWN_UNDECLARED } from '../../../adapter-tests/src/client-js-scope-led
 import { findLimitation, limitations } from '../../../adapter-tests/limitations'
 import { limitationDiagnostics } from '../../../adapter-tests/src/limitations'
 import { loadCompatAdapters } from '../adapter-registry'
+import { adaptersCiting, e2eQuarantineCitations, type LimitationsAdapterInput } from '../limitations'
+import { compareAdapterIds } from '../report'
 
 const { loaded } = await loadCompatAdapters()
+const e2eCitations = await e2eQuarantineCitations()
 
 /** Corpus fixture ids the oracle quarantine cites under `limitationId`. */
 function oracleFixturesCiting(limitationId: string): string[] {
@@ -206,6 +213,10 @@ describe('limitation registry ↔ adapter declarations', () => {
       expect(named).toEqual([])
     })
 
+    test(`[${entry.id}] publishes at least one affected adapter`, () => {
+      expect(adaptersCiting(entry.id, loaded, e2eCitations)).not.toEqual([])
+    })
+
     test(`[${entry.id}] every listed fixture is pinned, divergent, or e2e-quarantined under this id`, () => {
       const quarantined = new Set([
         ...oracleFixturesCiting(entry.id),
@@ -228,6 +239,47 @@ describe('limitation registry ↔ adapter declarations', () => {
             `pin cites the wrong id.`,
         )
       }
+    })
+  }
+})
+
+describe('e2e quarantine citations', () => {
+  const adapter = (id: string, fixture?: 'pin' | 'divergence'): LimitationsAdapterInput => ({
+    id,
+    pins: fixture === 'pin' ? { f: [{ code: 'BF101', severity: 'error', limitation: 'other' }] } : {},
+    renderDivergences: fixture === 'divergence' ? { f: { limitation: 'other' } } : {},
+  })
+
+  test('a fixture-keyed row covers every adapter rendering that fixture as the reference does', () => {
+    const adapters = [adapter('hono'), adapter('erb'), adapter('go-template', 'pin'), adapter('jinja', 'divergence')]
+    expect(adaptersCiting('x', adapters, [{ adapter: 'hono', limitation: 'x', fixture: 'f' }])).toEqual(['hono', 'erb'])
+  })
+
+  test('a generated-case row covers only its own run adapter', () => {
+    const adapters = [adapter('hono'), adapter('erb')]
+    expect(adaptersCiting('x', adapters, [{ adapter: 'erb', limitation: 'x' }, { adapter: 'hono', limitation: 'y' }])).toEqual([
+      'erb',
+    ])
+  })
+
+  // A fixture-keyed e2e row reproduces a gap on the reference markup, so
+  // it is expected to publish every adapter. An adapter that legitimately
+  // drops out (a pin or render divergence on the fixture) is written down
+  // here by name, `limitation id → fixture id → adapter ids`, so a shorter
+  // list than expected goes red instead of publishing silently.
+  const FIXTURE_ROW_EXCLUSIONS: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>> = {}
+  const fixtureRows = new Map(
+    e2eCitations.flatMap(c => (c.fixture === undefined ? [] : [[`${c.limitation}::${c.fixture}`, c] as const])),
+  )
+  for (const citation of fixtureRows.values()) {
+    const fixture = citation.fixture as string
+    test(`[${citation.limitation}] publishes every adapter for fixture-keyed row '${fixture}'`, () => {
+      const excluded = FIXTURE_ROW_EXCLUSIONS[citation.limitation]?.[fixture] ?? []
+      const expected = loaded
+        .map(a => a.id)
+        .filter(id => !excluded.includes(id))
+        .sort(compareAdapterIds)
+      expect(adaptersCiting(citation.limitation, loaded, e2eCitations)).toEqual(expected)
     })
   }
 })

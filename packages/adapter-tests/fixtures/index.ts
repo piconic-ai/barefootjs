@@ -792,6 +792,19 @@ import { fixture as diamondPropagation } from './diamond-propagation'
 // A child-component prop named like a handler but not one (`once`: `on` +
 // lowercase) is reactive data at top level and in loop rows.
 import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
+// A `ref`-callback `createPortal` on a keyed loop-row element (registry:
+// `loop-row-ref-portal`, pinned in the e2e quarantine ledgers).
+import { fixture as rowPortalRef } from './row-portal-ref'
+// Static text directly adjacent to a conditional (registry:
+// `text-adjacent-conditional-whitespace`).
+import { fixture as textThenConditional } from './text-then-conditional'
+import { fixture as textThenConditionalStatic } from './text-then-conditional-static'
+import { fixture as conditionalThenText } from './conditional-then-text'
+// A child component inside a row of a loop over a static literal array
+// (registry: `static-literal-loop-component-row`), plus its escape twins.
+import { fixture as staticLiteralLoopComponentInRow } from './static-literal-loop-component-in-row'
+import { fixture as staticLiteralLoopComponentInRowClient } from './static-literal-loop-component-in-row-client'
+import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-literal-loop-component-in-row-precomputed'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1289,4 +1302,11 @@ export const jsxFixtures: JSXFixture[] = [
   nestedChildNegatedProp,
   diamondPropagation,
   onPrefixedDataProp,
+  rowPortalRef,
+  textThenConditional,
+  textThenConditionalStatic,
+  conditionalThenText,
+  staticLiteralLoopComponentInRow,
+  staticLiteralLoopComponentInRowClient,
+  staticLiteralLoopComponentInRowPrecomputed,
 ]

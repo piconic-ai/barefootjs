@@ -54,4 +54,9 @@ export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuaranti
   // first re-run saw one memo stale. Fixed by the runtime's push-then-pull
   // propagation (`packages/client/src/reactive.ts`); the fixture's
   // `interactions` now pass and it is the fix's regression test.
+  'row-portal-ref': {
+    reason:
+      'the row <button> is portaled to document.body at hydration, outside the <ul> that carries the loop\'s delegated click listener, so the click never runs its handler and the counter stays at 0',
+    limitation: 'loop-row-ref-portal',
+  },
 }

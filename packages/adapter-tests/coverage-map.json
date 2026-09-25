@@ -1738,6 +1738,21 @@
         "text"
       ]
     },
+    "conditional-then-text": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-wrapping-loop": {
       "kinds": [
         "array-literal",
@@ -5724,6 +5739,23 @@
       "axes": [],
       "contexts": []
     },
+    "row-portal-ref": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "search-params": {
       "kinds": [
         "call",
@@ -6388,6 +6420,47 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "static-literal-loop-component-in-row": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-literal-loop-component-in-row-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-literal-loop-component-in-row-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
     },
     "static-loop-client-only-nested": {
       "kinds": [
@@ -7286,6 +7359,35 @@
         "text"
       ]
     },
+    "text-then-conditional": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "text-then-conditional-static": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "textarea": {
       "kinds": [
         "conditional",
@@ -7579,21 +7681,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 140,
+    "array-literal": 142,
     "array-method": 72,
     "arrow": 81,
     "binary": 118,
-    "call": 310,
+    "call": 313,
     "conditional": 44,
-    "identifier": 444,
+    "identifier": 451,
     "index-access": 15,
-    "literal": 355,
+    "literal": 360,
     "logical": 54,
-    "member": 267,
+    "member": 272,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 35,
-    "unsupported": 54
+    "unsupported": 55
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -7631,10 +7733,10 @@
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 79,
+    "literal:boolean": 81,
     "literal:null": 31,
-    "literal:number": 157,
-    "literal:string": 245,
+    "literal:number": 158,
+    "literal:string": 249,
     "logical:&&": 7,
     "logical:??": 45,
     "logical:||": 17,

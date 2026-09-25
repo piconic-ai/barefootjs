@@ -18,7 +18,8 @@
  *
  *   - `title`     — the limitation's name (a noun phrase).
  *   - `given`     — the input shape that hits it. Names no adapter: which
- *                   adapters are affected is derived from the pins that
+ *                   adapters are affected is derived from the pins, render
+ *                   divergences and real-browser e2e quarantine rows that
  *                   cite this id, never declared here.
  *   - `expected`  — what the Hono reference renders for that shape. This
  *                   is a definition, not an opinion: the reference adapter's

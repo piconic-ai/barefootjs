@@ -47,4 +47,11 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
+
+  // Static text directly followed by a conditional renders with a space
+  // between the text and the chosen branch (`x: off` for Hono's `x:off`).
+  // Text directly AFTER a conditional (`conditional-then-text`) renders
+  // like Hono here.
+  'text-then-conditional': { limitation: 'text-adjacent-conditional-whitespace' },
+  'text-then-conditional-static': { limitation: 'text-adjacent-conditional-whitespace' },
 }

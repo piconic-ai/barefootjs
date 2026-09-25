@@ -14,15 +14,15 @@
   ],
   "kinds": {
     "array-literal": {
-      "total": 140,
+      "total": 142,
       "cells": {
         "hono": {
-          "pass": 140,
-          "total": 140
+          "pass": 142,
+          "total": 142
         },
         "blade": {
-          "pass": 128,
-          "total": 140,
+          "pass": 130,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -99,8 +99,8 @@
           ]
         },
         "erb": {
-          "pass": 129,
-          "total": 140,
+          "pass": 131,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -171,8 +171,8 @@
           ]
         },
         "go-template": {
-          "pass": 119,
-          "total": 140,
+          "pass": 120,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -283,6 +283,12 @@
               ]
             },
             {
+              "fixture": "static-literal-loop-component-in-row",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -303,8 +309,8 @@
           ]
         },
         "jinja": {
-          "pass": 128,
-          "total": 140,
+          "pass": 130,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -381,8 +387,8 @@
           ]
         },
         "minijinja": {
-          "pass": 128,
-          "total": 140,
+          "pass": 130,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -459,8 +465,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 127,
-          "total": 140,
+          "pass": 129,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -543,8 +549,8 @@
           ]
         },
         "pebble": {
-          "pass": 128,
-          "total": 140,
+          "pass": 130,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -621,8 +627,8 @@
           ]
         },
         "twig": {
-          "pass": 128,
-          "total": 140,
+          "pass": 130,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -699,8 +705,8 @@
           ]
         },
         "xslate": {
-          "pass": 126,
-          "total": 140,
+          "pass": 128,
+          "total": 142,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2272,11 +2278,11 @@
       }
     },
     "call": {
-      "total": 310,
+      "total": 313,
       "cells": {
         "hono": {
-          "pass": 306,
-          "total": 310,
+          "pass": 309,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2305,13 +2311,19 @@
           ]
         },
         "blade": {
-          "pass": 287,
-          "total": 310,
+          "pass": 288,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -2445,17 +2457,29 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "erb": {
-          "pass": 288,
-          "total": 310,
+          "pass": 289,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -2583,12 +2607,18 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 279,
-          "total": 310,
+          "pass": 282,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2779,13 +2809,19 @@
           ]
         },
         "jinja": {
-          "pass": 287,
-          "total": 310,
+          "pass": 288,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -2918,18 +2954,30 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 287,
-          "total": 310,
+          "pass": 288,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -3062,18 +3110,30 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 288,
-          "total": 310,
+          "pass": 289,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -3200,13 +3260,19 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 287,
-          "total": 310,
+          "pass": 289,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -3344,18 +3410,30 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 287,
-          "total": 310,
+          "pass": 288,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -3488,18 +3566,30 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 287,
-          "total": 310,
+          "pass": 288,
+          "total": 313,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -3632,6 +3722,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -3912,11 +4008,11 @@
       }
     },
     "identifier": {
-      "total": 444,
+      "total": 451,
       "cells": {
         "hono": {
-          "pass": 438,
-          "total": 444,
+          "pass": 445,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -3957,13 +4053,19 @@
           ]
         },
         "blade": {
-          "pass": 417,
-          "total": 444,
+          "pass": 421,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -4121,17 +4223,35 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "erb": {
-          "pass": 418,
-          "total": 444,
+          "pass": 422,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -4283,12 +4403,24 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 404,
-          "total": 444,
+          "pass": 410,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -4513,6 +4645,12 @@
               ]
             },
             {
+              "fixture": "static-literal-loop-component-in-row",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -4533,13 +4671,19 @@
           ]
         },
         "jinja": {
-          "pass": 417,
-          "total": 444,
+          "pass": 421,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -4696,18 +4840,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 417,
-          "total": 444,
+          "pass": 421,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -4864,18 +5026,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 416,
-          "total": 444,
+          "pass": 420,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5038,13 +5218,25 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 417,
-          "total": 444,
+          "pass": 422,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5206,18 +5398,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 417,
-          "total": 444,
+          "pass": 421,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5375,17 +5585,35 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "xslate": {
-          "pass": 415,
-          "total": 444,
+          "pass": 419,
+          "total": 451,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5554,6 +5782,18 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -5628,11 +5868,11 @@
       }
     },
     "literal": {
-      "total": 355,
+      "total": 360,
       "cells": {
         "hono": {
-          "pass": 352,
-          "total": 355,
+          "pass": 357,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -5655,13 +5895,19 @@
           ]
         },
         "blade": {
-          "pass": 337,
-          "total": 355,
+          "pass": 339,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5764,18 +6010,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 337,
-          "total": 355,
+          "pass": 339,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5879,12 +6143,24 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 326,
-          "total": 355,
+          "pass": 330,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6043,6 +6319,12 @@
               ]
             },
             {
+              "fixture": "static-literal-loop-component-in-row",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -6063,13 +6345,19 @@
           ]
         },
         "jinja": {
-          "pass": 337,
-          "total": 355,
+          "pass": 339,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6172,18 +6460,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 337,
-          "total": 355,
+          "pass": 339,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6286,18 +6592,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 335,
-          "total": 355,
+          "pass": 337,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6412,13 +6736,25 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 337,
-          "total": 355,
+          "pass": 340,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6526,18 +6862,36 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 337,
-          "total": 355,
+          "pass": 339,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6641,17 +6995,35 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "xslate": {
-          "pass": 335,
-          "total": 355,
+          "pass": 337,
+          "total": 360,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6766,6 +7138,18 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -6966,11 +7350,11 @@
       }
     },
     "member": {
-      "total": 267,
+      "total": 272,
       "cells": {
         "hono": {
-          "pass": 263,
-          "total": 267,
+          "pass": 268,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -6999,8 +7383,8 @@
           ]
         },
         "blade": {
-          "pass": 247,
-          "total": 267,
+          "pass": 251,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7121,12 +7505,18 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "erb": {
-          "pass": 248,
-          "total": 267,
+          "pass": 252,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7241,12 +7631,18 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 236,
-          "total": 267,
+          "pass": 240,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7417,6 +7813,12 @@
               ]
             },
             {
+              "fixture": "static-literal-loop-component-in-row",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -7437,8 +7839,8 @@
           ]
         },
         "jinja": {
-          "pass": 247,
-          "total": 267,
+          "pass": 251,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7558,13 +7960,19 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 247,
-          "total": 267,
+          "pass": 251,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7684,13 +8092,19 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 246,
-          "total": 267,
+          "pass": 250,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7816,13 +8230,19 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 247,
-          "total": 267,
+          "pass": 251,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -7942,13 +8362,19 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 247,
-          "total": 267,
+          "pass": 251,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -8069,12 +8495,18 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "xslate": {
-          "pass": 245,
-          "total": 267,
+          "pass": 249,
+          "total": 272,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -8206,6 +8638,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -8904,11 +9342,11 @@
       }
     },
     "unsupported": {
-      "total": 54,
+      "total": 55,
       "cells": {
         "hono": {
-          "pass": 53,
-          "total": 54,
+          "pass": 54,
+          "total": 55,
           "gaps": [
             {
               "fixture": "ref-mount-attr",
@@ -8919,8 +9357,8 @@
           ]
         },
         "blade": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8991,8 +9429,8 @@
           ]
         },
         "erb": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9063,8 +9501,8 @@
           ]
         },
         "go-template": {
-          "pass": 42,
-          "total": 54,
+          "pass": 43,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9141,8 +9579,8 @@
           ]
         },
         "jinja": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9213,8 +9651,8 @@
           ]
         },
         "minijinja": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9285,8 +9723,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9357,8 +9795,8 @@
           ]
         },
         "pebble": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9429,8 +9867,8 @@
           ]
         },
         "twig": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -9501,8 +9939,8 @@
           ]
         },
         "xslate": {
-          "pass": 43,
-          "total": 54,
+          "pass": 44,
+          "total": 55,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -12398,11 +12836,11 @@
       }
     },
     "literal:boolean": {
-      "total": 79,
+      "total": 81,
       "cells": {
         "hono": {
-          "pass": 78,
-          "total": 79,
+          "pass": 80,
+          "total": 81,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -12414,8 +12852,14 @@
         },
         "blade": {
           "pass": 77,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12426,14 +12870,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "erb": {
           "pass": 77,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12445,12 +12901,18 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 76,
-          "total": 79,
+          "pass": 78,
+          "total": 81,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -12474,8 +12936,14 @@
         },
         "jinja": {
           "pass": 77,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12486,14 +12954,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "minijinja": {
           "pass": 77,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12504,14 +12984,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "mojolicious": {
           "pass": 75,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12535,12 +13027,18 @@
               "limitations": [
                 "boolean-in-static-loop-item"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "pebble": {
-          "pass": 77,
-          "total": 79,
+          "pass": 78,
+          "total": 81,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -12552,14 +13050,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "twig": {
           "pass": 77,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12571,13 +13081,25 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "xslate": {
           "pass": 75,
-          "total": 79,
+          "total": 81,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12600,6 +13122,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -12703,11 +13231,11 @@
       }
     },
     "literal:number": {
-      "total": 157,
+      "total": 158,
       "cells": {
         "hono": {
-          "pass": 156,
-          "total": 157,
+          "pass": 157,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -12718,8 +13246,8 @@
           ]
         },
         "blade": {
-          "pass": 147,
-          "total": 157,
+          "pass": 148,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -12784,8 +13312,8 @@
           ]
         },
         "erb": {
-          "pass": 147,
-          "total": 157,
+          "pass": 148,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -12850,8 +13378,8 @@
           ]
         },
         "go-template": {
-          "pass": 144,
-          "total": 157,
+          "pass": 145,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -12934,8 +13462,8 @@
           ]
         },
         "jinja": {
-          "pass": 147,
-          "total": 157,
+          "pass": 148,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -13000,8 +13528,8 @@
           ]
         },
         "minijinja": {
-          "pass": 147,
-          "total": 157,
+          "pass": 148,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -13066,8 +13594,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 145,
-          "total": 157,
+          "pass": 146,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -13144,8 +13672,8 @@
           ]
         },
         "pebble": {
-          "pass": 147,
-          "total": 157,
+          "pass": 148,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -13210,8 +13738,8 @@
           ]
         },
         "twig": {
-          "pass": 147,
-          "total": 157,
+          "pass": 148,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -13276,8 +13804,8 @@
           ]
         },
         "xslate": {
-          "pass": 145,
-          "total": 157,
+          "pass": 146,
+          "total": 158,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -13367,11 +13895,11 @@
       }
     },
     "literal:string": {
-      "total": 245,
+      "total": 249,
       "cells": {
         "hono": {
-          "pass": 244,
-          "total": 245,
+          "pass": 248,
+          "total": 249,
           "gaps": [
             {
               "fixture": "format-date",
@@ -13382,9 +13910,15 @@
           ]
         },
         "blade": {
-          "pass": 236,
-          "total": 245,
+          "pass": 237,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13437,14 +13971,32 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 236,
-          "total": 245,
+          "pass": 237,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13498,12 +14050,24 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 227,
-          "total": 245,
+          "pass": 230,
+          "total": 249,
           "gaps": [
             {
               "fixture": "data-on-attr-dynamic-value",
@@ -13612,13 +14176,25 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "static-literal-loop-component-in-row",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
             }
           ]
         },
         "jinja": {
-          "pass": 236,
-          "total": 245,
+          "pass": 237,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13671,14 +14247,32 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 236,
-          "total": 245,
+          "pass": 237,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13731,14 +14325,32 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 234,
-          "total": 245,
+          "pass": 235,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13803,13 +14415,25 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 236,
-          "total": 245,
+          "pass": 238,
+          "total": 249,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -13863,14 +14487,32 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 236,
-          "total": 245,
+          "pass": 237,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13924,13 +14566,31 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
             }
           ]
         },
         "xslate": {
-          "pass": 234,
-          "total": 245,
+          "pass": 235,
+          "total": 249,
           "gaps": [
+            {
+              "fixture": "conditional-then-text",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13995,6 +14655,18 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
+              ]
+            },
+            {
+              "fixture": "text-then-conditional-static",
+              "limitations": [
+                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
