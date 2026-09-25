@@ -152,8 +152,9 @@ describe('rule 3: one send per tick', () => {
 
     setBase(2)
     await waitUntil(() => calls.length === 2)
-    // Consistent snapshot: a=double(2)=4, b=plusOne(2)=3 — never the glitched
-    // intermediate a=4&b=2 the synchronous diamond re-run produces first.
+    // Consistent snapshot: a=double(2)=4, b=plusOne(2)=3. The runtime's
+    // push-then-pull propagation runs the body once per write, so no run ever
+    // observes a half-updated memo pair (spec/async.md §7.2).
     expect(calls[1]).toBe('/api/x?a=4&b=3')
     await settle()
     expect(calls.length).toBe(2)
