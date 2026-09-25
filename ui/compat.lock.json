@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 469,
+    "totalFixtures": 476,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -2091,6 +2091,50 @@
           ],
           "limitations": [
             "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        }
+      },
+      "conditional-then-text": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
           ]
         }
       },
@@ -5192,6 +5236,21 @@
           }
         }
       },
+      "static-literal-loop-component-in-row": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "static-literal-loop-component-row"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "static-literal-loop-component-in-row-precomputed"
+          }
+        }
+      },
       "static-loop-client-only-nested": {
         "go-template": {
           "kind": "refusal",
@@ -5396,12 +5455,116 @@
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
           }
         }
+      },
+      "text-then-conditional": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        }
+      },
+      "text-then-conditional-static": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "text-adjacent-conditional-whitespace"
+          ]
+        }
       }
     },
     "docs": {
       "conditional-return-fragment-branch": {
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
+      },
+      "conditional-then-text": {
+        "description": "A signal-driven ternary directly followed by text renders with no whitespace between them",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-text.ts"
       },
       "data-on-attr-dynamic-value": {
         "description": "A dynamic value on a data-on* attribute renders as plain attribute text",
@@ -5555,6 +5718,10 @@
         "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
       },
+      "static-literal-loop-component-in-row": {
+        "description": "A loop over a module-scope static literal array with a child component inside each row renders…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-literal-loop-component-in-row.ts"
+      },
       "static-loop-client-only-nested": {
         "description": "A /* @client */ nested .map() inside a static outer loop row renders the outer rows with an empty…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested.ts"
@@ -5574,6 +5741,14 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
+      },
+      "text-then-conditional": {
+        "description": "Text directly followed by a signal-driven ternary renders with no whitespace between them",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/text-then-conditional.ts"
+      },
+      "text-then-conditional-static": {
+        "description": "Text directly followed by a prop-driven ternary renders with no whitespace between them",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/text-then-conditional-static.ts"
       },
       "every-typeof-predicate-client": {
         "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",
@@ -5646,6 +5821,10 @@
       "static-array-from-props-with-component-precomputed": {
         "description": "prop-precompute twin of static-array-from-props-with-component — child components render at SSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-precomputed.ts"
+      },
+      "static-literal-loop-component-in-row-precomputed": {
+        "description": "prop-precompute twin of static-literal-loop-component-in-row — the rows render at SSR from a prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-literal-loop-component-in-row-precomputed.ts"
       },
       "static-loop-client-only-nested-precomputed": {
         "description": "prop-precompute twin of static-loop-client-only-nested — items moved to a prop, full SSR of the…",
@@ -5926,6 +6105,17 @@
         "go-template"
       ]
     },
+    "loop-row-ref-portal": {
+      "title": "A `ref`-callback portal on a loop-row element",
+      "kind": "silent",
+      "given": "an element inside a keyed `.map()` row that has an event handler and a `ref` callback moving it out of the row with `createPortal(el, document.body, { ownerScope })`",
+      "expected": "the server HTML and the hydrated DOM agree, and clicking the element runs its handler",
+      "actual": "renders the element inside its row and moves it to `document.body` at hydration (a callback declared in the row callback places it at the portal outlet already in the server HTML), after which clicking it no longer runs its handler",
+      "fixtures": [
+        "row-portal-ref"
+      ],
+      "adapters": []
+    },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",
       "kind": "refusal",
@@ -6168,6 +6358,44 @@
       ],
       "diagnostics": [
         "BF021"
+      ]
+    },
+    "static-literal-loop-component-row": {
+      "title": "Child component in a row of a loop over a static literal array",
+      "kind": "refusal",
+      "given": "a `.map()` over a module- or function-scope `const` initialized with a static array literal, whose row renders a child component nested inside an element",
+      "expected": "every row renders in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "static-literal-loop-component-in-row"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "text-adjacent-conditional-whitespace": {
+      "title": "Whitespace between static text and an adjacent conditional",
+      "kind": "silent",
+      "given": "static JSX text directly adjacent to a conditional expression with no whitespace between them, before it (`x:{c ? 'on' : 'off'}`) or after it (`{c ? 'on' : 'off'}:y`), whether the condition reads a signal or a prop",
+      "expected": "the text and the chosen branch abut with no whitespace between them (`x:off`, `off:y`)",
+      "actual": "renders a space between the text and the chosen branch (`x: off`, `off :y`)",
+      "fixtures": [
+        "conditional-then-text",
+        "text-then-conditional",
+        "text-then-conditional-static"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "untyped-loop-array-no-row-struct": {

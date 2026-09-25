@@ -2580,6 +2580,15 @@
       }
     }
   ],
+  "row-portal-ref": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "__instanceId": "RowPortalRef_test"
+      }
+    }
+  ],
   "search-params-derived-filter": [
     {
       "name": "gen:items:empty",
@@ -3472,6 +3481,20 @@
       "props": {
         "label": "日本語",
         "__instanceId": "TextEscape_test"
+      }
+    }
+  ],
+  "text-then-conditional-static": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
       }
     }
   ],
