@@ -25,6 +25,24 @@ test.describe('On This Page', () => {
     await expectTocActive(page, '3-look-at-what-was-generated')
   })
 
+  test('re-marks the section when the layout moves without a scroll', async ({ page }) => {
+    await page.goto('/docs/quick-start')
+    const start = await topOf(page, '3-look-at-what-was-generated')
+    await scrollToY(page, start + 200)
+    await expectTocActive(page, '3-look-at-what-was-generated')
+
+    // Content expanding at the end of step 2 (an opened demo, say) pushes
+    // step 3 below the reader. With scroll anchoring off, as it is whenever
+    // the browser finds no anchor to hold, no scroll event fires.
+    await page.evaluate(() => {
+      document.documentElement.style.overflowAnchor = 'none'
+      const block = document.createElement('div')
+      block.style.height = '3000px'
+      document.getElementById('3-look-at-what-was-generated')!.before(block)
+    })
+    await expectTocActive(page, '2-install-and-run')
+  })
+
   test('follows the reader back up from the bottom of the page', async ({ page }) => {
     await page.goto('/docs/quick-start')
 
