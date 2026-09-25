@@ -13,12 +13,14 @@ async function expectActive(page: Page, id: string) {
     `#${id}`,
   )
   expect(index).toBeGreaterThanOrEqual(0)
-  await expect(toc.locator(`a[href="#${id}"]`)).toHaveClass(/font-semibold/)
+  const link = toc.locator(`a[href="#${id}"]`)
+  await expect(link).toHaveClass(/font-semibold/)
   await expect(toc.locator('a.font-semibold')).toHaveCount(1)
-  // Nested items shift the marker 8px right
+  // A nested (indented, ml-2) item shifts the marker 8px right
+  const xOffset = (await link.evaluate((a) => a.classList.contains('ml-2'))) ? 8 : 0
   await expect(toc.locator('[data-toc-indicator]')).toHaveAttribute(
     'style',
-    new RegExp(`translate\\((0|8)px, ${index * ITEM_HEIGHT}px\\)`),
+    new RegExp(`translate\\(${xOffset}px, ${index * ITEM_HEIGHT}px\\)`),
   )
 }
 
