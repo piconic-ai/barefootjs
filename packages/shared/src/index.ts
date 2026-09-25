@@ -52,3 +52,6 @@ export type {
   ProfilerEventType,
   ProfilerSubscriberKind,
 } from './profiler-events.ts'
+
+export { invalidate, onInvalidate, __listenerCountForTests as __invalidationBusListenerCountForTests } from './invalidation-bus.ts'
+export type { InvalidationListener } from './invalidation-bus.ts'

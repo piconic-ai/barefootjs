@@ -399,10 +399,14 @@ and a bare Promise had no method to decide by. The method is now a **check**, no
 decision.
 
 `action()` returns `Promise<T>`, so `await saveComment()` before navigating is expressible.
-`invalidates: ['/api/posts']` marks every cached query whose key starts with that prefix
-stale on success and rides the router's invalidation bus, so the page cache is evicted
-with it (a mutation that only evicted the query cache would let a later navigation restore
-the pre-mutation HTML from the page cache).
+`invalidates: ['/api/posts']` marks every cached query whose **URL** (the descriptor's `url`
+with its `params` serialised, method-agnostic — not the cache key, which starts with the
+method: `GET /api/posts?…`, so a prefix like `/api/posts` would never match it) starts with
+that prefix stale on success and rides the router's invalidation bus, so the page cache is
+evicted with it (a mutation that only evicted the query cache would let a later navigation
+restore the pre-mutation HTML from the page cache). The router cannot tell which pages
+rendered data from an invalidated URL, so it evicts its whole page cache unconditionally
+rather than matching prefixes itself (#3199).
 
 ### 7.5 Options
 
@@ -411,7 +415,7 @@ the pre-mutation HTML from the page cache).
 | `initial` | query | the **already-obtained result** of the initial request. When present the first send is skipped and, when the key is known, the value is primed into the cache as fresh. Not a placeholder | none; `value()` is `T \| undefined` |
 | `ttl` | query | freshness window; a stale entry is re-fetched on the next read. Applies to `initial` | the router page cache's fresh window (15 s); `0` for revalidate-on-load (SSG) |
 | `key` | query | override the key: share across components, or prime eagerly for a bare-Promise function | descriptor key, else site id + dependency values |
-| `invalidates` | mutation | key prefixes to mark stale on success | none |
+| `invalidates` | mutation | URL prefixes (§7.4) to mark stale on success | none |
 
 `initial` is not Angular's `defaultValue` / TanStack's `placeholderData`. Writing
 `initial: []` to avoid `undefined` in mode B claims the server rendered an empty list and

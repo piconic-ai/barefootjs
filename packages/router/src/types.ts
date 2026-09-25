@@ -132,6 +132,15 @@ export interface RouterState {
   morph: boolean
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
   currentPath: string
+  /**
+   * Bumped every time an invalidation (`@barefootjs/shared`'s bus, #3199)
+   * clears `cache`. A background refresh in flight when the bump happens
+   * captures the generation it started under and compares before writing its
+   * result back, so a navigation-driven refresh started before an
+   * invalidation cannot re-insert its now-stale snapshot after the cache was
+   * swept (spec/async.md §7.4).
+   */
+  cacheGeneration: number
   inflight: AbortController | null
   /** Hover-prefetch dwell timer + the anchor it is counting down for (per instance). */
   hoverTimer: ReturnType<typeof setTimeout> | null

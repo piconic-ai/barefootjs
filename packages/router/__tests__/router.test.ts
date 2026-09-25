@@ -6,8 +6,9 @@
  * and history.state preservation. DOM via @happy-dom.
  */
 
-import { describe, test, expect, beforeAll, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, afterEach, setSystemTime } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
+import { invalidate, __invalidationBusListenerCountForTests } from '@barefootjs/shared'
 
 beforeAll(() => {
   if (typeof window === 'undefined') {
@@ -696,5 +697,87 @@ describe('@barefootjs/router — head resources are not managed', () => {
     await flush()
     expect(region().querySelector('link[href="/editor.css"]')).toBeNull()
     expect(document.querySelector('link[href="/editor.css"]')).toBeNull()
+  })
+})
+
+describe('@barefootjs/router — invalidation bus (#3199)', () => {
+  afterEach(() => {
+    setSystemTime()
+  })
+
+  test('an invalidation clears the page cache, so the next navigation fetches', async () => {
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+
+    await navigate('/blog/2')
+    await flush()
+    expect(fetchCalls.length).toBe(1)
+
+    // Within the default 15s `cacheFreshMs` window, a re-navigation to the
+    // same page would normally be served from the fresh cache with no
+    // refetch — the invalidation below is what forces the miss.
+    invalidate(['/anything'])
+
+    await navigate('/blog/2')
+    await flush()
+    expect(fetchCalls.length).toBe(2)
+  })
+
+  test('stop() unsubscribes', () => {
+    const before = __invalidationBusListenerCountForTests()
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    expect(__invalidationBusListenerCountForTests()).toBe(before + 1)
+
+    router.stop()
+    expect(__invalidationBusListenerCountForTests()).toBe(before)
+    router = null // already stopped; the shared afterEach's router?.stop() would be a harmless no-op either way
+  })
+
+  test('a navigation in flight across an invalidation does not repopulate the cache', async () => {
+    setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+    router = startRouter({
+      rehydrate: () => {},
+      dispose: () => {},
+      cacheFreshMs: 1000,
+      cacheStaleMs: 100_000,
+    })
+
+    // Populate the cache: one resolved fetch for /blog/2.
+    router.prefetch('/blog/2')
+    await flush()
+    expect(fetchCalls.length).toBe(1)
+
+    // Past `cacheFreshMs` but well inside `cacheStaleMs`: the next access is
+    // "aging" — served from cache AND refreshed in the background.
+    setSystemTime(new Date('2026-01-01T00:00:02.000Z'))
+
+    const resolvers: Array<(r: unknown) => void> = []
+    ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      fetchCalls.push({ url })
+      return new Promise((resolve) => resolvers.push(resolve))
+    }) as typeof fetch
+
+    router.prefetch('/blog/2') // triggers the background refresh (fetch #1), left pending
+    await flush()
+    expect(fetchCalls.length).toBe(2)
+
+    // An invalidation arrives while that background refresh is still in flight.
+    invalidate(['/anything'])
+
+    // The refresh now resolves successfully — a valid response, just late.
+    resolvers[0]!({
+      ok: true,
+      status: 200,
+      redirected: false,
+      url: fetchCalls[1]!.url,
+      text: async () => fullPage('<p>refreshed</p>', { title: 'refreshed' }),
+    })
+    await flush()
+
+    // The (now-cleared) cache must not have been repopulated by that stale
+    // refresh: a further prefetch is a genuine miss, not a fresh-cache hit.
+    router.prefetch('/blog/2')
+    await flush()
+    expect(fetchCalls.length).toBe(3)
   })
 })
