@@ -43,7 +43,10 @@ export interface RouterOptions {
   fetch?: typeof fetch
   /** Decide whether to intercept an anchor click. Defaults to {@link defaultShouldIntercept}. */
   shouldIntercept?: (anchor: HTMLAnchorElement, event: Event) => boolean
-  /** Scroll to the top of the document after a swap. Default `true`. */
+  /**
+   * Scroll to the top of the document after a swap, instantly (as a document
+   * load does) even under `scroll-behavior: smooth`. Default `true`.
+   */
   scrollToTop?: boolean
   /** Move focus to the swapped region + announce the route change. Default `true`. */
   manageFocus?: boolean
