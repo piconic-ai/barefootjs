@@ -206,7 +206,8 @@ export const renderer = jsxRenderer(
                   <div class="doc-main-column">
                     <div class="doc-title-bar">
                       <h1 class="doc-title">{title}</h1>
-                      <MdToggleButton slug={currentSlug} />
+                      {/* Only a docs page has a Markdown version; the 404 page has no slug */}
+                      {slug !== undefined && <MdToggleButton slug={currentSlug} />}
                       <PageNav prev={prev} next={next} />
                     </div>
                     <article class="doc-article">

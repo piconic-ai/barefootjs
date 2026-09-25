@@ -5,6 +5,7 @@
  *   GET /              → Landing page
  *   GET /docs/...      → Documentation
  *   GET /playground    → In-browser compiler playground
+ *   GET (anything else) → 404 page
  */
 
 import { Hono } from 'hono'
@@ -13,6 +14,7 @@ import { createLandingApp } from './landing/routes'
 import { createPlaygroundApp } from './playground/routes'
 import { createIntegrationsApp } from './integrations/routes'
 import { createOgRoute } from './og-route'
+import { createNotFoundApp } from './not-found'
 import type { Page, ContentMap, MdxContentMap } from './lib/content'
 
 /**
@@ -42,6 +44,9 @@ export async function createApp(content: ContentMap, pages: Page[], mdx: MdxCont
 
   // OG images (GET /og/<base64url(title)>.png, see lib/og-image.ts)
   app.route('/og', createOgRoute())
+
+  // Everything no route above answers. Mounted last so it never shadows one.
+  app.route('/', createNotFoundApp())
 
   return app
 }

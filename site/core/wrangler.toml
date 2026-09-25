@@ -8,8 +8,11 @@ compatibility_date = "2024-01-01"
 #
 # - html_handling (default "auto-trailing-slash"): /docs/quick-start serves
 #   dist/docs/quick-start.html; a trailing slash redirects to the bare path.
+# - not_found_handling = "404-page": a path with no file gets dist/404.html
+#   (the app's 404 page, see not-found.tsx) with a 404 status.
 # - dist/_redirects: the 301s for merged docs pages (from lib/navigation.ts).
 # - dist/_headers: CORS for /static/components/* (the playground iframe).
 # - dist/.assetsignore: build intermediates that are not uploaded.
 [assets]
 directory = "./dist"
+not_found_handling = "404-page"
