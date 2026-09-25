@@ -17,6 +17,7 @@ import { renderChildScopeArgs } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
+import { isEventHandlerName } from '../event-handler-name.ts'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -891,7 +892,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
         // during module-scope string rendering, and a ref closing over an
         // init-scope setter would leak it into the template (#2468). The
         // init path re-applies refs once real DOM exists.
-        .filter(p => p.name !== 'ref' && !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
+        .filter(p => p.name !== 'ref' && !(isEventHandlerName(p.name)))
         .map(p => {
           // `/* @client */` defers the prop to hydrate via initChild.
           if (p.clientOnly) return null
@@ -1558,7 +1559,7 @@ function irNodeToJsExprs(node: IRNode, brandMarkup = false): string[] {
       const propsEntries: string[] = node.props
         .filter(p => p.name !== 'key' && p.name !== '...' && !p.name.startsWith('...'))
         .map(p => {
-          if (p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()) {
+          if (isEventHandlerName(p.name)) {
             return `${quotePropName(p.name)}: ${attrValueToString(p.value) ?? 'undefined'}`
           }
           switch (p.value.kind) {
@@ -2041,7 +2042,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
         // during module-scope string rendering, and a ref closing over an
         // init-scope setter would leak it into the template (#2468). The
         // init path re-applies refs once real DOM exists.
-        .filter(p => p.name !== 'ref' && !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
+        .filter(p => p.name !== 'ref' && !(isEventHandlerName(p.name)))
         .map(p => {
           // `/* @client */` defers the prop to hydrate via initChild.
           if (p.clientOnly) return null
@@ -2422,7 +2423,7 @@ export function computeDeferredChildSlots(
             // `component` emit below so the deferral decision matches output.
             if (p.name === '...' || p.name.startsWith('...') || p.name === 'key') return false
             if (p.name === 'ref') return false
-            if (p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()) return false
+            if (isEventHandlerName(p.name)) return false
             if (p.clientOnly) return false
             return propResolvesUnsafe(p, env, unsafeLocalNames)
           })
@@ -2692,7 +2693,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // during module-scope string rendering, and a ref closing over an
         // init-scope setter would leak it into the template (#2468). The
         // init path re-applies refs once real DOM exists.
-        .filter(p => p.name !== 'ref' && !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
+        .filter(p => p.name !== 'ref' && !(isEventHandlerName(p.name)))
         .map(p => {
           // `/* @client */` defers the prop to hydrate. Drop from the
           // SSR `renderChild` props — `initChild`'s `propsExpr` getter

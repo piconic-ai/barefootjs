@@ -601,6 +601,46 @@ export type ProviderObjectMember =
   | { name: string; kind: 'expression'; expr: string }
 
 /**
+ * Whether an expression node is function-shaped: an arrow / function
+ * expression, or a `??` / `||` fallback chain with one as an operand
+ * (`props.onX ?? (() => {})` is function-typed whichever side wins).
+ */
+function isFunctionShapedNode(e: ts.Expression): boolean {
+  let v: ts.Expression = e
+  while (ts.isParenthesizedExpression(v)) v = v.expression
+  if (ts.isArrowFunction(v) || ts.isFunctionExpression(v)) return true
+  if (
+    ts.isBinaryExpression(v) &&
+    (v.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+      v.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+  ) {
+    return isFunctionShapedNode(v.left) || isFunctionShapedNode(v.right)
+  }
+  return false
+}
+
+/**
+ * Whether `source` is a function-shaped expression — behavior, not data, so
+ * SSR never has a value for it (the same classification
+ * `parseProviderObjectLiteral` gives a provider member's `function` kind).
+ * Covers the block-bodied arrows `parseExpression` leaves `unsupported`
+ * (`(el) => { el.focus() }`). Parses `source`, so callers reach for it off
+ * the hot path only (e.g. before refusing a value they could not lower).
+ */
+export function isFunctionShapedExpression(source: string): boolean {
+  const sf = ts.createSourceFile(
+    '__fn__.tsx',
+    `(${source})`,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TSX,
+  )
+  const stmt = sf.statements[0]
+  if (sf.statements.length !== 1 || !stmt || !ts.isExpressionStatement(stmt)) return false
+  return isFunctionShapedNode(stmt.expression)
+}
+
+/**
  * Structurally parse a `<Ctx.Provider value={{ … }}>` object literal into
  * per-member SSR lowering classifications (see `ProviderObjectMember`).
  *
@@ -624,22 +664,6 @@ export function parseProviderObjectLiteral(source: string): ProviderObjectMember
   let init = stmt.declarationList.declarations[0]?.initializer
   while (init && ts.isParenthesizedExpression(init)) init = init.expression
   if (!init || !ts.isObjectLiteralExpression(init)) return null
-
-  const isFunctionShaped = (e: ts.Expression): boolean => {
-    let v: ts.Expression = e
-    while (ts.isParenthesizedExpression(v)) v = v.expression
-    if (ts.isArrowFunction(v) || ts.isFunctionExpression(v)) return true
-    // `props.onX ?? (() => {})` — a fallback chain with a function operand
-    // is function-typed regardless of which side wins at runtime.
-    if (
-      ts.isBinaryExpression(v) &&
-      (v.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
-        v.operatorToken.kind === ts.SyntaxKind.BarBarToken)
-    ) {
-      return isFunctionShaped(v.left) || isFunctionShaped(v.right)
-    }
-    return false
-  }
 
   const members: ProviderObjectMember[] = []
   for (const prop of init.properties) {
@@ -668,7 +692,7 @@ export function parseProviderObjectLiteral(source: string): ProviderObjectMember
       members.push({ name, kind: 'getter', body: v.body.getText(sf).trim() })
       continue
     }
-    if (isFunctionShaped(v)) {
+    if (isFunctionShapedNode(v)) {
       members.push({ name, kind: 'function' })
       continue
     }
