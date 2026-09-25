@@ -10,9 +10,19 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { expectTocActive, tocNav } from './toc'
 
 const plantReloadMarker = (page: Page) => page.evaluate(() => { (window as any).__bfSoftNavMarker = true })
 const hasReloadMarker = (page: Page) => page.evaluate(() => (window as any).__bfSoftNavMarker === true)
+
+/** Counts requests for `pathname` from now on (any query or fragment). */
+function countRequestsTo(page: Page, pathname: string) {
+  let count = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === pathname) count++
+  })
+  return () => count
+}
 
 /** The router sets `data-bf-navigating` on <html> until the swapped-in islands are live. */
 const waitForSwap = (page: Page) => expect(page.locator('html[data-bf-navigating]')).toHaveCount(0)
@@ -67,19 +77,16 @@ test.describe('docs layout soft navigation', () => {
 
   test('an On This Page link scrolls in place and moves the active marker there', async ({ page }) => {
     await page.goto('/docs/quick-start')
-    await plantReloadMarker(page)
+    const pageRequests = countRequestsTo(page, '/docs/quick-start')
 
-    const toc = page.locator('nav[aria-label="Table of contents"]')
-    const target = toc.locator('a').nth(3)
-    const hash = (await target.getAttribute('href'))!
-    await target.click()
+    await tocNav(page).locator('a[href="#3-look-at-what-was-generated"]').click()
 
-    await expect(page).toHaveURL(new RegExp(`/docs/quick-start${hash}$`))
-    await expect(page.locator(`[id="${hash.slice(1)}"]`)).toBeInViewport()
-    await expect(target).toHaveClass(/font-semibold/)
-    await expect(toc.locator('[data-toc-indicator]')).toHaveAttribute('style', /translate\(0px, 84px\)/)
-    // An in-page anchor never re-fetches the page.
-    expect(await hasReloadMarker(page)).toBe(true)
+    await expect(page).toHaveURL(/\/docs\/quick-start#3-look-at-what-was-generated$/)
+    await expect(page.locator('[id="3-look-at-what-was-generated"]')).toBeInViewport()
+    await expectTocActive(page, '3-look-at-what-was-generated')
+    // An in-page anchor never re-fetches the page (a soft re-fetch would
+    // keep the reload marker, so the requests themselves are counted).
+    expect(pageRequests()).toBe(0)
   })
 
   test('leaving the docs layout for the landing layout is a full load', async ({ page }) => {

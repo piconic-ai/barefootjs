@@ -1,28 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
+import { expectTocActive } from './toc'
 
 // The On This Page nav follows the reader: the active item is bold and the
 // green marker sits on its row, whether it got there by a click or a scroll.
 // On site/ui a TOC target is either a whole <section> or an <h3> inside one.
-
-const ITEM_HEIGHT = 28
-
-async function expectActive(page: Page, id: string) {
-  const toc = page.locator('nav[aria-label="Table of contents"]')
-  const index = await toc.locator('a').evaluateAll(
-    (links, href) => links.findIndex((a) => a.getAttribute('href') === href),
-    `#${id}`,
-  )
-  expect(index).toBeGreaterThanOrEqual(0)
-  const link = toc.locator(`a[href="#${id}"]`)
-  await expect(link).toHaveClass(/font-semibold/)
-  await expect(toc.locator('a.font-semibold')).toHaveCount(1)
-  // A nested (indented, ml-2) item shifts the marker 8px right
-  const xOffset = (await link.evaluate((a) => a.classList.contains('ml-2'))) ? 8 : 0
-  await expect(toc.locator('[data-toc-indicator]')).toHaveAttribute(
-    'style',
-    new RegExp(`translate\\(${xOffset}px, ${index * ITEM_HEIGHT}px\\)`),
-  )
-}
 
 async function scrollToY(page: Page, y: number) {
   await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y)
@@ -39,22 +20,22 @@ test.describe('On This Page', () => {
     await page.locator('nav[aria-label="Table of contents"] a[href="#icon"]').click()
     await expect(page).toHaveURL(/\/components\/button#icon$/)
     await expect(page.locator('#icon')).toBeInViewport()
-    await expectActive(page, 'icon')
+    await expectTocActive(page, 'icon')
   })
 
   test('scrolling marks the sub-section being read, not its enclosing section', async ({ page }) => {
     await page.goto('/components/button')
-    await expectActive(page, 'preview')
+    await expectTocActive(page, 'preview')
 
     const start = await topOf(page, 'icon')
     const end = await topOf(page, 'as-child')
     await scrollToY(page, (start + end) / 2)
-    await expectActive(page, 'icon')
+    await expectTocActive(page, 'icon')
 
     await scrollToY(page, 1e6)
-    await expectActive(page, 'api-reference')
+    await expectTocActive(page, 'api-reference')
 
     await scrollToY(page, (await topOf(page, 'usage')) - 20)
-    await expectActive(page, 'usage')
+    await expectTocActive(page, 'usage')
   })
 })
