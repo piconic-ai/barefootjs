@@ -556,7 +556,7 @@ All four run the same oracle bodies (`e2e/oracle-core.ts`) against the same host
 
 | Sweep | Input | Question a red row answers | Oracles | Cadence | Ledger |
 |---|---|---|---|---|---|
-| fixture-hydrate + oracle (`test:fixture-hydrate`) | the frozen fixture corpus | does a committed fixture hydrate and mount consistently? | snap, three-point, idempotence, scripted interactions | every PR (`ci.yml`) | `oracle-quarantine.ts` |
+| fixture-hydrate + oracle (`test:fixture-hydrate`) | the frozen fixture corpus | does a committed fixture hydrate and mount consistently? | snap, three-point, idempotence, scripted interactions | every main-based PR (`ci.yml`; skipped on stacked PRs, see CLAUDE.md "CI on stacked PRs") | `oracle-quarantine.ts` |
 | mutation (`test:mutation`) | corpus × single meaning-preserving mutations | does a mutation that should not change meaning change the render? | snap, three-point, idempotence | nightly (`mutation-sweep.yml`) | `mutation-quarantine.ts` |
 | pairwise (`test:pairwise`) | generated t=2 / t=3 combinations of the five static feature axes | does a **static feature combination** the corpus never wrote render, hydrate and mount consistently at its SSR-time state? | snap, three-point, idempotence (one scripted click) | nightly (`pairwise-sweep.yml`) | `pairwise-quarantine.ts` |
 | explore (`test:explore`) | hand-modelled scenarios × bounded action sequences (× SSR adapter) | does a **transition** from a given state preserve the component's declarative meaning? | snap, three-point per state; transition-hydrate, transition-csr, identity-hydrate, identity-csr per path; render per adapter run | nightly (`explore-sweep.yml`) | `explore-quarantine.ts` |
