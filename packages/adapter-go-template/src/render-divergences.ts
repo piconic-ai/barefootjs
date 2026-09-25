@@ -138,6 +138,14 @@ export const renderDivergences: RenderDivergences = {
   // the shared instance's zero value.
   'loop-row-child-children-nested-index-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
   'loop-row-child-children-nested-preamble-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
+  // A component loop row whose callback destructures the row param renders
+  // no rows (`({ id, tone }) => <Mark key={id} tone={tone} />`), or — with
+  // forwarded children — rows without their `data-key` and without a
+  // destructured field passed to a nested component (read as
+  // `$__bf_item0.Tone`, a `{{range}}` variable the children define can't
+  // reach).
+  'loop-component-row-destructured-param': { limitation: 'loop-component-row-destructured-param' },
+  'loop-row-child-children-nested-destructured-prop': { limitation: 'loop-component-row-destructured-param' },
   // `html/template` strips a `data-` prefix before classifying an attribute,
   // so `data-on…` escapes as an `on…` event-handler (JS) attribute: a dynamic
   // value renders as a quoted script string (`&#34;x&#34;`).

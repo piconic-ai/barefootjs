@@ -127,4 +127,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'dialog',
   'popover',
   'portal',
+  // A `/* @client */` prop on a component inside a loop row: the CSR
+  // template omits it by design (it is deferred to `initChild`'s props
+  // getters, `IRProp.clientOnly`), and this harness evaluates only the
+  // `template` lambda — same not-modeled-init class as `input`. Per-adapter
+  // render conformance pins the SSR contract these fixtures exist for.
+  'loop-row-child-children-nested-client-prop',
+  'loop-row-child-children-nested-client-row-prop',
+  'loop-element-row-child-client-row-prop',
 ])

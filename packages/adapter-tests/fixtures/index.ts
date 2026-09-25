@@ -750,6 +750,21 @@ import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-c
 import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
 import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
+// The nested component's signal is seeded from a prop fallback
+// (`createSignal(props.hl ?? true)`), and the row binds its fields by
+// destructuring (`({ id, tone }) => …`).
+import { fixture as loopRowChildChildrenNestedPropFallback } from './loop-row-child-children-nested-prop-fallback'
+import { fixture as loopRowChildChildrenNestedDestructuredProp } from './loop-row-child-children-nested-destructured-prop'
+// The row-reading component nested two levels deep (inside another
+// component's children within the row child's forwarded children).
+import { fixture as loopRowChildChildrenNestedDeepRowProp } from './loop-row-child-children-nested-deep-row-prop'
+// A component loop row whose callback destructures the row param.
+import { fixture as loopComponentRowDestructuredParam } from './loop-component-row-destructured-param'
+// A `/* @client */` prop on a component nested in a loop-row child's forwarded children.
+import { fixture as loopRowChildChildrenNestedClientProp } from './loop-row-child-children-nested-client-prop'
+import { fixture as loopRowChildChildrenNestedClientRowProp } from './loop-row-child-children-nested-client-row-prop'
+// A `/* @client */` row-reading prop on a component inside an element loop row.
+import { fixture as loopElementRowChildClientRowProp } from './loop-element-row-child-client-row-prop'
 // The UNTYPED twin of `loop-row-child-children-nested-shapes`: same forwarded-JSX-children shape,
 // but the loop's source array is an unannotated object-literal const
 // (#3178). Regression pin for go-template's untyped-object-array-const
@@ -1255,6 +1270,13 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenOwnReactiveProp,
   loopRowChildChildrenNestedIndexProp,
   loopRowChildChildrenNestedPreambleProp,
+  loopRowChildChildrenNestedPropFallback,
+  loopRowChildChildrenNestedDestructuredProp,
+  loopRowChildChildrenNestedDeepRowProp,
+  loopComponentRowDestructuredParam,
+  loopRowChildChildrenNestedClientProp,
+  loopRowChildChildrenNestedClientRowProp,
+  loopElementRowChildClientRowProp,
   loopRowChildChildrenUntypedArray,
   loopRowChildUntypedArrayNestedField,
   loopRowChildUntypedArrayNestedFieldTyped,

@@ -82,6 +82,8 @@ import {
   evaluateStaticLiteral,
   BindingScope,
   freeIdentifiers,
+  isEventHandlerName,
+  isFunctionShapedExpression,
   buildImportAliasMap,
   resolveGetterAliases,
   collectAliasableGetterNames,
@@ -223,15 +225,6 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
       : null
   const first = keySet(rows[0])
   return rows.every(row => keySet(row) === first)
-}
-
-/**
- * Whether a component prop is an event handler, which is wired on the
- * client and has no SSR value — the same `isEventHandler` predicate
- * `jsx-to-ir.ts` applies to component props.
- */
-function isComponentEventProp(name: string): boolean {
-  return name.startsWith('on') && name.length > 2
 }
 
 /**
@@ -3053,11 +3046,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `lowerChildInputFields` for a child built once per loop in the parent's
    * constructor and shared by every row (the loop-body component of a
    * wrapper-slice loop, and each component nested in its forwarded
-   * children). Row-dependent props are skipped (delivered per row); a
-   * `/* @client *\/` prop never reaches SSR; `key` is the row's
-   * reconciliation key, not a prop. Any other prop the constructor can't
-   * lower, event handlers aside, is refused with BF101 rather than left at
-   * the child's zero value.
+   * children). Row-dependent props are skipped (delivered per row); `key` is
+   * the row's reconciliation key, not a prop. Every other prop goes through
+   * the same lowering as a non-loop call site — a `/* @client *\/` prop
+   * included, which the reference still renders at SSR
+   * (`loop-row-child-children-nested-client-prop`). A prop the constructor
+   * can't lower is refused with BF101 rather than left at the child's zero
+   * value — but only when it is SSR data with somewhere to go
+   * (`isUndeliveredSsrData`).
    */
   private lowerLoopRowChildInputFields(
     child: { name: string; props: readonly IRProp[] },
@@ -3065,7 +3061,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     rowScope: BindingScope,
   ): Array<{ goField: string; goValue: string }> {
-    const props = child.props.filter(p => !p.clientOnly && p.name !== 'key')
+    const props = child.props.filter(p => p.name !== 'key')
     const { fields, unlowered } = this.lowerChildInputFields(
       { name: child.name, props },
       ir,
@@ -3073,7 +3069,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       rowScope,
     )
     for (const prop of unlowered) {
-      if (isComponentEventProp(prop.name)) continue
+      if (!this.isUndeliveredSsrData(prop, child.name, ir)) continue
       this.state.errors.push({
         code: 'BF101',
         severity: 'error',
@@ -3086,6 +3082,55 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       })
     }
     return fields
+  }
+
+  /**
+   * Whether an unlowered loop-row child prop is SSR data the child should
+   * have received — the only props the loop-row refusal covers. Everything
+   * else is left out of the constructor silently, exactly as a non-loop
+   * call site leaves every unlowered prop (`emitStaticChildInstances`):
+   *
+   * - a `/* @client *\/` prop: the documented escape — applied on the
+   *   client when SSR can't lower it (it is lowered like any prop when it can);
+   * - `children`: the reserved slot, delivered by `bf_with_children` (the
+   *   forwarded children define), never by the constructor;
+   * - `ref`: a compile-time binding to the child's root element, applied on
+   *   the client (`child-component-ref-prop`);
+   * - an event handler (`isEventHandlerName`) or any other function-valued
+   *   prop (a setter, a callback): behavior, which SSR never invokes;
+   * - a hyphenated name with no rest bag to route into: no Go field can hold
+   *   it (`emitChildField` drops it even when its value lowers).
+   */
+  private isUndeliveredSsrData(prop: IRProp, childName: string, ir: ComponentIR): boolean {
+    if (prop.clientOnly) return false
+    if (prop.name === 'children' || prop.name === 'ref') return false
+    if (isEventHandlerName(prop.name)) return false
+    const shape = this.childComponentShapes.get(this.resolveChildName(childName))
+    if (prop.name.includes('-') && !routesToRestBag(shape, prop.name)) return false
+    return !this.isFunctionValuedProp(prop, ir)
+  }
+
+  /**
+   * Whether a prop's value is a function — an inline arrow / function
+   * expression, or a name this component binds to one (a signal setter, a
+   * local function declaration, a const initialized with a function).
+   */
+  private isFunctionValuedProp(prop: IRProp, ir: ComponentIR): boolean {
+    if (prop.value.kind !== 'expression') return false
+    const parsed = prop.value.parsed
+    if (parsed?.kind === 'arrow') return true
+    if (parsed?.kind === 'identifier') {
+      const name = parsed.name
+      const { signals, localFunctions } = ir.metadata
+      if (signals.some(s => s.setter === name)) return true
+      if (localFunctions.some(f => f.name === name)) return true
+      // The shared const lookups, not a new linear scan
+      // (`binding-scope-ratchet.test.ts`'s shrink-only ledger).
+      const constant = this.findValuedLocalConst(name) ?? this.findModuleScopeConst(name)
+      if (!constant?.value) return false
+      return constant.parsed?.kind === 'arrow' || isFunctionShapedExpression(constant.value)
+    }
+    return isFunctionShapedExpression(prop.value.expr)
   }
 
   /**
@@ -4337,6 +4382,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * also re-apply the props that read the row (`loopRowChildPropOverrides`).
    * A render-position flag like `inLoop`, not a record of bound names — which
    * names read the row is still `this.scope`'s answer.
+   *
+   * Saved and restored around that one define (`queueLoopBodyChildrenDefine`)
+   * and deliberately NOT cleared by the companion defines queued while it is
+   * set (`queueDynamicChildrenDefine`, `queueDynamicPropDefine`, a Portal's
+   * `bfPortalHTML`): each is executed with the calling define's own `.` — the
+   * same row wrapper — so a component nested one level further down
+   * (`<Mark><Icon tone={o.tone} /></Mark>`) is still the constructor's single
+   * shared instance and still needs its row props re-applied
+   * (`loop-row-child-children-nested-deep-row-prop`). A define that runs with
+   * a different data context resets it itself: an inner loop's row renders
+   * under `inLoop` and never reaches the static call-site branch.
    */
   private renderingWrapperRowChildren = false
 
@@ -7823,13 +7879,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // feeds a constructor-derived field AND the child can rebuild itself.
     let needsRebuild = false
     for (const prop of comp.props) {
-      // Client-only props never reach SSR output; `key`/`children` aren't
-      // Props-struct fields; event handlers have no Go field
-      // (`isComponentEventProp`); a hyphenated name can't be a Go field (same
-      // guard as `emitChildField`).
-      if (prop.clientOnly) continue
+      // `key`/`children` aren't Props-struct fields; event handlers have no
+      // Go field (`isEventHandlerName`); a hyphenated name can't be a Go
+      // field (same guard as `emitChildField`). A `/* @client *\/` prop is
+      // delivered like any other when it lowers — the reference renders it
+      // at SSR — and, being the escape, is skipped silently when it doesn't
+      // (every refusal below checks `escaped`).
+      const escaped = !!prop.clientOnly
       if (prop.name === 'key' || prop.name === 'children') continue
-      if (isComponentEventProp(prop.name)) continue
+      if (isEventHandlerName(prop.name)) continue
       if (prop.name.includes('-')) continue
       // A prop that routes into the child's rest bag (`routesToRestBag`,
       // `emitChildField`'s same routing rule) has no named Go field to
@@ -7843,6 +7901,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (prop.value.kind !== 'expression') continue
       const free = prop.freeIdentifiers
       if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
+      let rebuild = false
       // `rowItemOnly` (a wrapper-slice row's forwarded-children define): the
       // define runs as its own template with the row wrapper as its data, so
       // only the innermost row item's fields (`.Field`) are reachable there.
@@ -7865,6 +7924,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           ? [...derived].find(([, deps]) => deps.has(overriddenField))?.[0]
           : undefined
         if (staleField && !this.childRepropsReady.has(declaredName)) {
+          if (escaped) continue
           this.state.errors.push({
             code: 'BF101',
             severity: 'error',
@@ -7876,24 +7936,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           })
           continue
         }
-        if (staleField) {
-          needsRebuild = true
-          // The rebuilder is emitted into THIS component's type block, not the
-          // child's — only here do we know it is actually needed. First parent
-          // to claim a child owns the registration, so two parents overriding
-          // the same child don't both emit an `init()` for it. Keyed by the
-          // child's DECLARED name (#2822) — `emitRepropsRegistration` below
-          // builds Go type references (`<Name>Props`/`<Name>Input`) from this
-          // same key, and only the declared name has real types to match.
-          if (!this.repropsOwner.has(declaredName)) {
-            this.repropsOwner.set(declaredName, this.state.componentName)
-          }
-        }
+        // Claimed below, once the prop's value has actually lowered.
+        rebuild = !!staleField
       }
       const exprOut: { parsed?: ParsedExpr } = {}
       const errorCountBefore = this.state.errors.length
       let go = this.convertExpressionToGo(prop.value.expr, exprOut, prop.value.parsed)
       if (this.state.errors.length > errorCountBefore) {
+        if (escaped) {
+          this.state.errors.length = errorCountBefore
+          continue
+        }
         // `convertExpressionToGo` already pushed its own BF101 for an
         // unsupported expression and returned the `""` sentinel — using it
         // here would silently clobber the field with an empty string (or,
@@ -7925,6 +7978,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // fragment can't be a bare pipeline argument — refuse loudly rather
         // than silently dropping the prop (the #2445 bug was exactly a
         // silent drop one level up).
+        if (escaped) continue
         this.state.errors.push({
           code: 'BF101',
           severity: 'error',
@@ -7956,6 +8010,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // caller-facing. Falls back to the capitalized attribute for a
       // cross-file child this run's pre-pass never registered.
       const fieldName = this.childPropFieldNames.get(declaredName)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      if (rebuild) {
+        needsRebuild = true
+        // The rebuilder is emitted into THIS component's type block, not the
+        // child's — only here do we know it is actually needed. First parent
+        // to claim a child owns the registration, so two parents overriding
+        // the same child don't both emit an `init()` for it. Keyed by the
+        // child's DECLARED name (#2822) — `emitRepropsRegistration` below
+        // builds Go type references (`<Name>Props`/`<Name>Input`) from this
+        // same key, and only the declared name has real types to match.
+        if (!this.repropsOwner.has(declaredName)) {
+          this.repropsOwner.set(declaredName, this.state.componentName)
+        }
+      }
       args.push(`${JSON.stringify(fieldName)} ${wrapIfMultiToken(go)}`)
     }
     if (args.length === 0 && bagEntries.length === 0) return null
@@ -9275,6 +9342,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // is the one instance the constructor built for every row, so a prop
       // reading the row (`<Mark tone={o.tone}>`) is re-applied per row here —
       // the same delivery a component nested in an element row gets above.
+      //
+      // This puts the row's props helper OUTSIDE the named-prop/bag helpers
+      // above, the reverse of the loop-nested branch's order. That is safe
+      // because the two can only meet as `bf_reprops` over `bf_with_props`: a
+      // `bf_with_bag` entry needs a child with a rest bag, and a child with a
+      // rest bag never gets a props rebuilder (`recordRepropsSpec` declines
+      // `restPropsName`), so it is only ever patched by `bf_with_props` /
+      // `bf_with_bag`, which touch disjoint fields in any order. `bf_reprops`
+      // rebuilds the Input from every declared Props field, so a named prop
+      // patched just inside it is carried into the re-run constructor.
       if (this.renderingWrapperRowChildren) {
         base = this.wrapLoopRowPropOverrides(base, declaredName, this.loopRowChildPropOverrides(comp, true))
       }
