@@ -408,6 +408,17 @@ rather than matching prefixes itself (#3199). A live query tracking a matching U
 at once. A matching request already in flight was issued before the mutation, so no query
 joins it and its response writes neither a query's value nor the cache.
 
+**Concurrent calls** (#3200): calling `action()` again before an earlier call has settled
+does not cancel or dedupe it — a mutation has no cache and no single-flight, so each call
+sends its own request and its own returned promise settles with its own result. `value()`,
+`isPending()` and `error()` are shared per `createMutation` instance, though, and follow only
+the **latest** call (the same generation-guard shape `createQuery` uses for a superseded
+send): an older call's result settling after a newer one has already written never overwrites
+those three. A safe method (`GET`/`HEAD`/`QUERY`) passed to `createMutation` still sends —
+the check is a warning, not a refusal — and that warning is emitted **once per
+`createMutation` instance**, not once per call, so a mutation called in a loop doesn't flood
+the console.
+
 ### 7.5 Options
 
 | Option | Factory | Meaning | Default |

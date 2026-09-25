@@ -14,7 +14,8 @@
  */
 
 import { createSignal, createEffect, onCleanup, untrack, type Reactive } from './reactive.ts'
-import { isHttpDescriptor, requestKey, requestUrl, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
+import { requestKey, requestUrl, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
+import { assertHttpDescriptor, normalizeError } from './request-descriptor.ts'
 import { scheduleMicrotask } from './schedule-microtask.ts'
 import { onInvalidate } from '@barefootjs/shared'
 
@@ -137,12 +138,6 @@ export function __resetQueryCacheForTests(): void {
   inflight.clear()
   liveQueries.clear()
 }
-
-const NOT_A_DESCRIPTOR_MESSAGE =
-  'createQuery: the request function must return an `http` request descriptor ' +
-  '(http.get/query/head/post/put/patch/delete(...) from "@barefootjs/client"). ' +
-  'A bare Promise or other async value is not a supported request source in v0 ' +
-  '— see spec/async.md §7.2.'
 
 /**
  * `createQuery(fn, options?)` — a value re-sent whenever a signal `fn` reads
@@ -341,7 +336,7 @@ export function createQuery<T>(
           // polyfills/test runtimes reject with a non-Error) — `error()`'s
           // documented type is `HttpError | Error`, so normalize anything
           // else into a real `Error` rather than lying about the type.
-          setError(err instanceof Error ? err : new Error(String(err)))
+          setError(normalizeError(err))
           setIsPending(false)
         }
         throw err
@@ -350,11 +345,7 @@ export function createQuery<T>(
   }
 
   createEffect(() => {
-    const result = fn()
-    if (!isHttpDescriptor(result)) {
-      throw new Error(NOT_A_DESCRIPTOR_MESSAGE)
-    }
-    const descriptor = result as HttpDescriptor<T>
+    const descriptor = assertHttpDescriptor<T>(fn(), 'createQuery')
     const key = requestKey(descriptor)
     liveDescriptor = descriptor
     liveKey = key
@@ -381,11 +372,7 @@ export function createQuery<T>(
     // untrack: computing the descriptor to force-send must not register a
     // dependency on whatever reactive context called action() (e.g. a click
     // handler is not itself tracked, but this guards nested-effect callers too).
-    const result = untrack(fn)
-    if (!isHttpDescriptor(result)) {
-      throw new Error(NOT_A_DESCRIPTOR_MESSAGE)
-    }
-    const descriptor = result as HttpDescriptor<T>
+    const descriptor = assertHttpDescriptor<T>(untrack(fn), 'createQuery')
     const key = requestKey(descriptor)
     liveDescriptor = descriptor
     liveKey = key
