@@ -11,57 +11,7 @@ import { createSignal, createRoot } from '../src/reactive'
 import { http, type HttpDescriptor } from '../src/http'
 import { createMutation } from '../src/create-mutation'
 import { onInvalidate } from '@barefootjs/shared'
-
-// -- fetch stubs (mirrors create-query.test.ts) -----------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
-
-/** Every call resolves immediately with `body`; `calls` records the URLs sent. */
-function stubFetch(body: unknown, status = 200): { calls: string[] } {
-  const calls: string[] = []
-  // @ts-expect-error — test stub
-  globalThis.fetch = (url: string) => {
-    calls.push(url)
-    return Promise.resolve(jsonResponse(body, status))
-  }
-  return { calls }
-}
-
-/** Calls are recorded but resolve only when `resolveNth` is invoked. */
-function deferredFetch(): {
-  calls: string[]
-  resolveNth: (n: number, body: unknown, status?: number) => void
-} {
-  const calls: string[] = []
-  const resolvers: Array<(r: Response) => void> = []
-  // @ts-expect-error — test stub
-  globalThis.fetch = (url: string) => {
-    calls.push(url)
-    return new Promise<Response>((resolve) => {
-      resolvers.push(resolve)
-    })
-  }
-  return {
-    calls,
-    resolveNth(n, body, status = 200) {
-      resolvers[n]!(jsonResponse(body, status))
-    },
-  }
-}
-
-async function waitUntil(predicate: () => boolean, maxIters = 200): Promise<void> {
-  for (let i = 0; i < maxIters; i++) {
-    if (predicate()) return
-    await Promise.resolve()
-  }
-  throw new Error(`waitUntil: condition not met after ${maxIters} microtask ticks`)
-}
-
-async function settle(): Promise<void> {
-  for (let i = 0; i < 20; i++) await Promise.resolve()
-}
+import { jsonResponse, stubFetch, deferredFetch, waitUntil, settle } from './http-test-helpers'
 
 const originalFetch = globalThis.fetch
 const originalWarn = console.warn

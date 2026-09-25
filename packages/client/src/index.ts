@@ -61,9 +61,10 @@ export { formatDate } from './format-date.ts'
 
 // `http` request descriptors (spec/async.md §7.2, async layer 0 1/4, #3156).
 // Pure, synchronous, no I/O — `createQuery` (#3157) is the only consumer of
-// `requestKey` / `sendRequest`, which stay internal to the package.
-// `HttpError` is public: it is what `createQuery`'s `error()` holds for a
-// non-2xx response, so callers need it for `instanceof` checks.
+// `requestKey`, and `sendRequest` stays internal to the package, called by
+// both `createQuery` and `createMutation` (#3200). `HttpError` is public: it
+// is what both factories' `error()` holds for a non-2xx response, so callers
+// need it for `instanceof` checks.
 export {
   http,
   HttpError,
