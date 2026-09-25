@@ -60,4 +60,17 @@ test.describe('On This Page', () => {
     await expect(page.locator('[id="5-deploy-optional"]')).toBeInViewport()
     await expectActive(page, '5-deploy-optional')
   })
+
+  test('scrolling away during a clicked item\'s scroll hands the marker back to the scroll position', async ({ page }) => {
+    await page.goto('/docs/quick-start')
+
+    // Take over while the smooth scroll to step 2 is still in flight
+    await page.locator('nav[aria-label="Table of contents"] a[href="#2-install-and-run"]').click()
+    await page.keyboard.press('End')
+
+    await expect.poll(() => page.evaluate(
+      () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2,
+    )).toBe(true)
+    await expectActive(page, 'next-steps')
+  })
 })

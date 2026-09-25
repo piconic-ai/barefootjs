@@ -66,6 +66,9 @@ export function TableOfContents(props: TableOfContentsProps) {
     // the smooth scroll passes other sections on the way, and a target near
     // the end of the page can never reach the top.
     const SETTLE_MS = 150
+    // Input by which the reader scrolls the page themselves
+    const USER_SCROLL_EVENTS = ['wheel', 'touchstart', 'keydown'] as const
+    const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
 
     const activeFromScroll = () => {
       const scrolledToBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
@@ -99,6 +102,16 @@ export function TableOfContents(props: TableOfContentsProps) {
       })
     }
 
+    // The reader scrolling by themselves takes over from a clicked item: its
+    // smooth scroll is cancelled, so the marker follows their position again.
+    const handleUserScrollInput = (event: Event) => {
+      if (!pinned) return
+      if (event instanceof KeyboardEvent && !SCROLL_KEYS.has(event.key)) return
+      pinned = false
+      clearTimeout(settleTimer)
+      handleScroll()
+    }
+
     const handleClick = (event: MouseEvent) => {
       const link = (event.target as Element | null)?.closest?.('a[href^="#"]')
       const id = link?.getAttribute('href')?.slice(1)
@@ -112,10 +125,16 @@ export function TableOfContents(props: TableOfContentsProps) {
     setActiveId(activeFromScroll())
     window.addEventListener('scroll', handleScroll, { passive: true })
     nav?.addEventListener('click', handleClick as EventListener)
+    for (const type of USER_SCROLL_EVENTS) {
+      window.addEventListener(type, handleUserScrollInput, { passive: true })
+    }
 
     return () => {
       window.removeEventListener('scroll', handleScroll)
       nav?.removeEventListener('click', handleClick as EventListener)
+      for (const type of USER_SCROLL_EVENTS) {
+        window.removeEventListener(type, handleUserScrollInput)
+      }
       clearTimeout(settleTimer)
       cancelAnimationFrame(frame)
     }
