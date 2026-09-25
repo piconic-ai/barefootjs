@@ -45,6 +45,19 @@ test.describe('static site', () => {
     await expect(page.locator('body')).toContainText('├── server.tsx')
   })
 
+  test("a missing page answers 404 with the site's not-found page", async ({ page, request }) => {
+    const res = await request.get('/docs/no-such-page')
+    expect(res.status()).toBe(404)
+    expect(res.headers()['content-type']).toContain('text/html')
+
+    await page.goto('/docs/no-such-page')
+    await expect(page).toHaveTitle('Page Not Found — BarefootJS')
+    await expect(page.locator('h1')).toHaveText('Page Not Found')
+    // The docs layout, so the reader can navigate on from here
+    await expect(page.locator('aside[bf-region="sidebar"] a[href="/docs/introduction"]')).toBeVisible()
+    await expect(page.locator('article a[href="/docs/introduction"]')).toBeVisible()
+  })
+
   test("a page's OG image exists at the URL its <meta> names", async ({ page, request }) => {
     await page.goto('/docs/quick-start')
     const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content')

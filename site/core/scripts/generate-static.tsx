@@ -10,6 +10,8 @@
  * route of it, so dev and production cannot drift.
  *
  * Besides the pages:
+ *   - 404.html: the app's answer for an unknown path (not-found.tsx), which
+ *     Workers Assets serves for any path it has no file for.
  *   - OG images: the renderer names each page's image by its title
  *     (lib/og-image.ts); after the pages are rendered, every title they
  *     asked for is rendered through the same `/og/*` route into dist/og/.
@@ -90,6 +92,13 @@ if (unpruned.length > 0) {
   )
 }
 console.log(`Generated: ${result.files.length} files (toSSG)`)
+
+// toSSG skips non-200 responses, so the 404 page is written separately:
+// Workers Assets serves dist/404.html for any path it has no file for.
+const notFound = await app.request(new URL('/404', SITE_ORIGIN).href)
+if (notFound.status !== 404) throw new Error(`/404: expected the 404 page, got HTTP ${notFound.status}`)
+await fs.writeFile(resolve(DIST_DIR, '404.html'), await notFound.text())
+console.log('Generated: dist/404.html')
 
 // ── 2. OG images ─────────────────────────────────────────────
 const titles = requestedOgTitles()
