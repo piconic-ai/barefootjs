@@ -9,6 +9,9 @@ on:
       - 'packages/jsx/**'
       - 'packages/adapter-hono/**'
       - 'packages/client/**'
+      # The compiler's HTML emission imports escaping, attribute naming and
+      # markers from here, so a shared-only edit can change `expectedHtml`.
+      - 'packages/shared/**'
       - 'packages/adapter-tests/src/**'
       - 'packages/adapter-tests/scripts/**'
       - '.github/workflows/update-fixtures.yml'
