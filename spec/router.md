@@ -103,6 +103,13 @@ without it, "wait for the element, then click it" looks correct and fails
 intermittently under load. Only the CURRENT navigation clears it — a superseded
 one reaches its `finally` while its successor is still mid-swap.
 
+A `popstate` whose pathname and query equal the displayed page's does nothing:
+the browser fires one for a followed same-page `#hash` link and for
+back/forward between such entries, and it scrolls to the anchor itself. The
+displayed page is recorded when step 6 commits history, which is what makes
+it comparable to `location`. Swapping would re-fetch the page, reset island
+state and scroll to the top.
+
 Query-only navigations short-circuit before step 2, abort any in-flight swap
 (last-wins), update `searchParams()` + the URL, and do not swap — so they never
 set the attribute: nothing is re-rendered, so there is no interactivity gap to

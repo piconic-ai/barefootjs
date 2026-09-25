@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { expectTocActive, tocNav } from './toc'
 
 /**
  * Site-wide soft navigation (@barefootjs/router, booted once from the
@@ -12,6 +13,15 @@ import { test, expect, type Page } from '@playwright/test'
  */
 const plantReloadMarker = (page: Page) => page.evaluate(() => { (window as any).__bfSoftNavMarker = true })
 const hasReloadMarker = (page: Page) => page.evaluate(() => (window as any).__bfSoftNavMarker === true)
+
+/** Counts requests for `pathname` from now on (any query or fragment). */
+function countRequestsTo(page: Page, pathname: string) {
+  let count = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === pathname) count++
+  })
+  return () => count
+}
 
 /** The router sets `data-bf-navigating` on <html> until the swapped-in islands are live. */
 const waitForSwap = (page: Page) => expect(page.locator('html[data-bf-navigating]')).toHaveCount(0)
@@ -107,22 +117,18 @@ test.describe('Soft navigation', () => {
 
   test('an On This Page link scrolls in place and moves the active marker there', async ({ page }) => {
     await page.goto('/components/button')
-    await plantReloadMarker(page)
+    const pageRequests = countRequestsTo(page, '/components/button')
 
     // #examples is a short section directly followed by #size: the active item
     // must be the one clicked, not the next section that also ends up in view.
-    const toc = page.locator('nav[aria-label="Table of contents"]')
-    const links = toc.locator('a')
-    const index = await links.evaluateAll((as) => as.findIndex((a) => a.getAttribute('href') === '#examples'))
-    await toc.locator('a[href="#examples"]').click()
+    await tocNav(page).locator('a[href="#examples"]').click()
 
     await expect(page).toHaveURL(/\/components\/button#examples$/)
     await expect(page.locator('#examples')).toBeInViewport()
-    await expect(toc.locator('a[href="#examples"]')).toHaveClass(/font-semibold/)
-    await expect(toc.locator('[data-toc-indicator]')).toHaveAttribute('style', new RegExp(`translate\\(0px, ${index * 28}px\\)`))
-    // An in-page anchor never re-fetches the page.
-    expect(await hasReloadMarker(page)).toBe(true)
-    await expect(page.locator('html[data-bf-navigating]')).toHaveCount(0)
+    await expectTocActive(page, 'examples')
+    // An in-page anchor never re-fetches the page (a soft re-fetch would
+    // keep the reload marker, so the requests themselves are counted).
+    expect(pageRequests()).toBe(0)
   })
 
   test('a page with a different region set (gallery) is a full load', async ({ page }) => {

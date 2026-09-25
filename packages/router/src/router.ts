@@ -367,6 +367,11 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     if (mode === 'push') commitHistory('push', finalUrl)
     else if (mode === 'replace') commitHistory('replace', finalUrl)
 
+    // Recorded only after history is committed, not hoisted beside the region
+    // baselines above: `onPopState` compares these to `window.location`, which
+    // changes with the history commit, so they describe the entry being
+    // displayed. A navigation superseded before this point leaves them on the
+    // previous entry; its successor sets them when it commits.
     const committed = new URL(finalUrl, window.location.href)
     state.currentPath = committed.pathname
     state.currentSearch = committed.search

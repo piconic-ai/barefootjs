@@ -50,7 +50,9 @@ export function TableOfContents(props: TableOfContentsProps) {
   // scroll, so it holds inside a long section with no heading in view, after
   // a jump, and on the way back up from the bottom. Targets that are
   // containers (site/ui's <section>s) and targets nested in them (<h3>s) are
-  // both handled, because only each target's top edge matters.
+  // both handled, because only each target's top edge matters. A layout
+  // change that moves the targets without a scroll (content expanding above
+  // the reader, a window resize) recomputes too.
   createEffect(() => {
     const targets = props.items
       .map(item => document.getElementById(item.id))
@@ -70,14 +72,17 @@ export function TableOfContents(props: TableOfContentsProps) {
     const USER_SCROLL_EVENTS = ['wheel', 'touchstart', 'keydown'] as const
     const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
 
+    // Style reads stay off the per-frame path; re-read on a layout change
+    const readMargins = () => targets.map(target => parseFloat(getComputedStyle(target).scrollMarginTop) || 0)
+    let margins = readMargins()
+
     const activeFromScroll = () => {
       const scrolledToBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
       if (scrolledToBottom) return lastItemId
       let reached = firstItemId
-      for (const target of targets) {
-        const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0
-        if (target.getBoundingClientRect().top <= margin + REACHED_TOLERANCE) reached = target.id
-      }
+      targets.forEach((target, i) => {
+        if (target.getBoundingClientRect().top <= margins[i] + REACHED_TOLERANCE) reached = target.id
+      })
       return reached
     }
 
@@ -112,6 +117,11 @@ export function TableOfContents(props: TableOfContentsProps) {
       handleScroll()
     }
 
+    const handleLayoutChange = () => {
+      margins = readMargins()
+      handleScroll()
+    }
+
     const handleClick = (event: MouseEvent) => {
       const link = (event.target as Element | null)?.closest?.('a[href^="#"]')
       const id = link?.getAttribute('href')?.slice(1)
@@ -122,7 +132,11 @@ export function TableOfContents(props: TableOfContentsProps) {
     }
 
     const nav = document.querySelector('nav[aria-label="Table of contents"]')
+    // Observing <body> catches both a resize reflowing the page and content
+    // growing or shrinking inside it; its first callback is harmless.
+    const layoutObserver = new ResizeObserver(handleLayoutChange)
     setActiveId(activeFromScroll())
+    layoutObserver.observe(document.body)
     window.addEventListener('scroll', handleScroll, { passive: true })
     nav?.addEventListener('click', handleClick as EventListener)
     for (const type of USER_SCROLL_EVENTS) {
@@ -135,6 +149,7 @@ export function TableOfContents(props: TableOfContentsProps) {
       for (const type of USER_SCROLL_EVENTS) {
         window.removeEventListener(type, handleUserScrollInput)
       }
+      layoutObserver.disconnect()
       clearTimeout(settleTimer)
       cancelAnimationFrame(frame)
     }
