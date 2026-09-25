@@ -10,19 +10,10 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
-import { expectTocActive, tocNav } from './toc'
+import { countRequestsTo, expectTocActive, tocNav } from '../../shared/e2e/helpers'
 
 const plantReloadMarker = (page: Page) => page.evaluate(() => { (window as any).__bfSoftNavMarker = true })
 const hasReloadMarker = (page: Page) => page.evaluate(() => (window as any).__bfSoftNavMarker === true)
-
-/** Counts requests for `pathname` from now on (any query or fragment). */
-function countRequestsTo(page: Page, pathname: string) {
-  let count = 0
-  page.on('request', (request) => {
-    if (new URL(request.url()).pathname === pathname) count++
-  })
-  return () => count
-}
 
 /** The router sets `data-bf-navigating` on <html> until the swapped-in islands are live. */
 const waitForSwap = (page: Page) => expect(page.locator('html[data-bf-navigating]')).toHaveCount(0)
