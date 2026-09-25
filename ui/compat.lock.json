@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 456,
+    "totalFixtures": 469,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -2091,6 +2091,14 @@
           ],
           "limitations": [
             "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        }
+      },
+      "data-on-attr-dynamic-value": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "data-on-attr-value-script-escaped"
           ]
         }
       },
@@ -3269,6 +3277,14 @@
           ]
         }
       },
+      "loop-component-row-destructured-param": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-component-row-destructured-param"
+          ]
+        }
+      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -3283,11 +3299,27 @@
           }
         }
       },
-      "loop-row-child-children-nested-reactive-prop": {
+      "loop-row-child-children-nested-destructured-prop": {
         "go-template": {
           "kind": "render",
           "limitations": [
-            "loop-row-child-nested-component-reactive-prop-dropped"
+            "loop-component-row-destructured-param"
+          ]
+        }
+      },
+      "loop-row-child-children-nested-index-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-nested-prop-reads-unreachable-row-binding"
+          ]
+        }
+      },
+      "loop-row-child-children-nested-preamble-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-nested-prop-reads-unreachable-row-binding"
           ]
         }
       },
@@ -5371,6 +5403,10 @@
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
       },
+      "data-on-attr-dynamic-value": {
+        "description": "A dynamic value on a data-on* attribute renders as plain attribute text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-on-attr-dynamic-value.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -5415,13 +5451,25 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "loop-component-row-destructured-param": {
+        "description": "A component loop row whose callback destructures the row param renders every row with its own key…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-component-row-destructured-param.ts"
+      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
-      "loop-row-child-children-nested-reactive-prop": {
-        "description": "A nested component inside a loop-row child's forwarded children receives an outer signal's value as…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-reactive-prop.ts"
+      "loop-row-child-children-nested-destructured-prop": {
+        "description": "A nested component inside a loop-row child's forwarded children receives a destructured row field…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-destructured-prop.ts"
+      },
+      "loop-row-child-children-nested-index-prop": {
+        "description": "A nested component inside a loop-row child's forwarded children receives the row index as a prop at…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-index-prop.ts"
+      },
+      "loop-row-child-children-nested-preamble-prop": {
+        "description": "A nested component inside a loop-row child's forwarded children receives a callback-local derived…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-preamble-prop.ts"
       },
       "loop-row-child-untyped-array-mismatched-keys": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows have…",
@@ -5753,6 +5801,19 @@
         "BF101"
       ]
     },
+    "data-on-attr-value-script-escaped": {
+      "title": "A dynamic value on a `data-on…` attribute renders as a quoted script string",
+      "kind": "silent",
+      "given": "an element attribute named `data-` followed by a name starting with `on` (`data-on`, `data-onset`) whose value is dynamic (`<div data-on={mode()}>`)",
+      "expected": "the attribute carries the value as plain text (`data-on=\"x\"`), like any other `data-*` attribute",
+      "actual": "renders the value as a script string literal, so the attribute text carries escaped double quotes around it (`\"x\"` instead of `x`, `\"\"` for an empty value), because the template engine escapes a `data-on…` attribute as an event-handler attribute",
+      "fixtures": [
+        "data-on-attr-dynamic-value"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "derived-object-literal-signal": {
       "title": "Derived object-literal signal initializer",
       "kind": "refusal",
@@ -5821,6 +5882,20 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
+    "loop-component-row-destructured-param": {
+      "title": "A component loop row loses its row values when the callback destructures the row param",
+      "kind": "silent",
+      "given": "a `.map()` loop over a memo whose callback destructures its row param and whose row body is a component keyed by a destructured field, receiving a destructured field as a prop on itself or on a component in its forwarded children (`shown().map(({ id, tone }) => <Mark key={id} tone={tone} />)`, `shown().map(({ id, tone }) => <Chip key={id}><Mark tone={tone} /></Chip>)`)",
+      "expected": "one component per row, each with its own key and prop (`data-key=\"a\" data-tone=\"warm\"`, `data-key=\"b\" data-tone=\"cool\"`), hydrated with the same values",
+      "actual": "renders no rows at all, or rows without their `data-key` and without the destructured prop; and the emitted client JS reads the destructured name where it is not bound (`get tone() { return tone }`), so hydrating or creating a row throws a `ReferenceError`",
+      "fixtures": [
+        "loop-component-row-destructured-param",
+        "loop-row-child-children-nested-destructured-prop"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
       "kind": "refusal",
@@ -5837,14 +5912,15 @@
         "BF101"
       ]
     },
-    "loop-row-child-nested-component-reactive-prop-dropped": {
-      "title": "A reactive prop on a component nested in a loop-row child's forwarded children is dropped at SSR",
+    "loop-row-child-nested-prop-reads-unreachable-row-binding": {
+      "title": "A component in a loop-row child's forwarded children loses a prop read from the row index or a callback-body local",
       "kind": "silent",
-      "given": "a static `.map()` loop row that calls a child component with forwarded JSX `children`, where those children nest another component whose prop reads a signal or memo (e.g. `<Chip><Mark on={highlight()}>{o.label}</Mark></Chip>` inside `opts.map(o => …)`)",
-      "expected": "the nested component renders with the prop's initial value at SSR, the same as outside a loop",
-      "actual": "renders the nested component with the prop's zero value instead (the attribute it guards is missing), because the row's baked child-component construction only carries literal and boolean-shorthand props",
+      "given": "a `.map()` loop whose row is a single child component with forwarded JSX `children`, where those children nest another component whose prop reads a callback binding other than the row item itself: the index parameter (`opts.map((o, i) => <Chip><Mark pos={i}>…</Mark></Chip>)`) or a local the callback body declares (`const t = o.tone` → `<Mark tone={t}>`)",
+      "expected": "each row renders the nested component with its own value (`data-pos=\"0\"`, `data-pos=\"1\"`; `data-tone=\"warm\"`, `data-tone=\"cool\"`)",
+      "actual": "renders every row's nested component with the prop's zero value instead (the attribute is missing), because the forwarded children render as a separate template that receives the row item but not the row's other bindings",
       "fixtures": [
-        "loop-row-child-children-nested-reactive-prop"
+        "loop-row-child-children-nested-index-prop",
+        "loop-row-child-children-nested-preamble-prop"
       ],
       "adapters": [
         "go-template"

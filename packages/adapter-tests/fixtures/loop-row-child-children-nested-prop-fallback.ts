@@ -1,15 +1,16 @@
 import { createFixture } from '../src/types'
 
 /**
- * A `.map()` loop row calling a child component with forwarded JSX
- * `children` that nest another component whose prop reads an OUTER
- * signal (`<Mark on={highlight()}>`), with a non-default initial value so
- * a dropped prop is visible in the SSR output.
+ * A component nested in a loop-row child's forwarded children receives a
+ * signal seeded from a prop fallback (`createSignal(props.hl ?? true)`). A
+ * backend that builds the nested component once, ahead of the rows, must do
+ * so after the fallback's value is known — the signal's initial value is
+ * the fallback, not the prop's zero value.
  */
 export const fixture = createFixture({
-  id: 'loop-row-child-children-nested-reactive-prop',
+  id: 'loop-row-child-children-nested-prop-fallback',
   description:
-    "A nested component inside a loop-row child's forwarded children receives an outer signal's value as a prop at SSR",
+    "A nested component inside a loop-row child's forwarded children receives a prop-fallback-seeded signal's value at SSR",
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -25,13 +26,13 @@ function Mark({ on, children }: { on?: boolean; children?: any }) {
 type Opt = { id: string; label: string }
 const opts: Opt[] = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
 
-export function LoopRowChildChildrenNestedReactiveProp() {
-  const [highlight] = createSignal(true)
+export function LoopRowChildChildrenNestedPropFallback(props: { hl?: boolean }) {
+  const [hl] = createSignal(props.hl ?? true)
   return (
     <div>
       {opts.map(o => (
         <Chip key={o.id}>
-          <Mark on={highlight()}>{o.label}</Mark>
+          <Mark on={hl()}>{o.label}</Mark>
         </Chip>
       ))}
     </div>

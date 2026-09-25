@@ -69,6 +69,7 @@ import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope } from './scope/binding-scope.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
+import { isEventHandlerName } from './event-handler-name.ts'
 
 // =============================================================================
 // Transform Context
@@ -4362,7 +4363,7 @@ function leafIsWirelessElement(el: ts.JsxElement | ts.JsxSelfClosingElement): bo
         if (ts.isJsxSpreadAttribute(attr)) { ok = false; return }
         if (ts.isJsxAttribute(attr)) {
           const name = attr.name.getText()
-          if (isEventHandlerAttrName(name)) { ok = false; return }
+          if (isEventHandlerName(name)) { ok = false; return }
         }
       }
     }
@@ -5435,7 +5436,7 @@ function transformMapCall(
         .map((p) => ({
           name: p.name,
           value: p.value,
-          isEventHandler: p.name.startsWith('on') && p.name.length > 2,
+          isEventHandler: isEventHandlerName(p.name),
         })),
       children: comp.children,
     }
@@ -6210,7 +6211,7 @@ function neutralPreambleDeclarations(
       // JSX attribute position, e.g. `const handleClick = () => {...}`) has
       // no template-expression form on any backend — no DSL here has a
       // callable value. But every adapter's own SSR component-prop builder
-      // already skips an event-handler prop (`isEventHandlerAttrName`)
+      // already skips an event-handler prop (`isEventHandlerName`)
       // outright, so a name read ONLY that way needs no SSR representation
       // at all — elide the declaration instead of refusing the whole
       // preamble. The client-JS preamble (`segments`, not `declarations`)
@@ -6249,7 +6250,7 @@ function isFunctionLiteral(node: ts.Expression): boolean {
  * Whether every read of `name` in `bodyStatements`, other than its own
  * binding site, sits inside an event-handler `JsxAttribute`'s
  * (`onClick`/`onInput`/...) value — i.e. `name={<ident>}` where the
- * attribute's own name passes {@link isEventHandlerAttrName}, the exact
+ * attribute's own name passes {@link isEventHandlerName}, the exact
  * predicate every DSL adapter's own SSR prop-builder already uses to skip an
  * event-handler prop (e.g. `packages/adapter-jinja/src/adapter/
  * jinja-adapter.ts`'s `renderComponent`, `packages/adapter-go-template/...`'s
@@ -6283,25 +6284,13 @@ function everyReadIsEventHandlerPropValue(name: string, bodyStatements: readonly
           ts.isJsxAttribute(attr) &&
           attr.initializer === jsxExpr &&
           ts.isIdentifier(attr.name) &&
-          isEventHandlerAttrName(attr.name.text)
+          isEventHandlerName(attr.name.text)
         if (!isEventHandlerAttrValue) return true
       }
     }
     return ts.forEachChild(node, findDisallowedRead)
   }
   return !bodyStatements.some(findDisallowedRead)
-}
-
-/**
- * Whether a JSX attribute name is an event handler (`onClick`, `onInput`,
- * ...) rather than a plain attribute/prop. Shared by every site in this file
- * that needs the same call: native-element attribute extraction (routes into
- * `IREvent`, never rendered HTML), the preamble-verbatim-leaf wiring guard,
- * and {@link everyReadIsEventHandlerPropValue}'s elision safety check — one
- * decision, one implementation, per CLAUDE.md.
- */
-function isEventHandlerAttrName(name: string): boolean {
-  return /^on[A-Z]/.test(name)
 }
 
 /** Drop the trailing separator space from the final js segment. */
@@ -6444,7 +6433,7 @@ function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
           .map(p => ({
             name: p.name,
             value: p.value,
-            isEventHandler: p.name.startsWith('on') && p.name.length > 2,
+            isEventHandler: isEventHandlerName(p.name),
           })),
         children: node.children,
         loopDepth,
@@ -6661,7 +6650,7 @@ function processAttributes(
     // they're wired up at hydration time (delegated event registration) and
     // must not leak into rendered HTML. The DOM event name is lowercase
     // (`click`, not `Click`), so strip the `on` prefix and downcase.
-    if (isEventHandlerAttrName(rawName)) {
+    if (isEventHandlerName(rawName)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         const eventName = rawName.slice(2).toLowerCase()
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)

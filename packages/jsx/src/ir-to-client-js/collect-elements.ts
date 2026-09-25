@@ -14,6 +14,7 @@ import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 import type { BindingScope } from '../scope/binding-scope.ts'
+import { isEventHandlerName } from '../event-handler-name.ts'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
 const EMPTY_RENDER_EXPRS = new Set(['null', 'undefined', 'false', "''", '""', '``'])
@@ -402,7 +403,7 @@ export function collectInnerLoops(
               props: c.props.map(p => ({
                 name: p.name,
                 value: p.value,
-                isEventHandler: p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase(),
+                isEventHandler: isEventHandlerName(p.name),
               })),
               children: c.children,
               loopDepth: emitDepth,
@@ -522,10 +523,7 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
   for (const prop of props) {
     if (prop.name === '...' || prop.name.startsWith('...')) continue
     explicitPropNames.push(prop.name)
-    const isEventHandler =
-      prop.name.startsWith('on') &&
-      prop.name.length > 2 &&
-      prop.name[2] === prop.name[2].toUpperCase()
+    const isEventHandler = isEventHandlerName(prop.name)
     if (isEventHandler) {
       // Event handlers reach here only as `expression` variants.
       propsForInit.push(`${quotePropName(prop.name)}: ${attrValueToString(prop.value) ?? prop.name}`)
@@ -997,7 +995,7 @@ export function collectElements(
         // Reactive props need effects to update the element when values change.
         for (const prop of c.props) {
           if (prop.value.kind === 'jsx-children') continue
-          if (prop.name.startsWith('on') && prop.name.length > 2) continue
+          if (isEventHandlerName(prop.name)) continue
           // Only `expression` variants reach the signal/memo getter heuristic
           // — literal / template / spread / boolean forms don't have a single
           // bare-identifier shape to lookup.

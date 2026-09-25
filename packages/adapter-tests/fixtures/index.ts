@@ -180,6 +180,7 @@ import { fixture as fragmentLoopChildren } from './fragment-loop-children'
 // Priority 5: Elements and attributes
 import { fixture as voidElements } from './void-elements'
 import { fixture as dynamicAttributes } from './dynamic-attributes'
+import { fixture as dataOnAttrDynamicValue } from './data-on-attr-dynamic-value'
 import { fixture as classVsClassname } from './class-vs-classname'
 import { fixture as styleAttribute } from './style-attribute'
 import { fixture as styleObjectStatic } from './style-object-static'
@@ -741,6 +742,29 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 import { fixture as loopRowChildChildrenFnScopeArray } from './loop-row-child-children-fn-scope-array'
 import { fixture as loopRowChildChildrenNestedShapes } from './loop-row-child-children-nested-shapes'
 import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-child-children-nested-reactive-prop'
+// The per-row twin of the fixture above (`<Mark tone={o.tone}>`), and the
+// loop-body component's own row-independent reactive prop (`<Chip
+// on={highlight()}>`) — both built once per loop by backends that construct
+// a loop row's child components ahead of the rows.
+import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-children-nested-row-prop'
+import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
+import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
+import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
+// The nested component's signal is seeded from a prop fallback
+// (`createSignal(props.hl ?? true)`), and the row binds its fields by
+// destructuring (`({ id, tone }) => …`).
+import { fixture as loopRowChildChildrenNestedPropFallback } from './loop-row-child-children-nested-prop-fallback'
+import { fixture as loopRowChildChildrenNestedDestructuredProp } from './loop-row-child-children-nested-destructured-prop'
+// The row-reading component nested two levels deep (inside another
+// component's children within the row child's forwarded children).
+import { fixture as loopRowChildChildrenNestedDeepRowProp } from './loop-row-child-children-nested-deep-row-prop'
+// A component loop row whose callback destructures the row param.
+import { fixture as loopComponentRowDestructuredParam } from './loop-component-row-destructured-param'
+// A `/* @client */` prop on a component nested in a loop-row child's forwarded children.
+import { fixture as loopRowChildChildrenNestedClientProp } from './loop-row-child-children-nested-client-prop'
+import { fixture as loopRowChildChildrenNestedClientRowProp } from './loop-row-child-children-nested-client-row-prop'
+// A `/* @client */` row-reading prop on a component inside an element loop row.
+import { fixture as loopElementRowChildClientRowProp } from './loop-element-row-child-client-row-prop'
 // The UNTYPED twin of `loop-row-child-children-nested-shapes`: same forwarded-JSX-children shape,
 // but the loop's source array is an unannotated object-literal const
 // (#3178). Regression pin for go-template's untyped-object-array-const
@@ -765,6 +789,9 @@ import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // write and never observes a half-updated memo pair (its `interactions`
 // count the runs and the inconsistent ones in the DOM).
 import { fixture as diamondPropagation } from './diamond-propagation'
+// A child-component prop named like a handler but not one (`once`: `on` +
+// lowercase) is reactive data at top level and in loop rows.
+import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
 
 import type { JSXFixture } from '../src/types'
 
@@ -882,6 +909,7 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 5: Elements and attributes
   voidElements,
   dynamicAttributes,
+  dataOnAttrDynamicValue,
   classVsClassname,
   styleAttribute,
   styleObjectStatic,
@@ -1241,6 +1269,17 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenFnScopeArray,
   loopRowChildChildrenNestedShapes,
   loopRowChildChildrenNestedReactiveProp,
+  loopRowChildChildrenNestedRowProp,
+  loopRowChildChildrenOwnReactiveProp,
+  loopRowChildChildrenNestedIndexProp,
+  loopRowChildChildrenNestedPreambleProp,
+  loopRowChildChildrenNestedPropFallback,
+  loopRowChildChildrenNestedDestructuredProp,
+  loopRowChildChildrenNestedDeepRowProp,
+  loopComponentRowDestructuredParam,
+  loopRowChildChildrenNestedClientProp,
+  loopRowChildChildrenNestedClientRowProp,
+  loopElementRowChildClientRowProp,
   loopRowChildChildrenUntypedArray,
   loopRowChildUntypedArrayNestedField,
   loopRowChildUntypedArrayNestedFieldTyped,
@@ -1249,4 +1288,5 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalChildListenerCleanup,
   nestedChildNegatedProp,
   diamondPropagation,
+  onPrefixedDataProp,
 ]
