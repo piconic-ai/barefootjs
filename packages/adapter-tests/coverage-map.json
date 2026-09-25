@@ -1738,6 +1738,34 @@
         "text"
       ]
     },
+    "conditional-then-colon-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "conditional-then-percent-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-then-text": {
       "kinds": [
         "call",
@@ -1773,6 +1801,24 @@
         "loop",
         "text"
       ]
+    },
+    "const-boolean-conditional-test": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": []
+    },
+    "const-string-conditional-test": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
     },
     "context-provider": {
       "kinds": [
@@ -4508,6 +4554,15 @@
       "contexts": [
         "text"
       ]
+    },
+    "module-const-boolean-conditional-test": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": []
     },
     "module-const-loop-source": {
       "kinds": [
@@ -7687,11 +7742,11 @@
     "binary": 118,
     "call": 313,
     "conditional": 44,
-    "identifier": 451,
+    "identifier": 453,
     "index-access": 15,
-    "literal": 360,
+    "literal": 365,
     "logical": 54,
-    "member": 272,
+    "member": 274,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 35,
@@ -7733,10 +7788,10 @@
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 81,
+    "literal:boolean": 83,
     "literal:null": 31,
     "literal:number": 158,
-    "literal:string": 249,
+    "literal:string": 252,
     "logical:&&": 7,
     "logical:??": 45,
     "logical:||": 17,

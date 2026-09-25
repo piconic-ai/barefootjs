@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 476,
+    "totalFixtures": 481,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -2094,6 +2094,22 @@
           ]
         }
       },
+      "conditional-then-colon-text": {
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "line-statement-sigil-text-after-conditional"
+          ]
+        }
+      },
+      "conditional-then-percent-text": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "line-statement-sigil-text-after-conditional"
+          ]
+        }
+      },
       "conditional-then-text": {
         "blade": {
           "kind": "render",
@@ -2135,6 +2151,70 @@
           "kind": "render",
           "limitations": [
             "text-adjacent-conditional-whitespace"
+          ]
+        }
+      },
+      "const-boolean-conditional-test": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        }
+      },
+      "const-string-conditional-test": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
           ]
         }
       },
@@ -3743,6 +3823,62 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "module-const-boolean-conditional-test": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "literal-const-conditional-test"
+          ]
         }
       },
       "module-const-loop-source-computed": {
@@ -5562,9 +5698,25 @@
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
       },
+      "conditional-then-colon-text": {
+        "description": "Text starting with a colon right after a ternary renders verbatim",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-colon-text.ts"
+      },
+      "conditional-then-percent-text": {
+        "description": "Text starting with a percent sign right after a ternary renders verbatim",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-percent-text.ts"
+      },
       "conditional-then-text": {
         "description": "A signal-driven ternary directly followed by text renders with no whitespace between them",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-text.ts"
+      },
+      "const-boolean-conditional-test": {
+        "description": "A function-scope boolean-literal const read as a ternary test renders the branch it selects",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-boolean-conditional-test.ts"
+      },
+      "const-string-conditional-test": {
+        "description": "A function-scope string-literal const compared in a ternary test renders the branch it selects",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-string-conditional-test.ts"
       },
       "data-on-attr-dynamic-value": {
         "description": "A dynamic value on a data-on* attribute renders as plain attribute text",
@@ -5653,6 +5805,10 @@
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
+      },
+      "module-const-boolean-conditional-test": {
+        "description": "A module-scope boolean-literal const read as a ternary test renders the branch it selects",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-boolean-conditional-test.ts"
       },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
@@ -6060,6 +6216,44 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "line-statement-sigil-text-after-conditional": {
+      "title": "Text starting with a colon or percent sign right after a ternary",
+      "kind": "silent",
+      "given": "static JSX text whose first non-space character is `:` or `%`, directly following a ternary conditional whose branches both render (`{c ? 'on' : 'off'} :y`, `{c ? <b/> : <i/>}%y`)",
+      "expected": "the text renders verbatim after the chosen branch (`off :y`)",
+      "actual": "throws a template parse error because the engine reads the text as a statement line, or drops the text when that line happens to parse",
+      "fixtures": [
+        "conditional-then-colon-text",
+        "conditional-then-percent-text"
+      ],
+      "adapters": [
+        "mojolicious",
+        "xslate"
+      ]
+    },
+    "literal-const-conditional-test": {
+      "title": "Literal-initialized const read as a conditional test",
+      "kind": "silent",
+      "given": "a `const` initialized with a boolean literal at module or function scope (`const on = true`), or with a string or number literal inside the component function (`const mode = 'on'`), read as the test of a ternary or `&&` (`data-x={on ? 'a' : 'b'}`, `{mode === 'on' ? 'a' : 'b'}`)",
+      "expected": "the branch the const's value selects renders in the server HTML (`data-x=\"a\"`)",
+      "actual": "renders the falsy branch as if the const were unset, or throws at render time on an unbound template variable",
+      "fixtures": [
+        "const-boolean-conditional-test",
+        "const-string-conditional-test",
+        "module-const-boolean-conditional-test"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "loop-component-row-destructured-param": {
       "title": "A component loop row loses its row values when the callback destructures the row param",

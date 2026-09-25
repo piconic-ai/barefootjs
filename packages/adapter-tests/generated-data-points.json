@@ -954,6 +954,34 @@
       }
     }
   ],
+  "conditional-then-colon-text": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
+  "conditional-then-percent-text": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
   "controlled-signal": [
     {
       "name": "gen:value:zero",
