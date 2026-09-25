@@ -32,8 +32,8 @@ Mark the swappable region in your layout with `<Region>` (compiled to
 | `shouldIntercept` | same-origin, plain click | per-anchor opt-out (`data-bf-router="false"`, `download`, `target`, `rel=external`) |
 | `prefetch` / `prefetchDelay` | `true` / `65` | hover/focus/pointerdown prefetch + `modulepreload` |
 | `cacheFreshMs` / `cacheStaleMs` / `cacheCap` | `15000` / `60000` / `30` | SWR + LRU snapshot cache |
-| `scrollToTop` | `true` | scroll to top after a swap |
-| `manageFocus` | `true` | move focus into the region + announce the route |
+| `scrollToTop` | `true` | scroll to top after a swap, instantly (ignores `scroll-behavior: smooth`) |
+| `manageFocus` | `true` | move focus into the swapped content (first swapped region with a heading) + announce the route |
 | `morph` | `true` | preserve `[data-bf-permanent]` live nodes across a swap (no-op when none present); `false` forces a plain `replaceChildren` |
 
 ## Correct by default
@@ -53,10 +53,16 @@ setup step.
 - **Module-aware**: a response's new island modules are imported *before* the
   re-hydration walk, and deduped across navigations.
 - **Redirect-aware**: history commits at the response's final URL.
+- **In-page anchors stay the browser's**: a same-page `#hash` link is not
+  intercepted, and the `popstate` the browser fires for it (and for
+  back/forward between such entries) swaps nothing — the page is already
+  displayed, so island state and scroll position are kept.
 - **History.state preserved**: a router replace merges rather than clobbers
   existing state (scroll-restoration libs, framework state).
-- **A11y**: focus moves into the swapped region (its first heading) and the new
-  title is announced via a polite live region.
+- **A11y**: focus moves into the swapped content — the first swapped region that
+  has a heading, at that heading — and the new title is announced via a polite
+  live region. Sibling regions can therefore keep their natural document order
+  (navigation before content) without focus landing in the navigation.
 - **Head metadata**: title, description, `og:`/`twitter:`, canonical and friends
   are reconciled against the incoming page; head *resources* are not (see below).
 - **Persistence** (`data-bf-permanent`): an element marked

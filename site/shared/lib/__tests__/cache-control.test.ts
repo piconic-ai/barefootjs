@@ -1,10 +1,10 @@
 import { describe, test, expect } from 'bun:test'
 import { Hono } from 'hono'
-import { cacheControl } from '../cache-control'
+import { workersCacheControl } from '../cache-control'
 
 function buildApp() {
   const app = new Hono()
-  app.use('*', cacheControl)
+  app.use('*', workersCacheControl)
   app.get('/docs/quick-start', (c) => c.body('<html></html>', 200, { 'Content-Type': 'text/html' }))
   app.get('/og', (c) => c.body('png', 200, { 'Cache-Control': 'public, max-age=86400, immutable' }))
   app.get('/missing', (c) => c.body('not found', 404))
@@ -14,15 +14,10 @@ function buildApp() {
   return app
 }
 
-describe('cacheControl middleware', () => {
+describe('workersCacheControl middleware', () => {
   test('sets a default Cache-Control on a GET route with none', async () => {
     const res = await buildApp().request('/docs/quick-start')
     expect(res.headers.get('Cache-Control')).toBe('public, max-age=300, stale-while-revalidate=3600')
-  })
-
-  test('leaves a route that already set its own Cache-Control alone', async () => {
-    const res = await buildApp().request('/og')
-    expect(res.headers.get('Cache-Control')).toBe('public, max-age=86400, immutable')
   })
 
   test('explicitly opts error responses out of caching', async () => {
@@ -48,5 +43,28 @@ describe('cacheControl middleware', () => {
     // no-store, never merely headerless.
     const res = await buildApp().request('/account', { headers: { Cookie: 'session=abc' } })
     expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  test('gives the edge (Workers Cache) a longer TTL than browsers on a cacheable response', async () => {
+    const res = await buildApp().request('/docs/quick-start')
+    expect(res.headers.get('Cloudflare-CDN-Cache-Control')).toBe('public, max-age=86400, stale-while-revalidate=604800')
+  })
+
+  test('never gives the edge a TTL on a response that is not cacheable', async () => {
+    for (const [path, init] of [
+      ['/missing', undefined],
+      ['/login', undefined],
+      ['/account', { headers: { Cookie: 'session=abc' } }],
+    ] as const) {
+      const res = await buildApp().request(path, init)
+      expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+      expect(res.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
+    }
+  })
+
+  test('leaves a route that set its own Cache-Control alone, and adds no edge TTL to it', async () => {
+    const res = await buildApp().request('/og')
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=86400, immutable')
+    expect(res.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
   })
 })

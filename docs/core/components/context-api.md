@@ -59,7 +59,8 @@ export function AccordionTrigger(props: { itemId: string; children?: Child }) {
     })
   }
 
-  return <button ref={handleMount}>{props.children}</button>
+  // Nothing is open at SSR, so render the initial state; the effect keeps it in sync.
+  return <button aria-expanded="false" ref={handleMount}>{props.children}</button>
 }
 
 export function AccordionContent(props: { itemId: string; children?: Child }) {

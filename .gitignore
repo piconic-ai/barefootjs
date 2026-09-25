@@ -11,6 +11,7 @@ dist
 # Cloudflare Workers artifacts
 integrations/*/public
 integrations/*/.wrangler
+site/*/.wrangler
 # ...but Laravel's public/ is real source (the framework's HTTP entry point),
 # not a wrangler artifact
 !integrations/laravel/public

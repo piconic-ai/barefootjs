@@ -3,7 +3,7 @@
  *
  * Displays a sticky sidebar navigation for documentation pages.
  * Shows section links for easy navigation within the page.
- * Highlights the currently visible section using IntersectionObserver.
+ * Highlights the section the reader is at, derived from the scroll position.
  */
 
 'use client'
@@ -44,53 +44,114 @@ export function TableOfContents(props: TableOfContentsProps) {
     }
   })
 
-  // Track visible sections using IntersectionObserver
+  // Follow the scroll position: the active item is the last one whose target
+  // has scrolled up to where following its link places it (the target's
+  // scroll-margin-top). This is derived from the current position on every
+  // scroll, so it holds inside a long section with no heading in view, after
+  // a jump, and on the way back up from the bottom. Targets that are
+  // containers (site/ui's <section>s) and targets nested in them (<h3>s) are
+  // both handled, because only each target's top edge matters. A layout
+  // change that moves the targets without a scroll (content expanding above
+  // the reader, a window resize) recomputes too.
   createEffect(() => {
-    const sections = props.items
+    const targets = props.items
       .map(item => document.getElementById(item.id))
       .filter((el): el is HTMLElement => el !== null)
 
-    if (sections.length === 0) return
+    if (targets.length === 0) return
 
-    const lastItemId = props.items[props.items.length - 1]?.id
+    const firstItemId = props.items[0]?.id ?? ''
+    const lastItemId = props.items[props.items.length - 1]?.id ?? ''
+    // Sub-pixel rounding of a smooth scroll can stop just short of the margin
+    const REACHED_TOLERANCE = 8
+    // A clicked item stays active until the scroll it started has settled:
+    // the smooth scroll passes other sections on the way, and a target near
+    // the end of the page can never reach the top.
+    const SETTLE_MS = 150
+    // Input by which the reader scrolls the page themselves
+    const USER_SCROLL_EVENTS = ['wheel', 'touchstart', 'keydown'] as const
+    const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
 
-    // Check if scrolled to bottom of page
-    const handleScroll = () => {
-      const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100
-      if (scrolledToBottom && lastItemId) {
-        setActiveId(lastItemId)
-      }
+    // Style reads stay off the per-frame path; re-read on a layout change
+    const readMargins = () => targets.map(target => parseFloat(getComputedStyle(target).scrollMarginTop) || 0)
+    let margins = readMargins()
+
+    const activeFromScroll = () => {
+      const scrolledToBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+      if (scrolledToBottom) return lastItemId
+      let reached = firstItemId
+      targets.forEach((target, i) => {
+        if (target.getBoundingClientRect().top <= margins[i] + REACHED_TOLERANCE) reached = target.id
+      })
+      return reached
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Check if at bottom first
-        const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100
-        if (scrolledToBottom && lastItemId) {
-          setActiveId(lastItemId)
-          return
-        }
+    let pinned = false
+    let settleTimer: ReturnType<typeof setTimeout> | undefined
+    let frame = 0
 
-        // Find the first visible section
-        const visibleEntries = entries.filter(entry => entry.isIntersecting)
-        if (visibleEntries.length > 0) {
-          // Sort by top position and take the first one
-          visibleEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-          setActiveId(visibleEntries[0].target.id)
-        }
-      },
-      {
-        rootMargin: '-80px 0px -70% 0px', // Account for header and prefer top sections
-        threshold: 0,
+    const unpinWhenSettled = () => {
+      clearTimeout(settleTimer)
+      settleTimer = setTimeout(() => { pinned = false }, SETTLE_MS)
+    }
+
+    const handleScroll = () => {
+      if (pinned) {
+        unpinWhenSettled()
+        return
       }
-    )
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        if (!pinned) setActiveId(activeFromScroll())
+      })
+    }
 
-    sections.forEach(section => observer.observe(section))
-    window.addEventListener('scroll', handleScroll)
+    // The reader scrolling by themselves takes over from a clicked item: its
+    // smooth scroll is cancelled, so the marker follows their position again.
+    const handleUserScrollInput = (event: Event) => {
+      if (!pinned) return
+      if (event instanceof KeyboardEvent && !SCROLL_KEYS.has(event.key)) return
+      pinned = false
+      clearTimeout(settleTimer)
+      handleScroll()
+    }
+
+    const handleLayoutChange = () => {
+      margins = readMargins()
+      handleScroll()
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      const link = (event.target as Element | null)?.closest?.('a[href^="#"]')
+      const id = link?.getAttribute('href')?.slice(1)
+      if (!id || !props.items.some(item => item.id === id)) return
+      pinned = true
+      setActiveId(id)
+      unpinWhenSettled()
+    }
+
+    const nav = document.querySelector('nav[aria-label="Table of contents"]')
+    // Observing <body> catches both a resize reflowing the page and content
+    // growing or shrinking inside it; its first callback is harmless.
+    const layoutObserver = new ResizeObserver(handleLayoutChange)
+    setActiveId(activeFromScroll())
+    layoutObserver.observe(document.body)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    nav?.addEventListener('click', handleClick as EventListener)
+    for (const type of USER_SCROLL_EVENTS) {
+      window.addEventListener(type, handleUserScrollInput, { passive: true })
+    }
 
     return () => {
-      observer.disconnect()
       window.removeEventListener('scroll', handleScroll)
+      nav?.removeEventListener('click', handleClick as EventListener)
+      for (const type of USER_SCROLL_EVENTS) {
+        window.removeEventListener(type, handleUserScrollInput)
+      }
+      layoutObserver.disconnect()
+      clearTimeout(settleTimer)
+      cancelAnimationFrame(frame)
     }
   })
 

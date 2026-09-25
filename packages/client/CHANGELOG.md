@@ -1,5 +1,38 @@
 # @barefootjs/client
 
+## 0.38.0
+
+### Minor Changes
+
+- 988106f: `@barefootjs/client`'s `formatDate` is now documentation-tier `@internal` and no longer appears in `docs/core/advanced/api-reference.md` or the API comparison table — it is compiler ABI (the lowering target of the `.toLocaleDateString(locale, { timeZone, ... })` sugar), not an authored API. This is a breaking behaviour change for anyone who imported it directly: **an authored `formatDate(...)` call in a template position now fails to compile with BF056**, on every adapter including Hono. Fix it by switching to `date.toLocaleDateString(locale, { timeZone, ... })` with literal options (compiles to the same `format_date` helper), or by deferring the whole read to the client with `/* @client */`.
+  
+  `@barefootjs/jsx` no longer registers a lowering plugin for authored `formatDate(...)` calls (`formatDatePlugin` removed) and instead refuses them with the new BF056 diagnostic, fired once in the shared IR-build phase ahead of every adapter's `generate()`. The `.toLocaleDateString()` sugar's own lowering is unaffected.
+  
+  Each of the nine template-language adapters (plus Hono) pins the new `format-date` conformance fixture's BF056 refusal in its own `conformance-pins.ts`.
+- 73e370b: Removed `trackPosition` (Alpha) from `@barefootjs/client`. It was floating-UI plumbing used only by `ui/` overlay components — it moved to `ui/lib/track-position.ts` as an internal helper (no longer a public runtime API, so its stability tag is dropped). If you called it directly, copy its implementation (it is a small, dependency-free function) or vendor `ui/lib/track-position.ts`.
+  
+  `@barefootjs/jsx`'s analyzer no longer recognises `trackPosition` as a known runtime import or a browser-only API imported from `@barefootjs/client`.
+  
+  `@barefootjs/hono`'s client shim no longer stubs `trackPosition`.
+- 877d61e: Removed `cleanupPortalPlaceholder` (Beta) from `@barefootjs/client`. It had zero in-repo callers, and nothing in the runtime or the compiler ever called it on the author's behalf. Delete any call you had — the server-rendered `<template bf-pp="...">` placeholder it removed is inert (an untargeted `<template>` renders nothing) and needs no cleanup. `createPortal`, `isSSRPortal` and `findSiblingSlot` are unaffected.
+  
+  `@barefootjs/jsx`'s analyzer no longer recognises `cleanupPortalPlaceholder` as a known runtime import or a browser-only API.
+  
+  `@barefootjs/hono`'s client shim no longer stubs `cleanupPortalPlaceholder`.
+- 6fc45fc: Removed `createSelector` (Alpha) from `@barefootjs/client`. It was SolidJS-compatible O(changed) selection primitive with zero authored call sites in `ui/`, `site/` or `integrations/`, and no conformance fixture exercised it. If you called it directly, replace it with a per-key `createMemo`: `const memos = new Map(); const isSelected = (key) => (memos.get(key) ?? memos.set(key, createMemo(() => selected() === key)).get(key))()`, or for a small/fixed key set just compare the signal inline (`selected() === row.id`).
+  
+  `@barefootjs/jsx`'s analyzer no longer recognises `createSelector` as a known runtime import or as a trigger for type-based reactivity detection.
+  
+  `@barefootjs/hono`'s client shim no longer stubs `createSelector`.
+
+### Patch Changes
+
+- 915fa86: Fixed `claimSlots`/`lazySlots`'s fallback marker scan silently dropping a reactive text/markup slot update for a "root is a single child-component call" comment-scoped component (`root.type === 'component'`, #2649) whose own child is itself a wrapping element. That child mounts on the same DOM element the hydration walker registers as its ancestor's comment-scope proxy, so the element is both registered under the ancestor's scope id and carries the child's own, different `bf-s`. The ownership-rejection boundary now stays at the claim root itself whenever it carries its own `bf-s`, instead of walking out to the ancestor's comment parent and rejecting the child's own marker as "belongs to a nested scope" (#3122).
+- 177be87: `createDisposableEffect` and the profiler plumbing (`beginTurn`, `endTurn`, `createRecordingSink`, `setProfilerSink`, `ProfilerEvent`, `ProfilerEventSink`, `ProfilerEventType`, `RecordingSink`, `SubscriberKind`) are now tagged `@internal` and no longer appear in `docs/core/advanced/api-reference.md`. They are compiler-emitted / tooling-only ABI with zero authored call sites in `ui/`, `site/` or `integrations/`. Documentation tier only; no runtime change.
+- 039166e: Signal writes now propagate in two phases — every affected effect and memo is marked first, then each one is brought up to date, pulling the memos it reads before it runs — so an effect behind a diamond (one signal read through two memos) runs once per write and always sees both memos already recomputed, with or without `batch()`, and a memo read right after a write (inside an effect or inside `batch()`) returns the recomputed value. Writes made from outside any effect still update every subscriber and the DOM before the setter returns, but a write made inside an effect body (including a `batch()` nested in one, such as a list reconcile's per-row updates) now re-runs its subscribers — and applies the DOM updates they make — after that effect returns, and after the other effects the same update already queued, instead of re-entrantly inside it. An effect that throws no longer cuts the update short: the remaining affected effects still run, and the first error is rethrown to the writer once they have (any further errors from the same update are logged with `console.error`).
+- f68d4a4: Fix the `ref-callback-portal-content-inline-at-ssr` known limitation on the Hono adapter: a `ref` callback whose body calls `createPortal(el, document.body, { ownerScope })` (the pattern `dialog`/`dropdown-menu`/`popover`/`portal` use) is now recognized structurally by the compiler and the flagged element renders at its portal outlet (`<BfPortals />`) during SSR, matching where hydration's `createPortal` places it — so hydration is a structural no-op instead of a relocation. The client `isSSRPortal` guard also recognizes `bf-po` set directly on the element, not only a `bf-pi` wrapper ancestor. Every other template adapter still renders the flagged element inline (no SSR portal outlet yet) and is pinned with a `render-divergences.ts` entry citing the registry limitation.
+- @barefootjs/shared@0.38.0
+
 ## 0.37.1
 
 ### Patch Changes

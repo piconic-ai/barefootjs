@@ -20,6 +20,7 @@ import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { identifierCallPattern } from '../identifier-pattern.ts'
+import { isEventHandlerName } from '../event-handler-name.ts'
 
 /**
  * Build the `BindingScope` for one loop row's own bindings — item /
@@ -384,7 +385,7 @@ export function collectEventHandlersFromIR(node: IRNode): string[] {
     },
     component: ({ node, descend }) => {
       for (const prop of node.props) {
-        if (prop.name.startsWith('on') && prop.name.length > 2) {
+        if (isEventHandlerName(prop.name)) {
           const handler = attrValueToString(prop.value)
           if (handler) handlers.push(handler)
         }

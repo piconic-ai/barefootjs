@@ -43,7 +43,10 @@ export interface RouterOptions {
   fetch?: typeof fetch
   /** Decide whether to intercept an anchor click. Defaults to {@link defaultShouldIntercept}. */
   shouldIntercept?: (anchor: HTMLAnchorElement, event: Event) => boolean
-  /** Scroll to the top of the document after a swap. Default `true`. */
+  /**
+   * Scroll to the top of the document after a swap, instantly (as a document
+   * load does) even under `scroll-behavior: smooth`. Default `true`.
+   */
   scrollToTop?: boolean
   /** Move focus to the swapped region + announce the route change. Default `true`. */
   manageFocus?: boolean
@@ -132,6 +135,8 @@ export interface RouterState {
   morph: boolean
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
   currentPath: string
+  /** Query string of the currently-displayed page (a popstate that changes only the hash is left to the browser). */
+  currentSearch: string
   inflight: AbortController | null
   /** Hover-prefetch dwell timer + the anchor it is counting down for (per instance). */
   hoverTimer: ReturnType<typeof setTimeout> | null

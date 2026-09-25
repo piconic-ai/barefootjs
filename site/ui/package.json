@@ -9,7 +9,7 @@
     "build:registry": "cd ../../ui && bun run build:registry && mkdir -p ../site/ui/dist/r ../site/ui/dist/meta && cp -r dist/r/* ../site/ui/dist/r/ && cp meta/index.json ../site/ui/dist/r/index.json && cp meta/*.json ../site/ui/dist/meta/",
     "build:worker": "bun run build:clean && bun run build:registry",
     "dev": "concurrently -k -n vite,server -c blue,yellow \"bunx vite dev\" \"bun run --watch server.tsx\"",
-    "deploy": "bun run build:worker && wrangler deploy",
+    "deploy": "bun run build:worker && wrangler deploy -c wrangler.static.toml && wrangler deploy",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui"
   },
@@ -36,7 +36,7 @@
     "@unocss/preset-wind": "^66.0.0",
     "bun-types": "^1.1.0",
     "unocss": "^66.0.0",
-    "wrangler": "^4.59.0",
+    "wrangler": "^4.69.0",
     "vite": "^6.0.0",
     "concurrently": "^9.1.0"
   }

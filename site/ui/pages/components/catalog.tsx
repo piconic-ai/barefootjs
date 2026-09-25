@@ -6,7 +6,7 @@
  * following sibling of the `CatalogFilter` island, which exposes the active
  * `?tag=` as a reactive `data-filter` attribute that `globals.css` filters the
  * grid on — so a deep link is already filtered in the server HTML (no flash)
- * and a chip click is a soft `?tag=` navigation (`client/router-entry.ts`)
+ * and a chip click is a soft `?tag=` navigation (the layout's router bootstrap)
  * that flips one attribute. Keep the grid a later sibling of the filter: the
  * stylesheet reaches it with the `~` combinator.
  * Ref: #3103 (was #517)
@@ -28,7 +28,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
 import { CatalogFilter } from '@/components/catalog-filter'
 import { type ComponentCategory } from '../../components/shared/component-registry'
-import { Assets } from '@/bf-assets'
 import { Accordion, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Calendar } from '@/components/ui/calendar'
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
@@ -724,9 +723,6 @@ export function ComponentCatalogPage() {
           <ComponentCard key={entry.slug} entry={entry} />
         ))}
       </div>
-
-      {/* Boots @barefootjs/router for the filter chips (soft ?tag= navigation). */}
-      <script type="module" src={Assets.RouterEntry} />
     </div>
   )
 }
