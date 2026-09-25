@@ -5003,6 +5003,26 @@
         "text"
       ]
     },
+    "on-prefixed-data-prop": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "opaque-local-accessor-call": {
       "kinds": [
         "call",
@@ -7559,18 +7579,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 139,
+    "array-literal": 140,
     "array-method": 72,
     "arrow": 81,
     "binary": 118,
-    "call": 309,
+    "call": 310,
     "conditional": 44,
-    "identifier": 443,
+    "identifier": 444,
     "index-access": 15,
-    "literal": 354,
+    "literal": 355,
     "logical": 54,
-    "member": 266,
-    "object-literal": 114,
+    "member": 267,
+    "object-literal": 115,
     "template-literal": 33,
     "unary": 35,
     "unsupported": 54
@@ -7611,10 +7631,10 @@
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 78,
+    "literal:boolean": 79,
     "literal:null": 31,
     "literal:number": 157,
-    "literal:string": 244,
+    "literal:string": 245,
     "logical:&&": 7,
     "logical:??": 45,
     "logical:||": 17,

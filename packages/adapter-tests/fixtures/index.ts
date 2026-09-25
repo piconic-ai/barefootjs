@@ -789,6 +789,9 @@ import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // write and never observes a half-updated memo pair (its `interactions`
 // count the runs and the inconsistent ones in the DOM).
 import { fixture as diamondPropagation } from './diamond-propagation'
+// A child-component prop named like a handler but not one (`once`: `on` +
+// lowercase) is reactive data at top level and in loop rows.
+import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1285,4 +1288,5 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalChildListenerCleanup,
   nestedChildNegatedProp,
   diamondPropagation,
+  onPrefixedDataProp,
 ]
