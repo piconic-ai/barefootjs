@@ -56,6 +56,9 @@ test.describe('static site', () => {
     for (const path of ['/static/globals.css', '/static/uno.css', '/static/playground/page.js']) {
       expect((await request.get(path)).status(), path).toBe(200)
     }
+    // /playground/ is ignored as a directory only: the page itself is the
+    // root file playground.html, which must still be served.
+    expect((await request.get('/playground')).status()).toBe(200)
     const html = await (await request.get('/docs/quick-start')).text()
     const chunk = html.match(/\/static\/components\/assets\/router-entry-[\w-]+\.js/)?.[0]
     expect(chunk).toBeTruthy()

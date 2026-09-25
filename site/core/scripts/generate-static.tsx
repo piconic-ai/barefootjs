@@ -22,7 +22,7 @@
 
 import fs from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { resolve, dirname, relative, sep } from 'node:path'
 import { defaultExtensionMap, toSSG } from 'hono/ssg'
 import type { Hono } from 'hono'
 import { createApp } from '../app'
@@ -56,9 +56,19 @@ function atOrigin(app: Hono, origin: string): Hono {
 
 // ── Drop the previous run's output ──────────────────────────
 // dist/ is not cleaned between local builds; a page or OG title that no
-// longer exists would otherwise stay behind and be deployed.
-await fs.rm(resolve(DIST_DIR, 'docs'), { recursive: true, force: true })
-await fs.rm(resolve(DIST_DIR, 'og'), { recursive: true, force: true })
+// longer exists would otherwise stay behind and be deployed. toSSG writes a
+// route either as an .html file directly under dist/ or somewhere under one
+// of PAGE_DIRS; after the render, every file it wrote is checked against
+// this, so a route at a new prefix fails the build instead of leaving its
+// previous output unpruned.
+const PAGE_DIRS = ['docs']
+const isPrunedOutput = (file: string) => {
+  const parts = relative(DIST_DIR, file).split(sep)
+  return parts.length === 1 ? parts[0].endsWith('.html') : PAGE_DIRS.includes(parts[0])
+}
+for (const dir of [...PAGE_DIRS, 'og']) {
+  await fs.rm(resolve(DIST_DIR, dir), { recursive: true, force: true })
+}
 for (const entry of await fs.readdir(DIST_DIR)) {
   if (entry.endsWith('.html')) await fs.rm(resolve(DIST_DIR, entry))
 }
@@ -72,6 +82,13 @@ const app = await createApp(content, pages, mdx)
 const extensionMap = { ...defaultExtensionMap, 'text/markdown': 'md' }
 const result = await toSSG(atOrigin(app, SITE_ORIGIN), fs, { dir: DIST_DIR, extensionMap })
 if (!result.success) throw result.error
+const unpruned = result.files.filter((file) => !isPrunedOutput(resolve(DIST_DIR, file)))
+if (unpruned.length > 0) {
+  throw new Error(
+    `toSSG wrote outside the locations pruned before each run (root *.html, ${PAGE_DIRS.map((d) => `${d}/`).join(', ')}); ` +
+      `add the new location to PAGE_DIRS: ${unpruned.map((f) => relative(DIST_DIR, resolve(DIST_DIR, f))).join(', ')}`,
+  )
+}
 console.log(`Generated: ${result.files.length} files (toSSG)`)
 
 // ── 2. OG images ─────────────────────────────────────────────
