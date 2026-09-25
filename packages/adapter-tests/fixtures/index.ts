@@ -795,6 +795,11 @@ import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
 // A `ref`-callback `createPortal` on a keyed loop-row element (registry:
 // `loop-row-ref-portal`, pinned in the e2e quarantine ledgers).
 import { fixture as rowPortalRef } from './row-portal-ref'
+// Static text directly adjacent to a conditional (registry:
+// `text-adjacent-conditional-whitespace`).
+import { fixture as textThenConditional } from './text-then-conditional'
+import { fixture as textThenConditionalStatic } from './text-then-conditional-static'
+import { fixture as conditionalThenText } from './conditional-then-text'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1293,4 +1298,7 @@ export const jsxFixtures: JSXFixture[] = [
   diamondPropagation,
   onPrefixedDataProp,
   rowPortalRef,
+  textThenConditional,
+  textThenConditionalStatic,
+  conditionalThenText,
 ]
