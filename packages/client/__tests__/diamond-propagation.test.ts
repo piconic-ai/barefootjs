@@ -9,7 +9,7 @@
  * `diamond-propagation` conformance fixture.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, spyOn } from 'bun:test'
 import { batch, createEffect, createMemo, createRoot, createSignal, untrack } from '../src/reactive'
 
 function diamond() {
@@ -276,5 +276,21 @@ describe('errors during a flush', () => {
     // throw still reaches the caller, but only after the reader has run.
     expect(() => setT(1)).toThrow('boom')
     expect(seen).toEqual([0, 1])
+  })
+
+  test('rethrows the first error and logs each later one with the runtime prefix', () => {
+    const [t, setT] = createSignal(0)
+    createEffect(() => { if (t()) throw new Error('first') })
+    createEffect(() => { if (t()) throw new Error('second') })
+    const logged = spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect(() => setT(1)).toThrow('first')
+      expect(logged).toHaveBeenCalledTimes(1)
+      const [prefix, err] = logged.mock.calls[0]!
+      expect(prefix).toBe('[BarefootJS] additional error during update:')
+      expect((err as Error).message).toBe('second')
+    } finally {
+      logged.mockRestore()
+    }
   })
 })
