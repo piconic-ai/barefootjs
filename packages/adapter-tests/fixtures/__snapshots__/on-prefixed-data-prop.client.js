@@ -16,7 +16,7 @@ export function initBadge(__scope, _p = {}) {
       __l[0] = __x }
       { const __x = `${_p.once ? 'yes' : 'no'}`
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) _s1.setAttribute('data-once', String(__v)); else _s1.removeAttribute('data-once') }
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-flag', String(__v)); else _s1.removeAttribute('data-flag') }
       }
       __l[1] = __x }
     }
@@ -34,7 +34,7 @@ export function initBadge(__scope, _p = {}) {
 
 }
 
-hydrate('Badge__cc8941c3', { init: initBadge, template: (_p) => `<em class="badge" ${(_p.label) != null ? 'data-label="' + escapeAttr(_p.label) + '"' : ''} ${(`${_p.once ? 'yes' : 'no'}`) != null ? 'data-once="' + escapeAttr(`${_p.once ? 'yes' : 'no'}`) + '"' : ''} bf="s1">${_p.once ? `<!--bf-cond-start:s0-->${escapeText('on')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0-->${escapeText('off')}<!--bf-cond-end:s0-->`}</em>`, name: 'Badge' })
+hydrate('Badge__cc8941c3', { init: initBadge, template: (_p) => `<em class="badge" ${(_p.label) != null ? 'data-label="' + escapeAttr(_p.label) + '"' : ''} ${(`${_p.once ? 'yes' : 'no'}`) != null ? 'data-flag="' + escapeAttr(`${_p.once ? 'yes' : 'no'}`) + '"' : ''} bf="s1">${_p.once ? `<!--bf-cond-start:s0-->${escapeText('on')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0-->${escapeText('off')}<!--bf-cond-end:s0-->`}</em>`, name: 'Badge' })
 export function Badge(_p, __bfKey) { return createComponent('Badge__cc8941c3', _p, __bfKey) }
 export function initOnPrefixedDataProp(__scope, _p = {}) {
   if (!__scope) return
