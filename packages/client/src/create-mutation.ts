@@ -21,7 +21,7 @@ import { invalidate } from '@barefootjs/shared'
  * §7.4); the compiler-side diagnostic for a caller who writes one anyway is
  * later work, not this runtime PR.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export interface CreateMutationOptions {
@@ -34,7 +34,7 @@ export interface CreateMutationOptions {
  * request function's current descriptor when called, and carries two
  * reactive accessors.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export interface MutationAction<T> {
@@ -80,7 +80,7 @@ export interface MutationAction<T> {
  *    settles its own caller's promise, but its result never writes the
  *    signals.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export function createMutation<T>(
