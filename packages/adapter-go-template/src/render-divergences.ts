@@ -150,6 +150,16 @@ export const renderDivergences: RenderDivergences = {
   // so `data-on…` escapes as an `on…` event-handler (JS) attribute: a dynamic
   // value renders as a quoted script string (`&#34;x&#34;`).
   'data-on-attr-dynamic-value': { limitation: 'data-on-attr-value-script-escaped' },
+
+  // A literal-initialized `const` read as a ternary test is lowered as a
+  // Props field read (`.On`, `.Mode`) the struct doesn't have, so
+  // `html/template` fails at render time: "can't evaluate field On in type
+  // main.…Props". Boolean literals fail at module or function scope; string
+  // and number literals only at function scope (a module-scope string
+  // const renders like Hono).
+  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
+  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
+  'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
