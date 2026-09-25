@@ -174,7 +174,7 @@ export function createQuery<T>(
 
     const cached = cache.get(send.key)
     if (cached) {
-      // Rule 5 / rule 3's diamond exception: the value currently held for this
+      // Rule 5: the value currently held for this
       // key is necessarily this same cache entry (every successful resolution
       // below writes it), so a fresh hit here is exactly "the last descriptor's
       // key equals the key of the value currently held" — nothing is sent.
