@@ -1,9 +1,9 @@
 /**
  * Settlement helpers shared by `createQuery` (#3157) and `createMutation`
- * (#3200) — the "only descriptors in v0" check and rejection normalization,
- * factored out so the two factories don't each carry their own copy of the
- * same decision (spec/async.md §7.2, §7's "one decision, two
- * implementations" rule in CLAUDE.md).
+ * (#3200) — the "only descriptors in v0" check, rejection normalization and
+ * the pre-handled `action()` rejection, factored out so the two factories
+ * don't each carry their own copy of the same decision (spec/async.md §7.2,
+ * §7's "one decision, two implementations" rule in CLAUDE.md).
  */
 
 import { isHttpDescriptor, type HttpDescriptor } from './http.ts'
@@ -36,4 +36,16 @@ export function assertHttpDescriptor<T>(
  */
 export function normalizeError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err))
+}
+
+/**
+ * Attach a no-op rejection handler to `promise` and return the same promise.
+ * An `action()` failure is already observable via `error()`, so a
+ * fire-and-forget call (`onClick={() => save()}`) must not also report an
+ * unhandled rejection. A caller that awaits the returned promise still sees
+ * the rejection: awaiting attaches its own handler.
+ */
+export function markRejectionHandled<T>(promise: Promise<T>): Promise<T> {
+  promise.catch(() => {})
+  return promise
 }

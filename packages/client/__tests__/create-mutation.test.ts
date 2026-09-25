@@ -169,6 +169,25 @@ describe('rule 5: value retention', () => {
 
 // -- rule 6: invalidates -----------------------------------------------------
 
+describe('action(): un-awaited failure', () => {
+  test('a fire-and-forget failed call reports no unhandled rejection; error() holds it', async () => {
+    stubFetch({ message: 'nope' }, 500)
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, save] = createMutation(() => http.post('/api/comments', { body: 'hi' }))
+      save() // not awaited, as in `onClick={() => save()}`
+      await waitUntil(() => save.error() !== undefined)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+      expect(save.error()).toMatchObject({ status: 500 })
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+})
+
 describe('rule 6: invalidates', () => {
   test('fires on success only, with the given prefixes', async () => {
     const received: (readonly string[])[] = []

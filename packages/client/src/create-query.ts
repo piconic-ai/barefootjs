@@ -15,7 +15,7 @@
 
 import { createSignal, createEffect, onCleanup, untrack, type Reactive } from './reactive.ts'
 import { requestKey, requestUrl, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
-import { assertHttpDescriptor, normalizeError } from './request-descriptor.ts'
+import { assertHttpDescriptor, markRejectionHandled, normalizeError } from './request-descriptor.ts'
 import { scheduleMicrotask } from './schedule-microtask.ts'
 import { onInvalidate } from '@barefootjs/shared'
 
@@ -44,7 +44,7 @@ export interface CreateQueryOptions<T> {
  * @stability alpha
  */
 export interface QueryAction<T> {
-  /** Re-send the current descriptor, bypassing freshness. Resolves with the value or rejects with the error. */
+  /** Re-send the current descriptor, bypassing freshness. Resolves with the value or rejects with the error; the rejection is pre-handled, so an un-awaited call reports no unhandled rejection. */
   (): Promise<T>
   /** Whether the last send has not settled. */
   readonly isPending: Reactive<() => boolean>
@@ -289,8 +289,8 @@ export function createQuery<T>(
     // `error()` — swallow the promise's own rejection here so a failing
     // dependency-driven refetch (nobody is `await`ing this call) doesn't
     // surface as an unhandled rejection. `action()` below returns `doSend`'s
-    // promise directly instead, so a caller that awaits it still sees the
-    // rejection.
+    // promise instead, marked handled, so a caller that awaits it still sees
+    // the rejection and one that doesn't gets no unhandled-rejection report.
     doSend(send.descriptor, send.key).catch(() => {})
   }
 
@@ -379,7 +379,7 @@ export function createQuery<T>(
     liveUrl = requestUrl(descriptor)
     // Rule 8: bypasses the freshness gate `flush()` applies — always sends
     // (joining an in-flight request for the same key via single-flight).
-    return doSend(descriptor, key)
+    return markRejectionHandled(doSend(descriptor, key))
   }
 
   const boundAction = action as QueryAction<T>

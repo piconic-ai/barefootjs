@@ -397,6 +397,9 @@ and a bare Promise had no method to decide by. The method is now a **check**, no
 decision.
 
 `action()` returns `Promise<T>`, so `await saveComment()` before navigating is expressible.
+A failure rejects that promise and also sets `error()`. The rejection is pre-handled, so a
+fire-and-forget `onClick={() => saveComment()}` reports no unhandled rejection; a caller that
+awaits still sees it. A query's `action()` behaves the same.
 `invalidates: ['/api/posts']` marks every cached query whose **URL** (the descriptor's `url`
 with its `params` serialised, method-agnostic — not the cache key, which starts with the
 method: `GET /api/posts?…`, so a prefix like `/api/posts` would never match it) starts with

@@ -12,7 +12,7 @@
 
 import { createSignal, onCleanup, untrack, type Reactive } from './reactive.ts'
 import { isSafeMethod, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
-import { assertHttpDescriptor, normalizeError } from './request-descriptor.ts'
+import { assertHttpDescriptor, markRejectionHandled, normalizeError } from './request-descriptor.ts'
 import { invalidate } from '@barefootjs/shared'
 
 /**
@@ -38,7 +38,7 @@ export interface CreateMutationOptions {
  * @stability alpha
  */
 export interface MutationAction<T> {
-  /** Send now. Resolves with the value or rejects with the error — the caller's own promise, independent of `value()`/`error()`. */
+  /** Send now. Resolves with the value or rejects with the error — the caller's own promise, independent of `value()`/`error()`. The rejection is pre-handled, so an un-awaited call reports no unhandled rejection. */
   (): Promise<T>
   /** Whether the latest call has not settled. */
   readonly isPending: Reactive<() => boolean>
@@ -127,7 +127,7 @@ export function createMutation<T>(
     setIsPending(true)
 
     // Rule 3: no `inflight` map, no cache lookup — always a fresh send.
-    return sendRequest<T>(descriptor).then(
+    const sent = sendRequest<T>(descriptor).then(
       (result) => {
         if (!disposed && myGeneration === generation) {
           setValue(() => result)
@@ -151,6 +151,7 @@ export function createMutation<T>(
         throw err
       },
     )
+    return markRejectionHandled(sent)
   }
 
   const boundAction = action as MutationAction<T>
