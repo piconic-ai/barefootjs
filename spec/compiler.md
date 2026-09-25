@@ -1312,8 +1312,9 @@ certain, decided structurally (TS AST, `recordRefAttrsAbsentAtSsr` in
   declared in the `ref`'s innermost function scope — the limit it had before
   BF063, kept so sharing the resolution does not widen portal recognition.
   This is not a `.map()`-row guard: a portal element inside a row is broken
-  either way (a row-declared callback is still recognized), a pre-existing
-  defect tracked separately.
+  either way (a row-declared callback is still recognized) — the known
+  limitation `loop-row-ref-portal`
+  (`packages/adapter-tests/limitations/loop-row-ref-portal.ts`).
 - **The write targets the callback's own element parameter** —
   `el.setAttribute('<string literal>', …)`, `el.dataset.<key> = …` or
   `el.dataset['<key>'] = …` (the key maps to `data-<kebab-case>`). Writes to

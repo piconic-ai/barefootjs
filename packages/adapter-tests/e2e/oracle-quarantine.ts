@@ -199,6 +199,18 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // the same as the absent-attribute default. If `initialTodos` ever became
   // all-done, `every()` would flip `true` and this region would start
   // diverging too.
+  // A `ref` callback declared in the component body that portals a
+  // keyed-row `<button>` to `document.body`: SSR renders the button inside
+  // its `<li>`, hydration's `ref` pass moves it out (so `snap`'s SSR-vs-
+  // hydrated leg and `three-point`'s first leg diverge). `idempotence`
+  // passes: the csr-mount leg portals the button the same way, and the click
+  // misses the row handler on both legs alike.
+  'row-portal-ref': {
+    oracles: ['snap', 'three-point'],
+    reason:
+      'SSR renders each row <button> inside its <li>; hydration moves it to document.body (bf-po stamped), leaving the <li> elements empty.',
+    limitation: 'loop-row-ref-portal',
+  },
   'todo-app': {
     oracles: ['snap', 'three-point'],
     reason:

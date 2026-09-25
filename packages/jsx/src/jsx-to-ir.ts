@@ -7161,7 +7161,8 @@ function bindingDeclares(binding: ts.BindingName, name: string): boolean {
  * lookup, so sharing the resolution does not widen what is recognized. It
  * is not a `.map()`-row guard: a portal element inside a row is broken
  * either way (a row-declared callback is still recognized, and still
- * breaks), a pre-existing defect tracked separately.
+ * breaks) — the known limitation `loop-row-ref-portal`
+ * (`packages/adapter-tests/limitations/loop-row-ref-portal.ts`).
  *
  * A match makes `element.ssrPortalOwnerScope` true, which every adapter
  * (#3119) uses to place the element's SSR markup at its own portal

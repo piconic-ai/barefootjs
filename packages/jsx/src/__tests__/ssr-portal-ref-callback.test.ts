@@ -182,9 +182,11 @@ export function Overlay() {
   // resolution does not widen what is recognized. These two tests pin that
   // scope limit only. A portal element inside a `.map()` row is broken
   // either way — the second test's row-declared callback is still
-  // recognized and still breaks the row's hydration — which is a
-  // pre-existing, separately tracked defect: the control pins today's
-  // behaviour as a known gap, not as intended behaviour.
+  // recognized and still breaks the row's hydration — which is the
+  // registered known limitation `loop-row-ref-portal`
+  // (`packages/adapter-tests/limitations/loop-row-ref-portal.ts`, fixture
+  // `row-portal-ref`): the control pins today's behaviour as a known gap,
+  // not as intended behaviour.
   test('does not flag a .map() row ref naming a portal callback declared in the component body', () => {
     const ir = root(`
 'use client'
