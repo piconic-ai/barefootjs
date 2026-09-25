@@ -59,6 +59,21 @@ export { unwrap } from './unwrap.ts'
 export { queryHref, type QueryParams, type QueryParamValue } from './query-href.ts'
 export { formatDate } from './format-date.ts'
 
+// `http` request descriptors (spec/async.md §7.2, async layer 0 1/4, #3156).
+// Pure, synchronous, no I/O — `createQuery` (#3157) is the only consumer of
+// `requestKey` / `sendRequest`, which stay internal to the package.
+// `HttpError` is public: it is what `createQuery`'s `error()` holds for a
+// non-2xx response, so callers need it for `instanceof` checks.
+export {
+  http,
+  HttpError,
+  type HttpDescriptor,
+  type HttpParams,
+  type HttpParamValue,
+  type HttpInit,
+  type HttpMethod,
+} from './http.ts'
+
 export { createContext, type Context } from './context.ts'
 
 // `provideContext` is compiler ABI too, but — unlike `forwardProps`/

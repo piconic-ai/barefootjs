@@ -31,6 +31,13 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
 | [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
+| [`http`](#http) | const | 0.39.0 | Alpha |
+| [`HttpDescriptor`](#httpdescriptor) | type | 0.39.0 | Alpha |
+| [`HttpError`](#httperror) | class | 0.39.0 | Alpha |
+| [`HttpInit`](#httpinit) | interface | 0.39.0 | Alpha |
+| [`HttpMethod`](#httpmethod) | type | 0.39.0 | Alpha |
+| [`HttpParams`](#httpparams) | type | 0.39.0 | Alpha |
+| [`HttpParamValue`](#httpparamvalue) | type | 0.39.0 | Alpha |
 | [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
 | [`Memo`](#memo) | type | 0.1.0 | **Beta** |
 | [`onCleanup()`](#oncleanup) | function | 0.1.0 | **Beta** |
@@ -235,6 +242,48 @@ const handleMount = (el: HTMLElement) => {
   el.style.top = `${r.bottom + window.scrollY}px`
 }
 ```
+
+### `http`
+
+`const` · Alpha since 0.39.0 · `@barefootjs/client`
+
+Build `http` request descriptors — pure, synchronous, no I/O. See the module doc comment and spec/async.md §7.2 for the constructor table and the params/body serialisation rules.
+
+### `HttpDescriptor`
+
+`type` · Alpha since 0.39.0 · `@barefootjs/client`
+
+A pure request descriptor. Constructing one performs no I/O — see the `http` namespace below. `T` is a phantom: it is never set on the runtime object, only carried in the type so `createQuery`'s `initial` and `value()` can be checked against it.
+
+### `HttpError`
+
+`class` · Alpha since 0.39.0 · `@barefootjs/client`
+
+A non-2xx HTTP response to a request sent from an `http` descriptor — what a query's `error()` holds when the server answered with an error status (a network failure is the underlying error instead). `status` is the response status; `body` is the response body parsed as JSON when possible, else the raw text, else `undefined`.
+
+### `HttpInit`
+
+`interface` · Alpha since 0.39.0 · `@barefootjs/client`
+
+The third argument any `http` constructor accepts. v0 is intentionally narrow — headers and credentials only.
+
+### `HttpMethod`
+
+`type` · Alpha since 0.39.0 · `@barefootjs/client`
+
+The HTTP methods `http` can build a descriptor for. `QUERY` is the safe, read-with-a-body method (spec/async.md §7.2); it is not a method `fetch`/`XMLHttpRequest` special-case, so it is sent like any other verb.
+
+### `HttpParams`
+
+`type` · Alpha since 0.39.0 · `@barefootjs/client`
+
+The params object `http.get` / `http.head` accept.
+
+### `HttpParamValue`
+
+`type` · Alpha since 0.39.0 · `@barefootjs/client`
+
+One `http` param value. Unlike `queryHref`'s string-only `QueryParamValue`, numbers and booleans are accepted and kept — including `0` and `false` — because descriptors are never lowered to an SSR template (no string-only parity requirement to preserve). `null`, `undefined` and `''` are omitted; an array appends one entry per member.
 
 ### `isSSRPortal()`
 
