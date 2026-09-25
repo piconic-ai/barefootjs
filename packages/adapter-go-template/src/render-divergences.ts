@@ -154,9 +154,9 @@ export const renderDivergences: RenderDivergences = {
   // A literal-initialized `const` read as a ternary test is lowered as a
   // Props field read (`.On`, `.Mode`) the struct doesn't have, so
   // `html/template` fails at render time: "can't evaluate field On in type
-  // main.…Props". Boolean literals fail at module or function scope; string
-  // and number literals only at function scope (a module-scope string
-  // const renders like Hono).
+  // main.…Props". Boolean literals fail at module or function scope; a
+  // string literal only at function scope (a module-scope string const
+  // renders like Hono).
   'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },

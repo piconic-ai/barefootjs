@@ -57,8 +57,7 @@ export const renderDivergences: RenderDivergences = {
   // A boolean-literal `const` (module or function scope) read as a ternary
   // test is emitted as an undeclared `$on`, so the template fails to
   // compile under `use strict`: 'Global symbol "$on" requires explicit
-  // package name'. String and number literals are inlined and render like
-  // Hono.
+  // package name'. A string literal is inlined and renders like Hono.
   'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   // Text after a ternary lands at the start of its own template line

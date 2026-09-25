@@ -6220,7 +6220,7 @@
     "line-statement-sigil-text-after-conditional": {
       "title": "Text starting with a colon or percent sign right after a ternary",
       "kind": "silent",
-      "given": "static JSX text whose first non-space character is `:` or `%`, directly following a ternary conditional whose branches both render (`{c ? 'on' : 'off'} :y`, `{c ? <b/> : <i/>}%y`)",
+      "given": "static JSX text whose first non-space character is `:` or `%`, directly following a ternary conditional whose branches both render (`{c ? 'on' : 'off'} :y`, `{c ? 'on' : 'off'} %y`)",
       "expected": "the text renders verbatim after the chosen branch (`off :y`)",
       "actual": "throws a template parse error because the engine reads the text as a statement line, or drops the text when that line happens to parse",
       "fixtures": [
@@ -6235,7 +6235,7 @@
     "literal-const-conditional-test": {
       "title": "Literal-initialized const read as a conditional test",
       "kind": "silent",
-      "given": "a `const` initialized with a boolean literal at module or function scope (`const on = true`), or with a string or number literal inside the component function (`const mode = 'on'`), read as the test of a ternary or `&&` (`data-x={on ? 'a' : 'b'}`, `{mode === 'on' ? 'a' : 'b'}`)",
+      "given": "a `const` initialized with a boolean literal at module or function scope (`const on = true`), or with a string literal inside the component function (`const mode = 'on'`), read as the test of a ternary (`data-x={on ? 'a' : 'b'}`, `data-x={mode === 'on' ? 'a' : 'b'}`)",
       "expected": "the branch the const's value selects renders in the server HTML (`data-x=\"a\"`)",
       "actual": "renders the falsy branch as if the const were unset, or throws at render time on an unbound template variable",
       "fixtures": [
