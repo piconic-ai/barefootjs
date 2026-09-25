@@ -34,7 +34,7 @@ import { loadCompatAdapters, MissingCompatAdaptersError, requireAllCompatAdapter
 import { computeComponentDocs, computeFixtureDocs } from './component-docs'
 import { buildCompatCell, compileForCompat, type CompatCell } from './engine'
 import { buildCompatReport, buildFixtureDivergences, formatCompatJson, formatCompatMarkdown, type CompatReport } from './report'
-import { buildLimitationsSection } from './limitations'
+import { buildLimitationsSection, e2eQuarantineCitations } from './limitations'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const COMPONENTS_DIR = path.join(REPO_ROOT, 'ui/components/ui')
@@ -261,7 +261,11 @@ async function main(): Promise<void> {
   // entry — the section every diagnostic link on the docs page resolves
   // to. Same relative import precedent as `jsxFixtures` above.
   const { limitations } = await import('../../adapter-tests/limitations')
-  const report = buildCompatReport(cells, fixtureDivergences, buildLimitationsSection(limitations, loaded))
+  const report = buildCompatReport(
+    cells,
+    fixtureDivergences,
+    buildLimitationsSection(limitations, loaded, await e2eQuarantineCitations()),
+  )
 
   // Row descriptions + source links for the docs page's two entity
   // tables (component matrix, render-conformance fixture corpus), so a

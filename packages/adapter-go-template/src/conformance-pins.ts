@@ -57,6 +57,16 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A loop over a static LITERAL array (module- or function-scope `const`)
+  // whose row renders a child component anywhere but as the row root
+  // (inside an element, a conditional branch or a nested loop) refuses with
+  // the same BF101 as the computed-const case above, though the array is
+  // known at compile time (the same loop with a plain element row, or with
+  // the component as the row root, renders). Escape twins:
+  // `static-literal-loop-component-in-row-{client,precomputed}`.
+  'static-literal-loop-component-in-row': [
+    { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-component-row' },
+  ],
   // Untyped object-literal loop arrays with no single row shape: there is
   // no one Go struct to synthesize for the rows, so `resolveNestedLoopItemTypes`
   // refuses instead of baking the array to `nil` and dropping the loop.

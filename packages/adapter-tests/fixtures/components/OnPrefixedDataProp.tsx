@@ -12,7 +12,7 @@ import { createSignal } from '@barefootjs/client'
 
 function Badge(props: { once?: boolean; label: string }) {
   return (
-    <em className="badge" data-label={props.label} data-once={props.once ? 'yes' : 'no'}>
+    <em className="badge" data-label={props.label} data-flag={props.once ? 'yes' : 'no'}>
       {props.once ? 'on' : 'off'}
     </em>
   )

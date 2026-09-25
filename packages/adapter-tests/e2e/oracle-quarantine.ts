@@ -205,4 +205,16 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'SSR emits the four /* @client */ placeholders empty (<ul class="todo-list"> loop l0, <strong bf="s7"> count, cond s8 \'item\'/\'items\', cond s13 clear-completed button); hydration materializes them. Everything outside those regions is byte-identical, and the three-point\'s hydrated-vs-csr-mount leg agrees — by-design client-only rendering, not a hydration defect. (A fifth /* @client */ site, the toggle-all checkbox\'s `checked` binding, is untouched by this masking — SSR omits the attribute entirely and the fixture\'s seeded data happens to match that default; see the module comment above.)',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2719',
   },
+  // A `ref` callback declared in the component body that portals a
+  // keyed-row `<button>` to `document.body`: SSR renders the button inside
+  // its `<li>`, hydration's `ref` pass moves it out (so `snap`'s SSR-vs-
+  // hydrated leg and `three-point`'s first leg diverge). `idempotence`
+  // passes: the csr-mount leg portals the button the same way, and the click
+  // misses the row handler on both legs alike.
+  'row-portal-ref': {
+    oracles: ['snap', 'three-point'],
+    reason:
+      'SSR renders each row <button> inside its <li>; hydration moves it to document.body (bf-po stamped), leaving the <li> elements empty.',
+    limitation: 'loop-row-ref-portal',
+  },
 }
