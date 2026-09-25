@@ -385,7 +385,7 @@ export function requestKey(descriptor: HttpDescriptor<unknown>): string {
  * that prefix is meant to match (spec/async.md §7.4, `createMutation`'s
  * `invalidates`).
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export function requestUrl(descriptor: HttpDescriptor<unknown>): string {
