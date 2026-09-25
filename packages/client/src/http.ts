@@ -23,7 +23,7 @@
  * parity requirement to preserve). `null`, `undefined` and `''` are omitted;
  * an array appends one entry per member.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export type HttpParamValue = string | number | boolean | (string | number)[] | null | undefined
@@ -31,7 +31,7 @@ export type HttpParamValue = string | number | boolean | (string | number)[] | n
 /**
  * The params object `http.get` / `http.head` accept.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export type HttpParams = Record<string, HttpParamValue>
@@ -40,7 +40,7 @@ export type HttpParams = Record<string, HttpParamValue>
  * The third argument any `http` constructor accepts. v0 is intentionally
  * narrow — headers and credentials only.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export interface HttpInit {
@@ -53,7 +53,7 @@ export interface HttpInit {
  * read-with-a-body method (spec/async.md §7.2); it is not a method
  * `fetch`/`XMLHttpRequest` special-case, so it is sent like any other verb.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export type HttpMethod = 'GET' | 'QUERY' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -66,7 +66,7 @@ const SAFE_METHODS: ReadonlySet<HttpMethod> = new Set(['GET', 'QUERY', 'HEAD'])
  * object, only carried in the type so `createQuery`'s `initial` and `value()`
  * can be checked against it.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export type HttpDescriptor<T = unknown> = Readonly<{
@@ -85,7 +85,7 @@ export type HttpDescriptor<T = unknown> = Readonly<{
  * `createQuery` uses this to reject non-descriptor return values (spec/async.md
  * §7's "only descriptors in v0" rule for the runtime PR).
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export function isHttpDescriptor(value: unknown): value is HttpDescriptor {
@@ -100,7 +100,7 @@ export function isHttpDescriptor(value: unknown): value is HttpDescriptor {
  * Is `method` one of the safe methods (`GET`, `QUERY`, `HEAD`)? Used by
  * `createMutation` (a later PR) to warn on a safe method passed to a mutation.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export function isSafeMethod(method: HttpMethod): boolean {
@@ -217,7 +217,7 @@ function withBody<T>(method: HttpMethod, url: string, body?: unknown, init?: Htt
  * module doc comment and spec/async.md §7.2 for the constructor table and the
  * params/body serialisation rules.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export const http = {
@@ -369,7 +369,7 @@ function stableBodyKey(body: unknown): string {
  * `body` (recursively sorted); array order in `body` is significant. Headers
  * and credentials are not part of the key.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export function requestKey(descriptor: HttpDescriptor<unknown>): string {
@@ -384,7 +384,7 @@ export function requestKey(descriptor: HttpDescriptor<unknown>): string {
  * status; `body` is the response body parsed as JSON when possible, else the
  * raw text, else `undefined`.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export class HttpError extends Error {

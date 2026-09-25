@@ -24,7 +24,7 @@ const DEFAULT_TTL_MS = 15_000
  * Options `createQuery` accepts. `initial` is the **already-obtained result**
  * of the initial request (spec/async.md §7.5) — not a placeholder.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export interface CreateQueryOptions<T> {
@@ -38,7 +38,7 @@ export interface CreateQueryOptions<T> {
  * The callable `action` a query returns alongside its value: re-sends the
  * current descriptor when called, and carries two reactive accessors.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export interface QueryAction<T> {
@@ -114,7 +114,7 @@ const NOT_A_DESCRIPTOR_MESSAGE =
  * 9. **Disposal.** Owned by the current reactive owner; in-flight
  *    resolutions are dropped after disposal and never write.
  *
- * @since 0.38.0
+ * @since 0.39.0
  * @stability alpha
  */
 export function createQuery<T>(
