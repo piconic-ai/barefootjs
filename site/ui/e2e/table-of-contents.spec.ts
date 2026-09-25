@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { expectTocActive } from './toc'
+import { expectTocActive } from '../../shared/e2e/helpers'
 
 // The On This Page nav follows the reader: the active item is bold and the
 // green marker sits on its row, whether it got there by a click or a scroll.

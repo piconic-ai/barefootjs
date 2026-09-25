@@ -1,3 +1,8 @@
+/**
+ * E2E helpers shared by site/core and site/ui, whose docs pages render the
+ * same On This Page nav (site/shared/components/table-of-contents.tsx) and
+ * boot the same router.
+ */
 import { expect, type Page } from '@playwright/test'
 
 export const tocNav = (page: Page) => page.locator('nav[aria-label="Table of contents"]')
@@ -22,4 +27,13 @@ export async function expectTocActive(page: Page, id: string) {
       ? { x: Math.round(marker.x - row.x), y: Math.round(marker.y - row.y), height: Math.round(marker.height - row.height) }
       : null
   }).toEqual({ x: 0, y: 0, height: 0 })
+}
+
+/** Counts requests for `pathname` from now on (any query or fragment). */
+export function countRequestsTo(page: Page, pathname: string) {
+  let count = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === pathname) count++
+  })
+  return () => count
 }
