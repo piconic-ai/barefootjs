@@ -7,9 +7,9 @@
 // hydrated page shows. This module joins them into the deterministic shape
 // the docs compatibility-matrix page renders as its "Known limitations"
 // section and anchors every diagnostic link on: one entry per registry id,
-// with the affected adapters DERIVED from the pins and quarantine rows that
-// cite it (see `adaptersCiting`) — never declared on the entry (an entry
-// names no adapter, by rule).
+// with the affected adapters DERIVED from the pins, render divergences and
+// quarantine rows that cite it (see `adaptersCiting`) — never declared on
+// the entry (an entry names no adapter, by rule).
 
 import type { ConformancePins, RenderDivergences } from '@barefootjs/jsx'
 import { limitationActual, limitationDiagnostics, type Limitation, type LimitationKind } from '../../adapter-tests/src/limitations'

@@ -262,18 +262,24 @@ describe('e2e quarantine citations', () => {
     ])
   })
 
-  for (const citation of e2eCitations.filter(c => c.fixture !== undefined)) {
+  // A fixture-keyed e2e row reproduces a gap on the reference markup, so
+  // it is expected to publish every adapter. An adapter that legitimately
+  // drops out (a pin or render divergence on the fixture) is written down
+  // here by name, `limitation id → fixture id → adapter ids`, so a shorter
+  // list than expected goes red instead of publishing silently.
+  const FIXTURE_ROW_EXCLUSIONS: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>> = {}
+  const fixtureRows = new Map(
+    e2eCitations.flatMap(c => (c.fixture === undefined ? [] : [[`${c.limitation}::${c.fixture}`, c] as const])),
+  )
+  for (const citation of fixtureRows.values()) {
     const fixture = citation.fixture as string
-    test(`[${citation.limitation}] publishes every adapter rendering '${fixture}' as the reference does`, () => {
-      const conforming = loaded
-        .filter(a => (a.pins[fixture] ?? []).length === 0 && !a.renderDivergences[fixture])
+    test(`[${citation.limitation}] publishes every adapter for fixture-keyed row '${fixture}'`, () => {
+      const excluded = FIXTURE_ROW_EXCLUSIONS[citation.limitation]?.[fixture] ?? []
+      const expected = loaded
         .map(a => a.id)
-      const published = adaptersCiting(citation.limitation, loaded, e2eCitations)
-      expect(conforming.filter(id => !published.includes(id))).toEqual([])
+        .filter(id => !excluded.includes(id))
+        .sort(compareAdapterIds)
+      expect(adaptersCiting(citation.limitation, loaded, e2eCitations)).toEqual(expected)
     })
   }
-
-  test('loop-row-ref-portal publishes every adapter', () => {
-    expect(adaptersCiting('loop-row-ref-portal', loaded, e2eCitations)).toEqual(loaded.map(a => a.id).sort(compareAdapterIds))
-  })
 })
