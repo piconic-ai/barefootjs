@@ -262,6 +262,17 @@ describe('e2e quarantine citations', () => {
     ])
   })
 
+  for (const citation of e2eCitations.filter(c => c.fixture !== undefined)) {
+    const fixture = citation.fixture as string
+    test(`[${citation.limitation}] publishes every adapter rendering '${fixture}' as the reference does`, () => {
+      const conforming = loaded
+        .filter(a => (a.pins[fixture] ?? []).length === 0 && !a.renderDivergences[fixture])
+        .map(a => a.id)
+      const published = adaptersCiting(citation.limitation, loaded, e2eCitations)
+      expect(conforming.filter(id => !published.includes(id))).toEqual([])
+    })
+  }
+
   test('loop-row-ref-portal publishes every adapter', () => {
     expect(adaptersCiting('loop-row-ref-portal', loaded, e2eCitations)).toEqual(loaded.map(a => a.id).sort(compareAdapterIds))
   })

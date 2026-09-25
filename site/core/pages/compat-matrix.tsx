@@ -743,7 +743,7 @@ ${rows.join('\n')}
   return `
 ## Known Limitations
 
-Every gap on this page is an instance of a registered limitation — one file per entry under [\`packages/adapter-tests/limitations/\`](https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-tests/limitations), the source of truth for what is limited. An entry states the input shape (**given**), what the Hono reference renders for it (**expected**), what the affected adapters do instead (**actual**), and the minimal fixtures that reproduce it; which adapters are affected is derived from the adapter pins and real-browser hydration tests citing the entry. The kind is the compatibility policy's classifier: a **silent** divergence is a defect, a loud **refusal** is an escapable capability gap, and **by design** is a permanent position with its reason stated.
+Every gap on this page is an instance of a registered limitation — one file per entry under [\`packages/adapter-tests/limitations/\`](https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-tests/limitations), the source of truth for what is limited. An entry states the input shape (**given**), what the Hono reference renders for it (**expected**), what the affected adapters do instead (**actual**), and the minimal fixtures that reproduce it; which adapters are affected is derived from the adapter pins, render divergences and real-browser e2e quarantine rows citing the entry. The kind is the compatibility policy's classifier: a **silent** divergence is a defect, a loud **refusal** is an escapable capability gap, and **by design** is a permanent position with its reason stated.
 
 ${blocks.join('\n')}`
 }

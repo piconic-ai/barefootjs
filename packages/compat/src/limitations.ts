@@ -89,9 +89,12 @@ export async function e2eQuarantineCitations(): Promise<E2eCitation[]> {
  * run's SSR adapter. A row keyed by a corpus fixture also covers every
  * adapter that renders that fixture exactly as the reference does (no pin
  * and no render divergence on it): that adapter serves the same markup and
- * hydrates it with the same client runtime, so it shows the same gap. A
- * generated case (mutation / pairwise / explore) has no per-adapter
- * conformance record, so it covers only the run's own adapter.
+ * hydrates it with the same client runtime, so it shows the same gap. An
+ * adapter with a pin on the fixture never renders it; one with a render
+ * divergence (citing any limitation) serves different markup, so the row
+ * does not establish the gap there either — it is left out rather than
+ * claimed. A generated case (mutation / pairwise / explore) has no
+ * per-adapter conformance record, so it covers only the run's own adapter.
  */
 export function adaptersCiting(
   limitationId: string,
