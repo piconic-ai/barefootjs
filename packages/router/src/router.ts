@@ -8,7 +8,7 @@
  * the incoming ones, with last-wins semantics across overlapping navigations.
  */
 
-import { BF_REGION } from '@barefootjs/shared'
+import { BF_REGION, onInvalidate } from '@barefootjs/shared'
 import { loadPage } from './cache.ts'
 import { reconcileHead } from './head.ts'
 import {
@@ -72,6 +72,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     cacheStaleMs: options.cacheStaleMs ?? 60_000,
     cacheCap: options.cacheCap ?? 30,
     cache: new Map(),
+    cacheGeneration: 0,
     preloaded: new Set(),
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
     scrollToTop: options.scrollToTop ?? true,
@@ -100,6 +101,16 @@ export function startRouter(options: RouterOptions = {}): Router {
   // existing history.state a framework/scroll lib may have stored.
   commitHistory('replace', window.location.href)
 
+  // Async layer 0 invalidation bus (spec/async.md §7.4, #3199): the router
+  // cannot know which pages rendered data from an invalidated API URL, and a
+  // false hit (stale HTML served after a successful write) is worse than one
+  // extra page fetch — so any invalidation evicts the whole page cache,
+  // in-flight entries included, rather than trying to match a prefix.
+  const unsubscribeInvalidation = onInvalidate(() => {
+    state.cache.clear()
+    state.cacheGeneration++
+  })
+
   state.stop = () => {
     document.removeEventListener('click', onClick)
     window.removeEventListener('popstate', onPopState)
@@ -109,6 +120,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     document.removeEventListener('pointerdown', onPointerDown)
     clearHoverTimer(state)
     state.inflight?.abort()
+    unsubscribeInvalidation()
     if (active === state) active = null
   }
 

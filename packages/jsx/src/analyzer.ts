@@ -4048,6 +4048,13 @@ function validateContext(ctx: AnalyzerContext): void {
   // failures before factory inlining landed (#931).
   validateReactiveFactoryCalls(ctx)
 
+  // BF115/BF116: flag a RECOGNISED createSignal/createMemo call used with a
+  // destructure arity or argument count it doesn't support — the gap
+  // validateReactiveFactoryCalls above doesn't cover, since it exists to
+  // validate an unrecognised callee and skips createSignal/createMemo
+  // unconditionally (#3159).
+  validateReactiveFactoryArity(ctx)
+
   // BF013: flag a reactive primitive invoked through a namespace import
   // that the analyzer could not resolve (#2771) — same "silently dropped,
   // ReferenceError at hydrate" failure shape as BF011.
@@ -6059,6 +6066,143 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
 
       if (ts.isObjectBindingPattern(decl.name)) {
         validateObjectFactoryDestructure(ctx, decl.name, callee, loc)
+      }
+    }
+  }
+}
+
+/**
+ * BF115 / BF116 (#3159): two `createSignal`/`createMemo` shapes that
+ * mis-compiled silently before this pass existed, because
+ * `validateReactiveFactoryCalls` above unconditionally `continue`s past any
+ * array-pattern destructure whose callee is `createSignal`/`createMemo` —
+ * it exists to validate an UNRECOGNISED callee, and never checked whether a
+ * RECOGNISED one was actually called with a shape it supports.
+ *
+ * - **BF115 — tuple arity.** `createSignal(...)` returns `[getter, setter]`:
+ *   a 1-element destructure keeps just the getter (`setter: null`,
+ *   supported), but `collectSignal`'s `elements.length > 2` guard silently
+ *   returns with NOTHING pushed to `ctx.signals` for anything wider — the
+ *   whole declaration vanishes from the compiled output, and a same-name
+ *   prop (`const [user, setUser, extra] = createSignal(props.user)` next to
+ *   a `user` prop) silently mis-seeds `user` as the raw prop accessor
+ *   instead of the signal. `createMemo(...)` returns a single getter, not a
+ *   tuple, so ANY array-pattern destructure of it is a mismatch (it isn't
+ *   even reachable through `collectMemo`, which requires an identifier
+ *   binding — so today it silently produces nothing at all, not even an
+ *   opaque local).
+ * - **BF116 — extra arguments.** `createSignal(initialValue?)` takes 0 or 1
+ *   argument; `createMemo(computeFn)` takes exactly 1; an env-signal factory
+ *   (`createSearchParams()`) takes none. `collectSignal`/
+ *   `collectMemo` only ever read `arguments[0]`, so any argument beyond it
+ *   (`createSignal(props.user, { from: 'router' })`) is silently dropped
+ *   from the emitted client JS with no diagnostic.
+ *
+ * Recognises the callee via `resolvePrimitiveKind` — the same
+ * TypeChecker-backed, alias/namespace-import-safe resolution
+ * `isSignalDeclaration`/`isMemoDeclaration` use — rather than the bare
+ * identifier-text match `validateReactiveFactoryCalls` uses for BF110, so
+ * an aliased import (`import { createSignal as sig }`) is still caught.
+ *
+ * This walks the analyzer's own parse of the ORIGINAL source AST (Phase 1),
+ * which runs strictly before Phase 2 client-JS emission — the compiler's
+ * own profile-mode `__bfId` argument (`ir-to-client-js/stringify/
+ * declaration-emit.ts`, `profiler.ts`) is inserted later, during emission,
+ * so it can never appear in a call this pass inspects and needs no
+ * special-casing here.
+ */
+function validateReactiveFactoryArity(ctx: AnalyzerContext): void {
+  if (!ctx.componentNode) return
+  const body = ts.isFunctionDeclaration(ctx.componentNode)
+    ? ctx.componentNode.body
+    : (ts.isBlock(ctx.componentNode.body) ? ctx.componentNode.body : null)
+  if (!body) return
+
+  checkStatementsForReactiveFactoryArity(body.statements, ctx)
+
+  // Conditional early-return branches get their own signal collection path
+  // (#1414 cell #8 — `collectBranchSignals`, called from the "if statement
+  // with JSX return" case in `visitComponentBody` above): a top-level `if`
+  // whose then-branch returns JSX has its *direct* statements scanned for
+  // `createSignal` declarations too, so a bad-arity call there mis-compiles
+  // exactly like a top-level one would, and needs the same diagnostic — not
+  // just the top-level scan above, which the branch's statements are never
+  // members of.
+  for (const stmt of body.statements) {
+    if (!ts.isIfStatement(stmt)) continue
+    if (!findJsxReturnInBlock(stmt.thenStatement)) continue
+    if (!ts.isBlock(stmt.thenStatement)) continue
+    checkStatementsForReactiveFactoryArity(stmt.thenStatement.statements, ctx)
+  }
+}
+
+/**
+ * BF115/BF116 over one flat list of statements — shared by the component
+ * body's top-level scan and the conditional-branch scan above, both of
+ * which only ever look at direct variable-statement children (never
+ * recursing further), matching exactly what `collectSignal`/`collectMemo`
+ * are reachable from in each case.
+ */
+function checkStatementsForReactiveFactoryArity(statements: readonly ts.Statement[], ctx: AnalyzerContext): void {
+  for (const stmt of statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!decl.initializer || !ts.isCallExpression(decl.initializer)) continue
+      const callExpr = decl.initializer
+      const kind = resolvePrimitiveKind(callExpr, ctx)
+      if (kind !== 'signal' && kind !== 'memo') continue
+
+      const loc = getSourceLocation(stmt, ctx.sourceFile, ctx.filePath)
+      const calleeText = callExpr.expression.getText(ctx.sourceFile)
+
+      // BF115: tuple-destructure arity. `createMemo` never returns a tuple
+      // (maxArity 0 — any array-pattern destructure of it is a mismatch);
+      // `createSignal` returns 1-2 elements.
+      if (ts.isArrayBindingPattern(decl.name)) {
+        const elementCount = decl.name.elements.length
+        const maxArity = kind === 'signal' ? 2 : 0
+        if (elementCount < 1 || elementCount > maxArity) {
+          ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_ARITY_MISMATCH, loc, {
+            severity: 'error',
+            message: kind === 'signal'
+              ? (elementCount === 0
+                  ? `'${calleeText}(...)' returns a 2-element tuple '[getter, setter]' — this ` +
+                    `destructure binds 0 elements, so neither the getter nor the setter is ` +
+                    `reachable. Use 'const [get, set] = ${calleeText}(...)' or ` +
+                    `'const [get] = ${calleeText}(...)'.`
+                  : `'${calleeText}(...)' returns a 2-element tuple '[getter, setter]' (a ` +
+                    `1-element destructure keeps just the getter) — this destructure has ` +
+                    `${elementCount} elements. The extra binding(s) are silently dropped from ` +
+                    `the compiled output today. Use 'const [get, set] = ${calleeText}(...)' or ` +
+                    `'const [get] = ${calleeText}(...)'.`)
+              : `'${calleeText}(...)' returns a single getter function, not a tuple — this ` +
+                `destructures ${elementCount} element${elementCount === 1 ? '' : 's'} from it. ` +
+                `Use 'const value = ${calleeText}(...)' instead.`,
+          }))
+          // Already flagged for this shape; the argument-count check below
+          // would be redundant noise on a declaration already rejected.
+          continue
+        }
+      }
+
+      // BF116: extra call arguments. `createSignal`/`createMemo` accept at
+      // most 1; an env-signal factory (`createSearchParams()`, which also
+      // resolves to kind `'signal'`) takes none — its value comes from the
+      // request env, so any argument is dropped just the same.
+      const isEnvSignal = kind === 'signal' && resolveEnvSignalKey(callExpr, ctx) !== null
+      const maxArgs = isEnvSignal ? 0 : 1
+      if (callExpr.arguments.length > maxArgs) {
+        ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_EXTRA_ARGUMENTS, loc, {
+          severity: 'error',
+          message: isEnvSignal
+            ? `'${calleeText}()' takes no arguments (its value is read from the request ` +
+              `environment), but this call passes ${callExpr.arguments.length}. The ` +
+              `argument(s) are silently dropped from the compiled client JS today; remove them.`
+            : `'${calleeText}(...)' accepts at most 1 argument (${kind === 'signal' ? 'the initial value' : 'the compute function'}), ` +
+              `but this call passes ${callExpr.arguments.length}. The extra argument(s) are ` +
+              `silently dropped from the compiled client JS today; remove them, or fold ` +
+              `whatever they configure into the ${kind === 'signal' ? 'initial value expression' : 'compute function body'}.`,
+        }))
       }
     }
   }

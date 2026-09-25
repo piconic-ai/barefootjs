@@ -10,57 +10,8 @@ import { describe, test, expect, beforeEach, afterEach, setSystemTime } from 'bu
 import { createSignal, createMemo, createRoot } from '../src/reactive'
 import { http, type HttpDescriptor } from '../src/http'
 import { createQuery, __resetQueryCacheForTests } from '../src/create-query'
-
-// -- fetch stubs --------------------------------------------------------
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
-
-/** Every call resolves immediately with `body`. */
-function stubFetch(body: unknown, status = 200): { calls: string[] } {
-  const calls: string[] = []
-  // @ts-expect-error — test stub
-  globalThis.fetch = (url: string) => {
-    calls.push(url)
-    return Promise.resolve(jsonResponse(body, status))
-  }
-  return { calls }
-}
-
-/** Calls are recorded but resolve only when `resolveNth` is invoked. */
-function deferredFetch(): {
-  calls: string[]
-  resolveNth: (n: number, body: unknown, status?: number) => void
-} {
-  const calls: string[] = []
-  const resolvers: Array<(r: Response) => void> = []
-  // @ts-expect-error — test stub
-  globalThis.fetch = (url: string) => {
-    calls.push(url)
-    return new Promise<Response>((resolve) => {
-      resolvers.push(resolve)
-    })
-  }
-  return {
-    calls,
-    resolveNth(n, body, status = 200) {
-      resolvers[n]!(jsonResponse(body, status))
-    },
-  }
-}
-
-async function waitUntil(predicate: () => boolean, maxIters = 200): Promise<void> {
-  for (let i = 0; i < maxIters; i++) {
-    if (predicate()) return
-    await Promise.resolve()
-  }
-  throw new Error(`waitUntil: condition not met after ${maxIters} microtask ticks`)
-}
-
-async function settle(): Promise<void> {
-  for (let i = 0; i < 20; i++) await Promise.resolve()
-}
+import { invalidate } from '@barefootjs/shared'
+import { jsonResponse, stubFetch, deferredFetch, waitUntil, settle } from './http-test-helpers'
 
 const originalFetch = globalThis.fetch
 beforeEach(() => {
@@ -73,6 +24,9 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = originalFetch
   setSystemTime()
+  // Also after: the last test's ownerless queries would otherwise stay
+  // registered for invalidations published by later files in this process.
+  __resetQueryCacheForTests()
 })
 
 // -- rule 1: descriptors only --------------------------------------------
@@ -399,6 +353,43 @@ describe('rule 8: action', () => {
 
 // -- rule 9: disposal --------------------------------------------------
 
+describe('rule 8: un-awaited action failure', () => {
+  test('an un-awaited action() after disposal reports no unhandled rejection', async () => {
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, refetch] = createRoot((dispose) => {
+        const result = createQuery(() => http.get('/api/unawaited-disposed'), { initial: null })
+        dispose()
+        return result
+      })
+      refetch() // not awaited: a click racing teardown
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
+  test('a fire-and-forget failed action() reports no unhandled rejection; error() holds it', async () => {
+    stubFetch({ message: 'bad' }, 400)
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    try {
+      const [, refetch] = createQuery(() => http.get('/api/unawaited-action'), { initial: null })
+      refetch() // not awaited, as in `onClick={() => refetch()}`
+      await waitUntil(() => refetch.error() !== undefined)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).toEqual([])
+      expect(refetch.error()).toMatchObject({ status: 400 })
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+})
+
 describe('rule 9: disposal', () => {
   test('a resolution that arrives after disposal is dropped', async () => {
     const { calls, resolveNth } = deferredFetch()
@@ -429,5 +420,170 @@ describe('rule 9: disposal', () => {
     await settle()
     expect(calls.length).toBe(0) // the flush saw `disposed` and never sent
     expect(posts()).toBeUndefined()
+  })
+})
+
+// -- rule 10: invalidation (bus integration, #3199) -----------------------
+
+describe('rule 10: invalidation', () => {
+  test('a matching cache entry becomes stale: its next read re-fetches', async () => {
+    // Two separate query instances at the same key (rule 5's "re-mount"
+    // shape): `a` populates the cache and is then disposed, so only the
+    // cache entry — not a live query — is left for the invalidation to act
+    // on. `b`'s first read is what must observe the staleness.
+    const { calls } = stubFetch({ v: 1 })
+    let disposeA!: () => void
+    const [a] = createRoot((dispose) => {
+      disposeA = dispose
+      return createQuery(() => http.get('/api/invalidate-a'))
+    })
+    await waitUntil(() => a() !== undefined)
+    expect(calls.length).toBe(1)
+    disposeA()
+
+    invalidate(['/api/invalidate-a'])
+
+    globalThis.fetch = (() => Promise.resolve(jsonResponse({ v: 2 }))) as typeof fetch
+    const [b] = createQuery(() => http.get('/api/invalidate-a'))
+    // Shown immediately from the (now stale) cache entry, then re-fetched —
+    // the same sequence rule 5's "stale entry" test pins.
+    await waitUntil(() => b() !== undefined)
+    expect(b()).toEqual({ v: 1 })
+    await waitUntil(() => b()?.v === 2)
+  })
+
+  test('a non-matching entry stays fresh: no re-send', async () => {
+    const { calls } = stubFetch({ v: 1 })
+    const [a] = createQuery(() => http.get('/api/keep-fresh'))
+    await waitUntil(() => a() !== undefined)
+    expect(calls.length).toBe(1)
+
+    invalidate(['/api/unrelated'])
+    await settle()
+
+    const [b] = createQuery(() => http.get('/api/keep-fresh'))
+    await settle()
+    expect(b()).toEqual({ v: 1 })
+    expect(calls.length).toBe(1) // still fresh — no new send
+  })
+
+  test('a live matching query re-sends once; isPending goes true then false', async () => {
+    const { calls } = stubFetch({ v: 1 })
+    const [value, action] = createQuery(() => http.get<{ v: number }>('/api/live-invalidate'), {
+      initial: { v: 0 },
+    })
+    expect(value()).toEqual({ v: 0 })
+    await settle()
+    expect(calls.length).toBe(0) // init rule: no auto-send
+
+    expect(action.isPending()).toBe(false)
+    invalidate(['/api/live-invalidate'])
+    await waitUntil(() => action.isPending())
+    await waitUntil(() => calls.length === 1)
+    await waitUntil(() => !action.isPending())
+    expect(value()).toEqual({ v: 1 })
+
+    // A second, non-matching invalidation must not trigger another send.
+    invalidate(['/api/unrelated'])
+    await settle()
+    expect(calls.length).toBe(1)
+  })
+
+  test('a disposed query ignores the invalidation', async () => {
+    const { calls } = stubFetch({ v: 1 })
+    let value!: () => { v: number } | undefined
+    const dispose = createRoot((dispose) => {
+      const [v] = createQuery(() => http.get<{ v: number }>('/api/disposed-invalidate'), {
+        initial: { v: 0 },
+      })
+      value = v
+      return dispose
+    })
+    dispose()
+
+    invalidate(['/api/disposed-invalidate'])
+    await settle()
+    expect(calls.length).toBe(0) // no send: the query is gone
+    expect(value()).toEqual({ v: 0 }) // untouched
+  })
+
+  test('the generation guard still holds across an invalidation-triggered re-send', async () => {
+    const { calls, resolveNth } = deferredFetch()
+    const [page, setPage] = createSignal(1)
+    const [posts] = createQuery(() => http.get<{ page: number }>('/api/gen-guard', { page: page() }), {
+      initial: { page: 1 },
+    })
+    await settle()
+    expect(calls.length).toBe(0)
+
+    // The invalidation resend starts a fetch for page=1, left in flight.
+    invalidate(['/api/gen-guard'])
+    await waitUntil(() => calls.length === 1)
+    expect(calls[0]).toBe('/api/gen-guard?page=1')
+
+    // Superseded by a normal dependency change to a different key before the
+    // invalidation-triggered send settles.
+    setPage(2)
+    await waitUntil(() => calls.length === 2)
+    resolveNth(1, { page: 2 })
+    await waitUntil(() => posts()?.page === 2)
+
+    // The stale, invalidation-triggered response for page=1 arrives last and
+    // must not overwrite page=2.
+    resolveNth(0, { page: 1 })
+    await settle()
+    expect(posts()).toEqual({ page: 2 })
+  })
+
+  test('an invalidation matching a key already in flight re-sends now; the old response never writes', async () => {
+    // The in-flight request was sent *before* the invalidation, so it may
+    // resolve with pre-mutation data. It leaves single-flight: the re-send is
+    // a new request, and the old response writes neither value() nor cache.
+    const { calls, resolveNth } = deferredFetch()
+    const [value] = createQuery(() => http.get<{ v: number }>('/api/inflight-race'))
+    await waitUntil(() => calls.length === 1) // the (no-`initial`) first send is in flight
+
+    invalidate(['/api/inflight-race'])
+    await waitUntil(() => calls.length === 2) // a new, post-invalidation request
+
+    // The pre-invalidation response arrives first and is dropped.
+    resolveNth(0, { v: 1 })
+    await settle()
+    expect(value()).toBeUndefined()
+
+    resolveNth(1, { v: 2 })
+    await waitUntil(() => value()?.v === 2)
+  })
+
+  test('a sibling instance does not join the pre-invalidation request, and the cache is not re-stamped with it', async () => {
+    // `a` issues the request; `b` (same key, idle) would have joined it via
+    // single-flight. After the invalidation both must end on the
+    // post-invalidation response, sharing one new request.
+    const { calls, resolveNth } = deferredFetch()
+    const [a] = createQuery(() => http.get<{ v: number }>('/api/inflight-sibling'))
+    await waitUntil(() => calls.length === 1) // `a`'s first send is in flight
+    const [b] = createQuery(() => http.get<{ v: number }>('/api/inflight-sibling'))
+    await settle()
+    expect(calls.length).toBe(1) // `b` joined `a`'s request (single-flight)
+
+    invalidate(['/api/inflight-sibling'])
+    await waitUntil(() => calls.length === 2)
+    await settle()
+    expect(calls.length).toBe(2) // one new request, shared by `a` and `b`
+
+    resolveNth(0, { v: 1 }) // pre-invalidation response
+    await settle()
+    expect(a()).toBeUndefined()
+    expect(b()).toBeUndefined()
+
+    resolveNth(1, { v: 2 })
+    await waitUntil(() => a()?.v === 2 && b()?.v === 2)
+
+    // The cache holds the post-invalidation value as fresh: a third instance
+    // reads it with no send.
+    const [c] = createQuery(() => http.get<{ v: number }>('/api/inflight-sibling'))
+    await settle()
+    expect(c()).toEqual({ v: 2 })
+    expect(calls.length).toBe(2)
   })
 })

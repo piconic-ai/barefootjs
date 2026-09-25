@@ -397,10 +397,30 @@ and a bare Promise had no method to decide by. The method is now a **check**, no
 decision.
 
 `action()` returns `Promise<T>`, so `await saveComment()` before navigating is expressible.
-`invalidates: ['/api/posts']` marks every cached query whose key starts with that prefix
-stale on success and rides the router's invalidation bus, so the page cache is evicted
-with it (a mutation that only evicted the query cache would let a later navigation restore
-the pre-mutation HTML from the page cache).
+A failure rejects that promise and also sets `error()`. The rejection is pre-handled, so a
+fire-and-forget `onClick={() => saveComment()}` reports no unhandled rejection; a caller that
+awaits still sees it. A query's `action()` behaves the same.
+`invalidates: ['/api/posts']` marks every cached query whose **URL** (the descriptor's `url`
+with its `params` serialised, method-agnostic — not the cache key, which starts with the
+method: `GET /api/posts?…`, so a prefix like `/api/posts` would never match it) starts with
+that prefix stale on success and rides the router's invalidation bus, so the page cache is
+evicted with it (a mutation that only evicted the query cache would let a later navigation
+restore the pre-mutation HTML from the page cache). The router cannot tell which pages
+rendered data from an invalidated URL, so it evicts its whole page cache unconditionally
+rather than matching prefixes itself (#3199). A live query tracking a matching URL re-sends
+at once. A matching request already in flight was issued before the mutation, so no query
+joins it and its response writes neither a query's value nor the cache.
+
+**Concurrent calls** (#3200): calling `action()` again before an earlier call has settled
+does not cancel or dedupe it — a mutation has no cache and no single-flight, so each call
+sends its own request and its own returned promise settles with its own result. `value()`,
+`isPending()` and `error()` are shared per `createMutation` instance, though, and follow only
+the **latest** call (the same generation-guard shape `createQuery` uses for a superseded
+send): an older call's result settling after a newer one has already written never overwrites
+those three. A safe method (`GET`/`HEAD`/`QUERY`) passed to `createMutation` still sends —
+the check is a warning, not a refusal — and that warning is emitted **once per
+`createMutation` instance**, not once per call, so a mutation called in a loop doesn't flood
+the console.
 
 ### 7.5 Options
 
@@ -409,7 +429,7 @@ the pre-mutation HTML from the page cache).
 | `initial` | query | the **already-obtained result** of the initial request. When present the first send is skipped and, when the key is known, the value is primed into the cache as fresh. Not a placeholder | none; `value()` is `T \| undefined` |
 | `ttl` | query | freshness window; a stale entry is re-fetched on the next read. Applies to `initial` | the router page cache's fresh window (15 s); `0` for revalidate-on-load (SSG) |
 | `key` | query | override the key: share across components, or prime eagerly for a bare-Promise function | descriptor key, else site id + dependency values |
-| `invalidates` | mutation | key prefixes to mark stale on success | none |
+| `invalidates` | mutation | URL prefixes (§7.4) to mark stale on success | none |
 
 `initial` is not Angular's `defaultValue` / TanStack's `placeholderData`. Writing
 `initial: []` to avoid `undefined` in mode B claims the server rendered an empty list and
