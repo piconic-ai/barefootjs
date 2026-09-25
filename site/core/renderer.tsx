@@ -87,7 +87,7 @@ function Sidebar({ currentSlug }: { currentSlug: string }) {
   const currentPath = currentSlug === '' ? '/docs' : `/docs/${currentSlug}`
 
   return (
-    <aside id="sidebar" class="sidebar">
+    <aside id="sidebar" class="sidebar" bf-region="sidebar">
       <nav className="sidebar-nav p-4">
         <SidebarNav entries={entries} currentPath={currentPath} />
       </nav>
@@ -98,7 +98,7 @@ function Sidebar({ currentSlug }: { currentSlug: string }) {
 function MdToggleButton({ slug }: { slug: string }) {
   const mdPath = slug === '' ? '/docs/README.md' : `/docs/${slug}.md`
   return (
-    <a href={mdPath} class="md-toggle-btn" title="View as Markdown">
+    <a href={mdPath} class="md-toggle-btn" title="View as Markdown" data-bf-router="false">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
         <path d="M14.85 3H1.15C.52 3 0 3.52 0 4.15v7.69C0 12.48.52 13 1.15 13h13.69c.64 0 1.15-.52 1.15-1.15V4.15C16 3.52 15.48 3 14.85 3zM9 11H7V8L5.5 9.92 4 8v3H2V5h2l1.5 2L7 5h2v6zm2.99.5L9.5 8H11V5h2v3h1.5l-2.51 3.5z" />
       </svg>
@@ -114,6 +114,8 @@ import { commandGroups } from './lib/command-items'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { MobileMenu } from '@/components/mobile-menu'
 import { MobilePageNav } from '../shared/components/mobile-page-nav'
+import { Assets } from '@/bf-assets'
+import { ogImagePath } from './lib/og-image'
 
 export const renderer = jsxRenderer(
   ({ children, title, description, meta, slug, toc, prev, next }) => {
@@ -127,7 +129,7 @@ export const renderer = jsxRenderer(
     const baseUrl = resolveCoreHref(requestUrl).replace(/\/$/, '')
     const ogTitle = title ?? 'BarefootJS'
     const ogDescription = description ?? 'TSX in. Your stack out.'
-    const ogImageUrl = `${baseUrl}/og?title=${encodeURIComponent(ogTitle)}`
+    const ogImageUrl = `${baseUrl}${ogImagePath(ogTitle)}`
 
     return (
       <WithPredictableIds>
@@ -176,28 +178,50 @@ export const renderer = jsxRenderer(
             />
 
             <CommandPalette groups={commandGroups} />
-            <MobileMenu />
-            <MobilePageNav prev={prev} next={next} />
-            <Sidebar currentSlug={currentSlug} />
 
-            <main class="main-content">
-              <div class="doc-content-wrapper">
-                <div class="doc-main-column">
-                  <div class="doc-title-bar">
-                    <h1 class="doc-title">{title}</h1>
-                    <MdToggleButton slug={currentSlug} />
-                    <PageNav prev={prev} next={next} />
+            {/*
+              Soft navigation (@barefootjs/router, booted by RouterEntry below)
+              swaps the `bf-region`s; everything outside them (header, command
+              palette, theme) stays mounted. The router matches regions by id
+              and swaps only those whose server-rendered content changed:
+                - `sidebar` swaps when the active link moves. The <aside> is
+                  the region element and the scroll container, so it survives
+                  the swap and keeps its scroll position.
+                - `page` carries everything per-route: the mobile menu island
+                  (it reads the current path on mount, so it must re-hydrate),
+                  the mobile prev/next, and the doc itself.
+              The sidebar stays before the doc in document order (tab and
+              landmark order reach the navigation first); after a swap the
+              router focuses the first swapped region with a heading, i.e. the
+              doc, not the sidebar.
+              The landing layout (`/`, `/integrations`) has a different region
+              set, so crossing between the two layouts is a full page load.
+            */}
+            <Sidebar currentSlug={currentSlug} />
+            <div bf-region="page">
+              <MobileMenu />
+              <MobilePageNav prev={prev} next={next} />
+              <main class="main-content">
+                <div class="doc-content-wrapper">
+                  <div class="doc-main-column">
+                    <div class="doc-title-bar">
+                      <h1 class="doc-title">{title}</h1>
+                      {/* Only a docs page has a Markdown version; the 404 page has no slug */}
+                      {slug !== undefined && <MdToggleButton slug={currentSlug} />}
+                      <PageNav prev={prev} next={next} />
+                    </div>
+                    <article class="doc-article">
+                      {children}
+                    </article>
+                    <PageNavigation prev={prev} next={next} />
                   </div>
-                  <article class="doc-article">
-                    {children}
-                  </article>
-                  <PageNavigation prev={prev} next={next} />
+                  {toc && toc.length > 0 && <TableOfContents items={toc} />}
                 </div>
-                {toc && toc.length > 0 && <TableOfContents items={toc} />}
-              </div>
-            </main>
+              </main>
+            </div>
 
             <BfScripts />
+            <script type="module" src={Assets.RouterEntry} />
           </body>
         </html>
       </WithPredictableIds>

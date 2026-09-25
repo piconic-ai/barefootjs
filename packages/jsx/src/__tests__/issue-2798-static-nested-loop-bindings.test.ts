@@ -37,7 +37,7 @@ export function StaticRefCase() {
   return (
     <ul>
       {items.map(item => (
-        <li key={item.id} ref={trackMount}>{item.id}</li>
+        <li key={item.id} data-tracked="0" ref={trackMount}>{item.id}</li>
       ))}
     </ul>
   )
@@ -58,7 +58,7 @@ export function StaticNestedRefCase() {
       {items.map(item => (
         <li key={item.id}>
           {item.children.map(child => (
-            <span key={child.id} ref={trackMount}>{child.id}</span>
+            <span key={child.id} data-tracked="0" ref={trackMount}>{child.id}</span>
           ))}
         </li>
       ))}

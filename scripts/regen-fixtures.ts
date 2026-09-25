@@ -17,6 +17,8 @@
  * run this once before pushing a fixture change and commit what it writes.
  */
 
+import { fileURLToPath } from 'node:url'
+
 const BUILD_PACKAGES = [
   '@barefootjs/jsx',
   '@barefootjs/vite',
@@ -50,7 +52,7 @@ const STEPS: ReadonlyArray<{ label: string; cmd: string[] }> = [
   { label: 'ui/support-matrix.lock.json', cmd: ['bun', 'run', 'support-matrix:lock'] },
 ]
 
-const root = new URL('..', import.meta.url).pathname
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 for (const step of STEPS) {
   console.log(`\n▶ ${step.label}`)

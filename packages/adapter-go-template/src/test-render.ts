@@ -746,6 +746,18 @@ function goItemExprForLoopProp(parsed: ParsedExpr, loopParam: string): string | 
 }
 
 /**
+ * A loop-body child prop that reads an outer signal rather than the row
+ * (`once={flag()}`): the value a route handler passes every row is the
+ * parent's own signal field (`props.Flag`), the one the parent's constructor
+ * seeds. `null` for anything but a zero-argument call of a signal getter.
+ */
+function goOuterSignalExprForLoopProp(parsed: ParsedExpr, signalGetters: ReadonlySet<string>): string | null {
+  if (parsed.kind !== 'call' || parsed.args.length > 0) return null
+  if (parsed.callee.kind !== 'identifier' || !signalGetters.has(parsed.callee.name)) return null
+  return `props.${capitalizeFieldName(parsed.callee.name)}`
+}
+
+/**
  * (#2209 part 2, extended by #2630 and #3044) Replicate, in the generated
  * `main.go`, the documented "the route handler populates the loop-body
  * child-component slice at request time" contract from
@@ -795,7 +807,9 @@ function goItemExprForLoopProp(parsed: ParsedExpr, loopParam: string): string | 
  * child prop is either a bare pass-through of the loop item (`todo={todo}`)
  * or a member access on it (`variant={entry.variant}`) — the two-hop baked
  * path narrows this further to a member access only (see
- * `loopItemPropertyName`). Returns the Go statements to splice into
+ * `loopItemPropertyName`), or — on the ranged path — a read of an outer
+ * signal every row receives alike (`once={flag()}`,
+ * `goOuterSignalExprForLoopProp`). Returns the Go statements to splice into
  * `main()` plus whether `fmt` needs importing.
  */
 function buildDynamicChildLoopSeeding(
@@ -892,8 +906,8 @@ function buildDynamicChildLoopSeeding(
     // All-or-nothing (Copilot review on #2630's PR): a prop that is
     // legitimately SSR-irrelevant (event handler, `key`, dashed debug
     // attrs) is exempt, but any OTHER prop this resolver can't express as
-    // an `item` read means the seeded `<Name>Input{...}` would carry Go
-    // zero values for it — silently wrong SSR instead of the loudly-empty
+    // an `item` read (or an outer signal read) means the seeded
+    // `<Name>Input{...}` would carry Go zero values for it — silently wrong SSR instead of the loudly-empty
     // host the unseeded path produces. Bail on the whole component in
     // that case rather than seed an incomplete slice.
     const inputFields: string[] = []
@@ -903,7 +917,8 @@ function buildDynamicChildLoopSeeding(
       if (prop.name === 'key' || prop.name.includes('-')) continue
       const itemExpr =
         prop.value.kind === 'expression' && prop.value.parsed
-          ? goItemExprForLoopProp(prop.value.parsed, nested.loopParam)
+          ? goItemExprForLoopProp(prop.value.parsed, nested.loopParam) ??
+            goOuterSignalExprForLoopProp(prop.value.parsed, signalGetters)
           : null
       if (itemExpr === null) {
         unresolvableProp = true

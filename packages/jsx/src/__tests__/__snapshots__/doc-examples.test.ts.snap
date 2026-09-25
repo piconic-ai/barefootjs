@@ -1573,7 +1573,7 @@ export function initAccordionTrigger(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('AccordionTrigger', { init: initAccordionTrigger, template: (_p) => \`<button bf="s0">\${markupOrEmpty(_p.children)}</button>\` })
+hydrate('AccordionTrigger', { init: initAccordionTrigger, template: (_p) => \`<button aria-expanded="false" bf="s0">\${markupOrEmpty(_p.children)}</button>\` })
 export function AccordionTrigger(_p, __bfKey) { return createComponent('AccordionTrigger', _p, __bfKey) }
 var AccordionContext = AccordionContext ?? createContext()
 
@@ -1598,7 +1598,7 @@ hydrate('AccordionContent', { init: initAccordionContent, template: (_p) => \`<d
 export function AccordionContent(_p, __bfKey) { return createComponent('AccordionContent', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/context-api.md doc-examples L97 — (no label) 1`] = `
+exports[`docs/core/components/context-api.md doc-examples L98 — (no label) 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, onCleanup, onMount } from '@barefootjs/client/runtime'
 
 

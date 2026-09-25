@@ -13,6 +13,8 @@ import { BfScripts } from '../../../packages/adapter-hono/src/scripts'
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
 import { resolveUiHref } from '@barefootjs/site-shared/lib/site-urls'
 import { LpHeader, LpFooter } from './components/lp-chrome'
+import { demoTabsInitScript } from './demo-tabs-init'
+import { Assets } from '@/bf-assets'
 
 /**
  * Predictable instance ID generator for consistent SSR.
@@ -68,17 +70,26 @@ export const landingRenderer = jsxRenderer(
             <meta name="twitter:title" content={pageTitle} />
             <meta name="twitter:description" content={pageDescription} />
             <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+            <script dangerouslySetInnerHTML={{ __html: demoTabsInitScript }} />
             <link rel="stylesheet" href="/static/globals.css" />
             <link rel="stylesheet" href="/static/uno.css" />
           </head>
           <body>
             <LpHeader uiHref={uiHref} />
             <CommandPalette groups={commandGroups} />
-            <main>
+            {/*
+              The one `bf-region` of this layout: soft navigations between
+              landing-layout pages (`/`, `/integrations`) swap only <main>.
+              The docs layout has a different region set (it adds a
+              `sidebar` region), so crossing between the two layouts falls
+              back to a full page load — their <head>s differ.
+            */}
+            <main bf-region="page">
               {children}
             </main>
             <LpFooter uiHref={uiHref} />
             <BfScripts />
+            <script type="module" src={Assets.RouterEntry} />
           </body>
         </html>
       </WithPredictableIds>

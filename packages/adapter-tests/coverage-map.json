@@ -1939,6 +1939,19 @@
         "attribute"
       ]
     },
+    "data-on-attr-dynamic-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "data-table": {
       "kinds": [
         "array-literal",
@@ -3522,6 +3535,30 @@
         "text"
       ]
     },
+    "loop-component-row-destructured-param": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "loop-destructured-param-condition": {
       "kinds": [
         "call",
@@ -3536,6 +3573,30 @@
         "condition",
         "loop",
         "text"
+      ]
+    },
+    "loop-element-row-child-client-row-prop": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop"
       ]
     },
     "loop-item-conditional": {
@@ -3775,6 +3836,141 @@
         "text"
       ]
     },
+    "loop-row-child-children-nested-client-prop": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-client-row-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-deep-row-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-destructured-prop": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-index-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-preamble-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-prop-fallback": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-nested-reactive-prop": {
       "kinds": [
         "array-literal",
@@ -3787,6 +3983,23 @@
       ],
       "axes": [
         "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-nested-row-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
         "literal:string"
       ],
       "contexts": [
@@ -3810,6 +4023,32 @@
       ],
       "contexts": [
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-own-reactive-prop": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -4764,6 +5003,26 @@
         "text"
       ]
     },
+    "on-prefixed-data-prop": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "opaque-local-accessor-call": {
       "kinds": [
         "call",
@@ -5286,6 +5545,20 @@
       ]
     },
     "ref-mount-attr": {
+      "kinds": [
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": []
+    },
+    "ref-mount-attr-client": {
+      "kinds": [
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": []
+    },
+    "ref-mount-attr-rendered": {
       "kinds": [
         "unsupported"
       ],
@@ -7306,21 +7579,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 128,
+    "array-literal": 140,
     "array-method": 72,
-    "arrow": 77,
-    "binary": 114,
-    "call": 302,
-    "conditional": 38,
-    "identifier": 431,
+    "arrow": 81,
+    "binary": 118,
+    "call": 310,
+    "conditional": 44,
+    "identifier": 444,
     "index-access": 15,
-    "literal": 342,
-    "logical": 53,
-    "member": 255,
-    "object-literal": 103,
+    "literal": 355,
+    "logical": 54,
+    "member": 267,
+    "object-literal": 115,
     "template-literal": 33,
-    "unary": 31,
-    "unsupported": 52
+    "unary": 35,
+    "unsupported": 54
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -7355,15 +7628,15 @@
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 57,
+    "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 75,
-    "literal:null": 27,
+    "literal:boolean": 79,
+    "literal:null": 31,
     "literal:number": 157,
-    "literal:string": 232,
+    "literal:string": 245,
     "logical:&&": 7,
-    "logical:??": 44,
+    "logical:??": 45,
     "logical:||": 17,
     "lowering:date": 4,
     "lowering:queryHref": 5,
@@ -7378,7 +7651,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 24,
+    "unary:!": 28,
     "unary:-": 11
   },
   "uncoveredKinds": [

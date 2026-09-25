@@ -7411,3 +7411,102 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
     expect(result.template).not.toContain('bf_add .Label $.FallbackLabel')
   })
 })
+
+// A wrapper-slice loop row (`opts.map(o => <Chip>…</Chip>)`) builds the
+// components nested in its forwarded children ONCE in the parent's
+// constructor (`child_<Field> := New<Child>Props(...)`), shared by every row.
+// That construction used to carry its own literal-only copy of the child-prop
+// lowering, so `<Mark on={highlight()}>` silently fell back to Go's zero
+// value. It now goes through the same `lowerChildInputFields` as a non-loop
+// child; a row-dependent prop is left to per-row delivery, and a
+// row-independent prop it can't lower refuses instead of vanishing.
+describe('GoTemplateAdapter - loop-row child construction lowers props like a non-loop child', () => {
+  const compileRow = (markProps: string) => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+function Chip({ children }: { children?: any }) {
+  return <span class="chip">{children}</span>
+}
+function Mark({ on, tone, children }: { on?: boolean; tone?: string; children?: any }) {
+  return <em data-hl={on ? '' : undefined} data-tone={tone}>{children}</em>
+}
+type Opt = { id: string; label: string; tone: string }
+const opts: Opt[] = [{ id: 'a', label: 'A', tone: 'warm' }, { id: 'b', label: 'B', tone: 'cool' }]
+export function Row() {
+  const [highlight] = createSignal(true)
+  const [ready] = createSignal(false)
+  return (
+    <div>
+      {opts.map(o => (
+        <Chip key={o.id}>
+          <Mark ${markProps}>{o.label}</Mark>
+        </Chip>
+      ))}
+    </div>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const types = result.files.find(f => f.type === 'types')!.content
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    const start = types.indexOf('child_MarkSlot1 := NewMarkProps(MarkInput{')
+    const ctor = start === -1 ? '' : types.slice(start, types.indexOf('\t})', start))
+    return { ctor, template, bf101: result.errors.filter(e => e.code === 'BF101') }
+  }
+
+  test("a nested component's signal prop is lowered into the shared constructor", () => {
+    const { ctor, bf101 } = compileRow('on={highlight()}')
+    expect(bf101).toEqual([])
+    expect(ctor).toContain('BfMount: "s1",')
+    expect(ctor).toContain('On: true,')
+  })
+
+  test('a prop reading the row is left out of the constructor and re-applied per row', () => {
+    const { ctor, template, bf101 } = compileRow('tone={o.tone}')
+    expect(bf101).toEqual([])
+    expect(ctor).toContain('BfMount: "s1",')
+    expect(ctor).not.toContain('Tone:')
+    expect(template).toContain('(bf_with_props .MarkSlot1 "Tone" .Tone)')
+  })
+
+  test('a row-independent prop the constructor cannot lower refuses with BF101', () => {
+    const { ctor, bf101 } = compileRow('on={highlight() && ready()}')
+    expect(ctor).not.toContain('On:')
+    expect(bf101).toHaveLength(1)
+    expect(bf101[0].message).toContain("Prop 'on' on <Mark> inside a loop row")
+    expect(bf101[0].suggestion?.escape).toEqual([{ kind: 'client-directive' }])
+  })
+
+  test('the /* @client */ escape on that prop lifts the refusal', () => {
+    const { ctor, bf101 } = compileRow('on={/* @client */ highlight() && ready()}')
+    expect(bf101).toEqual([])
+    expect(ctor).not.toContain('On:')
+  })
+
+  // The forwarded children render as their own define whose data is the row
+  // wrapper, so only the row item's fields (`.Tone`) are reachable there — a
+  // `{{range}}` variable of the calling template (`$index`) is not, and
+  // referencing it fails the whole template at parse time (the data-table
+  // selection demo's `checked={selected()[index]}`). Such a prop is not
+  // re-applied (`loop-row-child-nested-prop-reads-unreachable-row-binding`).
+  test('a prop reading the row index is not re-applied inside the forwarded-children define', () => {
+    const result = compileJSX(`
+'use client'
+function Chip({ children }: { children?: any }) {
+  return <span class="chip">{children}</span>
+}
+function Mark({ pos, children }: { pos?: number; children?: any }) {
+  return <em data-pos={pos}>{children}</em>
+}
+type Opt = { id: string; label: string }
+const opts: Opt[] = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
+export function Row() {
+  return <div>{opts.map((o, i) => (<Chip key={o.id}><Mark pos={i}>{o.label}</Mark></Chip>))}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('{{template "Mark" (bf_with_children .MarkSlot1 ')
+    expect(template).not.toContain('bf_with_props .MarkSlot1')
+    expect(result.errors.filter(e => e.code === 'BF101')).toEqual([])
+  })
+})

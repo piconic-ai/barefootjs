@@ -19,7 +19,7 @@ function Chip({ children }: { children?: any }) {
 }
 
 function Mark({ on, children }: { on?: boolean; children?: any }) {
-  return <em data-on={on ? '' : undefined}>{children}</em>
+  return <em data-hl={on ? '' : undefined}>{children}</em>
 }
 
 type Opt = { id: string; label: string }
@@ -40,8 +40,8 @@ export function LoopRowChildChildrenNestedReactiveProp() {
 `,
   expectedHtml: `
     <div bf-s="test" bf="s3">
-      <span bf-s="Chip_*" class="chip" data-key="a"><em bf-s="test_s1" bf="s0" data-on=""><!--bf:^s0-->A<!--/--></em></span>
-      <span bf-s="Chip_*" class="chip" data-key="b"><em bf-s="test_s1" bf="s0" data-on=""><!--bf:^s0-->B<!--/--></em></span>
+      <span bf-s="Chip_*" class="chip" data-key="a"><em bf-s="test_s1" bf="s0" data-hl=""><!--bf:^s0-->A<!--/--></em></span>
+      <span bf-s="Chip_*" class="chip" data-key="b"><em bf-s="test_s1" bf="s0" data-hl=""><!--bf:^s0-->B<!--/--></em></span>
     </div>
   `,
 })

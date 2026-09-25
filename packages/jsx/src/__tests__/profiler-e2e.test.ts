@@ -9,8 +9,10 @@
  * `Cart#handler:s1:click`). It then joins to the real IR graph (SR4) and runs
  * the v1 analyses, asserting the end-to-end story holds:
  *
- *   an unbatched 3-write click re-runs `total` 5×/turn; a `batch()` would
- *   collapse 14 effect runs to 5.
+ *   an unbatched 3-write click re-runs `total` 3×/turn (once per write —
+ *   glitch-free propagation recomputes it once even though it reads
+ *   `subtotal` both directly and through `tax`); a `batch()` would collapse
+ *   12 effect runs to 5.
  *
  * This is the executable proof of the pipeline until the `--scenario` run
  * driver lands; it also pins the mount-vs-interaction metric split surfaced by
@@ -76,11 +78,12 @@ describe('profiler end-to-end (real substrate)', () => {
     expect(total).toBeDefined()
     expect(total.kind).toBe('memo')
     expect(total.loc!.file).toBe('Cart.tsx')
-    // The unbatched 3-write turn re-runs `total` 5× — and mount (1 run) is
-    // excluded, so the per-turn figure is 5.0, not the diluted 3.0.
+    // The unbatched 3-write turn re-runs `total` 3× (once per write) — and
+    // mount (1 run) is excluded, so the per-turn figure is 3.0, not the
+    // diluted 2.0.
     expect(total.mountRuns).toBe(1)
     expect(total.turns).toBe(1)
-    expect(total.runsPerTurn).toBe(5)
+    expect(total.runsPerTurn).toBe(3)
     expect(total.hot).toBe(true)
 
     // Every hot subscriber resolved to a real source line.
@@ -94,11 +97,13 @@ describe('profiler end-to-end (real substrate)', () => {
     const batch = analyzeBatchAdvisor(events)
     const cand = batch.candidates.find(c => c.turn === 'Cart#handler:s1:click')!
     expect(cand).toBeDefined()
-    // 3 unbatched writes cascade the memo chain: 14 effect runs, 5 distinct.
+    // 3 unbatched writes cascade the memo chain: qty and price each re-run
+    // subtotal, tax, total and both effects (5 each), coupon re-runs total and
+    // its effect (2) — 12 runs over 5 distinct subscribers.
     expect(cand.writes).toBe(3)
-    expect(cand.totalRuns).toBe(14)
+    expect(cand.totalRuns).toBe(12)
     expect(cand.distinctSubscribers).toBe(5)
-    expect(cand.savings).toBe(9)
+    expect(cand.savings).toBe(7)
     expect(cand.safety).toBe('unverified')
   })
 })

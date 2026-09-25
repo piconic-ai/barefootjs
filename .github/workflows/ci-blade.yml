@@ -88,17 +88,24 @@ jobs:
       # BarefootJS runtime (it skips gracefully when `php` or illuminate/view
       # is absent — installed above so it runs for real).
       - name: Run unit tests (incl. live Blade render + conformance)
-        run: bun test packages/adapter-blade
+        id: unit
+        run: bun test --max-concurrency=8 packages/adapter-blade
 
       # E2E runs in this job, after the unit tests, instead of in its own
       # `needs: test` job: a separate job queued a second time for a runner
       # and repeated checkout + install + build for ~1 min of Playwright
-      # (#3155). A unit-test failure still skips it, as `needs:` did.
+      # (#3155). A unit-test failure still skips it, as `needs:` did. The
+      # accepted cost: re-running a flaky E2E step re-runs the whole job,
+      # unit suite included, instead of a ~1 min E2E job.
+      # Each integration's build/run is gated on the unit step, not on the
+      # steps before it, so one integration's failure doesn't skip the next
+      # one's E2E (they used to be independent sibling jobs).
       - name: Build integrations/blade
         run: cd integrations/blade && bun run build
 
       - name: Cache Playwright browsers
         id: playwright-cache
+        if: ${{ !cancelled() && steps.unit.outcome == 'success' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
@@ -107,15 +114,16 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
 
       - name: Install Playwright browser binaries
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        if: ${{ !cancelled() && steps.unit.outcome == 'success' && steps.playwright-cache.outputs.cache-hit != 'true' }}
         run: bunx playwright install chromium
 
       - name: Run integrations/blade E2E tests
+        id: e2e_blade
         run: cd integrations/blade && bun run test:e2e
 
       - name: Upload Playwright report (integrations/blade)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.e2e_blade.outcome != 'skipped' }}
         with:
           name: playwright-report-integrations-blade
           path: integrations/blade/playwright-report/
@@ -128,14 +136,18 @@ jobs:
       # (laravel/framework from Packagist) with the runner's preinstalled
       # PHP/Composer.
       - name: Build integrations/laravel
+        id: build_laravel
+        if: ${{ !cancelled() && steps.unit.outcome == 'success' }}
         run: cd integrations/laravel && bun run build
 
       - name: Run integrations/laravel E2E tests
+        id: e2e_laravel
+        if: ${{ !cancelled() && steps.build_laravel.outcome == 'success' }}
         run: cd integrations/laravel && bun run test:e2e
 
       - name: Upload Playwright report (integrations/laravel)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.e2e_laravel.outcome != 'skipped' }}
         with:
           name: playwright-report-integrations-laravel
           path: integrations/laravel/playwright-report/

@@ -9,7 +9,7 @@
  *   bun run landing/generate-demo-outputs.ts
  *
  * Writes landing/components/shared/demo-outputs.ts (committed) so the
- * Worker bundle stays static and reviewers can diff exactly what the LP
+ * site build stays deterministic and reviewers can diff exactly what the LP
  * claims the compiler produces.
  */
 

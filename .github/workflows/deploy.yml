@@ -138,6 +138,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
+      # Static Worker first: it serves /static/* and /r/* (assets-only,
+      # free), and the HTML Worker deployed next references its new chunks.
+      # See site/ui/wrangler.static.toml.
+      - name: Deploy static assets Worker to Cloudflare Workers
+        run: cd site/ui && bunx wrangler deploy -c wrangler.static.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
       - name: Deploy to Cloudflare Workers
         run: cd site/ui && bunx wrangler deploy
         env:

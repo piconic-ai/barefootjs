@@ -10,29 +10,8 @@
 import { highlight, initHighlighter } from './shared/highlighter'
 import { DEMO_EXAMPLES } from './shared/demo-outputs'
 
-// Manual switching for the demo via two native <select>s: the active
-// example (left source pane) and the active adapter (right output
-// pane); the visible output panel is always example × adapter.
-// Progressive enhancement: without JS the first example/adapter stays
-// visible. No auto-rotation.
-const DEMO_TABS_SCRIPT = `(function(){
-  var frame = document.querySelector('.demo-frame');
-  if (!frame) return;
-  var exSelect = frame.querySelector('select[data-select="example"]');
-  var adSelect = frame.querySelector('select[data-select="adapter"]');
-  var srcPanels = Array.prototype.slice.call(frame.querySelectorAll('.src-panel'));
-  var outPanels = Array.prototype.slice.call(frame.querySelectorAll('.out-panel'));
-
-  function apply() {
-    var example = exSelect.value;
-    var adapter = adSelect.value;
-    srcPanels.forEach(function(p){ p.classList.toggle('active', p.dataset.example === example); });
-    outPanels.forEach(function(p){ p.classList.toggle('active', p.dataset.panel === example + '-' + adapter); });
-  }
-
-  if (exSelect) exSelect.addEventListener('change', apply);
-  if (adSelect) adSelect.addEventListener('change', apply);
-})();`
+// The two demo pickers are wired by `demoTabsInitScript`
+// (../demo-tabs-init.ts), installed from the landing layout's <head>.
 
 // Flattened example × adapter pairs for the output panels, hoisted so the
 // template loop's body is a single JSX element rather than a nested
@@ -120,7 +99,6 @@ export async function DemoSection() {
           small <code>~16&nbsp;kB min+gzip</code> hydration script.
         </p>
       </div>
-      <script dangerouslySetInnerHTML={{ __html: DEMO_TABS_SCRIPT }} />
     </div>
   )
 }
