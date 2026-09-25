@@ -250,6 +250,48 @@ describe('rule 6: invalidates', () => {
     }
   })
 
+  test('a superseded call still invalidates on its own success', async () => {
+    // The generation guard decides who writes value(); it does not decide
+    // whether a write happened on the server. Both successes invalidate.
+    const received: (readonly string[])[] = []
+    const unsubscribe = onInvalidate((prefixes) => received.push(prefixes))
+    try {
+      const { resolveNth } = deferredFetch()
+      const [, save] = createMutation(() => http.post('/api/comments', {}), {
+        invalidates: ['/api/posts'],
+      })
+      const first = save()
+      const second = save()
+      resolveNth(1, { n: 2 })
+      await second
+      resolveNth(0, { n: 1 }) // the superseded call settles last
+      await first
+      expect(received).toEqual([['/api/posts'], ['/api/posts']])
+    } finally {
+      unsubscribe()
+    }
+  })
+
+  test('a call that succeeds after disposal still invalidates', async () => {
+    const received: (readonly string[])[] = []
+    const unsubscribe = onInvalidate((prefixes) => received.push(prefixes))
+    try {
+      const { resolveNth } = deferredFetch()
+      let save!: () => Promise<unknown>
+      const dispose = createRoot((dispose) => {
+        ;[, save] = createMutation(() => http.post('/api/comments', {}), { invalidates: ['/api/posts'] })
+        return dispose
+      })
+      const pending = save()
+      dispose()
+      resolveNth(0, { ok: true })
+      await pending
+      expect(received).toEqual([['/api/posts']])
+    } finally {
+      unsubscribe()
+    }
+  })
+
   test('with no invalidates option, the bus is never touched', async () => {
     const received: (readonly string[])[] = []
     const unsubscribe = onInvalidate((prefixes) => received.push(prefixes))
