@@ -365,11 +365,24 @@ console.log('Generated: dist/playground/types-bundle.json (+ static copy)')
 // The OG images (dist/og/, written by scripts/generate-static.tsx) are named
 // by their page title, so a file only changes when the image design does;
 // a day's cache is what the dynamic /og route used to send.
+//
+// Workers Assets derives Content-Type from the extension and names no
+// charset (`text/markdown`, `text/plain`), so a browser decodes the per-page
+// Markdown and llms.txt in a legacy encoding and garbles their non-ASCII
+// text (—, ├──). The dynamic route sent `text/markdown; charset=utf-8`;
+// these restore that. HTML declares its own <meta charset>. (wrangler dev
+// adds the charset by itself, so only the deployed site shows the gap.)
 const headersContent = `/static/components/*
   Access-Control-Allow-Origin: *
 
 /og/*
   Cache-Control: public, max-age=86400, immutable
+
+/*.md
+  Content-Type: text/markdown; charset=utf-8
+
+/*.txt
+  Content-Type: text/plain; charset=utf-8
 `
 await Bun.write(resolve(DIST_DIR, '_headers'), headersContent)
 console.log('Generated: dist/_headers')

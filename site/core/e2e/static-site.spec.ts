@@ -34,6 +34,17 @@ test.describe('static site', () => {
     expect(await res.text()).toContain('title: Quick Start')
   })
 
+  test('text files declare UTF-8, so a browser shows them as written', async ({ page, request }) => {
+    for (const path of ['/docs/quick-start.md', '/llms.txt']) {
+      const res = await request.get(path)
+      expect(res.headers()['content-type'], path).toMatch(/;\s*charset=utf-8/i)
+    }
+    // Without a charset the browser falls back to a legacy encoding and the
+    // Markdown's box-drawing characters and dashes come out garbled.
+    await page.goto('/docs/quick-start.md')
+    await expect(page.locator('body')).toContainText('├── server.tsx')
+  })
+
   test("a page's OG image exists at the URL its <meta> names", async ({ page, request }) => {
     await page.goto('/docs/quick-start')
     const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content')
