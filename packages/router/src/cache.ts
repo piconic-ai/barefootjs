@@ -58,10 +58,19 @@ export function loadPage(state: RouterState, url: string): Promise<PageSnapshot 
     if (now >= hit.refreshAt && !hit.refreshing) {
       // Aging → refresh in the background (single-flight), keep serving cached.
       hit.refreshing = true
+      // Captured now: an invalidation that clears the whole cache while this
+      // refresh is in flight bumps `cacheGeneration`, so the `.then` below can
+      // tell its result is for an interval the cache was just swept for and
+      // must not repopulate it — even though `result` itself isn't wrong,
+      // re-inserting it would restore a page-cache entry the invalidation was
+      // specifically meant to evict (spec/async.md §7.4).
+      const generationAtRefreshStart = state.cacheGeneration
       const fresh = fetchSnapshot(state, url)
       void fresh.then((result) => {
-        if (result !== null) storeEntry(state, url, fresh) // swap in the fresh window
-        else if (state.cache.get(url) === hit) hit.refreshing = false // failed → keep old, retry later
+        if (result !== null) {
+          if (state.cacheGeneration === generationAtRefreshStart) storeEntry(state, url, fresh) // swap in the fresh window
+          // else: an invalidation swept the cache mid-refresh — drop it instead of repopulating.
+        } else if (state.cache.get(url) === hit) hit.refreshing = false // failed → keep old, retry later
       })
     }
     // LRU bump: move this entry to the most-recent position.

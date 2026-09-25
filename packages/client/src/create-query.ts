@@ -14,8 +14,9 @@
  */
 
 import { createSignal, createEffect, onCleanup, untrack, type Reactive } from './reactive.ts'
-import { isHttpDescriptor, requestKey, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
+import { isHttpDescriptor, requestKey, requestUrl, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
 import { scheduleMicrotask } from './schedule-microtask.ts'
+import { onInvalidate } from '@barefootjs/shared'
 
 /** Default freshness window — the router page cache's fresh window (spec/async.md §7.5). */
 const DEFAULT_TTL_MS = 15_000
@@ -53,6 +54,8 @@ export interface QueryAction<T> {
 type CacheEntry<T> = {
   value: T
   timestamp: number
+  /** The descriptor's URL (params serialised, method-agnostic) — what an invalidation prefix matches against (spec/async.md §7.4). */
+  url: string
 }
 
 // Module-level cache, keyed by `requestKey` (spec/async.md §7.5): a fresh
@@ -60,24 +63,79 @@ type CacheEntry<T> = {
 // (or a second query instance with the same key, cross-island) never
 // refetches. `inflight` is tracked separately so two queries with the same
 // key in flight share one underlying `sendRequest` call (single-flight).
+// Each in-flight entry carries its URL so an invalidation can drop the ones
+// it matches (rule 10).
 const cache = new Map<string, CacheEntry<unknown>>()
-const inflight = new Map<string, Promise<unknown>>()
+const inflight = new Map<string, { promise: Promise<unknown>; url: string }>()
 
 function isStale(entry: CacheEntry<unknown>, ttl: number): boolean {
   return Date.now() - entry.timestamp >= ttl
 }
 
+/** Force `entry` stale regardless of `ttl` — an invalidation match (rule 10). */
+function markStale(entry: CacheEntry<unknown>): void {
+  entry.timestamp = -Infinity
+}
+
+function matchesAnyPrefix(url: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => url.startsWith(prefix))
+}
+
 /**
- * Test-only: clear the module-level query cache and in-flight map. Not part
- * of the public API. A real page load gets a fresh module instance (so the
- * cache is naturally empty); only a test process reuses the same module
- * across cases, so `createQuery`'s own suite calls this in `beforeEach`.
+ * Live (mounted, undisposed) query instances, so the module-level
+ * invalidation subscriber (rule 10) can re-send the ones whose *current* key
+ * matches, not just mark the shared cache entry stale for whoever reads it
+ * next. Populated by `createQuery` itself; removed via `onCleanup`.
+ */
+interface LiveQuery {
+  /** Re-send the current descriptor now — the same path a stale cache hit takes in `flush()`. */
+  revalidate(): void
+  /** The URL (method-agnostic) of the descriptor this instance is currently tracking, or `null` before the first effect run. */
+  currentUrl(): string | null
+}
+const liveQueries = new Set<LiveQuery>()
+
+// Rule 10 (spec/async.md §7.4, #3199): one subscription for the whole
+// module — not per instance — matching every cache entry against every
+// invalidation. A prefix matches an entry when the entry's URL (method-
+// agnostic) starts with it; the full `requestKey` starts with the method
+// (`GET /api/posts?…`), so matching against it would never succeed.
+//
+// A matching in-flight request was issued before the invalidation and may
+// still resolve with pre-mutation data, so it is dropped from `inflight`
+// before any live query re-sends: every re-send below then issues (or, for
+// the second same-key instance onward, joins) a request made *after* the
+// invalidation, and the generation bump in `doSend` keeps the old response
+// from writing `value()` or the cache for any live instance — whichever
+// instance originally issued it.
+onInvalidate((prefixes) => {
+  for (const entry of cache.values()) {
+    if (matchesAnyPrefix(entry.url, prefixes)) markStale(entry)
+  }
+  for (const [key, entry] of inflight) {
+    if (matchesAnyPrefix(entry.url, prefixes)) inflight.delete(key)
+  }
+  for (const query of liveQueries) {
+    const url = query.currentUrl()
+    if (url !== null && matchesAnyPrefix(url, prefixes)) query.revalidate()
+  }
+})
+
+/**
+ * Test-only: clear the module-level query cache, in-flight map, and live
+ * query registry. Not part of the public API. A real page load gets a fresh
+ * module instance (so these are naturally empty); only a test process
+ * reuses the same module across cases, so `createQuery`'s own suite calls
+ * this in `beforeEach` — including clearing `liveQueries`, since a test that
+ * doesn't explicitly dispose its query would otherwise leave it subscribed
+ * to invalidations published by a later, unrelated test.
  *
  * @internal
  */
 export function __resetQueryCacheForTests(): void {
   cache.clear()
   inflight.clear()
+  liveQueries.clear()
 }
 
 const NOT_A_DESCRIPTOR_MESSAGE =
@@ -112,7 +170,21 @@ const NOT_A_DESCRIPTOR_MESSAGE =
  * 8. **Action.** `action()` re-sends the current descriptor, bypassing
  *    freshness (but still single-flight), and returns `Promise<T>`.
  * 9. **Disposal.** Owned by the current reactive owner; in-flight
- *    resolutions are dropped after disposal and never write.
+ *    resolutions are dropped after disposal and never write. Called with no
+ *    owner, a query is never disposed — like an ownerless `createEffect`, its
+ *    tracking effect and its rule-10 registration live for the page. Real
+ *    call sites run inside `runInit`'s `createRoot`, which always has one.
+ * 10. **Invalidation (#3199).** Subscribed once, at module level, to
+ *     `@barefootjs/shared`'s invalidation bus. A cache entry whose URL
+ *     (method-agnostic) starts with a published prefix is marked stale — the
+ *     next read re-fetches it (same as rule 5's stale case). A *live*
+ *     query currently tracking a matching key re-sends immediately, through
+ *     the same path as a stale cache hit (generation guard, single-flight,
+ *     `isPending`), rather than waiting for its next dependency change. A
+ *     matching request already in flight was issued before the invalidation,
+ *     so it leaves single-flight: live queries re-send instead of joining it,
+ *     and its response writes neither `value()` nor the cache. A disposed
+ *     query does nothing.
  *
  * @since 0.39.0
  * @stability alpha
@@ -150,6 +222,13 @@ export function createQuery<T>(
   // is superseded by a cache hit.
   let inflightKey: string | null = null
   let microtaskScheduled = false
+  // The descriptor/key/URL the tracking effect last computed, kept live
+  // (unlike `pendingSend`, which `flush()` clears) so rule 10's invalidation
+  // subscriber can ask "what is this instance's *current* key" at any time,
+  // not just while a send is pending.
+  let liveDescriptor: HttpDescriptor<T> | null = null
+  let liveKey: string | null = null
+  let liveUrl: string | null = null
 
   // Rule 9: owned by the *current* reactive owner — the scope active when
   // `createQuery()` itself is called, not the internal tracking effect below.
@@ -157,6 +236,22 @@ export function createQuery<T>(
   // against a resolution that arrives after teardown.
   onCleanup(() => {
     disposed = true
+  })
+
+  // Rule 10: register/unregister with the module-level live-query registry
+  // that the invalidation subscriber (declared once, above) walks. `disposed`
+  // is also checked inside `revalidate` itself, since disposal and an
+  // in-flight invalidation can race in the same tick. No same-key guard: the
+  // subscriber has already dropped any matching in-flight request, so this
+  // send is a new one even when this instance was already fetching this key.
+  function revalidate(): void {
+    if (disposed || liveDescriptor === null || liveKey === null) return
+    doSend(liveDescriptor, liveKey).catch(() => {})
+  }
+  const liveQuery: LiveQuery = { revalidate, currentUrl: () => liveUrl }
+  liveQueries.add(liveQuery)
+  onCleanup(() => {
+    liveQueries.delete(liveQuery)
   })
 
   function flush(): void {
@@ -217,12 +312,13 @@ export function createQuery<T>(
     inflightKey = key
     setIsPending(true)
 
-    let promise = inflight.get(key) as Promise<T> | undefined
+    let promise = inflight.get(key)?.promise as Promise<T> | undefined
     if (!promise) {
-      promise = sendRequest<T>(descriptor).finally(() => {
-        if (inflight.get(key) === promise) inflight.delete(key)
+      const sent: Promise<T> = sendRequest<T>(descriptor).finally(() => {
+        if (inflight.get(key)?.promise === sent) inflight.delete(key)
       })
-      inflight.set(key, promise)
+      promise = sent
+      inflight.set(key, { promise, url: requestUrl(descriptor) })
     }
 
     return promise.then(
@@ -231,7 +327,7 @@ export function createQuery<T>(
         // post-disposal resolution never writes.
         if (!disposed && myGeneration === generation) {
           inflightKey = null
-          cache.set(key, { value: result, timestamp: Date.now() })
+          cache.set(key, { value: result, timestamp: Date.now(), url: requestUrl(descriptor) })
           setValue(() => result)
           setError(undefined)
           setIsPending(false)
@@ -260,12 +356,15 @@ export function createQuery<T>(
     }
     const descriptor = result as HttpDescriptor<T>
     const key = requestKey(descriptor)
+    liveDescriptor = descriptor
+    liveKey = key
+    liveUrl = requestUrl(descriptor)
 
     if (firstRun) {
       firstRun = false
       if (hasInitial) {
         // Rule 4: learn the key, prime the cache, no send.
-        cache.set(key, { value: options.initial as T, timestamp: Date.now() })
+        cache.set(key, { value: options.initial as T, timestamp: Date.now(), url: liveUrl })
         return
       }
       scheduleSend(descriptor, key)
@@ -288,6 +387,9 @@ export function createQuery<T>(
     }
     const descriptor = result as HttpDescriptor<T>
     const key = requestKey(descriptor)
+    liveDescriptor = descriptor
+    liveKey = key
+    liveUrl = requestUrl(descriptor)
     // Rule 8: bypasses the freshness gate `flush()` applies — always sends
     // (joining an in-flight request for the same key via single-flight).
     return doSend(descriptor, key)

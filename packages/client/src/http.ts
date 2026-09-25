@@ -378,6 +378,21 @@ export function requestKey(descriptor: HttpDescriptor<unknown>): string {
 }
 
 /**
+ * The URL part of a descriptor's key — its `url` with `params` serialised,
+ * but **without** the method. `requestKey` starts with the method
+ * (`GET /api/posts?…`), so matching an invalidation prefix like
+ * `/api/posts` against the full key would never succeed; this is the part
+ * that prefix is meant to match (spec/async.md §7.4, `createMutation`'s
+ * `invalidates`).
+ *
+ * @since 0.39.0
+ * @stability alpha
+ */
+export function requestUrl(descriptor: HttpDescriptor<unknown>): string {
+  return serializeParams(descriptor.url, descriptor.params)
+}
+
+/**
  * A non-2xx HTTP response to a request sent from an `http` descriptor — what a
  * query's `error()` holds when the server answered with an error status (a
  * network failure is the underlying error instead). `status` is the response

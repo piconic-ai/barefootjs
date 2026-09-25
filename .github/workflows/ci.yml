@@ -12,6 +12,7 @@ on:
       - 'packages/xyflow/**'
       - 'packages/adapter-tests/**'
       - 'packages/router/**'
+      - 'packages/shared/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
       - 'packages/adapter-hono/**'
@@ -45,6 +46,7 @@ on:
       - 'packages/xyflow/**'
       - 'packages/adapter-tests/**'
       - 'packages/router/**'
+      - 'packages/shared/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
       - 'packages/adapter-hono/**'
@@ -115,7 +117,7 @@ jobs:
             # tests register happy-dom's globals, whose Headers drop Set-Cookie /
             # Cookie as a browser does, so the Workers Cache policy tests would
             # see cookie-free responses if they shared the process.
-            run: bun test packages/client packages/test packages/router scripts/lib && bun test integrations/shared/lib
+            run: bun test packages/client packages/shared packages/test packages/router scripts/lib && bun test integrations/shared/lib
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
