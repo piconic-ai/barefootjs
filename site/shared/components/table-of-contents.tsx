@@ -3,7 +3,7 @@
  *
  * Displays a sticky sidebar navigation for documentation pages.
  * Shows section links for easy navigation within the page.
- * Highlights the currently visible section using IntersectionObserver.
+ * Highlights the section the reader is at, derived from the scroll position.
  */
 
 'use client'
@@ -44,60 +44,80 @@ export function TableOfContents(props: TableOfContentsProps) {
     }
   })
 
-  // Track visible sections using IntersectionObserver
+  // Follow the scroll position: the active item is the last one whose target
+  // has scrolled up to where following its link places it (the target's
+  // scroll-margin-top). This is derived from the current position on every
+  // scroll, so it holds inside a long section with no heading in view, after
+  // a jump, and on the way back up from the bottom. Targets that are
+  // containers (site/ui's <section>s) and targets nested in them (<h3>s) are
+  // both handled, because only each target's top edge matters.
   createEffect(() => {
-    const sections = props.items
+    const targets = props.items
       .map(item => document.getElementById(item.id))
       .filter((el): el is HTMLElement => el !== null)
 
-    if (sections.length === 0) return
+    if (targets.length === 0) return
 
-    const lastItemId = props.items[props.items.length - 1]?.id
+    const firstItemId = props.items[0]?.id ?? ''
+    const lastItemId = props.items[props.items.length - 1]?.id ?? ''
+    // Sub-pixel rounding of a smooth scroll can stop just short of the margin
+    const REACHED_TOLERANCE = 8
+    // A clicked item stays active until the scroll it started has settled:
+    // the smooth scroll passes other sections on the way, and a target near
+    // the end of the page can never reach the top.
+    const SETTLE_MS = 150
 
-    // Check if scrolled to bottom of page
-    const handleScroll = () => {
-      const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100
-      if (scrolledToBottom && lastItemId) {
-        setActiveId(lastItemId)
+    const activeFromScroll = () => {
+      const scrolledToBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+      if (scrolledToBottom) return lastItemId
+      let reached = firstItemId
+      for (const target of targets) {
+        const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0
+        if (target.getBoundingClientRect().top <= margin + REACHED_TOLERANCE) reached = target.id
       }
+      return reached
     }
 
-    // Sections currently inside the observed band. An observer callback only
-    // lists the sections whose visibility just changed, and a smooth scroll to
-    // an anchor delivers those changes over several callbacks, so the visible
-    // set is kept across callbacks rather than read from the latest batch.
-    const visibleIds = new Set<string>()
+    let pinned = false
+    let settleTimer: ReturnType<typeof setTimeout> | undefined
+    let frame = 0
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) visibleIds.add(entry.target.id)
-          else visibleIds.delete(entry.target.id)
-        }
+    const unpinWhenSettled = () => {
+      clearTimeout(settleTimer)
+      settleTimer = setTimeout(() => { pinned = false }, SETTLE_MS)
+    }
 
-        // Check if at bottom first
-        const scrolledToBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100
-        if (scrolledToBottom && lastItemId) {
-          setActiveId(lastItemId)
-          return
-        }
-
-        // The first visible section in document order
-        const firstVisible = props.items.find(item => visibleIds.has(item.id))
-        if (firstVisible) setActiveId(firstVisible.id)
-      },
-      {
-        rootMargin: '-80px 0px -70% 0px', // Account for header and prefer top sections
-        threshold: 0,
+    const handleScroll = () => {
+      if (pinned) {
+        unpinWhenSettled()
+        return
       }
-    )
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        if (!pinned) setActiveId(activeFromScroll())
+      })
+    }
 
-    sections.forEach(section => observer.observe(section))
-    window.addEventListener('scroll', handleScroll)
+    const handleClick = (event: MouseEvent) => {
+      const link = (event.target as Element | null)?.closest?.('a[href^="#"]')
+      const id = link?.getAttribute('href')?.slice(1)
+      if (!id || !props.items.some(item => item.id === id)) return
+      pinned = true
+      setActiveId(id)
+      unpinWhenSettled()
+    }
+
+    const nav = document.querySelector('nav[aria-label="Table of contents"]')
+    setActiveId(activeFromScroll())
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    nav?.addEventListener('click', handleClick as EventListener)
 
     return () => {
-      observer.disconnect()
       window.removeEventListener('scroll', handleScroll)
+      nav?.removeEventListener('click', handleClick as EventListener)
+      clearTimeout(settleTimer)
+      cancelAnimationFrame(frame)
     }
   })
 
