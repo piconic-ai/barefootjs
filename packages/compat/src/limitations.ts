@@ -8,7 +8,8 @@
 // the docs compatibility-matrix page renders as its "Known limitations"
 // section and anchors every diagnostic link on: one entry per registry id,
 // with the affected adapters DERIVED from the pins and quarantine rows that
-// cite it — never declared on the entry (an entry names no adapter, by rule).
+// cite it (see `adaptersCiting`) — never declared on the entry (an entry
+// names no adapter, by rule).
 
 import type { ConformancePins, RenderDivergences } from '@barefootjs/jsx'
 import { limitationActual, limitationDiagnostics, type Limitation, type LimitationKind } from '../../adapter-tests/src/limitations'
@@ -28,7 +29,7 @@ export interface LimitationsSectionEntry {
   reason?: string
   /** The entry's declared minimal reproductions (sorted). */
   fixtures: string[]
-  /** Adapter ids whose pins, render divergences or e2e quarantine rows cite this limitation (`hono` first, then alphabetical). */
+  /** Adapter ids affected, derived from the pins, render divergences and e2e quarantine rows citing this limitation (`hono` first, then alphabetical). */
   adapters: string[]
 }
 
@@ -42,10 +43,15 @@ export interface LimitationsAdapterInput {
   renderDivergences: RenderDivergences
 }
 
-/** One e2e quarantine row's citation: the SSR adapter of the quarantined run, and the limitation it cites. */
+/**
+ * One e2e quarantine row's citation: the SSR adapter of the quarantined
+ * run, the limitation it cites, and — for a row keyed by a corpus fixture
+ * (oracle / fixture-hydrate) — that fixture.
+ */
 export interface E2eCitation {
   adapter: string
   limitation: string
+  fixture?: string
 }
 
 /**
@@ -63,21 +69,34 @@ export async function e2eQuarantineCitations(): Promise<E2eCitation[]> {
       import('../../adapter-tests/e2e/pairwise-quarantine'),
       import('../../adapter-tests/e2e/explore-quarantine'),
     ])
-  const rows: ReadonlyArray<{ adapter?: string; limitation?: string }> = [
-    ...Object.values(ORACLE_QUARANTINE),
-    ...Object.values(FIXTURE_HYDRATE_QUARANTINE),
+  const fixtureRows = [...Object.entries(ORACLE_QUARANTINE), ...Object.entries(FIXTURE_HYDRATE_QUARANTINE)].flatMap(
+    ([fixture, row]) => (row.limitation ? [{ adapter: 'hono', limitation: row.limitation, fixture }] : []),
+  )
+  const generatedRows: ReadonlyArray<{ adapter?: string; limitation?: string }> = [
     ...MUTATION_QUARANTINE.values(),
     ...PAIRWISE_QUARANTINE.values(),
     ...EXPLORE_QUARANTINE.values(),
   ]
-  return rows.flatMap(row => (row.limitation ? [{ adapter: row.adapter ?? 'hono', limitation: row.limitation }] : []))
+  return [
+    ...fixtureRows,
+    ...generatedRows.flatMap(row => (row.limitation ? [{ adapter: row.adapter ?? 'hono', limitation: row.limitation }] : [])),
+  ]
 }
 
-/** Adapter ids citing `limitationId` through any pin, render divergence or e2e quarantine row. */
+/**
+ * Adapter ids affected by `limitationId`: every adapter whose pins or render
+ * divergences cite it, plus, for each e2e quarantine row citing it, the
+ * run's SSR adapter. A row keyed by a corpus fixture also covers every
+ * adapter that renders that fixture exactly as the reference does (no pin
+ * and no render divergence on it): that adapter serves the same markup and
+ * hydrates it with the same client runtime, so it shows the same gap. A
+ * generated case (mutation / pairwise / explore) has no per-adapter
+ * conformance record, so it covers only the run's own adapter.
+ */
 export function adaptersCiting(
   limitationId: string,
   adapters: ReadonlyArray<LimitationsAdapterInput>,
-  e2eCitations: ReadonlyArray<E2eCitation> = [],
+  e2eCitations: ReadonlyArray<E2eCitation>,
 ): string[] {
   const ids = new Set<string>()
   for (const adapter of adapters) {
@@ -86,7 +105,14 @@ export function adaptersCiting(
     if (pinned || divergent) ids.add(adapter.id)
   }
   for (const citation of e2eCitations) {
-    if (citation.limitation === limitationId) ids.add(citation.adapter)
+    if (citation.limitation !== limitationId) continue
+    ids.add(citation.adapter)
+    const fixture = citation.fixture
+    if (fixture === undefined) continue
+    for (const adapter of adapters) {
+      const rendersAsReference = (adapter.pins[fixture] ?? []).length === 0 && !adapter.renderDivergences[fixture]
+      if (rendersAsReference) ids.add(adapter.id)
+    }
   }
   return [...ids].sort(compareAdapterIds)
 }
@@ -94,7 +120,7 @@ export function adaptersCiting(
 export function buildLimitationsSection(
   registry: readonly Limitation[],
   adapters: ReadonlyArray<LimitationsAdapterInput>,
-  e2eCitations: ReadonlyArray<E2eCitation> = [],
+  e2eCitations: ReadonlyArray<E2eCitation>,
 ): LimitationsSection {
   const section: LimitationsSection = {}
   for (const entry of [...registry].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {

@@ -6115,7 +6115,16 @@
         "row-portal-ref"
       ],
       "adapters": [
-        "hono"
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "module-scope-helper-call": {

@@ -57,7 +57,8 @@ import { KNOWN_UNDECLARED } from '../../../adapter-tests/src/client-js-scope-led
 import { findLimitation, limitations } from '../../../adapter-tests/limitations'
 import { limitationDiagnostics } from '../../../adapter-tests/src/limitations'
 import { loadCompatAdapters } from '../adapter-registry'
-import { adaptersCiting, e2eQuarantineCitations } from '../limitations'
+import { adaptersCiting, e2eQuarantineCitations, type LimitationsAdapterInput } from '../limitations'
+import { compareAdapterIds } from '../report'
 
 const { loaded } = await loadCompatAdapters()
 const e2eCitations = await e2eQuarantineCitations()
@@ -243,15 +244,25 @@ describe('limitation registry ↔ adapter declarations', () => {
 })
 
 describe('e2e quarantine citations', () => {
-  test('a row without an SSR adapter is a run over the Hono reference', () => {
-    const cited = e2eCitations.filter(c => c.limitation === 'loop-row-ref-portal')
-    expect(cited.length).toBeGreaterThan(0)
-    expect(new Set(cited.map(c => c.adapter))).toEqual(new Set(['hono']))
+  const adapter = (id: string, fixture?: 'pin' | 'divergence'): LimitationsAdapterInput => ({
+    id,
+    pins: fixture === 'pin' ? { f: [{ code: 'BF101', severity: 'error', limitation: 'other' }] } : {},
+    renderDivergences: fixture === 'divergence' ? { f: { limitation: 'other' } } : {},
   })
 
-  test('an e2e-only citation feeds the derived adapter list', () => {
-    expect(adaptersCiting('x', [], [{ adapter: 'erb', limitation: 'x' }, { adapter: 'hono', limitation: 'y' }])).toEqual([
+  test('a fixture-keyed row covers every adapter rendering that fixture as the reference does', () => {
+    const adapters = [adapter('hono'), adapter('erb'), adapter('go-template', 'pin'), adapter('jinja', 'divergence')]
+    expect(adaptersCiting('x', adapters, [{ adapter: 'hono', limitation: 'x', fixture: 'f' }])).toEqual(['hono', 'erb'])
+  })
+
+  test('a generated-case row covers only its own run adapter', () => {
+    const adapters = [adapter('hono'), adapter('erb')]
+    expect(adaptersCiting('x', adapters, [{ adapter: 'erb', limitation: 'x' }, { adapter: 'hono', limitation: 'y' }])).toEqual([
       'erb',
     ])
+  })
+
+  test('loop-row-ref-portal publishes every adapter', () => {
+    expect(adaptersCiting('loop-row-ref-portal', loaded, e2eCitations)).toEqual(loaded.map(a => a.id).sort(compareAdapterIds))
   })
 })
