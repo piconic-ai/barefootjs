@@ -32,7 +32,7 @@ Mark the swappable region in your layout with `<Region>` (compiled to
 | `shouldIntercept` | same-origin, plain click | per-anchor opt-out (`data-bf-router="false"`, `download`, `target`, `rel=external`) |
 | `prefetch` / `prefetchDelay` | `true` / `65` | hover/focus/pointerdown prefetch + `modulepreload` |
 | `cacheFreshMs` / `cacheStaleMs` / `cacheCap` | `15000` / `60000` / `30` | SWR + LRU snapshot cache |
-| `scrollToTop` | `true` | scroll to top after a swap |
+| `scrollToTop` | `true` | scroll to top after a swap, instantly (ignores `scroll-behavior: smooth`) |
 | `manageFocus` | `true` | move focus into the swapped content (first swapped region with a heading) + announce the route |
 | `morph` | `true` | preserve `[data-bf-permanent]` live nodes across a swap (no-op when none present); `false` forces a plain `replaceChildren` |
 

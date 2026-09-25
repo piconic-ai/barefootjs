@@ -377,7 +377,10 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     state.currentSearch = committed.search
     pushSearchSeam(committed.search)
 
-    if (state.scrollToTop) window.scrollTo(0, 0)
+    // Instant, like a document load: a page's `scroll-behavior: smooth` (set
+    // for its in-page anchors) would otherwise animate from the old scroll
+    // position and show the new page from mid-way down first.
+    if (state.scrollToTop) window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
 
     // Re-hydrate the freshly inserted islands (subtree-scoped, per region),
     // sequentially in document order — like `dispose`, `rehydrate` is

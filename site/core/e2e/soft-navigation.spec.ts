@@ -44,6 +44,20 @@ test.describe('docs layout soft navigation', () => {
     await expect(page.locator('h1.doc-title')).toBeFocused()
   })
 
+  test('a sidebar link from far down a page opens the next doc at its top at once', async ({ page }) => {
+    await page.goto('/docs/quick-start')
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }))
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(1000)
+
+    await sidebarLink(page, '/docs/introduction').click()
+    await expect(page).toHaveURL(/\/docs\/introduction$/)
+    await waitForSwap(page)
+
+    // Already at the top once the swap is done, not still animating there:
+    // the site's `scroll-behavior: smooth` is for its in-page anchors.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  })
+
   test('back / forward restore the previous doc softly', async ({ page }) => {
     await page.goto('/docs/introduction')
     await plantReloadMarker(page)

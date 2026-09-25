@@ -513,6 +513,38 @@ describe('@barefootjs/router v0', () => {
     expect(document.getElementById('bf-route-announcer')).toBeNull()
   })
 
+  // A document load starts at the top at once; so does a swap. A page's own
+  // `scroll-behavior: smooth` (meant for its in-page anchors) must not turn
+  // it into an animation that shows the new page from mid-way down first.
+  test('a swap scrolls to the top instantly, whatever the page\'s scroll-behavior', async () => {
+    const calls: unknown[][] = []
+    const original = window.scrollTo
+    window.scrollTo = ((...args: unknown[]) => { calls.push(args) }) as typeof window.scrollTo
+    try {
+      router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+      clickLink('next')
+      await flush()
+    } finally {
+      window.scrollTo = original
+    }
+    expect(calls).toEqual([[{ top: 0, left: 0, behavior: 'instant' }]])
+  })
+
+  test('scrollToTop: false leaves the scroll position alone', async () => {
+    const calls: unknown[][] = []
+    const original = window.scrollTo
+    window.scrollTo = ((...args: unknown[]) => { calls.push(args) }) as typeof window.scrollTo
+    try {
+      router = startRouter({ rehydrate: () => {}, dispose: () => {}, scrollToTop: false })
+      clickLink('next')
+      await flush()
+    } finally {
+      window.scrollTo = original
+    }
+    expect(region().textContent).toContain('page 2 body')
+    expect(calls).toEqual([])
+  })
+
   test('history.state preservation: a router replace keeps existing state keys', async () => {
     // Something else stored scroll state on the entry before the router starts.
     window.history.replaceState({ scrollTop: 42 }, '', window.location.href)
