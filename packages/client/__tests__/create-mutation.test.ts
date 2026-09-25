@@ -7,7 +7,7 @@
  */
 
 import { describe, test, expect, afterEach } from 'bun:test'
-import { createSignal, createRoot } from '../src/reactive'
+import { createSignal, createEffect, createRoot } from '../src/reactive'
 import { http, type HttpDescriptor } from '../src/http'
 import { createMutation } from '../src/create-mutation'
 import { onInvalidate } from '@barefootjs/shared'
@@ -70,6 +70,27 @@ describe('untracked evaluation', () => {
     setDraft('second')
     await save()
     expect(bodies).toEqual([{ body: 'first' }, { body: 'second' }])
+  })
+
+  test('calling the action inside an effect does not subscribe the effect to what fn reads', async () => {
+    const { calls } = stubFetch({ ok: true })
+    const [draft, setDraft] = createSignal('first')
+    const [, save] = createMutation(() => http.post('/api/comments', { body: draft() }))
+    let runs = 0
+    createRoot(() => {
+      createEffect(() => {
+        runs++
+        save().catch(() => {})
+      })
+    })
+    await settle()
+    expect(runs).toBe(1)
+    expect(calls.length).toBe(1)
+
+    setDraft('second') // must not re-run the effect, so no second write goes out
+    await settle()
+    expect(runs).toBe(1)
+    expect(calls.length).toBe(1)
   })
 })
 
@@ -158,16 +179,24 @@ describe('rule 5: value retention', () => {
     globalThis.fetch = (() => Promise.resolve(jsonResponse({ message: 'boom' }, 500))) as typeof fetch
     await expect(save()).rejects.toMatchObject({ status: 500 })
     expect(value()).toEqual({ n: 1 }) // retained across the failure
-    expect(save.error()).toBeDefined()
+    expect(save.error()).toMatchObject({ status: 500 })
 
     globalThis.fetch = (() => Promise.resolve(jsonResponse({ n: 2 }))) as typeof fetch
     await save()
     expect(value()).toEqual({ n: 2 })
     expect(save.error()).toBeUndefined() // cleared by the next success
   })
+
+  test('error() is always a real Error, even when the underlying rejection is not one', async () => {
+    globalThis.fetch = (() => Promise.reject('a plain string rejection')) as unknown as typeof fetch
+    const [, save] = createMutation(() => http.post('/api/comments', {}))
+    await expect(save()).rejects.toBe('a plain string rejection')
+    expect(save.error()).toBeInstanceOf(Error)
+    expect(save.error()?.message).toBe('a plain string rejection')
+  })
 })
 
-// -- rule 6: invalidates -----------------------------------------------------
+// -- un-awaited failure -----------------------------------------------------
 
 describe('action(): un-awaited failure', () => {
   test('a fire-and-forget failed call reports no unhandled rejection; error() holds it', async () => {
@@ -187,6 +216,8 @@ describe('action(): un-awaited failure', () => {
     }
   })
 })
+
+// -- rule 6: invalidates -----------------------------------------------------
 
 describe('rule 6: invalidates', () => {
   test('fires on success only, with the given prefixes', async () => {
