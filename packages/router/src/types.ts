@@ -132,6 +132,8 @@ export interface RouterState {
   morph: boolean
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
   currentPath: string
+  /** Query string of the currently-displayed page (a popstate that changes only the hash is left to the browser). */
+  currentSearch: string
   inflight: AbortController | null
   /** Hover-prefetch dwell timer + the anchor it is counting down for (per instance). */
   hoverTimer: ReturnType<typeof setTimeout> | null

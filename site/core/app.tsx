@@ -13,7 +13,6 @@ import { createLandingApp } from './landing/routes'
 import { createPlaygroundApp } from './playground/routes'
 import { createIntegrationsApp } from './integrations/routes'
 import { createOgRoute } from './og-route'
-import { cacheControl } from '@barefootjs/site-shared/lib/cache-control'
 import type { Page, ContentMap, MdxContentMap } from './lib/content'
 
 /**
@@ -25,12 +24,6 @@ import type { Page, ContentMap, MdxContentMap } from './lib/content'
  */
 export async function createApp(content: ContentMap, pages: Page[], mdx: MdxContentMap = {}): Promise<Hono> {
   const app = new Hono()
-
-  // Sets Cache-Control on every route below that doesn't set its own. Inert
-  // today — wrangler.toml deliberately leaves `[cache]` off (see the
-  // comment there) — but mounted first so enabling it later is a one-line
-  // wrangler.toml change with the middleware already wired and tested.
-  app.use('*', cacheControl)
 
   // Landing page (GET /)
   const landingApp = await createLandingApp()
@@ -47,7 +40,7 @@ export async function createApp(content: ContentMap, pages: Page[], mdx: MdxCont
   // live on separate services, so this is just the catalog page.
   app.route('/integrations', createIntegrationsApp())
 
-  // OG image generator (GET /og?title=...)
+  // OG images (GET /og/<base64url(title)>.png, see lib/og-image.ts)
   app.route('/og', createOgRoute())
 
   return app

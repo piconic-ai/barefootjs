@@ -29,7 +29,7 @@ import {
   hardNavigate,
   pushSearchSeam,
 } from './seams.ts'
-import { announceNavigation, focusRegion } from './a11y.ts'
+import { announceNavigation, focusSwappedRegions } from './a11y.ts'
 import type {
   NavigateOptions,
   PageSnapshot,
@@ -81,6 +81,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     // (captured before islands mutate the DOM). Refreshed after each navigation.
     regionBaselines: captureRegionBaselines(document, options.region ?? `[${BF_REGION}]`),
     currentPath: window.location.pathname,
+    currentSearch: window.location.search,
     inflight: null,
     hoverTimer: null,
     hoverAnchor: null,
@@ -190,6 +191,17 @@ function defaultShouldIntercept(anchor: HTMLAnchorElement): boolean {
 
 function onPopState(): void {
   if (!active) return
+  // Same route, only the fragment differs: an in-page anchor was followed (the
+  // browser fires popstate for those too) or back/forward moved between such
+  // entries. The displayed page is already this one and the browser scrolls to
+  // the anchor itself — a swap would re-fetch it, reset island state and
+  // scroll to the top.
+  if (
+    window.location.pathname === active.currentPath &&
+    window.location.search === active.currentSearch
+  ) {
+    return
+  }
   // A query-only back/forward on the same route doesn't need a swap: push the
   // new query into the env signal (if a consumer registered the seam) and let
   // islands react fine-grained. A pathname change does need a swap, but the
@@ -198,6 +210,7 @@ function onPopState(): void {
     window.location.pathname === active.currentPath &&
     pushSearchSeam(window.location.search)
   ) {
+    active.currentSearch = window.location.search
     return
   }
   void navigate(window.location.href, { history: false })
@@ -233,6 +246,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     pushSearchSeam(target.search)
   ) {
     state.inflight?.abort()
+    state.currentSearch = target.search
     if (mode === 'push') commitHistory('push', target.href)
     else if (mode === 'replace') commitHistory('replace', target.href)
     return
@@ -276,10 +290,17 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       // root containing every other region (one swap rebuilds them all — the v0
       // single-region behaviour). If the regions are siblings, a single swap
       // would half-update the page, so hard-navigate instead (never worse than
-      // an MPA).
+      // an MPA). Both sides must be roots: a live root region swapped with an
+      // incoming page's first *sibling* region would put that sibling's markup
+      // where the whole page was and drop the rest of the incoming regions.
       const current = document.querySelector(state.regionSelector)
       const incoming = incomingDoc.querySelector(state.regionSelector)
-      if (!current || !incoming || !isRootRegion(current, state.regionSelector)) {
+      if (
+        !current ||
+        !incoming ||
+        !isRootRegion(current, state.regionSelector) ||
+        !isRootRegion(incoming, state.regionSelector)
+      ) {
         hardNavigate(finalUrl)
         return
       }
@@ -346,8 +367,14 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     if (mode === 'push') commitHistory('push', finalUrl)
     else if (mode === 'replace') commitHistory('replace', finalUrl)
 
+    // Recorded only after history is committed, not hoisted beside the region
+    // baselines above: `onPopState` compares these to `window.location`, which
+    // changes with the history commit, so they describe the entry being
+    // displayed. A navigation superseded before this point leaves them on the
+    // previous entry; its successor sets them when it commits.
     const committed = new URL(finalUrl, window.location.href)
     state.currentPath = committed.pathname
+    state.currentSearch = committed.search
     pushSearchSeam(committed.search)
 
     if (state.scrollToTop) window.scrollTo(0, 0)
@@ -362,11 +389,12 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     // now stale content.
     if (controller.signal.aborted) return
 
-    // Accessibility: move focus into the first swapped region (the broadest /
-    // topmost in document order) and announce the route. A navigation with no
-    // changed region (targets empty) still committed history + title above.
+    // Accessibility: move focus into the swapped content — the first swapped
+    // region with a heading, else the first swapped region — and announce the
+    // route. A navigation with no changed region (targets empty) still
+    // committed history + title above.
     if (state.manageFocus && swapped.length > 0) {
-      focusRegion(swapped[0].region)
+      focusSwappedRegions(swapped.map(({ region }) => region))
       announceNavigation(title)
     }
   } finally {

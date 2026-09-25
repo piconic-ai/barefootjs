@@ -97,11 +97,14 @@ test.describe('Component Catalog Page', () => {
     await expect(filterGroup(page).locator('a:has-text("Input")')).toHaveAttribute('aria-current', 'page')
   })
 
-  test('a plain link on the page is still a normal navigation', async ({ page }) => {
-    // The router is scoped to the filter chips: a card link leaves the page.
+  test('a card link is a soft cross-route navigation', async ({ page }) => {
+    // The router runs site-wide: leaving the catalog swaps the page region
+    // instead of loading a new document.
+    await plantReloadMarker(page)
     await page.locator('[data-catalog-card][data-tags~="input"]').first().click()
     await page.waitForURL(/\/components\/[a-z-]+$/)
     await expect(page.locator('[data-catalog-filter]')).toHaveCount(0)
+    await expectNoReload(page)
   })
 })
 
