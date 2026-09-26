@@ -4,12 +4,15 @@
  * adapter including Hono.
  *
  * `const [posts, fetchPosts] = createQuery(fn, options)` seeds `posts()` from
- * `options.initial`, but nothing seeds `fetchPosts.isPending()` or
- * `fetchPosts.error()`: the request function never runs on the server, and no
- * backend has a value for them yet. Calling the action itself would send a
- * request during render. So a template position may not:
+ * `options.initial`. Since #3166, `fetchPosts.isPending()` / `fetchPosts.error()`
+ * are ALSO seeded (`false` / `undefined`, spec/async.md §7.3) when read as the
+ * WHOLE template-position expression — see `action-accessor.ts`, the one place
+ * that recognises the shape and the seed both this pass and `jsx-to-ir.ts`
+ * share. Everything else here is unchanged: calling the action itself
+ * (`fetchPosts()`) still sends a request during render, and a compound or
+ * nested accessor read (`!fetchPosts.isPending()`, buried inside a memo) has
+ * no seed substitution yet, so a template position may still not:
  *
- * - read an accessor (`fetchPosts.isPending()`, `fetchPosts.error`),
  * - call the action (`fetchPosts()`),
  * - read a memo or a component-local constant that reads the action, since
  *   every backend evaluates a memo or constant it renders, or
@@ -37,6 +40,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { ErrorCodes } from './errors.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { walkTemplatePositions } from './template-position-walk.ts'
+import { matchActionAccessorCall, collectActionNames } from './action-accessor.ts'
 
 /**
  * Properties of a query action that are reactive accessors. Mirrors the
@@ -70,11 +74,17 @@ interface ActionReaders {
 }
 
 export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors: CompilerError[]): void {
-  const actions = new Set<string>()
-  for (const signal of metadata.signals) {
-    if (signal.factory?.action) actions.add(signal.factory.action)
-  }
-  if (actions.size === 0) return
+  // The action bindings a recognised factory produced DIRECTLY — the same
+  // set `jsx-to-ir.ts`'s seed substitution recognises (`action-accessor.ts`).
+  // Kept separate from `actions` below (which also grows through aliases):
+  // the seed substitution only ever rewrites a read of a DIRECT binding, so
+  // the "no longer refused" check here must match exactly that, not a wider
+  // alias-grown set — an aliased read (`const run = fetchPosts;
+  // run.isPending()`) stays refused below exactly as before #3166, since
+  // nothing seeds it structurally.
+  const directActions = collectActionNames(metadata.signals)
+  if (directActions.size === 0) return
+  const actions = new Set(directActions)
   // `const run = fetchPosts` is the action under another name.
   for (let grew = true; grew; ) {
     grew = false
@@ -90,6 +100,13 @@ export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors
   const seen = new Set<string>()
   walkTemplatePositions(root, ({ expr, loc, attrName }) => {
     if (attrName !== undefined && isEventHandlerName(attrName)) return
+    // #3166: a direct accessor read AS THE WHOLE template-position expression
+    // is an ordinary seeded value now (`action-accessor.ts`) — no refusal.
+    // `jsx-to-ir.ts` substitutes this exact same shape with its seed, so the
+    // two stay in sync by construction. A compound/nested use is NOT matched
+    // here (`matchActionAccessorCall` only matches the whole expression) and
+    // falls through to `findActionRead` below, refused exactly as before.
+    if (matchActionAccessorCall(expr, directActions)) return
     const read = findActionRead(expr, actions, readers, new Set())
     if (read) pushDiagnostic(errors, seen, loc, read)
   })

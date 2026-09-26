@@ -1948,6 +1948,7 @@
         "member"
       ],
       "axes": [
+        "literal:boolean",
         "literal:null"
       ],
       "contexts": [
@@ -1965,6 +1966,7 @@
         "member"
       ],
       "axes": [
+        "literal:boolean",
         "literal:null"
       ],
       "contexts": [
@@ -7948,7 +7950,7 @@
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 83,
+    "literal:boolean": 85,
     "literal:null": 33,
     "literal:number": 160,
     "literal:string": 254,

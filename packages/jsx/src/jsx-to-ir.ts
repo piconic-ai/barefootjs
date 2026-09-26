@@ -70,6 +70,7 @@ import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs
 import { BindingScope } from './scope/binding-scope.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
+import { collectActionNames, matchActionAccessorCall, actionAccessorSeedParsed, actionAccessorSeedText } from './action-accessor.ts'
 
 // =============================================================================
 // Transform Context
@@ -619,6 +620,23 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
+  // #3166: a direct `<action>.isPending()` / `<action>.error()` read, as the
+  // WHOLE expression, is seeded as ordinary JS text here too. This
+  // function's `templateExpr`/`templateCondition` output is what the CSR
+  // module-scope fallback template falls back to, and that template can't
+  // close over the real accessor (a local inside `initX`, never in scope at
+  // module level) — the same reason a signal getter call is substituted
+  // with its initial value below instead of called live. See
+  // `action-accessor.ts` — the same recognition `attachParsedExpressions`
+  // and BF117's refusal-lift use, kept in sync by construction.
+  const actions = collectActionNames(ctx.analyzer.signals)
+  if (actions.size > 0) {
+    const trimmed = text.trim()
+    for (const action of actions) {
+      if (trimmed === `${action}.isPending()`) return actionAccessorSeedText('isPending')
+      if (trimmed === `${action}.error()`) return actionAccessorSeedText('error')
+    }
+  }
   // #2292: lower a Date-typed prop's catalogued accessor call BEFORE the
   // bare-prop-name rewrite below, so the receiver identifier still picks
   // up the usual `_p.` prefix (destructured mode) or falls through to the
@@ -1021,8 +1039,20 @@ const EMPTY_BOUND: ReadonlySet<string> = new Set()
  * same as real JS scoping — resolution stays off within that loop's body.
  */
 function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound: ReadonlySet<string> = EMPTY_BOUND): void {
-  const parse = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseExpression(trimmed), analyzer, bound)
-  const parseValue = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseValueExpr(trimmed), analyzer, bound)
+  // #3166: recognised action bindings (`SignalInfo.factory.action`, #3165) —
+  // a direct `<action>.isPending()` / `<action>.error()` read, as the WHOLE
+  // parsed expression, is seeded here (see `action-accessor.ts`) rather than
+  // left as a member-call every DSL adapter would otherwise lower generically
+  // (and wrongly — there is no struct field for an action). Cheap to
+  // recompute per node; `analyzer.signals` is small.
+  const actions = collectActionNames(analyzer.signals)
+  const seedIfActionAccessor = (parsed: ParsedExpr): ParsedExpr => {
+    if (actions.size === 0) return parsed
+    const read = matchActionAccessorCall(parsed, actions)
+    return read ? actionAccessorSeedParsed(read.accessor) : parsed
+  }
+  const parse = (trimmed: string) => seedIfActionAccessor(resolveCallbackMethodFunctionReferences(parseExpression(trimmed), analyzer, bound))
+  const parseValue = (trimmed: string) => seedIfActionAccessor(resolveCallbackMethodFunctionReferences(parseValueExpr(trimmed), analyzer, bound))
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
     if (trimmed) node.parsed = parse(trimmed)

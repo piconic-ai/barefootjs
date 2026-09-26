@@ -908,7 +908,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       return `<%= bf.comment("cond-start:${cond.slotId}") %><%= bf.comment("cond-end:${cond.slotId}") %>`
     }
 
-    const condition = this.convertExpressionToRuby(cond.condition)
+    // #3166: thread `cond.parsedCondition` through — see the attribute
+    // emitter's matching comment above for why a fresh re-parse of the raw
+    // string would lose a seeded `<action>.isPending()` / `.error()`
+    // substitution.
+    const condition = this.convertExpressionToRuby(cond.condition, cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -1632,7 +1636,13 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           return `<% if bf.truthy?(${cond}) %>${name}="<%= bf.h(${val}) %>"<% end %>`
         }
       }
-      const ruby = this.convertExpressionToRuby(value.expr)
+      // #3166: thread the IR-carried `.parsed` tree through (same reason as
+      // `renderExpression`'s `expr.parsed` above) — a recognised
+      // `<action>.isPending()` / `.error()` read has already been
+      // substituted with its seed literal there; re-parsing `value.expr`
+      // fresh here would lose that and fall into the generic member-access
+      // lowering (`v[:fetchPosts][:isPending]`, `NoMethodError` on `nil`).
+      const ruby = this.convertExpressionToRuby(value.expr, value.parsed)
       if (this.shouldWrapBoolStr(value.expr, name)) {
         return `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
       }
