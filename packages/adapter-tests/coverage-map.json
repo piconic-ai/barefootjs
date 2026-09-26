@@ -4133,6 +4133,17 @@
         "text"
       ]
     },
+    "loop-row-child-key-not-a-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-untyped-array-mismatched-keys": {
       "kinds": [
         "array-literal",
@@ -7742,11 +7753,11 @@
     "binary": 118,
     "call": 313,
     "conditional": 44,
-    "identifier": 453,
+    "identifier": 454,
     "index-access": 15,
     "literal": 365,
     "logical": 54,
-    "member": 274,
+    "member": 275,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 35,
