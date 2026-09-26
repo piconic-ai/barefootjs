@@ -26,6 +26,8 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createEffect()`](#createeffect) | function | 0.1.0 | **Beta** |
 | [`createMemo()`](#creatememo) | function | 0.1.0 | **Beta** |
 | [`createPortal()`](#createportal) | function | 0.1.0 | **Beta** |
+| [`createQuery()`](#createquery) | function | 0.39.0 | Alpha |
+| [`CreateQueryOptions`](#createqueryoptions) | interface | 0.39.0 | Alpha |
 | [`createRoot()`](#createroot) | function | 0.1.0 | Alpha |
 | [`createSearchParams()`](#createsearchparams) | function | 0.17.0 | **Beta** |
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
@@ -45,6 +47,7 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`Portal`](#portal) | type | 0.1.0 | **Beta** |
 | [`PortalChildren`](#portalchildren) | type | 0.1.0 | **Beta** |
 | [`PortalOptions`](#portaloptions) | interface | 0.1.0 | **Beta** |
+| [`QueryAction`](#queryaction) | interface | 0.39.0 | Alpha |
 | [`queryHref()`](#queryhref) | function | 0.17.0 | **Beta** |
 | [`QueryParams`](#queryparams) | type | 0.17.0 | **Beta** |
 | [`QueryParamValue`](#queryparamvalue) | type | 0.17.0 | **Beta** |
@@ -175,6 +178,18 @@ function DialogOverlay() {
   return <div ref={handleMount} class="fixed inset-0 bg-black/50" />
 }
 ```
+
+### `createQuery()`
+
+`function` · Alpha since 0.39.0 · `@barefootjs/client`
+
+`createQuery(fn, options?)` — a value re-sent whenever a signal `fn` reads changes. Returns `[value, action]`, the same `[getter, setter]`-shaped tuple as `createSignal`. See spec/async.md §7 for the full model.
+
+### `CreateQueryOptions`
+
+`interface` · Alpha since 0.39.0 · `@barefootjs/client`
+
+Options `createQuery` accepts. `initial` is the **already-obtained result** of the initial request (spec/async.md §7.5) — not a placeholder.
 
 ### `createRoot()`
 
@@ -357,6 +372,12 @@ Options for createPortal
 | Field | Since | Status | Description |
 |---|---|---|---|
 | `ownerScope` | 0.1.0 | **Beta** | The scope element that owns this portal. |
+
+### `QueryAction`
+
+`interface` · Alpha since 0.39.0 · `@barefootjs/client`
+
+The callable `action` a query returns alongside its value: re-sends the current descriptor when called, and carries two reactive accessors.
 
 ### `queryHref()`
 

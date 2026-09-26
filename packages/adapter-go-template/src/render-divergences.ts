@@ -163,6 +163,19 @@ export const renderDivergences: RenderDivergences = {
   'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },
+  // A memo reading `.length` of a prop-seeded array signal is baked into the
+  // constructor as the memo type's zero value (`Count: 0`): the
+  // constructor-time memo baker (`computeMemoInitialValueOrNull`,
+  // `adapter/memo/memo-compute.ts`) recognises a fixed list of body shapes,
+  // `.length` over a getter is not among them, and an unrecognised body
+  // falls back to the zero value with no diagnostic. The `createQuery` twin
+  // (`create-query-derived-memo`) is the same shape.
+  'memo-length-prop-seeded-signal': { limitation: 'memo-length-of-prop-seeded-array' },
+  'create-query-derived-memo': { limitation: 'memo-length-of-prop-seeded-array' },
+  // `!x` lowers to Go's built-in `not`, whose truthiness treats an empty
+  // slice as false, where JS treats `[]` as true. (`bf_truthy` is not a
+  // drop-in: it reports a typed nil slice — the absent-prop case — as true.)
+  'negated-empty-array-condition': { limitation: 'negated-empty-array-condition' },
 
   // A component loop row over an array prop, keyed by a row field the child
   // takes no prop for (`<Badge key={item.id} label={item.label} />`): the
@@ -208,3 +221,18 @@ export const renderDivergences: RenderDivergences = {
 // renamed shape also needed a duplicate-Input-field dedup and an
 // `interface{}`-safe fallback extraction in `generateInputStruct` /
 // `generatePropsStruct` — see their docstrings).
+
+/**
+ * Data points (`<fixture>:<point>`) that render divergent from the Hono
+ * reference on real Go while the fixture's primary render matches, so the
+ * fixture itself is not in `renderDivergences`. The conformance
+ * `skipDataPoints` set derives from the keys, and each entry cites the
+ * limitation it is an instance of: graduating (deleting) that entry fails
+ * `go-template-adapter.test.ts`'s citation check until the skip goes too.
+ */
+export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // `createQuery` mode B with an empty result list renders the skeleton
+  // instead of the empty list: `!posts()` on `[]` is Go's `not` on an empty
+  // slice. The fixture's primary point (prop absent) renders like Hono.
+  'create-query-optional-initial:gen:posts:empty': { limitation: 'negated-empty-array-condition' },
+}

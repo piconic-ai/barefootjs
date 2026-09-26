@@ -41,7 +41,7 @@ import type { Server } from 'node:http'
 import { loadAllSharedFixtures } from '../fixtures/_helpers'
 import type { JSXFixture } from '../src/types'
 import { startFixtureServer, fixtureUrl } from './fixture-host'
-import { runStep } from './interaction-runner'
+import { installFetchRecorder, runStep } from './interaction-runner'
 import { FIXTURE_HYDRATE_QUARANTINE } from './fixture-hydrate-quarantine'
 
 let server: Server
@@ -104,6 +104,7 @@ for (const fixture of fixtures) {
     const browserLogs: string[] = []
     page.on('console', msg => browserLogs.push(`${msg.type()}: ${msg.text()}`))
     page.on('pageerror', err => browserLogs.push(`pageerror: ${err.message}`))
+    await installFetchRecorder(page)
     await page.goto(fixtureUrl(baseUrl, fixture.id))
     // Hydration is microtask + rAF on the runtime side. A single rAF wait
     // covers both — we don't need to expose flushHydration just for tests.

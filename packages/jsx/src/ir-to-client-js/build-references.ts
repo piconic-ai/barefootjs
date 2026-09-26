@@ -41,6 +41,7 @@ import { attrValueToString } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
 import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts'
 import { walkIR } from './walker.ts'
+import { signalSecondBinding } from '../signal-initializer.ts'
 
 // All non-declaration edge origins share a single null source — no
 // query on the graph distinguishes them on read today. Stage E
@@ -59,7 +60,8 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   for (const f of ctx.localFunctions) declaredNames.add(f.name)
   for (const s of ctx.signals) {
     declaredNames.add(s.getter)
-    if (s.setter) declaredNames.add(s.setter)
+    const second = signalSecondBinding(s)
+    if (second) declaredNames.add(second)
   }
   for (const m of ctx.memos) declaredNames.add(m.name)
   for (const p of ctx.propsParams) {
@@ -189,7 +191,9 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   // identifiers.ts L137-139
   for (const signal of ctx.signals) {
-    addExprEdges({ kind: 'signal', name: signal.getter }, signal.initialValue, 'init-body')
+    // An async factory's declaration is its whole call (`createQuery(fn,
+    // options)`, #3165): the request function's reads are dependencies too.
+    addExprEdges({ kind: 'signal', name: signal.getter }, signal.factory?.argsText ?? signal.initialValue, 'init-body')
   }
 
   // identifiers.ts L141-143

@@ -13,6 +13,7 @@ import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
   'format-date': [{ code: 'BF056', severity: 'error', limitation: 'authored-format-date-call' }],
+  'create-query-action-read': [{ code: 'BF117', severity: 'error', limitation: 'query-action-read-in-template' }],
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', limitation: 'ambient-locale-date-formatting' }],
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', limitation: 'rich-typed-prop-hydration' }],
   // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop

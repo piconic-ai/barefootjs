@@ -576,6 +576,14 @@ import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
 import { fixture as formatDateClient } from './format-date-client'
+import { fixture as createQueryInitial } from './create-query-initial'
+import { fixture as createQueryOptionalInitial } from './create-query-optional-initial'
+import { fixture as createQueryRequestClientOnly } from './create-query-request-client-only'
+import { fixture as createQueryDerivedMemo } from './create-query-derived-memo'
+import { fixture as createQueryActionRead } from './create-query-action-read'
+import { fixture as createQueryActionReadClient } from './create-query-action-read-client'
+import { fixture as memoLengthPropSeededSignal } from './memo-length-prop-seeded-signal'
+import { fixture as negatedEmptyArrayCondition } from './negated-empty-array-condition'
 import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
@@ -1238,6 +1246,14 @@ export const jsxFixtures: JSXFixture[] = [
   richPropPrecompute,
   formatDate,
   formatDateClient,
+  createQueryInitial,
+  createQueryOptionalInitial,
+  createQueryRequestClientOnly,
+  createQueryDerivedMemo,
+  createQueryActionRead,
+  createQueryActionReadClient,
+  memoLengthPropSeededSignal,
+  negatedEmptyArrayCondition,
   queryHref,
   queryHrefSrc,
   queryHrefTernary,

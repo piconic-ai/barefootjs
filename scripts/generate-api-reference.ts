@@ -393,6 +393,7 @@ function createProgram(files: string[]): ts.Program {
     // hide a missing one.
     paths: {
       '@barefootjs/client/reactive': ['packages/client/src/reactive.ts'],
+      '@barefootjs/client/async': ['packages/client/src/async.ts'],
       '@barefootjs/client/csr-adapter': ['packages/client/src/csr-adapter.ts'],
       '@barefootjs/client/runtime': ['packages/client/src/runtime/index.ts'],
       '@barefootjs/client': ['packages/client/src/index.ts'],

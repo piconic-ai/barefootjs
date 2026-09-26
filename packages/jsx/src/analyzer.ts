@@ -8,7 +8,7 @@
 
 import ts from 'typescript'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
@@ -31,6 +31,7 @@ import { baseTypeName } from './rich-type-evidence.ts'
 import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
 import fs from 'node:fs'
+import { signalSecondBinding } from './signal-initializer.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -1142,6 +1143,20 @@ const PRIMITIVE_CANONICAL_NAMES: Record<string, 'signal' | 'memo' | 'effect' | '
   // is recorded separately on the collected signal so adapters can lower the
   // reader value; the reactivity kind itself is just `signal`.
   createSearchParams: 'signal',
+  // Async reactive factories (#3165) return a `[value, action]` tuple whose
+  // value half is a signal getter, so they resolve to the `signal` kind too;
+  // SIGNAL_FACTORY_KINDS below records which factory it was.
+  createQuery: 'signal',
+}
+
+/**
+ * Async reactive factories → their `SignalFactoryCall` kind (#3165). The value
+ * half of the tuple is collected as a signal seeded from `options.initial`;
+ * the kind tells every backend that re-emits the declaration to call the
+ * factory instead of `createSignal`.
+ */
+const SIGNAL_FACTORY_KINDS: Record<string, SignalFactoryCall['kind']> = {
+  createQuery: 'query',
 }
 
 /**
@@ -1271,15 +1286,41 @@ function resolveEnvSignalKey(
   callExpr: ts.CallExpression,
   ctx: AnalyzerContext
 ): string | null {
+  return resolveClientFactoryEntry(callExpr, ENV_SIGNAL_FACTORIES, ctx)
+}
+
+/**
+ * Resolve a call expression to the {@link SIGNAL_FACTORY_KINDS} kind of the
+ * async reactive factory it calls (`createQuery(...)` → `'query'`), or null.
+ * Same fast/slow paths as {@link resolveEnvSignalKey}.
+ */
+function resolveSignalFactoryKind(
+  callExpr: ts.CallExpression,
+  ctx: AnalyzerContext
+): SignalFactoryCall['kind'] | null {
+  return resolveClientFactoryEntry(callExpr, SIGNAL_FACTORY_KINDS, ctx)
+}
+
+/**
+ * Look a call's callee up in a table keyed by `@barefootjs/client` export
+ * names: the direct name, an alias resolved through the checker, or a
+ * `bf.<name>` namespace access. Shared by the env-signal and async-factory
+ * resolvers above.
+ */
+function resolveClientFactoryEntry<T>(
+  callExpr: ts.CallExpression,
+  table: Record<string, T>,
+  ctx: AnalyzerContext
+): T | null {
   if (ts.isIdentifier(callExpr.expression)) {
-    const key = ENV_SIGNAL_FACTORIES[callExpr.expression.text]
-    if (key) return key
+    const hit = table[callExpr.expression.text]
+    if (hit) return hit
     const canonical = resolveCanonicalClientExportName(callExpr.expression, ctx)
-    return canonical ? (ENV_SIGNAL_FACTORIES[canonical] ?? null) : null
+    return canonical ? (table[canonical] ?? null) : null
   }
   if (ts.isPropertyAccessExpression(callExpr.expression)) {
-    const key = ENV_SIGNAL_FACTORIES[callExpr.expression.name.text]
-    if (key && isBarefootClientNamespace(callExpr.expression.expression, ctx)) return key
+    const hit = table[callExpr.expression.name.text]
+    if (hit && isBarefootClientNamespace(callExpr.expression.expression, ctx)) return hit
   }
   return null
 }
@@ -1323,6 +1364,11 @@ function isSignalDeclaration(node: ts.VariableDeclaration, ctx: AnalyzerContext)
 function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   const pattern = node.name as ts.ArrayBindingPattern
   const callExpr = node.initializer as ts.CallExpression
+  const factoryKind = resolveSignalFactoryKind(callExpr, ctx)
+  if (factoryKind) {
+    collectFactorySignal(node, pattern, callExpr, factoryKind, ctx)
+    return
+  }
 
   const elements = pattern.elements
   // Getter-elided form: `const [, setActive] = createSignal(0)`. The first
@@ -1406,6 +1452,133 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     envReader,
     envFactory,
   })
+}
+
+/**
+ * Collect `const [value, action] = createQuery(fn, options)` (#3165) as a
+ * signal whose getter is the value and whose initial value is
+ * `options.initial`. The action is recorded on `factory`, never as a setter,
+ * so setter-keyed logic (controlled-prop sync, handler→setter wiring, SSR
+ * setter stubs) leaves it alone.
+ *
+ * `initial` is read structurally from an object-literal `options` with no
+ * spread: its value expression when the key is present, the literal
+ * `undefined` when it isn't. Any other `options`
+ * shape seeds from the member read `(<options>).initial`, which each backend
+ * lowers or refuses like any other expression — never a guess.
+ */
+function collectFactorySignal(
+  node: ts.VariableDeclaration,
+  pattern: ts.ArrayBindingPattern,
+  callExpr: ts.CallExpression,
+  kind: SignalFactoryCall['kind'],
+  ctx: AnalyzerContext,
+): void {
+  const elements = pattern.elements
+  const bindingName = (el: ts.ArrayBindingElement | undefined): string | null =>
+    el && ts.isBindingElement(el) && ts.isIdentifier(el.name) ? el.name.text : null
+  // BF115 reports any other destructure shape; nothing is collected for it.
+  if (elements.length < 1 || elements.length > 2) return
+  const getterElided = ts.isOmittedExpression(elements[0])
+  const valueName = getterElided ? null : bindingName(elements[0])
+  if (!getterElided && valueName === null) return
+  const action = elements.length === 2 ? bindingName(elements[1]) : null
+  if (elements.length === 2 && action === null) return
+  if (getterElided && action === null) return
+
+  const initialNode = factoryInitialNode(callExpr.arguments[1])
+  const initialValue = initialNode.kind === 'expression'
+    ? ctx.getJS(initialNode.node)
+    : initialNode.kind === 'member-read'
+      ? `(${ctx.getJS(initialNode.options)}).initial`
+      : 'undefined'
+  const typedInitialValue = initialNode.kind === 'expression'
+    ? initialNode.node.getText(ctx.sourceFile)
+    : initialNode.kind === 'member-read'
+      ? `(${initialNode.options.getText(ctx.sourceFile)}).initial`
+      : undefined
+  const initialFreeIdentifiers = initialNode.kind === 'expression'
+    ? extractFreeIdentifiersFromNode(initialNode.node)
+    : initialNode.kind === 'member-read'
+      ? extractFreeIdentifiersFromNode(initialNode.options)
+      : new Set<string>()
+
+  let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+  if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
+    type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
+  } else if (initialNode.kind !== 'absent') {
+    type = inferTypeFromValue(initialValue)
+  }
+
+  // Destructured-arg components (#2265): the CSR `template:` arrow's
+  // module-scope fallback needs `_p.<name>` for a bare destructured prop in
+  // `initial`, same as a `createSignal` initial value.
+  let templateInitialValue: string | undefined
+  if (!ctx.propsObjectName && initialNode.kind === 'expression') {
+    const propNames = new Set(ctx.propsParams.map(p => p.name))
+    if (propNames.size > 0) {
+      const propAliases = buildPropAliasMap(ctx.propsParams)
+      templateInitialValue = rewriteBarePropRefs(initialValue, initialNode.node, propNames, undefined, propAliases)
+    }
+  }
+
+  const argsText = callExpr.arguments.map(arg => ctx.getJS(arg)).join(', ')
+  const argsFreeIdentifiers = new Set<string>()
+  for (const arg of callExpr.arguments) {
+    for (const id of extractFreeIdentifiersFromNode(arg)) argsFreeIdentifiers.add(id)
+  }
+
+  ctx.signals.push({
+    getter: valueName ?? `__bfGet_${action}`,
+    setter: null,
+    getterElided: getterElided || undefined,
+    initialValue,
+    typedInitialValue: typedInitialValue !== undefined && typedInitialValue !== initialValue ? typedInitialValue : undefined,
+    templateInitialValue,
+    type,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+    initialFreeIdentifiers,
+    factory: {
+      kind,
+      callee: callExpr.expression.getText(ctx.sourceFile),
+      argsText,
+      argsFreeIdentifiers,
+      action,
+    },
+  })
+}
+
+/**
+ * Where an async factory's `initial` comes from (#3165): the `initial`
+ * property's value in an object-literal `options` (`expression`), nothing
+ * (`absent` — no `options`, or a literal without the key), or a member read
+ * of `options` itself when the literal can't be read structurally (spread,
+ * computed key, accessor) or `options` isn't a literal at all (`member-read`).
+ */
+type FactoryInitialNode =
+  | { kind: 'expression'; node: ts.Expression }
+  | { kind: 'absent' }
+  | { kind: 'member-read'; options: ts.Expression }
+
+function factoryInitialNode(options: ts.Expression | undefined): FactoryInitialNode {
+  if (!options) return { kind: 'absent' }
+  let unwrapped: ts.Expression = options
+  while (ts.isParenthesizedExpression(unwrapped) || ts.isAsExpression(unwrapped) || ts.isSatisfiesExpression(unwrapped)) {
+    unwrapped = unwrapped.expression
+  }
+  if (!ts.isObjectLiteralExpression(unwrapped)) return { kind: 'member-read', options }
+  let found: ts.Expression | null = null
+  for (const prop of unwrapped.properties) {
+    if (ts.isSpreadAssignment(prop)) return { kind: 'member-read', options }
+    const name = prop.name
+    if (name === undefined || ts.isComputedPropertyName(name)) return { kind: 'member-read', options }
+    const key = ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name) ? name.text : null
+    if (key !== 'initial') continue
+    if (ts.isPropertyAssignment(prop)) found = prop.initializer
+    else if (ts.isShorthandPropertyAssignment(prop)) found = prop.name
+    else return { kind: 'member-read', options }
+  }
+  return found ? { kind: 'expression', node: found } : { kind: 'absent' }
 }
 
 /**
@@ -2138,6 +2311,10 @@ const CLIENT_EXPORTS = new Set([
   // getter; the compiler lowers the reader value per adapter via the signal's
   // `envReader` key, with no `searchParams`-name allow-list.
   'createSearchParams',
+  // Async layer 0 (spec/async.md §7): `http` descriptors and `HttpError`
+  // (#3161), and `createQuery`, recognised structurally as a factory signal
+  // (#3165).
+  'http', 'HttpError', 'createQuery',
   // Pure URL-query builder (#2042) — the functional counterpart to
   // `searchParams`. Runs natively on the client; SSR adapters lower a
   // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
@@ -2875,6 +3052,7 @@ function collectFunction(
     declarationKind: 'function',
     isModule: _isModule || undefined,
     isJsxFunction: isJsxFunction || undefined,
+    freeIdentifiers: extractFreeIdentifiersFromNode(node),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -3428,6 +3606,12 @@ function collectConstant(
 
   // Compute AST-derived flags for Phase 2 optimization
   const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
+  let unwrappedInitializer: ts.Expression | undefined = node.initializer
+  while (unwrappedInitializer && (ts.isParenthesizedExpression(unwrappedInitializer) || ts.isAsExpression(unwrappedInitializer) || ts.isSatisfiesExpression(unwrappedInitializer))) {
+    unwrappedInitializer = unwrappedInitializer.expression
+  }
+  const isFunctionValue = unwrappedInitializer !== undefined &&
+    (ts.isArrowFunction(unwrappedInitializer) || ts.isFunctionExpression(unwrappedInitializer))
   const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
 
   // Pre-transform bare prop refs for template inlining (#807). Two
@@ -3472,7 +3656,8 @@ function collectConstant(
       const shadowedByNonAlias = new Set<string>()
       for (const s of ctx.signals) {
         shadowedByNonAlias.add(s.getter)
-        if (s.setter) shadowedByNonAlias.add(s.setter)
+        const second = signalSecondBinding(s)
+        if (second) shadowedByNonAlias.add(second)
       }
       for (const m of ctx.memos) shadowedByNonAlias.add(m.name)
       const aliases = new Set<string>()
@@ -3536,6 +3721,7 @@ function collectConstant(
     isJsx,
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
+    isFunctionValue: isFunctionValue || undefined,
     systemConstructKind,
     templateValue,
     origin: {
@@ -4377,7 +4563,8 @@ function collectResolvedNames(ctx: AnalyzerContext): Set<string> {
   for (const f of ctx.localFunctions) names.add(f.name)
   for (const s of ctx.signals) {
     names.add(s.getter)
-    if (s.setter) names.add(s.setter)
+    const second = signalSecondBinding(s)
+    if (second) names.add(second)
   }
   for (const m of ctx.memos) names.add(m.name)
   for (const p of ctx.propsParams) names.add(p.name)
@@ -6016,6 +6203,9 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
         // import (`import { createSearchParams as csp }`) is accepted here too,
         // rather than falling through to a spurious BF110.
         if (resolveEnvSignalKey(decl.initializer, ctx)) continue
+        // Async reactive factories (`createQuery`, #3165) return a
+        // `[value, action]` tuple and are collected by `collectFactorySignal`.
+        if (resolveSignalFactoryKind(decl.initializer, ctx)) continue
 
         const declinedEntry = ctx.declinedReactiveFactories.get(callee)
         if (declinedEntry) {
@@ -6155,6 +6345,13 @@ function checkStatementsForReactiveFactoryArity(statements: readonly ts.Statemen
       const loc = getSourceLocation(stmt, ctx.sourceFile, ctx.filePath)
       const calleeText = callExpr.expression.getText(ctx.sourceFile)
 
+      // Async reactive factories (`createQuery(fn, options?)`, #3165) return
+      // `[value, action]` and take a request function plus options.
+      if (kind === 'signal' && resolveSignalFactoryKind(callExpr, ctx) !== null) {
+        checkAsyncFactoryArity(decl, callExpr, calleeText, loc, ctx)
+        continue
+      }
+
       // BF115: tuple-destructure arity. `createMemo` never returns a tuple
       // (maxArity 0 — any array-pattern destructure of it is a mismatch);
       // `createSignal` returns 1-2 elements.
@@ -6205,6 +6402,44 @@ function checkStatementsForReactiveFactoryArity(statements: readonly ts.Statemen
         }))
       }
     }
+  }
+}
+
+/**
+ * BF115 / BF116 for an async reactive factory (`createQuery(fn, options?)`,
+ * #3165): it returns `[value, action]` (a 1-element destructure keeps just
+ * the value; `[, action]` keeps just the action) and takes the request
+ * function plus an optional options object. `collectFactorySignal` only
+ * reads those two arguments, so a third would be dropped from the client JS.
+ */
+function checkAsyncFactoryArity(
+  decl: ts.VariableDeclaration,
+  callExpr: ts.CallExpression,
+  calleeText: string,
+  loc: SourceLocation,
+  ctx: AnalyzerContext,
+): void {
+  if (ts.isArrayBindingPattern(decl.name)) {
+    const elementCount = decl.name.elements.length
+    if (elementCount < 1 || elementCount > 2) {
+      ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_ARITY_MISMATCH, loc, {
+        severity: 'error',
+        message:
+          `'${calleeText}(...)' returns a 2-element tuple '[value, action]' — this destructure has ` +
+          `${elementCount} elements. Use 'const [value, action] = ${calleeText}(...)', ` +
+          `'const [value] = ${calleeText}(...)' or 'const [, action] = ${calleeText}(...)'.`,
+      }))
+      return
+    }
+  }
+  if (callExpr.arguments.length > 2) {
+    ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_EXTRA_ARGUMENTS, loc, {
+      severity: 'error',
+      message:
+        `'${calleeText}(...)' accepts at most 2 arguments (the request function and the options), ` +
+        `but this call passes ${callExpr.arguments.length}. The extra argument(s) are dropped from the ` +
+        `compiled client JS; remove them.`,
+    }))
   }
 }
 

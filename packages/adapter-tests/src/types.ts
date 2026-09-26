@@ -62,6 +62,13 @@ export interface ExpectedDiagnostic {
  *   resulting *scroll distance* is layout-dependent, so assert on the
  *   deterministic fallout (aria/data attributes, button `disabled`)
  *   rather than pixel offsets — see the determinism caveat in #1971.
+ * - `expectFetchCount` — the number of `fetch()` calls the page has made
+ *   so far whose URL contains `urlIncludes` equals `count`. Calls are
+ *   recorded when they are made (not when they settle), so `count: 0` right
+ *   after hydration proves a mount sent nothing: a mount-time send is
+ *   issued in a microtask, before the hydration wait ends. Only
+ *   `fixture-hydrate.playwright.ts` installs the recorder (via
+ *   `installFetchRecorder`).
  */
 export type InteractionStep =
   | { type: 'click'; selector: string }
@@ -80,6 +87,7 @@ export type InteractionStep =
   | { type: 'hover'; selector: string; position?: { x: number; y: number } }
   | { type: 'press'; selector: string; key: string }
   | { type: 'drag'; selector: string; deltaX?: number; deltaY?: number }
+  | { type: 'expectFetchCount'; urlIncludes: string; count: number }
 
 /**
  * An additional evaluation point for oracle conformance

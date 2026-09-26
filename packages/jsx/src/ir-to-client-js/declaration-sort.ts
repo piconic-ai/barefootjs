@@ -9,6 +9,7 @@
 
 import type { ConstantInfo, FunctionInfo, MemoInfo, ReferencesGraph, SignalInfo } from '../types.ts'
 import { graphDeclarationReferences } from './build-references.ts'
+import { signalSecondBinding } from '../signal-initializer.ts'
 
 // =============================================================================
 // Declaration types
@@ -22,14 +23,17 @@ export type Declaration =
 
 /**
  * Return the names defined by a declaration.
- * Signals define both getter and setter names.
+ * Signals define both getter and setter names (an async factory's second
+ * binding is its action, #3165).
  */
 export function providedNames(decl: Declaration): string[] {
   switch (decl.kind) {
     case 'constant':
       return [decl.info.name]
-    case 'signal':
-      return decl.info.setter ? [decl.info.getter, decl.info.setter] : [decl.info.getter]
+    case 'signal': {
+      const second = signalSecondBinding(decl.info)
+      return second ? [decl.info.getter, second] : [decl.info.getter]
+    }
     case 'memo':
       return [decl.info.name]
     case 'function':

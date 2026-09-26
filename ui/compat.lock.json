@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 485,
+    "totalFixtures": 493,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -2215,6 +2215,106 @@
           "kind": "render",
           "limitations": [
             "literal-const-conditional-test"
+          ]
+        }
+      },
+      "create-query-action-read": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF117"
+          ],
+          "limitations": [
+            "query-action-read-in-template"
+          ]
+        }
+      },
+      "create-query-derived-memo": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "memo-length-of-prop-seeded-array"
           ]
         }
       },
@@ -3747,6 +3847,14 @@
           }
         }
       },
+      "memo-length-prop-seeded-signal": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "memo-length-of-prop-seeded-array"
+          ]
+        }
+      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -4341,6 +4449,14 @@
           ],
           "limitations": [
             "namespace-import-primitive-without-program"
+          ]
+        }
+      },
+      "negated-empty-array-condition": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "negated-empty-array-condition"
           ]
         }
       },
@@ -5750,6 +5866,14 @@
         "description": "A function-scope string-literal const compared in a ternary test renders the branch it selects",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-string-conditional-test.ts"
       },
+      "create-query-action-read": {
+        "description": "Reading a createQuery action accessor in a template position refuses with BF117 on every adapter",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-action-read.ts"
+      },
+      "create-query-derived-memo": {
+        "description": "A memo over a createQuery value is seeded from `initial` at SSR",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-derived-memo.ts"
+      },
       "data-on-attr-dynamic-value": {
         "description": "A dynamic value on a data-on* attribute renders as plain attribute text",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-on-attr-dynamic-value.ts"
@@ -5850,6 +5974,10 @@
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
       },
+      "memo-length-prop-seeded-signal": {
+        "description": "A memo over the length of a prop-seeded array signal renders the length at SSR",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-length-prop-seeded-signal.ts"
+      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -5873,6 +6001,10 @@
       "namespace-import-primitive": {
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
+      },
+      "negated-empty-array-condition": {
+        "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
       },
       "nested-prop-member-signal-seed": {
         "description": "signals seeded from nested prop members render their seed at SSR (text, conditional, keyed loop)",
@@ -6421,6 +6553,20 @@
         "xslate"
       ]
     },
+    "memo-length-of-prop-seeded-array": {
+      "title": "A memo over the length of a prop-seeded array",
+      "kind": "silent",
+      "given": "a memo that reads `.length` of a signal seeded from an array prop (`const [items] = createSignal(props.items)`, `createMemo(() => items().length)`), rendered in text",
+      "expected": "the memo renders the array's length (`2` for a two-item array)",
+      "actual": "renders `0`, the zero value of the memo's type, whatever the array holds",
+      "fixtures": [
+        "create-query-derived-memo",
+        "memo-length-prop-seeded-signal"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",
       "kind": "refusal",
@@ -6473,6 +6619,19 @@
         "BF013"
       ],
       "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
+    },
+    "negated-empty-array-condition": {
+      "title": "Negated empty array as a conditional test",
+      "kind": "silent",
+      "given": "a ternary whose test negates a value that is an empty array (`{!tags() ? 'no tags' : 'has tags'}` with `tags()` returning `[]`)",
+      "expected": "an empty array is truthy, so the test is false and the second branch renders (`has tags`)",
+      "actual": "renders the first branch, treating the empty array as falsy",
+      "fixtures": [
+        "negated-empty-array-condition"
+      ],
+      "adapters": [
+        "go-template"
+      ]
     },
     "nested-callback-in-filter-predicate": {
       "title": "Nested higher-order callback inside a filter predicate",
@@ -6569,6 +6728,31 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "query-action-read-in-template": {
+      "title": "Query action accessor read in a template position",
+      "kind": "refusal",
+      "given": "a `createQuery` action's accessor read in a template position, e.g. `aria-busy={fetchPosts.isPending()}` or `{fetchPosts.error() ? <p>…</p> : null}`",
+      "expected": "the accessors render their pre-request values (`isPending()` false, `error()` undefined), like any seeded reactive value",
+      "actual": "the compiler refuses with BF117",
+      "fixtures": [
+        "create-query-action-read"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF117"
       ]
     },
     "ref-effect-attr-state-ssr": {

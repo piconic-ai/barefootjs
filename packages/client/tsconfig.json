@@ -19,6 +19,9 @@
     "paths": {
       "@barefootjs/client/reactive": [
         "./src/reactive.ts"
+      ],
+      "@barefootjs/client/async": [
+        "./src/async.ts"
       ]
     },
     "allowImportingTsExtensions": true,
