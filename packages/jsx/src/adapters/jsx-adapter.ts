@@ -174,13 +174,19 @@ export abstract class JsxAdapter extends BaseAdapter {
 
       // An async factory's action (#3165): the request function never runs on
       // the server, so a reference that survives into SSR (e.g. forwarded to a
-      // child as a prop) gets a no-op. Reading its accessors in a template
-      // position is refused before any adapter runs.
+      // child as a prop) gets a no-op. Since #3166, `action.isPending()` /
+      // `action.error()` are ordinary, IR-visible seeded values
+      // (`false` / `undefined`, spec/async.md §7.3) rather than refused —
+      // this SSR stub is what a template position's `fetchPosts.isPending()`
+      // actually calls at render time (this file's execution model runs the
+      // real JS text, unlike a DSL adapter's `parsedCondition`-based
+      // substitution), so it must carry working accessors, not just be
+      // callable itself.
       const action = signal.factory?.action
       if (action && identifierPattern(action).test(setterRefText)) {
         lines.push(preserveTypes
-          ? `  const ${action}: any = () => {}`
-          : `  const ${action} = () => {}`)
+          ? `  const ${action}: any = Object.assign(() => {}, { isPending: () => false, error: () => undefined })`
+          : `  const ${action} = Object.assign(() => {}, { isPending: () => false, error: () => undefined })`)
       }
 
       // Create a no-op setter for SSR — omit entirely if not referenced anywhere

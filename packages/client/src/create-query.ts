@@ -8,9 +8,11 @@
  * Exported through `./async.ts` (the `@barefootjs/client/async` subpath, so
  * this module's cache and live-query registry exist once per page). The
  * compiler recognises the call (#3165): it seeds the value from `initial`
- * server-side and emits the request function into client JS only. Reading
- * `action.isPending()` / `action.error()` in a template position is refused
- * (BF117) until the compiler seeds them too.
+ * server-side and emits the request function into client JS only. A direct
+ * read of `action.isPending()` / `action.error()` in a template position is
+ * an ordinary seeded value too now (`false` / `undefined`, #3166,
+ * spec/async.md §7.3) — calling the action itself, or reading either
+ * accessor through a memo/constant/function, still refuses with BF117.
  */
 
 import { createSignal, createEffect, onCleanup, untrack, type Reactive } from '@barefootjs/client/reactive'

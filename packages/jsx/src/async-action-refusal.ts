@@ -4,12 +4,21 @@
  * adapter including Hono.
  *
  * `const [posts, fetchPosts] = createQuery(fn, options)` seeds `posts()` from
- * `options.initial`, but nothing seeds `fetchPosts.isPending()` or
- * `fetchPosts.error()`: the request function never runs on the server, and no
- * backend has a value for them yet. Calling the action itself would send a
- * request during render. So a template position may not:
+ * `options.initial`. Since #3166, `fetchPosts.isPending()` / `fetchPosts.error()`
+ * are ALSO seeded (`false` / `undefined`, spec/async.md §7.3) when read as the
+ * WHOLE expression of a position where the seed renders like Hono: a
+ * condition (either accessor), or an ARIA boolean-state attribute
+ * (`isPending()` only). `action-accessor.ts`'s `seedableActionAccessorRead` is
+ * the one gate deciding that, for both this lift and the seed itself. Any
+ * other direct accessor read — a text child (`{fetchPosts.error()}`),
+ * `error()` in any attribute, `isPending()` in a non-ARIA-boolean attribute,
+ * a structured template attribute's ternary — has no sound seed and refuses
+ * here as before. Everything else is unchanged too: calling the action itself
+ * (`fetchPosts()`) still sends a request during render, and a compound or
+ * nested accessor read (`!fetchPosts.isPending()`, buried inside a memo) has
+ * no seed substitution yet, so a template position may still not:
  *
- * - read an accessor (`fetchPosts.isPending()`, `fetchPosts.error`),
+ * - read an accessor outside the positions above,
  * - call the action (`fetchPosts()`),
  * - read a memo or a component-local constant that reads the action, since
  *   every backend evaluates a memo or constant it renders, or
@@ -37,13 +46,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { ErrorCodes } from './errors.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { walkTemplatePositions } from './template-position-walk.ts'
-
-/**
- * Properties of a query action that are reactive accessors. Mirrors the
- * `Reactive` members of `QueryAction` in `packages/client/src/create-query.ts`:
- * an accessor added there must be added here.
- */
-const ACTION_ACCESSORS: ReadonlySet<string> = new Set(['isPending', 'error'])
+import { seedableActionAccessorRead, collectActionNames, ACTION_ACCESSOR_NAMES } from './action-accessor.ts'
 
 /** What a template position read, for the diagnostic. */
 type ActionRead =
@@ -70,11 +73,17 @@ interface ActionReaders {
 }
 
 export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors: CompilerError[]): void {
-  const actions = new Set<string>()
-  for (const signal of metadata.signals) {
-    if (signal.factory?.action) actions.add(signal.factory.action)
-  }
-  if (actions.size === 0) return
+  // The action bindings a recognised factory produced DIRECTLY — the same
+  // set the seed pass (`seedActionAccessorReads`) recognises.
+  // Kept separate from `actions` below (which also grows through aliases):
+  // the seed substitution only ever rewrites a read of a DIRECT binding, so
+  // the "no longer refused" check here must match exactly that, not a wider
+  // alias-grown set — an aliased read (`const run = fetchPosts;
+  // run.isPending()`) stays refused below exactly as before #3166, since
+  // nothing seeds it structurally.
+  const directActions = collectActionNames(metadata.signals)
+  if (directActions.size === 0) return
+  const actions = new Set(directActions)
   // `const run = fetchPosts` is the action under another name.
   for (let grew = true; grew; ) {
     grew = false
@@ -88,8 +97,18 @@ export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors
   }
   const readers = localsReadingActions(metadata, actions)
   const seen = new Set<string>()
-  walkTemplatePositions(root, ({ expr, loc, attrName }) => {
+  walkTemplatePositions(root, (position) => {
+    const { expr, loc, attrName } = position
     if (attrName !== undefined && isEventHandlerName(attrName)) return
+    // #3166: a direct accessor read the shared gate admits is an ordinary
+    // seeded value (`seedActionAccessorReads` has usually already replaced
+    // it with its seed literal by now) — no refusal. The gate is the same
+    // function the seed pass calls, over the same walk, so the two cannot
+    // disagree. Anything it does not admit — a compound/nested use, or a
+    // direct read at a position where the seed would not render like Hono
+    // (a text child, `error()` in an attribute, …) — falls through to
+    // `findActionRead` below, refused exactly as before.
+    if (seedableActionAccessorRead(position, directActions)) return
     const read = findActionRead(expr, actions, readers, new Set())
     if (read) pushDiagnostic(errors, seen, loc, read)
   })
@@ -196,7 +215,7 @@ function findActionRead(
         expr.object.kind === 'identifier' &&
         actions.has(expr.object.name) &&
         !bound.has(expr.object.name) &&
-        ACTION_ACCESSORS.has(expr.property)
+        ACTION_ACCESSOR_NAMES.has(expr.property)
       ) {
         return { kind: 'accessor', action: expr.object.name, accessor: expr.property }
       }

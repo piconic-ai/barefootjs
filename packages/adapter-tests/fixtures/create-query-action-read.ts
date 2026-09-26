@@ -1,17 +1,24 @@
 import { createFixture } from '../src/types'
 
 /**
- * A query action's accessors read in template positions (#3165, BF117):
+ * A query action's accessors read in template positions (#3158-B/#3166):
  * `fetchPosts.isPending()` as an attribute value and `fetchPosts.error()` as
- * a condition. The request function never runs on the server, so nothing
- * seeds them yet; the read is refused on every adapter including Hono.
+ * a condition. These are seeded ordinary values now (`false` / `undefined`,
+ * spec/async.md §7.3) — the request function never runs on the server, but
+ * that IS the one seed value, not a refusal. SSR renders the non-pending,
+ * no-error branch on every adapter, including Hono.
  *
- * `escapes` twin: `create-query-action-read-client` — the same reads
- * deferred to the client with `/* @client *\/`.
+ * Graduated from BF117 (#3165's original refusal, `query-action-read-in-
+ * template` in the limitations registry) — this fixture is now its
+ * regression test.
+ *
+ * `create-query-action-read-client` (kept passing): the same reads deferred
+ * to the client with `/* @client *\/` still work — an explicit escape isn't
+ * required anymore, but it isn't wrong either.
  */
 export const fixture = createFixture({
   id: 'create-query-action-read',
-  description: 'Reading a createQuery action accessor in a template position refuses with BF117 on every adapter',
+  description: 'A createQuery action accessor read in a template position renders its seeded value on every adapter',
   source: `
 'use client'
 import { createQuery, http } from '@barefootjs/client'
@@ -29,5 +36,7 @@ export function PostList(props: { posts: Post[] }) {
 }
 `,
   props: { posts: [{ id: 1, title: 'Alpha' }] },
-  escapes: [{ kind: 'client-directive', fixture: 'create-query-action-read-client' }],
+  expectedHtml: `
+    <div aria-busy="false" bf-s="test"><!--bf-cond-start:s0--><!--bf-cond-end:s0--><ul bf="s2"><li data-key="1"><!--bf:s1-->Alpha<!--/--></li></ul></div>
+  `,
 })

@@ -70,6 +70,7 @@ import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs
 import { BindingScope } from './scope/binding-scope.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
+import { seedActionAccessorReads } from './action-accessor.ts'
 
 // =============================================================================
 // Transform Context
@@ -1188,6 +1189,11 @@ export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
   if (root) {
     reportRefAttrsAbsentAtSsr(root, ctx)
     attachParsedExpressions(root, analyzer)
+    // #3166: seed a query/mutation action's `isPending()` / `error()` read
+    // where the seed renders like the reference — `action-accessor.ts`'s gate
+    // decides which positions, the same gate BF117's refusal-lift reads.
+    // Runs on the attached `parsed` trees, so it must follow the attach walk.
+    seedActionAccessorReads(root, analyzer.signals)
     resolveRootKeyAttr(root)
   }
   return root

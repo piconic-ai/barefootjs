@@ -626,6 +626,64 @@ export { Counter }
 })
 
 // ---------------------------------------------------------------------------
+// createQuery action accessors (#3166, #3158-B): `isPending()` / `error()`
+// are ordinary IR-visible values now — no longer refused (BF117) as a direct
+// read, and both branches of a pending/error conditional are visible
+// structurally (renderToTest's union semantics: the framework can't resolve
+// the seed to one concrete branch and doesn't need to — it shows both, same
+// as any other reactive conditional).
+// ---------------------------------------------------------------------------
+
+describe('createQuery action accessors seed as ordinary values (#3166)', () => {
+  const source = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+
+type Post = { id: number; title: string }
+
+export function PostList(props: { posts: Post[] }) {
+  const [posts, fetchPosts] = createQuery(() => http.get<Post[]>('/api/posts'), { initial: props.posts })
+  return (
+    <div aria-busy={fetchPosts.isPending()}>
+      {fetchPosts.error() ? <p>Failed to load</p> : <p>All good</p>}
+      <ul>{posts().map((post) => <li key={post.id}>{post.title}</li>)}</ul>
+    </div>
+  )
+}
+`
+
+  test('compiles clean — no BF117 for a direct accessor read', () => {
+    const result = renderToTest(source, 'post-list.tsx')
+    expect(result.errors).toEqual([])
+  })
+
+  test('the pending branch (aria-busy) and both error branches show up structurally', () => {
+    const result = renderToTest(source, 'post-list.tsx')
+    expect(result.toStructure()).toBe(
+      [
+        'div [aria-busy]',
+        '├── ?{fetchPosts.error()}',
+        '│   ├── p',
+        '│   │   └── "Failed to load"',
+        '│   └── p',
+        '│       └── "All good"',
+        '└── ul',
+        '    └── *{posts()}',
+        '        └── li',
+        '            └── {post.title}',
+      ].join('\n'),
+    )
+    // Union semantics (CLAUDE.md's `renderToTest` resolution semantics): the
+    // seed (`false`/`undefined`) can't be baked into ONE branch at IR time,
+    // so both are visible — exactly what lets a test assert on the error
+    // branch's content without the framework ever resolving which one a
+    // real pending/failed query would take.
+    expect(result.findByText('Failed to load')).not.toBeNull()
+    expect(result.findByText('All good')).not.toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // createQuery (#3165): the value is a signal seeded from `options.initial`;
 // the action is not a setter.
 // ---------------------------------------------------------------------------
