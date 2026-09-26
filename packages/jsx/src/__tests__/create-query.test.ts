@@ -2,11 +2,12 @@
  * `createQuery` recognition (#3165): the value is collected as a signal
  * seeded from `options.initial`, and the request function is emitted into
  * the client JS only. Since #3166 (#3158-B), a DIRECT read of the action's
- * `isPending()` / `error()` accessors — as the WHOLE template-position
- * expression — is an ordinary seeded value (`false` / `undefined`,
- * spec/async.md §7.3), not a refusal; calling the action itself, and any
- * compound/transitive read (through a memo, constant or function), still
- * refuses with BF117. Cross-adapter output lives in the `create-query-*`
+ * `isPending()` / `error()` accessors — as the WHOLE expression of a
+ * condition, or (`isPending()` only) of an ARIA boolean-state attribute — is
+ * an ordinary seeded value (`false` / `undefined`, spec/async.md §7.3), not a
+ * refusal; a direct read anywhere else (where the seed would not render like
+ * Hono), calling the action itself, and any compound/transitive read
+ * (through a memo, constant or function) still refuse with BF117. Cross-adapter output lives in the `create-query-*`
  * conformance fixtures; this file pins the compiler-internal decisions.
  */
 
@@ -16,6 +17,7 @@ import path from 'path'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/hono-adapter'
+import { GoTemplateAdapter } from '../../../adapter-go-template/src/index'
 import { extractInitBody, extractTemplateBody } from './staged-ir/helpers'
 
 function compile(source: string, options: { hono?: boolean; program?: ts.Program; fileName?: string } = {}) {
@@ -286,18 +288,134 @@ export function PostList(props: { posts: Post[] }) {
   })
 
   test('a direct read is structurally recognised via action-accessor.ts, not a name heuristic', () => {
-    // A same-named local that is NOT the recognised action binding (no
-    // \`createQuery\` factory backs it) must not be seeded — recognition
-    // reads #3165's binding metadata, never the bare property name.
-    const { codes, ssr } = compile(`
+    // Same accessor name, same position role (`aria-busy`), same component:
+    // only the binding a real `createQuery` produced is seeded. `upload` is a
+    // different local whose value also has an `isPending()` method — a
+    // name-based match would seed it too (`{{false}}`); the structural one
+    // leaves it to the adapter's ordinary lowering.
+    const result = compileJSX(`
 'use client'
-export function C(props: { fetchPosts: { isPending: () => boolean } }) {
-  return <div aria-busy={props.fetchPosts.isPending()}></div>
+import { createQuery, http } from '@barefootjs/client'
+type Tracker = { isPending: () => boolean }
+export function C(props: { tracker: Tracker }) {
+  const [posts, fetchPosts] = createQuery(() => http.get<string[]>('/x'), { initial: [] as string[] })
+  const upload = props.tracker
+  return (
+    <div aria-busy={fetchPosts.isPending()}>
+      <span aria-busy={upload.isPending()}>{posts().length}</span>
+    </div>
+  )
 }
-`, { hono: true })
-    expect(codes).toEqual([])
-    expect(ssr).toContain('props.fetchPosts.isPending()')
-    expect(ssr).not.toContain('Object.assign(() => {}')
+`, 'C.tsx', { adapter: new GoTemplateAdapter() })
+    expect(result.errors.map((e) => e.code)).toEqual([])
+    const template = result.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).toContain('<div aria-busy="{{false}}"')
+    expect(template).toContain('<span aria-busy="{{.Tracker.IsPending}}"')
+    expect(template.match(/\{\{false\}\}/g)).toHaveLength(1)
+    expect(template).not.toContain('FetchPosts')
+  })
+})
+
+/**
+ * The seed is `false` (`isPending()`) / `undefined` (`error()`), rendered by
+ * DSL adapters as the literal `false`. It is admitted only where that renders
+ * exactly like Hono's real stub value (`action-accessor.ts`'s
+ * `seedableActionAccessorRead`); everywhere else the read still refuses with
+ * BF117, exactly as before #3166.
+ */
+describe('createQuery action accessors seed only where the seed renders like Hono (#3166)', () => {
+  const withBody = (body: string) => `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+type Post = { id: number; title: string }
+export function PostList(props: { posts: Post[] }) {
+  const [posts, fetchPosts] = createQuery(() => http.get<Post[]>('/api/posts'), { initial: props.posts })
+  return (
+    <div>
+      ${body}
+      <ul>{posts().map((post) => <li key={post.id}>{post.title}</li>)}</ul>
+    </div>
+  )
+}
+`
+
+  // Hono renders `{undefined}` / `{false}` as nothing, omits `title={undefined}`,
+  // and a DSL adapter renders the `false` literal as `false` (Mojolicious /
+  // Xslate: `0`) — so none of these has a sound seed.
+  const REFUSED: Array<[string, string]> = [
+    ['error() as a text child', '<span>{fetchPosts.error()}</span>'],
+    ['isPending() as a text child', '<b>{fetchPosts.isPending()}</b>'],
+    ['error() in a plain attribute', '<p title={fetchPosts.error()}>x</p>'],
+    ['error() in an aria-* attribute', '<p aria-label={fetchPosts.error()}>x</p>'],
+    ['error() in an ARIA boolean-state attribute', '<p aria-busy={fetchPosts.error()}>x</p>'],
+    ['isPending() in a plain attribute', '<p title={fetchPosts.isPending()}>x</p>'],
+    ['isPending() in a non-boolean aria-* attribute', '<p aria-label={fetchPosts.isPending()}>x</p>'],
+    ['isPending() in a data-* attribute', '<p data-pending={fetchPosts.isPending()}>x</p>'],
+    // A truthiness test, but the condition is raw template-part text every
+    // adapter lowers itself — nothing to substitute, so it is not lifted.
+    ['isPending() as a structured template-attribute ternary', "<p class={fetchPosts.isPending() ? 'busy' : 'idle'}>x</p>"],
+  ]
+
+  for (const [label, body] of REFUSED) {
+    test(`BF117 still refuses ${label}`, () => {
+      for (const hono of [false, true]) {
+        const { errors } = compile(withBody(body), { hono })
+        const bf117 = errors.filter((e) => e.code === 'BF117')
+        expect(bf117).toHaveLength(1)
+        expect(bf117[0].message).toContain("reads a query action's accessor")
+      }
+    })
+  }
+
+  const LIFTED: Array<[string, string, string]> = [
+    ['isPending() in aria-busy', '<p aria-busy={fetchPosts.isPending()}>x</p>', '<p aria-busy="{{false}}"'],
+    ['isPending() in another ARIA boolean-state attribute', '<p aria-hidden={fetchPosts.isPending()}>x</p>', '<p aria-hidden="{{false}}"'],
+    ['error() as a conditional test', '{fetchPosts.error() ? <p>failed</p> : null}', '{{if false}}<p'],
+    ['isPending() as a conditional test', '{fetchPosts.isPending() ? <p>loading</p> : null}', '{{if false}}<p'],
+  ]
+
+  for (const [label, body, seeded] of LIFTED) {
+    test(`lifts and seeds ${label}`, () => {
+      expect(compile(withBody(body)).codes).toEqual([])
+      expect(compile(withBody(body), { hono: true }).codes).toEqual([])
+      const result = compileJSX(withBody(body), 'PostList.tsx', { adapter: new GoTemplateAdapter() })
+      expect(result.errors).toEqual([])
+      const template = result.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+      expect(template).toContain(seeded)
+      expect(template).not.toContain('FetchPosts')
+    })
+  }
+
+  test('lifts and seeds an early-return if-statement condition', () => {
+    const source = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C() {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/x'), { initial: [] as string[] })
+  if (fetchItems.error()) return <p>failed</p>
+  return <ul>{items().map((item) => <li key={item}>{item}</li>)}</ul>
+}
+`
+    expect(compile(source).codes).toEqual([])
+    const result = compileJSX(source, 'C.tsx', { adapter: new GoTemplateAdapter() })
+    expect(result.errors).toEqual([])
+    const template = result.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).toContain('{{if false}}<p')
+    expect(template).not.toContain('FetchItems')
+    // The CSR module-scope fallback template gets the JS seed text instead:
+    // `undefined` for `error()`, never the out-of-scope accessor call.
+    const { templateBody } = compile(source)
+    expect(templateBody).toContain('undefined ?')
+    expect(templateBody).not.toContain('fetchItems.error()')
+  })
+
+  test('a /* @client */ position is neither refused nor seeded', () => {
+    const result = compileJSX(withBody('{/* @client */ fetchPosts.error() ? <p>failed</p> : null}'), 'PostList.tsx', {
+      adapter: new GoTemplateAdapter(),
+    })
+    expect(result.errors).toEqual([])
+    const template = result.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).not.toContain('{{if false}}')
   })
 })
 

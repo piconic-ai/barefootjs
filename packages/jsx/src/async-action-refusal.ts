@@ -6,13 +6,19 @@
  * `const [posts, fetchPosts] = createQuery(fn, options)` seeds `posts()` from
  * `options.initial`. Since #3166, `fetchPosts.isPending()` / `fetchPosts.error()`
  * are ALSO seeded (`false` / `undefined`, spec/async.md §7.3) when read as the
- * WHOLE template-position expression — see `action-accessor.ts`, the one place
- * that recognises the shape and the seed both this pass and `jsx-to-ir.ts`
- * share. Everything else here is unchanged: calling the action itself
+ * WHOLE expression of a position where the seed renders like Hono: a
+ * condition (either accessor), or an ARIA boolean-state attribute
+ * (`isPending()` only). `action-accessor.ts`'s `seedableActionAccessorRead` is
+ * the one gate deciding that, for both this lift and the seed itself. Any
+ * other direct accessor read — a text child (`{fetchPosts.error()}`),
+ * `error()` in any attribute, `isPending()` in a non-ARIA-boolean attribute,
+ * a structured template attribute's ternary — has no sound seed and refuses
+ * here as before. Everything else is unchanged too: calling the action itself
  * (`fetchPosts()`) still sends a request during render, and a compound or
  * nested accessor read (`!fetchPosts.isPending()`, buried inside a memo) has
  * no seed substitution yet, so a template position may still not:
  *
+ * - read an accessor outside the positions above,
  * - call the action (`fetchPosts()`),
  * - read a memo or a component-local constant that reads the action, since
  *   every backend evaluates a memo or constant it renders, or
@@ -40,7 +46,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { ErrorCodes } from './errors.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { walkTemplatePositions } from './template-position-walk.ts'
-import { matchActionAccessorCall, collectActionNames, ACTION_ACCESSOR_NAMES } from './action-accessor.ts'
+import { seedableActionAccessorRead, collectActionNames, ACTION_ACCESSOR_NAMES } from './action-accessor.ts'
 
 /** What a template position read, for the diagnostic. */
 type ActionRead =
@@ -68,7 +74,7 @@ interface ActionReaders {
 
 export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors: CompilerError[]): void {
   // The action bindings a recognised factory produced DIRECTLY — the same
-  // set `jsx-to-ir.ts`'s seed substitution recognises (`action-accessor.ts`).
+  // set the seed pass (`seedActionAccessorReads`) recognises.
   // Kept separate from `actions` below (which also grows through aliases):
   // the seed substitution only ever rewrites a read of a DIRECT binding, so
   // the "no longer refused" check here must match exactly that, not a wider
@@ -91,15 +97,18 @@ export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors
   }
   const readers = localsReadingActions(metadata, actions)
   const seen = new Set<string>()
-  walkTemplatePositions(root, ({ expr, loc, attrName }) => {
+  walkTemplatePositions(root, (position) => {
+    const { expr, loc, attrName } = position
     if (attrName !== undefined && isEventHandlerName(attrName)) return
-    // #3166: a direct accessor read AS THE WHOLE template-position expression
-    // is an ordinary seeded value now (`action-accessor.ts`) — no refusal.
-    // `jsx-to-ir.ts` substitutes this exact same shape with its seed, so the
-    // two stay in sync by construction. A compound/nested use is NOT matched
-    // here (`matchActionAccessorCall` only matches the whole expression) and
-    // falls through to `findActionRead` below, refused exactly as before.
-    if (matchActionAccessorCall(expr, directActions)) return
+    // #3166: a direct accessor read the shared gate admits is an ordinary
+    // seeded value (`seedActionAccessorReads` has usually already replaced
+    // it with its seed literal by now) — no refusal. The gate is the same
+    // function the seed pass calls, over the same walk, so the two cannot
+    // disagree. Anything it does not admit — a compound/nested use, or a
+    // direct read at a position where the seed would not render like Hono
+    // (a text child, `error()` in an attribute, …) — falls through to
+    // `findActionRead` below, refused exactly as before.
+    if (seedableActionAccessorRead(position, directActions)) return
     const read = findActionRead(expr, actions, readers, new Set())
     if (read) pushDiagnostic(errors, seen, loc, read)
   })
