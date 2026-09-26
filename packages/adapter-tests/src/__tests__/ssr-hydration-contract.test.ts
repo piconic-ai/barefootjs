@@ -118,6 +118,11 @@ const statelessFixtures = new Set([
   // (rendered with `level: 'mid'`… normalised to the low branch) carries
   // only the rendered branch's ids.
   'else-if-chain',
+  // #3165: same one-side-renders-less divergence — `createQuery` mode B
+  // renders the skeleton branch at SSR (its optional `posts` prop is
+  // absent), and the client JS wires the list branch's loop container `s2`
+  // for when the first response arrives.
+  'create-query-optional-initial',
   // #1448 Tier B — iteration shape fixtures are prop-based components
   // without signals. SSR renders them fully; no client JS is emitted.
   'array-entries',

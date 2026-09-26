@@ -1024,6 +1024,84 @@
       }
     }
   ],
+  "create-query-action-read-client": [
+    {
+      "name": "gen:posts:empty",
+      "props": {
+        "posts": []
+      }
+    }
+  ],
+  "create-query-derived-memo": [
+    {
+      "name": "gen:posts:empty",
+      "props": {
+        "posts": []
+      }
+    }
+  ],
+  "create-query-initial": [
+    {
+      "name": "gen:posts:empty",
+      "props": {
+        "posts": [],
+        "__instanceId": "CreateQueryInitial_test"
+      }
+    }
+  ],
+  "create-query-optional-initial": [
+    {
+      "name": "gen:posts:empty",
+      "props": {
+        "__instanceId": "CreateQueryOptionalInitial_test",
+        "posts": []
+      }
+    }
+  ],
+  "create-query-request-client-only": [
+    {
+      "name": "gen:userId:zero",
+      "props": {
+        "userId": 0,
+        "label": "Feed"
+      }
+    },
+    {
+      "name": "gen:userId:negative",
+      "props": {
+        "userId": -7,
+        "label": "Feed"
+      }
+    },
+    {
+      "name": "gen:userId:large",
+      "props": {
+        "userId": 1234567890,
+        "label": "Feed"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "userId": 7,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "userId": 7,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "userId": 7,
+        "label": "日本語"
+      }
+    }
+  ],
   "custom-element-child-loop-row": [
     {
       "name": "gen:items:empty",
