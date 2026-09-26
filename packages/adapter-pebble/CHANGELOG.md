@@ -1,5 +1,13 @@
 # @barefootjs/pebble
 
+## 0.39.0
+
+### Patch Changes
+
+- cdfb970: `@barefootjs/pebble/test-render` starts its render JVMs with `-XX:-UsePerfData -Xlog:disable -Xlog:all=warning:stderr`. The rendered HTML is read from stdout, where the JVM prints warnings by default, so a warning such as an `hsperfdata` file-lock notice could be prepended to the HTML.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Patch Changes
