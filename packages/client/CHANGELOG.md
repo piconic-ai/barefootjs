@@ -1,5 +1,20 @@
 # @barefootjs/client
 
+## 0.39.0
+
+### Minor Changes
+
+- 0c6e4f6: Add the `http` namespace of request descriptors (`http.get` / `query` / `head` / `post` / `put` / `patch` / `delete`), the first piece of the async data layer in `spec/async.md` §7. Each constructor returns a frozen, pure descriptor and performs no I/O; the response type is carried as a type parameter (`http.get<Post[]>(url)`). A body is sent as JSON by default; a string, `FormData`, `URLSearchParams`, `Blob` or bytes is sent as fetch would send it, and a `Content-Type` in the third argument replaces the default. Every request sends `Accept: application/json, */*;q=0.5` unless the third argument sets its own `Accept`. `HttpError` is exported for non-2xx responses (`{ status, body }`). `createQuery` builds on these in a later release.
+- 33767d1: Export `createQuery` (with `QueryAction` and `CreateQueryOptions`) from `@barefootjs/client`, and compile it. `const [posts, fetchPosts] = createQuery(fn, { initial })` is recognised as a reactive factory: `posts()` is seeded from `initial` on the server on every adapter (`undefined` when `initial` is absent), and the request function is emitted into client JS only, with prop reads kept live. It is never evaluated on the server. Reading `fetchPosts.isPending()` or `fetchPosts.error()` in a template position is refused with the new BF117 on every adapter, including Hono, until the compiler seeds those accessors; defer the read with `/* @client */` or read it in an event handler or effect.
+  
+  `http`, `HttpError` and `createQuery` now live in the new `@barefootjs/client/async` subpath, which both the main entry and `/runtime` re-export. A page therefore has one query cache and one `HttpError` class, whichever entry each module imports from. `http` and `HttpError` are also exported from `/runtime` now, which compiled client JS imports from. Importing `http`, `HttpError` or `createQuery` from `@barefootjs/client` no longer reports BF051. The Hono SSR shim re-exports `http` and `HttpError`.
+
+### Patch Changes
+
+- 195e385: When several effects or memos throw during one update, the errors after the first (which is rethrown to the writer) are now logged as `[BarefootJS] additional error during update:` so they can be attributed to the reactive runtime.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Minor Changes

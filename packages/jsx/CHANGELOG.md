@@ -1,5 +1,19 @@
 # @barefootjs/jsx
 
+## 0.39.0
+
+### Minor Changes
+
+- 33767d1: Export `createQuery` (with `QueryAction` and `CreateQueryOptions`) from `@barefootjs/client`, and compile it. `const [posts, fetchPosts] = createQuery(fn, { initial })` is recognised as a reactive factory: `posts()` is seeded from `initial` on the server on every adapter (`undefined` when `initial` is absent), and the request function is emitted into client JS only, with prop reads kept live. It is never evaluated on the server. Reading `fetchPosts.isPending()` or `fetchPosts.error()` in a template position is refused with the new BF117 on every adapter, including Hono, until the compiler seeds those accessors; defer the read with `/* @client */` or read it in an event handler or effect.
+  
+  `http`, `HttpError` and `createQuery` now live in the new `@barefootjs/client/async` subpath, which both the main entry and `/runtime` re-export. A page therefore has one query cache and one `HttpError` class, whichever entry each module imports from. `http` and `HttpError` are also exported from `/runtime` now, which compiled client JS imports from. Importing `http`, `HttpError` or `createQuery` from `@barefootjs/client` no longer reports BF051. The Hono SSR shim re-exports `http` and `HttpError`.
+
+### Patch Changes
+
+- decf83c: Report two `createSignal` / `createMemo` call shapes that used to compile silently wrong. BF115: a tuple destructure whose arity does not match the primitive, such as `const [a, b, c] = createSignal(0)` or `const [a, b] = createMemo(...)`. BF116: extra arguments, which were dropped from the emitted client JS. `createSearchParams()` counts as taking no arguments.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Minor Changes
