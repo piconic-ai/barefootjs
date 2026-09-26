@@ -4155,6 +4155,18 @@
         "text"
       ]
     },
+    "loop-row-child-key-shadowed-by-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-scalar-row-key": {
       "kinds": [
         "identifier",
@@ -7775,11 +7787,11 @@
     "binary": 118,
     "call": 313,
     "conditional": 44,
-    "identifier": 456,
+    "identifier": 457,
     "index-access": 15,
     "literal": 365,
     "logical": 54,
-    "member": 277,
+    "member": 278,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 35,

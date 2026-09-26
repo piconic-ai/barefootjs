@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 484,
+    "totalFixtures": 485,
     "fixtures": {
       "conditional-return-fragment-branch": {
         "blade": {
@@ -3460,6 +3460,14 @@
           "kind": "render",
           "limitations": [
             "loop-row-child-key-not-a-prop"
+          ]
+        }
+      },
+      "loop-row-child-key-shadowed-by-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-key-shadowed-by-prop"
           ]
         }
       },
@@ -5818,6 +5826,10 @@
         "description": "A component loop row keyed by a row field the component takes no prop for renders every row with…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-key-not-a-prop.ts"
       },
+      "loop-row-child-key-shadowed-by-prop": {
+        "description": "A component loop row keyed by a row field whose name the component also takes as a prop keys each…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-key-shadowed-by-prop.ts"
+      },
       "loop-row-child-scalar-row-key": {
         "description": "A component loop row over a string array prop, keyed by the row value itself, renders every row…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-scalar-row-key.ts"
@@ -6342,6 +6354,19 @@
       "actual": "emits code that fails to build: it reads the key field off the child component's input struct, which has no such field (`BadgeInput has no field or method ID`)",
       "fixtures": [
         "loop-row-child-key-not-a-prop"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "loop-row-child-key-shadowed-by-prop": {
+      "title": "Component loop row keyed by a row field the component also takes a same-named prop for",
+      "kind": "silent",
+      "given": "a `.map()` over an array prop of objects whose row is a child component with no children, keyed by a field of the row object whose name the component also takes as a prop, passed a different row field (`props.items.map(item => <Badge key={item.id} id={item.slug} label={item.label} />)`)",
+      "expected": "one component per row, each keyed by the row field and given the prop (`data-id=\"x\" data-key=\"a\"` … `A`, `data-id=\"y\" data-key=\"b\"` … `B`)",
+      "actual": "renders each row's `data-key` from the child's same-named prop instead of the row field (`data-key=\"x\"`, `data-key=\"y\"`): the props constructor reads the key off each row's child-component input",
+      "fixtures": [
+        "loop-row-child-key-shadowed-by-prop"
       ],
       "adapters": [
         "go-template"
