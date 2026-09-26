@@ -4213,6 +4213,17 @@
         "text"
       ]
     },
+    "loop-row-child-children-prop-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-untyped-array": {
       "kinds": [
         "array-literal",
@@ -4233,6 +4244,17 @@
       ]
     },
     "loop-row-child-key-not-a-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-scalar-row-key": {
       "kinds": [
         "identifier",
         "member"
@@ -7880,11 +7902,11 @@
     "binary": 118,
     "call": 321,
     "conditional": 44,
-    "identifier": 462,
+    "identifier": 464,
     "index-access": 15,
     "literal": 370,
     "logical": 55,
-    "member": 283,
+    "member": 285,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 37,

@@ -816,6 +816,12 @@ import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-
 // A component loop row keyed by a row field the component takes no prop
 // for (registry: `loop-row-child-key-not-a-prop`).
 import { fixture as loopRowChildKeyNotAProp } from './loop-row-child-key-not-a-prop'
+// A component loop row over a string array prop keyed by the row value
+// itself (registry: `loop-row-child-scalar-row-key`).
+import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
+// A component loop row with forwarded children over an array prop
+// (registry: `loop-row-child-children-prop-array`).
+import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-children-prop-array'
 // A literal-initialized `const` read as a conditional's test (registry:
 // `literal-const-conditional-test`).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
@@ -1338,6 +1344,8 @@ export const jsxFixtures: JSXFixture[] = [
   staticLiteralLoopComponentInRowClient,
   staticLiteralLoopComponentInRowPrecomputed,
   loopRowChildKeyNotAProp,
+  loopRowChildScalarRowKey,
+  loopRowChildChildrenPropArray,
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
