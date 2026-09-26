@@ -31,6 +31,7 @@ import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
 import type { ConstantInfo, MemoInfo, SignalInfo } from '../types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveAliasOrigin } from '../props-binding.ts'
+import { signalSecondBinding } from '../signal-initializer.ts'
 
 /**
  * CSR-substituted const value: the const's initializer with every
@@ -600,8 +601,12 @@ export function buildSignalMemoEnv(
     // that shim directly, with no thunk-wrapping needed. `s.setter` is
     // null for the setter-elided declaration form (`const [count] =
     // createSignal(...)`), which has no name to register.
-    if (s.setter) {
-      substitutions.set(s.setter, { kind: 'identifier', replacement: '() => {}', freeIdentifiers: new Set() })
+    // An async factory's action (#3165) gets the same no-op: forwarding it as
+    // a value (`<Retry run={fetchItems} />`) is allowed, and every read of
+    // its accessors in a template position is refused before emit (BF117).
+    const second = signalSecondBinding(s)
+    if (second) {
+      substitutions.set(second, { kind: 'identifier', replacement: '() => {}', freeIdentifiers: new Set() })
     }
   }
   for (const m of memos) {
@@ -639,7 +644,10 @@ function normalizeSignalInitial(signal: SignalInfo, propsObjectName: string | nu
   const initialValue = signal.initialValue
   const propsName = propsObjectName ?? 'props'
   const propsPrefix = `${propsName}.`
-  if (initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
+  // An async factory's `initial` (#3165) renders exactly as given: an absent
+  // prop means no obtained result, so the value is `undefined` on the server
+  // too, never a type default.
+  if (!signal.factory && initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
     return `${initialValue} ?? ${inferDefaultValue(signal.type)}`
   }
   // Destructured mode (#2265): `templateInitialValue` (when present) has

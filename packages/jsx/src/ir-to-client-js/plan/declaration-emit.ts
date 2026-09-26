@@ -62,11 +62,13 @@ export interface SignalEmitPlan {
   bfId?: string
   /**
    * When set, the full initializer expression to emit verbatim instead of
-   * `createSignal(<initialValueExpr>)`. Env signals (#2057) emit their own
-   * factory call — e.g. `createSearchParams()` — with no baked initial value,
-   * profile id, controlled effect, or branch condition (the tuple is a stable
-   * request-scoped view, not stored state). When present the stringifier emits
-   * `const [<getter>, <setter>] = <initializerOverride>` and nothing else.
+   * `createSignal(<initialValueExpr>)`. Env signals (#2057) and async
+   * factories (#3165) emit their own factory call — e.g.
+   * `createSearchParams()`, `createQuery(fn, options)` — with no baked initial
+   * value, profile id, or controlled effect; `setter` then holds the tuple's
+   * second binding (an async factory's action). When present the stringifier
+   * emits `const [<getter>, <setter>] = <initializerOverride>` (or the
+   * `branchCondition` form, which only an async factory sets) and nothing else.
    */
   initializerOverride?: string
 }

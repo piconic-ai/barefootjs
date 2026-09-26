@@ -25,12 +25,8 @@
  * METHOD CALL on a host-rich-typed receiver have a catalogued lowering) and
  * short-circuits when the component has no `propsType` — a `formatDate`
  * call needs no receiver type at all and can appear in a props-free
- * component, so it cannot share that early return. The tree coverage below
- * intentionally mirrors that module's `walkNode` / `walkAttrValue` /
- * `walkTemplateParts` (element/component/provider attrs, loop array +
- * children, conditional/if-statement branches, async fallback + children)
- * for the same reason both checks need it: "every position a template
- * could render" — for two unrelated predicates.
+ * component, so it cannot share that early return. The positions come from
+ * `walkTemplatePositions` (`template-position-walk.ts`), which BF117 shares.
  */
 
 import type {
@@ -38,12 +34,10 @@ import type {
   IRMetadata,
   CompilerError,
   SourceLocation,
-  AttrValue,
-  IRTemplatePart,
 } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
-import { parseExpression } from './expression-parser.ts'
 import { ErrorCodes } from './errors.ts'
+import { walkTemplatePositions } from './template-position-walk.ts'
 
 /** Entries that re-export the pure client `formatDate` helper (#2324). */
 const FORMAT_DATE_SOURCES: ReadonlySet<string> = new Set([
@@ -74,7 +68,9 @@ export function checkAuthoredFormatDateCalls(root: IRNode, metadata: IRMetadata,
   const names = collectFormatDateBoundNames(metadata)
   if (names.size === 0) return
   const seen = new Set<string>()
-  walkNode(root, names, errors, seen)
+  walkTemplatePositions(root, ({ expr, loc }) => {
+    if (exprCallsName(expr, names)) pushDiagnostic(errors, seen, loc, anyName(names))
+  })
 }
 
 function pushDiagnostic(errors: CompilerError[], seen: Set<string>, loc: SourceLocation, name: string): void {
@@ -148,119 +144,4 @@ function exprCallsName(expr: ParsedExpr, names: ReadonlySet<string>): boolean {
 function anyName(names: ReadonlySet<string>): string {
   for (const n of names) return n
   return 'formatDate'
-}
-
-/**
- * `IRTemplatePart.ternary.condition` / `.lookup.key` carry no attached
- * parse (unlike every other position here), so parse on demand — same as
- * `rich-type-refusal.ts`'s `walkTemplateParts`. `ternary.whenTrue` /
- * `.whenFalse` are ALSO raw, unparsed text (the per-branch rendered
- * snippet), so they get the same on-demand treatment: this is exactly the
- * `format-date-ternary` shape (#2843) — a call in a ternary CONSEQUENT
- * inside a structured template-literal attribute.
- */
-function walkTemplateParts(
-  parts: readonly IRTemplatePart[],
-  loc: SourceLocation,
-  names: ReadonlySet<string>,
-  errors: CompilerError[],
-  seen: Set<string>,
-): void {
-  const checkText = (text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    if (exprCallsName(parseExpression(trimmed), names)) pushDiagnostic(errors, seen, loc, anyName(names))
-  }
-  for (const part of parts) {
-    if (part.type === 'ternary') {
-      checkText(part.condition)
-      checkText(part.whenTrue)
-      checkText(part.whenFalse)
-    } else if (part.type === 'lookup') {
-      checkText(part.key)
-    }
-  }
-}
-
-function walkAttrValue(
-  value: AttrValue,
-  clientOnly: boolean | undefined,
-  loc: SourceLocation,
-  names: ReadonlySet<string>,
-  errors: CompilerError[],
-  seen: Set<string>,
-): void {
-  if (clientOnly) return
-  if (value.kind === 'expression') {
-    if (value.parsed && exprCallsName(value.parsed, names)) pushDiagnostic(errors, seen, loc, anyName(names))
-    if (value.parts) walkTemplateParts(value.parts, loc, names, errors, seen)
-  } else if (value.kind === 'spread') {
-    if (value.parsed && exprCallsName(value.parsed, names)) pushDiagnostic(errors, seen, loc, anyName(names))
-  } else if (value.kind === 'template') {
-    walkTemplateParts(value.parts, loc, names, errors, seen)
-  }
-}
-
-function walkNode(node: IRNode, names: ReadonlySet<string>, errors: CompilerError[], seen: Set<string>): void {
-  if (node.type === 'expression') {
-    if (!node.clientOnly && node.parsed && exprCallsName(node.parsed, names)) {
-      pushDiagnostic(errors, seen, node.loc, anyName(names))
-    }
-  } else if (node.type === 'conditional') {
-    if (!node.clientOnly && node.parsedCondition && exprCallsName(node.parsedCondition, names)) {
-      pushDiagnostic(errors, seen, node.loc, anyName(names))
-    }
-  } else if (node.type === 'if-statement') {
-    if (node.parsedCondition && exprCallsName(node.parsedCondition, names)) {
-      pushDiagnostic(errors, seen, node.loc, anyName(names))
-    }
-  }
-
-  if (node.type === 'element') {
-    for (const attr of node.attrs) walkAttrValue(attr.value, attr.clientOnly, attr.loc, names, errors, seen)
-  } else if (node.type === 'component') {
-    for (const prop of node.props) walkAttrValue(prop.value, prop.clientOnly, prop.loc, names, errors, seen)
-  } else if (node.type === 'provider') {
-    walkAttrValue(node.valueProp.value, node.valueProp.clientOnly, node.valueProp.loc, names, errors, seen)
-  }
-
-  switch (node.type) {
-    case 'element':
-    case 'component':
-    case 'fragment':
-    case 'provider':
-      for (const child of node.children) walkNode(child, names, errors, seen)
-      break
-    case 'async':
-      walkNode(node.fallback, names, errors, seen)
-      for (const child of node.children) walkNode(child, names, errors, seen)
-      break
-    case 'loop': {
-      if (node.clientOnly) break
-      if (node.arrayParsed && exprCallsName(node.arrayParsed, names)) pushDiagnostic(errors, seen, node.loc, anyName(names))
-      for (const child of node.children) walkNode(child, names, errors, seen)
-      if (node.childComponent) {
-        for (const child of node.childComponent.children) walkNode(child, names, errors, seen)
-      }
-      for (const nested of node.nestedComponents ?? []) {
-        for (const child of nested.children) walkNode(child, names, errors, seen)
-      }
-      for (const seg of node.flatMapCallback?.segments ?? []) {
-        if (seg.kind === 'jsx') walkNode(seg.ir, names, errors, seen)
-      }
-      for (const seg of node.preamble?.segments ?? []) {
-        if (seg.kind === 'jsx') walkNode(seg.ir, names, errors, seen)
-      }
-      break
-    }
-    case 'conditional':
-      if (node.clientOnly) break
-      walkNode(node.whenTrue, names, errors, seen)
-      walkNode(node.whenFalse, names, errors, seen)
-      break
-    case 'if-statement':
-      walkNode(node.consequent, names, errors, seen)
-      if (node.alternate) walkNode(node.alternate, names, errors, seen)
-      break
-  }
 }

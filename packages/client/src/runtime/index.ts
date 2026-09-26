@@ -53,6 +53,21 @@ export { forwardProps } from '../forward-props.ts'
 export { unwrap } from '../unwrap.ts'
 export { queryHref, type QueryParams, type QueryParamValue } from '../query-href.ts'
 export { formatDate } from '../format-date.ts'
+// Async layer 0 — the same shared module the main entry re-exports (see
+// src/async.ts), so compiled islands and author code share one query cache
+// and one `HttpError` class.
+export {
+  http,
+  HttpError,
+  type HttpDescriptor,
+  type HttpParams,
+  type HttpParamValue,
+  type HttpInit,
+  type HttpMethod,
+  createQuery,
+  type CreateQueryOptions,
+  type QueryAction,
+} from '@barefootjs/client/async'
 
 // Context API (real DOM-bound implementations; `createContext` is the
 // same pure function re-exported from `../context`).

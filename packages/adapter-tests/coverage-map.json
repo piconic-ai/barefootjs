@@ -1940,6 +1940,105 @@
         "text"
       ]
     },
+    "create-query-action-read": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "create-query-action-read-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "create-query-derived-memo": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "create-query-initial": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "create-query-optional-initial": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "create-query-request-client-only": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "custom-element-child-loop-row": {
       "kinds": [
         "call",
@@ -4534,6 +4633,17 @@
         "text"
       ]
     },
+    "memo-length-prop-seeded-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-array-seed": {
       "kinds": [
         "array-literal",
@@ -4784,6 +4894,23 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "negated-empty-array-condition": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -7769,20 +7896,20 @@
     }
   },
   "kindCounts": {
-    "array-literal": 142,
+    "array-literal": 143,
     "array-method": 72,
     "arrow": 81,
     "binary": 118,
-    "call": 313,
+    "call": 321,
     "conditional": 44,
-    "identifier": 456,
+    "identifier": 464,
     "index-access": 15,
-    "literal": 365,
-    "logical": 54,
-    "member": 277,
+    "literal": 370,
+    "logical": 55,
+    "member": 285,
     "object-literal": 115,
     "template-literal": 33,
-    "unary": 35,
+    "unary": 37,
     "unsupported": 55
   },
   "axisCounts": {
@@ -7822,17 +7949,17 @@
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 83,
-    "literal:null": 31,
-    "literal:number": 158,
-    "literal:string": 252,
+    "literal:null": 33,
+    "literal:number": 160,
+    "literal:string": 254,
     "logical:&&": 7,
-    "logical:??": 45,
+    "logical:??": 46,
     "logical:||": 17,
     "lowering:date": 4,
     "lowering:queryHref": 5,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
-    "member:optional": 1,
+    "member:optional": 2,
     "sort-direction:asc": 7,
     "sort-direction:desc": 1,
     "sort-key:auto": 1,
@@ -7841,7 +7968,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 28,
+    "unary:!": 30,
     "unary:-": 11
   },
   "uncoveredKinds": [

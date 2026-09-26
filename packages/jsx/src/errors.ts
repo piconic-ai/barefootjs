@@ -189,6 +189,12 @@ export const ErrorCodes = {
   // the primitive accepts (#3159). Before this code existed, the extra
   // argument(s) were silently dropped from the emitted client JS.
   REACTIVE_FACTORY_EXTRA_ARGUMENTS: 'BF116',
+  // A query action's accessors (`action.isPending()` / `action.error()`), or
+  // the action itself, read in a template-lowered position (#3165). The
+  // request function never runs on the server, so no backend has a value to
+  // render there yet; refused on every adapter including Hono until the
+  // accessors are seeded. See `async-action-refusal.ts`.
+  ASYNC_ACTION_READ_IN_TEMPLATE: 'BF117',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -323,6 +329,10 @@ const errorMessages: Record<ErrorCode, string> = {
     "'createSignal'/'createMemo' call passes more arguments than the primitive accepts " +
     '(`createSignal(initialValue?)`, `createMemo(computeFn)`, `createSearchParams()`). The extra argument(s) are ' +
     'silently dropped from the compiled client JS.',
+
+  [ErrorCodes.ASYNC_ACTION_READ_IN_TEMPLATE]:
+    "A query action's accessors (`isPending()` / `error()`) cannot be read in a template position yet — " +
+    'the request function never runs on the server, so there is no value to render.',
 }
 
 // =============================================================================

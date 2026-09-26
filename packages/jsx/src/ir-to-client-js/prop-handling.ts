@@ -189,6 +189,10 @@ export function getControlledPropName(
   propsParams: ParamInfo[],
   propsObjectName: string | null = null
 ): string | null {
+  // An async factory's value (`createQuery(fn, { initial: props.posts })`,
+  // #3165) takes `initial` once; later values come from its own requests, so
+  // it is never re-synced from the prop.
+  if (signal.factory) return null
   const initialValue = signal.initialValue.trim()
   const isDefaultProp = (propName: string) => propName.startsWith('default')
   // Use the source-level props name for pattern matching (not the generated PROPS_PARAM)

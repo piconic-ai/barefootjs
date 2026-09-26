@@ -624,3 +624,79 @@ export { Counter }
     expect(errorCodes).toContain('BF001')
   })
 })
+
+// ---------------------------------------------------------------------------
+// createQuery (#3165): the value is a signal seeded from `options.initial`;
+// the action is not a setter.
+// ---------------------------------------------------------------------------
+
+describe('createQuery value (#3165)', () => {
+  test('mode A: `initial` from a required prop renders the list from the value', () => {
+    const source = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+
+type Post = { id: number; title: string }
+
+export function PostList(props: { posts: Post[] }) {
+  const [posts, fetchPosts] = createQuery(() => http.get<Post[]>('/api/posts'), { initial: props.posts })
+  return (
+    <div>
+      <ul>{posts().map((post) => <li key={post.id}>{post.title}</li>)}</ul>
+      <button onClick={() => fetchPosts()}>reload</button>
+    </div>
+  )
+}
+`
+    const result = renderToTest(source, 'post-list.tsx')
+    expect(result.errors).toEqual([])
+    expect(result.signals).toEqual(['posts'])
+    expect(result.toStructure()).toBe(
+      [
+        'div',
+        '├── ul',
+        '│   └── *{posts()}',
+        '│       └── li',
+        '│           └── {post.title}',
+        '└── button (click)',
+        '    └── "reload"',
+      ].join('\n'),
+    )
+    // The action re-sends a request; it is not a signal setter.
+    expect(result.find({ tag: 'button' })!.onClick!.setters).toEqual([])
+  })
+
+  test('mode B: `initial` from an optional prop renders both the skeleton and the list branch', () => {
+    const source = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+
+type Post = { id: number; title: string }
+
+export function PostList(props: { posts?: Post[] }) {
+  const [posts] = createQuery(() => http.get<Post[]>('/api/posts'), { initial: props.posts })
+  return (
+    <div>
+      {!posts() ? <p data-slot="skeleton">Loading…</p> : <ul>{posts()!.map((post) => <li key={post.id}>{post.title}</li>)}</ul>}
+    </div>
+  )
+}
+`
+    const result = renderToTest(source, 'post-list.tsx')
+    expect(result.errors).toEqual([])
+    expect(result.signals).toEqual(['posts'])
+    expect(result.findByText('Loading…')).not.toBeNull()
+    expect(result.toStructure()).toBe(
+      [
+        'div',
+        '└── ?{!posts()}',
+        '    ├── p',
+        '    │   └── "Loading…"',
+        '    └── ul',
+        '        └── *{posts()}',
+        '            └── li',
+        '                └── {post.title}',
+      ].join('\n'),
+    )
+  })
+})

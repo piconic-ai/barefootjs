@@ -6,10 +6,10 @@
  * host mode without a second copy of the step-dispatch switch. Behavior
  * unchanged — this is the identical `runStep` body, just relocated.
  *
- * `InteractionStep`'s eleven variants split into two families: ACTIONS
+ * `InteractionStep`'s twelve variants split into two families: ACTIONS
  * (`click`/`fill`/`hover`/`press`/`drag`) mutate the page, ASSERTIONS
  * (`expectText`/`expectContains`/`expectAttribute`/`expectVisible`/
- * `expectHidden`/`expectValue`) only read it. The idempotence oracle
+ * `expectHidden`/`expectValue`/`expectFetchCount`) only read it. The idempotence oracle
  * replays only the former — an `expect*` step is a claim about ONE
  * render's behavior (already checked by `fixture-hydrate.playwright.ts`),
  * not an action whose *end state* two independently-produced renders
@@ -36,6 +36,26 @@ export function isActionStep(step: InteractionStep): step is ActionStep {
 /** Every action step in `steps`, in order, dropping every assertion step. */
 export function actionStepsOf(steps: ReadonlyArray<InteractionStep> | undefined): ActionStep[] {
   return (steps ?? []).filter(isActionStep)
+}
+
+/** Where `installFetchRecorder` keeps the URL of every `fetch()` call the page makes. */
+const FETCH_LOG = '__bfFetchLog'
+
+/**
+ * Record the URL of every `fetch()` call the page makes, at call time, for
+ * `expectFetchCount`. Must run before navigation (it is an init script).
+ */
+export async function installFetchRecorder(page: Page): Promise<void> {
+  await page.addInitScript((logKey: string) => {
+    const w = window as unknown as Record<string, unknown>
+    const log: string[] = []
+    w[logKey] = log
+    const original = window.fetch.bind(window)
+    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      log.push(input instanceof Request ? input.url : String(input))
+      return original(input, init)
+    }
+  }, FETCH_LOG)
 }
 
 function assertNever(value: never): never {
@@ -112,6 +132,22 @@ export async function runStep(page: Page, step: InteractionStep, options?: { tim
       await page.mouse.up()
       return
     }
+    case 'expectFetchCount':
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              ({ logKey, urlIncludes }) => {
+                const log = (window as unknown as Record<string, string[] | undefined>)[logKey]
+                if (!log) throw new Error('expectFetchCount: installFetchRecorder was not called for this page')
+                return log.filter((url) => url.includes(urlIncludes)).length
+              },
+              { logKey: FETCH_LOG, urlIncludes: step.urlIncludes },
+            ),
+          { timeout },
+        )
+        .toBe(step.count)
+      return
     default:
       return assertNever(step)
   }

@@ -172,6 +172,17 @@ export abstract class JsxAdapter extends BaseAdapter {
         lines.push(`  const ${signal.getter} = () => ${initialValue}`)
       }
 
+      // An async factory's action (#3165): the request function never runs on
+      // the server, so a reference that survives into SSR (e.g. forwarded to a
+      // child as a prop) gets a no-op. Reading its accessors in a template
+      // position is refused before any adapter runs.
+      const action = signal.factory?.action
+      if (action && identifierPattern(action).test(setterRefText)) {
+        lines.push(preserveTypes
+          ? `  const ${action}: any = () => {}`
+          : `  const ${action} = () => {}`)
+      }
+
       // Create a no-op setter for SSR — omit entirely if not referenced anywhere
       if (signal.setter) {
         const setterUsed = identifierPattern(signal.setter).test(setterRefText)

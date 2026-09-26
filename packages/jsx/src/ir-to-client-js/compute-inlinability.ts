@@ -33,6 +33,7 @@ import { createError, ErrorCodes } from '../errors.ts'
 import { attrValueToString } from './utils.ts'
 import { walkIR, type IRVisitor } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, resolveGetterAliases, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
+import { signalSecondBinding } from '../signal-initializer.ts'
 
 /**
  * Build a `RelocateEnv` from a live `ClientJsContext`. The IR-keyed env
@@ -266,7 +267,7 @@ export function computeInlinability(
 
   // --- Constants (initial classification) ---
   const signalGetters = new Set(ctx.signals.map(s => s.getter))
-  const signalSetters = new Set(ctx.signals.filter(s => s.setter).map(s => s.setter!))
+  const signalSetters = new Set(ctx.signals.flatMap(s => signalSecondBinding(s) ?? []))
   const memoNames = new Set(ctx.memos.map(m => m.name))
   // A bare alias-hop chain that ultimately names a signal/memo getter
   // (`const items__alias = items`, #2778) is `reactive-read` the same as

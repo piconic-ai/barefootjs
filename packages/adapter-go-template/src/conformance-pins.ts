@@ -11,6 +11,7 @@ import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
   'format-date': [{ code: 'BF056', severity: 'error', limitation: 'authored-format-date-call' }],
+  'create-query-action-read': [{ code: 'BF117', severity: 'error', limitation: 'query-action-read-in-template' }],
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error', limitation: 'off-subset-callback-body' }],
   'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],

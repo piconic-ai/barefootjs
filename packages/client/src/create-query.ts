@@ -5,15 +5,15 @@
  * dependencies), the same way `createForm` (`packages/form/src/create-form.ts`)
  * is a composite over `createSignal`/`createMemo`.
  *
- * NOT exported from `./index.ts` yet (#3157 is runtime-only). Until the
- * compiler recognises the call (#3158) and seeds `initial` / `isPending` /
- * `error` server-side, a real component that imported this from the public
- * entry would hit the silent "unrecognised call → prop accessor" gap
- * spec/async.md §7.8 describes. Import it from this file directly (tests,
- * and #3158's own work) until then.
+ * Exported through `./async.ts` (the `@barefootjs/client/async` subpath, so
+ * this module's cache and live-query registry exist once per page). The
+ * compiler recognises the call (#3165): it seeds the value from `initial`
+ * server-side and emits the request function into client JS only. Reading
+ * `action.isPending()` / `action.error()` in a template position is refused
+ * (BF117) until the compiler seeds them too.
  */
 
-import { createSignal, createEffect, onCleanup, untrack, type Reactive } from './reactive.ts'
+import { createSignal, createEffect, onCleanup, untrack, type Reactive } from '@barefootjs/client/reactive'
 import { requestKey, requestUrl, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
 import { assertHttpDescriptor, markRejectionHandled, normalizeError } from './request-descriptor.ts'
 import { scheduleMicrotask } from './schedule-microtask.ts'
@@ -142,9 +142,10 @@ export function __resetQueryCacheForTests(): void {
 /**
  * `createQuery(fn, options?)` — a value re-sent whenever a signal `fn` reads
  * changes. Returns `[value, action]`, the same `[getter, setter]`-shaped tuple
- * as `createSignal`. See spec/async.md §7 for the full model; the rules this
- * implementation follows (each pinned by its own describe block in
- * `create-query.test.ts`):
+ * as `createSignal`. See spec/async.md §7 for the full model.
+ *
+ * The rules this implementation follows (each pinned by its own describe
+ * block in `create-query.test.ts`):
  *
  * 1. **Descriptors only.** `fn` must return an `http` descriptor; anything
  *    else throws synchronously, naming `createQuery`.

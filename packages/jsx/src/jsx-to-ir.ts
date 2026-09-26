@@ -8972,7 +8972,24 @@ function shouldAutoDeferReactiveBrand(expr: ts.Expression, ctx: TransformContext
   // Preserves the original "any native ref anywhere defers to non-deferred"
   // semantics by checking every reactive-brand leaf, not just the first.
   if (leaves.some((leaf) => isSignalOrMemoReference(ctx.getJS(leaf), ctx))) return false
+  // A query action's accessors (`fetchPosts.isPending()`, #3165) are not a
+  // client-only brand package: they stay in the template, where BF117
+  // (`async-action-refusal.ts`) refuses them until they are seeded.
+  if (leaves.some((leaf) => isAsyncActionLeaf(leaf, ctx))) return false
   return true
+}
+
+/**
+ * Whether a reactive-brand leaf (`fetchPosts.isPending`,
+ * `fetchPosts.isPending()`) is rooted at the action binding of an async
+ * factory (`const [, fetchPosts] = createQuery(…)`, #3165).
+ */
+function isAsyncActionLeaf(leaf: ts.Node, ctx: TransformContext): boolean {
+  let node: ts.Node = leaf
+  while (ts.isCallExpression(node) || ts.isPropertyAccessExpression(node)) node = node.expression
+  if (!ts.isIdentifier(node)) return false
+  const name = node.text
+  return ctx.analyzer.signals.some((s) => s.factory?.action === name)
 }
 
 /**

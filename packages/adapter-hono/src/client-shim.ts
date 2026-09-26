@@ -40,6 +40,12 @@ export {
   // Pure date formatter (#2324) — same story: no reactivity, runs unchanged
   // during SSR, so the real export is re-exported (not a stub).
   formatDate,
+  // `http` descriptors and `HttpError` (spec/async.md §7.2) — pure, so the
+  // real exports are re-exported. A request function that builds a
+  // descriptor is never called during SSR, but the SSR module still imports
+  // whatever the source imported.
+  http,
+  HttpError,
 } from '@barefootjs/client'
 
 export type {
@@ -56,6 +62,13 @@ export type {
   Renderable,
   QueryParams,
   QueryParamValue,
+  HttpDescriptor,
+  HttpParams,
+  HttpParamValue,
+  HttpInit,
+  HttpMethod,
+  CreateQueryOptions,
+  QueryAction,
 } from '@barefootjs/client'
 
 // ---------------------------------------------------------------------------
@@ -138,6 +151,11 @@ export function createDisposableEffect(_fn: () => void): never {
 }
 export function createRoot<T>(_fn: (dispose: () => void) => T): never {
   return calledAtSSR('createRoot')
+}
+// The compiler seeds a query's value from `options.initial` and never
+// evaluates the request function on the server (#3165).
+export function createQuery(_fn: () => unknown, _options?: unknown): never {
+  return calledAtSSR('createQuery')
 }
 
 export function onMount(_fn: () => void): void {

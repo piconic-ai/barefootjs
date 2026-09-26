@@ -26,6 +26,7 @@ import {
   collectUserDomImports,
   detectUsedImports,
 } from './imports.ts'
+import { signalFactoryInitializer, signalSecondBinding } from '../signal-initializer.ts'
 
 /**
  * Build the module-level code block that replaces `MODULE_CONSTANTS_PLACEHOLDER`.
@@ -70,13 +71,15 @@ export function emitModuleLevelDeclarations(
   }
   for (const signal of moduleLevelSignals) {
     const tupleVar = `__bf_m_${signal.getter}_tuple`
+    const initializer = signalFactoryInitializer(signal) ?? `createSignal(${signal.initialValue})`
+    const second = signalSecondBinding(signal)
     if (signal.isExported) {
-      lines.push(`export const [${signal.getter}${signal.setter ? `, ${signal.setter}` : ''}] = createSignal(${signal.initialValue})`)
+      lines.push(`export const [${signal.getter}${second ? `, ${second}` : ''}] = ${initializer}`)
     } else {
-      lines.push(`var ${tupleVar} = ${tupleVar} ?? createSignal(${signal.initialValue})`)
+      lines.push(`var ${tupleVar} = ${tupleVar} ?? ${initializer}`)
       lines.push(`var ${signal.getter} = ${tupleVar}[0]`)
-      if (signal.setter) {
-        lines.push(`var ${signal.setter} = ${tupleVar}[1]`)
+      if (second) {
+        lines.push(`var ${second} = ${tupleVar}[1]`)
       }
     }
   }
