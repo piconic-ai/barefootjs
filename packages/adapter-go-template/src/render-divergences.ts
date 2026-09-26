@@ -168,6 +168,23 @@ export const renderDivergences: RenderDivergences = {
   // Go fails to build with no diagnostic: "item.ID undefined (type
   // BadgeInput has no field or method ID)".
   'loop-row-child-key-not-a-prop': { limitation: 'loop-row-child-key-not-a-prop' },
+
+  // A component loop row over a string array prop, keyed by the row value
+  // itself (`<Badge key={i} label={i} />`): the constructor only derives
+  // `BfDataKey` from a field path off the ranged child Input row
+  // (`loopKeyToGoFieldPath`), and a bare `i` has no field, so every row
+  // renders without its `data-key` — also when a caller builds the props
+  // through `NewXxxProps` with `Badges` populated directly.
+  'loop-row-child-scalar-row-key': { limitation: 'loop-row-child-scalar-row-key' },
+
+  // A component loop row with forwarded children over an array prop
+  // (`<Badge key={item.id}>{item.label}</Badge>`): `emitStaticBodyWrappers`
+  // bakes rows only from a resolvable const array source, so the
+  // constructor builds no rows from `in.Items` (and ignores `in.Badges`);
+  // the `<ul>` renders empty. A handler-filled wrapper slice fails at
+  // render time instead: the `…BadgeLl0Ctx` wrapper has no `Label` datum
+  // field for the forwarded children template to read.
+  'loop-row-child-children-prop-array': { limitation: 'loop-row-child-children-prop-array' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
