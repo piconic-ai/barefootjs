@@ -813,6 +813,9 @@ import { fixture as conditionalThenText } from './conditional-then-text'
 import { fixture as staticLiteralLoopComponentInRow } from './static-literal-loop-component-in-row'
 import { fixture as staticLiteralLoopComponentInRowClient } from './static-literal-loop-component-in-row-client'
 import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-literal-loop-component-in-row-precomputed'
+// A component loop row keyed by a row field the component takes no prop
+// for (registry: `loop-row-child-key-not-a-prop`).
+import { fixture as loopRowChildKeyNotAProp } from './loop-row-child-key-not-a-prop'
 // A literal-initialized `const` read as a conditional's test (registry:
 // `literal-const-conditional-test`).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
@@ -1334,6 +1337,7 @@ export const jsxFixtures: JSXFixture[] = [
   staticLiteralLoopComponentInRow,
   staticLiteralLoopComponentInRowClient,
   staticLiteralLoopComponentInRowPrecomputed,
+  loopRowChildKeyNotAProp,
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,

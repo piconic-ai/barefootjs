@@ -173,6 +173,14 @@ export const renderDivergences: RenderDivergences = {
   // slice as false, where JS treats `[]` as true. (`bf_truthy` is not a
   // drop-in: it reports a typed nil slice — the absent-prop case — as true.)
   'negated-empty-array-condition': { limitation: 'negated-empty-array-condition' },
+
+  // A component loop row over an array prop, keyed by a row field the child
+  // takes no prop for (`<Badge key={item.id} label={item.label} />`): the
+  // constructor ranges over the child's own Input slice and reads the key
+  // off it (`badges[i].BfDataKey = fmt.Sprint(item.ID)`), so the generated
+  // Go fails to build with no diagnostic: "item.ID undefined (type
+  // BadgeInput has no field or method ID)".
+  'loop-row-child-key-not-a-prop': { limitation: 'loop-row-child-key-not-a-prop' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
