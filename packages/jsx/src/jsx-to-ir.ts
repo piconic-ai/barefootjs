@@ -628,14 +628,16 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // module level) — the same reason a signal getter call is substituted
   // with its initial value below instead of called live. See
   // `action-accessor.ts` — the same recognition `attachParsedExpressions`
-  // and BF117's refusal-lift use, kept in sync by construction.
+  // and BF117's refusal-lift use, kept in sync by construction. Recognised
+  // structurally (`parseExpression` + `matchActionAccessorCall`), not by
+  // string equality against `text.trim()` — the latter would silently miss
+  // a parenthesized read (`(fetchPosts.isPending())`), which the SAME
+  // structural match already seeds in the IR-facing `ParsedExpr` tree and
+  // does not refuse via BF117.
   const actions = collectActionNames(ctx.analyzer.signals)
   if (actions.size > 0) {
-    const trimmed = text.trim()
-    for (const action of actions) {
-      if (trimmed === `${action}.isPending()`) return actionAccessorSeedText('isPending')
-      if (trimmed === `${action}.error()`) return actionAccessorSeedText('error')
-    }
+    const read = matchActionAccessorCall(parseExpression(text.trim()), actions)
+    if (read) return actionAccessorSeedText(read.accessor)
   }
   // #2292: lower a Date-typed prop's catalogued accessor call BEFORE the
   // bare-prop-name rewrite below, so the receiver identifier still picks

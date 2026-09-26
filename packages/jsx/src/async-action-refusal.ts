@@ -40,14 +40,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { ErrorCodes } from './errors.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { walkTemplatePositions } from './template-position-walk.ts'
-import { matchActionAccessorCall, collectActionNames } from './action-accessor.ts'
-
-/**
- * Properties of a query action that are reactive accessors. Mirrors the
- * `Reactive` members of `QueryAction` in `packages/client/src/create-query.ts`:
- * an accessor added there must be added here.
- */
-const ACTION_ACCESSORS: ReadonlySet<string> = new Set(['isPending', 'error'])
+import { matchActionAccessorCall, collectActionNames, ACTION_ACCESSOR_NAMES } from './action-accessor.ts'
 
 /** What a template position read, for the diagnostic. */
 type ActionRead =
@@ -213,7 +206,7 @@ function findActionRead(
         expr.object.kind === 'identifier' &&
         actions.has(expr.object.name) &&
         !bound.has(expr.object.name) &&
-        ACTION_ACCESSORS.has(expr.property)
+        ACTION_ACCESSOR_NAMES.has(expr.property)
       ) {
         return { kind: 'accessor', action: expr.object.name, accessor: expr.property }
       }

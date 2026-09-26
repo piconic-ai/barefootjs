@@ -35,7 +35,13 @@ import type { SignalInfo } from './types.ts'
 /** Reactive accessors every recognised action carries (spec/async.md §7.1/§7.3). */
 export type ActionAccessorName = 'isPending' | 'error'
 
-const ACTION_ACCESSOR_NAMES: ReadonlySet<string> = new Set(['isPending', 'error'])
+/**
+ * Exported so every consumer that needs the accessor-name set (not just the
+ * whole-expression-call recognition below) reads the same one — mirrors the
+ * `Reactive` members of `QueryAction` in `packages/client/src/create-query.ts`:
+ * an accessor added there must be added here.
+ */
+export const ACTION_ACCESSOR_NAMES: ReadonlySet<string> = new Set(['isPending', 'error'])
 
 export interface ActionAccessorRead {
   action: string
