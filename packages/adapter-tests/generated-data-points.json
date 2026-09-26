@@ -2024,6 +2024,14 @@
       }
     }
   ],
+  "memo-length-prop-seeded-signal": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",
@@ -2090,6 +2098,12 @@
       "props": {
         "label": "日本語"
       }
+    }
+  ],
+  "negated-empty-array-condition": [
+    {
+      "name": "gen:tags:absent",
+      "props": {}
     }
   ],
   "nested-child-negated-prop": [

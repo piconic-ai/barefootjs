@@ -99,6 +99,12 @@ runAdapterConformanceTests({
   // touching any cross-adapter file — every adapter declares its own
   // refusal set against the canonical fixture corpus.
   expectedDiagnostics: conformancePins,
+  // `createQuery` mode B with an empty result list renders the skeleton
+  // instead of the empty list: `!posts()` on `[]` is Go's `not` on an empty
+  // slice. Same divergence as the pinned `negated-empty-array-condition`
+  // (limitation `negated-empty-array-condition`); the fixture's primary
+  // point (prop absent) renders like Hono.
+  skipDataPoints: new Set(['create-query-optional-initial:gen:posts:empty']),
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` pass via
   // `GoTemplateAdapter.templatePrimitives` (#1188) — the identifier-path
   // registry for well-known JS builtins. `USER_IMPORT_VIA_CONST` and

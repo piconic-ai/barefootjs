@@ -582,6 +582,8 @@ import { fixture as createQueryRequestClientOnly } from './create-query-request-
 import { fixture as createQueryDerivedMemo } from './create-query-derived-memo'
 import { fixture as createQueryActionRead } from './create-query-action-read'
 import { fixture as createQueryActionReadClient } from './create-query-action-read-client'
+import { fixture as memoLengthPropSeededSignal } from './memo-length-prop-seeded-signal'
+import { fixture as negatedEmptyArrayCondition } from './negated-empty-array-condition'
 import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
@@ -1237,6 +1239,8 @@ export const jsxFixtures: JSXFixture[] = [
   createQueryDerivedMemo,
   createQueryActionRead,
   createQueryActionReadClient,
+  memoLengthPropSeededSignal,
+  negatedEmptyArrayCondition,
   queryHref,
   queryHrefSrc,
   queryHrefTernary,

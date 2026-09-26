@@ -160,6 +160,19 @@ export const renderDivergences: RenderDivergences = {
   'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },
+  // A memo reading `.length` of a prop-seeded array signal is baked into the
+  // constructor as the memo type's zero value (`Count: 0`): the
+  // constructor-time memo baker (`computeMemoInitialValueOrNull`,
+  // `adapter/memo/memo-compute.ts`) recognises a fixed list of body shapes,
+  // `.length` over a getter is not among them, and an unrecognised body
+  // falls back to the zero value with no diagnostic. The `createQuery` twin
+  // (`create-query-derived-memo`) is the same shape.
+  'memo-length-prop-seeded-signal': { limitation: 'memo-length-of-prop-seeded-array' },
+  'create-query-derived-memo': { limitation: 'memo-length-of-prop-seeded-array' },
+  // `!x` lowers to Go's built-in `not`, whose truthiness treats an empty
+  // slice as false, where JS treats `[]` as true. (`bf_truthy` is not a
+  // drop-in: it reports a typed nil slice — the absent-prop case — as true.)
+  'negated-empty-array-condition': { limitation: 'negated-empty-array-condition' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
