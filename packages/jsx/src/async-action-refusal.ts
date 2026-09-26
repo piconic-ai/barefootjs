@@ -17,11 +17,19 @@
  *
  * "Reads the action" is transitive through memos, constants and functions
  * (a constant reading a memo reading the action counts). Passing the action,
- * or a function that reads it, as a value (`<Retry onRetry={fetchPosts} />`,
- * `run={reload}`) is fine: nothing runs until the client calls it. So is any
- * read inside an event handler or effect, which only run on the client. A
- * `/* @client *\/`-marked position is skipped by `walkTemplatePositions`: the
- * read is deferred to the client.
+ * or a local function that reads it, as a value (`<Retry onRetry={fetchPosts} />`,
+ * `run={reload}`) is fine: nothing runs until the client calls it. A constant
+ * that only aliases one of them (`const run = fetchPosts`) is treated like its
+ * target. Any read inside an event handler or effect is fine too, since those
+ * only run on the client. A `/* @client *\/`-marked position is skipped by
+ * `walkTemplatePositions`: the read is deferred to the client.
+ *
+ * Other function-valued expressions that read the action are refused even when
+ * they are only passed on, because the walk cannot tell passing from calling
+ * during render (an array-method callback runs then): an inline arrow outside
+ * an `on*` prop (`run={() => fetchPosts()}`), and a constant holding arrows in an object or
+ * array literal (`const h = { run: () => fetchPosts() }`, `run={h.run}`). Name
+ * the function as a local instead, or mark the position `/* @client *\/`.
  */
 
 import type { IRNode, IRMetadata, CompilerError, SourceLocation } from './types.ts'
@@ -67,6 +75,17 @@ export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors
     if (signal.factory?.action) actions.add(signal.factory.action)
   }
   if (actions.size === 0) return
+  // `const run = fetchPosts` is the action under another name.
+  for (let grew = true; grew; ) {
+    grew = false
+    for (const constant of metadata.localConstants) {
+      const target = aliasTarget(constant)
+      if (target !== undefined && actions.has(target) && !actions.has(constant.name)) {
+        actions.add(constant.name)
+        grew = true
+      }
+    }
+  }
   const readers = localsReadingActions(metadata, actions)
   const seen = new Set<string>()
   walkTemplatePositions(root, ({ expr, loc, attrName }) => {
@@ -91,17 +110,24 @@ export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors
 function localsReadingActions(metadata: IRMetadata, actions: ReadonlySet<string>): ActionReaders {
   const values = new Map<string, ActionReader>()
   const callables = new Map<string, ActionReader>()
-  const candidates: Array<{ name: string; declaration: ActionReader['declaration']; callable: boolean; freeIds: Iterable<string> }> = []
+  const candidates: Array<{
+    name: string
+    declaration: ActionReader['declaration']
+    callable: boolean
+    freeIds: Iterable<string>
+    aliasOf?: string
+  }> = []
   for (const memo of metadata.memos) {
     candidates.push({ name: memo.name, declaration: 'memo', callable: false, freeIds: memo.computationFreeIdentifiers ?? [] })
   }
   for (const constant of metadata.localConstants) {
-    if (constant.isJsx || constant.isJsxFunction) continue
+    if (constant.isJsx || constant.isJsxFunction || actions.has(constant.name)) continue
     candidates.push({
       name: constant.name,
       declaration: 'constant',
       callable: constant.isFunctionValue === true,
       freeIds: constant.freeIdentifiers ?? [],
+      aliasOf: aliasTarget(constant),
     })
   }
   for (const fn of metadata.localFunctions) {
@@ -114,6 +140,17 @@ function localsReadingActions(metadata: IRMetadata, actions: ReadonlySet<string>
     changed = false
     for (const candidate of candidates) {
       if (values.has(candidate.name) || callables.has(candidate.name)) continue
+      if (candidate.aliasOf !== undefined) {
+        // An alias reads the action only if its target does, and is called or
+        // referenced the same way.
+        const target = values.get(candidate.aliasOf) ?? callables.get(candidate.aliasOf)
+        if (target === undefined) continue
+        const reader = { declaration: candidate.declaration, action: target.action }
+        if (callables.has(candidate.aliasOf)) callables.set(candidate.name, reader)
+        else values.set(candidate.name, reader)
+        changed = true
+        continue
+      }
       for (const id of candidate.freeIds) {
         if (id === candidate.name) continue
         const action = actions.has(id) ? id : (values.get(id) ?? callables.get(id))?.action
@@ -127,6 +164,11 @@ function localsReadingActions(metadata: IRMetadata, actions: ReadonlySet<string>
     }
   }
   return { values, callables }
+}
+
+/** The name a constant only aliases (`const run = fetchPosts`), if it is one. */
+function aliasTarget(constant: IRMetadata['localConstants'][number]): string | undefined {
+  return constant.parsed?.kind === 'identifier' ? constant.parsed.name : undefined
 }
 
 function findActionRead(

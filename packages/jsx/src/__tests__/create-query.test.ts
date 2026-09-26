@@ -346,6 +346,62 @@ export function C(props: { items: string[] }) {
     expect(codes).not.toContain('BF117')
   })
 
+  test('treats a constant that aliases the action or a reader like its target', () => {
+    const accepted = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+function Retry(props: { run: () => void }) {
+  return <button onClick={() => props.run()}>retry</button>
+}
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  const run = fetchItems
+  const reload = () => fetchItems()
+  const again = reload
+  return (
+    <div>
+      <Retry run={run} />
+      <Retry run={again} />
+      <p>{items().length}</p>
+    </div>
+  )
+}
+`, { fileName: 'C.tsx' })
+    expect(accepted.codes).not.toContain('BF117')
+
+    const refused = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  const run = fetchItems
+  const reload = () => run.error()
+  const again = reload
+  return (
+    <div aria-busy={run.isPending()}>
+      <p>{again() ? 'failed' : items().length}</p>
+    </div>
+  )
+}
+`, { fileName: 'C.tsx' })
+    expect(refused.codes.filter(c => c === 'BF117')).toHaveLength(2)
+  })
+
+  test('refuses an inline arrow reading the action outside an on* prop', () => {
+    const { codes } = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+function Retry(props: { run: () => void }) {
+  return <button onClick={() => props.run()}>retry</button>
+}
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  return <div><Retry run={() => fetchItems()} />{items().length}</div>
+}
+`, { fileName: 'C.tsx' })
+    expect(codes).toContain('BF117')
+  })
+
   test('allows /* @client */ reads, event handlers, and forwarding the action as a value', () => {
     const { codes } = compile(`
 'use client'
