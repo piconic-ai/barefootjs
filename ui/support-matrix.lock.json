@@ -13100,11 +13100,11 @@
       }
     },
     "literal:boolean": {
-      "total": 85,
+      "total": 84,
       "cells": {
         "hono": {
-          "pass": 84,
-          "total": 85,
+          "pass": 83,
+          "total": 84,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -13115,8 +13115,8 @@
           ]
         },
         "blade": {
-          "pass": 79,
-          "total": 85,
+          "pass": 78,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13157,8 +13157,8 @@
           ]
         },
         "erb": {
-          "pass": 79,
-          "total": 85,
+          "pass": 78,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13199,8 +13199,8 @@
           ]
         },
         "go-template": {
-          "pass": 80,
-          "total": 85,
+          "pass": 79,
+          "total": 84,
           "gaps": [
             {
               "fixture": "const-boolean-conditional-test",
@@ -13235,8 +13235,8 @@
           ]
         },
         "jinja": {
-          "pass": 79,
-          "total": 85,
+          "pass": 78,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13277,8 +13277,8 @@
           ]
         },
         "minijinja": {
-          "pass": 79,
-          "total": 85,
+          "pass": 78,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13319,8 +13319,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 77,
-          "total": 85,
+          "pass": 76,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13373,8 +13373,8 @@
           ]
         },
         "pebble": {
-          "pass": 80,
-          "total": 85,
+          "pass": 79,
+          "total": 84,
           "gaps": [
             {
               "fixture": "const-boolean-conditional-test",
@@ -13409,8 +13409,8 @@
           ]
         },
         "twig": {
-          "pass": 79,
-          "total": 85,
+          "pass": 78,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
@@ -13451,8 +13451,8 @@
           ]
         },
         "xslate": {
-          "pass": 77,
-          "total": 85,
+          "pass": 76,
+          "total": 84,
           "gaps": [
             {
               "fixture": "conditional-then-text",
