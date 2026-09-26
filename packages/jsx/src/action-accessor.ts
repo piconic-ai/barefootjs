@@ -110,7 +110,7 @@ export function matchActionAccessorCall(
  * adapter stringifies a boolean value JS-style (`"true"` / `"false"`), which
  * is what Hono renders for `aria-*={false}`. Must stay a subset of each DSL
  * adapter's own `isAriaBooleanAttr` set (Mojolicious / Xslate render a bare
- * `false` literal as `0` on any other attribute); `create-query.test.ts`
+ * `false` literal as `0` on any other attribute); `action-accessor.test.ts`
  * pins that across every adapter, so an adapter dropping a name fails there
  * instead of silently diverging.
  */
