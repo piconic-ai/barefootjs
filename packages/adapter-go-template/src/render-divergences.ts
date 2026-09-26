@@ -192,3 +192,18 @@ export const renderDivergences: RenderDivergences = {
 // renamed shape also needed a duplicate-Input-field dedup and an
 // `interface{}`-safe fallback extraction in `generateInputStruct` /
 // `generatePropsStruct` — see their docstrings).
+
+/**
+ * Data points (`<fixture>:<point>`) that render divergent from the Hono
+ * reference on real Go while the fixture's primary render matches, so the
+ * fixture itself is not in `renderDivergences`. The conformance
+ * `skipDataPoints` set derives from the keys, and each entry cites the
+ * limitation it is an instance of: graduating (deleting) that entry fails
+ * `go-template-adapter.test.ts`'s citation check until the skip goes too.
+ */
+export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // `createQuery` mode B with an empty result list renders the skeleton
+  // instead of the empty list: `!posts()` on `[]` is Go's `not` on an empty
+  // slice. The fixture's primary point (prop absent) renders like Hono.
+  'create-query-optional-initial:gen:posts:empty': { limitation: 'negated-empty-array-condition' },
+}

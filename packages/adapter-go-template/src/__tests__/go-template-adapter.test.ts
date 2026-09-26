@@ -6,7 +6,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
-import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
+import { runAdapterConformanceTests, findLimitation } from '@barefootjs/adapter-tests'
 import { renderGoTemplateComponent, GoNotAvailableError } from '@barefootjs/go-template/test-render'
 import {
   compileJSX,
@@ -17,7 +17,7 @@ import {
   type IRExpression,
 } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
-import { renderDivergences } from '../render-divergences'
+import { renderDivergences, dataPointDivergences } from '../render-divergences'
 import { findNestedComponents } from '../adapter/analysis/component-tree.ts'
 
 runAdapterConformanceTests({
@@ -99,12 +99,8 @@ runAdapterConformanceTests({
   // touching any cross-adapter file — every adapter declares its own
   // refusal set against the canonical fixture corpus.
   expectedDiagnostics: conformancePins,
-  // `createQuery` mode B with an empty result list renders the skeleton
-  // instead of the empty list: `!posts()` on `[]` is Go's `not` on an empty
-  // slice. Same divergence as the pinned `negated-empty-array-condition`
-  // (limitation `negated-empty-array-condition`); the fixture's primary
-  // point (prop absent) renders like Hono.
-  skipDataPoints: new Set(['create-query-optional-initial:gen:posts:empty']),
+  // Declared in `../render-divergences` with the limitation each cites.
+  skipDataPoints: new Set(Object.keys(dataPointDivergences)),
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` pass via
   // `GoTemplateAdapter.templatePrimitives` (#1188) — the identifier-path
   // registry for well-known JS builtins. `USER_IMPORT_VIA_CONST` and
@@ -7515,4 +7511,16 @@ export function Row() {
     expect(template).not.toContain('bf_with_props .MarkSlot1')
     expect(result.errors.filter(e => e.code === 'BF101')).toEqual([])
   })
+})
+
+describe('dataPointDivergences', () => {
+  for (const [point, { limitation }] of Object.entries(dataPointDivergences)) {
+    test(`[${point}] cites an existing limitation`, () => {
+      expect(
+        findLimitation(limitation),
+        `'${point}' cites limitation '${limitation}', which is not in the registry: ` +
+          'if it graduated, the data point renders like Hono now, so delete this skip too',
+      ).toBeDefined()
+    })
+  }
 })

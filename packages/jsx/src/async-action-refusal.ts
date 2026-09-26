@@ -10,14 +10,18 @@
  * request during render. So a template position may not:
  *
  * - read an accessor (`fetchPosts.isPending()`, `fetchPosts.error`),
- * - call the action (`fetchPosts()`), or
- * - read a memo that reads the action (transitively), since every backend
- *   evaluates a memo it renders.
+ * - call the action (`fetchPosts()`),
+ * - read a memo or a component-local constant that reads the action, since
+ *   every backend evaluates a memo or constant it renders, or
+ * - call a local function that reads the action.
  *
- * Passing the action itself as a value (`<Retry onRetry={fetchPosts} />`) is
- * fine, and so is any read inside an event handler or effect, which only run
- * on the client. A `/* @client *\/`-marked position is skipped by
- * `walkTemplatePositions`: the read is deferred to the client.
+ * "Reads the action" is transitive through memos, constants and functions
+ * (a constant reading a memo reading the action counts). Passing the action,
+ * or a function that reads it, as a value (`<Retry onRetry={fetchPosts} />`,
+ * `run={reload}`) is fine: nothing runs until the client calls it. So is any
+ * read inside an event handler or effect, which only run on the client. A
+ * `/* @client *\/`-marked position is skipped by `walkTemplatePositions`: the
+ * read is deferred to the client.
  */
 
 import type { IRNode, IRMetadata, CompilerError, SourceLocation } from './types.ts'
@@ -26,14 +30,36 @@ import { ErrorCodes } from './errors.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { walkTemplatePositions } from './template-position-walk.ts'
 
-/** Properties of a query action that are reactive accessors (`QueryAction` in `@barefootjs/client`). */
+/**
+ * Properties of a query action that are reactive accessors. Mirrors the
+ * `Reactive` members of `QueryAction` in `packages/client/src/create-query.ts`:
+ * an accessor added there must be added here.
+ */
 const ACTION_ACCESSORS: ReadonlySet<string> = new Set(['isPending', 'error'])
 
 /** What a template position read, for the diagnostic. */
 type ActionRead =
   | { kind: 'accessor'; action: string; accessor: string }
   | { kind: 'call'; action: string }
-  | { kind: 'memo'; memo: string; action: string }
+  | { kind: 'local'; name: string; declaration: 'memo' | 'constant' | 'function'; action: string }
+
+/** A component-local declaration that reads a query action, and the action it reaches. */
+interface ActionReader {
+  declaration: 'memo' | 'constant' | 'function'
+  action: string
+}
+
+/**
+ * The component-local declarations that read a query action, split by how a
+ * template position evaluates them: `values` (memos and constants whose value
+ * is computed when rendered, so a reference is a read) and `callables`
+ * (functions, and constants whose value is a function, whose body runs only
+ * when called).
+ */
+interface ActionReaders {
+  values: ReadonlyMap<string, ActionReader>
+  callables: ReadonlyMap<string, ActionReader>
+}
 
 export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors: CompilerError[]): void {
   const actions = new Set<string>()
@@ -41,49 +67,75 @@ export function checkAsyncActionReads(root: IRNode, metadata: IRMetadata, errors
     if (signal.factory?.action) actions.add(signal.factory.action)
   }
   if (actions.size === 0) return
-  const memoActions = memosReadingActions(metadata, actions)
+  const readers = localsReadingActions(metadata, actions)
   const seen = new Set<string>()
   walkTemplatePositions(root, ({ expr, loc, attrName }) => {
     if (attrName !== undefined && isEventHandlerName(attrName)) return
-    const read = findActionRead(expr, actions, memoActions, new Set())
+    const read = findActionRead(expr, actions, readers, new Set())
     if (read) pushDiagnostic(errors, seen, loc, read)
   })
 }
 
 /**
- * Memos whose computation reads a query action, directly or through another
- * such memo, mapped to the action they reach. Uses each memo's free
- * identifiers (so a block-bodied memo is covered too): mentioning the action
- * at all is enough, since the only things a memo can do with it are read an
- * accessor or send a request.
+ * The component-local memos, constants and functions that read a query
+ * action, directly or through another such declaration (a fixpoint). Uses each
+ * declaration's free identifiers, so a block-bodied memo or function is
+ * covered too: mentioning the action, or a declaration that reads it, is
+ * enough, since the only things a body can do with the action are read an
+ * accessor, send a request, or pass it on. JSX-valued constants and functions
+ * are skipped: they are inlined into the IR, where the walk sees their reads
+ * directly. `isModule` is not consulted: for a function it only marks a
+ * candidate for hoisting (`compute-scope.ts` decides), and a declaration that
+ * really lives at module scope cannot name a component's action anyway.
  */
-function memosReadingActions(metadata: IRMetadata, actions: ReadonlySet<string>): Map<string, string> {
-  const reading = new Map<string, string>()
+function localsReadingActions(metadata: IRMetadata, actions: ReadonlySet<string>): ActionReaders {
+  const values = new Map<string, ActionReader>()
+  const callables = new Map<string, ActionReader>()
+  const candidates: Array<{ name: string; declaration: ActionReader['declaration']; callable: boolean; freeIds: Iterable<string> }> = []
+  for (const memo of metadata.memos) {
+    candidates.push({ name: memo.name, declaration: 'memo', callable: false, freeIds: memo.computationFreeIdentifiers ?? [] })
+  }
+  for (const constant of metadata.localConstants) {
+    if (constant.isJsx || constant.isJsxFunction) continue
+    candidates.push({
+      name: constant.name,
+      declaration: 'constant',
+      callable: constant.isFunctionValue === true,
+      freeIds: constant.freeIdentifiers ?? [],
+    })
+  }
+  for (const fn of metadata.localFunctions) {
+    if (fn.isJsxFunction) continue
+    candidates.push({ name: fn.name, declaration: 'function', callable: true, freeIds: fn.freeIdentifiers ?? [] })
+  }
+
   let changed = true
   while (changed) {
     changed = false
-    for (const memo of metadata.memos) {
-      if (reading.has(memo.name)) continue
-      for (const id of memo.computationFreeIdentifiers ?? []) {
-        const action = actions.has(id) ? id : reading.get(id)
-        if (action !== undefined) {
-          reading.set(memo.name, action)
-          changed = true
-          break
-        }
+    for (const candidate of candidates) {
+      if (values.has(candidate.name) || callables.has(candidate.name)) continue
+      for (const id of candidate.freeIds) {
+        if (id === candidate.name) continue
+        const action = actions.has(id) ? id : (values.get(id) ?? callables.get(id))?.action
+        if (action === undefined) continue
+        const reader = { declaration: candidate.declaration, action }
+        if (candidate.callable) callables.set(candidate.name, reader)
+        else values.set(candidate.name, reader)
+        changed = true
+        break
       }
     }
   }
-  return reading
+  return { values, callables }
 }
 
 function findActionRead(
   expr: ParsedExpr,
   actions: ReadonlySet<string>,
-  memoActions: ReadonlyMap<string, string>,
+  readers: ActionReaders,
   bound: ReadonlySet<string>,
 ): ActionRead | null {
-  const recurse = (e: ParsedExpr) => findActionRead(e, actions, memoActions, bound)
+  const recurse = (e: ParsedExpr) => findActionRead(e, actions, readers, bound)
   const first = (...exprs: ParsedExpr[]): ActionRead | null => {
     for (const e of exprs) {
       const read = recurse(e)
@@ -94,8 +146,8 @@ function findActionRead(
   switch (expr.kind) {
     case 'identifier': {
       if (bound.has(expr.name)) return null
-      const action = memoActions.get(expr.name)
-      return action !== undefined ? { kind: 'memo', memo: expr.name, action } : null
+      const reader = readers.values.get(expr.name)
+      return reader ? { kind: 'local', name: expr.name, ...reader } : null
     }
     case 'member':
       if (
@@ -108,8 +160,10 @@ function findActionRead(
       }
       return recurse(expr.object)
     case 'call':
-      if (expr.callee.kind === 'identifier' && actions.has(expr.callee.name) && !bound.has(expr.callee.name)) {
-        return { kind: 'call', action: expr.callee.name }
+      if (expr.callee.kind === 'identifier' && !bound.has(expr.callee.name)) {
+        if (actions.has(expr.callee.name)) return { kind: 'call', action: expr.callee.name }
+        const reader = readers.callables.get(expr.callee.name)
+        if (reader) return { kind: 'local', name: expr.callee.name, ...reader }
       }
       return first(expr.callee, ...expr.args)
     case 'index-access':
@@ -132,7 +186,7 @@ function findActionRead(
     case 'arrow': {
       const inner = new Set(bound)
       for (const p of expr.params) inner.add(p)
-      return findActionRead(expr.body, actions, memoActions, inner)
+      return findActionRead(expr.body, actions, readers, inner)
     }
     case 'literal':
     case 'regex':
@@ -150,7 +204,7 @@ function pushDiagnostic(errors: CompilerError[], seen: Set<string>, loc: SourceL
       ? `'${read.action}.${read.accessor}' reads a query action's accessor`
       : read.kind === 'call'
         ? `'${read.action}()' calls a query action, which sends a request,`
-        : `'${read.memo}' reads the query action '${read.action}'`
+        : `${read.declaration} '${read.name}' reads the query action '${read.action}' and is used`
   errors.push({
     code: ErrorCodes.ASYNC_ACTION_READ_IN_TEMPLATE,
     severity: 'error',

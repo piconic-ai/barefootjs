@@ -270,6 +270,82 @@ export function C() {
     expect(codes).toContain('BF117')
   })
 
+  test('refuses reads through a local constant or a called local function', () => {
+    const viaConstant = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  const busy = fetchItems.isPending()
+  return <div aria-busy={busy}>{items().length}</div>
+}
+`, { hono: true })
+    expect(viaConstant.codes).toContain('BF117')
+    expect(viaConstant.errors.find((e) => e.code === 'BF117')!.message).toContain("constant 'busy' reads the query action 'fetchItems'")
+
+    const viaFunction = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  const status = () => (fetchItems.error() ? 'failed' : 'ok')
+  return <p>{status()} {items().length}</p>
+}
+`, { hono: true })
+    expect(viaFunction.codes).toContain('BF117')
+
+    const viaDeclaration = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  function status() {
+    return fetchItems.error() ? 'failed' : 'ok'
+  }
+  return <p>{status()} {items().length}</p>
+}
+`, { hono: true })
+    expect(viaDeclaration.codes).toContain('BF117')
+  })
+
+  test('follows reads transitively through memos, constants and functions', () => {
+    const { errors } = compile(`
+'use client'
+import { createMemo, createQuery, http } from '@barefootjs/client'
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  const failed = () => fetchItems.error() !== undefined
+  const busy = createMemo(() => fetchItems.isPending() || failed())
+  const label = busy() ? 'loading' : 'ready'
+  return <p data-state={label}>{items().length}</p>
+}
+`)
+    const bf117 = errors.filter((e) => e.code === 'BF117')
+    expect(bf117).toHaveLength(1)
+    expect(bf117[0].message).toContain("constant 'label' reads the query action 'fetchItems'")
+  })
+
+  test('allows passing a function that reads the action as a value', () => {
+    const { codes } = compile(`
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+function Retry(props: { run: () => void }) {
+  return <button onClick={() => props.run()}>retry</button>
+}
+export function C(props: { items: string[] }) {
+  const [items, fetchItems] = createQuery(() => http.get<string[]>('/api/items'), { initial: props.items })
+  const reload = () => fetchItems()
+  return (
+    <div>
+      <button onClick={reload}>{items().length}</button>
+      <Retry run={reload} />
+    </div>
+  )
+}
+`, { fileName: 'C.tsx' })
+    expect(codes).not.toContain('BF117')
+  })
+
   test('allows /* @client */ reads, event handlers, and forwarding the action as a value', () => {
     const { codes } = compile(`
 'use client'

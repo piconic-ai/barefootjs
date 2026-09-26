@@ -2000,6 +2000,11 @@ export interface FunctionInfo {
    * migration; legacy emit paths default to inferring from `body`.
    */
   declarationKind?: 'function' | 'arrow' | 'function-expression'
+  /**
+   * Free identifiers of the function (parameters excluded), computed from the
+   * AST: what its body reads when it is called.
+   */
+  freeIdentifiers?: ReadonlySet<string>
   /** When true, declared at module level (outside the component function). */
   isModule?: boolean
   /** When true, this function returns JSX and is inlined at call sites (#569). */
@@ -2053,6 +2058,12 @@ export interface ConstantInfo {
   isJsxFunction?: boolean
   /** When true, the initializer contains an arrow function or function expression (computed from AST). */
   containsArrow?: boolean
+  /**
+   * When true, the initializer IS an arrow function or function expression
+   * (`const status = () => …`), so reading the constant yields a function and
+   * only calling it evaluates the body. Computed from the AST.
+   */
+  isFunctionValue?: boolean
   /**
    * When true, a same-scope statement (a `for`/`while` body, or any other
    * imperative statement) mutates this binding's value AFTER its

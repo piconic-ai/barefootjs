@@ -31,6 +31,7 @@ import { baseTypeName } from './rich-type-evidence.ts'
 import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
 import fs from 'node:fs'
+import { signalSecondBinding } from './signal-initializer.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -3051,6 +3052,7 @@ function collectFunction(
     declarationKind: 'function',
     isModule: _isModule || undefined,
     isJsxFunction: isJsxFunction || undefined,
+    freeIdentifiers: extractFreeIdentifiersFromNode(node),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -3604,6 +3606,12 @@ function collectConstant(
 
   // Compute AST-derived flags for Phase 2 optimization
   const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
+  let unwrappedInitializer: ts.Expression | undefined = node.initializer
+  while (unwrappedInitializer && (ts.isParenthesizedExpression(unwrappedInitializer) || ts.isAsExpression(unwrappedInitializer) || ts.isSatisfiesExpression(unwrappedInitializer))) {
+    unwrappedInitializer = unwrappedInitializer.expression
+  }
+  const isFunctionValue = unwrappedInitializer !== undefined &&
+    (ts.isArrowFunction(unwrappedInitializer) || ts.isFunctionExpression(unwrappedInitializer))
   const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
 
   // Pre-transform bare prop refs for template inlining (#807). Two
@@ -3648,7 +3656,8 @@ function collectConstant(
       const shadowedByNonAlias = new Set<string>()
       for (const s of ctx.signals) {
         shadowedByNonAlias.add(s.getter)
-        if (s.setter) shadowedByNonAlias.add(s.setter)
+        const second = signalSecondBinding(s)
+        if (second) shadowedByNonAlias.add(second)
       }
       for (const m of ctx.memos) shadowedByNonAlias.add(m.name)
       const aliases = new Set<string>()
@@ -3712,6 +3721,7 @@ function collectConstant(
     isJsx,
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
+    isFunctionValue: isFunctionValue || undefined,
     systemConstructKind,
     templateValue,
     origin: {
@@ -4553,7 +4563,8 @@ function collectResolvedNames(ctx: AnalyzerContext): Set<string> {
   for (const f of ctx.localFunctions) names.add(f.name)
   for (const s of ctx.signals) {
     names.add(s.getter)
-    if (s.setter) names.add(s.setter)
+    const second = signalSecondBinding(s)
+    if (second) names.add(second)
   }
   for (const m of ctx.memos) names.add(m.name)
   for (const p of ctx.propsParams) names.add(p.name)

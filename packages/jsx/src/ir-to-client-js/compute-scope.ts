@@ -21,6 +21,7 @@ import {
   graphFunctionReferences,
   graphUsedIdentifiers,
 } from './build-references.ts'
+import { signalSecondBinding } from '../signal-initializer.ts'
 
 export interface DeclarationScopes {
   constantScope: Map<string, DeclarationScope>
@@ -104,7 +105,8 @@ export function computeDeclarationScopes(
   const initRequired = new Set<string>()
   for (const s of ctx.signals) {
     initRequired.add(s.getter)
-    if (s.setter) initRequired.add(s.setter)
+    const second = signalSecondBinding(s)
+    if (second) initRequired.add(second)
   }
   for (const m of ctx.memos) initRequired.add(m.name)
   for (const p of ctx.propsParams) initRequired.add(p.name)
