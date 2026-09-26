@@ -639,7 +639,10 @@ function normalizeSignalInitial(signal: SignalInfo, propsObjectName: string | nu
   const initialValue = signal.initialValue
   const propsName = propsObjectName ?? 'props'
   const propsPrefix = `${propsName}.`
-  if (initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
+  // An async factory's `initial` (#3165) renders exactly as given: an absent
+  // prop means no obtained result, so the value is `undefined` on the server
+  // too, never a type default.
+  if (!signal.factory && initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
     return `${initialValue} ?? ${inferDefaultValue(signal.type)}`
   }
   // Destructured mode (#2265): `templateInitialValue` (when present) has

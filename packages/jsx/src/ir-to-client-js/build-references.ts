@@ -189,7 +189,9 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   // identifiers.ts L137-139
   for (const signal of ctx.signals) {
-    addExprEdges({ kind: 'signal', name: signal.getter }, signal.initialValue, 'init-body')
+    // An async factory's declaration is its whole call (`createQuery(fn,
+    // options)`, #3165): the request function's reads are dependencies too.
+    addExprEdges({ kind: 'signal', name: signal.getter }, signal.factory?.argsText ?? signal.initialValue, 'init-body')
   }
 
   // identifiers.ts L141-143

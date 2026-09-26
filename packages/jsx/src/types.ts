@@ -1637,6 +1637,40 @@ export interface SignalInfo {
    * actually in scope, not a hardcoded canonical name (#2057).
    */
   envFactory?: string
+  /**
+   * Set when this signal is the value half of an async reactive factory
+   * (`const [posts, action] = createQuery(fn, options)`, #3165) rather than
+   * `createSignal`. The getter is a normal reactive getter (so it seeds,
+   * substitutes and folds like any signal), and `initialValue` is the
+   * `options.initial` expression — the literal `undefined` when the call has
+   * no `initial`. `setter` is always `null`: the second tuple binding is
+   * the factory's action, recorded here, never a setter.
+   */
+  factory?: SignalFactoryCall
+}
+
+/**
+ * The async reactive factory call a signal's value comes from (#3165). Every
+ * backend that re-emits the declaration reads this instead of assuming
+ * `createSignal`: client JS re-emits `<callee>(<argsText>)` (the request
+ * function is never evaluated on the server), and SSR seeds the value from
+ * `initialValue` like any other signal.
+ */
+export interface SignalFactoryCall {
+  /** Which factory. `createMutation` (#3210) adds its own kind. */
+  kind: 'query'
+  /** The callee as written: `createQuery`, an alias, or `bf.createQuery`. */
+  callee: string
+  /**
+   * The call's argument list as JS (type annotations stripped), emitted
+   * verbatim into the client `init` body, where the props-rewrite passes turn
+   * prop reads into live `_p` reads like any effect body.
+   */
+  argsText: string
+  /** Free identifiers of `argsText`: what the declaration depends on in client JS. */
+  argsFreeIdentifiers: ReadonlySet<string>
+  /** The action binding (the second tuple element), or `null` when it isn't destructured. */
+  action: string | null
 }
 
 export interface MemoInfo {

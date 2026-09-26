@@ -70,15 +70,22 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
   // getter name into output (#2468 sweep — dropping the declaration
   // entirely left the setter as a guaranteed ReferenceError).
   const getterSlot = plan.getterElided ? '' : plan.getter
-  // Env signal (#2057): emit its own factory call verbatim (`createSearchParams()`)
-  // — a stable request-scoped view, so no baked initial value, profile id,
-  // controlled effect, or branch condition applies.
+  // Env signal (#2057) or async factory (#3165): emit its own factory call
+  // verbatim (`createSearchParams()`, `createQuery(fn, options)`) — no baked
+  // initial value, profile id, or controlled effect applies. Only an async
+  // factory carries a branch condition (see `SignalEmitPlan.branchCondition`).
   if (plan.initializerOverride) {
-    if (plan.setter) {
-      lines.push(`  const [${getterSlot}, ${plan.setter}] = ${plan.initializerOverride}`)
-    } else {
-      lines.push(`  const [${plan.getter}] = ${plan.initializerOverride}`)
+    const bindings = plan.setter ? `${getterSlot}, ${plan.setter}` : plan.getter
+    if (plan.branchCondition) {
+      lines.push(plan.setter
+        ? (plan.getterElided ? `  let ${plan.setter}` : `  let ${plan.getter}, ${plan.setter}`)
+        : `  let ${plan.getter}`)
+      lines.push(`  if (${plan.branchCondition}) {`)
+      lines.push(`    ;[${bindings}] = ${plan.initializerOverride}`)
+      lines.push(`  }`)
+      return
     }
+    lines.push(`  const [${bindings}] = ${plan.initializerOverride}`)
     return
   }
   const id = bfIdArg(plan.bfId)

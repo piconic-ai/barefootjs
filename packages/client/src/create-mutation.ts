@@ -4,13 +4,13 @@
  * `action` is called, never automatically and never cached — a write is an
  * event, not a derivation.
  *
- * NOT exported from `./index.ts` yet, same reason as `createQuery`
- * (spec/async.md §7.8's compiler-recognition gap; a future PR wires up
- * recognition for both factories together). Import it from this file
+ * NOT exported yet: the compiler does not recognise the call until #3210
+ * (spec/async.md §7.8's compiler-recognition gap), which also exports it
+ * through `./async.ts` next to `createQuery`. Import it from this file
  * directly (tests, and that PR's own work) until then.
  */
 
-import { createSignal, onCleanup, untrack, type Reactive } from './reactive.ts'
+import { createSignal, onCleanup, untrack, type Reactive } from '@barefootjs/client/reactive'
 import { isSafeMethod, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
 import { assertHttpDescriptor, markRejectionHandled, normalizeError } from './request-descriptor.ts'
 import { invalidate } from '@barefootjs/shared'

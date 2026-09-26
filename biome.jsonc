@@ -51,7 +51,8 @@
   },
   "overrides": [
     {
-      // Package self-references (`@barefootjs/client/reactive`, resolved
+      // Package self-references (`@barefootjs/client/reactive` and
+      // `@barefootjs/client/async`, resolved
       // through the package `exports` map / the JSR import map that
       // jsr-publish.ts generates) are deliberately extension-less and
       // `deno check` accepts them as-is. Biome's resolver follows the
@@ -69,7 +70,9 @@
         "packages/client/src/runtime/map-array-lazy.ts",
         "packages/client/src/runtime/component.ts",
         "packages/client/src/runtime/apply-rest-attrs.ts",
-        "packages/client/src/runtime/dynamic-text.ts"
+        "packages/client/src/runtime/dynamic-text.ts",
+        "packages/client/src/create-query.ts",
+        "packages/client/src/create-mutation.ts"
       ],
       "linter": {
         "rules": {

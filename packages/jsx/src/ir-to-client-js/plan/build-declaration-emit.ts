@@ -14,7 +14,7 @@ import type { ClientJsContext } from '../types.ts'
 import type { ParamInfo, SignalInfo } from '../../types.ts'
 import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
 import { livePropReadExpr } from '../../props-binding.ts'
-import { ENV_SIGNAL_CLIENT_FACTORY } from '../../adapters/env-signal.ts'
+import { signalFactoryInitializer, signalSecondBinding } from '../../signal-initializer.ts'
 import type {
   ControlledSignalEffectPlan,
   DeclarationEmitPlan,
@@ -87,20 +87,21 @@ function buildSignalPlan(
   ctx: ClientJsContext,
   lookups: DeclarationEmitLookups,
 ): SignalEmitPlan {
-  if (signal.envReader) {
-    // Emit the factory as written (alias / namespace aware, #2057), falling back
-    // to the canonical name if the callee text wasn't captured.
-    const factory = signal.envFactory ?? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader]
-    if (factory) {
-      return {
-        kind: 'signal',
-        getter: signal.getter,
-        setter: signal.setter,
-        getterElided: signal.getterElided,
-        initialValueExpr: '',
-        controlledEffect: null,
-        initializerOverride: `${factory}()`,
-      }
+  // Env signals (#2057) and async factories (#3165) re-emit their own factory
+  // call, as written (alias / namespace aware), instead of `createSignal`.
+  const initializerOverride = signalFactoryInitializer(signal)
+  if (initializerOverride) {
+    return {
+      kind: 'signal',
+      getter: signal.getter,
+      setter: signalSecondBinding(signal),
+      getterElided: signal.getterElided,
+      initialValueExpr: '',
+      controlledEffect: null,
+      initializerOverride,
+      // An env signal is a stable request-scoped view, emitted unconditionally;
+      // an async factory owns a request, so it is created only on its branch.
+      branchCondition: signal.factory ? signal.branchCondition : undefined,
     }
   }
   const controlledEffect = buildControlledSignalEffect(signal, lookups)
