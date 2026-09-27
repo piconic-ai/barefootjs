@@ -212,3 +212,30 @@ jobs:
           path: packages/adapter-tests/.explore/failures/
           if-no-files-found: ignore
           retention-days: 30
+
+  # Posts this run's outcome to the "Nightly: Explore Sweep" tracking issue
+  # (scripts/ci/nightly-report.ts): a comment on every run, the issue
+  # reopened while the sweep is red and closed once it passes. Subscribe to
+  # that issue to be notified of every night's result; set the repository
+  # variable NIGHTLY_REPORT_MENTION (e.g. `@kfly8`) to @-mention someone in
+  # each comment as well.
+  report:
+    needs: [explore-sweep, explore-sweep-adapter]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Report to the tracking issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIGHTLY_REPORT_MENTION: ${{ vars.NIGHTLY_REPORT_MENTION }}
+        run: bun scripts/ci/nightly-report.ts
