@@ -26,3 +26,9 @@ export {
   type CreateQueryOptions,
   type QueryAction,
 } from './create-query.ts'
+
+export {
+  createMutation,
+  type CreateMutationOptions,
+  type MutationAction,
+} from './create-mutation.ts'

@@ -189,12 +189,16 @@ export const ErrorCodes = {
   // the primitive accepts (#3159). Before this code existed, the extra
   // argument(s) were silently dropped from the emitted client JS.
   REACTIVE_FACTORY_EXTRA_ARGUMENTS: 'BF116',
-  // A query action's accessors (`action.isPending()` / `action.error()`), or
-  // the action itself, read in a template-lowered position (#3165). The
-  // request function never runs on the server, so no backend has a value to
-  // render there yet; refused on every adapter including Hono until the
-  // accessors are seeded. See `async-action-refusal.ts`.
+  // An async action's accessors (`action.isPending()` / `action.error()`, from
+  // `createQuery` or `createMutation`), or the action itself, read in a
+  // template-lowered position where their seed would not render like Hono
+  // (#3165; #3166 seeds the positions where it does). Refused on every
+  // adapter including Hono. See `async-action-refusal.ts`.
   ASYNC_ACTION_READ_IN_TEMPLATE: 'BF117',
+  // An `initial` option passed to `createMutation` (#3210). A mutation has no
+  // initial request to seed from (spec/async.md §7.4): its value is
+  // `undefined` until the action is called, and the runtime ignores the key.
+  MUTATION_INITIAL_OPTION: 'BF118',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -331,8 +335,11 @@ const errorMessages: Record<ErrorCode, string> = {
     'silently dropped from the compiled client JS.',
 
   [ErrorCodes.ASYNC_ACTION_READ_IN_TEMPLATE]:
-    "A query action's accessors (`isPending()` / `error()`) cannot be read in a template position yet — " +
+    "An async action's accessors (`isPending()` / `error()`) cannot be read in this template position — " +
     'the request function never runs on the server, so there is no value to render.',
+  [ErrorCodes.MUTATION_INITIAL_OPTION]:
+    '`createMutation` takes no `initial` option — a mutation has no initial request to seed its value from. ' +
+    'Use `createQuery` for a value that needs an initial state.',
 }
 
 // =============================================================================

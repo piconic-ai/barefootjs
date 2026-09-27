@@ -758,3 +758,60 @@ export function PostList(props: { posts?: Post[] }) {
     )
   })
 })
+
+// ---------------------------------------------------------------------------
+// createMutation (#3210): the value is a signal seeded `undefined`; the
+// action is not a setter, and its `isPending()` / `error()` accessors are
+// seeded like a query's (#3166), so both the pending/error states and the
+// idle state are visible structurally (union semantics).
+// ---------------------------------------------------------------------------
+
+describe('createMutation value and action accessors (#3210)', () => {
+  const source = `
+'use client'
+import { createMutation, http } from '@barefootjs/client'
+
+export function CommentForm(props: { postId: number }) {
+  const [saved, save] = createMutation(() => http.post('/api/posts/' + props.postId + '/comments'))
+  return (
+    <form>
+      {save.error() ? <p role="alert">Failed to save</p> : null}
+      {saved() ? <p>Saved</p> : <p>Not saved yet</p>}
+      <button disabled={save.isPending()} onClick={() => save()}>Send</button>
+    </form>
+  )
+}
+`
+
+  test('compiles clean, and the value is a signal while the action is not a setter', () => {
+    const result = renderToTest(source, 'comment-form.tsx')
+    expect(result.errors).toEqual([])
+    expect(result.signals).toEqual(['saved'])
+    expect(result.find({ tag: 'button' })!.onClick!.setters).toEqual([])
+  })
+
+  test('the pending (disabled), error and saved states show up structurally', () => {
+    const result = renderToTest(source, 'comment-form.tsx')
+    expect(result.toStructure()).toBe(
+      [
+        'form',
+        '├── ?{save.error()}',
+        '│   ├── p [role=alert]',
+        '│   │   └── "Failed to save"',
+        '│   └── {null}',
+        '├── ?{saved()}',
+        '│   ├── p',
+        '│   │   └── "Saved"',
+        '│   └── p',
+        '│       └── "Not saved yet"',
+        '└── button (click)',
+        '    └── "Send"',
+      ].join('\n'),
+    )
+    // The pending state is a boolean attribute read, carried as the prop's
+    // expression (toStructure lists only ARIA/role/static attributes).
+    expect(result.find({ tag: 'button' })!.props.disabled).toBe('save.isPending()')
+    expect(result.findByText('Failed to save')).not.toBeNull()
+    expect(result.findByText('Saved')).not.toBeNull()
+  })
+})

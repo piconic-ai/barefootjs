@@ -25,6 +25,8 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createContext()`](#createcontext) | function | 0.1.0 | **Beta** |
 | [`createEffect()`](#createeffect) | function | 0.1.0 | **Beta** |
 | [`createMemo()`](#creatememo) | function | 0.1.0 | **Beta** |
+| [`createMutation()`](#createmutation) | function | 0.39.0 | Alpha |
+| [`CreateMutationOptions`](#createmutationoptions) | interface | 0.39.0 | Alpha |
 | [`createPortal()`](#createportal) | function | 0.1.0 | **Beta** |
 | [`createQuery()`](#createquery) | function | 0.39.0 | Alpha |
 | [`CreateQueryOptions`](#createqueryoptions) | interface | 0.39.0 | Alpha |
@@ -42,6 +44,7 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`HttpParamValue`](#httpparamvalue) | type | 0.39.0 | Alpha |
 | [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
 | [`Memo`](#memo) | type | 0.1.0 | **Beta** |
+| [`MutationAction`](#mutationaction) | interface | 0.39.0 | Alpha |
 | [`onCleanup()`](#oncleanup) | function | 0.1.0 | **Beta** |
 | [`onMount()`](#onmount) | function | 0.1.0 | **Beta** |
 | [`Portal`](#portal) | type | 0.1.0 | **Beta** |
@@ -161,6 +164,18 @@ doubled()    // 4
 setCount(5)
 doubled()    // 10
 ```
+
+### `createMutation()`
+
+`function` · Alpha since 0.39.0 · `@barefootjs/client`
+
+`createMutation(fn, options?)` — a value written only by calling the returned action. Returns `[value, action]`, the same tuple shape as `createQuery`. See spec/async.md §7.4/§7.5.
+
+### `CreateMutationOptions`
+
+`interface` · Alpha since 0.39.0 · `@barefootjs/client`
+
+Options `createMutation` accepts. Unlike `CreateQueryOptions`, there is no `initial` — a mutation has no initial request to seed from (spec/async.md §7.4); the compiler refuses one written anyway (BF118).
 
 ### `createPortal()`
 
@@ -324,6 +339,12 @@ function DialogOverlay() {
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 The cached getter `createMemo` returns.
+
+### `MutationAction`
+
+`interface` · Alpha since 0.39.0 · `@barefootjs/client`
+
+The callable `action` a mutation returns alongside its value: sends the request function's current descriptor when called, and carries two reactive accessors.
 
 ### `onCleanup()`
 

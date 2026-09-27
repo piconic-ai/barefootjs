@@ -1163,6 +1163,7 @@ const PRIMITIVE_CANONICAL_NAMES: Record<string, 'signal' | 'memo' | 'effect' | '
   // value half is a signal getter, so they resolve to the `signal` kind too;
   // SIGNAL_FACTORY_KINDS below records which factory it was.
   createQuery: 'signal',
+  createMutation: 'signal',
 }
 
 /**
@@ -1173,6 +1174,7 @@ const PRIMITIVE_CANONICAL_NAMES: Record<string, 'signal' | 'memo' | 'effect' | '
  */
 const SIGNAL_FACTORY_KINDS: Record<string, SignalFactoryCall['kind']> = {
   createQuery: 'query',
+  createMutation: 'mutation',
 }
 
 /**
@@ -1471,11 +1473,13 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
 }
 
 /**
- * Collect `const [value, action] = createQuery(fn, options)` (#3165) as a
- * signal whose getter is the value and whose initial value is
- * `options.initial`. The action is recorded on `factory`, never as a setter,
- * so setter-keyed logic (controlled-prop sync, handler→setter wiring, SSR
- * setter stubs) leaves it alone.
+ * Collect `const [value, action] = createQuery(fn, options)` (#3165) or
+ * `createMutation(fn, options)` (#3210) as a signal whose getter is the value
+ * and whose initial value is `options.initial` (a query) or `undefined` (a
+ * mutation, which has no `initial`: spec/async.md §7.4). The action is
+ * recorded on `factory`, never as a setter, so setter-keyed logic
+ * (controlled-prop sync, handler→setter wiring, SSR setter stubs) leaves it
+ * alone.
  *
  * `initial` is read structurally from an object-literal `options` with no
  * spread: its value expression when the key is present, the literal
@@ -1502,7 +1506,11 @@ function collectFactorySignal(
   if (elements.length === 2 && action === null) return
   if (getterElided && action === null) return
 
-  const initialNode = factoryInitialNode(callExpr.arguments[1])
+  // A mutation's value is `undefined` until its action is called; an
+  // `initial` it was given anyway is refused (BF118), never read.
+  const initialNode: FactoryInitialNode = kind === 'mutation'
+    ? { kind: 'absent' }
+    : factoryInitialNode(callExpr.arguments[1])
   const initialValue = initialNode.kind === 'expression'
     ? ctx.getJS(initialNode.node)
     : initialNode.kind === 'member-read'
@@ -2328,9 +2336,9 @@ const CLIENT_EXPORTS = new Set([
   // `envReader` key, with no `searchParams`-name allow-list.
   'createSearchParams',
   // Async layer 0 (spec/async.md §7): `http` descriptors and `HttpError`
-  // (#3161), and `createQuery`, recognised structurally as a factory signal
-  // (#3165).
-  'http', 'HttpError', 'createQuery',
+  // (#3161), and `createQuery` (#3165) / `createMutation` (#3210),
+  // recognised structurally as factory signals.
+  'http', 'HttpError', 'createQuery', 'createMutation',
   // Pure URL-query builder (#2042) — the functional counterpart to
   // `searchParams`. Runs natively on the client; SSR adapters lower a
   // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
@@ -6363,8 +6371,10 @@ function checkStatementsForReactiveFactoryArity(statements: readonly ts.Statemen
 
       // Async reactive factories (`createQuery(fn, options?)`, #3165) return
       // `[value, action]` and take a request function plus options.
-      if (kind === 'signal' && resolveSignalFactoryKind(callExpr, ctx) !== null) {
+      const factoryKind = kind === 'signal' ? resolveSignalFactoryKind(callExpr, ctx) : null
+      if (factoryKind !== null) {
         checkAsyncFactoryArity(decl, callExpr, calleeText, loc, ctx)
+        if (factoryKind === 'mutation') checkMutationInitialOption(callExpr, calleeText, ctx)
         continue
       }
 
@@ -6457,6 +6467,25 @@ function checkAsyncFactoryArity(
         `compiled client JS; remove them.`,
     }))
   }
+}
+
+/**
+ * BF118 (#3210): an `initial` key in `createMutation`'s options. A mutation's
+ * value is `undefined` until its action is called (spec/async.md §7.4), and
+ * the runtime ignores the key, so an author who writes it expects a seed
+ * that never happens. Only an object-literal `options` is read, the same
+ * structural read `createQuery`'s `initial` goes through; any other shape
+ * carries no key the compiler can see.
+ */
+function checkMutationInitialOption(callExpr: ts.CallExpression, calleeText: string, ctx: AnalyzerContext): void {
+  const initialNode = factoryInitialNode(callExpr.arguments[1])
+  if (initialNode.kind !== 'expression') return
+  ctx.errors.push(createError(ErrorCodes.MUTATION_INITIAL_OPTION, getSourceLocation(initialNode.node, ctx.sourceFile, ctx.filePath), {
+    severity: 'error',
+    message:
+      `'${calleeText}(...)' takes no 'initial' option: a mutation's value is undefined until its action is ` +
+      `called, so this value would never be used. Use 'createQuery' for a value that needs an initial state.`,
+  }))
 }
 
 /**

@@ -59,8 +59,9 @@ export { unwrap } from './unwrap.ts'
 export { queryHref, type QueryParams, type QueryParamValue } from './query-href.ts'
 export { formatDate } from './format-date.ts'
 
-// Async layer 0 (spec/async.md §7): `http` request descriptors (#3156) and
-// `createQuery` (#3157, recognised by the compiler since #3165). `requestKey`
+// Async layer 0 (spec/async.md §7): `http` request descriptors (#3156),
+// `createQuery` (#3157, recognised by the compiler since #3165) and
+// `createMutation` (#3200, recognised since #3210). `requestKey`
 // and `sendRequest` stay internal to the package. `HttpError` is public: it is
 // what a query's `error()` holds for a non-2xx response, so callers need it for
 // `instanceof` checks. Re-exported from the shared `@barefootjs/client/async`
@@ -77,6 +78,9 @@ export {
   createQuery,
   type CreateQueryOptions,
   type QueryAction,
+  createMutation,
+  type CreateMutationOptions,
+  type MutationAction,
 } from '@barefootjs/client/async'
 
 export { createContext, type Context } from './context.ts'
