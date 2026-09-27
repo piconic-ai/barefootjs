@@ -2617,7 +2617,7 @@
           ]
         },
         "go-template": {
-          "pass": 287,
+          "pass": 289,
           "total": 321,
           "gaps": [
             {
@@ -2750,18 +2750,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-prop-member-signal-seed",
-              "limitations": [
-                "nested-prop-member-signal-seed"
-              ]
-            },
-            {
-              "fixture": "nested-prop-signal-child-prop",
-              "limitations": [
-                "nested-prop-member-signal-seed"
               ]
             },
             {
@@ -4437,7 +4425,7 @@
           ]
         },
         "go-template": {
-          "pass": 417,
+          "pass": 419,
           "total": 465,
           "gaps": [
             {
@@ -4642,18 +4630,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-prop-member-signal-seed",
-              "limitations": [
-                "nested-prop-member-signal-seed"
-              ]
-            },
-            {
-              "fixture": "nested-prop-signal-child-prop",
-              "limitations": [
-                "nested-prop-member-signal-seed"
               ]
             },
             {
@@ -7857,7 +7833,7 @@
           ]
         },
         "go-template": {
-          "pass": 247,
+          "pass": 249,
           "total": 286,
           "gaps": [
             {
@@ -8014,18 +7990,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-prop-member-signal-seed",
-              "limitations": [
-                "nested-prop-member-signal-seed"
-              ]
-            },
-            {
-              "fixture": "nested-prop-signal-child-prop",
-              "limitations": [
-                "nested-prop-member-signal-seed"
               ]
             },
             {

@@ -2134,6 +2134,34 @@
       }
     }
   ],
+  "nested-loop-outer-binding": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
+  "nested-loop-triple-depth": [
+    {
+      "name": "gen:trees:empty",
+      "props": {
+        "trees": []
+      }
+    }
+  ],
+  "nested-prop-member-signal-seed": [
+    {
+      "name": "gen:initial:object:minimal",
+      "props": {
+        "initial": {
+          "label": "",
+          "open": false,
+          "items": []
+        }
+      }
+    }
+  ],
   "nullish-coalescing-destructured": [
     {
       "name": "gen:label:absent",
@@ -3773,6 +3801,15 @@
       "name": "gen:children:absent",
       "props": {
         "className": "",
+        "__instanceId": "Toggle_test"
+      }
+    }
+  ],
+  "toggle-shared": [
+    {
+      "name": "gen:toggleItems:empty",
+      "props": {
+        "toggleItems": [],
         "__instanceId": "Toggle_test"
       }
     }

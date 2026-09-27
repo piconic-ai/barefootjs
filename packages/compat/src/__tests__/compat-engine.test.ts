@@ -61,7 +61,6 @@ describe('compileForCompat', () => {
           'loop-row-child-children-attrs-frozen',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
-          'nested-prop-member-signal-seed',
           'off-subset-callback-body',
           'opaque-local-accessor-call',
           'signal-read-in-nested-static-loop',

@@ -143,6 +143,24 @@ export class CompileState {
   currentTypeDefinitions: TypeDefinition[] = []
 
   /**
+   * The current IR's props params (full `ParamInfo`, with `type`), stashed
+   * like `currentMemos` so a signal seeded from a member of an object-typed
+   * prop (`createSignal(initial.items)`) can walk the prop's type without
+   * threading the list through every seed-baking signature
+   * (`resolvePropMemberSeed`, `value/prop-member-seed.ts`).
+   */
+  currentPropsParams: IRMetadata['propsParams'] = []
+
+  /**
+   * `buildPropTypeOverrides`'s result for the component whose types are
+   * being generated — the SAME map `generateTypes` hands the Input/Props
+   * generators, stashed so `resolvePropMemberSeed` resolves a prop's Input
+   * field type through `resolvePropGoType` exactly as the Input struct
+   * declares it. Empty until `generateTypes` computes it.
+   */
+  propTypeOverrides: Map<string, string> = new Map()
+
+  /**
    * `useContext(...)` consumers in the component being generated. Each becomes
    * a struct field defaulted to the `createContext` default.
    */

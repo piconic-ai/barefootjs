@@ -4368,34 +4368,6 @@
           ]
         }
       },
-      "nested-prop-member-signal-seed": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "nested-prop-member-signal-seed"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
-      "nested-prop-signal-child-prop": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "nested-prop-member-signal-seed"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -5910,14 +5882,6 @@
         "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
       },
-      "nested-prop-member-signal-seed": {
-        "description": "signals seeded from nested prop members render their seed at SSR (text, conditional, keyed loop)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-member-signal-seed.ts"
-      },
-      "nested-prop-signal-child-prop": {
-        "description": "a signal seeded from a nested prop member reaches a child component prop at SSR",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-signal-child-prop.ts"
-      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6557,23 +6521,6 @@
         "pebble",
         "twig",
         "xslate"
-      ],
-      "diagnostics": [
-        "BF101"
-      ]
-    },
-    "nested-prop-member-signal-seed": {
-      "title": "Signal seeded from a member of an object-typed prop",
-      "kind": "refusal",
-      "given": "a `createSignal` whose initial value is a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`), read by the component as text, a conditional, or a loop source, or forwarded to a child component prop",
-      "expected": "the server HTML renders the seeded value, as if the member had been passed as a top-level prop",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "nested-prop-member-signal-seed",
-        "nested-prop-signal-child-prop"
-      ],
-      "adapters": [
-        "go-template"
       ],
       "diagnostics": [
         "BF101"
