@@ -12,6 +12,7 @@
 
 import type { JSXFixture } from '../../adapter-tests/src/types'
 import { CSR_SKIP_FIXTURES } from '../../adapter-tests/src/csr-skip-set'
+import { harnessProgramFor } from '../../adapter-tests/src/harness-program'
 import type { LoadedCompatAdapter } from './adapter-registry'
 import { compileForCompat } from './engine'
 
@@ -52,7 +53,7 @@ export function computeHonoErrorPinnedFixtures(loadedAdapters: readonly LoadedCo
  */
 export function twinWorksOnAdapter(twin: JSXFixture, adapter: LoadedCompatAdapter): boolean {
   const instance = adapter.factory()
-  const errors = compileForCompat(twin.source, 'component.tsx', instance, 'conformance', twin.components)
+  const errors = compileForCompat(twin.source, 'component.tsx', instance, 'conformance', twin.components, harnessProgramFor)
   const tier1Clean = !errors.some(e => e.severity === 'error')
   const tier2Unpinned = !(twin.id in adapter.pins)
   const tier2NonDivergent = !(twin.id in adapter.renderDivergences)
@@ -308,7 +309,14 @@ export function findUnprovenEscapeClaims(
   adapter: LoadedCompatAdapter,
   fixture: JSXFixture,
 ): { claimed: string[]; demonstrated: string[]; unproven: string[] } {
-  const errors = compileForCompat(fixture.source, `${fixture.id}.tsx`, adapter.factory(), 'conformance', fixture.components)
+  const errors = compileForCompat(
+    fixture.source,
+    `${fixture.id}.tsx`,
+    adapter.factory(),
+    'conformance',
+    fixture.components,
+    harnessProgramFor,
+  )
   const claimed = new Set<string>()
   for (const error of errors) {
     for (const { kind } of error.suggestion?.escape ?? []) claimed.add(kind)

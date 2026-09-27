@@ -37,6 +37,6 @@ export function PostList(props: { posts: Post[] }) {
 `,
   props: { posts: [{ id: 1, title: 'Alpha' }] },
   expectedHtml: `
-    <div aria-busy="false" bf-s="test"><!--bf-cond-start:s0--><!--bf-cond-end:s0--><ul bf="s2"><li data-key="1"><!--bf:s1-->Alpha<!--/--></li></ul></div>
+    <div aria-busy="false" bf-s="test" bf="s3"><!--bf-cond-start:s0--><!--bf-cond-end:s0--><ul bf="s2"><li data-key="1"><!--bf:s1-->Alpha<!--/--></li></ul></div>
   `,
 })

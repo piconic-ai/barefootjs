@@ -36,6 +36,12 @@ on:
       - 'integrations/shared/lib/**'
       - 'integrations/*/Dockerfile'
       - 'integrations/*/wrangler.toml'
+  # Split workflow under the stacked-PR policy (CLAUDE.md, "CI on stacked
+  # PRs"): the unit/IR jobs (`test`, `test-ui`) are the light set and run on
+  # every PR; the browser jobs (`e2e-site-core`, `fixture-hydrate`,
+  # `e2e-site-ui`) are the heavy set, gated to main-based PRs by their
+  # job-level `if`. No `branches` filter, because the light half must run on
+  # stacked PRs.
   pull_request:
     paths:
       - 'packages/client/**'
@@ -160,6 +166,9 @@ jobs:
         run: bun test ui/components/
 
   e2e-site-core:
+    # Heavy set: skipped on a stacked PR (base != main). See the trigger
+    # comment above.
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -204,6 +213,8 @@ jobs:
           path: site/core/playwright-report/
 
   fixture-hydrate:
+    # Heavy set: see the `e2e-site-core` job.
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -255,6 +266,8 @@ jobs:
           retention-days: 30
 
   e2e-site-ui:
+    # Heavy set: see the `e2e-site-core` job.
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:

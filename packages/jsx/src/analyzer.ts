@@ -97,14 +97,29 @@ function findBrandPackageImportLoc(
  * imported types may resolve to `any` and the signal/memo regex fallback kicks in.
  * For full type resolution in build tools, pass a pre-built ts.Program via
  * CompileOptions.program instead.
+ *
+ * `hostOptions.currentDirectory` pins the directory a RELATIVE `filePath`
+ * (and the Program's own `getCurrentDirectory()`, which also roots
+ * `@types` discovery) resolves against, instead of `process.cwd()`. The
+ * Program still serves `source` at the relative name, so
+ * `program.getSourceFile(filePath)` resolves to it and the result can be
+ * handed to `compileJSX` as `CompileOptions.program` under that same
+ * relative `filePath`. Used by the conformance harness
+ * (`packages/adapter-tests/src/harness-program.ts`) to compile fixtures
+ * under a relative virtual name without its type resolution depending on
+ * where the process was started (#3220). Omitted, behaviour is unchanged.
  */
 export function createProgramForFile(
   source: string,
-  filePath: string
+  filePath: string,
+  hostOptions: { currentDirectory?: string } = {}
 ): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
   incrementCounter('programCreations')
   try {
-    const normalizedPath = path.resolve(filePath)
+    const { currentDirectory } = hostOptions
+    const resolveFrom = (fileName: string): string =>
+      currentDirectory === undefined ? path.resolve(fileName) : path.resolve(currentDirectory, fileName)
+    const normalizedPath = resolveFrom(filePath)
 
     const compilerOptions: ts.CompilerOptions = {
       target: ts.ScriptTarget.Latest,
@@ -121,18 +136,19 @@ export function createProgramForFile(
 
     const virtualHost: ts.CompilerHost = {
       ...defaultHost,
+      ...(currentDirectory === undefined ? {} : { getCurrentDirectory: () => currentDirectory }),
       getSourceFile(fileName, languageVersion) {
-        if (path.resolve(fileName) === normalizedPath) {
+        if (resolveFrom(fileName) === normalizedPath) {
           return ts.createSourceFile(fileName, source, languageVersion, true, ts.ScriptKind.TSX)
         }
         return defaultHost.getSourceFile(fileName, languageVersion)
       },
       fileExists(fileName) {
-        if (path.resolve(fileName) === normalizedPath) return true
+        if (resolveFrom(fileName) === normalizedPath) return true
         return defaultHost.fileExists(fileName)
       },
       readFile(fileName) {
-        if (path.resolve(fileName) === normalizedPath) return source
+        if (resolveFrom(fileName) === normalizedPath) return source
         return defaultHost.readFile(fileName)
       },
     }

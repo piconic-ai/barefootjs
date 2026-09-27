@@ -18,6 +18,7 @@ import {
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { harnessProgramFor } from './harness-program'
 
 // The CSR runtime is a JS engine, so — like Hono / any `JsxAdapter` — it runs
 // an off-subset callback body (`filter`/`sort` predicate the compiler can't
@@ -65,10 +66,11 @@ function compileToClientJs(source: string, filePath: string): string {
   // emits at module level. The CSR harness needs the full set so the
   // template lambdas can resolve cross-component module references (#1295).
   const componentNames = listComponentFunctions(source, filePath)
+  const program = harnessProgramFor(source, filePath)
   if (componentNames.length === 0) {
     // Fall back to default-export resolution (preserves prior behaviour for
     // sources where `listComponentFunctions` returns nothing).
-    const ctx = analyzeComponent(source, filePath, undefined, undefined, csrAcceptsCallbackBody)
+    const ctx = analyzeComponent(source, filePath, undefined, program, csrAcceptsCallbackBody)
     if (!ctx.jsxReturn) {
       throwIfErrors(ctx, filePath)
       return ''
@@ -94,7 +96,7 @@ function compileToClientJs(source: string, filePath: string): string {
 
   const outputs: string[] = []
   for (const componentName of componentNames) {
-    const ctx = analyzeComponent(source, filePath, componentName, undefined, csrAcceptsCallbackBody)
+    const ctx = analyzeComponent(source, filePath, componentName, program, csrAcceptsCallbackBody)
     if (!ctx.jsxReturn) {
       throwIfErrors(ctx, filePath)
       continue

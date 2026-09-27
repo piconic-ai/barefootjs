@@ -17,6 +17,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { jsxFixtures } from '../../../adapter-tests/fixtures'
+import { harnessProgramFor } from '../../../adapter-tests/src/harness-program'
 import { loadCompatAdapters } from '../adapter-registry'
 import { compileForCompat } from '../engine'
 
@@ -59,6 +60,7 @@ describe('renderDivergences consistency', () => {
             instance,
             'conformance',
             fixture.components,
+            harnessProgramFor,
           )
           const errorSeverity = errors.filter(e => e.severity === 'error')
           if (errorSeverity.length > 0) {

@@ -5,7 +5,8 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, augmentInheritedPropAccesses, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, deriveStashFromDefaults, augmentInheritedPropAccesses, importsSearchParams } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '@barefootjs/adapter-tests'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -105,7 +106,7 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
   const childTemplates: Map<string, { template: string; ir: ComponentIR }> = new Map()
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
-      const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
+      const childResult = compileFixtureJSX(childSource, filename, { adapter, outputIR: true })
       const childErrors = childResult.errors.filter(e => e.severity === 'error')
       if (childErrors.length > 0) {
         throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
@@ -140,7 +141,7 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
   // matches this harness's real behavior — every sibling child template is registered
   // alongside the parent before rendering, so a loop-body cross-template
   // call resolves at render time (#2205).
-  const result = compileJSX(source, 'component.tsx', {
+  const result = compileFixtureJSX(source, 'component.tsx', {
     adapter,
     outputIR: true,
     siblingTemplatesRegistered: Boolean(components),

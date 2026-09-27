@@ -42,7 +42,7 @@
 import { describe, test, expect } from 'bun:test'
 import { renderTest } from './render-test'
 import * as ts from 'typescript'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from './harness-program'
 import type { TemplateAdapter } from '@barefootjs/jsx'
 import { Window, type Node as HappyNode, type Element as HappyElement, type Comment as HappyComment } from 'happy-dom'
 import { BF_SCOPE } from '@barefootjs/shared'
@@ -209,7 +209,7 @@ export function runClaimPlanConformance(opts: RunClaimPlanConformanceOptions): v
       const skipped = opts.skipFixtures?.has(fixture.id) ?? false
       const t = skipped ? test.skip : renderTest
       t(`${fixture.id}: claim-plan paths resolve against real SSR DOM`, async () => {
-        const clientJs = compileJSX(fixture.source, `${fixture.id}.tsx`, { adapter: opts.factory() })
+        const clientJs = compileFixtureJSX(fixture.source, `${fixture.id}.tsx`, { adapter: opts.factory() })
           .files.find(f => f.type === 'clientJs')?.content
         if (!clientJs) return // stateless fixture — no claim plan to check
 

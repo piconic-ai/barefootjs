@@ -22,7 +22,7 @@
  * emits from the same `element.keyAttr` branch.
  */
 import { describe, test, expect } from 'bun:test'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../harness-program'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { GoTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { MojoAdapter } from '@barefootjs/mojolicious/adapter'
@@ -98,7 +98,7 @@ const ADAPTERS: readonly AdapterCase[] = [
 ]
 
 function markedTemplate(source: string, adapter: TemplateAdapter): string {
-  const result = compileJSX(source, 'Select.tsx', { adapter })
+  const result = compileFixtureJSX(source, 'Select.tsx', { adapter })
   expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
   const file = result.files.find(f => f.type === 'markedTemplate')
   expect(file).toBeDefined()

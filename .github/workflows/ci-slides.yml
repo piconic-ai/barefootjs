@@ -15,6 +15,11 @@ on:
       - 'site/core/scripts/build-slides.ts'
       - '.github/workflows/ci-slides.yml'
   pull_request:
+    # Heavy set: main-based PRs only, default activity types. A stacked PR
+    # (base != main) never runs this; ci-heavy-gate.yml goes red on a PR
+    # retargeted onto main until a push runs it. See CLAUDE.md, "CI on
+    # stacked PRs".
+    branches: [main]
     paths:
       - 'site/core/slides/**'
       - 'site/core/scripts/build-slides.ts'

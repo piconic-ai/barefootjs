@@ -19,7 +19,7 @@
  */
 
 import { expect } from 'bun:test'
-import { compileJSX } from '../../../jsx/src/compiler'
+import { compileFixtureJSX } from '../harness-program'
 import type { TemplateAdapter } from '../../../jsx/src/types'
 import type { ConformanceCase } from '../conformance'
 import {
@@ -176,7 +176,7 @@ export function runTemplatePrimitiveCase(
   const previousPlugins = getLoweringPlugins()
   registerLoweringPlugin(customSerializeTestPlugin)
   try {
-    const result = compileJSX(input.source, 'Test.tsx', { adapter })
+    const result = compileFixtureJSX(input.source, 'Test.tsx', { adapter })
     return result.files.find((f) => f.type === 'clientJs')?.content ?? ''
   } finally {
     __resetLoweringPluginsForTest(previousPlugins)

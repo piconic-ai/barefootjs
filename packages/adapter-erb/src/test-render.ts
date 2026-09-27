@@ -36,7 +36,8 @@
  * regression test.
  */
 
-import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '@barefootjs/adapter-tests'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -131,7 +132,7 @@ export async function renderErbComponent(options: RenderOptions): Promise<string
   const childTemplates: Map<string, { template: string; ir: ComponentIR }> = new Map()
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
-      const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
+      const childResult = compileFixtureJSX(childSource, filename, { adapter, outputIR: true })
       const childTemplateFiles = childResult.files.filter(f => f.type === 'markedTemplate')
       if (childTemplateFiles.length === 0) throw new Error(`No marked template for ${filename}`)
       const childIrFiles = childResult.files.filter(f => f.type === 'ir')
@@ -155,7 +156,7 @@ export async function renderErbComponent(options: RenderOptions): Promise<string
   // matches this harness's real behavior — every sibling child template is registered
   // alongside the parent before rendering, so a loop-body cross-template
   // call resolves at render time (#2205).
-  const result = compileJSX(source, 'component.tsx', {
+  const result = compileFixtureJSX(source, 'component.tsx', {
     adapter,
     outputIR: true,
     siblingTemplatesRegistered: Boolean(components),

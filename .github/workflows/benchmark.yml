@@ -1,20 +1,29 @@
 name: Benchmark
 
-# Trigger notes — two blind spots this configuration has, both hit for real:
+# Trigger notes — two blind spots, both hit for real:
 #
 #  - `branches: [main]` means a STACKED pull request (one based on another
 #    feature branch) never runs this workflow. Retargeting its base to main
 #    afterwards does NOT re-trigger, so the numbers get checked only if
 #    something is pushed after the retarget. Several PRs in the slot
-#    unification series merged with no benchmark run at all this way.
+#    unification series merged with no benchmark run at all this way. The
+#    filter is back as repo-wide policy for the heavy set, and
+#    ci-heavy-gate.yml now makes the retarget case loud: it stays red until
+#    a push runs this on the retargeted head.
 #  - the workflow file was absent from its own `paths`, so a change to the
 #    benchmark steps could not test itself. The SSR-heap step below was added
 #    and merged without ever executing because of exactly that.
 #
 # `workflow_dispatch` exists so this can be run on demand against any ref —
-# the escape hatch for both cases, and how a workflow edit gets verified.
+# the escape hatch for a stacked PR's numbers, and how a workflow edit gets
+# verified.
 on:
   pull_request:
+    # Heavy set: main-based PRs only, default activity types. A stacked PR
+    # (base != main) never runs this; ci-heavy-gate.yml goes red on a PR
+    # retargeted onto main until a push runs it. See CLAUDE.md, "CI on
+    # stacked PRs".
+    branches: [main]
     paths:
       - 'packages/client/**'
       - 'benchmarks/**'

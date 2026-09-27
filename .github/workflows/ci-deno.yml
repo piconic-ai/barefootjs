@@ -16,6 +16,11 @@ on:
       - 'packages/cli/**'
       - '.github/workflows/ci-deno.yml'
   pull_request:
+    # Heavy set: main-based PRs only, default activity types. A stacked PR
+    # (base != main) never runs this; ci-heavy-gate.yml goes red on a PR
+    # retargeted onto main until a push runs it. See CLAUDE.md, "CI on
+    # stacked PRs".
+    branches: [main]
     paths:
       - 'packages/cli/**'
       - '.github/workflows/ci-deno.yml'
