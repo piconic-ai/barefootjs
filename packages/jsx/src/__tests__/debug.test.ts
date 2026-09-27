@@ -1646,3 +1646,90 @@ describe('prop reads are tracked deps (#2903)', () => {
     expect(formatComponentGraph(graph)).toContain('~ <div title={pick()}> (no tracked deps)')
   })
 })
+
+describe('async factories in the graph (#3167, spec/async.md §7.8)', () => {
+  const source = `
+'use client'
+import { createQuery, createMutation, createMemo, createSignal, http } from '@barefootjs/client'
+type Post = { id: number; title: string }
+export function Feed(props: { posts: Post[] }) {
+  const [page, setPage] = createSignal(1)
+  const [posts, fetchPosts] = createQuery(() => http.get<Post[]>('/api/posts', { page: page() }), { initial: props.posts })
+  const busy = createMemo(() => fetchPosts.isPending())
+  const [saved, save] = createMutation(() => http.post('/api/likes', { body: { page: page() } }))
+  return (
+    <div aria-busy={fetchPosts.isPending()}>
+      {fetchPosts.error() ? <p>Failed</p> : null}
+      <ul>{posts().map((post) => <li key={post.id}>{post.title}</li>)}</ul>
+      <button disabled={save.isPending()} onClick={() => { setPage(page() + 1); save() }}>next</button>
+      <p>{busy() ? 'loading' : saved() ? 'liked' : 'idle'}</p>
+    </div>
+  )
+}
+`
+  const graph = buildComponentGraph(source, 'Feed.tsx')
+
+  test('a query is a signal source with its request inputs; a mutation has none', () => {
+    expect(graph.signals.find(s => s.name === 'posts')!.factory).toEqual({
+      kind: 'query',
+      callee: 'createQuery',
+      action: 'fetchPosts',
+      requestDeps: ['page'],
+    })
+    // The mutation's request function also reads `page`, but untracked.
+    expect(graph.signals.find(s => s.name === 'saved')!.factory).toEqual({
+      kind: 'mutation',
+      callee: 'createMutation',
+      action: 'save',
+      requestDeps: [],
+    })
+    expect(graph.signals.find(s => s.name === 'page')!.consumers).toContain('query:posts')
+    expect(graph.signals.find(s => s.name === 'page')!.consumers).not.toContain('query:saved')
+  })
+
+  test('accessor reads are nodes with DOM and memo consumers', () => {
+    expect(graph.accessors.map(a => a.name)).toEqual([
+      'fetchPosts.isPending',
+      'fetchPosts.error',
+      'save.isPending',
+      'save.error',
+    ])
+    const consumersOf = (name: string) => graph.accessors.find(a => a.name === name)!.consumers
+    expect(consumersOf('fetchPosts.isPending')).toEqual(['dom:aria-busy', 'memo:busy'])
+    expect(consumersOf('fetchPosts.error')).toEqual(['dom:conditional "s0"'])
+    expect(consumersOf('save.isPending')).toEqual(['dom:disabled'])
+    expect(consumersOf('save.error')).toEqual([])
+    expect(graph.memos.find(m => m.name === 'busy')!.deps).toEqual(['fetchPosts.isPending'])
+    // An accessor read is never mistaken for a prop read.
+    expect(graph.props.map(p => p.name)).toEqual([])
+  })
+
+  test('tracing a query input reaches the query value and accessor readers', () => {
+    const path = traceUpdatePath(graph, 'page')!
+    const query = path.dependents.find(d => d.name === 'posts')!
+    expect(query.kind).toBe('query')
+    expect(query.children.map(c => c.name)).toEqual(['loop "s2"', 'aria-busy', 'busy', 'conditional "s0"'])
+    expect(traceUpdatePath(graph, 'save.isPending')!.dependents.map(d => d.name)).toEqual(['disabled'])
+  })
+
+  test('the text format lists the factory, its accessors and their edges', () => {
+    const text = formatComponentGraph(graph)
+    expect(text).toContain('posts (initial: props.posts) [createQuery, action fetchPosts] <- page')
+    expect(text).toContain('saved (initial: undefined) [createMutation, action save]')
+    expect(text).toContain('  accessors:\n    fetchPosts.isPending() (of posts)')
+    expect(text).toContain('    page -> query:posts')
+    expect(text).toContain('    save.isPending -> dom:disabled')
+    expect(text).toContain('    busy <- fetchPosts.isPending')
+  })
+
+  test('the JSON form carries the factory and the accessors', () => {
+    const json = graphToJSON(graph) as { signals: { name: string; factory?: unknown }[]; accessors: { name: string }[] }
+    expect(json.signals.find(s => s.name === 'saved')!.factory).toEqual({
+      kind: 'mutation',
+      callee: 'createMutation',
+      action: 'save',
+      requestDeps: [],
+    })
+    expect(json.accessors.map(a => a.name)).toContain('save.error')
+  })
+})

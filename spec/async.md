@@ -1,9 +1,14 @@
-# Async Specification (Design Draft)
+# Async Specification
 
-> **Status:** design. Nothing in this document is implemented yet — `createQuery`,
-> `createMutation` and the `http` request descriptors (layer 0, "Three layers" below) do not
-> exist in `@barefootjs/client`. This spec fixes the model before any of it ships, in the
-> style of [`router.md`](./router.md).
+> **Status:** layer 0 is implemented; layers 1 and 2 are design. `http` request descriptors
+> (#3161), `createQuery` (#3162) and `createMutation` (#3202) ship in `@barefootjs/client`
+> through the `@barefootjs/client/async` subpath. The compiler recognises both factories on
+> all ten adapters (#3165, #3166, #3210) and refuses bad-arity calls (#3163), and
+> `invalidates` reaches the router's page cache through the invalidation bus (#3201). Still
+> design only: request functions that return a bare `Promise`, with their site-id key and the
+> `key` option (§7.2, §7.5); `createSubscription` and the other §7.7 items; and layers 1–2.
+> §7.8 records what the implementation pins. The spec was written before any of it shipped, in
+> the style of [`router.md`](./router.md).
 
 ## 1. Values, not control flow
 
@@ -474,31 +479,64 @@ React's "fetch after mount", with the cache and the race guard still in place.
   delayed). Runtime policies; none of them change a component. Not part of v0.
 - **`<Async>`'s client-side fold (layer 1)** — after layer 0.
 
-### 7.8 What the implementation PR must pin
+### 7.8 What the implementation pins
 
-Compiler: `action.isPending()` / `error()` lower on all nine adapters (seeds `false` /
-`undefined`); `options.initial` seeds the value on all nine adapters without the same-name
-prop collision (#2669); the request function is emitted like an effect body and never
-evaluated by the SSR shim or the CSR template lambda; an unrecognised tuple-returning
-factory becomes a **loud** diagnostic (today it silently turns into a prop accessor — the
-same shape as the `opaque-local-accessor-call` entry in the limitation registry,
-`packages/adapter-tests/limitations/opaque-local-accessor-call.ts`; extend that entry and
-its fixture rather than filing a second one); hydration parity for
-mode A and mode B via `renderToTest` with and without `initial`; the method check
-(`createMutation` with a safe method warns).
+This section began as the list of what the implementation PR had to pin. Layer 0 now ships, so
+it records where each item is pinned, and where the implementation departed from the draft.
 
-Runtime: descriptor purity and key stability (body serialisation independent of key order);
-one send per tick (a diamond in the function's dependencies — the `diamond-propagation`
-fixture's shape — produces exactly one request, keyed by the consistent snapshot);
-the init rule (`initial` present → no send, cached, re-fetched after `ttl`; absent → send);
-mutation trigger and `invalidates`; the generation guard on `1 → 2 → 1` dependency changes;
-previous-value retention across pending and error, `error` cleared by the next success;
-disposal drops in-flight resolutions (the query is owned by its scope, so `disposeScope`
-on a region swap or a removed `.map()` row releases it and nothing leaks across
-navigations).
+**Compiler** (`packages/jsx`, spec/compiler.md's "Async action accessor seeding" section):
 
-Around it: the memo chain resolves its SSR seed from `initial`; the value type follows the
-prop's optionality; `bf debug graph` shows query nodes with edges from the signals the
-function reads (a query is a signal source; one the graph does not show cannot be traced).
-Per `subset-conformance.md`'s change-time coupling rule, the factory,
-its fixtures, the runtime unit tests and this spec's status line land in the same PR.
+- **Recognition.** `const [value, action] = createQuery(fn, options?)` and
+  `createMutation(fn, options?)` are recognised structurally as reactive factories
+  (`SignalInfo.factory`, `kind: 'query' | 'mutation'`), including through an alias or a
+  namespace import when a TypeChecker is available. `[value]` and `[, action]` are accepted.
+- **The value seed.** A query's value is seeded from `options.initial` on all ten adapters (the
+  literal `undefined` when it is absent), without the same-name prop collision of #2669
+  (`create-query-initial` binds `posts` from `props.posts`). A mutation's value is seeded
+  `undefined`; an `initial` passed to `createMutation` is refused with BF118. The memo chain
+  resolves its SSR seed through the value (`create-query-derived-memo`), and the value's type
+  follows the prop's optionality (`createQuery`'s overloads: a required `initial` gives `T`).
+- **The accessors.** `action.isPending()` / `action.error()` are seeded `false` / `undefined`
+  **only where that seed renders byte-identically to the Hono reference**: as a condition
+  (both accessors), and `isPending()` as an intrinsic element's ARIA boolean-state attribute or
+  HTML boolean attribute (`aria-busy={…}`, `disabled={…}`). This is narrower than the draft's
+  "lower on all adapters": a text child, `error()` in any attribute, `isPending()` in any other
+  attribute, calling the action, and a compound or transitive read are refused with BF117,
+  whose `/* @client */` escape still applies (`create-query-action-read`,
+  `create-mutation-form`).
+- **The request function** is emitted into the client JS only, as the factory call's own
+  argument, with prop reads kept live. It is never evaluated by the SSR shim or the CSR
+  template lambda (`create-query-request-client-only`, `create-mutation-request-client-only`),
+  and a mutation's is never wrapped in anything that tracks.
+- **Diagnostics.** The draft asked for an unrecognised tuple-returning factory to become a
+  loud diagnostic by extending the `opaque-local-accessor-call` registry entry. The
+  implementation took a different route and needs no registry entry: an unrecognised factory
+  in a tuple destructure is BF110 (#931), and a recognised factory with a destructure of more
+  than two elements or a third argument is BF115 / BF116 (#3163, extended to `createQuery` in
+  #3165 and to `createMutation` in #3210). These are hard errors on invalid code, with no
+  escape, so they are pinned by unit tests (`reactive-factory-arity.test.ts`) rather than by
+  conformance fixtures.
+- **Hydration parity** for mode A and mode B is pinned by `create-query-initial` and
+  `create-query-optional-initial`, and for a mutation by `create-mutation-form`. All three are
+  browser-checked (`fixture-hydrate`, oracle): mode A sends nothing on mount, mode B sends once,
+  and a mutation sends only on click. `renderToTest` covers mode A, mode B and the mutation's
+  pending, error and saved branches.
+- **`bf debug graph`** shows a query as a signal source with edges from the signals and memos
+  its request function reads, a mutation with none (its function is read untracked), and each
+  action's `isPending` / `error` accessors as nodes with edges to the template positions,
+  memos and effects that read them (#3167). `bf debug trace` accepts an accessor too.
+
+**Runtime** (`packages/client`): descriptor purity and key stability, with body serialisation
+independent of key order (`http.test.ts`). Each of the following rules is pinned by its own
+`describe` block in `create-query.test.ts` / `create-mutation.test.ts`: descriptors only in v0; one send per tick; the init
+rule (`initial` present → no send, cached, re-fetched after `ttl`; absent → send); the cache;
+previous-value retention across pending and error, `error` cleared by the next success; the
+generation guard on `1 → 2 → 1` dependency changes; the pre-handled `action()` rejection;
+disposal dropping in-flight resolutions; invalidation. For a mutation: sending only when
+called, with the function evaluated untracked; no cache and no single-flight; the latest call
+owning `value()` / `isPending()` / `error()`; `invalidates` on success only, and still after
+disposal; the safe-method warning, once per instance (the method check).
+
+**Around it:** `invalidates` evicts the query cache and the router's whole page cache through
+the invalidation bus (#3199 / #3201). Each compiler PR landed its conformance fixtures with it,
+per `subset-conformance.md`'s change-time coupling rule.

@@ -71,6 +71,8 @@ export const navigation: NavItem[] = [
       { title: 'onCleanup', slug: 'reactivity/on-cleanup' },
       { title: 'untrack', slug: 'reactivity/untrack' },
       { title: 'batch', slug: 'reactivity/batch' },
+      { title: 'createQuery', slug: 'reactivity/create-query' },
+      { title: 'createMutation', slug: 'reactivity/create-mutation' },
       { title: 'Props Reactivity', slug: 'reactivity/props-reactivity' },
     ],
   },

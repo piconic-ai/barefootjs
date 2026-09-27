@@ -290,6 +290,8 @@ const PAGES: PageSpec[] = [
   { path: 'core/reactivity/on-cleanup.md' },
   { path: 'core/reactivity/untrack.md' },
   { path: 'core/reactivity/batch.md' },
+  { path: 'core/reactivity/create-query.md' },
+  { path: 'core/reactivity/create-mutation.md' },
   { path: 'core/reactivity/props-reactivity.md' },
   { path: 'core/components/component-authoring.md' },
   { path: 'core/components/children-slots.md' },

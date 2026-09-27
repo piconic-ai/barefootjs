@@ -44,6 +44,8 @@ The getter is a function call — `count()`, not `count`. Dependencies are track
 | [`onCleanup`](./reactivity/on-cleanup.md) | Register cleanup for effects and lifecycle |
 | [`untrack`](./reactivity/untrack.md) | Read signals without tracking dependencies |
 | [`batch`](./reactivity/batch.md) | Group signal writes so subscribers run once |
+| [`createQuery`](./reactivity/create-query.md) | A value loaded by an HTTP request, seeded on the server |
+| [`createMutation`](./reactivity/create-mutation.md) | A value written by an HTTP request sent on demand |
 
 ## Guides
 
