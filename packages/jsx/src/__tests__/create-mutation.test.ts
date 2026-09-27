@@ -13,6 +13,14 @@ import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/hono-adapter'
 import { GoTemplateAdapter } from '../../../adapter-go-template/src/index'
+import { BladeAdapter } from '../../../adapter-blade/src/index'
+import { ErbAdapter } from '../../../adapter-erb/src/index'
+import { JinjaAdapter } from '../../../adapter-jinja/src/index'
+import { MojoAdapter } from '../../../adapter-mojolicious/src/index'
+import { PebbleAdapter } from '../../../adapter-pebble/src/index'
+import { MinijinjaAdapter } from '../../../adapter-rust/src/index'
+import { TwigAdapter } from '../../../adapter-twig/src/index'
+import { XslateAdapter } from '../../../adapter-xslate/src/index'
 import { extractInitBody, extractTemplateBody } from './staged-ir/helpers'
 
 function compile(source: string, options: { adapter?: 'test' | 'hono' | 'go' } = {}) {
@@ -105,6 +113,33 @@ describe('createMutation action accessors (#3210, via #3166)', () => {
     expect(ssr).not.toContain('.Save.')
     expect(ssr).toContain('<button {{if false}}disabled{{end}}')
     expect(ssr).toContain('{{if false}}<p bf-c="s0">Failed</p>')
+  })
+
+  // The shared fixture compares rendered HTML, and a DSL adapter that re-parses
+  // the raw `save.isPending()` reads an undeclared `save`, which every engine
+  // treats as falsy — the same HTML. So check the template text itself: no
+  // adapter may emit a reference to the action or its accessor.
+  test('every DSL adapter lowers the seed, never the accessor read', () => {
+    const adapters = [
+      new GoTemplateAdapter(),
+      new ErbAdapter(),
+      new MojoAdapter(),
+      new JinjaAdapter(),
+      new TwigAdapter(),
+      new XslateAdapter(),
+      new BladeAdapter(),
+      new MinijinjaAdapter(),
+      new PebbleAdapter(),
+    ]
+    for (const adapter of adapters) {
+      const result = compileJSX(FORM, 'Component.tsx', { adapter })
+      const ssr = result.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+      expect({ adapter: adapter.name, codes: result.errors.map((e) => e.code) }).toEqual({ adapter: adapter.name, codes: [] })
+      expect({ adapter: adapter.name, leaks: /isPending|IsPending|is_pending|\bsave\b|\bSave\b/.test(ssr) }).toEqual({
+        adapter: adapter.name,
+        leaks: false,
+      })
+    }
   })
 
   test('a read the gate does not admit still refuses with BF117', () => {

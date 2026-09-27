@@ -4,6 +4,12 @@
 "@barefootjs/hono": patch
 "@barefootjs/erb": patch
 "@barefootjs/mojolicious": patch
+"@barefootjs/jinja": patch
+"@barefootjs/twig": patch
+"@barefootjs/xslate": patch
+"@barefootjs/blade": patch
+"@barefootjs/rust": patch
+"@barefootjs/pebble": patch
 ---
 
 Export `createMutation` (with `MutationAction` and `CreateMutationOptions`) from `@barefootjs/client`, and compile it. This is the first release that exports it. `const [saved, save] = createMutation(fn, { invalidates })` is recognised as a reactive factory, the same way as `createQuery`:
@@ -15,4 +21,4 @@ Export `createMutation` (with `MutationAction` and `CreateMutationOptions`) from
 
 `createMutation`, `MutationAction` and `CreateMutationOptions` live in the `@barefootjs/client/async` subpath next to `createQuery`, re-exported by the main entry and `/runtime`. The Hono SSR shim exports a `createMutation` stub.
 
-ERB and Mojolicious now lower a dynamic HTML boolean attribute from the IR's pre-parsed expression tree instead of re-parsing its raw source text, so a seeded accessor reaches their output there too.
+ERB, Mojolicious, Jinja, Twig, Xslate, Blade, Rust (minijinja) and Pebble now lower a dynamic HTML boolean attribute from the IR's pre-parsed expression tree instead of re-parsing its raw source text, so a seeded accessor reaches their output there too. Before, they emitted a read of the undeclared action (`save.isPending`), which rendered the same HTML only because the engine treated the missing variable as falsy.

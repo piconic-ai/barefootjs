@@ -1445,7 +1445,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       }
       if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
-        return `<: ${this.convertExpressionToKolon(value.expr)} ? '${name}' : '' :>`
+        return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
       }
       if (value.presenceOrUndefined) {
         // `attr={expr || undefined}` on a NON-boolean attribute: Hono
