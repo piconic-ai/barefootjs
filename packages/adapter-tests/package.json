@@ -6,6 +6,9 @@
   "exports": {
     ".": {
       "bun": "./src/index.ts"
+    },
+    "./harness-program": {
+      "bun": "./src/harness-program.ts"
     }
   },
   "scripts": {

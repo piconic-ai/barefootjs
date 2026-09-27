@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileFixtureJSX } from '@barefootjs/adapter-tests'
+import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'

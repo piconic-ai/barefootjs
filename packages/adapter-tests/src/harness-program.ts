@@ -49,9 +49,18 @@
  * `@barefootjs/form` would no longer report BF050 (no fixture imports it);
  * and the compiler drops a caller Program when it rewrites the source
  * first (inline JSX callbacks, reactive-factory inlining) and falls back
- * to its own cwd-relative one. The guard test pins that the harness
- * Program is accepted; across the corpus every compile that needs a
- * checker accepts it.
+ * to its own cwd-relative one. The client-JS scope gate pins that the
+ * harness Program is accepted for every `jsxFixtures` source (entry and
+ * `components`), against a shrink-only exception ledger that is empty
+ * today (`harness-program-ledger.ts`).
+ *
+ * ## Import it through `@barefootjs/adapter-tests/harness-program`
+ *
+ * The adapters' `test-render` modules import this file through that
+ * narrow subpath, never the package barrel: the barrel loads the fixture
+ * corpus, `bun:test` and happy-dom, and imports modules that import
+ * `test-render` back (a cycle). Keep this module's imports to
+ * `@barefootjs/jsx` and node builtins so the subpath stays that narrow.
  *
  * ## Requirement: `@barefootjs/client` must be BUILT
  *
