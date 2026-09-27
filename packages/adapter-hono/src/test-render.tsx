@@ -7,7 +7,7 @@
 
 /** @jsxImportSource hono/jsx */
 
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '@barefootjs/adapter-tests'
 import type { TemplateAdapter } from '@barefootjs/jsx'
 import { Hono } from 'hono'
 import { jsxRenderer } from 'hono/jsx-renderer'
@@ -113,7 +113,7 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
     for (const [filename, childSource] of Object.entries(components)) {
       if (moduleMap.has(filename)) continue
       componentKeys.add(filename)
-      const childResult = compileJSX(childSource, filename, { adapter })
+      const childResult = compileFixtureJSX(childSource, filename, { adapter })
       const childErrors = childResult.errors.filter(e => e.severity === 'error')
       if (childErrors.length > 0) {
         throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
@@ -142,7 +142,7 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
   }
 
   // Compile parent source
-  const result = compileJSX(source, 'component.tsx', { adapter })
+  const result = compileFixtureJSX(source, 'component.tsx', { adapter })
 
   const errors = result.errors.filter(e => e.severity === 'error')
   if (errors.length > 0) {

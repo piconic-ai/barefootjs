@@ -38,7 +38,7 @@ import { resolve } from 'node:path'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../src/harness-program'
 import { buildVariableStrengthArray } from '../pairwise/covering-array'
 import { composeCase } from '../pairwise/compose'
 import type { AxisCombo } from '../pairwise/axes'
@@ -115,7 +115,7 @@ async function sweepOne(combo: AxisCombo): Promise<PairwiseManifestEntry> {
   // Classify first, cheaply: a loud refusal never needs the full
   // render/combine pipeline below — it's a PASS on its own (same
   // short-circuit `mutation-generate.ts` uses).
-  const probe = compileJSX(composed.source, `${composed.componentName}.tsx`, { adapter: new HonoAdapter() })
+  const probe = compileFixtureJSX(composed.source, `${composed.componentName}.tsx`, { adapter: new HonoAdapter() })
   const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
   if (errorDiagnostics.length > 0) {
     return { ...withCase, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }

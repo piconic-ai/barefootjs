@@ -37,6 +37,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import { harnessProgramFor } from './harness-program'
 import {
   analyzeComponent,
   jsxToIR,
@@ -262,7 +263,7 @@ export function extractTemplateMarkerIds(template: string): MarkerIdSets {
 }
 
 function buildIRFromSource(source: string, filePath: string): ComponentIR | null {
-  const ctx = analyzeComponent(source, filePath, undefined)
+  const ctx = analyzeComponent(source, filePath, undefined, harnessProgramFor(source, filePath))
   if (!ctx.jsxReturn) return null
   const root = jsxToIR(ctx)
   if (!root) return null

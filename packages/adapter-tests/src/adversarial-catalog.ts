@@ -47,7 +47,7 @@
  * optional field (one field at a time, no cross-product).
  */
 
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from './harness-program'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../fixtures'
 import type { JSXFixture, JSXDataPoint } from './types'
@@ -362,7 +362,7 @@ function stableStringify(value: unknown): string {
  */
 export function generateDataPointsForFixture(fixture: JSXFixture): JSXDataPoint[] {
   if (!fixture.expectedHtml) return []
-  const result = compileJSX(fixture.source, 'component.tsx', {
+  const result = compileFixtureJSX(fixture.source, 'component.tsx', {
     adapter: new HonoAdapter(),
     outputIR: true,
     siblingTemplatesRegistered: Boolean(fixture.components),

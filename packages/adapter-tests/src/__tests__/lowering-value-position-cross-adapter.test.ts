@@ -26,7 +26,7 @@
  * comparing them" defect class (CLAUDE.md) calls for.
  */
 import { describe, test, expect } from 'bun:test'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../harness-program'
 import type { TemplateAdapter } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { GoTemplateAdapter } from '@barefootjs/go-template/adapter'
@@ -117,7 +117,7 @@ const ADAPTERS: readonly AdapterCase[] = [
 describe('a registered lowering call nested in a template-literal interpolation lowers identically on every adapter (#2843)', () => {
   for (const adapter of ADAPTERS) {
     test(adapter.name, () => {
-      const result = compileJSX(SOURCE, 'P.tsx', { adapter: adapter.make() })
+      const result = compileFixtureJSX(SOURCE, 'P.tsx', { adapter: adapter.make() })
       expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
       const file = result.files.find(f => f.type === 'markedTemplate')
       expect(file).toBeDefined()

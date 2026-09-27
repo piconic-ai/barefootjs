@@ -24,7 +24,7 @@ import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../harness-program'
 import { goTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { mojoAdapter } from '@barefootjs/mojolicious/adapter'
 import { xslateAdapter } from '@barefootjs/xslate/adapter'
@@ -59,7 +59,7 @@ describe('Calendar cross-adapter compile conformance (#1467)', () => {
       // a generous timeout keeps the first cold-cache case from flaking past
       // bun's 5s default (the matrix is source × 4 adapters).
       test(`${label} compiles on ${adapterName} with no error diagnostics`, () => {
-        const result = compileJSX(source, filename, { adapter, outputIR: true })
+        const result = compileFixtureJSX(source, filename, { adapter, outputIR: true })
         const errors = (result.errors ?? []).filter((e) => e.severity === 'error')
         expect(errors).toEqual([])
       }, 30_000)

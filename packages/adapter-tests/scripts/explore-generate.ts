@@ -44,7 +44,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../src/harness-program'
 import { explore } from '../explore/explorer'
 import { SCENARIOS } from '../explore/scenarios'
 import type { Scenario } from '../explore/scenario'
@@ -175,7 +175,7 @@ async function sweepOne(scenario: Scenario<unknown, string>): Promise<ExploreMan
   }
 
   // Classify first, cheaply: a loud refusal never needs the render loop.
-  const probe = compileJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: new HonoAdapter(), outputIR: true })
+  const probe = compileFixtureJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: new HonoAdapter(), outputIR: true })
   const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
   if (errorDiagnostics.length > 0) {
     return { ...base, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }
@@ -242,7 +242,7 @@ async function sweepAdapter(
   entry: ExploreManifestEntry,
 ): Promise<ExploreAdapterRun> {
   const base = { adapter: loaded.id, scenarioId: scenario.id }
-  const probe = compileJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: loaded.create() })
+  const probe = compileFixtureJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: loaded.create() })
   const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
   if (errorDiagnostics.length > 0) {
     return { ...base, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }

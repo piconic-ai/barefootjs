@@ -39,7 +39,6 @@
  */
 
 import {
-  compileJSX,
   PARSED_EXPR_KINDS,
   BUILTIN_LOWERING_PLUGINS,
   sortComparatorFromArrow,
@@ -47,6 +46,7 @@ import {
   type LoweringMatcher,
   type ParsedExpr,
 } from '@barefootjs/jsx'
+import { compileFixtureJSX } from './harness-program'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../fixtures'
 import type { JSXFixture } from './types'
@@ -237,7 +237,7 @@ export function computeFixtureCoverage(fixture: JSXFixture): FixtureCoverage {
     ...Object.entries(fixture.components ?? {}),
   ]
   for (const [filename, source] of sources) {
-    const result = compileJSX(source, filename, {
+    const result = compileFixtureJSX(source, filename, {
       adapter: new HonoAdapter(),
       outputIR: true,
       siblingTemplatesRegistered: Boolean(fixture.components),

@@ -37,7 +37,7 @@ import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../src/harness-program'
 import { MUTATIONS_V1, type Mutation } from '../mutation/mutations'
 import { componentSourcePath, loadAllSharedSpecs, sourceFileBasename, type SharedFixtureSpec } from '../fixtures/_helpers'
 import { generateSharedComponentSnapshotCore, seedFromId } from '../src/snapshot-generator'
@@ -118,7 +118,7 @@ async function sweepOne(spec: SharedFixtureSpec, mutation: Mutation): Promise<Ma
 
   // Classify first, cheaply: a loud refusal never needs the full
   // render/combine pipeline below — it's a PASS on its own.
-  const probe = compileJSX(mutatedSource, `${sourceFileBasename(spec)}.tsx`, { adapter: new HonoAdapter() })
+  const probe = compileFixtureJSX(mutatedSource, `${sourceFileBasename(spec)}.tsx`, { adapter: new HonoAdapter() })
   const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
   if (errorDiagnostics.length > 0) {
     return { ...base, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }
