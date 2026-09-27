@@ -148,21 +148,33 @@ describe('components sources accept the harness Program under their literal key'
   }, 120_000)
 })
 
+// A non-literal specifier cannot be checked, so it is reported as-is and fails.
+function specifierText(node: ts.Node): string {
+  return ts.isStringLiteralLike(node) ? node.text : `<non-literal specifier: ${node.getText()}>`
+}
+
 // The adapters' `test-render` modules import `harness-program.ts` through
 // the `@barefootjs/adapter-tests/harness-program` subpath precisely so they
 // do NOT load the barrel (fixture corpus, `bun:test`, happy-dom, and a
 // cycle back into `test-render`). That only holds while the module itself
 // stays leaf-like, so pin its runtime imports (TS AST walk, not a regex).
 describe('harness-program.ts stays importable without the barrel', () => {
-  test('its runtime imports are only @barefootjs/jsx and node builtins', () => {
+  test('its runtime imports, re-exports and dynamic imports are only @barefootjs/jsx and node builtins', () => {
     const file = path.join(import.meta.dir, '..', 'harness-program.ts')
     const sourceFile = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)
     const runtimeImports: string[] = []
-    for (const statement of sourceFile.statements) {
-      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue
-      if (statement.importClause?.isTypeOnly) continue
-      runtimeImports.push(statement.moduleSpecifier.text)
+    const visit = (node: ts.Node): void => {
+      if (ts.isImportDeclaration(node) && !node.importClause?.isTypeOnly) {
+        runtimeImports.push(specifierText(node.moduleSpecifier))
+      } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && !node.isTypeOnly) {
+        runtimeImports.push(specifierText(node.moduleSpecifier))
+      } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        const [arg] = node.arguments
+        runtimeImports.push(arg ? specifierText(arg) : '<import() without a specifier>')
+      }
+      ts.forEachChild(node, visit)
     }
+    visit(sourceFile)
     expect(runtimeImports.filter(s => s !== '@barefootjs/jsx' && !s.startsWith('node:'))).toEqual([])
   })
 })

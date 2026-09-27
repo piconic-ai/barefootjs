@@ -20,13 +20,16 @@
 import { getCompilerCounters, needsTypeBasedDetection } from '@barefootjs/jsx'
 
 /**
- * Shrink-only ledger of corpus sources whose harness Program `compileJSX`
+ * Exception ledger of corpus sources whose harness Program `compileJSX`
  * is allowed to reject, keyed `<fixture id>` (entry source) or
- * `<fixture id>:<components key>`. Starts EMPTY and may only shrink.
+ * `<fixture id>:<components key>`. The goal state is empty, which is
+ * where it starts.
  *
  * A fixture that reaches a source-rewrite path must fix the fallback
- * (carry the anchor through the rebuild) or be declared here with the
- * reason — never slip through as a silently cwd-dependent compile.
+ * (carry the anchor through the rebuild) or be added here with the
+ * reason — never slip through as a silently cwd-dependent compile. An
+ * entry whose compile no longer overbuilds fails the scope gate as
+ * "graduated — delete the entry", so fixed exceptions cannot linger.
  */
 export const HARNESS_PROGRAM_REJECTION_EXCEPTIONS: ReadonlySet<string> = new Set<string>([])
 

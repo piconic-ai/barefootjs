@@ -60,10 +60,18 @@ interface CollectedClientJs {
   sourceKeys: string[]
   /** Compiles that built a Program beyond the harness's own. */
   harnessProgramRejections: string[]
+  /** Ledger entries whose compile no longer overbuilds. */
+  harnessProgramGraduated: string[]
 }
 
 function collectClientJs(): CollectedClientJs {
-  const out: CollectedClientJs = { files: [], compileFailed: [], sourceKeys: [], harnessProgramRejections: [] }
+  const out: CollectedClientJs = {
+    files: [],
+    compileFailed: [],
+    sourceKeys: [],
+    harnessProgramRejections: [],
+    harnessProgramGraduated: [],
+  }
   enableCompilerInstrumentation()
   try {
     for (const fixture of jsxFixtures) collectFixture(fixture, out)
@@ -97,9 +105,9 @@ function collectFixture(fixture: (typeof jsxFixtures)[number], out: CollectedCli
     } finally {
       // Counted even when the compile throws or reports errors.
       const overbuild = harnessProgramOverbuild(source)
-      if (overbuild && !HARNESS_PROGRAM_REJECTION_EXCEPTIONS.has(key)) {
-        out.harnessProgramRejections.push(`${key}: ${overbuild}`)
-      }
+      const excepted = HARNESS_PROGRAM_REJECTION_EXCEPTIONS.has(key)
+      if (overbuild && !excepted) out.harnessProgramRejections.push(`${key}: ${overbuild}`)
+      if (!overbuild && excepted) out.harnessProgramGraduated.push(key)
     }
     if (result.errors.some(e => e.severity === 'error')) {
       out.compileFailed.push(fixture.id)
@@ -168,7 +176,8 @@ function findUndeclared(files: VirtualFile[]): Map<string, string[]> {
 }
 
 describe('client-JS scope gate', () => {
-  const { files, compileFailed, sourceKeys, harnessProgramRejections } = collectClientJs()
+  const { files, compileFailed, sourceKeys, harnessProgramRejections, harnessProgramGraduated } =
+    collectClientJs()
   const undeclared = findUndeclared(files)
   const fixtureIds = new Set(jsxFixtures.map(f => f.id))
 
@@ -181,6 +190,14 @@ describe('client-JS scope gate', () => {
       harnessProgramRejections,
       'compileJSX rejected the harness Program and built a cwd-relative one — carry the ' +
         'anchor through the rebuild, or declare the source in HARNESS_PROGRAM_REJECTION_EXCEPTIONS',
+    ).toEqual([])
+  })
+
+  test('every harness-Program exception still overbuilds (graduated entries are deleted)', () => {
+    expect(
+      harnessProgramGraduated,
+      'these sources now accept the harness Program — graduated, delete the entry from ' +
+        'HARNESS_PROGRAM_REJECTION_EXCEPTIONS',
     ).toEqual([])
   })
 
