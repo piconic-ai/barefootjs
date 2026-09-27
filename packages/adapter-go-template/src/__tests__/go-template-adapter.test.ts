@@ -2043,93 +2043,160 @@ export function Host() {
 
   describe('#3142 signal seeded from a member of an object-typed prop', () => {
     // `createSignal(initial.label)` (destructured) / `createSignal(props.initial.label)`
-    // (SolidJS-style) parse `initial.label` as a `member` node, never a
-    // `literal` — none of `convertInitialValue`'s literal-baking branches
-    // match it, and `extractPropNameFromInitialValue` only ever matches a
-    // FLAT `prop.field`, so this used to silently bake `Label: nil,`. Now
-    // refuses loudly (BF101) instead.
-    test('destructured component: refuses instead of baking Label: nil,', () => {
+    // (SolidJS-style) bakes the Input field path the member lives at
+    // (`in.Initial.Label`), and the signal's own Props field takes that
+    // path's Go type (`resolvePropMemberSeed`, `value/prop-member-seed.ts`).
+    // A path that doesn't reach a generated struct field refuses (BF101)
+    // instead of silently baking `nil`.
+    const compileWidget = (source: string) => {
       const adapter = new GoTemplateAdapter()
-      const ir = compileToIR(`
+      const ir = compileToIR(source, adapter)
+      const result = adapter.generate(ir)
+      return { types: result.types ?? '', bf101: ir.errors.filter(e => e.code === 'BF101') }
+    }
+
+    test('destructured component: bakes the Input field path, typed like the member', () => {
+      const { types, bf101 } = compileWidget(`
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function Widget({ initial }: { initial: { label: string } }) {
   const [label] = createSignal(initial.label)
   return <span>{label()}</span>
 }
-`, adapter)
-      adapter.generate(ir)
-      const bf101 = ir.errors.filter(e => e.code === 'BF101')
-      expect(bf101).toHaveLength(1)
-      expect(bf101[0].message).toContain("initial.label")
+`)
+      expect(bf101).toHaveLength(0)
+      expect(types).toContain('Label: in.Initial.Label,')
+      expect(types).toMatch(/\tLabel string `json:"-"`/)
     })
 
-    test('non-destructured (propsObjectName) component: refuses the same shape', () => {
-      const adapter = new GoTemplateAdapter()
-      const ir = compileToIR(`
+    test('non-destructured (propsObjectName) component: bakes the same path', () => {
+      const { types, bf101 } = compileWidget(`
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function Widget(props: { initial: { label: string } }) {
   const [label] = createSignal(props.initial.label)
   return <span>{label()}</span>
 }
-`, adapter)
-      adapter.generate(ir)
-      const bf101 = ir.errors.filter(e => e.code === 'BF101')
-      expect(bf101).toHaveLength(1)
+`)
+      expect(bf101).toHaveLength(0)
+      expect(types).toContain('Label: in.Initial.Label,')
     })
 
-    test('a deeper member chain refuses too, on both prop styles', () => {
+    test('a deeper member chain bakes the full path, on both prop styles', () => {
       for (const [sig, seed] of [
         ['{ initial }: { initial: { address: { city: string } } }', 'initial.address.city'],
         ['props: { initial: { address: { city: string } } }', 'props.initial.address.city'],
       ]) {
-        const adapter = new GoTemplateAdapter()
-        const ir = compileToIR(`
+        const { types, bf101 } = compileWidget(`
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function Widget(${sig}) {
   const [city] = createSignal(${seed})
   return <span>{city()}</span>
 }
-`, adapter)
-        adapter.generate(ir)
-        const bf101 = ir.errors.filter(e => e.code === 'BF101')
-        expect(bf101).toHaveLength(1)
-        expect(bf101[0].message).toContain('initial.address.city')
+`)
+        expect(bf101).toHaveLength(0)
+        expect(types).toContain('City: in.Initial.Address.City,')
+        expect(types).toMatch(/\tCity string `json:"-"`/)
       }
     })
 
+    test('a same-file named object type (with a named element array) bakes typed', () => {
+      const { types, bf101 } = compileWidget(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: string; label: string }
+interface State { items: Item[]; nextId: number }
+export function Widget({ initial }: { initial: State }) {
+  const [items] = createSignal(initial.items)
+  const [nextId] = createSignal(initial.nextId)
+  return <ul data-next={nextId()}>{items().map(item => <li key={item.id}>{item.label}</li>)}</ul>
+}
+`)
+      expect(bf101).toHaveLength(0)
+      expect(types).toMatch(/\tInitial State\n/)
+      expect(types).toContain('Items: in.Initial.Items,')
+      expect(types).toMatch(/\tItems \[\]Item `json:"-"`/)
+      expect(types).toContain('NextId: in.Initial.NextId,')
+    })
+
+    test('an optional object prop (a nillable map field) refuses — no struct field path', () => {
+      const { bf101 } = compileWidget(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type State = { label: string }
+export function Widget({ initial }: { initial?: State }) {
+  const [label] = createSignal(initial.label)
+  return <span>{label()}</span>
+}
+`)
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('initial.label')
+      expect(bf101[0].message).toContain('map[string]interface{}')
+    })
+
+    test('a prop typed by a non-local type refuses — no struct field path', () => {
+      const { bf101 } = compileWidget(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+import type { State } from './state'
+export function Widget({ initial }: { initial: State }) {
+  const [label] = createSignal(initial.label)
+  return <span>{label()}</span>
+}
+`)
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain('initial.label')
+    })
+
     test('a member of a non-object prop refuses with an accurate message', () => {
-      const adapter = new GoTemplateAdapter()
-      const ir = compileToIR(`
+      const { bf101 } = compileWidget(`
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function Widget({ name }: { name: string }) {
   const [len] = createSignal(name.length)
   return <span>{len()}</span>
 }
-`, adapter)
-      adapter.generate(ir)
-      const bf101 = ir.errors.filter(e => e.code === 'BF101')
+`)
       expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain("name.length")
       expect(bf101[0].message).not.toContain('object-typed')
     })
 
+    // Only a bare chain bakes to a field path. The same chain read inside a
+    // larger expression used to fall through to literal baking and bake the
+    // type's zero value (`Label: ""` for `initial?.label ?? 'none'`).
+    test('a member chain inside a larger seed expression refuses instead of baking a zero value', () => {
+      for (const [propType, seed, chain] of [
+        ['initial?: State', "initial?.label ?? 'none'", 'initial.label'],
+        ['initial: State', 'initial.count + 1', 'initial.count'],
+        ['initial: State', '`${initial.label}!`', 'initial.label'],
+      ]) {
+        const { bf101 } = compileWidget(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type State = { label: string; count: number }
+export function Widget({ initial }: { ${propType} }) {
+  const [value] = createSignal(${seed})
+  return <span>{value()}</span>
+}
+`)
+        expect(bf101).toHaveLength(1)
+        expect(bf101[0].message).toContain(`reads '${chain}' inside a larger expression`)
+      }
+    })
+
     test('a FLAT prop member (not nested) still resolves normally, no refusal', () => {
-      const adapter = new GoTemplateAdapter()
-      const ir = compileToIR(`
+      const { types, bf101 } = compileWidget(`
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function Widget({ label }: { label: string }) {
   const [text] = createSignal(label)
   return <span>{text()}</span>
 }
-`, adapter)
-      const result = adapter.generate(ir)
-      expect(ir.errors.filter(e => e.code === 'BF101')).toHaveLength(0)
-      expect(result.types).not.toContain('Text: nil,')
+`)
+      expect(bf101).toHaveLength(0)
+      expect(types).not.toContain('Text: nil,')
     })
   })
 

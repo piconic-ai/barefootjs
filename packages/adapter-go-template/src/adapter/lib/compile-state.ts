@@ -143,6 +143,33 @@ export class CompileState {
   currentTypeDefinitions: TypeDefinition[] = []
 
   /**
+   * The current IR's props params (full `ParamInfo`, with `type`), stashed
+   * like `currentMemos` so a signal seeded from a member of an object-typed
+   * prop (`createSignal(initial.items)`) can walk the prop's type without
+   * threading the list through every seed-baking signature
+   * (`resolvePropMemberSeed`, `value/prop-member-seed.ts`).
+   */
+  currentPropsParams: IRMetadata['propsParams'] = []
+
+  /**
+   * `buildPropTypeOverrides`'s result for the component being compiled,
+   * read through `resolvePropGoType` by `resolvePropMemberSeed` and
+   * `nillablePropNameOf`. Assigned twice per compile:
+   *
+   *   - `primeCompileState`, right after `buildLocalTypeTables` — the map
+   *     `collectNillablePropNames` also reads, so the template body (which
+   *     `generate()` renders BEFORE `generateTypes`) sees the current
+   *     component's answer, never an empty or previous-component map.
+   *   - `generateTypes`, after `emitSynthPropStructs` — the SAME map it hands
+   *     the Input/Props/constructor generators, so constructor-time readers
+   *     agree with the emitted struct fields by construction. It could differ
+   *     from the primed map only where a `typeInfoToGo` answer changes once
+   *     this compile's anonymous-object structs are registered; over the
+   *     whole conformance corpus the two maps are identical.
+   */
+  propTypeOverrides: Map<string, string> = new Map()
+
+  /**
    * `useContext(...)` consumers in the component being generated. Each becomes
    * a struct field defaulted to the `createContext` default.
    */

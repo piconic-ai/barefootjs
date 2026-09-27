@@ -19,6 +19,7 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
 import { numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
 import { collapseLiteralUnion } from '../type/type-codegen.ts'
+import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
@@ -99,45 +100,6 @@ function nillableAwarePropRef(
 }
 
 /**
- * #3142: whether `preParsed` is a signal seed read through a member chain
- * rooted in a prop, at any depth: `createSignal(initial.label)`,
- * `createSignal(initial.address.city)` (destructured component) or
- * `createSignal(props.initial.label)` (SolidJS-style `propsObjectName`
- * component). `extractPropNameFromInitialValue` only matches a FLAT prop
- * (`createSignal(label)` / `createSignal(props.label)`), and none of
- * `convertInitialValue`'s literal-baking branches match a `member` node,
- * so every such seed used to bake `nil` silently. Returns the prop name
- * and the member path so the caller can refuse. A real fix would need the
- * object prop typed as its synthesized struct (so `in.Initial.Label` is a
- * valid Go field path), which is out of scope for this loud stopgap. A
- * computed hop (`initial[key]`) stops the match and keeps the old path.
- */
-function unresolvedPropMemberSeed(
-  ctx: GoEmitContext,
-  preParsed: ParsedExpr | undefined,
-  propsParams: { name: string; sourceName?: string }[] | undefined,
-): { propName: string; path: string[] } | null {
-  if (!preParsed || preParsed.kind !== 'member') return null
-  const path: string[] = []
-  let node: ParsedExpr = preParsed
-  while (node.kind === 'member') {
-    if (node.computed) return null
-    path.unshift(node.property)
-    node = node.object
-  }
-  if (node.kind !== 'identifier') return null
-  if (propsParams?.some(p => p.name === node.name)) {
-    return { propName: node.name, path }
-  }
-  // `props.x` alone is a flat prop (resolved earlier); only a deeper
-  // chain (`props.x.y…`) reads through a member of prop `x`.
-  if (ctx.state.propsObjectName !== null && node.name === ctx.state.propsObjectName && path.length >= 2) {
-    return { propName: path[0], path: path.slice(1) }
-  }
-  return null
-}
-
-/**
  * Lower a signal/const initial value to its Go SSR literal: a prop reference
  * becomes `in.<Field>`, a non-literal falls back to the type's zero value.
  */
@@ -184,18 +146,38 @@ export function convertInitialValue(
     return propRef(param)
   }
 
-  // #3142: refuse loudly instead of falling through to the literal-baking
-  // branches below (none of which match a `member` node) and silently
-  // baking `nil`.
-  const memberSeed = unresolvedPropMemberSeed(ctx, preParsed, propsParams)
+  // A member of an object-typed prop (`createSignal(initial.items)`) bakes
+  // as its Input field path (`in.Initial.Items`), typed exactly like the
+  // signal's own Props field (`propMemberSeedGoType`). A path that doesn't
+  // resolve to a generated struct field refuses loudly (BF101) instead of
+  // falling through to the literal-baking branches below (none of which
+  // match a `member` node) and silently baking `nil` (#3142).
+  const memberSeed = resolvePropMemberSeed(ctx, preParsed, propsParams)
+  if (memberSeed?.kind === 'resolved') return memberSeed.goRef
   if (memberSeed) {
     ctx.state.errors.push({
       code: 'BF101',
       severity: 'error',
-      message: `Signal seeded from '${memberSeed.propName}.${memberSeed.path.join('.')}' has no Go template lowering — a value read through a member of prop '${memberSeed.propName}' cannot be baked into the constructor.`,
+      message: `Signal seeded from '${memberSeed.propName}.${memberSeed.path.join('.')}' has no Go template lowering — ${memberSeed.reason}, so the value cannot be baked into the constructor.`,
       loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
       suggestion: {
-        message: `Pass the value as its own top-level prop instead of reading it through '${memberSeed.propName}'.`,
+        message: `Declare '${memberSeed.propName}' as a required prop with a same-file object type (inline, or an interface/type alias), or pass the value as its own top-level prop.`,
+      },
+    })
+  }
+  // The same member chain read INSIDE a larger seed expression
+  // (`initial?.label ?? 'none'`) has no lowering either: only a bare chain
+  // bakes to a field path, and the literal branches below would bake the
+  // type's zero value in its place.
+  const embedded = memberSeed ? null : embeddedPropMemberChain(ctx, preParsed, propsParams)
+  if (embedded) {
+    ctx.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Signal seeded from '${value}' has no Go template lowering — it reads '${embedded.propName}.${embedded.path.join('.')}' inside a larger expression, and only a bare prop member chain can be baked into the constructor.`,
+      loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+      suggestion: {
+        message: `Pass the computed value as its own top-level prop, or seed the signal from '${embedded.propName}.${embedded.path.join('.')}' alone and derive the rest with a memo.`,
       },
     })
   }
@@ -427,6 +409,10 @@ export function objectLiteralToGoMap(
  * when the referenced prop was flipped to nillable. Omitted by call sites
  * that splice the result into an `interface{}`-typed context (e.g. a
  * `map[string]any{...}` env entry), where the bare reference is fine.
+ *
+ * `parsed` (the signal's own `SignalInfo.parsed`) lets a prop-member seed
+ * (`createSignal(initial.items)`) resolve to the same Input field path
+ * `convertInitialValue` bakes (`resolvePropMemberSeed`).
  */
 export function getSignalInitialValueAsGo(
   ctx: GoEmitContext,
@@ -434,7 +420,13 @@ export function getSignalInitialValueAsGo(
   propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   signalType?: TypeInfo,
+  parsed?: ParsedExpr,
 ): string {
+  // A prop-member seed (`initial.items`) reads its Input field path — the
+  // same value `convertInitialValue` bakes into the signal's own field.
+  const memberSeed = resolvePropMemberSeed(ctx, parsed, propsParams)
+  if (memberSeed?.kind === 'resolved') return memberSeed.goRef
+
   const propRef = (param: { name: string; sourceName?: string }): string =>
     signalType
       ? nillableAwarePropRef(ctx, param, signalType)
@@ -607,7 +599,7 @@ function callbackStepToGo(
     let goExpr: string | null = null
     const freeVarParam = propsParams.find(p => p.name === name)
     if (sig) {
-      goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, sig.type)
+      goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, sig.type, sig.parsed)
     } else if (freeVarParam) {
       const hoisted = propFallbackVars.get(name)
       goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(freeVarParam.sourceName ?? name)}`
