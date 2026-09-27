@@ -83,7 +83,7 @@ export function issueBody(workflowName: string, workflowFile: string): string {
     'Every scheduled run comments its result here. A failing run reopens this issue and a passing run closes it,',
     'so the issue is open exactly while the sweep is red. Subscribe to this issue to be notified of every run.',
     '',
-    'Maintained by `scripts/ci/nightly-report.ts`; do not rename it (the reporter finds it by title).',
+    'Maintained by `scripts/ci/nightly-report.ts`; do not rename it or remove its `nightly-sweep` label (the reporter finds it by both).',
   ].join('\n')
 }
 

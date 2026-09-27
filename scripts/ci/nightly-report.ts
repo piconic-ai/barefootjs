@@ -7,8 +7,8 @@
  * Env: GITHUB_TOKEN (issues: write, actions: read), GITHUB_REPOSITORY,
  * GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA, GITHUB_WORKFLOW,
  * GITHUB_WORKFLOW_REF, GITHUB_SERVER_URL, optionally GITHUB_API_URL and
- * REPORTER_JOB (default `report`, the job to leave out of the verdict). It has no dependencies,
- * so no `bun install`.
+ * REPORTER_JOB (default `report`, the job to leave out of the verdict). It
+ * has no dependencies, so no `bun install`.
  *
  * `--dry-run` prints the comment and the planned issue changes without
  * writing anything.
