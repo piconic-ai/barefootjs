@@ -57,8 +57,6 @@ export interface CommentInput {
   sha: string
   /** `YYYY-MM-DD` of the run. */
   date: string
-  /** Optional `@user` / `@org/team` line, from the `NIGHTLY_REPORT_MENTION` repository variable. */
-  mention?: string
 }
 
 export function renderComment(input: CommentInput): string {
@@ -75,7 +73,6 @@ export function renderComment(input: CommentInput): string {
     '| Job | Result |',
     '|---|---|',
     ...rows,
-    ...(input.mention ? ['', input.mention] : []),
   ].join('\n')
 }
 

@@ -6,9 +6,8 @@
  *
  * Env: GITHUB_TOKEN (issues: write, actions: read), GITHUB_REPOSITORY,
  * GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA, GITHUB_WORKFLOW,
- * GITHUB_WORKFLOW_REF, GITHUB_SERVER_URL, optionally GITHUB_API_URL,
- * NIGHTLY_REPORT_MENTION (e.g. `@kfly8`) and REPORTER_JOB (default
- * `report`, the job to leave out of the verdict). It has no dependencies,
+ * GITHUB_WORKFLOW_REF, GITHUB_SERVER_URL, optionally GITHUB_API_URL and
+ * REPORTER_JOB (default `report`, the job to leave out of the verdict). It has no dependencies,
  * so no `bun install`.
  *
  * `--dry-run` prints the comment and the planned issue changes without
@@ -75,7 +74,6 @@ const comment = renderComment({
   runUrl: `${env('GITHUB_SERVER_URL')}/${repo}/actions/runs/${runId}`,
   sha: env('GITHUB_SHA'),
   date: new Date().toISOString().slice(0, 10),
-  mention: process.env.NIGHTLY_REPORT_MENTION || undefined,
 })
 console.log(comment)
 

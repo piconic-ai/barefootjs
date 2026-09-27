@@ -62,11 +62,6 @@ describe('renderComment', () => {
     expect(body).toContain('| ✅ success |')
     expect(body).toContain('| ❌ failure |')
   })
-
-  test('appends the mention only when one is configured', () => {
-    expect(renderComment({ ...input, ok: true, mention: '@kfly8' }).endsWith('\n\n@kfly8')).toBe(true)
-    expect(renderComment({ ...input, ok: true })).not.toContain('@')
-  })
 })
 
 test('issueTitle is what the reporter looks the issue up by', () => {
