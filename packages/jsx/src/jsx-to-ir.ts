@@ -2282,7 +2282,8 @@ function markDataKeyCarrier(children: IRNode[]): IRNode[] {
  * The marked copy of `node` if this subtree can render an element in first
  * position, or null if it cannot.
  *
- * Descends through `conditional` because a fragment whose only top-level
+ * Descends through a nested `fragment` (no DOM of its own) and through
+ * `conditional`, because a fragment whose only top-level
  * child is a ternary or `&&` is still a single-visual-root row —
  * `{done ? <li class="done"/> : <li/>}` renders exactly one `<li>`. A flat
  * `children.findIndex(c => c.type === 'element')` returns -1 there and
@@ -2309,6 +2310,15 @@ function markCarrierIn(node: IRNode): IRNode | null {
     const whenFalse = markCarrierIn(cond.whenFalse)
     if (!whenTrue && !whenFalse) return null
     return { ...cond, whenTrue: whenTrue ?? cond.whenTrue, whenFalse: whenFalse ?? cond.whenFalse }
+  }
+  if (node.type === 'fragment') {
+    // A fragment nested directly inside the root fragment (`<><><li/></></>`)
+    // renders no DOM of its own, so its first element is the row's first
+    // element too — the one the CSR runtime stamps the key on
+    // (`component.ts`'s `roots.find(isElement)`, #2735).
+    const frag = node as IRFragment
+    const children = markDataKeyCarrier(frag.children)
+    return children === frag.children ? null : { ...frag, children }
   }
   return null
 }

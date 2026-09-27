@@ -194,7 +194,7 @@ export function initPopoverContent(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) (handleMount)(_s0)
+  if (_s0) { (handleMount)(_s0); if (__scopeId) _s0.setAttribute('bf-po', __scopeId) }
 }
 
 hydrate('PopoverContent', { init: initPopoverContent, template: (_p) => `<div data-slot="popover-content" data-state="closed" ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })

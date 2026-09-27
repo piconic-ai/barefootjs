@@ -488,6 +488,7 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
       refs.push({
         slotId: el.slotId,
         callback: el.ref,
+        ...(el.ssrPortalOwnerScope && { ssrPortalOwner: true }),
       })
     }
   }, true)

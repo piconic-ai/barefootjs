@@ -59,3 +59,27 @@ jobs:
           name: playwright-traces-mutation-sweep
           path: packages/adapter-tests/test-results/
           retention-days: 30
+
+  # Posts this run's outcome to the "Nightly: Mutation Sweep" tracking issue
+  # (scripts/ci/nightly-report.ts): a comment on every run, the issue
+  # reopened while the sweep is red and closed once it passes. Subscribe to
+  # that issue to be notified of every night's result.
+  report:
+    needs: [mutation-sweep]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Report to the tracking issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun scripts/ci/nightly-report.ts

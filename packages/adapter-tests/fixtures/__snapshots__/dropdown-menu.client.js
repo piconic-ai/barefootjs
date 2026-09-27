@@ -3135,7 +3135,7 @@ export function initDropdownMenuContent(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) (handleMount)(_s0)
+  if (_s0) { (handleMount)(_s0); if (__scopeId) _s0.setAttribute('bf-po', __scopeId) }
 }
 
 hydrate('DropdownMenuContent', { init: initDropdownMenuContent, template: (_p) => `<div data-slot="dropdown-menu-content" data-state="closed" role="menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })

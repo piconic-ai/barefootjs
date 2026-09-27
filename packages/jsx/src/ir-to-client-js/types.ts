@@ -203,6 +203,8 @@ export interface ConditionalBranchEvent {
 export interface ConditionalBranchRef {
   slotId: string
   callback: string
+  /** Mirrors `IRElement.ssrPortalOwnerScope` — see `emitRefCall`. */
+  ssrPortalOwner?: boolean
 }
 
 export interface ConditionalBranchChildComponent {
@@ -740,6 +742,8 @@ export type CollectedLoop = TopLevelLoop | BranchLoop | NestedLoop
 export interface RefElement {
   slotId: string
   callback: string
+  /** Mirrors `IRElement.ssrPortalOwnerScope` — see `emitRefCall`. */
+  ssrPortalOwner?: boolean
 }
 
 export interface ChildInit {

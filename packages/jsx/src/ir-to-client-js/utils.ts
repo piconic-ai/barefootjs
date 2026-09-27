@@ -26,6 +26,7 @@ import {
   loopItemMarker,
   toHTMLAttrName as toHtmlAttrName,
   keyAttrName as sharedKeyAttrName,
+  BF_PORTAL_OWNER,
 } from '@barefootjs/shared'
 import { RUNTIME_IMPORT_CANDIDATES } from './imports.ts'
 
@@ -81,7 +82,42 @@ export function initFunctionName(componentName: string): string {
  * — the wrapping comment marks a scope with no DOM presence of its own.
  */
 export function isCommentScopedRoot(root: ComponentIR['root']): boolean {
-  return (root.type === 'fragment' && !!(root as IRFragment).needsScopeComment) || root.type === 'component'
+  return isScopeCommentFragmentRoot(root) || root.type === 'component'
+}
+
+/**
+ * True for a genuine `needsScopeComment` fragment root — the `fragmentRoot:
+ * true` def flag's condition (#2722). SSR renders it wrapped in
+ * `<!--bf-scope:-->` comments with no scope attribute on any element, so the
+ * CSR runtime must be told to mirror that (`materializeComponent` /
+ * `renderChild` in component.ts) instead of stamping `bf-s` onto the first
+ * rendered element.
+ */
+export function isScopeCommentFragmentRoot(root: ComponentIR['root']): boolean {
+  return root.type === 'fragment' && !!(root as IRFragment).needsScopeComment
+}
+
+/**
+ * The scope-shape flags (`comment: true` / `fragmentRoot: true`) a
+ * component's `hydrate()` def declares — the ONE answer both registration
+ * emitters read: `emitRegistrationAndHydration` (emit-registration.ts, a
+ * component with an init body) and `generateTemplateOnlyMount` (index.ts, a
+ * stateless component registered for `renderChild()` only). The template-
+ * only emitter used to re-derive the def by hand and declared neither flag,
+ * so a fragment-rooted stateless child rendered by CSR got `bf-s` stamped on
+ * its first element while SSR (and so hydration) scoped it with a comment
+ * pair — a hydrated-vs-csr-mount divergence.
+ *
+ * A component-call root (#2649) never reaches the template-only emitter:
+ * its root child call always pushes a `childInits` entry
+ * (collect-elements.ts), so `needsClientJs` routes it to the init-bearing
+ * path. Both paths therefore share one answer here.
+ */
+export function componentDefScopeFlags(root: ComponentIR['root']): string[] {
+  const flags: string[] = []
+  if (isCommentScopedRoot(root)) flags.push('comment: true')
+  if (isScopeCommentFragmentRoot(root)) flags.push('fragmentRoot: true')
+  return flags
 }
 
 /**
@@ -397,18 +433,30 @@ export function wrapHandlerForTurn(handler: string, handlerId: string, loc?: str
  * Heuristic: a single bare identifier (e.g. `attachPane`) is a local binding;
  * anything else (member access, call, arrow, …) is treated as a possibly-
  * undefined source and emitted with optional-call (`?.()`).
+ *
+ * `ssrPortalOwner` (the element's `IRElement.ssrPortalOwnerScope`, #3059):
+ * every SSR adapter renders that element at its portal outlet with
+ * `bf-po="<this component's scope id>"` — the owner marker hydration's
+ * portal-aware slot lookup finds it by, and which hydration keeps as-is.
+ * The CSR mirror stamps the same owner right AFTER the ref callback ran (not
+ * in the template: a `bf-po` present before the callback makes its
+ * `!isSSRPortal(el)` guard skip the move). Without it the owner came only
+ * from the callback's own `createPortal(el, …, { ownerScope })`, which
+ * derives it from `el.closest('[bf-s]')` — this component's root for an
+ * element root, but nothing (or an unrelated outer scope) for a
+ * `needsScopeComment` fragment root, whose scope id lives on a comment, so
+ * a CSR mount diverged from SSR/hydration on the attribute.
  */
-export function emitRefCall(callback: string, elementVar: string): string {
+export function emitRefCall(callback: string, elementVar: string, ssrPortalOwner = false): string {
   const trimmed = callback.trim()
   const isBareIdent = /^[a-zA-Z_$][\w$]*$/.test(trimmed)
-  if (isBareIdent) {
-    return `(${callback})(${elementVar})`
-  }
   // Wrap non-identifier expressions in parens so `?.()` binds to the whole
   // expression (e.g. `(_p.onMount)?.(_s0)` not `_p.onMount?.(_s0)` — both
   // parse the same here, but the parens preserve the legacy emit shape's
   // intent and stay safe for arbitrary callback expressions).
-  return `(${callback})?.(${elementVar})`
+  const call = isBareIdent ? `(${callback})(${elementVar})` : `(${callback})?.(${elementVar})`
+  if (!ssrPortalOwner) return call
+  return `{ ${call}; if (__scopeId) ${elementVar}.setAttribute('${BF_PORTAL_OWNER}', __scopeId) }`
 }
 
 /** Infer a sensible JS default value literal from a type descriptor. */

@@ -3199,6 +3199,18 @@
         "text"
       ]
     },
+    "fragment-root-nested-keyed-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "fragment-wrapped-children-jsx-expression": {
       "kinds": [
         "identifier"
@@ -4393,6 +4405,21 @@
         "text"
       ]
     },
+    "loop-row-fragment-root-child": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-static-conditional": {
       "kinds": [
         "call",
@@ -5414,6 +5441,22 @@
     "portal": {
       "kinds": [
         "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "portal-fragment-root": {
+      "kinds": [
         "call",
         "identifier",
         "literal",
@@ -7967,21 +8010,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 143,
+    "array-literal": 144,
     "array-method": 72,
     "arrow": 81,
     "binary": 119,
-    "call": 325,
+    "call": 328,
     "conditional": 44,
-    "identifier": 469,
+    "identifier": 472,
     "index-access": 15,
-    "literal": 372,
+    "literal": 374,
     "logical": 56,
-    "member": 290,
+    "member": 291,
     "object-literal": 115,
     "template-literal": 33,
-    "unary": 37,
-    "unsupported": 55
+    "unary": 38,
+    "unsupported": 56
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -8019,10 +8062,10 @@
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 84,
+    "literal:boolean": 85,
     "literal:null": 33,
     "literal:number": 161,
-    "literal:string": 255,
+    "literal:string": 256,
     "logical:&&": 7,
     "logical:??": 47,
     "logical:||": 17,
@@ -8039,7 +8082,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 30,
+    "unary:!": 31,
     "unary:-": 11
   },
   "uncoveredKinds": [
