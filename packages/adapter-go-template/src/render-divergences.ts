@@ -12,7 +12,10 @@
  * learned to seed a prop-backed static child-component loop's Props slice
  * the same way it already seeded a signal-backed dynamic one: the adapter's
  * own `emission` was never the bug, only this harness's route-handler
- * stand-in was missing the prop-derived case.)
+ * stand-in was missing the prop-derived case. The harness has since stopped
+ * building a prop-backed loop's Props rows itself: it supplies the caller's
+ * `<Name>s` Input rows and lets `NewXxxProps` build the rows, so the
+ * constructor's own row loop — `BfDataKey` included — is executed here.)
  *
  * (#2703's `jsx-element-prop-fragment-conditional` divergence graduated by
  * reclassification, not a lowering fix: the underlying gap — a named
@@ -181,6 +184,15 @@ export const renderDivergences: RenderDivergences = {
   // Go fails to build with no diagnostic: "item.ID undefined (type
   // BadgeInput has no field or method ID)".
   'loop-row-child-key-not-a-prop': { limitation: 'loop-row-child-key-not-a-prop' },
+
+  // The same constructor read with a same-named child prop passed a
+  // DIFFERENT row field (`<Badge key={item.id} id={item.slug} … />`): the
+  // key read off the child's own Input row (`fmt.Sprint(item.ID)`) compiles,
+  // but yields the child's `id` prop (`item.slug`), so every row renders
+  // `data-key="x"`/`"y"` instead of the row's own `"a"`/`"b"`. Observable
+  // only since the harness supplies `in.Badges` and lets the constructor
+  // build the rows (it used to rebuild them itself, keyed off the JS row).
+  'loop-row-child-key-shadowed-by-prop': { limitation: 'loop-row-child-key-shadowed-by-prop' },
 
   // A component loop row over a string array prop, keyed by the row value
   // itself (`<Badge key={i} label={i} />`): the constructor only derives
