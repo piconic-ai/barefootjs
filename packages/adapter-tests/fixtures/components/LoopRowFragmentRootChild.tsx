@@ -6,6 +6,12 @@
 // fragment-root scope shape SSR renders (a `<!--bf-scope:-->` comment pair,
 // no `bf-s` on the child's element), or a CSR mount stamps `bf-s` onto the
 // child's `<span>` and diverges from SSR + hydration.
+//
+// The forwarded children read only the row's own item, never the outer
+// signal: a static loop's forwarded children reaching outer reactive state
+// is a separate, go-template-refused shape
+// (`loop-row-child-children-attrs-frozen`) this fixture must not depend
+// on, so every adapter covers the scope shape it exists for.
 
 import { createSignal } from '@barefootjs/client'
 
@@ -25,11 +31,11 @@ export function LoopRowFragmentRootChild() {
     <div>
       {opts.map(opt => (
         <Tag key={opt}>
-          <b data-current={active() === opt ? 'true' : 'false'}>{opt}</b>
+          <b>{opt}</b>
         </Tag>
       ))}
       <button type="button" className="toggle" onClick={() => setActive('b')}>
-        toggle
+        {active()}
       </button>
     </div>
   )

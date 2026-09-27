@@ -4392,6 +4392,7 @@
     "loop-row-fragment-root-child": {
       "kinds": [
         "array-literal",
+        "call",
         "identifier",
         "literal"
       ],
@@ -7955,7 +7956,7 @@
     "array-method": 72,
     "arrow": 81,
     "binary": 118,
-    "call": 323,
+    "call": 324,
     "conditional": 44,
     "identifier": 468,
     "index-access": 15,

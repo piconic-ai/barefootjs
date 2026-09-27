@@ -66,6 +66,30 @@ export function Host() {
     expect(tag).not.toContain('comment: true')
     expect(tag).not.toContain('fragmentRoot: true')
   })
+
+  test('a stateless component-call root takes the init-bearing path and declares comment only', () => {
+    // `componentDefScopeFlags` gives both registration emitters one answer
+    // because this shape never reaches the template-only one: the root
+    // child call is a `childInits` entry, so `needsClientJs` is true.
+    const js = clientJs(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+function Inner({ children }: { children?: any }) {
+  return <span>{children}</span>
+}
+function Tag({ children }: { children?: any }) {
+  return <Inner>{children}</Inner>
+}
+export function Host() {
+  const [n, setN] = createSignal(0)
+  return <div>{['a', 'b'].map(x => <Tag key={x}>{x}</Tag>)}<button onClick={() => setN(n() + 1)}>{n()}</button></div>
+}
+`)
+    expect(js).not.toContain('function initTag() {}')
+    const tag = hydrateLine(js, 'Tag')
+    expect(tag).toContain('comment: true')
+    expect(tag).not.toContain('fragmentRoot: true')
+  })
 })
 
 const PORTAL_CALLBACK = `

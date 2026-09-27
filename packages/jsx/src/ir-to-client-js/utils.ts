@@ -108,13 +108,14 @@ export function isScopeCommentFragmentRoot(root: ComponentIR['root']): boolean {
  * its first element while SSR (and so hydration) scoped it with a comment
  * pair — a hydrated-vs-csr-mount divergence.
  *
- * `hasInit` keeps the #2649 component-root shape where it was: it is
- * comment-scoped only on the init-bearing path; the template-only path
- * declares only the fragment-root shape.
+ * A component-call root (#2649) never reaches the template-only emitter:
+ * its root child call always pushes a `childInits` entry
+ * (collect-elements.ts), so `needsClientJs` routes it to the init-bearing
+ * path. Both paths therefore share one answer here.
  */
-export function componentDefScopeFlags(root: ComponentIR['root'], hasInit: boolean): string[] {
+export function componentDefScopeFlags(root: ComponentIR['root']): string[] {
   const flags: string[] = []
-  if (hasInit ? isCommentScopedRoot(root) : isScopeCommentFragmentRoot(root)) flags.push('comment: true')
+  if (isCommentScopedRoot(root)) flags.push('comment: true')
   if (isScopeCommentFragmentRoot(root)) flags.push('fragmentRoot: true')
   return flags
 }

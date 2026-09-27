@@ -243,7 +243,7 @@ export function emitRegistrationAndHydration(
     }
   }
   // No else: top-level-only components skip template entirely (save bytes)
-  defParts.push(...componentDefScopeFlags(_ir.root, true))
+  defParts.push(...componentDefScopeFlags(_ir.root))
 
   const registryKey = nameForRegistryRef(name)
   // When the registry key was file-scoped (`Name__<8hex>`, for a

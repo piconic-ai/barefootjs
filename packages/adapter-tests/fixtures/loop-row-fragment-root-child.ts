@@ -23,11 +23,12 @@ export const spec: SharedFixtureSpec = {
   description:
     'a .map() row calls a stateless fragment-rooted child; CSR mount scopes it with a comment pair like SSR (no bf-s on the child element)',
   interactions: [
-    { type: 'expectAttribute', selector: 'span:nth-of-type(1) > b', attribute: 'data-current', value: 'true' },
-    { type: 'expectAttribute', selector: 'span:nth-of-type(2) > b', attribute: 'data-current', value: 'false' },
+    { type: 'expectText', selector: 'span:nth-of-type(1) > b', text: 'a' },
+    { type: 'expectText', selector: 'span:nth-of-type(2) > b', text: 'b' },
+    { type: 'expectText', selector: '.toggle', text: 'a' },
     { type: 'click', selector: '.toggle' },
-    { type: 'expectAttribute', selector: 'span:nth-of-type(1) > b', attribute: 'data-current', value: 'false' },
-    { type: 'expectAttribute', selector: 'span:nth-of-type(2) > b', attribute: 'data-current', value: 'true' },
+    { type: 'expectText', selector: '.toggle', text: 'b' },
+    { type: 'expectText', selector: 'span:nth-of-type(1) > b', text: 'a' },
   ],
 }
 

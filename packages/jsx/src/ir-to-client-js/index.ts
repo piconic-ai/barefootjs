@@ -367,7 +367,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // uses — a fragment-rooted stateless child must declare `comment` /
   // `fragmentRoot` too, or `renderChild()` stamps `bf-s` onto its first
   // element while SSR scopes it with a comment pair.
-  const scopeFlags = componentDefScopeFlags(ir.root, false).map((f) => `, ${f}`).join('')
+  const scopeFlags = componentDefScopeFlags(ir.root).map((f) => `, ${f}`).join('')
   lines.push(`hydrate('${registryKey}', { init: ${initName}, template: (${PROPS_PARAM}) => \`${templateHtml}\`${scopeFlags}${nameField} })`)
   // See `emitRegistrationAndHydration` (./emit-registration.ts) for the
   // rationale on why the component is also emitted as a callable

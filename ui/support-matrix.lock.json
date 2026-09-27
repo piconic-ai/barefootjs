@@ -2278,11 +2278,11 @@
       }
     },
     "call": {
-      "total": 323,
+      "total": 324,
       "cells": {
         "hono": {
-          "pass": 319,
-          "total": 323,
+          "pass": 320,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2311,8 +2311,8 @@
           ]
         },
         "blade": {
-          "pass": 298,
-          "total": 323,
+          "pass": 299,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2467,8 +2467,8 @@
           ]
         },
         "erb": {
-          "pass": 299,
-          "total": 323,
+          "pass": 300,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2617,8 +2617,8 @@
           ]
         },
         "go-template": {
-          "pass": 289,
-          "total": 323,
+          "pass": 290,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2827,8 +2827,8 @@
           ]
         },
         "jinja": {
-          "pass": 298,
-          "total": 323,
+          "pass": 299,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -2983,8 +2983,8 @@
           ]
         },
         "minijinja": {
-          "pass": 298,
-          "total": 323,
+          "pass": 299,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -3139,8 +3139,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 299,
-          "total": 323,
+          "pass": 300,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -3289,8 +3289,8 @@
           ]
         },
         "pebble": {
-          "pass": 299,
-          "total": 323,
+          "pass": 300,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -3439,8 +3439,8 @@
           ]
         },
         "twig": {
-          "pass": 298,
-          "total": 323,
+          "pass": 299,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",
@@ -3595,8 +3595,8 @@
           ]
         },
         "xslate": {
-          "pass": 298,
-          "total": 323,
+          "pass": 299,
+          "total": 324,
           "gaps": [
             {
               "fixture": "conditional-return-fragment-branch",

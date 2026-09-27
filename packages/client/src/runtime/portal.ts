@@ -392,19 +392,18 @@ export function createPortal(
 
   // The reorder subject, resolved BEFORE the append moves the element:
   // the declared owner when it lies outside the element, else the
-  // element's former parent (see the insertion rule above). Only a parent
-  // the caller handed us counts — the string path parses into a fragment,
-  // which never connects; the same goes for a caller-built fragment.
+  // element's former parent — or, when that parent is a fragment, a former
+  // sibling (see the insertion rule above). Only a parent the caller handed
+  // us counts: the string path's parse container never connects.
   const owner = options?.ownerScope
   const formerParent = children instanceof HTMLElement ? children.parentNode : null
-  const formerSibling = children instanceof HTMLElement ? (children.previousSibling ?? children.nextSibling) : null
   const subject: Node | null =
     owner && !element.contains(owner)
       ? owner
       : formerParent instanceof Element
         ? formerParent
         : formerParent instanceof DocumentFragment
-          ? formerSibling
+          ? (element.previousSibling ?? element.nextSibling)
           : null
 
   container.appendChild(element)
