@@ -14,7 +14,7 @@ import type { JSXFixture } from '../src/types'
 import { fixtureUrl } from './fixture-host'
 import { captureDomState, diffDomState, type DomStateSnapshot } from './dom-state'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from '../src/html-normalize'
-import { actionStepsOf, runStep, type ActionStep } from './interaction-runner'
+import { actionStepsOf, installFetchRecorder, runStep, waitForFetchesToSettle, type ActionStep } from './interaction-runner'
 
 /**
  * Canonicalize `bf-po` (portal-origin marker) the same way `normalizeHTML`
@@ -110,6 +110,12 @@ async function settleScrollBeforeAction(page: Page, step: ActionStep, timeout: n
  * which boot the client JS on load — no `addScriptTag` two-step needed
  * here since idempotence only cares about the END state), replay every
  * ACTION step from its `interactions` in order, then capture.
+ *
+ * An action can start a request (`createQuery`'s action, a
+ * `createMutation` call), and the END state depends on whether its
+ * response has landed yet. The capture waits for every fetch to settle
+ * first, so both legs compare the same settled state rather than whichever
+ * side of the response each happened to land on.
  */
 export async function replayActionsAndCapture(
   page: Page,
@@ -117,6 +123,7 @@ export async function replayActionsAndCapture(
   baseUrl: string,
   mode: 'hydrate' | 'csr-mount',
 ): Promise<DomStateSnapshot> {
+  await installFetchRecorder(page)
   await page.goto(fixtureUrl(baseUrl, fixture.id, mode))
   await waitOneFrame(page)
   for (const step of actionStepsOf(fixture.interactions)) {
@@ -132,6 +139,7 @@ export async function replayActionsAndCapture(
     await settleScrollBeforeAction(page, step, 5_000)
     await runStep(page, step, { timeout: 5_000 })
   }
+  await waitForFetchesToSettle(page, 5_000)
   return captureDomState(page)
 }
 
