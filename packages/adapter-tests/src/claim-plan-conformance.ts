@@ -48,6 +48,7 @@ import { Window, type Node as HappyNode, type Element as HappyElement, type Comm
 import { BF_SCOPE } from '@barefootjs/shared'
 import { jsxFixtures } from '../fixtures'
 import type { RenderOptions } from './jsx-runner'
+import { virtualComponentPath } from './virtual-path'
 
 const BF_SCOPE_ATTR = BF_SCOPE
 
@@ -209,7 +210,7 @@ export function runClaimPlanConformance(opts: RunClaimPlanConformanceOptions): v
       const skipped = opts.skipFixtures?.has(fixture.id) ?? false
       const t = skipped ? test.skip : renderTest
       t(`${fixture.id}: claim-plan paths resolve against real SSR DOM`, async () => {
-        const clientJs = compileJSX(fixture.source, `${fixture.id}.tsx`, { adapter: opts.factory() })
+        const clientJs = compileJSX(fixture.source, virtualComponentPath(`${fixture.id}.tsx`), { adapter: opts.factory() })
           .files.find(f => f.type === 'clientJs')?.content
         if (!clientJs) return // stateless fixture — no claim plan to check
 

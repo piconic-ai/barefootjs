@@ -12,6 +12,7 @@ import { compileJSX } from '@barefootjs/jsx'
 import { jsxFixtures } from '../fixtures'
 import type { ExpectedDiagnostic } from './types'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from './html-normalize'
+import { virtualComponentPath } from './virtual-path'
 
 export interface RenderOptions {
   /** JSX source code */
@@ -118,7 +119,7 @@ function collectFixtureDiagnostics(args: {
   const siblingTemplatesRegistered = Boolean(args.components)
   if (args.components) {
     for (const [filename, childSource] of Object.entries(args.components)) {
-      const r = compileJSX(childSource.trimStart(), filename, {
+      const r = compileJSX(childSource.trimStart(), virtualComponentPath(filename), {
         adapter: args.adapter,
         outputIR: true,
         siblingTemplatesRegistered,
@@ -134,7 +135,7 @@ function collectFixtureDiagnostics(args: {
       }
     }
   }
-  const result = compileJSX(args.source.trimStart(), 'component.tsx', {
+  const result = compileJSX(args.source.trimStart(), virtualComponentPath(), {
     adapter: args.adapter,
     outputIR: true,
     siblingTemplatesRegistered,

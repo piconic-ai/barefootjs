@@ -28,6 +28,7 @@ import { GoTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { MojoAdapter } from '@barefootjs/mojolicious/adapter'
 import { XslateAdapter } from '@barefootjs/xslate/adapter'
 import type { TemplateAdapter } from '@barefootjs/jsx'
+import { virtualComponentPath } from '../virtual-path'
 
 const PROVIDER_ROOT = `
 'use client'
@@ -98,7 +99,7 @@ const ADAPTERS: readonly AdapterCase[] = [
 ]
 
 function markedTemplate(source: string, adapter: TemplateAdapter): string {
-  const result = compileJSX(source, 'Select.tsx', { adapter })
+  const result = compileJSX(source, virtualComponentPath('Select.tsx'), { adapter })
   expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
   const file = result.files.find(f => f.type === 'markedTemplate')
   expect(file).toBeDefined()

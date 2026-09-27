@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { GoTemplateAdapter, conformancePins as goTemplatePins } from '@barefootjs/go-template'
 import { compileForCompat, buildCompatCell, COMPILE_THREW_CODE } from '../engine'
 import { buildCompatReport, formatCompatJson, formatCompatMarkdown } from '../report'
+import { virtualComponentPath } from '../../../adapter-tests/src/virtual-path'
 
 // #2038 repro shape — a filter predicate with a NESTED higher-order
 // callback call. The Go template adapter has no faithful lowering and
@@ -30,7 +31,7 @@ export function Hello() {
 describe('compileForCompat', () => {
   test('build mode: clean component produces no diagnostics', () => {
     const adapter = new GoTemplateAdapter()
-    const errors = compileForCompat(OK_SOURCE, 'component.tsx', adapter, 'build')
+    const errors = compileForCompat(OK_SOURCE, virtualComponentPath(), adapter, 'build')
     expect(errors).toEqual([])
     const cell = buildCompatCell(errors, {})
     expect(cell).toEqual({ ok: true, diagnostics: [] })
@@ -38,7 +39,7 @@ describe('compileForCompat', () => {
 
   test('build mode: a refused shape fires BF101 and the cell is not ok', () => {
     const adapter = new GoTemplateAdapter()
-    const errors = compileForCompat(NESTED_CALLBACK_PREDICATE_SOURCE, 'component.tsx', adapter, 'build')
+    const errors = compileForCompat(NESTED_CALLBACK_PREDICATE_SOURCE, virtualComponentPath(), adapter, 'build')
     expect(errors.some(e => e.code === 'BF101' && e.severity === 'error')).toBe(true)
 
     const cell = buildCompatCell(errors, goTemplatePins)
@@ -99,13 +100,13 @@ export function Parent() {
     ;(throwingAdapter as unknown as { generate: () => never }).generate = () => {
       throw new Error('boom')
     }
-    const errors = compileForCompat(OK_SOURCE, 'component.tsx', throwingAdapter, 'build')
+    const errors = compileForCompat(OK_SOURCE, virtualComponentPath(), throwingAdapter, 'build')
     expect(errors).toEqual([
       {
         code: COMPILE_THREW_CODE,
         severity: 'error',
         message: '',
-        loc: { file: 'component.tsx', start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
+        loc: { file: virtualComponentPath(), start: { line: 0, column: 0 }, end: { line: 0, column: 0 } },
       },
     ])
     const cell = buildCompatCell(errors, {})
@@ -209,7 +210,7 @@ describe('determinism', () => {
   test('two engine runs over the same inputs produce deep-equal and byte-equal reports', () => {
     const runOnce = () => {
       const adapter = new GoTemplateAdapter()
-      const errors = compileForCompat(NESTED_CALLBACK_PREDICATE_SOURCE, 'component.tsx', adapter, 'build')
+      const errors = compileForCompat(NESTED_CALLBACK_PREDICATE_SOURCE, virtualComponentPath(), adapter, 'build')
       const cell = buildCompatCell(errors, goTemplatePins)
       return buildCompatReport({ 'nested-callback-predicate': { 'go-template': cell } })
     }

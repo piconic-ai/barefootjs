@@ -18,6 +18,7 @@ import {
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { virtualComponentPath } from './virtual-path'
 
 // The CSR runtime is a JS engine, so — like Hono / any `JsxAdapter` — it runs
 // an off-subset callback body (`filter`/`sort` predicate the compiler can't
@@ -124,13 +125,13 @@ export async function renderCsrComponent(options: CsrRenderOptions): Promise<str
   const childClientJsList: string[] = []
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
-      const clientJs = compileToClientJs(childSource, filename)
+      const clientJs = compileToClientJs(childSource, virtualComponentPath(filename))
       if (clientJs) childClientJsList.push(clientJs)
     }
   }
 
   // Compile main component
-  const clientJs = compileToClientJs(source, 'component.tsx')
+  const clientJs = compileToClientJs(source, virtualComponentPath())
   if (!clientJs) throw new Error('No client JS generated')
 
   // Build evaluation module

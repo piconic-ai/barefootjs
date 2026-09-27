@@ -28,6 +28,7 @@
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter } from '@barefootjs/jsx'
+import { virtualComponentPath } from '../virtual-path'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { GoTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { JinjaAdapter } from '@barefootjs/jinja/adapter'
@@ -117,7 +118,7 @@ const ADAPTERS: readonly AdapterCase[] = [
 describe('a registered lowering call nested in a template-literal interpolation lowers identically on every adapter (#2843)', () => {
   for (const adapter of ADAPTERS) {
     test(adapter.name, () => {
-      const result = compileJSX(SOURCE, 'P.tsx', { adapter: adapter.make() })
+      const result = compileJSX(SOURCE, virtualComponentPath('P.tsx'), { adapter: adapter.make() })
       expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
       const file = result.files.find(f => f.type === 'markedTemplate')
       expect(file).toBeDefined()

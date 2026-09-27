@@ -12,8 +12,8 @@ export function initTag(__scope, _p = {}) {
 
 }
 
-hydrate('Tag__515bc416', { init: initTag, template: (_p) => `<span class="tag" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.id)}<!--/--></span>`, name: 'Tag' })
-export function Tag(_p, __bfKey) { return createComponent('Tag__515bc416', _p, __bfKey) }
+hydrate('Tag__bbf74fd8', { init: initTag, template: (_p) => `<span class="tag" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.id)}<!--/--></span>`, name: 'Tag' })
+export function Tag(_p, __bfKey) { return createComponent('Tag__bbf74fd8', _p, __bfKey) }
 export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -30,7 +30,7 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
       __tpl.innerHTML = `<li data-key="${escapeAttr(id())}"><div data-bf-ph="s1"></div><textarea class="ta" bf="s2">${escapeText(value())}</textarea></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
-    upsertChild(__el, 'Tag__515bc416', 's1', { get id() { return id() } }, undefined, __scope)
+    upsertChild(__el, 'Tag__bbf74fd8', 's1', { get id() { return id() } }, undefined, __scope)
     { const __e = qsa(__el, '[bf="s2"]'); if (__e) __e.addEventListener('input', () => { setValue('a</textarea><b class="broke">X</b>') }) }
     const __ra_s2 = qsa(__el, '[bf="s2"]')
     const __l = []
@@ -49,5 +49,5 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
 
 }
 
-hydrate('TextareaRowBreakoutComposite', { init: initTextareaRowBreakoutComposite, template: (_p) => `<div><button class="add" bf="s0">add</button><ul bf="s3"><!--bf-loop:l0-->${([1]).map((id) => `<li data-key="${escapeAttr(id)}">${renderChild('Tag__515bc416', {id: id}, undefined, 's1')}<textarea class="ta" bf="s2">${escapeText(('a</textarea><b class="broke">X</b>'))}</textarea></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+hydrate('TextareaRowBreakoutComposite', { init: initTextareaRowBreakoutComposite, template: (_p) => `<div><button class="add" bf="s0">add</button><ul bf="s3"><!--bf-loop:l0-->${([1]).map((id) => `<li data-key="${escapeAttr(id)}">${renderChild('Tag__bbf74fd8', {id: id}, undefined, 's1')}<textarea class="ta" bf="s2">${escapeText(('a</textarea><b class="broke">X</b>'))}</textarea></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function TextareaRowBreakoutComposite(_p, __bfKey) { return createComponent('TextareaRowBreakoutComposite', _p, __bfKey) }

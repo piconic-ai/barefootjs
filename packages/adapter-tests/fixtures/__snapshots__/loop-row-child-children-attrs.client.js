@@ -2,8 +2,8 @@ import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal,
 
 function initChip() {}
 
-hydrate('Chip__4491e96d', { init: initChip, template: (_p) => `<span>${markupOrEmpty(_p.children)}</span>`, name: 'Chip' })
-export function Chip(_p, __bfKey) { return createComponent('Chip__4491e96d', _p, __bfKey) }
+hydrate('Chip__97214296', { init: initChip, template: (_p) => `<span>${markupOrEmpty(_p.children)}</span>`, name: 'Chip' })
+export function Chip(_p, __bfKey) { return createComponent('Chip__97214296', _p, __bfKey) }
 export function initLoopRowChildChildrenAttrs(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -48,11 +48,11 @@ export function initLoopRowChildChildrenAttrs(__scope, _p = {}) {
     const __childScopes = qsaChildScopes(_s4, `[bf-h="${__scopeId}"][bf-m="s2"], [bf-s$="_s2"]`)
     __childScopes.forEach((childScope, __idx) => {
       const opt = opts[__idx]
-      initChild('Chip__4491e96d', childScope, {})
+      initChild('Chip__97214296', childScope, {})
     })
   }
 
 }
 
-hydrate('LoopRowChildChildrenAttrs', { init: initLoopRowChildChildrenAttrs, template: (_p) => `<div bf="s4"><!--bf-loop:l0-->${(['a', 'b']).map((opt) => `${renderChild('Chip__4491e96d', {children: `<a ${(('a') === opt ? '/current' : `/other/${opt}`) != null ? 'href="' + escapeAttr(('a') === opt ? '/current' : `/other/${opt}`) + '"' : ''} ${(`${('a') === opt ? 'true' : 'false'}`) != null ? 'data-current="' + escapeAttr(`${('a') === opt ? 'true' : 'false'}`) + '"' : ''} bf="^s1"><!--bf:^s0-->${escapeText(opt)}<!--/--></a>`}, opt, 's2', true)}`).join('')}<!--bf-/loop:l0--><button type="button" class="toggle" bf="s3"> toggle </button></div>` })
+hydrate('LoopRowChildChildrenAttrs', { init: initLoopRowChildChildrenAttrs, template: (_p) => `<div bf="s4"><!--bf-loop:l0-->${(['a', 'b']).map((opt) => `${renderChild('Chip__97214296', {children: `<a ${(('a') === opt ? '/current' : `/other/${opt}`) != null ? 'href="' + escapeAttr(('a') === opt ? '/current' : `/other/${opt}`) + '"' : ''} ${(`${('a') === opt ? 'true' : 'false'}`) != null ? 'data-current="' + escapeAttr(`${('a') === opt ? 'true' : 'false'}`) + '"' : ''} bf="^s1"><!--bf:^s0-->${escapeText(opt)}<!--/--></a>`}, opt, 's2', true)}`).join('')}<!--bf-/loop:l0--><button type="button" class="toggle" bf="s3"> toggle </button></div>` })
 export function LoopRowChildChildrenAttrs(_p, __bfKey) { return createComponent('LoopRowChildChildrenAttrs', _p, __bfKey) }

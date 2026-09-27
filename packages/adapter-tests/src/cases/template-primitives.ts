@@ -22,6 +22,7 @@ import { expect } from 'bun:test'
 import { compileJSX } from '../../../jsx/src/compiler'
 import type { TemplateAdapter } from '../../../jsx/src/types'
 import type { ConformanceCase } from '../conformance'
+import { virtualComponentPath } from '../virtual-path'
 import {
   registerLoweringPlugin,
   getLoweringPlugins,
@@ -176,7 +177,7 @@ export function runTemplatePrimitiveCase(
   const previousPlugins = getLoweringPlugins()
   registerLoweringPlugin(customSerializeTestPlugin)
   try {
-    const result = compileJSX(input.source, 'Test.tsx', { adapter })
+    const result = compileJSX(input.source, virtualComponentPath('Test.tsx'), { adapter })
     return result.files.find((f) => f.type === 'clientJs')?.content ?? ''
   } finally {
     __resetLoweringPluginsForTest(previousPlugins)

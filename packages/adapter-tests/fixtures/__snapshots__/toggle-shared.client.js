@@ -38,8 +38,8 @@ export function initToggleItem(__scope, _p = {}) {
   if (_s3) _s3.addEventListener('click', () => { setOn(!on()) })
 }
 
-hydrate('ToggleItem__69f56292', { init: initToggleItem, template: (_p) => `<div class="toggle-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0;"><span style="min-width: 120px;" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><button ${((v) => v != null ? 'style="' + escapeAttr(v) + '"' : '')(styleToCss(`padding: 4px 12px; min-width: 60px; background: ${(_p.defaultOn ?? false) ? '#4caf50' : '#ccc'}; color: ${(_p.defaultOn ?? false) ? 'white' : 'black'}; border: none; border-radius: 4px; cursor: pointer;`))} bf="s3">${(_p.defaultOn ?? false) ? `<!--bf-cond-start:s2-->${escapeText('ON')}<!--bf-cond-end:s2-->` : `<!--bf-cond-start:s2-->${escapeText('OFF')}<!--bf-cond-end:s2-->`}</button></div>`, name: 'ToggleItem' })
-export function ToggleItem(_p, __bfKey) { return createComponent('ToggleItem__69f56292', _p, __bfKey) }
+hydrate('ToggleItem__21507667', { init: initToggleItem, template: (_p) => `<div class="toggle-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0;"><span style="min-width: 120px;" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><button ${((v) => v != null ? 'style="' + escapeAttr(v) + '"' : '')(styleToCss(`padding: 4px 12px; min-width: 60px; background: ${(_p.defaultOn ?? false) ? '#4caf50' : '#ccc'}; color: ${(_p.defaultOn ?? false) ? 'white' : 'black'}; border: none; border-radius: 4px; cursor: pointer;`))} bf="s3">${(_p.defaultOn ?? false) ? `<!--bf-cond-start:s2-->${escapeText('ON')}<!--bf-cond-end:s2-->` : `<!--bf-cond-start:s2-->${escapeText('OFF')}<!--bf-cond-end:s2-->`}</button></div>`, name: 'ToggleItem' })
+export function ToggleItem(_p, __bfKey) { return createComponent('ToggleItem__21507667', _p, __bfKey) }
 export function initToggle(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -47,11 +47,11 @@ export function initToggle(__scope, _p = {}) {
   const [_s1] = $(__scope, 's1')
 
   mapArray(() => (_p.toggleItems ?? []), _s1, (item) => String(item.label), (item, __idx, __existing) => {
-    if (__existing) { initChild('ToggleItem__69f56292', __existing, { get label() { return item().label }, get defaultOn() { return item().defaultOn } }); return __existing }
-    return createComponent('ToggleItem__69f56292', { get label() { return item().label }, get defaultOn() { return item().defaultOn } }, item().label)
+    if (__existing) { initChild('ToggleItem__21507667', __existing, { get label() { return item().label }, get defaultOn() { return item().defaultOn } }); return __existing }
+    return createComponent('ToggleItem__21507667', { get label() { return item().label }, get defaultOn() { return item().defaultOn } }, item().label)
   }, 'l0')
 
 }
 
-hydrate('Toggle', { init: initToggle, template: (_p) => `<div class="settings-panel" style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;" bf="s1"><h3 style="margin-top: 0;">Settings</h3><!--bf-loop:l0-->${_p.toggleItems.map((item) => `${renderChild('ToggleItem__69f56292', {label: item.label, defaultOn: item.defaultOn}, item.label, 's0', true)}`).join('')}<!--bf-/loop:l0--></div>` })
+hydrate('Toggle', { init: initToggle, template: (_p) => `<div class="settings-panel" style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;" bf="s1"><h3 style="margin-top: 0;">Settings</h3><!--bf-loop:l0-->${_p.toggleItems.map((item) => `${renderChild('ToggleItem__21507667', {label: item.label, defaultOn: item.defaultOn}, item.label, 's0', true)}`).join('')}<!--bf-/loop:l0--></div>` })
 export function Toggle(_p, __bfKey) { return createComponent('Toggle', _p, __bfKey) }

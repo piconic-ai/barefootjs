@@ -51,6 +51,7 @@ import { compileJSX } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../fixtures'
 import type { JSXFixture, JSXDataPoint } from './types'
+import { virtualComponentPath } from './virtual-path'
 
 /** Sentinel meaning "omit the key" (an absent optional prop). */
 const ABSENT = Symbol('absent')
@@ -362,7 +363,7 @@ function stableStringify(value: unknown): string {
  */
 export function generateDataPointsForFixture(fixture: JSXFixture): JSXDataPoint[] {
   if (!fixture.expectedHtml) return []
-  const result = compileJSX(fixture.source, 'component.tsx', {
+  const result = compileJSX(fixture.source, virtualComponentPath(), {
     adapter: new HonoAdapter(),
     outputIR: true,
     siblingTemplatesRegistered: Boolean(fixture.components),

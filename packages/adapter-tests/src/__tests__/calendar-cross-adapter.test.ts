@@ -52,8 +52,14 @@ const adapters = [
 
 describe('Calendar cross-adapter compile conformance (#1467)', () => {
   for (const [label, relPath] of sources) {
-    const source = readFileSync(resolve(ROOT, relPath), 'utf8').trimStart()
-    const filename = relPath.split('/').pop()!
+    const absPath = resolve(ROOT, relPath)
+    const source = readFileSync(absPath, 'utf8').trimStart()
+    // The real absolute path (not just its basename, #3220): `ui/`'s own
+    // `node_modules` resolves `@barefootjs/*` types the same way a real
+    // `@barefootjs/vite` build would. A bare basename would resolve
+    // `node_modules` against `process.cwd()` instead — see
+    // `virtualComponentPath`'s doc comment for the general failure mode.
+    const filename = absPath
     for (const [adapterName, adapter] of adapters) {
       // Each case builds a TS program for the type-based analysis (~2s cold);
       // a generous timeout keeps the first cold-cache case from flaking past

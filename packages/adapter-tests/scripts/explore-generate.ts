@@ -49,6 +49,7 @@ import { explore } from '../explore/explorer'
 import { SCENARIOS } from '../explore/scenarios'
 import type { Scenario } from '../explore/scenario'
 import { generateSharedComponentSnapshotCore, seedFromId } from '../src/snapshot-generator'
+import { virtualComponentPath } from '../src/virtual-path'
 import { selectExploreAdapters, type LoadedExploreAdapter } from '../explore/adapters'
 import type { SharedFixtureSpec } from '../fixtures/_helpers'
 
@@ -175,7 +176,7 @@ async function sweepOne(scenario: Scenario<unknown, string>): Promise<ExploreMan
   }
 
   // Classify first, cheaply: a loud refusal never needs the render loop.
-  const probe = compileJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: new HonoAdapter(), outputIR: true })
+  const probe = compileJSX(scenario.source, virtualComponentPath(`${scenario.componentName}.tsx`), { adapter: new HonoAdapter(), outputIR: true })
   const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
   if (errorDiagnostics.length > 0) {
     return { ...base, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }
@@ -242,7 +243,7 @@ async function sweepAdapter(
   entry: ExploreManifestEntry,
 ): Promise<ExploreAdapterRun> {
   const base = { adapter: loaded.id, scenarioId: scenario.id }
-  const probe = compileJSX(scenario.source, `${scenario.componentName}.tsx`, { adapter: loaded.create() })
+  const probe = compileJSX(scenario.source, virtualComponentPath(`${scenario.componentName}.tsx`), { adapter: loaded.create() })
   const errorDiagnostics = probe.errors.filter(e => e.severity === 'error')
   if (errorDiagnostics.length > 0) {
     return { ...base, status: 'refused', diagnosticCodes: [...new Set(errorDiagnostics.map(e => e.code))].sort() }

@@ -17,6 +17,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { jsxFixtures } from '../../../adapter-tests/fixtures'
+import { virtualComponentPath } from '../../../adapter-tests/src/virtual-path'
 import { loadCompatAdapters } from '../adapter-registry'
 import { compileForCompat } from '../engine'
 
@@ -55,7 +56,7 @@ describe('renderDivergences consistency', () => {
           const instance = adapter.factory()
           const errors = compileForCompat(
             fixture.source,
-            'component.tsx',
+            virtualComponentPath(),
             instance,
             'conformance',
             fixture.components,

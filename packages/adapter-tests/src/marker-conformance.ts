@@ -56,6 +56,7 @@ import {
   type TemplateAdapter,
 } from '@barefootjs/jsx'
 import { jsxFixtures } from '../fixtures'
+import { virtualComponentPath } from './virtual-path'
 
 export interface MarkerIdSets {
   slots: Set<string>
@@ -304,7 +305,7 @@ export function runMarkerConformance(opts: RunMarkerConformanceOptions): void {
       const skipped = opts.skipFixtures?.has(fixture.id) ?? false
       const t = skipped ? test.skip : test
       t(`${fixture.id}: template marker ids match IR`, () => {
-        const ir = buildIRFromSource(fixture.source, `${fixture.id}.tsx`)
+        const ir = buildIRFromSource(fixture.source, virtualComponentPath(`${fixture.id}.tsx`))
         if (!ir) {
           // Fixture can't be lowered at all (e.g. analyzer-error case
           // owned by a different suite). Marker conformance is

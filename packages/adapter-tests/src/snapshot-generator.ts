@@ -14,6 +14,7 @@ import ts from 'typescript'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
+import { virtualComponentPath } from './virtual-path'
 import {
   SNAPSHOT_DIR,
   componentPath,
@@ -100,7 +101,7 @@ async function writeUiChildModules(
   const map: Record<string, string> = {}
   for (const [base, specifiers] of entries) {
     const childSource = await Bun.file(componentPath(siblingSourceRoot(root), base)).text()
-    const compiled = compileJSX(childSource, `${base}.tsx`, { adapter: new HonoAdapter() })
+    const compiled = compileJSX(childSource, virtualComponentPath(`${base}.tsx`), { adapter: new HonoAdapter() })
     const tmpl = compiled.files.find(f => f.type === 'markedTemplate')
     if (!tmpl) {
       const errs = compiled.errors.map(e => `${e.severity}: ${e.message}`).join('\n')
@@ -125,7 +126,7 @@ async function compileClientJs(root: FixtureSourceRoot, basename: string): Promi
  * on-disk file back over it.
  */
 function compileClientJsFromSource(source: string, basename: string): string {
-  const compiled = compileJSX(source, `${basename}.tsx`, { adapter: new HonoAdapter() })
+  const compiled = compileJSX(source, virtualComponentPath(`${basename}.tsx`), { adapter: new HonoAdapter() })
   const file = compiled.files.find(f => f.type === 'clientJs')
   if (!file) {
     const errs = compiled.errors.map(e => `${e.severity}: ${e.message}`).join('\n')

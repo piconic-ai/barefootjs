@@ -50,6 +50,7 @@ import {
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../fixtures'
 import type { JSXFixture } from './types'
+import { virtualComponentPath } from './virtual-path'
 
 export interface FixtureCoverage {
   kinds: string[]
@@ -237,7 +238,7 @@ export function computeFixtureCoverage(fixture: JSXFixture): FixtureCoverage {
     ...Object.entries(fixture.components ?? {}),
   ]
   for (const [filename, source] of sources) {
-    const result = compileJSX(source, filename, {
+    const result = compileJSX(source, virtualComponentPath(filename), {
       adapter: new HonoAdapter(),
       outputIR: true,
       siblingTemplatesRegistered: Boolean(fixture.components),
