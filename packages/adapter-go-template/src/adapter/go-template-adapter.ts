@@ -620,7 +620,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentMemos = ir.metadata.memos ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.currentPropsParams = ir.metadata.propsParams ?? []
-    this.state.propTypeOverrides = new Map()
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     // Single authority (Package G): the plan already decided which signals are
     // per-request env readers, in declaration order. `ir.metadata.ssrSeedPlan`
@@ -650,11 +649,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `generate()` itself computing nillability against the PREVIOUS
     // compile's type tables.
     this.buildLocalTypeTables(ir, ir.metadata.componentName)
+    // Template-time readers (`nillablePropNameOf`, `resolvePropMemberSeed`
+    // via memo/getter lowering) run before `generateTypes`, so they need
+    // the overrides now — computed against the same freshly built tables
+    // `collectNillablePropNames` reads below. `generateTypes` recomputes it
+    // once this compile's anonymous-object structs are synthesized.
+    this.state.propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
     this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
     this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
-    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
+    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
   }
 
   /** Generate template output for a component. */

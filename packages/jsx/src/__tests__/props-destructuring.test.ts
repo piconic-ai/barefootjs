@@ -260,4 +260,27 @@ describe('Destructured props keep their declared types (#2150)', () => {
       expect(typeOf(ctx, name)).toEqual({ kind: 'unknown', raw: 'unknown' })
     }
   })
+
+  // Interface declaration merging: the type is the union of both blocks,
+  // so either half alone can't vouch for it. Declines whichever order the
+  // halves come in, rather than admitting on whichever one a walk keeps.
+  test('declines a named type declared more than once (interface merging)', () => {
+    const merged = (first: string, second: string) => `
+      interface State { ${first} }
+      interface State { ${second} }
+
+      export function Component({ initial }: { initial: State }) {
+        return <div />
+      }
+    `
+
+    for (const source of [
+      merged('label: string', "kind: 'a' | 'b'"),
+      merged("kind: 'a' | 'b'", 'label: string'),
+      merged('label: string', 'count: number'),
+    ]) {
+      const ctx = analyzeComponent(source, 'Component.tsx')
+      expect(typeOf(ctx, 'initial')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    }
+  })
 })

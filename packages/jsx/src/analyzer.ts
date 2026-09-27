@@ -3983,8 +3983,13 @@ type LocalObjectMemberTypes = (name: string) => TypeInfo[] | null
 
 function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes {
   return (name) => {
-    const decl = findTypeDeclaration(name, ctx.sourceFile)
-    if (!decl || decl.typeParameters?.length) return null
+    // Exactly one declaration, or decline: two `interface State` blocks
+    // merge into one type, and checking either half alone could admit a
+    // shape whose other half carries a member this gate would refuse.
+    const decls = findTypeDeclarations(name, ctx.sourceFile)
+    if (decls.length !== 1) return null
+    const decl = decls[0]
+    if (decl.typeParameters?.length) return null
     let members: ts.NodeArray<ts.TypeElement>
     if (ts.isInterfaceDeclaration(decl)) {
       if (decl.heritageClauses?.length) return null
@@ -4120,21 +4125,19 @@ function extractPropsFromTypeMembers(
 }
 
 /**
- * Find a type declaration (interface or type alias) by name in the source file.
+ * Every type declaration (interface or type alias) named `typeName` in the
+ * source file, in source order. More than one means interface declaration
+ * merging (or a name reused in nested scopes).
  */
-function findTypeDeclaration(
+function findTypeDeclarations(
   typeName: string,
   sourceFile: ts.SourceFile
-): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined {
-  let result: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined
+): Array<ts.InterfaceDeclaration | ts.TypeAliasDeclaration> {
+  const result: Array<ts.InterfaceDeclaration | ts.TypeAliasDeclaration> = []
 
   function visit(node: ts.Node): void {
-    if (ts.isInterfaceDeclaration(node) && node.name.text === typeName) {
-      result = node
-      return
-    }
-    if (ts.isTypeAliasDeclaration(node) && node.name.text === typeName) {
-      result = node
+    if ((ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) && node.name.text === typeName) {
+      result.push(node)
       return
     }
     ts.forEachChild(node, visit)
@@ -4142,6 +4145,17 @@ function findTypeDeclaration(
 
   ts.forEachChild(sourceFile, visit)
   return result
+}
+
+/**
+ * Find a type declaration (interface or type alias) by name in the source
+ * file — the LAST one when the name is declared more than once.
+ */
+function findTypeDeclaration(
+  typeName: string,
+  sourceFile: ts.SourceFile
+): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined {
+  return findTypeDeclarations(typeName, sourceFile).at(-1)
 }
 
 // =============================================================================

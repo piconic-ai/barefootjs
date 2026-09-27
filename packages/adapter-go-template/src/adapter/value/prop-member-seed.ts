@@ -126,6 +126,67 @@ export function resolvePropMemberSeed(
 }
 
 /**
+ * The first prop-rooted member chain (`propMemberChain`) read somewhere
+ * INSIDE `preParsed` — an operand of `initial?.label ?? 'none'`,
+ * `initial.count + 1`, a template literal, … — or null when there is none
+ * (or `preParsed` is itself such a chain, which `resolvePropMemberSeed`
+ * answers). The seed bakers lower only a bare chain to its Input field
+ * path; a chain embedded in a larger expression would otherwise fall
+ * through to literal baking and silently bake a zero value. Arrow bodies
+ * are not searched: their parameters can shadow a prop name.
+ */
+export function embeddedPropMemberChain(
+  ctx: GoEmitContext,
+  preParsed: ParsedExpr | undefined,
+  propsParams: readonly { name: string; sourceName?: string }[] | undefined,
+): { propName: string; path: string[] } | null {
+  if (!preParsed || propMemberChain(ctx, preParsed, propsParams)) return null
+  const visit = (node: ParsedExpr): { propName: string; path: string[] } | null => {
+    const chain = propMemberChain(ctx, node, propsParams)
+    if (chain) return chain
+    for (const child of operands(node)) {
+      const found = visit(child)
+      if (found) return found
+    }
+    return null
+  }
+  return visit(preParsed)
+}
+
+/** The direct sub-expressions of `node` a seed value is computed from. */
+function operands(node: ParsedExpr): ParsedExpr[] {
+  switch (node.kind) {
+    case 'identifier':
+    case 'literal':
+    case 'regex':
+    case 'unsupported':
+    case 'arrow':
+      return []
+    case 'member':
+      return [node.object]
+    case 'index-access':
+      return [node.object, node.index]
+    case 'binary':
+    case 'logical':
+      return [node.left, node.right]
+    case 'unary':
+      return [node.argument]
+    case 'conditional':
+      return [node.test, node.consequent, node.alternate]
+    case 'call':
+      return [node.callee, ...node.args]
+    case 'template-literal':
+      return node.parts.flatMap(part => (part.type === 'expression' ? [part.expr] : []))
+    case 'array-literal':
+      return node.elements
+    case 'object-literal':
+      return node.properties.map(p => (p.kind === 'prop' ? p.value : p.expr))
+    case 'array-method':
+      return [node.object, ...node.args, ...(node.method === 'flat' && node.depthExpr ? [node.depthExpr] : [])]
+  }
+}
+
+/**
  * The Go type a prop-member-seeded signal's own Props field takes — the
  * type of the Input field path its seed reads (`resolvePropMemberSeed`), so
  * the baked `in.Initial.Items` is always assignable to it. Null when the

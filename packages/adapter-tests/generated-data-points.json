@@ -2307,6 +2307,12 @@
       }
     }
   ],
+  "optional-object-prop-member-signal-seed": [
+    {
+      "name": "gen:initial:absent",
+      "props": {}
+    }
+  ],
   "pre-whitespace": [
     {
       "name": "gen:snippet:empty",

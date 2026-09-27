@@ -63,6 +63,7 @@ describe('compileForCompat', () => {
           'nested-callback-in-filter-predicate',
           'off-subset-callback-body',
           'opaque-local-accessor-call',
+          'prop-member-chain-signal-seed',
           'signal-read-in-nested-static-loop',
           'static-literal-loop-component-row',
           'untyped-loop-array-no-row-struct',

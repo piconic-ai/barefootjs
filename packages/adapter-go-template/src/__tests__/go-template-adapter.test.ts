@@ -2163,6 +2163,29 @@ export function Widget({ name }: { name: string }) {
       expect(bf101[0].message).not.toContain('object-typed')
     })
 
+    // Only a bare chain bakes to a field path. The same chain read inside a
+    // larger expression used to fall through to literal baking and bake the
+    // type's zero value (`Label: ""` for `initial?.label ?? 'none'`).
+    test('a member chain inside a larger seed expression refuses instead of baking a zero value', () => {
+      for (const [propType, seed, chain] of [
+        ['initial?: State', "initial?.label ?? 'none'", 'initial.label'],
+        ['initial: State', 'initial.count + 1', 'initial.count'],
+        ['initial: State', '`${initial.label}!`', 'initial.label'],
+      ]) {
+        const { bf101 } = compileWidget(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type State = { label: string; count: number }
+export function Widget({ initial }: { ${propType} }) {
+  const [value] = createSignal(${seed})
+  return <span>{value()}</span>
+}
+`)
+        expect(bf101).toHaveLength(1)
+        expect(bf101[0].message).toContain(`reads '${chain}' inside a larger expression`)
+      }
+    })
+
     test('a FLAT prop member (not nested) still resolves normally, no refusal', () => {
       const { types, bf101 } = compileWidget(`
 'use client'

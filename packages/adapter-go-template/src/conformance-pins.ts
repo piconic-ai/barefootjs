@@ -221,4 +221,13 @@ export const conformancePins: ConformancePins = {
   // Hono's real JS runtime evaluates this shape correctly and must keep
   // doing so.
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
+  // A signal seed is baked as the Input field path its prop member chain
+  // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
+  // A chain that reads a member of a non-struct value
+  // (`initial.items.length`, `[]Item`) has no such path, and neither does
+  // one read inside a larger expression (`initial?.label ?? 'none'`, whose
+  // optional object prop is also `map[string]interface{}`), so
+  // `convertInitialValue` refuses rather than bake a zero value.
+  'optional-object-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
+  'prop-member-length-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
 }

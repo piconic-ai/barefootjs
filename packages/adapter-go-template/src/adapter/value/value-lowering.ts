@@ -19,7 +19,7 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
 import { numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
 import { collapseLiteralUnion } from '../type/type-codegen.ts'
-import { resolvePropMemberSeed } from './prop-member-seed.ts'
+import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
@@ -162,6 +162,22 @@ export function convertInitialValue(
       loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
       suggestion: {
         message: `Declare '${memberSeed.propName}' as a required prop with a same-file object type (inline, or an interface/type alias), or pass the value as its own top-level prop.`,
+      },
+    })
+  }
+  // The same member chain read INSIDE a larger seed expression
+  // (`initial?.label ?? 'none'`) has no lowering either: only a bare chain
+  // bakes to a field path, and the literal branches below would bake the
+  // type's zero value in its place.
+  const embedded = memberSeed ? null : embeddedPropMemberChain(ctx, preParsed, propsParams)
+  if (embedded) {
+    ctx.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Signal seeded from '${value}' has no Go template lowering — it reads '${embedded.propName}.${embedded.path.join('.')}' inside a larger expression, and only a bare prop member chain can be baked into the constructor.`,
+      loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+      suggestion: {
+        message: `Pass the computed value as its own top-level prop, or seed the signal from '${embedded.propName}.${embedded.path.join('.')}' alone and derive the rest with a memo.`,
       },
     })
   }

@@ -152,11 +152,20 @@ export class CompileState {
   currentPropsParams: IRMetadata['propsParams'] = []
 
   /**
-   * `buildPropTypeOverrides`'s result for the component whose types are
-   * being generated — the SAME map `generateTypes` hands the Input/Props
-   * generators, stashed so `resolvePropMemberSeed` resolves a prop's Input
-   * field type through `resolvePropGoType` exactly as the Input struct
-   * declares it. Empty until `generateTypes` computes it.
+   * `buildPropTypeOverrides`'s result for the component being compiled,
+   * read through `resolvePropGoType` by `resolvePropMemberSeed` and
+   * `nillablePropNameOf`. Assigned twice per compile:
+   *
+   *   - `primeCompileState`, right after `buildLocalTypeTables` — the map
+   *     `collectNillablePropNames` also reads, so the template body (which
+   *     `generate()` renders BEFORE `generateTypes`) sees the current
+   *     component's answer, never an empty or previous-component map.
+   *   - `generateTypes`, after `emitSynthPropStructs` — the SAME map it hands
+   *     the Input/Props/constructor generators, so constructor-time readers
+   *     agree with the emitted struct fields by construction. It could differ
+   *     from the primed map only where a `typeInfoToGo` answer changes once
+   *     this compile's anonymous-object structs are registered; over the
+   *     whole conformance corpus the two maps are identical.
    */
   propTypeOverrides: Map<string, string> = new Map()
 

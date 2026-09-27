@@ -4877,6 +4877,20 @@
         "text"
       ]
     },
+    "named-type-prop-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "namespace-import-primitive": {
       "kinds": [
         "call",
@@ -5308,6 +5322,23 @@
         "text"
       ]
     },
+    "optional-object-prop-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "pagination": {
       "kinds": [
         "array-literal",
@@ -5427,6 +5458,17 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "prop-member-length-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
       ]
     },
     "props-reactive": {
@@ -7913,13 +7955,13 @@
     "array-method": 72,
     "arrow": 81,
     "binary": 118,
-    "call": 321,
+    "call": 324,
     "conditional": 44,
-    "identifier": 465,
+    "identifier": 468,
     "index-access": 15,
-    "literal": 370,
-    "logical": 55,
-    "member": 286,
+    "literal": 371,
+    "logical": 56,
+    "member": 289,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 37,
@@ -7964,15 +8006,15 @@
     "literal:boolean": 84,
     "literal:null": 33,
     "literal:number": 160,
-    "literal:string": 254,
+    "literal:string": 255,
     "logical:&&": 7,
-    "logical:??": 46,
+    "logical:??": 47,
     "logical:||": 17,
     "lowering:date": 4,
     "lowering:queryHref": 5,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
-    "member:optional": 2,
+    "member:optional": 3,
     "sort-direction:asc": 7,
     "sort-direction:desc": 1,
     "sort-key:auto": 1,
