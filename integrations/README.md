@@ -181,7 +181,9 @@ BarefootJS Blade backend reuses.
 Each Go adapter is its own Cloudflare Worker + Container, routed on the
 `barefootjs.dev` zone via its `wrangler.toml` (e.g.
 `barefootjs.dev/integrations/gin*`), and deployed by the matching
-`deploy-integrations-*` job in `.github/workflows/deploy.yml`.
+`deploy-integrations-*` leg of the `deploy-integrations` matrix in
+`.github/workflows/deploy.yml`, which deploys every integration that has a
+`wrangler.toml`.
 
 ### Why production images run under `tini`
 
