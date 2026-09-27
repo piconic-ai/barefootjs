@@ -3982,7 +3982,11 @@ function isResolvableMemberType(
 type LocalObjectMemberTypes = (name: string) => TypeInfo[] | null
 
 function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes {
-  return (name) => {
+  // Each lookup walks the whole source file, and one props annotation can
+  // reach the same name many times (`Item` from several `Item[]` members),
+  // so answer each name once per annotation.
+  const cache = new Map<string, TypeInfo[] | null>()
+  const lookup = (name: string): TypeInfo[] | null => {
     // Exactly one declaration, or decline: two `interface State` blocks
     // merge into one type, and checking either half alone could admit a
     // shape whose other half carries a member this gate would refuse.
@@ -4007,6 +4011,10 @@ function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes
       types.push(info)
     }
     return types
+  }
+  return (name) => {
+    if (!cache.has(name)) cache.set(name, lookup(name))
+    return cache.get(name) ?? null
   }
 }
 
