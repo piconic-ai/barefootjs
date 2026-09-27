@@ -178,7 +178,11 @@ easy to miss — check off each one:
 - [ ] `.github/workflows/ci-<name>.yml` — new workflow, path-filtered on
       `packages/{client,shared,jsx,adapter-<name>,adapter-tests}/**`, installing the language
       toolchain, running native runtime tests then `bun test packages/adapter-<name>`
-      (copy the closest `ci-*.yml`).
+      (copy the closest `ci-*.yml`). It belongs to the heavy set: keep the copied
+      `pull_request` trigger's `branches: [main]` and its default activity types (no `edited`),
+      and do not add it to `EVERY_PR_WORKFLOWS` in `scripts/lib/heavy-gate.ts`. The lint
+      `bun test scripts/lib/__tests__/heavy-gate.test.ts` fails otherwise (CLAUDE.md, "CI on
+      stacked PRs").
 - [ ] `.github/workflows/release.yml` — per-language registry publish job (gem/crates/PyPI/CPAN/
       Packagist…), following the existing Trusted-Publishing patterns.
 - [ ] Add a changeset (`.changeset/`) — CI enforces it.

@@ -123,7 +123,67 @@ worktree its own `bun install` or use the primary clone.
 
 Before #2780 the job was gated `on: pull_request: branches: [main]`, so a stacked PR never
 ran it. That gap is how #2762's regression reached `main`: it was a stacked PR, the drift gate
-structurally could not see it, and nobody ran the generator by hand.
+structurally could not see it, and nobody ran the generator by hand. The drift gates stay
+ungated under the stacked-PR policy below. They are part of its light set, not its heavy set.
+
+## CI on stacked PRs
+
+A stacked PR (base is another PR's branch, not `main`) runs only a **light set**. The full
+matrix runs on **main-based PRs**, so each layer of a stack gets full CI when it becomes
+mergeable into `main`, not while all five layers are open at once. Without this, a 5-deep
+stack queued 120+ workflow runs and saturated the shared runner pool.
+
+- **Light set** (every PR, stacked or not): the generated-artifact drift gates
+  (`update-fixtures.yml`, `update-meta.yml`, `update-doc-snapshots.yml`,
+  `update-api-reference.yml`, `update-adapter-docs.yml`), `ci-lint.yml`, `ci-docs.yml`,
+  `ci-compat.yml`, and the unit/IR jobs of `ci.yml` (`test (*)`, `test-ui`).
+- **Heavy set** (main-based PRs only): every other `pull_request` workflow (the per-adapter
+  `ci-*.yml`, the integration e2e workflows, `ci-cli`, `ci-form`, `ci-jsr-check`,
+  `ci-smoke-publish`, `benchmark.yml`, …) via `branches: [main]` on the trigger with the
+  **default** activity types, plus `ci.yml`'s browser jobs (`e2e-site-core`,
+  `fixture-hydrate`, `e2e-site-ui`) via a job-level
+  `if: github.event_name != 'pull_request' || github.base_ref == 'main'`, because `ci.yml`
+  also carries light jobs. `changeset-check.yml` was main-only already, for its own reason
+  (see its trigger comment). `pkg-pr-new.yml` is outside both sets: it is opt-in by label.
+- The classification lives in `scripts/lib/heavy-gate.ts` (`EVERY_PR_WORKFLOWS`,
+  `CI_YML_LIGHT_JOBS`). The lint in `scripts/lib/__tests__/heavy-gate.test.ts` fails on a
+  `pull_request` workflow that is neither listed as light nor main-only. So a new adapter's
+  `ci-<name>.yml` must carry `branches: [main]`. The lint runs as `heavy-set-lint` in
+  `ci-heavy-gate.yml` and in `ci.yml`'s `rest` group.
+
+**Retargeting is the dangerous edge, and `ci-heavy-gate.yml` makes it loud.** When the
+bottom PR merges, GitHub deletes its branch and retargets the next PR onto `main` without a
+push. The default types (`opened, synchronize, reopened`) fire nothing on that, so the heavy
+set never runs on that head. The gate job `heavy-ci-ran` runs on those three types plus
+`edited`, for base `main` only. It passes when a heavy-trigger event with base `main` has
+fired for this PR at the current head SHA. That is either the current event, or an earlier
+gate run on the same SHA whose `run-name` records such an event. Otherwise it fails with
+"Heavy CI has not run on this head against main — push (e.g. merge main into this branch)
+to trigger it." It asserts that heavy CI *ran*; the heavy workflows report pass or fail
+under their own names. That event is the one that starts every main-only workflow, with
+GitHub applying each workflow's own `paths` filter. So the gate covers `changeset-check.yml`
+too, and needs no per-workflow list and no path matching of its own.
+
+**Operational rule:** after a stack's base layer merges, push the next layer (merge `main`
+into it, or rebase onto `main`) so the heavy set runs against `main`. Closing and reopening
+the PR also works. `heavy-ci-ran` stays red until then. Do not merge a PR to `main` while
+`heavy-ci-ran` is red or missing. The gate's only evidence is its own earlier runs, so it
+also goes red on the first title or body edit of a main-based PR whose heavy CI ran before
+the gate existed, or whose gate runs have aged out of Actions run retention. There the red
+does not mean heavy CI is missing on that head, and the same push clears it.
+
+**Do not add `edited` to heavy workflows, or a job-level `if` that skips edits.** Title and
+body edits must not re-run the heavy set, and a skip-on-edit `if` is worse: a skipped job
+posts a check run under the job's name that counts as success, and GitHub keeps the most
+recent check run per name on a commit. So an edit after a failed run would replace the red
+result with a green skip, and skipped also satisfies a required status check. The gate
+avoids that. It is one job with no job-level `if`, and it recomputes its answer from the
+Actions API on every event, so an edit re-derives the same verdict instead of posting a
+placeholder. Its concurrency group (`ci-heavy-gate-<PR>`) cancels only older gate runs.
+
+To get heavy results on a stacked PR early, dispatch the workflow against the PR's branch.
+The adapter workflows and `benchmark.yml` have a `workflow_dispatch` trigger; for the
+adapter workflows it runs the full data-point tier.
 
 ## Git Commit
 

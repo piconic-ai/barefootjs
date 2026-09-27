@@ -1,0 +1,76 @@
+name: CI — Heavy gate
+
+# Stacked-PR policy (CLAUDE.md, "CI on stacked PRs"): heavy workflows are
+# `pull_request: branches: [main]` with the default activity types, so a
+# stacked PR runs only the light set. When the layer below merges, GitHub
+# retargets this PR onto main without a push. No default type fires on that,
+# so the heavy set would never run on this head.
+#
+# `heavy-ci-ran` makes that case loud. It fails with "push to trigger heavy
+# CI" until a heavy-trigger event (opened / synchronize / reopened) with base
+# main has fired for this PR at its current head SHA. It checks that heavy CI
+# *ran*, not that it passed; the heavy workflows report their own results.
+# Logic, rationale and tests: scripts/lib/heavy-gate.ts and
+# scripts/lib/__tests__/heavy-gate.test.ts.
+#
+# `edited` is listed so a retarget re-evaluates the gate. A title/body edit
+# also re-evaluates it and gets the same answer from the API as before. The
+# job has no job-level `if` and never posts a skipped placeholder. Its
+# concurrency group is its own, so it cancels only older gate runs, never a
+# heavy workflow run.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+# Read back by scripts/lib/heavy-gate.ts (parseGateRunTitle): the runs API
+# does not expose the activity type any other way. Pinned by the lint.
+run-name: 'heavy-ci-gate #${{ github.event.pull_request.number }} ${{ github.event.action }}: ${{ github.event.pull_request.title }}'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ci-heavy-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  heavy-ci-ran:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            .github
+            scripts
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Check heavy CI ran on this head against main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ci/heavy-gate.ts
+
+  # Keeps the gate's premise true: every pull_request workflow is either
+  # main-only with the default heavy-trigger types, or listed as light in
+  # scripts/lib/heavy-gate.ts. A new workflow that is neither fails here.
+  heavy-set-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            .github
+            scripts
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Lint the stacked-PR trigger policy
+        run: bun test scripts/lib/__tests__/heavy-gate.test.ts
