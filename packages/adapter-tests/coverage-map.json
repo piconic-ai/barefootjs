@@ -2548,6 +2548,22 @@
         "text"
       ]
     },
+    "embedded-prop-member-signal-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "empty-list-branch": {
       "kinds": [
         "array-literal",
@@ -7954,14 +7970,14 @@
     "array-literal": 143,
     "array-method": 72,
     "arrow": 81,
-    "binary": 118,
-    "call": 324,
+    "binary": 119,
+    "call": 325,
     "conditional": 44,
-    "identifier": 468,
+    "identifier": 469,
     "index-access": 15,
-    "literal": 371,
+    "literal": 372,
     "logical": 56,
-    "member": 289,
+    "member": 290,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 37,
@@ -7996,7 +8012,7 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 15,
-    "binary:+": 28,
+    "binary:+": 29,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
@@ -8005,7 +8021,7 @@
     "binary:>=": 1,
     "literal:boolean": 84,
     "literal:null": 33,
-    "literal:number": 160,
+    "literal:number": 161,
     "literal:string": 255,
     "logical:&&": 7,
     "logical:??": 47,

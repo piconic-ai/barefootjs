@@ -225,9 +225,11 @@ export const conformancePins: ConformancePins = {
   // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
   // A chain that reads a member of a non-struct value
   // (`initial.items.length`, `[]Item`) has no such path, and neither does
-  // one read inside a larger expression (`initial?.label ?? 'none'`, whose
-  // optional object prop is also `map[string]interface{}`), so
-  // `convertInitialValue` refuses rather than bake a zero value.
+  // one read inside a larger expression (`initial.count + 1`, or
+  // `initial?.label ?? 'none'`, whose optional object prop is also
+  // `map[string]interface{}`), so `convertInitialValue` refuses rather
+  // than bake a zero value.
   'optional-object-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
   'prop-member-length-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
+  'embedded-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
 }
