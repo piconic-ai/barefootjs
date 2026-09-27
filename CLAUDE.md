@@ -167,7 +167,10 @@ too, and needs no per-workflow list and no path matching of its own.
 **Operational rule:** after a stack's base layer merges, push the next layer (merge `main`
 into it, or rebase onto `main`) so the heavy set runs against `main`. Closing and reopening
 the PR also works. `heavy-ci-ran` stays red until then. Do not merge a PR to `main` while
-`heavy-ci-ran` is red or missing.
+`heavy-ci-ran` is red or missing. The gate's only evidence is its own earlier runs, so it
+also goes red on the first title or body edit of a main-based PR whose heavy CI ran before
+the gate existed, or whose gate runs have aged out of Actions run retention. There the red
+does not mean heavy CI is missing on that head, and the same push clears it.
 
 **Do not add `edited` to heavy workflows, or a job-level `if` that skips edits.** Title and
 body edits must not re-run the heavy set, and a skip-on-edit `if` is worse: a skipped job
