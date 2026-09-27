@@ -15,6 +15,8 @@
 - [batch](https://barefootjs.dev/docs/reactivity/batch.md): Groups multiple signal writes so dependent effects and memos run once, after all writes complete.
 - [createEffect](https://barefootjs.dev/docs/reactivity/create-effect.md): Runs a function and re-runs it whenever its tracked signal dependencies change.
 - [createMemo](https://barefootjs.dev/docs/reactivity/create-memo.md): Creates a cached derived value that recomputes only when its dependencies change.
+- [createMutation](https://barefootjs.dev/docs/reactivity/create-mutation.md): A value written by an HTTP request that is sent only when its action is called, with pending and error state and cache invalidation on success.
+- [createQuery](https://barefootjs.dev/docs/reactivity/create-query.md): A reactive value loaded by an HTTP request, re-sent when a signal the request reads changes, and seeded on the server from the data it already has.
 - [createSignal](https://barefootjs.dev/docs/reactivity/create-signal.md): Creates a reactive getter/setter pair for managing state.
 - [onCleanup](https://barefootjs.dev/docs/reactivity/on-cleanup.md): Registers a cleanup function that runs when the owning effect re-runs or the component is destroyed.
 - [onMount](https://barefootjs.dev/docs/reactivity/on-mount.md): Runs a callback once when the component initializes, without tracking signal dependencies.
