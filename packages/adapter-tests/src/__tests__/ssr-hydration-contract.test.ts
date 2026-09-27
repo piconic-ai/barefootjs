@@ -10,15 +10,14 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../harness-program'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../../fixtures'
-import { virtualComponentPath } from '../virtual-path'
 
 const adapter = new HonoAdapter()
 
 function compileClientJs(fixture: (typeof jsxFixtures)[number]): string {
-  const result = compileJSX(fixture.source, virtualComponentPath('Test.tsx'), { adapter })
+  const result = compileFixtureJSX(fixture.source, 'Test.tsx', { adapter })
   return result.files.find(f => f.type === 'clientJs')?.content ?? ''
 }
 
@@ -253,7 +252,7 @@ export function Test() {
   return <div className="container"><span className="label">Text</span></div>
 }
 `
-      const result = compileJSX(source, virtualComponentPath('Test.tsx'), { adapter })
+      const result = compileFixtureJSX(source, 'Test.tsx', { adapter })
       const template = result.files.find(f => f.type === 'markedTemplate')!
 
       expect(template.content).toContain('className="container"')
@@ -271,7 +270,7 @@ export function Test() {
   return <div className={active() ? 'on' : 'off'}>Toggle</div>
 }
 `
-      const result = compileJSX(source, virtualComponentPath('Test.tsx'), { adapter })
+      const result = compileFixtureJSX(source, 'Test.tsx', { adapter })
       const template = result.files.find(f => f.type === 'markedTemplate')!
 
       expect(template.content).toContain('className=')

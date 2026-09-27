@@ -19,7 +19,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { jsxFixtures } from '../../../adapter-tests/fixtures'
-import { virtualComponentPath } from '../../../adapter-tests/src/virtual-path'
+import { harnessProgramFor } from '../../../adapter-tests/src/harness-program'
 import { loadCompatAdapters } from '../adapter-registry'
 import { compileForCompat, buildCompatCell } from '../engine'
 
@@ -51,7 +51,14 @@ describe('conformancePins consistency', () => {
             }
 
             const instance = adapter.factory()
-            const errors = compileForCompat(fixture.source, virtualComponentPath(), instance, 'conformance', fixture.components)
+            const errors = compileForCompat(
+              fixture.source,
+              'component.tsx',
+              instance,
+              'conformance',
+              fixture.components,
+              harnessProgramFor,
+            )
 
             const expected = adapter.pins[fixtureId]
             for (const want of expected) {

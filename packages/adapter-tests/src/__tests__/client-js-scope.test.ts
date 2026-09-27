@@ -30,11 +30,10 @@
 
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../harness-program'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../../fixtures'
 import { KNOWN_UNDECLARED } from '../client-js-scope-ledger'
-import { virtualComponentPath } from '../virtual-path'
 
 /** One virtual .ts file per emitted client-JS artifact. */
 interface VirtualFile {
@@ -57,7 +56,7 @@ function collectClientJs(): { files: VirtualFile[]; compileFailed: string[] } {
     for (const [name, source] of sources) {
       let result
       try {
-        result = compileJSX(source, virtualComponentPath(`${name}.tsx`), { adapter: new HonoAdapter() })
+        result = compileFixtureJSX(source, `${name}.tsx`, { adapter: new HonoAdapter() })
       } catch {
         compileFailed.push(fixture.id)
         continue

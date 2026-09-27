@@ -8,11 +8,10 @@
 import { describe, expect } from 'bun:test'
 import { renderTest } from './render-test'
 import type { ComponentIR, CompilerError, TemplateAdapter } from '@barefootjs/jsx'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from './harness-program'
 import { jsxFixtures } from '../fixtures'
 import type { ExpectedDiagnostic } from './types'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from './html-normalize'
-import { virtualComponentPath } from './virtual-path'
 
 export interface RenderOptions {
   /** JSX source code */
@@ -119,7 +118,7 @@ function collectFixtureDiagnostics(args: {
   const siblingTemplatesRegistered = Boolean(args.components)
   if (args.components) {
     for (const [filename, childSource] of Object.entries(args.components)) {
-      const r = compileJSX(childSource.trimStart(), virtualComponentPath(filename), {
+      const r = compileFixtureJSX(childSource.trimStart(), filename, {
         adapter: args.adapter,
         outputIR: true,
         siblingTemplatesRegistered,
@@ -135,7 +134,7 @@ function collectFixtureDiagnostics(args: {
       }
     }
   }
-  const result = compileJSX(args.source.trimStart(), virtualComponentPath(), {
+  const result = compileFixtureJSX(args.source.trimStart(), 'component.tsx', {
     adapter: args.adapter,
     outputIR: true,
     siblingTemplatesRegistered,

@@ -38,9 +38,9 @@
  *     caller's `props` and needs no JSON round-trip.
  */
 
-import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '@barefootjs/adapter-tests'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
-import { virtualComponentPath } from '@barefootjs/adapter-tests'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -137,7 +137,7 @@ export async function renderTwigComponent(options: RenderOptions): Promise<strin
   const childTemplates: Map<string, { template: string; ir: ComponentIR }> = new Map()
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
-      const childResult = compileJSX(childSource, virtualComponentPath(filename), { adapter, outputIR: true })
+      const childResult = compileFixtureJSX(childSource, filename, { adapter, outputIR: true })
       const childTemplateFiles = childResult.files.filter(f => f.type === 'markedTemplate')
       if (childTemplateFiles.length === 0) throw new Error(`No marked template for ${filename}`)
       const childIrFiles = childResult.files.filter(f => f.type === 'ir')
@@ -161,7 +161,7 @@ export async function renderTwigComponent(options: RenderOptions): Promise<strin
   // matches this harness's real behavior — every sibling child template is registered
   // alongside the parent before rendering, so a loop-body cross-template
   // call resolves at render time (#2205).
-  const result = compileJSX(source, virtualComponentPath(), {
+  const result = compileFixtureJSX(source, 'component.tsx', {
     adapter,
     outputIR: true,
     siblingTemplatesRegistered: Boolean(components),

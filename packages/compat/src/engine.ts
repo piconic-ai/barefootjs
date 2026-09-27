@@ -1,7 +1,7 @@
 // @barefootjs/compat — pure compile+reduce logic. No console output here;
 // the command layer (src/cli.ts) owns all user-facing text.
 
-import type { ComponentIR, CompilerError, ConformancePins, EscapeKind, TemplateAdapter } from '@barefootjs/jsx'
+import type { CompileOptions, ComponentIR, CompilerError, ConformancePins, EscapeKind, TemplateAdapter } from '@barefootjs/jsx'
 import { compileJSX } from '@barefootjs/jsx'
 
 export type CompatMode = 'build' | 'conformance'
@@ -77,6 +77,14 @@ export const COMPILE_THREW_CODE = 'COMPILE_THREW'
  * diagnostic (deterministic, carries no message) rather than propagating
  * — a compat matrix must always produce a cell for every
  * component/adapter pair, never abort the whole run.
+ *
+ * `programFor`, when given, supplies `compileJSX`'s `program` for each
+ * compiled source (entry and every child). Callers replaying fixtures
+ * under a relative virtual filename pass the adapter conformance
+ * harness's `harnessProgramFor` so type resolution matches the
+ * conformance suite and does not depend on `process.cwd()` (#3220).
+ * Omitted (the `bun run compat` CLI, which compiles real files at their
+ * real paths), `compileJSX` builds its own Program as usual.
  */
 export function compileForCompat(
   source: string,
@@ -84,6 +92,7 @@ export function compileForCompat(
   adapter: TemplateAdapter,
   mode: CompatMode,
   components?: Record<string, string>,
+  programFor?: (source: string, filePath: string) => CompileOptions['program'],
 ): CompilerError[] {
   try {
     if (mode === 'conformance') {
@@ -91,10 +100,12 @@ export function compileForCompat(
       const siblingTemplatesRegistered = Boolean(components)
       if (components) {
         for (const [filename, childSource] of Object.entries(components)) {
-          const childResult = compileJSX(childSource.trimStart(), filename, {
+          const childTrimmed = childSource.trimStart()
+          const childResult = compileJSX(childTrimmed, filename, {
             adapter,
             outputIR: true,
             siblingTemplatesRegistered,
+            program: programFor?.(childTrimmed, filename),
           })
           all.push(...childResult.errors)
           for (const irFile of childResult.files.filter(f => f.type === 'ir')) {
@@ -102,16 +113,22 @@ export function compileForCompat(
           }
         }
       }
-      const result = compileJSX(source.trimStart(), filePath, {
+      const trimmed = source.trimStart()
+      const result = compileJSX(trimmed, filePath, {
         adapter,
         outputIR: true,
         siblingTemplatesRegistered,
+        program: programFor?.(trimmed, filePath),
       })
       all.push(...result.errors)
       return all
     }
 
-    const result = compileJSX(source, filePath, { adapter, siblingTemplatesRegistered: true })
+    const result = compileJSX(source, filePath, {
+      adapter,
+      siblingTemplatesRegistered: true,
+      program: programFor?.(source, filePath),
+    })
     return result.errors
   } catch {
     return [

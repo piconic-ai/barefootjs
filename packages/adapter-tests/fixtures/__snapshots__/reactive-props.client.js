@@ -21,8 +21,8 @@ export function initReactiveChild(__scope, _p = {}) {
   if (_s4) _s4.addEventListener('click', () => { _p.onIncrement() })
 }
 
-hydrate('ReactiveChild__a902a7c3', { init: initReactiveChild, template: (_p) => `<div class="reactive-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><button class="btn-child-increment" bf="s4"> Increment from child </button></div>`, name: 'ReactiveChild' })
-export function ReactiveChild(_p, __bfKey) { return createComponent('ReactiveChild__a902a7c3', _p, __bfKey) }
+hydrate('ReactiveChild__aca6fc98', { init: initReactiveChild, template: (_p) => `<div class="reactive-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><button class="btn-child-increment" bf="s4"> Increment from child </button></div>`, name: 'ReactiveChild' })
+export function ReactiveChild(_p, __bfKey) { return createComponent('ReactiveChild__aca6fc98', _p, __bfKey) }
 export function initReactiveProps(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -71,11 +71,11 @@ export function initReactiveProps(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('ReactiveChild__a902a7c3', _s5, { get value() { return count() }, label: "Child A", onIncrement: () => setCount(n => n + 1) })
-  initChild('ReactiveChild__a902a7c3', _s6, { get value() { return doubled() }, label: "Child B (doubled)", onIncrement: () => setCount(n => n + 1) })
+  initChild('ReactiveChild__aca6fc98', _s5, { get value() { return count() }, label: "Child A", onIncrement: () => setCount(n => n + 1) })
+  initChild('ReactiveChild__aca6fc98', _s6, { get value() { return doubled() }, label: "Child B (doubled)", onIncrement: () => setCount(n => n + 1) })
 }
 
-hydrate('ReactiveProps', { init: initReactiveProps, template: (_p) => `<div class="reactive-props-container"><div class="parent-section"><p class="parent-count" bf="s1">Parent count: <!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></p><p class="parent-doubled" bf="s3">Doubled: <!--bf:s2-->${escapeTextOrMarkup(((0) * 2))}<!--/--></p><button class="btn-parent-increment" bf="s4"> +1 </button></div>${renderChild('ReactiveChild__a902a7c3', {value: (0), label: "Child A"}, undefined, 's5')}${renderChild('ReactiveChild__a902a7c3', {value: ((0) * 2), label: "Child B (doubled)"}, undefined, 's6')}</div>` })
+hydrate('ReactiveProps', { init: initReactiveProps, template: (_p) => `<div class="reactive-props-container"><div class="parent-section"><p class="parent-count" bf="s1">Parent count: <!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></p><p class="parent-doubled" bf="s3">Doubled: <!--bf:s2-->${escapeTextOrMarkup(((0) * 2))}<!--/--></p><button class="btn-parent-increment" bf="s4"> +1 </button></div>${renderChild('ReactiveChild__aca6fc98', {value: (0), label: "Child A"}, undefined, 's5')}${renderChild('ReactiveChild__aca6fc98', {value: ((0) * 2), label: "Child B (doubled)"}, undefined, 's6')}</div>` })
 export function ReactiveProps(_p, __bfKey) { return createComponent('ReactiveProps', _p, __bfKey) }
 export function initPropsStyleChild(__scope, _p = {}) {
   if (!__scope) return
@@ -103,8 +103,8 @@ export function initPropsStyleChild(__scope, _p = {}) {
 
 }
 
-hydrate('PropsStyleChild__a902a7c3', { init: initPropsStyleChild, template: (_p) => `<div class="props-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((_p.value * 10))}<!--/--></span></div>`, name: 'PropsStyleChild' })
-export function PropsStyleChild(_p, __bfKey) { return createComponent('PropsStyleChild__a902a7c3', _p, __bfKey) }
+hydrate('PropsStyleChild__aca6fc98', { init: initPropsStyleChild, template: (_p) => `<div class="props-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((_p.value * 10))}<!--/--></span></div>`, name: 'PropsStyleChild' })
+export function PropsStyleChild(_p, __bfKey) { return createComponent('PropsStyleChild__aca6fc98', _p, __bfKey) }
 export function initDestructuredStyleChild(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -131,8 +131,8 @@ export function initDestructuredStyleChild(__scope, _p = {}) {
 
 }
 
-hydrate('DestructuredStyleChild__a902a7c3', { init: initDestructuredStyleChild, template: (_p) => `<div class="destructured-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((_p.value * 10))}<!--/--></span></div>`, name: 'DestructuredStyleChild' })
-export function DestructuredStyleChild(_p, __bfKey) { return createComponent('DestructuredStyleChild__a902a7c3', _p, __bfKey) }
+hydrate('DestructuredStyleChild__aca6fc98', { init: initDestructuredStyleChild, template: (_p) => `<div class="destructured-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((_p.value * 10))}<!--/--></span></div>`, name: 'DestructuredStyleChild' })
+export function DestructuredStyleChild(_p, __bfKey) { return createComponent('DestructuredStyleChild__aca6fc98', _p, __bfKey) }
 export function initPropsReactivityComparison(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -174,9 +174,9 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('PropsStyleChild__a902a7c3', _s3, { get value() { return count() }, label: "Props Style" })
-  initChild('DestructuredStyleChild__a902a7c3', _s4, { get value() { return count() }, label: "Destructured" })
+  initChild('PropsStyleChild__aca6fc98', _s3, { get value() { return count() }, label: "Props Style" })
+  initChild('DestructuredStyleChild__aca6fc98', _s4, { get value() { return count() }, label: "Destructured" })
 }
 
-hydrate('PropsReactivityComparison', { init: initPropsReactivityComparison, template: (_p) => `<div class="props-reactivity-comparison"><div class="parent-section"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><button class="btn-increment" bf="s2"> Increment </button></div><div class="children-section"><h3>Props Style (Reactive)</h3>${renderChild('PropsStyleChild__a902a7c3', {value: (1), label: "Props Style"}, undefined, 's3')}<h3>Destructured Style (Reactive)</h3>${renderChild('DestructuredStyleChild__a902a7c3', {value: (1), label: "Destructured"}, undefined, 's4')}</div></div>` })
+hydrate('PropsReactivityComparison', { init: initPropsReactivityComparison, template: (_p) => `<div class="props-reactivity-comparison"><div class="parent-section"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><button class="btn-increment" bf="s2"> Increment </button></div><div class="children-section"><h3>Props Style (Reactive)</h3>${renderChild('PropsStyleChild__aca6fc98', {value: (1), label: "Props Style"}, undefined, 's3')}<h3>Destructured Style (Reactive)</h3>${renderChild('DestructuredStyleChild__aca6fc98', {value: (1), label: "Destructured"}, undefined, 's4')}</div></div>` })
 export function PropsReactivityComparison(_p, __bfKey) { return createComponent('PropsReactivityComparison', _p, __bfKey) }

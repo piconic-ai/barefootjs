@@ -37,6 +37,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import { harnessProgramFor } from './harness-program'
 import {
   analyzeComponent,
   jsxToIR,
@@ -56,7 +57,6 @@ import {
   type TemplateAdapter,
 } from '@barefootjs/jsx'
 import { jsxFixtures } from '../fixtures'
-import { virtualComponentPath } from './virtual-path'
 
 export interface MarkerIdSets {
   slots: Set<string>
@@ -263,7 +263,7 @@ export function extractTemplateMarkerIds(template: string): MarkerIdSets {
 }
 
 function buildIRFromSource(source: string, filePath: string): ComponentIR | null {
-  const ctx = analyzeComponent(source, filePath, undefined)
+  const ctx = analyzeComponent(source, filePath, undefined, harnessProgramFor(source, filePath))
   if (!ctx.jsxReturn) return null
   const root = jsxToIR(ctx)
   if (!root) return null
@@ -305,7 +305,7 @@ export function runMarkerConformance(opts: RunMarkerConformanceOptions): void {
       const skipped = opts.skipFixtures?.has(fixture.id) ?? false
       const t = skipped ? test.skip : test
       t(`${fixture.id}: template marker ids match IR`, () => {
-        const ir = buildIRFromSource(fixture.source, virtualComponentPath(`${fixture.id}.tsx`))
+        const ir = buildIRFromSource(fixture.source, `${fixture.id}.tsx`)
         if (!ir) {
           // Fixture can't be lowered at all (e.g. analyzer-error case
           // owned by a different suite). Marker conformance is

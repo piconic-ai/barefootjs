@@ -5,9 +5,8 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '@barefootjs/adapter-tests'
 import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
-import { virtualComponentPath } from '@barefootjs/adapter-tests'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey, loopKeyToGoFieldPath } from './adapter/lib/go-naming.ts'
@@ -122,7 +121,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // the rest bag or becomes an invalid hyphenated Go field.
     const compiledChildIrs: Array<{ ir: ComponentIR; defines: Map<string, string> }> = []
     for (const [filename, childSource] of Object.entries(components)) {
-      const childResult = compileJSX(childSource, virtualComponentPath(filename), { adapter, outputIR: true })
+      const childResult = compileFixtureJSX(childSource, filename, { adapter, outputIR: true })
       const childErrors = childResult.errors.filter(e => e.severity === 'error')
       if (childErrors.length > 0) {
         throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
@@ -164,7 +163,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   // matches this harness's real behavior — every sibling child template is concatenated
   // into `tmplContent` and parsed onto one `*template.Template` instance
   // below, so a loop-body cross-template call resolves at render time (#2205).
-  const result = compileJSX(source, virtualComponentPath(), {
+  const result = compileFixtureJSX(source, 'component.tsx', {
     adapter,
     outputIR: true,
     siblingTemplatesRegistered: Boolean(components),

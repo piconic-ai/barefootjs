@@ -26,6 +26,6 @@ export function Layout() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test"><div bf-region="4115d28d:0"><span>Page</span></div></div>
+    <div bf-s="test"><div bf-region="e6a68a47:0"><span>Page</span></div></div>
   `,
 })

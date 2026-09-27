@@ -24,7 +24,7 @@ import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileFixtureJSX } from '../harness-program'
 import { goTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { mojoAdapter } from '@barefootjs/mojolicious/adapter'
 import { xslateAdapter } from '@barefootjs/xslate/adapter'
@@ -52,20 +52,14 @@ const adapters = [
 
 describe('Calendar cross-adapter compile conformance (#1467)', () => {
   for (const [label, relPath] of sources) {
-    const absPath = resolve(ROOT, relPath)
-    const source = readFileSync(absPath, 'utf8').trimStart()
-    // The real absolute path (not just its basename, #3220): `ui/`'s own
-    // `node_modules` resolves `@barefootjs/*` types the same way a real
-    // `@barefootjs/vite` build would. A bare basename would resolve
-    // `node_modules` against `process.cwd()` instead — see
-    // `virtualComponentPath`'s doc comment for the general failure mode.
-    const filename = absPath
+    const source = readFileSync(resolve(ROOT, relPath), 'utf8').trimStart()
+    const filename = relPath.split('/').pop()!
     for (const [adapterName, adapter] of adapters) {
       // Each case builds a TS program for the type-based analysis (~2s cold);
       // a generous timeout keeps the first cold-cache case from flaking past
       // bun's 5s default (the matrix is source × 4 adapters).
       test(`${label} compiles on ${adapterName} with no error diagnostics`, () => {
-        const result = compileJSX(source, filename, { adapter, outputIR: true })
+        const result = compileFixtureJSX(source, filename, { adapter, outputIR: true })
         const errors = (result.errors ?? []).filter((e) => e.severity === 'error')
         expect(errors).toEqual([])
       }, 30_000)

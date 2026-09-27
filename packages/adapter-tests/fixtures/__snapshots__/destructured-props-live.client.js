@@ -50,8 +50,8 @@ export function initLiveChild(__scope, _p = {}) {
   })
 }
 
-hydrate('LiveChild__d4c116d9', { init: initLiveChild, template: (_p) => `<div class="live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((_p.value * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6"> pick </button></div>`, name: 'LiveChild' })
-export function LiveChild(_p, __bfKey) { return createComponent('LiveChild__d4c116d9', _p, __bfKey) }
+hydrate('LiveChild__ee1733f8', { init: initLiveChild, template: (_p) => `<div class="live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((_p.value * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6"> pick </button></div>`, name: 'LiveChild' })
+export function LiveChild(_p, __bfKey) { return createComponent('LiveChild__ee1733f8', _p, __bfKey) }
 export function initDestructuredPropsLive(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -100,8 +100,8 @@ export function initDestructuredPropsLive(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('LiveChild__d4c116d9', _s6, { get value() { return count() }, get label() { return named() ? 'named' : undefined }, onPick: setPicked })
+  initChild('LiveChild__ee1733f8', _s6, { get value() { return count() }, get label() { return named() ? 'named' : undefined }, onPick: setPicked })
 }
 
-hydrate('DestructuredPropsLive', { init: initDestructuredPropsLive, template: (_p) => `<div class="destructured-props-live"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><p class="picked" bf="s3">Picked: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></p><button class="btn-increment" bf="s4"> +1 </button><button class="btn-name" bf="s5"> name </button>${renderChild('LiveChild__d4c116d9', {value: (1), label: (false) ? 'named' : undefined}, undefined, 's6')}</div>` })
+hydrate('DestructuredPropsLive', { init: initDestructuredPropsLive, template: (_p) => `<div class="destructured-props-live"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><p class="picked" bf="s3">Picked: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></p><button class="btn-increment" bf="s4"> +1 </button><button class="btn-name" bf="s5"> name </button>${renderChild('LiveChild__ee1733f8', {value: (1), label: (false) ? 'named' : undefined}, undefined, 's6')}</div>` })
 export function DestructuredPropsLive(_p, __bfKey) { return createComponent('DestructuredPropsLive', _p, __bfKey) }

@@ -18,7 +18,7 @@ import {
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { virtualComponentPath } from './virtual-path'
+import { harnessProgramFor } from './harness-program'
 
 // The CSR runtime is a JS engine, so — like Hono / any `JsxAdapter` — it runs
 // an off-subset callback body (`filter`/`sort` predicate the compiler can't
@@ -66,10 +66,11 @@ function compileToClientJs(source: string, filePath: string): string {
   // emits at module level. The CSR harness needs the full set so the
   // template lambdas can resolve cross-component module references (#1295).
   const componentNames = listComponentFunctions(source, filePath)
+  const program = harnessProgramFor(source, filePath)
   if (componentNames.length === 0) {
     // Fall back to default-export resolution (preserves prior behaviour for
     // sources where `listComponentFunctions` returns nothing).
-    const ctx = analyzeComponent(source, filePath, undefined, undefined, csrAcceptsCallbackBody)
+    const ctx = analyzeComponent(source, filePath, undefined, program, csrAcceptsCallbackBody)
     if (!ctx.jsxReturn) {
       throwIfErrors(ctx, filePath)
       return ''
@@ -95,7 +96,7 @@ function compileToClientJs(source: string, filePath: string): string {
 
   const outputs: string[] = []
   for (const componentName of componentNames) {
-    const ctx = analyzeComponent(source, filePath, componentName, undefined, csrAcceptsCallbackBody)
+    const ctx = analyzeComponent(source, filePath, componentName, program, csrAcceptsCallbackBody)
     if (!ctx.jsxReturn) {
       throwIfErrors(ctx, filePath)
       continue
@@ -125,13 +126,13 @@ export async function renderCsrComponent(options: CsrRenderOptions): Promise<str
   const childClientJsList: string[] = []
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
-      const clientJs = compileToClientJs(childSource, virtualComponentPath(filename))
+      const clientJs = compileToClientJs(childSource, filename)
       if (clientJs) childClientJsList.push(clientJs)
     }
   }
 
   // Compile main component
-  const clientJs = compileToClientJs(source, virtualComponentPath())
+  const clientJs = compileToClientJs(source, 'component.tsx')
   if (!clientJs) throw new Error('No client JS generated')
 
   // Build evaluation module

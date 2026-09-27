@@ -17,7 +17,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { jsxFixtures } from '../../../adapter-tests/fixtures'
-import { virtualComponentPath } from '../../../adapter-tests/src/virtual-path'
+import { harnessProgramFor } from '../../../adapter-tests/src/harness-program'
 import { loadCompatAdapters } from '../adapter-registry'
 import { compileForCompat } from '../engine'
 
@@ -56,10 +56,11 @@ describe('renderDivergences consistency', () => {
           const instance = adapter.factory()
           const errors = compileForCompat(
             fixture.source,
-            virtualComponentPath(),
+            'component.tsx',
             instance,
             'conformance',
             fixture.components,
+            harnessProgramFor,
           )
           const errorSeverity = errors.filter(e => e.severity === 'error')
           if (errorSeverity.length > 0) {

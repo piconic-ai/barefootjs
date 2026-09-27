@@ -13,7 +13,7 @@ export type { JSXFixture, JSXDataPoint, ExpectedDiagnostic } from './types'
 export { runDataPointConformance } from './data-point-conformance'
 export type { RunDataPointConformanceOptions } from './data-point-conformance'
 export { indentHTML } from './indent-html'
-export { virtualComponentPath } from './virtual-path'
+export { compileFixtureJSX, harnessProgramFor } from './harness-program'
 export type { RunJSXConformanceOptions, RenderOptions } from './jsx-runner'
 export { runConformanceSuite } from './conformance'
 export type {

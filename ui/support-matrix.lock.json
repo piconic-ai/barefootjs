@@ -12254,8 +12254,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "nullish-coalescing-jsx",
@@ -12309,8 +12309,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "filter-predicate-props-member",
@@ -12365,8 +12365,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "filter-predicate-modulo",
@@ -12421,8 +12421,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "memo",
@@ -12549,8 +12549,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "string-concat-plus",
@@ -12605,8 +12605,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "array-sort-self",
@@ -12661,8 +12661,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "data-table",
@@ -12717,8 +12717,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "data-table",
@@ -13229,8 +13229,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "nested-ternary-bare-branch",
@@ -13285,8 +13285,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "top-level-ternary",
@@ -13341,8 +13341,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 156,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "comparison-ternary-text",
@@ -13759,8 +13759,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 162,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L162"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "boolean-attr-literals",
@@ -13919,8 +13919,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 162,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L162"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "logical-and-zero",
@@ -14588,8 +14588,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 162,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L162"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "svg-icon",
@@ -15402,8 +15402,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 162,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L162"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "const-string-conditional-test",
@@ -15458,8 +15458,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 153,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
+        "line": 152,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
         "fixture": "logical-and-chain",
@@ -15646,8 +15646,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 153,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
+        "line": 152,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
         "fixture": "body-destructured-prop-default-renamed",
@@ -15701,8 +15701,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 153,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
+        "line": 152,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
         "fixture": "loop-preamble-conditional-reactive",
@@ -15757,8 +15757,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 179,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L179"
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
       },
       "example": {
         "fixture": "date-catalogued",
@@ -15812,8 +15812,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 179,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L179"
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
       },
       "example": {
         "fixture": "query-href-shorthand-prop",
@@ -15867,8 +15867,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 179,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L179"
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
       },
       "example": {
         "fixture": "date-tolocale-datestyle",
@@ -15922,8 +15922,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 169,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
+        "line": 168,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L168"
       },
       "example": {
         "fixture": "pagination",
@@ -15986,8 +15986,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 168,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L168"
+        "line": 167,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L167"
       },
       "example": {
         "fixture": "optional-chaining-prop",
@@ -16042,8 +16042,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 131,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L131"
+        "line": 130,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L130"
       },
       "example": {
         "fixture": "array-sort-self",
@@ -16097,8 +16097,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 131,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L131"
+        "line": 130,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L130"
       },
       "example": {
         "fixture": "array-sort-field-desc",
@@ -16152,8 +16152,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 129,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
+        "line": 128,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L128"
       },
       "example": {
         "fixture": "array-sort-ternary",
@@ -16207,8 +16207,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 129,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
+        "line": 128,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L128"
       },
       "example": {
         "fixture": "array-sort-self",
@@ -16262,8 +16262,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 129,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
+        "line": 128,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L128"
       },
       "example": {
         "fixture": "array-sort-multikey",
@@ -16317,8 +16317,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 130,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L130"
+        "line": 129,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
       },
       "example": {
         "fixture": "array-sort-field-asc",
@@ -16372,8 +16372,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 130,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L130"
+        "line": 129,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
       },
       "example": {
         "fixture": "array-sort-self",
@@ -16427,8 +16427,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 133,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L133"
+        "line": 132,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L132"
       },
       "example": {
         "fixture": "array-sort-multikey",
@@ -16614,8 +16614,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 159,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L159"
+        "line": 158,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L158"
       },
       "example": {
         "fixture": "create-query-optional-initial",
@@ -16670,8 +16670,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 159,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L159"
+        "line": 158,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L158"
       },
       "example": {
         "fixture": "array-at",
