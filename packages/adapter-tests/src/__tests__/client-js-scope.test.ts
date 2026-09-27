@@ -26,11 +26,22 @@
  * and when a fix lands the pin goes stale and fails with a
  * "graduated — delete the pin" message. New entries may be added only
  * with a registry limitation; the goal state is an empty object.
+ *
+ * The same walk also checks that every compile accepted the harness
+ * Program (`../harness-program-ledger.ts`, #3220). It already compiles
+ * every entry and `components` source through `compileFixtureJSX`, so
+ * counting Program creations around each compile costs nothing extra.
  */
 
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
+import {
+  disableCompilerInstrumentation,
+  enableCompilerInstrumentation,
+  resetCompilerCounters,
+} from '@barefootjs/jsx'
 import { compileFixtureJSX } from '../harness-program'
+import { HARNESS_PROGRAM_REJECTION_EXCEPTIONS, harnessProgramOverbuild } from '../harness-program-ledger'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../../fixtures'
 import { KNOWN_UNDECLARED } from '../client-js-scope-ledger'
@@ -42,39 +53,74 @@ interface VirtualFile {
   content: string
 }
 
-function collectClientJs(): { files: VirtualFile[]; compileFailed: string[] } {
-  const files: VirtualFile[] = []
-  const compileFailed: string[] = []
-  for (const fixture of jsxFixtures) {
-    const sources: Array<[string, string]> = [[`${fixture.id}`, fixture.source]]
-    for (const [childName, childSource] of Object.entries(fixture.components ?? {})) {
-      // Child components are compiled standalone, the same way the
-      // conformance renderers compile them.
-      const base = childName.replace(/[^a-zA-Z0-9_-]/g, '_')
-      sources.push([`${fixture.id}__${base}`, childSource])
+interface CollectedClientJs {
+  files: VirtualFile[]
+  compileFailed: string[]
+  /** Every source key compiled (the harness-Program ledger's key space). */
+  sourceKeys: string[]
+  /** Compiles that built a Program beyond the harness's own. */
+  harnessProgramRejections: string[]
+  /** Ledger entries whose compile no longer overbuilds. */
+  harnessProgramGraduated: string[]
+}
+
+function collectClientJs(): CollectedClientJs {
+  const out: CollectedClientJs = {
+    files: [],
+    compileFailed: [],
+    sourceKeys: [],
+    harnessProgramRejections: [],
+    harnessProgramGraduated: [],
+  }
+  enableCompilerInstrumentation()
+  try {
+    for (const fixture of jsxFixtures) collectFixture(fixture, out)
+  } finally {
+    disableCompilerInstrumentation()
+    resetCompilerCounters()
+  }
+  return out
+}
+
+function collectFixture(fixture: (typeof jsxFixtures)[number], out: CollectedClientJs): void {
+  // [compile name, harness-Program ledger key, source]
+  const sources: Array<[string, string, string]> = [[`${fixture.id}`, fixture.id, fixture.source]]
+  for (const [childName, childSource] of Object.entries(fixture.components ?? {})) {
+    // Child components are compiled standalone, like the conformance
+    // renderers do, but under a sanitised `<id>__<key>.tsx` filename
+    // rather than the literal key (the harness-Program count does not
+    // depend on the filename; the brand test covers the literal keys).
+    const base = childName.replace(/[^a-zA-Z0-9_-]/g, '_')
+    sources.push([`${fixture.id}__${base}`, `${fixture.id}:${childName}`, childSource])
+  }
+  for (const [name, key, source] of sources) {
+    out.sourceKeys.push(key)
+    let result
+    resetCompilerCounters()
+    try {
+      result = compileFixtureJSX(source, `${name}.tsx`, { adapter: new HonoAdapter() })
+    } catch {
+      out.compileFailed.push(fixture.id)
+      continue
+    } finally {
+      // Counted even when the compile throws or reports errors.
+      const overbuild = harnessProgramOverbuild(source)
+      const excepted = HARNESS_PROGRAM_REJECTION_EXCEPTIONS.has(key)
+      if (overbuild && !excepted) out.harnessProgramRejections.push(`${key}: ${overbuild}`)
+      if (!overbuild && excepted) out.harnessProgramGraduated.push(key)
     }
-    for (const [name, source] of sources) {
-      let result
-      try {
-        result = compileFixtureJSX(source, `${name}.tsx`, { adapter: new HonoAdapter() })
-      } catch {
-        compileFailed.push(fixture.id)
-        continue
-      }
-      if (result.errors.some(e => e.severity === 'error')) {
-        compileFailed.push(fixture.id)
-        continue
-      }
-      for (const [i, file] of result.files.filter(f => f.type === 'clientJs').entries()) {
-        files.push({
-          fileName: `/virtual/${name}.${i}.ts`,
-          fixtureId: fixture.id,
-          content: file.content,
-        })
-      }
+    if (result.errors.some(e => e.severity === 'error')) {
+      out.compileFailed.push(fixture.id)
+      continue
+    }
+    for (const [i, file] of result.files.filter(f => f.type === 'clientJs').entries()) {
+      out.files.push({
+        fileName: `/virtual/${name}.${i}.ts`,
+        fixtureId: fixture.id,
+        content: file.content,
+      })
     }
   }
-  return { files, compileFailed }
 }
 
 /**
@@ -130,13 +176,35 @@ function findUndeclared(files: VirtualFile[]): Map<string, string[]> {
 }
 
 describe('client-JS scope gate', () => {
-  const { files, compileFailed } = collectClientJs()
+  const { files, compileFailed, sourceKeys, harnessProgramRejections, harnessProgramGraduated } =
+    collectClientJs()
   const undeclared = findUndeclared(files)
   const fixtureIds = new Set(jsxFixtures.map(f => f.id))
 
   if (process.env.DUMP_SCOPE_GATE) {
     console.log('SCOPE-GATE-INVENTORY ' + JSON.stringify(Object.fromEntries(undeclared)))
   }
+
+  test('every compile accepts the harness Program (no cwd-relative fallback Program)', () => {
+    expect(
+      harnessProgramRejections,
+      'compileJSX rejected the harness Program and built a cwd-relative one — carry the ' +
+        'anchor through the rebuild, or declare the source in HARNESS_PROGRAM_REJECTION_EXCEPTIONS',
+    ).toEqual([])
+  })
+
+  test('every harness-Program exception still overbuilds (graduated entries are deleted)', () => {
+    expect(
+      harnessProgramGraduated,
+      'these sources now accept the harness Program — graduated, delete the entry from ' +
+        'HARNESS_PROGRAM_REJECTION_EXCEPTIONS',
+    ).toEqual([])
+  })
+
+  test('the harness-Program exception ledger names only corpus sources', () => {
+    const keys = new Set(sourceKeys)
+    expect([...HARNESS_PROGRAM_REJECTION_EXCEPTIONS].filter(key => !keys.has(key))).toEqual([])
+  })
 
   test('every pinned fixture id exists in the corpus', () => {
     const stale = Object.keys(KNOWN_UNDECLARED).filter(id => !fixtureIds.has(id))

@@ -13,6 +13,8 @@ export type { JSXFixture, JSXDataPoint, ExpectedDiagnostic } from './types'
 export { runDataPointConformance } from './data-point-conformance'
 export type { RunDataPointConformanceOptions } from './data-point-conformance'
 export { indentHTML } from './indent-html'
+// Adapter `test-render` modules import these through the narrow
+// `@barefootjs/adapter-tests/harness-program` subpath instead (see that file).
 export { compileFixtureJSX, harnessProgramFor } from './harness-program'
 export type { RunJSXConformanceOptions, RenderOptions } from './jsx-runner'
 export { runConformanceSuite } from './conformance'
