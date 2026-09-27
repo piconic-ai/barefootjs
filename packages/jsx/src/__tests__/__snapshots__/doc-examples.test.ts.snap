@@ -1104,7 +1104,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-query.md doc-examples L25 — (no label) 1`] = `
-"import { $, createComponent, createQuery, createSignal, escapeAttr, escapeText, http, hydrate, insert, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createQuery, createSignal, escapeAttr, escapeText, http, hydrate, insert, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initPostList(__scope, _p = {}) {
@@ -1114,7 +1114,18 @@ export function initPostList(__scope, _p = {}) {
   const [page, setPage] = createSignal(1)
   const [posts, fetchPosts] = createQuery(() => http.get('/api/posts', { page: page() }), { initial: _p.posts })
 
-  const [_s3, _s0, _s2] = $(__scope, 's3', 's0', 's2')
+  const [_s3, _s0, _s2, _s4] = $(__scope, 's3', 's0', 's2', 's4')
+
+  { const __l = []
+  createEffect(() => {
+    if (_s4) {
+      { const __x = fetchPosts.isPending()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s4.setAttribute('aria-busy', String(__v)); else _s4.removeAttribute('aria-busy') }
+      }
+      __l[0] = __x }
+    }
+  }) }
 
   insert(__scope, 's0', () => fetchPosts.error(), {
     template: () => { const __slots = []; return { html: \`<p bf-c="s0" role="alert">Failed to load</p>\`, slots: __slots } },
@@ -1156,7 +1167,7 @@ export function initPostList(__scope, _p = {}) {
 
 }
 
-hydrate('PostList', { init: initPostList, template: (_p) => \`<div \${(false) != null ? 'aria-busy="' + escapeAttr(false) + '"' : ''}>\${undefined ? \`<p bf-c="s0" role="alert">Failed to load</p>\` : \`<!--bf-cond-start:s0--><!--bf-cond-end:s0-->\`}<ul bf="s2"><!--bf-loop:l0-->\${(_p.posts).map((post) => \`<li data-key="\${escapeAttr(post.id)}"><!--bf:s1-->\${escapeText(post.title)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul><button bf="s3">Next page</button></div>\` })
+hydrate('PostList', { init: initPostList, template: (_p) => \`<div \${(false) != null ? 'aria-busy="' + escapeAttr(false) + '"' : ''} bf="s4">\${undefined ? \`<p bf-c="s0" role="alert">Failed to load</p>\` : \`<!--bf-cond-start:s0--><!--bf-cond-end:s0-->\`}<ul bf="s2"><!--bf-loop:l0-->\${(_p.posts).map((post) => \`<li data-key="\${escapeAttr(post.id)}"><!--bf:s1-->\${escapeText(post.title)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul><button bf="s3">Next page</button></div>\` })
 export function PostList(_p, __bfKey) { return createComponent('PostList', _p, __bfKey) }"
 `;
 

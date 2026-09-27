@@ -76,6 +76,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+import { createProgramForFile, needsTypeBasedDetection } from '../analyzer'
 
 const DOCS_ROOT = resolve(__dirname, '../../../../docs')
 
@@ -321,8 +322,27 @@ const PAGES: PageSpec[] = [
 
 const adapter = new TestAdapter()
 
+/**
+ * Where the TypeChecker resolves `DocExample.tsx`'s imports from. Without
+ * an explicit Program, `compileJSX` builds one relative to `process.cwd()`:
+ * from `packages/jsx`, `@barefootjs/client`'s types resolve (a `Reactive`
+ * accessor such as `fetchPosts.isPending()` is reactive); from the repo
+ * root they do not, and the snapshot records a non-reactive binding a real
+ * build never produces (#3220 is the adapter-tests twin). Anchoring here
+ * makes the output match a real build whatever the cwd. The directory need
+ * not exist; resolution climbs to `packages/jsx/node_modules`.
+ */
+const PROGRAM_ANCHOR = resolve(import.meta.dir, '__virtual__')
+
+function compileDocExample(source: string) {
+  const program = needsTypeBasedDetection(source)
+    ? createProgramForFile(source, 'DocExample.tsx', { currentDirectory: PROGRAM_ANCHOR })?.program
+    : undefined
+  return compileJSX(source, 'DocExample.tsx', { adapter, ...(program ? { program } : {}) })
+}
+
 function compileOnce(source: string) {
-  const result = compileJSX(source, 'DocExample.tsx', { adapter })
+  const result = compileDocExample(source)
   const fatals = result.errors.filter(e => e.severity === 'error')
   const clientJsFile = result.files.find(f => f.type === 'clientJs')
   return { fatals, clientJs: clientJsFile?.content ?? null }
@@ -556,7 +576,7 @@ describe('docs/core/advanced/error-codes.md per-BFxxx matchers', () => {
       const source = isExpression
         ? EXPRESSION_SCAFFOLD_HEADER + c.body + EXPRESSION_SCAFFOLD_FOOTER
         : c.body + '\n'
-      const result = compileJSX(source, 'DocExample.tsx', { adapter })
+      const result = compileDocExample(source)
       const matched = result.errors.find(e => e.code === c.code)
       if (!matched) {
         const got = result.errors.map(e => `  ${e.severity} ${e.code}: ${e.message}`).join('\n') || '  (no diagnostics)'
