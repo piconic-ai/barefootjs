@@ -498,10 +498,8 @@ test.describe('bounded state-space exploration', () => {
   // `refused` run is a loud compile-time refusal, which is the contract
   // for an unsupported shape, so it registers one SKIPPED test naming the
   // diagnostic codes: the refusal shows in the report, and an adapter that
-  // refuses every scenario (Go on the `initial.<member>` signal seed,
-  // `nested-prop-member-signal-seed`) still runs something for its matrix
-  // leg's `-g "[<id>]"` filter to match, instead of failing "No tests
-  // found".
+  // refuses every scenario still runs something for its matrix leg's
+  // `-g "[<id>]"` filter to match, instead of failing "No tests found".
   for (const run of manifest.adapterRuns ?? []) {
     if (run.status !== 'refused') continue
     if (!okScenarios.some(s => s.scenarioId === run.scenarioId)) continue

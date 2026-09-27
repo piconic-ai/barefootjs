@@ -11,6 +11,7 @@ import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
+import { propMemberSeedGoType } from '../value/prop-member-seed.ts'
 
 /**
  * True when a memo's body is a `.filter(<arrow>)` callback-method call
@@ -55,7 +56,7 @@ export function isBooleanMemo(
   const isBoolGetter = (name: string): boolean => {
     const sig = signals.find(s => s.getter === name)
     if (sig) {
-      if (typeInfoToGo(ctx, sig.type) === 'bool') return true
+      if ((propMemberSeedGoType(ctx, sig) ?? typeInfoToGo(ctx, sig.type)) === 'bool') return true
       // Signal initialised from `props.X ?? false` / a boolean prop.
       if (/\?\?\s*(true|false)\b/.test(sig.initialValue)) return true
       const propName = ctx.extractPropNameFromInitialValue(sig.initialValue, sig.parsed) ?? sig.initialValue

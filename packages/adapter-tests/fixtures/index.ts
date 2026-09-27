@@ -684,6 +684,10 @@ import { fixture as refMountAttrRendered } from './ref-mount-attr-rendered'
 import { fixture as refMountAttrClient } from './ref-mount-attr-client'
 import { fixture as nestedPropSignalChildProp } from './nested-prop-signal-child-prop'
 import { fixture as nestedPropMemberSignalSeed } from './nested-prop-member-signal-seed'
+import { fixture as namedTypePropMemberSignalSeed } from './named-type-prop-member-signal-seed'
+import { fixture as optionalObjectPropMemberSignalSeed } from './optional-object-prop-member-signal-seed'
+import { fixture as propMemberLengthSignalSeed } from './prop-member-length-signal-seed'
+import { fixture as embeddedPropMemberSignalSeed } from './embedded-prop-member-signal-seed'
 import { fixture as componentRootClientScope } from './component-root-client-scope'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
@@ -1299,6 +1303,10 @@ export const jsxFixtures: JSXFixture[] = [
   refMountAttrClient,
   nestedPropSignalChildProp,
   nestedPropMemberSignalSeed,
+  namedTypePropMemberSignalSeed,
+  optionalObjectPropMemberSignalSeed,
+  propMemberLengthSignalSeed,
+  embeddedPropMemberSignalSeed,
   componentRootClientScope,
   lazyRowIndexReorder,
   condArmTagCollision,
