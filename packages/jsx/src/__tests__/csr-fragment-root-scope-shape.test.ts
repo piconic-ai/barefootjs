@@ -44,6 +44,10 @@ export function Host() {
   return <div>{['a', 'b'].map(x => <Tag key={x}>{x}</Tag>)}<button onClick={() => setN(n() + 1)}>{n()}</button></div>
 }
 `)
+    // Pin the template-only emitter (`generateTemplateOnlyMount`'s empty
+    // init): the init-bearing one already declared both flags, so a
+    // rerouted shape would pass the flag assertions without covering it.
+    expect(js).toContain('function initTag() {}')
     const tag = hydrateLine(js, 'Tag')
     expect(tag).toContain('init: initTag')
     expect(tag).toContain('comment: true')
@@ -62,6 +66,7 @@ export function Host() {
   return <div>{['a', 'b'].map(x => <Tag key={x}>{x}</Tag>)}<button onClick={() => setN(n() + 1)}>{n()}</button></div>
 }
 `)
+    expect(js).toContain('function initTag() {}')
     const tag = hydrateLine(js, 'Tag')
     expect(tag).not.toContain('comment: true')
     expect(tag).not.toContain('fragmentRoot: true')
