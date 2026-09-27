@@ -51,7 +51,7 @@
  * first (inline JSX callbacks, reactive-factory inlining) and falls back
  * to its own cwd-relative one. The client-JS scope gate pins that the
  * harness Program is accepted for every `jsxFixtures` source (entry and
- * `components`), against a shrink-only exception ledger that is empty
+ * `components`), against an exception ledger that is empty
  * today (`harness-program-ledger.ts`).
  *
  * ## Import it through `@barefootjs/adapter-tests/harness-program`
