@@ -92,6 +92,8 @@ export interface ArmEventBind {
 export interface ArmRefBind {
   slotId: string
   callback: string
+  /** The element's `IRElement.ssrPortalOwnerScope` — see `emitRefCall`. */
+  ssrPortalOwner?: boolean
 }
 
 export interface ArmChildComponentInit {

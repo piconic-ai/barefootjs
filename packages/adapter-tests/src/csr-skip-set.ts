@@ -127,6 +127,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'dialog',
   'popover',
   'portal',
+  // Same harness gap for the fragment-root variant, and more so: its
+  // `bf-po` is stamped by the init body right after the ref callback runs,
+  // which this template-only harness never evaluates. The real-browser
+  // oracle's `csr-mount` leg covers it.
+  'portal-fragment-root',
   // A `/* @client */` prop on a component inside a loop row: the CSR
   // template omits it by design (it is deferred to `initChild`'s props
   // getters, `IRProp.clientOnly`), and this harness evaluates only the

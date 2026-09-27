@@ -3272,7 +3272,7 @@ export function initComboboxContent(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) (handleMount)(_s0)
+  if (_s0) { (handleMount)(_s0); if (__scopeId) _s0.setAttribute('bf-po', __scopeId) }
 }
 
 hydrate('ComboboxContent', { init: initComboboxContent, template: (_p) => `<div data-slot="combobox-content" data-state="closed" role="listbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })

@@ -3009,7 +3009,7 @@ export function initDialogOverlay(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) (handleMount)(_s0)
+  if (_s0) { (handleMount)(_s0); if (__scopeId) _s0.setAttribute('bf-po', __scopeId) }
 }
 
 hydrate('DialogOverlay', { init: initDialogOverlay, template: (_p) => `<div data-slot="dialog-overlay" data-state="closed" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed inset-0 z-50 bg-black/80 transition-opacity duration-200')} ${('opacity-0 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed inset-0 z-50 bg-black/80 transition-opacity duration-200')} ${('opacity-0 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0"></div>` })
@@ -3123,7 +3123,7 @@ export function initDialogContent(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) (handleMount)(_s0)
+  if (_s0) { (handleMount)(_s0); if (__scopeId) _s0.setAttribute('bf-po', __scopeId) }
 }
 
 hydrate('DialogContent', { init: initDialogContent, template: (_p) => `<div data-slot="dialog-content" data-state="closed" role="dialog" aria-modal="true" ${(_p.ariaLabelledby) != null ? 'aria-labelledby="' + escapeAttr(_p.ariaLabelledby) + '"' : ''} ${(_p.ariaDescribedby) != null ? 'aria-describedby="' + escapeAttr(_p.ariaDescribedby) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })

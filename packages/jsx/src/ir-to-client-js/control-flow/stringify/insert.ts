@@ -124,7 +124,7 @@ function emitArmBody(
 
   for (const ref of body.refs) {
     const v = varSlotId(ref.slotId)
-    lines.push(`${indent}if (_${v}) ${emitRefCall(ref.callback, `_${v}`)}`)
+    lines.push(`${indent}if (_${v}) ${emitRefCall(ref.callback, `_${v}`, ref.ssrPortalOwner)}`)
   }
 
   // 3. Child component initializations from the branch swap.

@@ -346,8 +346,14 @@ function cancelPendingPortal(element: HTMLElement): void {
  * owner — right away, while the component under construction is the tree
  * it was taken from. An element in a detached tree with no owner (a
  * fragment-root component, whose scope lives on a comment) is the same
- * case. A bare element with neither has nothing that will ever connect
- * it, so there is nothing to wait for.
+ * case. When that former parent is a `DocumentFragment` — a fragment-root
+ * component whose portaled element is one of its TOP-LEVEL nodes, bundled
+ * by `materializeComponent` into a fragment the caller then appends — the
+ * fragment itself never connects (inserting it moves its children out), so
+ * the subject is instead one of the element's former siblings, which moves
+ * into the document together with the rest of the component. A bare
+ * element with neither has nothing that will ever connect it, so there is
+ * nothing to wait for.
  */
 export function createPortal(
   children: PortalChildren,
@@ -391,8 +397,15 @@ export function createPortal(
   // which never connects; the same goes for a caller-built fragment.
   const owner = options?.ownerScope
   const formerParent = children instanceof HTMLElement ? children.parentNode : null
+  const formerSibling = children instanceof HTMLElement ? (children.previousSibling ?? children.nextSibling) : null
   const subject: Node | null =
-    owner && !element.contains(owner) ? owner : formerParent instanceof Element ? formerParent : null
+    owner && !element.contains(owner)
+      ? owner
+      : formerParent instanceof Element
+        ? formerParent
+        : formerParent instanceof DocumentFragment
+          ? formerSibling
+          : null
 
   container.appendChild(element)
 

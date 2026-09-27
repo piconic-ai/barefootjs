@@ -1077,6 +1077,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
     ctx.refElements.push({
       slotId: element.slotId,
       callback: element.ref,
+      ...(element.ssrPortalOwnerScope && { ssrPortalOwner: true }),
     })
   }
 

@@ -522,6 +522,7 @@ import { fixture as filterWrapperPropsReachable } from './filter-wrapper-props-r
 // `ErbFilterEmitter` ID-matching bug that naming previously routed around.
 import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 import { fixture as fragmentRootKeyedLoopRow } from './fragment-root-keyed-loop-row'
+import { fixture as fragmentRootNestedKeyedLoopRow } from './fragment-root-nested-keyed-loop-row'
 import { fixture as fragmentBodyKeyedLoopRow } from './fragment-body-keyed-loop-row'
 // #2237 (PR #2241): a `.map()` callback param shadows a module-scope
 // object const; every Twig-family adapter used to bake the const's
@@ -748,6 +749,12 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 // outer signal — and the loop's source array is a function-body-local
 // const. Regression pin for go-template's array-source-scope fix.
 import { fixture as loopRowChildChildrenFnScopeArray } from './loop-row-child-children-fn-scope-array'
+// Fragment-rooted variants of `portal` / `loopRowChildChildrenAttrs`: the
+// CSR-mount leg must reproduce SSR's scope shape — the SSR-portal owner
+// marker (`bf-po`) on a fragment root's portaled element, and a stateless
+// fragment-rooted loop-row child's comment scope (no `bf-s`).
+import { fixture as portalFragmentRoot } from './portal-fragment-root'
+import { fixture as loopRowFragmentRootChild } from './loop-row-fragment-root-child'
 import { fixture as loopRowChildChildrenNestedShapes } from './loop-row-child-children-nested-shapes'
 import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-child-children-nested-reactive-prop'
 // The per-row twin of the fixture above (`<Mark tone={o.tone}>`), and the
@@ -1286,6 +1293,7 @@ export const jsxFixtures: JSXFixture[] = [
   destructuredObjectPropNested,
   loopPreambleConditionalReactive,
   fragmentRootKeyedLoopRow,
+  fragmentRootNestedKeyedLoopRow,
   fragmentBodyKeyedLoopRow,
   loopRowControlledTextarea,
   loopRowControlledInput,
@@ -1296,6 +1304,8 @@ export const jsxFixtures: JSXFixture[] = [
   signalOptionalInit,
   refMountAttr,
   refMountAttrRendered,
+  portalFragmentRoot,
+  loopRowFragmentRootChild,
   refMountAttrClient,
   nestedPropSignalChildProp,
   nestedPropMemberSignalSeed,

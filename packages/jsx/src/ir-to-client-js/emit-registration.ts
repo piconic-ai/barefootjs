@@ -4,9 +4,9 @@
  * and the final hydrate() call emission.
  */
 
-import type { ComponentIR, IRFragment, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
+import type { ComponentIR, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { PROPS_PARAM, isCommentScopedRoot, initFunctionName } from './utils.ts'
+import { PROPS_PARAM, componentDefScopeFlags, initFunctionName } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
@@ -214,8 +214,8 @@ export function emitRegistrationAndHydration(
   //     ITS OWN real scope id — the wrapping comment marks a scope with no
   //     DOM presence of its own, and `materializeComponent` must leave
   //     `scopeId` null so it doesn't stamp over (or duplicate) the child's.
-  const isFragmentRoot = _ir.root.type === 'fragment' && !!(_ir.root as IRFragment).needsScopeComment
-  const isCommentScope = isCommentScopedRoot(_ir.root)
+  // Both flags come from `componentDefScopeFlags` (utils.ts), shared with
+  // the template-only registration path (`generateTemplateOnlyMount`).
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: ${initFunctionName(name)}`]
@@ -243,12 +243,7 @@ export function emitRegistrationAndHydration(
     }
   }
   // No else: top-level-only components skip template entirely (save bytes)
-  if (isCommentScope) {
-    defParts.push('comment: true')
-  }
-  if (isFragmentRoot) {
-    defParts.push('fragmentRoot: true')
-  }
+  defParts.push(...componentDefScopeFlags(_ir.root, true))
 
   const registryKey = nameForRegistryRef(name)
   // When the registry key was file-scoped (`Name__<8hex>`, for a
