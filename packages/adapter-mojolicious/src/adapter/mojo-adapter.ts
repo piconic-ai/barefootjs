@@ -836,7 +836,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return `<%== bf->comment("cond-start:${cond.slotId}") %><%== bf->comment("cond-end:${cond.slotId}") %>`
     }
 
-    const condition = this.convertExpressionToPerl(cond.condition)
+    // #3166: thread `cond.parsedCondition` through — a recognised
+    // `<action>.isPending()` / `.error()` read has already been substituted
+    // with its seed literal there; re-parsing `cond.condition` fresh here
+    // would lose that and fall into the generic member-access lowering
+    // (`$fetchPosts->{error}`, a hard "Global symbol requires explicit
+    // package name" error under `use strict` — `$fetchPosts` is never
+    // declared server-side).
+    const condition = this.convertExpressionToPerl(cond.condition, cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -1526,7 +1533,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
           return `<% if (${cond}) { %>${name}="<%= ${val} %>"<% } %>`
         }
       }
-      const perl = this.convertExpressionToPerl(value.expr)
+      // #3166: thread `value.parsed` through — same reason as
+      // `renderConditional`'s matching comment.
+      const perl = this.convertExpressionToPerl(value.expr, value.parsed)
       if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
         return `${name}="<%= bf->bool_str(${perl}) %>"`
       }

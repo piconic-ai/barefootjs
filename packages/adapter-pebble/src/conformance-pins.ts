@@ -11,7 +11,6 @@ import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
   'format-date': [{ code: 'BF056', severity: 'error', limitation: 'authored-format-date-call' }],
-  'create-query-action-read': [{ code: 'BF117', severity: 'error', limitation: 'query-action-read-in-template' }],
   // #2843: graduated — a registered lowering call inside a ternary
   // attribute branch (or any nested value position) is now recognised via
   // `PebbleTopLevelEmitter`'s `lowering` seam + the registry-aware support

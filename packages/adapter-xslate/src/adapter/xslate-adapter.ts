@@ -730,7 +730,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return `<: $bf.comment("cond-start:${cond.slotId}") | mark_raw :><: $bf.comment("cond-end:${cond.slotId}") | mark_raw :>`
     }
 
-    const condition = this.convertExpressionToKolon(cond.condition)
+    // #3166: thread `cond.parsedCondition` through — a recognised
+    // `<action>.isPending()` / `.error()` read has already been substituted
+    // with its seed literal there; re-parsing `cond.condition` fresh here
+    // would lose that and fall into the generic member-access lowering
+    // (undefined at render time).
+    const condition = this.convertExpressionToKolon(cond.condition, cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -1479,7 +1484,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       }
       // Boolean-result handling: route boolean-shaped values through
       // `$bf.bool_str` so the wire bytes match JS `String(boolean)`.
-      const perl = this.convertExpressionToKolon(value.expr)
+      // #3166: thread `value.parsed` through (same reason as
+      // `renderConditional`'s matching comment).
+      const perl = this.convertExpressionToKolon(value.expr, value.parsed)
       if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
         return `${name}="<: $bf.bool_str(${perl}) :>"`
       }

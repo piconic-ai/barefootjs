@@ -898,7 +898,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       return `{!! $bf->comment("cond-start:${cond.slotId}") !!}{!! $bf->comment("cond-end:${cond.slotId}") !!}`
     }
 
-    const condition = this.convertConditionToBlade(cond.condition)
+    // #3166: thread `cond.parsedCondition` through — a recognised
+    // `<action>.isPending()` / `.error()` read has already been substituted
+    // with its seed literal there; re-parsing `cond.condition` fresh here
+    // would lose that and fall into the generic member-access lowering
+    // (`$fetchPosts['error']`, undefined at render time).
+    const condition = this.convertConditionToBlade(cond.condition, cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -1668,7 +1673,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // `$bf->bool_str` so the wire bytes match JS `String(boolean)`. Every
       // other value is a text-position interpolation — route through
       // `$bf->string` (see the file header, "Stringification").
-      const blade = this.convertExpressionToBlade(value.expr)
+      // #3166: thread `value.parsed` through (same reason as
+      // `renderConditional`'s matching comment).
+      const blade = this.convertExpressionToBlade(value.expr, value.parsed)
       if (this.shouldBoolStr(value.expr, name)) {
         return `${name}="{!! e($bf->bool_str(${blade})) !!}"`
       }

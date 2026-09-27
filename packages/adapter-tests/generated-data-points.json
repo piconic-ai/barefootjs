@@ -1024,6 +1024,14 @@
       }
     }
   ],
+  "create-query-action-read": [
+    {
+      "name": "gen:posts:empty",
+      "props": {
+        "posts": []
+      }
+    }
+  ],
   "create-query-action-read-client": [
     {
       "name": "gen:posts:empty",
