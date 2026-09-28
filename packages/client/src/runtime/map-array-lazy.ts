@@ -11,7 +11,7 @@
  * per-row reactivity (§9.1):
  *
  *  1. **Item-driven changes** — the keyed reconciler detects them itself
- *     (`!Object.is(oldItem, newItem)` per key) and calls the row plan's
+ *     (`!sameLoopItem(oldItem, newItem)` per key) and calls the row plan's
  *     `applyItem` directly. The row's DOM refs are claimed lazily on that
  *     row's FIRST item-driven write (a scan inside that one row, cached on
  *     `entry.refs`); a row that never updates never pays.
@@ -130,6 +130,7 @@
 import { createEffect, createSignal, untrack } from '@barefootjs/client/reactive'
 import { BF_KEY } from '@barefootjs/shared'
 import { findLoopMarkers, longestIncreasingSubsequenceIndices } from './map-array.ts'
+import { sameLoopItem } from './loop-item.ts'
 
 /**
  * One row of a lazy loop: plain data, no reactive resources.
@@ -181,7 +182,7 @@ export interface LazyRowPlan<T> {
    * `LazyRowPlanData.readsIndex`). Such a binding is always `readsItem`
    * (compiler-side), so the runtime must also call `applyItem` when a row's
    * POSITION changes with no item change — a plain reorder — not only when
-   * `!Object.is(oldItem, newItem)`. Absent/false for every other loop, which
+   * `!sameLoopItem(oldItem, newItem)`. Absent/false for every other loop, which
    * keeps a bare reorder exactly as cheap as before this widening.
    */
   indexDriven?: boolean
@@ -414,7 +415,9 @@ export function mapArrayLazy<T>(
         // setItem. `applyItem` runs after `entry.item` is updated, receives
         // the previous item, and is untracked (mixed bindings may read
         // outer signals; the applyOuter effect owns the reactive side).
-        const itemChanged = !Object.is(existing.item, item)
+        // An item equal to the row's current one (`sameLoopItem`) is no
+        // change: the row keeps its previous reference.
+        const itemChanged = !sameLoopItem(existing.item, item)
         // A pure reorder (#2859 follow-up): the item is unchanged but the
         // row's POSITION is, and `plan.indexDriven` says some binding reads
         // it. `entry.index` is bookkept below regardless — only the

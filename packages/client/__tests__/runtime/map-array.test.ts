@@ -375,6 +375,51 @@ describe('mapArray', () => {
     expect(container.children[0].textContent).toBe('B')
   })
 
+  test('same-key item that is rebuilt but equal leaves the row alone (sameLoopItem)', () => {
+    const [items, setItems] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B' },
+    ])
+    const runs: string[] = []
+    const seen: unknown[] = []
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        const li = document.createElement('li')
+        createEffect(() => {
+          const it = item()
+          runs.push(it.id)
+          seen.push(it)
+          li.textContent = it.text
+        })
+        return li
+      },
+    )
+    const first = items()[0]
+    runs.length = 0
+
+    // Every item rebuilt, only the second one different.
+    setItems([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B2' },
+    ])
+    expect(runs).toEqual(['2'])
+    expect(container.children[1].textContent).toBe('B2')
+
+    // The unchanged row keeps its previous reference.
+    runs.length = 0
+    seen.length = 0
+    setItems([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B3' },
+    ])
+    expect(runs).toEqual(['2'])
+    expect(seen).not.toContain(first)
+  })
+
   test('same-key update does not re-call renderItem', () => {
     const [items, setItems] = createSignal([{ id: '1', text: 'A' }])
     let renderCount = 0

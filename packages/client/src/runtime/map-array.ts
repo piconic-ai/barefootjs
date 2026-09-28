@@ -20,6 +20,7 @@
 
 import { createSignal, createEffect, createRoot, batch } from '@barefootjs/client/reactive'
 import { hydratedScopes } from './hydration-state.ts'
+import { sameLoopItem } from './loop-item.ts'
 import { setRowMountPoint, type RowMountPoint } from './component.ts'
 import {
   BF_KEY,
@@ -56,6 +57,15 @@ function scopeIdOf(start: Comment): string {
   const rest = (start.nodeValue ?? '').slice(BF_SCOPE_COMMENT_PREFIX.length)
   const pipe = rest.indexOf('|')
   return pipe >= 0 ? rest.slice(0, pipe) : rest
+}
+
+/**
+ * Wraps a row's item setter so an item equal to the current one
+ * (`sameLoopItem`) leaves the row's signal, and every effect reading it,
+ * alone. The row keeps its previous reference.
+ */
+function keepSameItem<T>(set: (v: T | ((prev: T) => T)) => void): (v: T) => void {
+  return (next) => set((prev) => (sameLoopItem(prev, next) ? prev : next))
 }
 
 type ItemScope<T> = {
@@ -368,7 +378,7 @@ function createItemScope<T>(
     dispose = d
     const [itemAccessor, itemSetter] = createSignal(item)
     const [indexAccessor, indexSetter] = createSignal(index)
-    setItem = itemSetter
+    setItem = keepSameItem(itemSetter)
     setIndex = indexSetter
     // Fresh row: hand the mount point down so the row's own root — whether a
     // `createComponent` call or a `mountRowRoot(clone)` — observes a connected
@@ -890,7 +900,7 @@ function createAnchorScope<T>(
     dispose = d
     const [itemAccessor, itemSetter] = createSignal(item)
     const [indexAccessor, indexSetter] = createSignal(index)
-    setItem = itemSetter
+    setItem = keepSameItem(itemSetter)
     setIndex = indexSetter
     returned = renderItem(itemAccessor, indexAccessor, existingAnchor)
     return undefined
