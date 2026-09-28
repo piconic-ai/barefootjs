@@ -437,12 +437,18 @@ function compileMultipleComponents(
       scriptAssets: options.scriptAssets,
       preloadAssets: options.preloadAssets,
     })
-    const moduleExports = generateModuleExports(
-      componentIR,
-      fileWideInlineExported,
-      options.rewriteRelativeImport,
-      { skipValueDeclarations: adapterOutput.sections.moduleConstantsIncludeExports },
-    )
+    // `emitsTemplates: false` (CSR) — nothing will ever read this file's
+    // markedTemplate, so skip module-export assembly entirely rather than
+    // let a file's value exports become the file's only, and therefore
+    // "real", content (#3234).
+    const moduleExports = adapter.emitsTemplates === false
+      ? ''
+      : generateModuleExports(
+        componentIR,
+        fileWideInlineExported,
+        options.rewriteRelativeImport,
+        { skipValueDeclarations: adapterOutput.sections.moduleConstantsIncludeExports },
+      )
 
     const s = adapterOutput.sections
     const imports = s.imports
@@ -856,6 +862,14 @@ export function compileJSX(
   let content: string
   if (adapter.templatesPerComponent) {
     content = adapterOutput.template
+  } else if (adapter.emitsTemplates === false) {
+    // Nothing will ever read this file's markedTemplate (CSR) — skip
+    // assembly entirely, module-level value exports included. Otherwise a
+    // component file that also exports a plain constant/function would
+    // produce a markedTemplate whose only content is that export, which
+    // `@barefootjs/vite`'s `assertNoRealTemplateOutput` treats as real
+    // template output requiring a configured `templates` dir (#3234).
+    content = ''
   } else {
     const moduleExports = generateModuleExports(componentIR, undefined, options.rewriteRelativeImport, {
       skipValueDeclarations: s.moduleConstantsIncludeExports,

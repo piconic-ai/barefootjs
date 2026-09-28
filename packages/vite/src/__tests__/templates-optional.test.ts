@@ -76,6 +76,35 @@ describe('templates: optional for an adapter with always-empty output (CSR)', ()
     expect(await pathExists(join(dir, 'manifest.json'))).toBe(false)
   })
 
+  test('builds clean for a component that also exports a value (#3234)', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-templates-optional-csr-export-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    // A component file that ALSO exports a module-level constant. Before
+    // #3234's fix, the compiler appended this export to `markedTemplate`
+    // regardless of the adapter's own (empty) `generate()` output, so this
+    // file's markedTemplate was the export alone — tripping
+    // `assertNoRealTemplateOutput` even though CSR reads none of it.
+    await writeFile(
+      join(dir, 'src/components/Header.tsx'),
+      '\'use client\'\nexport const MAX = 3\nexport function Header() {\n  return <p>hi {MAX}</p>\n}\n',
+    )
+
+    const plugin: AnyPlugin = barefoot({
+      adapter: new CSRAdapter(),
+      components: ['src/components'],
+    })
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    plugin.configResolved({ root: dir, base: '/', build: { outDir: 'dist', manifest: true } })
+    await mkdir(join(dir, 'dist/.vite'), { recursive: true })
+    await writeFile(
+      join(dir, 'dist/.vite/manifest.json'),
+      JSON.stringify({ 'src/components/Header.tsx': { file: 'assets/Header-abc123.js', isEntry: true } }),
+    )
+
+    await expect(plugin.writeBundle()).resolves.toBeUndefined()
+    expect(await pathExists(join(dir, 'manifest.json'))).toBe(false)
+  })
+
   test('dev pass also builds clean with `templates` omitted', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-templates-optional-csr-dev-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
