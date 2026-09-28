@@ -43,12 +43,23 @@ export type TemplateFn = (props: Record<string, unknown>) => string
  * outlive it. `createRoot` also isolates signal reads from tracking
  * (`Listener = null`), so this subsumes an explicit `untrack()` wrapper
  * around the same call.
+ *
+ * `dispose()` runs in a `finally` so a `template()` call that throws (a
+ * documented, expected shape at some call sites — e.g. `insert.ts`'s
+ * `evalBranchTemplate()` callers catch a nullable-access `TypeError` from
+ * the compiled template) still tears down whatever it registered before
+ * throwing. Disposing only after a normal return would reproduce the exact
+ * owner-less leak this function exists to close, just on the exception
+ * path, and would leave the abandoned root referenced forever in its
+ * ambient owner's `children` set.
  */
 export function evalTemplateFn<T>(fn: () => T): T {
   return createRoot((dispose) => {
-    const result = fn()
-    dispose()
-    return result
+    try {
+      return fn()
+    } finally {
+      dispose()
+    }
   })
 }
 
