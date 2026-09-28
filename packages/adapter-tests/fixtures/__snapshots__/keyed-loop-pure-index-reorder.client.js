@@ -71,7 +71,7 @@ export function initKeyedLoopPureIndexReorder(__scope, _p = {}) {
 
 }
 
-hydrate('KeyedLoopPureIndexReorder', { init: initKeyedLoopPureIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul bf="s4"><!--bf-loop:l0-->${([
+hydrate('KeyedLoopPureIndexReorder', { init: initKeyedLoopPureIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0">Rotate</button><ul bf="s4"><!--bf-loop:l0-->${([
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Bravo' },
     { id: 3, label: 'Charlie' },

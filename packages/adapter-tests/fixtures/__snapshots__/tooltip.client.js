@@ -224,7 +224,7 @@ export function initTooltipBasicDemo(__scope, _p = {}) {
   initChild('Tooltip', _s0, { content: "This is a tooltip", id: "tooltip-basic" })
 }
 
-hydrate('TooltipBasicDemo', { init: initTooltipBasicDemo, template: (_p) => `<span>${renderChild('Tooltip', {content: "This is a tooltip", id: "tooltip-basic", children: `<span class="underline decoration-dotted cursor-help"> Hover me </span>`}, undefined, 's0')}</span>` })
+hydrate('TooltipBasicDemo', { init: initTooltipBasicDemo, template: (_p) => `<span>${renderChild('Tooltip', {content: "This is a tooltip", id: "tooltip-basic", children: `<span class="underline decoration-dotted cursor-help">Hover me</span>`}, undefined, 's0')}</span>` })
 export function TooltipBasicDemo(_p, __bfKey) { return createComponent('TooltipBasicDemo', _p, __bfKey) }
 export function initTooltipButtonDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -307,7 +307,7 @@ export function initTooltipDelayDemo(__scope, _p = {}) {
   initChild('Tooltip', _s0, { content: "This tooltip has a 700ms delay", get delayDuration() { return 700 }, id: "tooltip-delay" })
 }
 
-hydrate('TooltipDelayDemo', { init: initTooltipDelayDemo, template: (_p) => `<span>${renderChild('Tooltip', {content: "This tooltip has a 700ms delay", delayDuration: 700, id: "tooltip-delay", children: `<span class="underline decoration-dotted cursor-help"> Hover me (700ms delay) </span>`}, undefined, 's0')}</span>` })
+hydrate('TooltipDelayDemo', { init: initTooltipDelayDemo, template: (_p) => `<span>${renderChild('Tooltip', {content: "This tooltip has a 700ms delay", delayDuration: 700, id: "tooltip-delay", children: `<span class="underline decoration-dotted cursor-help">Hover me (700ms delay)</span>`}, undefined, 's0')}</span>` })
 export function TooltipDelayDemo(_p, __bfKey) { return createComponent('TooltipDelayDemo', _p, __bfKey) }
 export function initTooltipNoDelayDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -320,7 +320,7 @@ export function initTooltipNoDelayDemo(__scope, _p = {}) {
   initChild('Tooltip', _s0, { content: "This tooltip appears immediately", get delayDuration() { return 0 }, id: "tooltip-no-delay" })
 }
 
-hydrate('TooltipNoDelayDemo', { init: initTooltipNoDelayDemo, template: (_p) => `<span>${renderChild('Tooltip', {content: "This tooltip appears immediately", delayDuration: 0, id: "tooltip-no-delay", children: `<span class="underline decoration-dotted cursor-help"> Hover me (no delay) </span>`}, undefined, 's0')}</span>` })
+hydrate('TooltipNoDelayDemo', { init: initTooltipNoDelayDemo, template: (_p) => `<span>${renderChild('Tooltip', {content: "This tooltip appears immediately", delayDuration: 0, id: "tooltip-no-delay", children: `<span class="underline decoration-dotted cursor-help">Hover me (no delay)</span>`}, undefined, 's0')}</span>` })
 export function TooltipNoDelayDemo(_p, __bfKey) { return createComponent('TooltipNoDelayDemo', _p, __bfKey) }
 export function initTooltipIconDemo(__scope, _p = {}) {
   if (!__scope) return

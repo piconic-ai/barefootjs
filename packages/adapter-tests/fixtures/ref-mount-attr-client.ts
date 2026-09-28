@@ -26,6 +26,6 @@ export function RefMountAttrClient() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf="s0" data-slot="target"> content </div>
+    <div bf-s="test" bf="s0" data-slot="target">content</div>
   `,
 })

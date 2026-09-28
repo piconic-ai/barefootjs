@@ -73,5 +73,5 @@ export function initChildPropRestForward(__scope, _p = {}) {
   initChild('RestForwardTag', _s0, { get variant() { return variant() }, get tag() { return shown() ? tag() : undefined } })
 }
 
-hydrate('ChildPropRestForward', { init: initChildPropRestForward, template: (_p) => `<div>${renderChild('RestForwardTag', {variant: ('a'), tag: (true) ? ('one') : undefined}, undefined, 's0')}<button bf="s1"> cycle </button></div>` })
+hydrate('ChildPropRestForward', { init: initChildPropRestForward, template: (_p) => `<div>${renderChild('RestForwardTag', {variant: ('a'), tag: (true) ? ('one') : undefined}, undefined, 's0')}<button bf="s1">cycle</button></div>` })
 export function ChildPropRestForward(_p, __bfKey) { return createComponent('ChildPropRestForward', _p, __bfKey) }

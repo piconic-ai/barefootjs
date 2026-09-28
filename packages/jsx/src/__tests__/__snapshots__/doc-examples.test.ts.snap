@@ -1289,7 +1289,7 @@ export function initCommentForm(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => { save() })
 }
 
-hydrate('CommentForm', { init: initCommentForm, template: (_p) => \`<form bf="s4">\${undefined ? \`<p bf-c="s0" role="alert">Failed to save</p>\` : \`<!--bf-cond-start:s0--><!--bf-cond-end:s0-->\`}<input \${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s1" /><button type="button" \${false ? 'disabled' : ''} bf="s2"> Post </button>\${(undefined) ? \`<p bf-c="s3">Saved</p>\` : \`<!--bf-cond-start:s3--><!--bf-cond-end:s3-->\`}</form>\` })
+hydrate('CommentForm', { init: initCommentForm, template: (_p) => \`<form bf="s4">\${undefined ? \`<p bf-c="s0" role="alert">Failed to save</p>\` : \`<!--bf-cond-start:s0--><!--bf-cond-end:s0-->\`}<input \${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s1" /><button type="button" \${false ? 'disabled' : ''} bf="s2">Post</button>\${(undefined) ? \`<p bf-c="s3">Saved</p>\` : \`<!--bf-cond-start:s3--><!--bf-cond-end:s3-->\`}</form>\` })
 export function CommentForm(_p, __bfKey) { return createComponent('CommentForm', _p, __bfKey) }"
 `;
 
@@ -1357,7 +1357,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -1891,7 +1891,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -2055,7 +2055,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 

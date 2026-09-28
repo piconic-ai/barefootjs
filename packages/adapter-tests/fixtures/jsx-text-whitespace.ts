@@ -23,7 +23,6 @@ export function JsxTextWhitespace() {
     <p bf-s="test">
       <strong>bold</strong>
       <em>italic</em>
-       plain text run 
-    </p>
+       plain text run</p>
   `,
 })

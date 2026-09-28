@@ -41,7 +41,7 @@ export function initNestedLoopOuterIndexReorder(__scope, _p = {}) {
 
 }
 
-hydrate('NestedLoopOuterIndexReorder', { init: initNestedLoopOuterIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul class="groups" bf="s4"><!--bf-loop:l1-->${([
+hydrate('NestedLoopOuterIndexReorder', { init: initNestedLoopOuterIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0">Rotate</button><ul class="groups" bf="s4"><!--bf-loop:l1-->${([
     { id: 1, items: [{ id: 11, label: 'one' }] },
     { id: 2, items: [{ id: 21, label: 'two' }] },
     { id: 3, items: [{ id: 31, label: 'three' }] },

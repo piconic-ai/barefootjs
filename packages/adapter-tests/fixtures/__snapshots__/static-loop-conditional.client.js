@@ -64,7 +64,7 @@ export function initStaticLoopConditional(__scope, _p = {}) {
 
 }
 
-hydrate('StaticLoopConditional', { init: initStaticLoopConditional, template: (_p) => `<div><button type="button" class="toggle" bf="s0"> Toggle </button><ul bf="s4"><!--bf-loop:l0-->${([
+hydrate('StaticLoopConditional', { init: initStaticLoopConditional, template: (_p) => `<div><button type="button" class="toggle" bf="s0">Toggle</button><ul bf="s4"><!--bf-loop:l0-->${([
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Beta' },
   ]).map((item) => `<li data-key="${escapeAttr(item.id)}" bf="s3"><span class="label"><!--bf:s1-->${escapeText(item.label)}<!--/--></span>${(true) ? `<b bf-c="s2" class="on">on</b>` : `<i bf-c="s2" class="off">off</i>`}</li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
