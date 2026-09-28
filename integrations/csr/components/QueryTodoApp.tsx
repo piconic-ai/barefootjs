@@ -58,8 +58,10 @@ function QueryTodoApp() {
   const handleAdd = () => {
     if (!newText().trim()) return
     // Clear the input only once the server has the todo, so a failed add
-    // keeps what was typed.
-    addTodo().then(() => setNewText(''))
+    // keeps what was typed. The failure itself shows through
+    // `addTodo.error()`; the no-op handler keeps this derived promise from
+    // reporting an unhandled rejection.
+    addTodo().then(() => setNewText(''), () => {})
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {

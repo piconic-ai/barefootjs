@@ -78,4 +78,21 @@ test.describe.serial('QueryTodoApp (createQuery / createMutation)', () => {
     await expect(page.locator('.todo-list li')).toHaveCount(4)
     await expect(page.getByRole('alert')).toHaveCount(0)
   })
+
+  test('a failed add keeps the typed text and reports no unhandled rejection', async ({ page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', err => pageErrors.push(err.message))
+    await page.route('**/api/todos', route =>
+      route.request().method() === 'POST' ? route.fulfill({ status: 500, body: '{}' }) : route.continue(),
+    )
+    await page.goto(`${baseUrl}/todos`)
+    await expect(page.locator('.todo-list li')).toHaveCount(3)
+
+    await page.fill('input.new-todo', 'Will not be saved')
+    await page.press('input.new-todo', 'Enter')
+    await expect(page.getByRole('alert')).toHaveText('Could not add the todo.')
+    await expect(page.locator('input.new-todo')).toHaveValue('Will not be saved')
+    await expect(page.locator('.todo-list li')).toHaveCount(3)
+    expect(pageErrors).toEqual([])
+  })
 })
