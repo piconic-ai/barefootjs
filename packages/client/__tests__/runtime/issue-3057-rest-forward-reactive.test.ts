@@ -136,3 +136,80 @@ describe('#3057 — a {...rest}-forwarded prop that starts undefined updates rea
     expect(root.getAttribute('tag')).toBe('x')
   })
 })
+
+// `id` is a closed rest key that COLLIDES with an explicit `id="fixed"` on
+// the same root (spread BEFORE the explicit attr in source order, so plain
+// object-spread semantics — and the Hono reference's SSR — have the
+// explicit literal win), and `onPing` is a closed rest key whose value is a
+// function. Pullfrog's review of #3252 found both would be clobbered/
+// mis-written by an unconditional `_p.<key>` fast-path binding: the
+// caller-omitted `id` rest key would `removeAttribute('id')` on its first
+// effect run (even though SSR correctly rendered `id="fixed"`), and the
+// function-valued `onPing` rest key would get `setAttribute`'d as a
+// stringified inline handler. Neither must reach the DOM differently from
+// what SSR (the Hono reference) renders.
+const REST_FORWARD_COLLISION = `'use client'
+export function RestForwardCollision({ variant = 'a', ...rest }: { variant?: 'a' | 'b'; id?: string; onPing?: () => void }) {
+  const variantClasses: Record<'a' | 'b', string> = { a: 'cls-a', b: 'cls-b' }
+  const cls = variantClasses[variant]
+  return <span data-slot="rest-collision" className={cls} {...rest} id="fixed">content</span>
+}`
+
+const COLLISION_PARENT_SOURCE = `'use client'
+import { RestForwardCollision } from './RestForwardCollision'
+export function CollisionParent() {
+  return <RestForwardCollision onPing={() => {}} />
+}`
+
+async function setupCollisionHydration(): Promise<{ hydrate: () => void }> {
+  const dir = mkdtempSync(join(tmpdir(), 'bf-3057-collision-'))
+  const modules: Array<[string, string, string]> = [
+    [REST_FORWARD_COLLISION, 'RestForwardCollision.tsx', 'RestForwardCollision'],
+    [COLLISION_PARENT_SOURCE, 'CollisionParent.tsx', 'CollisionParent'],
+  ]
+  for (const [source, filename, name] of modules) {
+    const file = join(dir, `${name}.mjs`)
+    writeFileSync(file, clientJsFor(source, filename))
+    await import(file)
+  }
+
+  const ssrHtml = await renderHonoComponent({
+    adapter: new HonoAdapter(),
+    source: COLLISION_PARENT_SOURCE,
+    components: { './RestForwardCollision.tsx': REST_FORWARD_COLLISION },
+    props: { __instanceId: 'CollisionParent_test' },
+  })
+  document.body.innerHTML = ssrHtml
+
+  const { rehydrateAll, flushHydration } = await import(runtimePath)
+  return {
+    hydrate: () => {
+      rehydrateAll()
+      flushHydration()
+    },
+  }
+}
+
+describe('#3057 review follow-up — a rest key that collides with an explicit attribute, or is function-valued', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('hydration keeps the explicit `id` and never writes the function-valued `onPing` as an attribute', async () => {
+    const { hydrate } = await setupCollisionHydration()
+
+    const root = document.querySelector('[data-slot="rest-collision"]')!
+    // SSR (the Hono reference): the explicit `id="fixed"` wins, and a
+    // function prop never becomes an HTML attribute.
+    expect(root.getAttribute('id')).toBe('fixed')
+    expect(root.hasAttribute('onping')).toBe(false)
+
+    hydrate()
+
+    // Hydration must match SSR exactly — the caller never passed `id`, so an
+    // unconditional `_p.id` binding would incorrectly `removeAttribute` it.
+    expect(root.getAttribute('id')).toBe('fixed')
+    // `onPing` is a function; it must never be stringified onto the DOM.
+    expect(root.hasAttribute('onping')).toBe(false)
+  })
+})
