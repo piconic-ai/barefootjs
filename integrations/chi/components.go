@@ -933,6 +933,62 @@ type ThemeToggleProps struct {
 	Light bool `json:"-"`
 }
 
+// QueryTodoAppInput is the user-facing input type.
+type QueryTodoAppInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	InitialTodos []Todo
+}
+
+// QueryTodoAppProps is the props type for the QueryTodoApp component.
+type QueryTodoAppProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	InitialTodos []Todo `json:"initialTodos"`
+	Todos []Todo `json:"-"`
+	NewText string `json:"-"`
+	Filter Filter `json:"-"`
+	__bfGet_addTodo interface{} `json:"-"`
+	__bfGet_toggleAll interface{} `json:"-"`
+	__bfGet_clearCompleted interface{} `json:"-"`
+	QueryTodoItems []QueryTodoItemProps `json:"-"`
+}
+
+// QueryTodoItemInput is the user-facing input type.
+type QueryTodoItemInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Todo Todo
+}
+
+// QueryTodoItemProps is the props type for the QueryTodoItem component.
+type QueryTodoItemProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Todo Todo `json:"todo"`
+	Editing bool `json:"-"`
+	Draft string `json:"-"`
+	__bfGet_toggle interface{} `json:"-"`
+	__bfGet_rename interface{} `json:"-"`
+	__bfGet_remove interface{} `json:"-"`
+}
+
 // NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
 func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps {
 	scopeID := in.ScopeID
@@ -1787,5 +1843,69 @@ func NewThemeToggleProps(in ThemeToggleInput) ThemeToggleProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Light: false,
+	}
+}
+
+// NewQueryTodoAppProps creates QueryTodoAppProps from QueryTodoAppInput.
+//
+// NOTE: `QueryTodoItems` is populated by the route handler, not by
+// NewQueryTodoAppProps — the SSR template iterates over it
+// dynamically (`.QueryTodoItems`). Build the slice from your source data and
+// assign it before passing the props to your renderer. Example:
+//
+//   props := NewQueryTodoAppProps(QueryTodoAppInput{ /* ... */ })
+//   props.QueryTodoItems = make([]QueryTodoItemProps, len(items))
+//   for i, item := range items {
+//     props.QueryTodoItems[i] = NewQueryTodoItemProps(QueryTodoItemInput{ /* fields */ })
+//     props.QueryTodoItems[i].BfParent = props.ScopeID
+//     props.QueryTodoItems[i].BfMount = "s5"
+//   }
+func NewQueryTodoAppProps(in QueryTodoAppInput) QueryTodoAppProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "QueryTodoApp_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+	if in.InitialTodos != nil {
+		bfCallerProps["initialTodos"] = in.InitialTodos
+	}
+
+	return QueryTodoAppProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		InitialTodos: in.InitialTodos,
+		Todos: in.InitialTodos,
+		NewText: "",
+		Filter: "all",
+		__bfGet_addTodo: nil,
+		__bfGet_toggleAll: nil,
+		__bfGet_clearCompleted: nil,
+	}
+}
+
+// NewQueryTodoItemProps creates QueryTodoItemProps from QueryTodoItemInput.
+func NewQueryTodoItemProps(in QueryTodoItemInput) QueryTodoItemProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "QueryTodoItem_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+	bfCallerProps["todo"] = in.Todo
+
+	return QueryTodoItemProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Todo: in.Todo,
+		Editing: false,
+		Draft: "",
+		__bfGet_toggle: nil,
+		__bfGet_rename: nil,
+		__bfGet_remove: nil,
 	}
 }
