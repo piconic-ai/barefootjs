@@ -164,7 +164,6 @@ async function fetchMeta(name: string): Promise<Response> {
   })
 }
 
-/** Has this exact version already been published to JSR? */
 /**
  * The version part of the `npm:<name>@<range>` specifier a deno.json
  * `imports` entry gets for a package.json dependency range. Deno takes one
@@ -180,6 +179,7 @@ export function npmSpecifierRange(range: string): string {
   return /^[~^]?\d\S*$/.test(first) ? first : '*'
 }
 
+/** Has this exact version already been published to JSR? */
 export async function jsrHasVersion(name: string, version: string): Promise<boolean> {
   try {
     const res = await fetchMeta(name)

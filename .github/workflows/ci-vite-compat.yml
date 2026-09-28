@@ -1,0 +1,152 @@
+name: CI — Vite Compatibility
+
+# `@barefootjs/vite` and every adapter's `/vite` builder declare a `vite`
+# peer range spanning several majors. The workspace installs one Vite per
+# package (the adapters' devDependencies sit on the range floor,
+# integrations/csr on the newest major, which ci-csr.yml exercises on every
+# compiler change). This workflow covers the rest of the range: every
+# adapter's `vite.test.ts` (a real `vite build` through its builder) on each
+# major, and the integrations/csr build + E2E suite on the majors ci-csr.yml
+# does not run. It only runs when the Vite-facing code changes, on main, and
+# weekly, so a new Vite release that breaks the range surfaces without a PR.
+#
+# The matrices below and the peer range are pinned to each other by
+# scripts/lib/__tests__/vite-peer.test.ts: widening the range means adding
+# the major here in the same PR.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/vite/**'
+      - 'packages/adapter-*/package.json'
+      - 'packages/adapter-*/src/vite.ts'
+      - 'packages/adapter-*/src/__tests__/vite.test.ts'
+      - 'integrations/csr/**'
+      - 'scripts/ci/use-vite-major.ts'
+      - 'scripts/lib/vite-peer.ts'
+      - '.github/workflows/ci-vite-compat.yml'
+  pull_request:
+    # Heavy set: main-based PRs only, default activity types. A stacked PR
+    # (base != main) never runs this; ci-heavy-gate.yml goes red on a PR
+    # retargeted onto main until a push runs it. See CLAUDE.md, "CI on
+    # stacked PRs".
+    branches: [main]
+    paths:
+      - 'packages/vite/**'
+      - 'packages/adapter-*/package.json'
+      - 'packages/adapter-*/src/vite.ts'
+      - 'packages/adapter-*/src/__tests__/vite.test.ts'
+      - 'integrations/csr/**'
+      - 'scripts/ci/use-vite-major.ts'
+      - 'scripts/lib/vite-peer.ts'
+      - '.github/workflows/ci-vite-compat.yml'
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-vite-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  adapter-builders:
+    name: adapter-builders (vite ${{ matrix.vite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every major in the peer range.
+        vite: ['6', '7', '8']
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Install Vite ${{ matrix.vite }}
+        run: bun scripts/ci/use-vite-major.ts ${{ matrix.vite }}
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Run each adapter's vite.test.ts
+        run: |
+          set -uo pipefail
+          failed=()
+          for test in packages/adapter-*/src/__tests__/vite.test.ts; do
+            pkg_dir=${test%/src/__tests__/vite.test.ts}
+            echo "::group::${pkg_dir}"
+            if ! ( cd "$pkg_dir" && bun test src/__tests__/vite.test.ts ); then
+              failed+=("$pkg_dir")
+            fi
+            echo "::endgroup::"
+          done
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::error::vite.test.ts failed on vite ${{ matrix.vite }} for: ${failed[*]}"
+            exit 1
+          fi
+
+  e2e-csr:
+    name: e2e-csr (vite ${{ matrix.vite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # The peer range minus integrations/csr's own devDependency major,
+        # which ci-csr.yml already runs.
+        vite: ['6', '7']
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      # Before the Vite swap below rewrites integrations/csr/package.json, so
+      # the key matches the one every other workflow computes.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Vite ${{ matrix.vite }}
+        run: bun scripts/ci/use-vite-major.ts ${{ matrix.vite }} integrations/csr
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Run integrations/csr E2E tests
+        run: cd integrations/csr && bun run test:e2e
+
+      - name: Upload Playwright report (integrations/csr)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-integrations-csr-vite${{ matrix.vite }}
+          path: integrations/csr/playwright-report/
+          retention-days: 30

@@ -44,7 +44,7 @@ dist/
     └── Counter.tsx-<hash>.js  # compiled component (imports the runtime as a shared chunk)
 ```
 
-If Vite should also build your HTML page (for example the default `index.html`), list it in `build.rollupOptions.input`. The plugin sets `input` to the component entries, so Vite skips its `index.html` default. See [Vite Plugin → Build entries](../advanced/vite-plugin.md#build-entries).
+If Vite should also build your HTML page (for example the default `index.html`), list it in `build.rollupOptions.input` as an object (`{ main: ... }`). The plugin sets `input` to the component entries, so Vite skips its `index.html` default. See [Vite Plugin → Build entries](../advanced/vite-plugin.md#build-entries).
 
 ## API
 

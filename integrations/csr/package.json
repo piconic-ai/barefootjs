@@ -17,6 +17,6 @@
     "@barefootjs/jsx": "workspace:*",
     "@barefootjs/vite": "workspace:*",
     "bun-types": "^1.1.0",
-    "vite": "^6.0.0"
+    "vite": "^8.0.0"
   }
 }
