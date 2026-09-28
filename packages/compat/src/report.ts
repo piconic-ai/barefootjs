@@ -91,8 +91,10 @@ export interface FixtureDoc {
 
 export interface FixtureDivergences {
   note: string
-  /** Total shared-corpus fixture count, for the "N of M clean" summary. */
-  totalFixtures: number
+  // No corpus-size field: the "N of M" headline's M is derived at read
+  // time from the committed coverage map (`computeCoverageCounts(...)
+  // .fixtureCount`) and passed to `formatCompatMarkdown`. A committed
+  // count would be rewritten — and conflict — on every fixture PR.
   /** Fixture id → adapter id → divergence cell. Clean cells are omitted. */
   fixtures: Record<string, Record<string, FixtureDivergenceCell>>
   /**
@@ -158,7 +160,6 @@ export interface CompatReport {
  */
 export function buildFixtureDivergences(
   adapters: ReadonlyArray<LoadedCompatAdapter>,
-  totalFixtures: number,
   corpus: readonly JSXFixture[],
 ): FixtureDivergences {
   const byFixture = new Map<string, Map<string, FixtureDivergenceCell>>()
@@ -203,7 +204,7 @@ export function buildFixtureDivergences(
     fixtures[fixtureId] = row
   }
 
-  return { note: FIXTURE_DIVERGENCES_NOTE, totalFixtures, fixtures }
+  return { note: FIXTURE_DIVERGENCES_NOTE, fixtures }
 }
 
 /**
@@ -243,7 +244,7 @@ export function buildCompatReport(
     adapters,
     components,
     fixtureDivergences:
-      fixtureDivergences ?? { note: FIXTURE_DIVERGENCES_NOTE, totalFixtures: 0, fixtures: {} },
+      fixtureDivergences ?? { note: FIXTURE_DIVERGENCES_NOTE, fixtures: {} },
     limitations,
   }
 }
@@ -326,8 +327,13 @@ export function rowWorksEverywhere(row: Record<string, FixtureDivergenceCell>): 
  * joined codes otherwise — warnings prefixed `⚠`), a legend mapping
  * every code that appears to the registry limitation ids behind it, and
  * the known-limitations list itself (id, kind, title, affected adapters).
+ *
+ * `totalFixtures` is the conformance-corpus size, the denominator of the
+ * render-conformance headline ("N of M fixtures work on every adapter").
+ * It is not part of the report (see `FixtureDivergences`): a lock reader
+ * derives it from the committed coverage map via `computeCoverageCounts`.
  */
-export function formatCompatMarkdown(report: CompatReport): string {
+export function formatCompatMarkdown(report: CompatReport, totalFixtures: number): string {
   const lines: string[] = []
   lines.push(report.note)
   lines.push('')
@@ -375,7 +381,7 @@ export function formatCompatMarkdown(report: CompatReport): string {
     const fd = report.fixtureDivergences
     const fullyEscapableIds = allFixtureIds.filter(id => rowWorksEverywhere(fd.fixtures[id]))
     const needsAttentionIds = allFixtureIds.filter(id => !rowWorksEverywhere(fd.fixtures[id])).sort()
-    const cleanCount = fd.totalFixtures - allFixtureIds.length
+    const cleanCount = totalFixtures - allFixtureIds.length
     const worksEverywhereCount = cleanCount + fullyEscapableIds.length
 
     lines.push('')
@@ -384,7 +390,7 @@ export function formatCompatMarkdown(report: CompatReport): string {
     lines.push(fd.note)
     lines.push('')
     lines.push(
-      `${worksEverywhereCount} of ${fd.totalFixtures} fixtures work on every adapter ` +
+      `${worksEverywhereCount} of ${totalFixtures} fixtures work on every adapter ` +
         `(${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). ` +
         `${needsAttentionIds.length} need attention:`,
     )

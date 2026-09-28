@@ -23,6 +23,9 @@ on:
       - 'site/ui/**'
       - 'site/core/**'
       - 'site/shared/**'
+      # site/core/pages/compat-matrix.tsx imports this helper by relative path
+      # (no package dependency), so a change to it must re-run the site checks.
+      - 'packages/compat/src/support-matrix-counts.ts'
       - '.github/workflows/ci.yml'
       # Central divergence validation in adapter-tests re-checks every
       # adapter's declarations, so it must re-run when any adapter edits its.
@@ -63,6 +66,9 @@ on:
       - 'site/ui/**'
       - 'site/core/**'
       - 'site/shared/**'
+      # site/core/pages/compat-matrix.tsx imports this helper by relative path
+      # (no package dependency), so a change to it must re-run the site checks.
+      - 'packages/compat/src/support-matrix-counts.ts'
       - '.github/workflows/ci.yml'
       # Central divergence validation in adapter-tests re-checks every
       # adapter's declarations, so it must re-run when any adapter edits its.

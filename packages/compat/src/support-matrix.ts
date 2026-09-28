@@ -25,9 +25,17 @@
 // `src/coverage-map.ts` for how it's computed and its own freshness
 // gate). Numerators come from `loadCompatAdapters()` (the same registry
 // `report.ts`/`cli.ts` use for the component matrix).
+//
+// The committed lock carries only the FACTS of that join — per construct,
+// per adapter, which covering fixtures are gapped — never the counts. A
+// construct's `total` and a cell's `pass` move on nearly every fixture PR,
+// so committing them made unrelated fixture PRs conflict on every cell.
+// Readers derive them with `computeSupportMatrixCounts`
+// (`./support-matrix-counts.ts`) from the lock + the coverage map.
 
 import { PARSED_EXPR_KINDS } from '@barefootjs/jsx'
 import coverageMapJson from '../../adapter-tests/coverage-map.json' with { type: 'json' }
+import { computeCoverageCounts, type CoverageFacts } from '../../adapter-tests/src/coverage-map-counts'
 import { loadAllCompatAdapters } from './adapter-registry'
 import { computeConstructExamples, type ConstructExample } from './construct-examples'
 import { computeConstructSourceLinks, resolveAxisLink, resolveKindLink, type SourceLink } from './construct-source-links'
@@ -43,13 +51,8 @@ export const SUPPORT_MATRIX_NOTE =
   'the full compat matrix, ui/compat.lock.json); each gap cites the registry limitation ' +
   '(packages/adapter-tests/limitations/<id>.ts) it is an instance of.'
 
-/** Minimal shape read from `packages/adapter-tests/coverage-map.json`. */
-export interface SupportMatrixCoverageMap {
-  fixtures: Record<string, { kinds: readonly string[]; axes: readonly string[] }>
-  kindCounts: Record<string, number>
-  axisCounts: Record<string, number>
-  uncoveredKinds: readonly string[]
-}
+/** Minimal shape read from `packages/adapter-tests/coverage-map.json` (per-fixture facts only). */
+export type SupportMatrixCoverageMap = CoverageFacts
 
 /** The subset of `LoadedCompatAdapter` the join needs — kept narrow for the unit test's synthetic fixtures. */
 export interface SupportMatrixAdapterInput {
@@ -64,16 +67,16 @@ export interface SupportMatrixGap {
   limitations: string[]
 }
 
-/** `pass`/`total` over the fixtures that exercise this construct on this adapter; `gaps` omitted when empty. */
+/**
+ * The covering fixtures gapped on this adapter; `gaps` omitted when empty.
+ * `pass`/`total` are not stored — see `computeSupportMatrixCounts`.
+ */
 export interface SupportMatrixCell {
-  pass: number
-  total: number
   gaps?: SupportMatrixGap[]
 }
 
-/** One construct's (kind or axis) total covering-fixture count and its per-adapter cells. */
+/** One construct's (kind or axis) per-adapter cells. */
 export interface SupportMatrixConstruct {
-  total: number
   cells: Record<string, SupportMatrixCell>
   /** GitHub permalink to where this construct is recognised, when resolvable (see `construct-source-links.ts`). */
   source?: SourceLink
@@ -128,9 +131,7 @@ function gapsFor(coveringIds: string[], adapter: SupportMatrixAdapterInput): Sup
 
 function buildCell(coveringIds: string[], adapter: SupportMatrixAdapterInput): SupportMatrixCell {
   const gaps = gapsFor(coveringIds, adapter)
-  const cell: SupportMatrixCell = { pass: coveringIds.length - gaps.length, total: coveringIds.length }
-  if (gaps.length > 0) cell.gaps = gaps
-  return cell
+  return gaps.length > 0 ? { gaps } : {}
 }
 
 function buildConstruct(
@@ -145,12 +146,12 @@ function buildConstruct(
   for (const adapterId of adapterIds) {
     cells[adapterId] = buildCell(coveringIds, adapterById.get(adapterId)!)
   }
-  return { total: coveringIds.length, cells }
+  return { cells }
 }
 
 /**
- * Pure join: `coverage-map.json` (denominators) × adapter pins/render-
- * divergences (numerators) → the `SupportMatrixReport` shape. Separated
+ * Pure join: `coverage-map.json` (covering fixtures) × adapter pins/render-
+ * divergences (gaps) → the `SupportMatrixReport` shape. Separated
  * from `computeSupportMatrix` (which supplies the real committed
  * coverage map + `loadCompatAdapters()`) so the unit test can pin the
  * join logic against small synthetic input without depending on the
@@ -158,10 +159,10 @@ function buildConstruct(
  *
  * Kinds are every entry in `PARSED_EXPR_KINDS` (the full compiler-side
  * registry, sorted) — including kinds with zero covering fixtures (e.g.
- * `regex`, `coverage.uncoveredKinds`), so the matrix stays complete
- * against the registry rather than silently dropping uncovered rows.
- * Axes are every key of `coverage.axisCounts` (there's no equivalent
- * "uncovered axis" registry to complete against).
+ * `regex`), so the matrix stays complete against the registry rather than
+ * silently dropping uncovered rows. Axes are every axis some fixture
+ * exercises (`computeCoverageCounts(coverage).axisCounts` keys — there's
+ * no equivalent "uncovered axis" registry to complete against).
  */
 export function buildSupportMatrix(
   coverage: SupportMatrixCoverageMap,
@@ -176,7 +177,7 @@ export function buildSupportMatrix(
   }
 
   const axes: Record<string, SupportMatrixConstruct> = {}
-  for (const axis of Object.keys(coverage.axisCounts).sort(byCodeUnit)) {
+  for (const axis of Object.keys(computeCoverageCounts(coverage).axisCounts).sort(byCodeUnit)) {
     axes[axis] = buildConstruct(coverage, axis, 'axes', adapterIds, adapterById)
   }
 
@@ -201,7 +202,7 @@ export function buildSupportMatrix(
  */
 export async function computeSupportMatrix(): Promise<SupportMatrixReport> {
   const loaded = await loadAllCompatAdapters()
-  const coverage = coverageMapJson as SupportMatrixCoverageMap
+  const coverage: SupportMatrixCoverageMap = coverageMapJson
   const report = buildSupportMatrix(coverage, loaded)
   return attachConstructDocs(report, coverage)
 }

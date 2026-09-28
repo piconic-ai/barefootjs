@@ -10,8 +10,9 @@ packages/adapter-tests/fixtures/__snapshots__/** linguist-generated=true
 
 # `ui/support-matrix.lock.json` (support-matrix-cli.ts): the per-adapter
 # capability matrix, mechanically regenerated from the full fixture corpus.
-# Nearly every fixture addition/removal reshuffles pass/total counts across
-# every adapter cell, so the diff is thousands of lines of noise rather than
-# a review signal — collapse it by default in PR diffs (still expandable,
-# and kept out of language stats).
+# It holds per-cell facts only (which covering fixtures are gapped); the
+# pass/total counts are derived at read time and never committed, so a
+# fixture PR no longer rewrites every cell. The remaining diff is still
+# bulk machine output rather than a review signal — collapse it by default
+# in PR diffs (still expandable, and kept out of language stats).
 ui/support-matrix.lock.json linguist-generated=true

@@ -15,6 +15,13 @@
  *
  * Missing one costs a full CI round (every adapter workflow) per push, so
  * run this once before pushing a fixture change and commit what it writes.
+ *
+ * (2)-(4) commit per-fixture / per-cell facts only, never aggregates (no
+ * kind/axis counts, corpus size, or pass/total): those lines would change
+ * on every fixture PR and make unrelated fixture PRs conflict. Readers
+ * derive them via `computeCoverageCounts`
+ * (`packages/adapter-tests/src/coverage-map-counts.ts`) and
+ * `computeSupportMatrixCounts` (`packages/compat/src/support-matrix-counts.ts`).
  */
 
 import { fileURLToPath } from 'node:url'

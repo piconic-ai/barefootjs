@@ -30,6 +30,8 @@ import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { glob as fsGlob } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'path'
+import coverageMapJson from '../../adapter-tests/coverage-map.json' with { type: 'json' }
+import { computeCoverageCounts, type CoverageFacts } from '../../adapter-tests/src/coverage-map-counts'
 import { loadCompatAdapters, MissingCompatAdaptersError, requireAllCompatAdapters } from './adapter-registry'
 import { computeComponentDocs, computeFixtureDocs } from './component-docs'
 import { buildCompatCell, compileForCompat, type CompatCell } from './engine'
@@ -112,7 +114,10 @@ export function renderLockToMarkdown(lockPath: string): string {
     throw new Error(`${lockPath} does not look like a CompatReport (expected an \`adapters\` array and a \`components\` object)`)
   }
 
-  return formatCompatMarkdown(parsed)
+  // The lock carries no corpus-size aggregate (see `FixtureDivergences`):
+  // derive it from the committed coverage map's per-fixture facts.
+  const coverage: CoverageFacts = coverageMapJson
+  return formatCompatMarkdown(parsed, computeCoverageCounts(coverage).fixtureCount)
 }
 
 async function main(): Promise<void> {
@@ -250,12 +255,13 @@ async function main(): Promise<void> {
   // compatibility-matrix page reports render-level gaps instead of
   // showing only the all-green compile story. `jsxFixtures` is imported
   // relatively (same precedent as `compat-pins.test.ts` — it isn't part
-  // of adapter-tests' public export map): the corpus total AND (#2613) the
-  // full fixture list, so `buildFixtureDivergences` can read each refused
-  // fixture's `escapeNotOwed` / `escapes` declarations and verify escape
-  // twins against every adapter's real backend.
+  // of adapter-tests' public export map): (#2613) the full fixture list,
+  // so `buildFixtureDivergences` can read each refused fixture's
+  // `escapeNotOwed` / `escapes` declarations and verify escape twins
+  // against every adapter's real backend. Its length is also the corpus
+  // size for the Markdown headline below (never written to the lock).
   const { jsxFixtures } = await import('../../adapter-tests/fixtures')
-  const fixtureDivergences = buildFixtureDivergences(loaded, jsxFixtures.length, jsxFixtures)
+  const fixtureDivergences = buildFixtureDivergences(loaded, jsxFixtures)
 
   // The known-limitation registry, joined with the adapters citing each
   // entry — the section every diagnostic link on the docs page resolves
@@ -290,7 +296,12 @@ async function main(): Promise<void> {
   const docFixtureIds = new Set([...Object.keys(report.fixtureDivergences.fixtures), ...escapeTwinIds])
   report.fixtureDivergences.docs = computeFixtureDocs([...docFixtureIds])
 
-  const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report)
+  // Live mode counts the corpus it just compiled (`jsxFixtures`), not the
+  // committed coverage map: this report is built from the working tree, so
+  // the headline must match it even while coverage-map.json is stale. The
+  // lock-render paths (`--render`, the docs page) have no live corpus and
+  // count through `computeCoverageCounts`; the freshness gate keeps the two equal.
+  const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report, jsxFixtures.length)
 
   if (outPath) {
     const resolved = path.isAbsolute(outPath) ? outPath : path.resolve(process.cwd(), outPath)

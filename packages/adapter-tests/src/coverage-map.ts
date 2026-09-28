@@ -57,15 +57,16 @@ export interface FixtureCoverage {
   contexts: string[]
 }
 
+/**
+ * The committed ledger: per-fixture facts only. Aggregates (corpus size,
+ * per-kind / per-axis fixture counts, uncovered kinds) are NOT part of it
+ * — every fixture PR would rewrite those lines and conflict with every
+ * other one. Readers derive them via `computeCoverageCounts`
+ * (`./coverage-map-counts.ts`).
+ */
 export interface CoverageMap {
   /** Per-fixture exercised sets, keyed by fixture id, sorted keys. */
   fixtures: Record<string, FixtureCoverage>
-  /** Fixture-count per kind across the corpus (the ledger numerators). */
-  kindCounts: Record<string, number>
-  /** Fixture-count per axis across the corpus. */
-  axisCounts: Record<string, number>
-  /** Registry kinds no fixture exercises (the ledger-floor holes). */
-  uncoveredKinds: string[]
 }
 
 const KIND_SET: ReadonlySet<string> = new Set(PARSED_EXPR_KINDS)
@@ -258,24 +259,12 @@ export function computeFixtureCoverage(fixture: JSXFixture): FixtureCoverage {
 
 export function computeCoverageMap(): CoverageMap {
   const fixtures: Record<string, FixtureCoverage> = {}
-  const kindCounts: Record<string, number> = {}
-  const axisCounts: Record<string, number> = {}
   // Code-unit sort everywhere (never localeCompare): the artifact is
   // byte-committed and the freshness test compares key order, so
   // ICU-collation differences across machines would fail it spuriously
   // and reorder thousands of committed lines on regen.
   for (const fixture of [...jsxFixtures].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
-    const coverage = computeFixtureCoverage(fixture)
-    fixtures[fixture.id] = coverage
-    for (const kind of coverage.kinds) kindCounts[kind] = (kindCounts[kind] ?? 0) + 1
-    for (const axis of coverage.axes) axisCounts[axis] = (axisCounts[axis] ?? 0) + 1
+    fixtures[fixture.id] = computeFixtureCoverage(fixture)
   }
-  const sortRecord = (rec: Record<string, number>) =>
-    Object.fromEntries(Object.entries(rec).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
-  return {
-    fixtures,
-    kindCounts: sortRecord(kindCounts),
-    axisCounts: sortRecord(axisCounts),
-    uncoveredKinds: PARSED_EXPR_KINDS.filter(k => !kindCounts[k]).sort(),
-  }
+  return { fixtures }
 }

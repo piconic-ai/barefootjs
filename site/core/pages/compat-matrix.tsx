@@ -10,6 +10,15 @@
  * standard `renderMarkdown` pipeline so it gets the same heading IDs,
  * TOC extraction, and table styling as every other docs page, instead of
  * hand-rolling HTML/JSX.
+ *
+ * The committed locks carry facts only — no counts. Every number the page
+ * shows (a construct's `pass/total`, the render-conformance headline's
+ * corpus size) is derived here from those facts plus the committed
+ * `packages/adapter-tests/coverage-map.json`, through the same helpers the
+ * compat tooling uses (`computeSupportMatrixCounts`,
+ * `computeCoverageCounts`). Those two modules are dependency-free and are
+ * imported by relative path, like the JSON — the site still takes no
+ * package dependency on `@barefootjs/compat`.
  */
 
 import type { Hono } from 'hono'
@@ -17,6 +26,13 @@ import { renderMarkdown } from '../lib/markdown'
 import { getDocsNavLinks } from '../lib/navigation'
 import lock from '../../../ui/compat.lock.json' with { type: 'json' }
 import supportMatrixLock from '../../../ui/support-matrix.lock.json' with { type: 'json' }
+import coverageMapJson from '../../../packages/adapter-tests/coverage-map.json' with { type: 'json' }
+import { computeCoverageCounts } from '../../../packages/adapter-tests/src/coverage-map-counts'
+import {
+  computeSupportMatrixCounts,
+  type SupportMatrixCellCounts,
+  type SupportMatrixConstructCounts,
+} from '../../../packages/compat/src/support-matrix-counts'
 
 const SLUG = 'advanced/compatibility-matrix'
 const TITLE = 'Compatibility Matrix'
@@ -122,7 +138,6 @@ interface FixtureDoc {
 
 interface FixtureDivergences {
   note: string
-  totalFixtures: number
   fixtures: Record<string, Record<string, FixtureDivergenceCell>>
   /** Optional: fixture id → description + source link (older locks lack it). */
   docs?: Record<string, FixtureDoc>
@@ -150,15 +165,16 @@ interface CompatLock {
 
 const compat = lock as CompatLock
 
-/** One `kind` or `axis` construct's covering-fixture total and its per-adapter cells (`ui/support-matrix.lock.json`). */
+/** Conformance-corpus size — the render-conformance headline's denominator, derived (not stored in the lock). */
+const totalFixtures = computeCoverageCounts(coverageMapJson).fixtureCount
+
+/** One `kind` or `axis` construct's per-adapter gapped fixtures (`ui/support-matrix.lock.json`). */
 interface SupportMatrixGap {
   fixture: string
   limitations: string[]
 }
 
 interface SupportMatrixCell {
-  pass: number
-  total: number
   gaps?: SupportMatrixGap[]
 }
 
@@ -176,7 +192,6 @@ interface SupportMatrixExample {
 }
 
 interface SupportMatrixConstruct {
-  total: number
   cells: Record<string, SupportMatrixCell>
   source?: SupportMatrixSourceLink
   example?: SupportMatrixExample
@@ -190,6 +205,9 @@ interface SupportMatrixLock {
 }
 
 const supportMatrix = supportMatrixLock as SupportMatrixLock
+
+/** Every construct's `total` and every cell's `pass/total`, derived from the lock's gaps + the coverage map. */
+const supportCounts = computeSupportMatrixCounts(supportMatrix, coverageMapJson)
 
 function escapeCell(text: string): string {
   return text.replace(/\|/g, '\\|')
@@ -547,7 +565,7 @@ function buildFixtureSection(): string {
   const fullyEscapableIds = allFixtureIds.filter((id) => fixtureWorksEverywhere(fd.fixtures[id]))
   const needsAttentionIds = allFixtureIds.filter((id) => !fixtureWorksEverywhere(fd.fixtures[id])).sort()
   const adapters = compat.adapters
-  const cleanCount = fd.totalFixtures - allFixtureIds.length
+  const cleanCount = totalFixtures - allFixtureIds.length
   const worksEverywhereCount = cleanCount + fullyEscapableIds.length
   const debtExample = exampleRefusalCode(fd, needsAttentionIds, adapters, 'debt')
   const notOwedExample = exampleRefusalCode(fd, needsAttentionIds, adapters, 'not-owed')
@@ -568,7 +586,7 @@ The component matrix above is **compile-time only**. This section answers the qu
 
 The table lists only fixtures that need attention: at least one adapter where nothing works today. Each cell's meaning is in the legend below it; diagnostic codes link to the [known limitation](#known-limitations) they are an instance of, and the reason a code is led by \`${NOT_OWED_MARKER}\` is in that fixture's detail entry. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` in one column and a code needing attention in another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
 
-**${worksEverywhereCount} / ${fd.totalFixtures} fixtures work on every adapter** (${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). The ${needsAttentionIds.length} below need attention:
+**${worksEverywhereCount} / ${totalFixtures} fixtures work on every adapter** (${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). The ${needsAttentionIds.length} below need attention:
 
 ${[header, divider, ...rows].join('\n')}
 
@@ -601,9 +619,9 @@ ${buildFixtureDetails(fd, needsAttentionIds)}
  * fixtures gapped by the same limitation, which would otherwise repeat
  * its link.
  */
-function supportCellMarkdown(cell: SupportMatrixCell | undefined): string {
-  if (!cell) return '?'
-  const ratio = `${cell.pass}/${cell.total}`
+function supportCellMarkdown(cell: SupportMatrixCell | undefined, counts: SupportMatrixCellCounts | undefined): string {
+  if (!cell || !counts) return '?'
+  const ratio = `${counts.pass}/${counts.total}`
   const gaps = cell.gaps ?? []
   if (gaps.length === 0) return ratio
   // `formatLimitationLinks` dedupes + sorts, so just flatten every gapped
@@ -644,13 +662,18 @@ function exampleCellMarkdown(construct: SupportMatrixConstruct | undefined): str
 }
 
 /** One `construct × adapter` table — shared by the "By kind" and "By axis" tables. */
-function buildSupportTable(records: Record<string, SupportMatrixConstruct>): string {
+function buildSupportTable(
+  records: Record<string, SupportMatrixConstruct>,
+  counts: Record<string, SupportMatrixConstructCounts>,
+): string {
   const adapters = supportMatrix.adapters
   const names = Object.keys(records).sort()
   const header = `| Construct | Example | ${adapters.join(' | ')} |`
   const divider = `| --- | --- | ${adapters.map(() => '---').join(' | ')} |`
   const rows = names.map((name) => {
-    const cells = adapters.map((adapter) => supportCellMarkdown(records[name]?.cells[adapter]))
+    const cells = adapters.map((adapter) =>
+      supportCellMarkdown(records[name]?.cells[adapter], counts[name]?.cells[adapter]),
+    )
     return `| ${constructLabelMarkdown(records[name], name)} | ${exampleCellMarkdown(records[name])} | ${cells.join(' | ')} |`
   })
   return [header, divider, ...rows].join('\n')
@@ -676,11 +699,11 @@ Each construct name links to a conformance fixture exercising it — a small sel
 
 ### By kind
 
-${buildSupportTable(supportMatrix.kinds)}
+${buildSupportTable(supportMatrix.kinds, supportCounts.kinds)}
 
 ### By axis
 
-${buildSupportTable(supportMatrix.axes)}
+${buildSupportTable(supportMatrix.axes, supportCounts.axes)}
 `
 }
 
