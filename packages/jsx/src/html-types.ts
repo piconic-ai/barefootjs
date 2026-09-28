@@ -93,6 +93,9 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
   lang?: string
   slot?: string
 
+  // Popover API (global attribute — any element can opt into being a popover)
+  popover?: '' | 'auto' | 'manual' | 'hint' | boolean
+
   // Data attributes
   [key: `data-${string}`]: string | number | boolean | undefined
 
@@ -323,6 +326,8 @@ export interface ButtonHTMLAttributes extends Omit<HTMLBaseAttributes,
   name?: string
   type?: 'submit' | 'reset' | 'button'
   value?: string
+  popovertarget?: string
+  popovertargetaction?: 'toggle' | 'show' | 'hide'
 
   onClick?: MouseEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
@@ -363,6 +368,8 @@ export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes,
   name?: string
   pattern?: string
   placeholder?: string
+  popovertarget?: string
+  popovertargetaction?: 'toggle' | 'show' | 'hide'
   readonly?: boolean | null
   required?: boolean | null
   size?: number
