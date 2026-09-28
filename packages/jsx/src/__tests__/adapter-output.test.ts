@@ -50,6 +50,24 @@ class EmptyNoTemplateAdapter extends BaseAdapter {
   renderCondMarker(): string { return '' }
 }
 
+// A hypothetical `emitsTemplates: false` adapter whose `generate()` (unlike
+// `CSRAdapter`'s) returns non-empty `sections`. Nothing in the
+// `TemplateAdapter` contract requires an `emitsTemplates: false` adapter's
+// sections to be empty — `emitsTemplates` alone is what's supposed to
+// suppress assembly. Used to pin that `compileMultipleComponents` enforces
+// the same short-circuit as `compileJSX`'s single-component path, not just
+// a `moduleExports`-only skip (#3234).
+class LeakySectionsAdapter extends EmptyNoTemplateAdapter {
+  name = 'leaky-sections-no-template'
+  generate(): AdapterOutput {
+    return {
+      template: '',
+      sections: { imports: '', types: '', component: 'const LEAKED = 1;', defaultExport: '' },
+      extension: '.tsx',
+    }
+  }
+}
+
 describe('Adapter output', () => {
   describe('real components', () => {
     test('compiles ButtonDemo component', async () => {
@@ -359,6 +377,18 @@ describe('Adapter output', () => {
         export function World() { return <p>world</p> }
       `
       const result = compileJSX(source, 'Multi.tsx', { adapter: emptyAdapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('multi-component file: emitsTemplates:false still wins even when generate() returns non-empty sections', () => {
+      const source = `
+        'use client'
+        export function Hello() { return <p>hi</p> }
+        export function World() { return <p>world</p> }
+      `
+      const result = compileJSX(source, 'Multi.tsx', { adapter: new LeakySectionsAdapter() })
       expect(result.errors).toHaveLength(0)
       const template = result.files.find(f => f.type === 'markedTemplate')
       expect(template?.content ?? '').toBe('')
