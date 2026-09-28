@@ -1830,3 +1830,41 @@ export function Bare() {
     expect(result.deps.find(d => d.name === 'page')!.changedBy[0]).toMatchObject({ setter: 'setPage' })
   })
 })
+
+describe('async factories in the graph: reads in memo / effect bodies (#3227 review)', () => {
+  const source = `
+'use client'
+import { createQuery, createEffect, createMemo, createSignal, http } from '@barefootjs/client'
+export function Bodies() {
+  const [items] = createSignal([1, 2])
+  const [, fetchPosts] = createQuery(() => http.get('/api/posts'))
+  const busy = createMemo(() => { console.log('x'); return fetchPosts.isPending() })
+  createEffect(() => { items().forEach((x) => { if (fetchPosts.error()) console.log(x) }) })
+  return <p>{busy() ? 'loading' : 'idle'}</p>
+}
+`
+  const graph = buildComponentGraph(source, 'Bodies.tsx')
+
+  test('a memo whose block body does not fold to one expression still records its accessor read', () => {
+    expect(graph.memos.find(m => m.name === 'busy')!.deps).toContain('fetchPosts.isPending')
+  })
+
+  test('an effect reading an accessor inside a block-bodied callback records the read', () => {
+    expect(graph.effects[0].deps).toEqual(['items', 'fetchPosts.error'])
+    expect(graph.accessors.find(a => a.name === 'fetchPosts.error')!.consumers).toEqual(['effect:e0'])
+  })
+})
+
+describe('consumer lists keep one entry per binding (#3227 review)', () => {
+  test('two bindings with the same label are both listed, as before async factories', () => {
+    const graph = buildComponentGraph(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Two() {
+  const [busy, setBusy] = createSignal(false)
+  return <div><button disabled={busy()} onClick={() => setBusy(true)}>a</button><button disabled={busy()}>b</button></div>
+}
+`, 'Two.tsx')
+    expect(graph.signals.find(s => s.name === 'busy')!.consumers.filter(c => c === 'dom:disabled')).toHaveLength(2)
+  })
+})

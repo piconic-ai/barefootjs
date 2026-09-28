@@ -32,8 +32,8 @@ import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity.ts'
 import { tokenContainsIdent } from './ir-to-client-js/utils.ts'
 import { identifierCallPattern } from './identifier-pattern.ts'
 import { BindingScope } from './scope/binding-scope.ts'
-import { ACTION_ACCESSOR_NAMES, collectActionAccessorReads, collectActionNames, type ActionAccessorName } from './action-accessor.ts'
-import { parseExpression, tsNodeToParsedExpr } from './expression-parser.ts'
+import { ACTION_ACCESSOR_NAMES, collectActionAccessorReads, collectActionNames, parsedExprChildren, type ActionAccessorName } from './action-accessor.ts'
+import { parseExpression, tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
 
 // =============================================================================
 // Types
@@ -526,7 +526,7 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   const memos: MemoNode[] = meta.memos.map(m => ({
     kind: 'memo',
     name: m.name,
-    deps: [...m.deps, ...accessorDepsOf(m.computation)],
+    deps: [...m.deps, ...bodyAccessorDeps(m.computation, actions)],
     consumers: [],
     computation: m.computation,
     loc: { file: m.loc.file, line: m.loc.start.line },
@@ -535,7 +535,7 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   const effects: EffectNode[] = meta.effects.map((e, i) => ({
     kind: 'effect',
     label: `e${i}`,
-    deps: [...e.deps, ...effectAccessorDeps(e.body, actions)],
+    deps: [...e.deps, ...bodyAccessorDeps(e.body, actions)],
     body: e.body,
     loc: { file: e.loc.file, line: e.loc.start.line },
   }))
@@ -551,7 +551,7 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   const addConsumer = (dep: string, consumer: string, props: boolean): void => {
     const consumers = signalConsumers.get(dep) ?? memoConsumers.get(dep) ?? accessorConsumers.get(dep)
     if (consumers) {
-      if (!consumers.includes(consumer)) consumers.push(consumer)
+      consumers.push(consumer)
     } else if (props) {
       const list = propConsumers.get(dep) ?? []
       propConsumers.set(dep, list)
@@ -618,28 +618,35 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
 }
 
 /**
- * Accessor reads in an effect body (#3167). An effect has no `ParsedExpr` of
- * its own (its block body doesn't parse to a value expression), so each
- * expression its statements hold is converted with `tsNodeToParsedExpr` and
- * read by the same collector as a binding; an expression that doesn't convert
- * is searched inside. The body is parsed only when an action name appears in
- * it as a token.
+ * Accessor reads in a memo or effect body (#3167). Neither has a `ParsedExpr`
+ * that always covers its body — a block body only folds to a value expression
+ * in simple cases — so each expression the body holds is converted with
+ * `tsNodeToParsedExpr` and read by the same collector as a binding. A
+ * conversion that is not complete (it contains an `unsupported` node, such as
+ * a block-bodied callback passed to `forEach`) is searched inside instead of
+ * accepted, so a read under it is never lost; arrow-parameter shadowing holds
+ * wherever a conversion is complete. The body is parsed only when an action
+ * name appears in it as a token.
  */
-function effectAccessorDeps(body: string, actions: ReadonlySet<string>): string[] {
+function bodyAccessorDeps(body: string, actions: ReadonlySet<string>): string[] {
   if (![...actions].some(action => tokenContainsIdent(body, action))) return []
   const found = new Set<string>()
   const visit = (node: ts.Node): void => {
     if (ts.isExpression(node)) {
       const parsed = tsNodeToParsedExpr(node)
-      if (parsed.kind !== 'unsupported') {
+      if (!containsUnsupported(parsed)) {
         for (const r of collectActionAccessorReads(parsed, actions)) found.add(`${r.action}.${r.accessor}`)
         return
       }
     }
     ts.forEachChild(node, visit)
   }
-  visit(ts.createSourceFile('__effect.tsx', `(${body})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX))
+  visit(ts.createSourceFile('__body.tsx', `(${body})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX))
   return [...found]
+}
+
+function containsUnsupported(expr: ParsedExpr): boolean {
+  return expr.kind === 'unsupported' || parsedExprChildren(expr).some(child => containsUnsupported(child.expr))
 }
 
 /**
