@@ -6,10 +6,11 @@
  * handles event binding for both branches.
  */
 
-import { createEffect, createRoot, untrack } from '@barefootjs/client/reactive'
+import { createEffect, createRoot } from '@barefootjs/client/reactive'
 import { find, findCondTarget, commentsInScope } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
 import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
+import { evalTemplateFn } from './template.ts'
 import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
 
 /**
@@ -139,12 +140,17 @@ export interface BranchConfig {
    * captured live `Node` values via `__bfSlot`.
    *
    * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   *  INVARIANT — TEMPLATES RUN WITH REACTIVITY UNTRACKED.
+   *  INVARIANT — TEMPLATES RUN WITH REACTIVITY UNTRACKED, IN A THROWAWAY ROOT.
    * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    *
    * Every call site goes through `evalBranchTemplate()` in this file,
-   * which wraps the invocation in `untrack()`. Signal reads inside
-   * the template are therefore NOT registered as effect dependencies.
+   * which routes the invocation through `evalTemplateFn()` (#3235). Signal
+   * reads inside the template are therefore NOT registered as effect
+   * dependencies (`createRoot` isolates tracking the same way `untrack()`
+   * did), and anything the call creates (a signal, an `onMount`/`onCleanup`
+   * registration from an opaque helper call the compiler inlined into the
+   * template) is disposed before the call returns, instead of leaking with
+   * no owner to release it.
    *
    * Consequences for authors of new branch shapes:
    *
@@ -179,18 +185,21 @@ function normalizeTemplate(value: string | BranchTemplateResult): BranchTemplate
 
 /**
  * Single chokepoint for every `branch.template()` call in this module —
- * routes the invocation through `untrack()` so the contract on
+ * routes the invocation through `evalTemplateFn()` so the contract on
  * `BranchConfig.template` cannot be locally bypassed.
  *
  * Reads inside the template would otherwise be attributed to whatever
  * effect is the active Listener when `insert()` runs, causing duplicate
  * inner constructs (notably duplicate `mapArray` instances) when an
- * outer effect re-runs and re-invokes `insert()`.
+ * outer effect re-runs and re-invokes `insert()`. `evalTemplateFn` also
+ * gives the call a throwaway owner (#3235), so a signal-creating call the
+ * compiler inlined into the template is torn down immediately rather than
+ * leaking outside any owner.
  *
  * New `template()` call sites: route through here, never call directly.
  */
 function evalBranchTemplate(branch: BranchConfig): BranchTemplateResult {
-  return untrack(() => normalizeTemplate(branch.template()))
+  return evalTemplateFn(() => normalizeTemplate(branch.template()))
 }
 
 /**

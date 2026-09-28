@@ -11,7 +11,7 @@ import { setParentScopeId } from './component.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { getComponentInit } from './registry.ts'
 import { commentScopeRegistry } from './scope.ts'
-import { getTemplate, type TemplateFn } from './template.ts'
+import { evalTemplateFn, getTemplate, type TemplateFn } from './template.ts'
 import type { ComponentDef, InitFn } from './types.ts'
 
 /**
@@ -87,7 +87,7 @@ export function render(
   setParentScopeId(scopeId)
   let html: string
   try {
-    html = template(props).trim()
+    html = evalTemplateFn(() => template(props)).trim()
   } finally {
     setParentScopeId(null)
   }
