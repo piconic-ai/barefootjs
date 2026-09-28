@@ -399,7 +399,7 @@ const polishGroupResults = await parallel(
       phase: 'Polish',
       label: `polish group ${gi + 1} (${groupPRs.length}-PR stack)`,
       model: IMPLEMENT_MODEL,
-      isolation: 'worktree',
+      isolation: plan.groups.length > 1 ? 'worktree' : undefined,
     })
   }),
 )
