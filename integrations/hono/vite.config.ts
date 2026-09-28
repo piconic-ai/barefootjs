@@ -23,7 +23,7 @@ export default defineConfig({
     },
   },
   plugins: barefoot({
-    components: ['components', '../shared/components', '../shared/blog'],
+    components: ['components', '../shared/components', '../shared/blog', '../shared/query-todo'],
     // `tsconfig.json`'s `@/components/*` path points here, and
     // `server.tsx` / `blog.tsx` import compiled components from it.
     templates: 'dist/components',
