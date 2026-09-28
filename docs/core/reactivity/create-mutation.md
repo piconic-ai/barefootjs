@@ -50,7 +50,7 @@ export function CommentForm(props: { postId: number }) {
 
 The request function is evaluated **untracked, when the action is called**. It reads the signals' current values then, and a later change to them sends nothing. Nothing is sent on mount. The function never runs on the server, and on the server `value()` is `undefined`, `isPending()` is `false` and `error()` is `undefined`.
 
-Like `createQuery`, the function must return an `http` descriptor. A safe method (`GET`, `HEAD`, `QUERY`) still sends, but warns once per mutation that a read belongs in `createQuery`.
+Like `createQuery`, the function must return an `http` descriptor. A success with an empty body, such as a `DELETE` answered with `204 No Content`, resolves the call with `undefined`, sets `value()` to `undefined`, and still invalidates. A safe method (`GET`, `HEAD`, `QUERY`) still sends, but warns once per mutation that a read belongs in `createQuery`.
 
 ## Concurrent calls
 

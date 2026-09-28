@@ -253,6 +253,33 @@ describe('rule 6: invalidates', () => {
     }
   })
 
+  test('a DELETE answered with 204 No Content succeeds and invalidates', async () => {
+    const received: (readonly string[])[] = []
+    const unsubscribe = onInvalidate((prefixes) => received.push(prefixes))
+    try {
+      globalThis.fetch = (() => Promise.resolve(new Response(null, { status: 204 }))) as typeof fetch
+      const [, remove] = createMutation(() => http.delete('/api/posts/1'), {
+        invalidates: ['/api/posts'],
+      })
+      await expect(remove()).resolves.toBeUndefined()
+      expect(remove.error()).toBeUndefined()
+      expect(received).toEqual([['/api/posts']])
+    } finally {
+      unsubscribe()
+    }
+  })
+
+  test('a 204 success replaces an earlier result with undefined', async () => {
+    stubFetch({ id: 1 })
+    const [saved, save] = createMutation(() => http.post('/api/posts', {}))
+    await save()
+    expect(saved()).toEqual({ id: 1 })
+    globalThis.fetch = (() => Promise.resolve(new Response(null, { status: 204 }))) as typeof fetch
+    await expect(save()).resolves.toBeUndefined()
+    expect(saved()).toBeUndefined()
+    expect(save.error()).toBeUndefined()
+  })
+
   test('does not fire on failure', async () => {
     const received: (readonly string[])[] = []
     const unsubscribe = onInvalidate((prefixes) => received.push(prefixes))
