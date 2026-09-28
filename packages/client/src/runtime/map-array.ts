@@ -20,6 +20,7 @@
 
 import { createSignal, createEffect, createRoot, batch } from '@barefootjs/client/reactive'
 import { hydratedScopes } from './hydration-state.ts'
+import { sameLoopItem } from './loop-item.ts'
 import { setRowMountPoint, type RowMountPoint } from './component.ts'
 import {
   BF_KEY,
@@ -56,6 +57,31 @@ function scopeIdOf(start: Comment): string {
   const rest = (start.nodeValue ?? '').slice(BF_SCOPE_COMMENT_PREFIX.length)
   const pipe = rest.indexOf('|')
   return pipe >= 0 ? rest.slice(0, pipe) : rest
+}
+
+/**
+ * A row's item: the accessor its body reads and the setter the reconciler
+ * calls. The accessor always returns the item now in the source array, so
+ * identity-based code (`todos().filter((t) => t !== todo)`, mutating `todo`
+ * in place) keeps working. Only an item that is not `sameLoopItem`-equal to
+ * the current one notifies, so a rebuilt but equal item runs nothing.
+ */
+function rowItem<T>(initial: T): [() => T, (next: T) => void] {
+  let current = initial
+  // A counter, not the item: the signal's own Object.is bail must never
+  // compare against an item it last saw, or putting back an object that was
+  // mutated since would be dropped.
+  const [version, setVersion] = createSignal(0)
+  const read = () => {
+    version()
+    return current
+  }
+  const write = (next: T) => {
+    const changed = !sameLoopItem(current, next)
+    current = next
+    if (changed) setVersion((v) => v + 1)
+  }
+  return [read, write]
 }
 
 type ItemScope<T> = {
@@ -366,7 +392,7 @@ function createItemScope<T>(
 
   createRoot((d) => {
     dispose = d
-    const [itemAccessor, itemSetter] = createSignal(item)
+    const [itemAccessor, itemSetter] = rowItem(item)
     const [indexAccessor, indexSetter] = createSignal(index)
     setItem = itemSetter
     setIndex = indexSetter
@@ -888,7 +914,7 @@ function createAnchorScope<T>(
 
   createRoot((d) => {
     dispose = d
-    const [itemAccessor, itemSetter] = createSignal(item)
+    const [itemAccessor, itemSetter] = rowItem(item)
     const [indexAccessor, indexSetter] = createSignal(index)
     setItem = itemSetter
     setIndex = indexSetter

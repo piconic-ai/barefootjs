@@ -508,7 +508,9 @@ A plain loop row's update paths are exactly two, and both are already known
 without per-row reactivity:
 
 1. **Item-driven changes.** The keyed reconciler detects them itself —
-   `!Object.is(oldItem, newItem)` per key. The per-item signal + per-row
+   `!sameLoopItem(oldItem, newItem)` per key (`Object.is`, or arrays / plain
+   objects whose values are `Object.is`-equal one level down; see
+   `packages/client/src/runtime/loop-item.ts`). The per-item signal + per-row
    effect exist only to RE-DELIVER that knowledge back to the row; the
    reconciler can call the row's update function directly.
 2. **Outer-signal reads** (`class={selected() === row.id ? … : …}`). When an
@@ -532,7 +534,7 @@ per-row closures at hydration) consumed by `mapArrayLazy`:
   item, refs: null, last: null }`. `key` comes from the SSR-rendered
   `data-key` (read, never written). NO root, NO signal, NO effect, NO query,
   NO claim, NO DOM write per row.
-- **Item-driven updates**: on `!Object.is` the reconciler calls
+- **Item-driven updates**: on `!sameLoopItem` the reconciler calls
   `applyItem(entry)` directly — claims the row's slot refs lazily on that
   row's first update (scan inside that one row; cached on `entry.refs`; CSR-
   created rows record refs from known clone paths with no scan), then writes
