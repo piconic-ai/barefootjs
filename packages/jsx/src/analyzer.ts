@@ -3913,7 +3913,10 @@ function collectKeysFromMembers(
  *
  * `array`/`object` admit only when EVERY reachable leaf resolves — an
  * array's element type and an object's every property type must pass this
- * same check, recursively. A union, a function, or an un-catalogued named
+ * same check, recursively. A same-file object type referenced by name
+ * (`Item` in `items: Item[]`) is checked through its declaration's members
+ * (`LocalObjectMemberTypes`) the same way an inline object literal's are.
+ * A union, a function, or any other named
  * type reachable ANYWHERE inside the shape declines the WHOLE member (not
  * just that one leaf): `collectMemberTypes` is an all-or-nothing gate per
  * member, so a partially-resolvable structural type must still decline —
@@ -3938,19 +3941,88 @@ function collectKeysFromMembers(
  * synthesized struct is exactly as faithful a representation as the type
  * itself claims, nothing is being guessed.
  */
-function isResolvableMemberType(info: TypeInfo): boolean {
+function isResolvableMemberType(
+  info: TypeInfo,
+  localObjectMembers?: LocalObjectMemberTypes,
+  visiting: ReadonlySet<string> = new Set(),
+): boolean {
+  const recurse = (t: TypeInfo): boolean => isResolvableMemberType(t, localObjectMembers, visiting)
   switch (info.kind) {
     case 'primitive':
       return info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean'
-    case 'interface':
-      return CATALOGUED_RICH_TYPE_NAMES.has(baseTypeName(info.raw))
+    case 'interface': {
+      if (CATALOGUED_RICH_TYPE_NAMES.has(baseTypeName(info.raw))) return true
+      // A same-file object type referenced BY NAME (`initial: State`,
+      // `items: Item[]`) is the same structural shape as its inline
+      // spelling — see `LocalObjectMemberTypes`. A name already on the
+      // resolution stack (a recursive type) declines rather than loop.
+      if (!localObjectMembers || visiting.has(info.raw)) return false
+      const members = localObjectMembers(info.raw)
+      if (!members) return false
+      const inner = new Set(visiting).add(info.raw)
+      return members.every(t => isResolvableMemberType(t, localObjectMembers, inner))
+    }
     case 'array':
-      return !!info.elementType && isResolvableMemberType(info.elementType)
+      return !!info.elementType && recurse(info.elementType)
     case 'object':
-      return info.properties !== undefined && info.properties.every(prop => isResolvableMemberType(prop.type))
+      return info.properties !== undefined && info.properties.every(prop => recurse(prop.type))
     // Unions, functions, and `unknown` all decline — see docstring.
     default:
       return false
+  }
+}
+
+/**
+ * Member types of a same-file, non-generic object type declared by name —
+ * an `interface` with no `extends` clause, or a `type X = { … }` alias —
+ * or `null` when `name` isn't one (an import, a generic, a union alias, an
+ * interface with heritage, or a declaration with a non-property member such
+ * as a method or index signature). #3142 follow-up: `{ initial }: {
+ * initial: State }` declined to `unknown` while the `props`-object form
+ * (`props: { initial: State }`, `extractPropsFromTypeMembers`) resolved
+ * `State` — the same destructured-vs-props-object asymmetry #2677 closed
+ * for INLINE object shapes, left open for NAMED ones. A named same-file
+ * object type is exactly as representable as its inline spelling: it lands
+ * in `ir.metadata.typeDefinitions`, and typed adapters already emit a
+ * struct for it (go-template's `typeDefinitionToGo`), so admitting it
+ * resurrects neither #2150 concern.
+ */
+type LocalObjectMemberTypes = (name: string) => TypeInfo[] | null
+
+function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes {
+  // Each lookup walks the whole source file, and one props annotation can
+  // reach the same name many times (`Item` from several `Item[]` members),
+  // so answer each name once per annotation.
+  const cache = new Map<string, TypeInfo[] | null>()
+  const lookup = (name: string): TypeInfo[] | null => {
+    // Exactly one declaration, or decline: two `interface State` blocks
+    // merge into one type, and checking either half alone could admit a
+    // shape whose other half carries a member this gate would refuse.
+    const decls = findTypeDeclarations(name, ctx.sourceFile)
+    if (decls.length !== 1) return null
+    const decl = decls[0]
+    if (decl.typeParameters?.length) return null
+    let members: ts.NodeArray<ts.TypeElement>
+    if (ts.isInterfaceDeclaration(decl)) {
+      if (decl.heritageClauses?.length) return null
+      members = decl.members
+    } else if (ts.isTypeLiteralNode(decl.type)) {
+      members = decl.type.members
+    } else {
+      return null
+    }
+    const types: TypeInfo[] = []
+    for (const member of members) {
+      if (!ts.isPropertySignature(member) || !member.type) return null
+      const info = typeNodeToTypeInfo(member.type, ctx.sourceFile)
+      if (!info) return null
+      types.push(info)
+    }
+    return types
+  }
+  return (name) => {
+    if (!cache.has(name)) cache.set(name, lookup(name))
+    return cache.get(name) ?? null
   }
 }
 
@@ -3969,9 +4041,10 @@ function isResolvableMemberType(info: TypeInfo): boolean {
  *   #2252's nullish-flip machinery supplies the nillable representation
  *   exactly where absence is semantically observable (#2259).
  * - A member resolves a type when it is a PRIMITIVE (string/number/boolean),
- *   a CATALOGUED rich type (`Date`), or a STRUCTURAL shape (array/object)
- *   built entirely out of those, recursively (#2677). Unions, functions, and
- *   un-catalogued named types (`Map`, `Set`, …) are left as `unknown` — see
+ *   a CATALOGUED rich type (`Date`), or a STRUCTURAL shape (array/object,
+ *   inline or a same-file object type referenced by name) built entirely
+ *   out of those, recursively (#2677). Unions, functions, and other named
+ *   types (imports, generics, `Map`, `Set`, …) are left as `unknown` — see
  *   `isResolvableMemberType`'s own docstring for why the structural cases
  *   are safe to admit and why those three still are not.
  */
@@ -3979,6 +4052,7 @@ function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
 ): Map<string, { type: TypeInfo | null; optional: boolean }> | null {
+  const localObjectMembers = localObjectMemberTypesFor(ctx)
   const fromMembers = (
     members: ts.NodeArray<ts.TypeElement>
   ): Map<string, { type: TypeInfo | null; optional: boolean }> => {
@@ -3987,7 +4061,7 @@ function collectMemberTypes(
       if (ts.isPropertySignature(member) && member.name) {
         const info = member.type ? typeNodeToTypeInfo(member.type, ctx.sourceFile) : null
         map.set(member.name.getText(ctx.sourceFile), {
-          type: info && isResolvableMemberType(info) ? info : null,
+          type: info && isResolvableMemberType(info, localObjectMembers) ? info : null,
           optional: !!member.questionToken,
         })
       }
@@ -4067,21 +4141,19 @@ function extractPropsFromTypeMembers(
 }
 
 /**
- * Find a type declaration (interface or type alias) by name in the source file.
+ * Every type declaration (interface or type alias) named `typeName` in the
+ * source file, in source order. More than one means interface declaration
+ * merging (or a name reused in nested scopes).
  */
-function findTypeDeclaration(
+function findTypeDeclarations(
   typeName: string,
   sourceFile: ts.SourceFile
-): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined {
-  let result: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined
+): Array<ts.InterfaceDeclaration | ts.TypeAliasDeclaration> {
+  const result: Array<ts.InterfaceDeclaration | ts.TypeAliasDeclaration> = []
 
   function visit(node: ts.Node): void {
-    if (ts.isInterfaceDeclaration(node) && node.name.text === typeName) {
-      result = node
-      return
-    }
-    if (ts.isTypeAliasDeclaration(node) && node.name.text === typeName) {
-      result = node
+    if ((ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) && node.name.text === typeName) {
+      result.push(node)
       return
     }
     ts.forEachChild(node, visit)
@@ -4089,6 +4161,17 @@ function findTypeDeclaration(
 
   ts.forEachChild(sourceFile, visit)
   return result
+}
+
+/**
+ * Find a type declaration (interface or type alias) by name in the source
+ * file — the LAST one when the name is declared more than once.
+ */
+function findTypeDeclaration(
+  typeName: string,
+  sourceFile: ts.SourceFile
+): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined {
+  return findTypeDeclarations(typeName, sourceFile).at(-1)
 }
 
 // =============================================================================

@@ -500,11 +500,15 @@ export function resolvePropGoType(
 /**
  * Build the set of prop NAMES whose resolved Go field type is exactly
  * `interface{}` (nillable, for Hono-style attribute omission). Uses the same
- * `propTypeOverrides` + `resolvePropGoType` pipeline as the struct generators.
+ * `propTypeOverrides` + `resolvePropGoType` pipeline as the struct generators;
+ * the caller passes the overrides map it stashed on the compile state.
  * Concrete (`string`/`int`/`bool`/`[]T`/struct) types are excluded.
  */
-export function collectNillablePropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const propTypeOverrides = buildPropTypeOverrides(ctx, ir)
+export function collectNillablePropNames(
+  ctx: GoEmitContext,
+  ir: ComponentIR,
+  propTypeOverrides: Map<string, string>,
+): Set<string> {
   const nillable = new Set<string>()
   for (const param of ir.metadata.propsParams) {
     if (resolvePropGoType(ctx, param, propTypeOverrides) === 'interface{}') {

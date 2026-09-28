@@ -79,6 +79,7 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
     refs: branch.refs.map(r => ({
       slotId: r.slotId,
       callback: r.callback,
+      ...(r.ssrPortalOwner && { ssrPortalOwner: true }),
     })),
     childComponents: branch.childComponents.map(c => ({
       name: c.name,

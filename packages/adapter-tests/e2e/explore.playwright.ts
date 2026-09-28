@@ -496,7 +496,20 @@ test.describe('bounded state-space exploration', () => {
   // whose backend toolchain was missing (`unavailable`) registers one
   // failing test instead of silently dropping the adapter's cases. A
   // `refused` run is a loud compile-time refusal, which is the contract
-  // for an unsupported shape, so it registers nothing.
+  // for an unsupported shape, so it registers one SKIPPED test naming the
+  // diagnostic codes: the refusal shows in the report, and an adapter that
+  // refuses every scenario still runs something for its matrix leg's
+  // `-g "[<id>]"` filter to match, instead of failing "No tests found".
+  for (const run of manifest.adapterRuns ?? []) {
+    if (run.status !== 'refused') continue
+    if (!okScenarios.some(s => s.scenarioId === run.scenarioId)) continue
+    test.describe(`[${run.adapter}] ${run.scenarioId}`, () => {
+      test(`[refused] ${(run.diagnosticCodes ?? []).join(', ')}`, () => {
+        test.skip(true, `refused at compile time: ${(run.diagnosticCodes ?? []).join(', ') || '(no code recorded)'}`)
+      })
+    })
+  }
+
   for (const run of manifest.adapterRuns ?? []) {
     if (run.status !== 'broken' && run.status !== 'unavailable') continue
     if (!okScenarios.some(s => s.scenarioId === run.scenarioId)) continue

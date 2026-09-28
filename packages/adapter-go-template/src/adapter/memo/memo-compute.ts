@@ -61,7 +61,7 @@ function isBooleanTypeInfo(t: TypeInfo): boolean {
 function isBooleanTypedGetter(
   ctx: GoEmitContext,
   name: string,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
 ): boolean {
   const signal = signals.find(s => s.getter === name)
   if (signal) return signal.type !== undefined && isBooleanTypeInfo(signal.type)
@@ -109,7 +109,7 @@ function propNameForPropsBinding(ctx: GoEmitContext, e: ParsedExpr): string | nu
 export function matchFilterArmMemo(
   ctx: GoEmitContext,
   body: ParsedExpr,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
 ): { propName: string; predJSON: string; paramName: string; freeVars: string[] } | null {
   const cb = asCallbackMethodCall(body)
@@ -146,7 +146,7 @@ export function matchFilterArmMemo(
 export function filterArmEarlierSiblingRefs(
   ctx: GoEmitContext,
   memo: { name: string; parsed?: ParsedExpr },
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
 ): string[] {
   if (!memo.parsed) return []
@@ -179,7 +179,7 @@ export function filterArmEarlierSiblingRefs(
 export function computeMemoInitialValue(
   ctx: GoEmitContext,
   memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr },
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   goType?: string,
@@ -221,7 +221,7 @@ export function computeMemoInitialValue(
 export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
   body: ParsedExpr,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   currentMemoName: string,
@@ -312,7 +312,7 @@ export function memoInitialFromParsedBody(
         } else {
           const sig = signals.find(s => s.getter === name)
           if (sig) {
-            goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars)
+            goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, undefined, sig.parsed)
           } else {
             const p = propsParams.find(pp => pp.name === name)
             if (p) goExpr = propRef(name)
@@ -421,7 +421,7 @@ export function memoInitialFromParsedBody(
         let condGo: string | null = null
         const condSignal = signals.find(sg => sg.getter === condName)
         if (condSignal) {
-          condGo = getSignalInitialValueAsGo(ctx, condSignal.initialValue, propsParams, propFallbackVars)
+          condGo = getSignalInitialValueAsGo(ctx, condSignal.initialValue, propsParams, propFallbackVars, undefined, condSignal.parsed)
         } else {
           const condMemo = (ctx.state.currentMemos ?? []).find(m => m.name === condName)
           // A condition memo already on the resolution stack (self- or
@@ -621,7 +621,7 @@ export function memoInitialFromParsedBody(
 function resolveStringConcatChainGo(
   ctx: GoEmitContext,
   expr: ParsedExpr,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   propRef: (propName: string) => string,
@@ -661,7 +661,7 @@ function resolveStringConcatChainGo(
 export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
   memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   /**
@@ -743,14 +743,14 @@ export function computeMemoInitialValueOrNull(
 export function resolveGetterValueAsGo(
   ctx: GoEmitContext,
   name: string,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
   const signal = signals.find(s => s.getter === name)
   if (signal) {
-    return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type)
+    return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
   }
   const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
   if (memo) {
@@ -787,7 +787,7 @@ export function resolveGetterValueAsGo(
 export function computeComparisonTernaryGo(
   ctx: GoEmitContext,
   parsed: ParsedExpr | undefined,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
@@ -843,7 +843,7 @@ export function computeComparisonTernaryGo(
 export function resolveComparisonOperandGo(
   ctx: GoEmitContext,
   node: ParsedExpr,
-  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),

@@ -384,6 +384,18 @@ rendered outside the compiler pipeline. See piconic-ai/barefootjs#1915.
    the scope's own addressable id used by portals (`bf-po`), context
    lookups, and the hydration walker — but **not** slot identity.
 
+   **An SSR-portal element's `bf-po` is the component's own scope id on
+   every path.** An element whose `ref` callback is the recognized
+   `createPortal(el, document.body, { ownerScope })` pattern
+   (`IRElement.ssrPortalOwnerScope`) is rendered by every SSR adapter at its
+   portal outlet with `bf-po="<own scope id>"`, which hydration keeps. The
+   client init mirrors it: right after the callback runs it stamps
+   `bf-po` with `__scopeId` (`emitRefCall`, `ir-to-client-js/utils.ts`) —
+   after, not in the template, since a `bf-po` present before the callback
+   makes its `!isSSRPortal(el)` guard skip the move. The callback's own
+   `el.closest('[bf-s]')` finds no owner under a fragment root, so without
+   the stamp a CSR mount diverged from SSR on the attribute.
+
    **A comment-scoped component resolves its own id via the comment
    registry, not its proxy's `bf-s` (#2910).** A component whose root is a
    `needsScopeComment` fragment or itself a single child-component call

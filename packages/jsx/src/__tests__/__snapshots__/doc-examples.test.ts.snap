@@ -1655,7 +1655,7 @@ export function initTooltip(__scope, _p = {}) {
 
   if (_s0) _s0.addEventListener('mouseenter', () => { setVisible(true) })
   if (_s0) _s0.addEventListener('mouseleave', () => { setVisible(false) })
-  if (_s2) (handleMount)(_s2)
+  if (_s2) { (handleMount)(_s2); if (__scopeId) _s2.setAttribute('bf-po', __scopeId) }
 }
 
 hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\${markupOrEmpty(_p.children)}</span><div class="tooltip" bf="s2"><!--bf:s1-->\${escapeTextOrMarkup(_p.text)}<!--/--></div></div>\` })

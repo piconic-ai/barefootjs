@@ -88,18 +88,13 @@ export function exploreQuarantineKey(
 // only one was disposed with the branch. `collectElements` now leaves a
 // branch-owned child to the branch; all 100 rows passed and were deleted.
 
-// `go-template` adapter axis (`GO_SEED_ROWS`) graduated (#3142): the shape
-// every one of these rows shared — every #3046 scenario seeds its signals
-// from a member of its `initial` prop (`createSignal(initial.items)`) —
-// now refuses to compile (BF101) in `convertInitialValue`
-// (`packages/adapter-go-template/src/adapter/value/value-lowering.ts`)
-// instead of silently baking `nil`. `EXPLORE_ADAPTERS=go-template bun run
-// scripts/explore-generate.ts` (re-run against every scenario this ledger
-// used to cite) now reports `[go-template] [refused] [BF101]` for all of
-// them — a compile-time PASS the adapter-axis probe never reaches an
-// oracle for — so the divergence these rows recorded no longer exists to
-// quarantine. See the registry entry `nested-prop-member-signal-seed`
-// (now `kind: 'refusal'`) and `conformance-pins.ts`.
+// `go-template` adapter axis (`GO_SEED_ROWS`) graduated (#3142): every
+// row shared one shape — each #3046 scenario seeds its signals from a
+// member of its `initial` prop (`createSignal(initial.items)`) — which Go
+// first refused (BF101) instead of silently baking `nil`, and now bakes as
+// the Input field path the member lives at (`in.Initial.Items`,
+// `resolvePropMemberSeed` in
+// `packages/adapter-go-template/src/adapter/value/prop-member-seed.ts`).
 
 const ROWS: ReadonlyArray<ExploreQuarantineEntry> = []
 

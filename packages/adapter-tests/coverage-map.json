@@ -2579,6 +2579,22 @@
         "text"
       ]
     },
+    "embedded-prop-member-signal-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "empty-list-branch": {
       "kinds": [
         "array-literal",
@@ -3203,6 +3219,18 @@
       ]
     },
     "fragment-root-keyed-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "fragment-root-nested-keyed-loop-row": {
       "kinds": [
         "call",
         "identifier",
@@ -4408,6 +4436,21 @@
         "text"
       ]
     },
+    "loop-row-fragment-root-child": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-static-conditional": {
       "kinds": [
         "call",
@@ -4908,6 +4951,20 @@
         "text"
       ]
     },
+    "named-type-prop-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "namespace-import-primitive": {
       "kinds": [
         "call",
@@ -5339,6 +5396,23 @@
         "text"
       ]
     },
+    "optional-object-prop-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "pagination": {
       "kinds": [
         "array-literal",
@@ -5412,6 +5486,22 @@
         "attribute"
       ]
     },
+    "portal-fragment-root": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "pre-whitespace": {
       "kinds": [
         "identifier"
@@ -5458,6 +5548,17 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "prop-member-length-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
       ]
     },
     "props-reactive": {
@@ -7940,21 +8041,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 143,
+    "array-literal": 144,
     "array-method": 72,
     "arrow": 81,
-    "binary": 118,
-    "call": 323,
+    "binary": 119,
+    "call": 330,
     "conditional": 44,
-    "identifier": 467,
+    "identifier": 474,
     "index-access": 15,
-    "literal": 372,
-    "logical": 55,
-    "member": 287,
+    "literal": 376,
+    "logical": 56,
+    "member": 292,
     "object-literal": 115,
     "template-literal": 33,
-    "unary": 37,
-    "unsupported": 55
+    "unary": 38,
+    "unsupported": 56
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -7985,25 +8086,25 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 15,
-    "binary:+": 28,
+    "binary:+": 29,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 85,
+    "literal:boolean": 86,
     "literal:null": 34,
-    "literal:number": 161,
-    "literal:string": 254,
+    "literal:number": 162,
+    "literal:string": 256,
     "logical:&&": 7,
-    "logical:??": 46,
+    "logical:??": 47,
     "logical:||": 17,
     "lowering:date": 4,
     "lowering:queryHref": 5,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
-    "member:optional": 2,
+    "member:optional": 3,
     "sort-direction:asc": 7,
     "sort-direction:desc": 1,
     "sort-key:auto": 1,
@@ -8012,7 +8113,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 30,
+    "unary:!": 31,
     "unary:-": 11
   },
   "uncoveredKinds": [

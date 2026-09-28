@@ -117,12 +117,13 @@ describe('Destructured props keep their declared types (#2150)', () => {
     })
   })
 
-  // A non-primitive optional keeps `unknown` (interface{}-based lowering)
-  // but still reports the type's `?` — the adversarial catalogue derives
-  // absent points from `optional` alone.
+  // A non-primitive optional whose type doesn't resolve (here: an imported
+  // element type) keeps `unknown` (interface{}-based lowering) but still
+  // reports the type's `?` — the adversarial catalogue derives absent
+  // points from `optional` alone.
   test('marks OPTIONAL non-primitive members optional while keeping unknown type (#2259)', () => {
     const source = `
-      type Todo = { id: number }
+      import type { Todo } from './todo'
       type Props = { items?: Todo[] }
 
       export function Component({ items }: Props) {
@@ -207,5 +208,79 @@ describe('Destructured props keep their declared types (#2150)', () => {
     expect(typeOf(ctx, 'variants')).toEqual({ kind: 'unknown', raw: 'unknown' })
     expect(typeOf(ctx, 'handlers')).toEqual({ kind: 'unknown', raw: 'unknown' })
     expect(typeOf(ctx, 'configs')).toEqual({ kind: 'unknown', raw: 'unknown' })
+  })
+
+  // A same-file object type referenced BY NAME resolves like its inline
+  // spelling — the `props`-object form (`props: { initial: State }`) always
+  // kept it; the destructured form declined it to `unknown`.
+  test('resolves a member typed by a same-file object type, named element types included', () => {
+    const source = `
+      type Item = { id: string; label: string }
+      interface State { items: Item[]; nextId: number }
+
+      export function Component({ initial, rows }: { initial: State; rows: Item[] }) {
+        return <div>{initial.nextId}{rows.length}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'initial')).toEqual({ kind: 'interface', raw: 'State' })
+    expect(typeOf(ctx, 'rows')).toEqual({
+      kind: 'array',
+      raw: 'Item[]',
+      elementType: { kind: 'interface', raw: 'Item' },
+    })
+  })
+
+  // The named type is checked through its declaration's members, so the
+  // same all-or-nothing rule applies: a union/function leaf, a generic, an
+  // `extends` clause, a non-property member, an import, or a recursive
+  // reference still declines the whole member.
+  test('declines a named type that is not a plain, fully-resolvable same-file object type', () => {
+    const source = `
+      import type { External } from './external'
+      type WithUnion = { kind: 'a' | 'b' }
+      type Generic<T> = { value: T }
+      interface Base { id: string }
+      interface Derived extends Base { label: string }
+      interface WithMethod { run(): void }
+      type Tree = { children: Tree[] }
+
+      export function Component({ a, b, c, d, e, f }: {
+        a: WithUnion; b: Generic<string>; c: Derived; d: WithMethod; e: External; f: Tree
+      }) {
+        return <div />
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    for (const name of ['a', 'b', 'c', 'd', 'e', 'f']) {
+      expect(typeOf(ctx, name)).toEqual({ kind: 'unknown', raw: 'unknown' })
+    }
+  })
+
+  // Interface declaration merging: the type is the union of both blocks,
+  // so either half alone can't vouch for it. Declines whichever order the
+  // halves come in, rather than admitting on whichever one a walk keeps.
+  test('declines a named type declared more than once (interface merging)', () => {
+    const merged = (first: string, second: string) => `
+      interface State { ${first} }
+      interface State { ${second} }
+
+      export function Component({ initial }: { initial: State }) {
+        return <div />
+      }
+    `
+
+    for (const source of [
+      merged('label: string', "kind: 'a' | 'b'"),
+      merged("kind: 'a' | 'b'", 'label: string'),
+      merged('label: string', 'count: number'),
+    ]) {
+      const ctx = analyzeComponent(source, 'Component.tsx')
+      expect(typeOf(ctx, 'initial')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    }
   })
 })

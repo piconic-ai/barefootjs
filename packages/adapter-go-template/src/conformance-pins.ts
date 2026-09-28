@@ -221,14 +221,15 @@ export const conformancePins: ConformancePins = {
   // Hono's real JS runtime evaluates this shape correctly and must keep
   // doing so.
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
-  // #3142: a signal seeded from a member of an object-typed prop
-  // (`createSignal(initial.label)`) refuses in `convertInitialValue`
-  // (`adapter/value/value-lowering.ts`) instead of silently baking `nil` —
-  // go-template-only: the object prop's own Go type is `interface{}` (or,
-  // for a nested array of named types, would need a synthesized struct
-  // this baker doesn't build yet), so there is no `in.Initial.Label`
-  // field path to bake. The other eight DSL adapters and Hono already
-  // render this shape correctly.
-  'nested-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed', unescapable: true }],
-  'nested-prop-signal-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed', unescapable: true }],
+  // A signal seed is baked as the Input field path its prop member chain
+  // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
+  // A chain that reads a member of a non-struct value
+  // (`initial.items.length`, `[]Item`) has no such path, and neither does
+  // one read inside a larger expression (`initial.count + 1`, or
+  // `initial?.label ?? 'none'`, whose optional object prop is also
+  // `map[string]interface{}`), so `convertInitialValue` refuses rather
+  // than bake a zero value.
+  'optional-object-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
+  'prop-member-length-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
+  'embedded-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
 }

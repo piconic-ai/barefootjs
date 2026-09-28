@@ -346,8 +346,14 @@ function cancelPendingPortal(element: HTMLElement): void {
  * owner — right away, while the component under construction is the tree
  * it was taken from. An element in a detached tree with no owner (a
  * fragment-root component, whose scope lives on a comment) is the same
- * case. A bare element with neither has nothing that will ever connect
- * it, so there is nothing to wait for.
+ * case. When that former parent is a `DocumentFragment` — a fragment-root
+ * component whose portaled element is one of its TOP-LEVEL nodes, bundled
+ * by `materializeComponent` into a fragment the caller then appends — the
+ * fragment itself never connects (inserting it moves its children out), so
+ * the subject is instead one of the element's former siblings, which moves
+ * into the document together with the rest of the component. A bare
+ * element with neither has nothing that will ever connect it, so there is
+ * nothing to wait for.
  */
 export function createPortal(
   children: PortalChildren,
@@ -386,13 +392,19 @@ export function createPortal(
 
   // The reorder subject, resolved BEFORE the append moves the element:
   // the declared owner when it lies outside the element, else the
-  // element's former parent (see the insertion rule above). Only a parent
-  // the caller handed us counts — the string path parses into a fragment,
-  // which never connects; the same goes for a caller-built fragment.
+  // element's former parent — or, when that parent is a fragment, a former
+  // sibling (see the insertion rule above). Only a parent the caller handed
+  // us counts: the string path's parse container never connects.
   const owner = options?.ownerScope
   const formerParent = children instanceof HTMLElement ? children.parentNode : null
   const subject: Node | null =
-    owner && !element.contains(owner) ? owner : formerParent instanceof Element ? formerParent : null
+    owner && !element.contains(owner)
+      ? owner
+      : formerParent instanceof Element
+        ? formerParent
+        : formerParent instanceof DocumentFragment
+          ? (element.previousSibling ?? element.nextSibling)
+          : null
 
   container.appendChild(element)
 

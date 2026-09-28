@@ -518,6 +518,31 @@ describe('createPortal', () => {
       expect(Array.from(container.children)).toEqual([root, target])
     })
 
+    test('without an owner, a top-level node of a detached fragment waits for a former sibling to connect', async () => {
+      // A multi-root fragment-root component's CSR mount bundles its
+      // top-level nodes (scope comments included) into one
+      // DocumentFragment the caller appends; the fragment itself never
+      // connects, so a former sibling is what signals the mount.
+      const fragment = document.createDocumentFragment()
+      const start = document.createComment('bf-scope:Frag_a')
+      const button = document.createElement('button')
+      const target = document.createElement('div')
+      const end = document.createComment('bf-/scope:Frag_a')
+      fragment.append(start, button, target, end)
+
+      createPortal(target, container)
+      // Compared by tag name: a failing `toEqual` over live DOM nodes
+      // prints the whole happy-dom object graph.
+      const order = () => Array.from(container.children).map(el => el.tagName)
+      expect(order()).toEqual(['DIV'])
+
+      container.appendChild(fragment)
+      await settle(() => container.lastElementChild === target)
+
+      expect(order()).toEqual(['BUTTON', 'DIV'])
+      expect(container.lastElementChild).toBe(target)
+    })
+
     test('a bare element with no owner and no parent is appended once, with nothing to wait for', async () => {
       const target = document.createElement('div')
       const later = document.createElement('div')

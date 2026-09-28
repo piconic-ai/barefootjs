@@ -152,6 +152,7 @@ import {
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
+import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
@@ -618,6 +619,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.state.currentMemos = ir.metadata.memos ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
+    this.state.currentPropsParams = ir.metadata.propsParams ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     // Single authority (Package G): the plan already decided which signals are
     // per-request env readers, in declaration order. `ir.metadata.ssrSeedPlan`
@@ -647,11 +649,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `generate()` itself computing nillability against the PREVIOUS
     // compile's type tables.
     this.buildLocalTypeTables(ir, ir.metadata.componentName)
+    // Template-time readers (`nillablePropNameOf`, `resolvePropMemberSeed`
+    // via memo/getter lowering) run before `generateTypes`, so they need
+    // the overrides now — computed against the same freshly built tables
+    // `collectNillablePropNames` reads below. `generateTypes` recomputes it
+    // once this compile's anonymous-object structs are synthesized.
+    this.state.propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
     this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
     this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
-    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
+    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
   }
 
   /** Generate template output for a component. */
@@ -1351,6 +1359,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
+    this.state.propTypeOverrides = propTypeOverrides
 
     // Computed once (the walk is shared by all three generators).
     const spreadSlots = collectSpreadSlots(this.emitCtx, ir.root)
@@ -4163,6 +4172,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t${fieldName} ${typeInfoToGo(this.emitCtx, synthType)} \`json:"${jsonTag}"\``)
         continue
       }
+      // A signal seeded from a member of an object-typed prop
+      // (`createSignal(initial.items)`) takes the Go type of the Input field
+      // path its seed reads (`in.Initial.Items`), so the baked value is
+      // always assignable to it.
+      const memberSeedType = propMemberSeedGoType(this.emitCtx, signal)
+      if (memberSeedType) {
+        lines.push(`\t${fieldName} ${memberSeedType} \`json:"${jsonTag}"\``)
+        continue
+      }
       let goType: string
       let referencedProp = propsParamMap.get(signal.initialValue)
       if (!referencedProp) {
@@ -5031,7 +5049,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
               return 'int'
             }
           }
-          const signalType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
+          const signalType = propMemberSeedGoType(this.emitCtx, signal) ??
+            typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
           if (signalType === 'int' || signalType === 'float64') {
             return 'int'
           }
@@ -6579,6 +6598,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private nillablePropNameOf(expr: ParsedExpr): string | null {
     let name: string | null = null
+    let memberOfRoot = false
     if (expr.kind === 'identifier') {
       name = expr.name
     } else if (expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier') {
@@ -6593,13 +6613,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // the root here is sufficient. Mirrors
         // `collectNullishConsumedPropNames`'s `propNameOfLeft`.
         name = expr.object.name
+        memberOfRoot = true
       }
     }
-    return name !== null &&
-      this.state.nullishConsumedPropNames.has(name) &&
-      this.state.nillablePropNames.has(name)
-      ? name
-      : null
+    if (name === null || !this.state.nullishConsumedPropNames.has(name)) return null
+    if (this.state.nillablePropNames.has(name)) return name
+    // The root of a `user?.name` hop is also nillable when it lowers to the
+    // optional-object `map[string]interface{}` field (`resolvePropGoType`'s
+    // struct-map branch — an optional prop typed by a same-file object
+    // type): a nil map, like a missing key, makes that `bf_get` return nil.
+    if (memberOfRoot) {
+      const param = this.state.currentPropsParams.find(p => p.name === name)
+      if (param && resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides).startsWith('map[')) {
+        return name
+      }
+    }
+    return null
   }
 
   // JSX-level ternaries (`{expr ? a : b}`) in TEXT position are handled at the
