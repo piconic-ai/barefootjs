@@ -5,7 +5,7 @@
 
 `bf debug graph` shows `createQuery` and `createMutation`. Each factory is listed in `ComponentGraph.factories`, and its value signal is annotated with the factory and its action. When the value isn't destructured (`const [, save] = createMutation(…)`), the factory is keyed by its action.
 
-A query lists the signals, memos and props its request function reads, and each of them gets a `query:<value>` edge, since a change re-sends the request. Only the request function counts, because `options` is read once, at creation. A mutation has no such edges, because its request function is read untracked.
+A query lists the signals, memos and props its request function reads, and each of them gets a `query:<key>` edge (the factory's key: its value's name, or its action's), since a change re-sends the request. Only the request function counts, because `options` is read once, at creation. A mutation has no such edges, because its request function is read untracked.
 
 Each action's `isPending()` and `error()` accessors are nodes (`ComponentGraph.accessors`), with edges to the template positions, memos and effects that read them. A binding's `deps` names such a read `<action>.<accessor>`, and a binding that reads one counts as reactive, not as a fallback. A loop parameter or arrow parameter that shadows the action name is not a read.
 
