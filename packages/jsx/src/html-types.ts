@@ -93,6 +93,16 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
   lang?: string
   slot?: string
 
+  // Popover API (global attribute — any element can opt into being a popover).
+  // No `boolean` arm: `popover` isn't in BOOLEAN_ATTRS (`@barefootjs/shared`'s
+  // `dom-prop.ts`), so a boolean value stringifies instead of toggling the
+  // attribute's presence. `popover={false}` would render `popover="false"` —
+  // an invalid keyword the spec maps to `manual`, so the element is STILL a
+  // popover, not opted out — and the client runtime's `applyRestAttrs`
+  // disagrees by removing the attribute outright on `false`, an SSR/CSR
+  // mismatch. `popover={true}` renders `"true"`, also `manual`, not `auto`.
+  popover?: '' | 'auto' | 'manual' | 'hint'
+
   // Data attributes
   [key: `data-${string}`]: string | number | boolean | undefined
 
@@ -323,6 +333,8 @@ export interface ButtonHTMLAttributes extends Omit<HTMLBaseAttributes,
   name?: string
   type?: 'submit' | 'reset' | 'button'
   value?: string
+  popovertarget?: string
+  popovertargetaction?: 'toggle' | 'show' | 'hide'
 
   onClick?: MouseEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
@@ -363,6 +375,8 @@ export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes,
   name?: string
   pattern?: string
   placeholder?: string
+  popovertarget?: string
+  popovertargetaction?: 'toggle' | 'show' | 'hide'
   readonly?: boolean | null
   required?: boolean | null
   size?: number
