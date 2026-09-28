@@ -35,6 +35,30 @@ final class TodosController extends Controller
         return $this->withSessionCookie($response, $sid, $minted);
     }
 
+    /**
+     * The createQuery / createMutation todo app. `initialTodos` seeds its
+     * query (mode A): the list is rendered here, and the client sends no
+     * request on mount. Writes go through the API below and re-fetch the
+     * list.
+     */
+    public function query(Request $request): Response
+    {
+        [$sid, $minted] = $this->resolveSessionId($request);
+        $state = TodoStore::read($sid);
+        $todos = $state['todos'];
+        $response = response($this->renderComponent(
+            'QueryTodoApp',
+            title: 'TodoMVC (createQuery) - BarefootJS',
+            children: ['query_todo_item' => 'QueryTodoItem'],
+            // Each row's own signals (`editing`, `draft`) are seeded from
+            // its ssrDefaults: the loop passes only `todo`.
+            signalInit: ['query_todo_item' => static fn (array $p) => ExampleApp::stashFromSsrDefaults('QueryTodoItem', $p)],
+            props: ['initialTodos' => $todos],
+            stash: ['newText' => '', 'filter' => 'all'],
+        ));
+        return $this->withSessionCookie($response, $sid, $minted);
+    }
+
     // --- todo REST API ---
 
     public function apiIndex(Request $request): BaseResponse
@@ -90,6 +114,36 @@ final class TodosController extends Controller
             return [$state, null];
         });
         return response()->noContent();
+    }
+
+    /** "Toggle all": set every todo's done flag, answer with the full list. */
+    public function apiSetAllDone(Request $request): BaseResponse
+    {
+        [$sid, $minted] = $this->resolveSessionId($request);
+        $body = $request->json()->all();
+        if (!array_key_exists('done', $body)) {
+            return response()->json(['error' => 'invalid input'], 400);
+        }
+        $done = (bool) $body['done'];
+        $todos = TodoStore::with($sid, static function (array $state) use ($done) {
+            foreach ($state['todos'] as &$t) {
+                $t['done'] = $done;
+            }
+            unset($t);
+            return [$state, $state['todos']];
+        });
+        return $this->withSessionCookie(response()->json($todos), $sid, $minted);
+    }
+
+    /** "Clear completed": drop every done todo. */
+    public function apiClearCompleted(Request $request): BaseResponse
+    {
+        [$sid, $minted] = $this->resolveSessionId($request);
+        TodoStore::with($sid, static function (array $state) {
+            $state['todos'] = array_values(array_filter($state['todos'], static fn ($t) => !$t['done']));
+            return [$state, null];
+        });
+        return $this->withSessionCookie(response()->noContent(), $sid, $minted);
     }
 
     public function apiReset(Request $request): BaseResponse

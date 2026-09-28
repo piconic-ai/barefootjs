@@ -53,9 +53,13 @@ Route::prefix($base)->group(function (): void {
     // default (mirrors integrations/rails' `defaults: { ssr: '1' }`).
     Route::get('todos', [TodosController::class, 'index']);
     Route::get('todos-ssr', [TodosController::class, 'index'])->defaults('ssr', '1');
+    Route::get('todos-query', [TodosController::class, 'query']);
     Route::get('api/todos', [TodosController::class, 'apiIndex']);
     Route::post('api/todos', [TodosController::class, 'apiCreate']);
     Route::post('api/todos/reset', [TodosController::class, 'apiReset']);
+    // The two list-wide writes of /todos-query, one request each.
+    Route::put('api/todos', [TodosController::class, 'apiSetAllDone']);
+    Route::delete('api/todos/completed', [TodosController::class, 'apiClearCompleted']);
     Route::put('api/todos/{id}', [TodosController::class, 'apiUpdate'])->whereNumber('id');
     Route::delete('api/todos/{id}', [TodosController::class, 'apiDestroy'])->whereNumber('id');
 
