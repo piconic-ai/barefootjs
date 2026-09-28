@@ -1,5 +1,43 @@
 # @barefootjs/pebble
 
+## 0.39.0
+
+### Patch Changes
+
+- 3c5c771: Export `createMutation` (with `MutationAction` and `CreateMutationOptions`) from `@barefootjs/client`, and compile it. This is the first release that exports it. `const [saved, save] = createMutation(fn, { invalidates })` is recognised as a reactive factory, the same way as `createQuery`:
+  
+  - `saved()` is seeded `undefined` on the server on every adapter. A mutation has no `initial`, and passing one is refused with the new BF118, which names `createQuery` as the factory that takes it.
+  - The request function is emitted into client JS only, as the call's own argument, with prop reads kept live. It is never evaluated on the server and never wrapped in anything that tracks. `invalidates` passes through unchanged.
+  - `save.isPending()` and `save.error()` are seeded through the same gate as a query action's. The gate now also admits `isPending()` in an HTML boolean attribute on an intrinsic element, so `disabled={save.isPending()}` renders the enabled button on every adapter. This applies to a `createQuery` action too.
+  - A destructure with more than two elements, or a third argument, is refused with BF115 / BF116, as for `createQuery`.
+  
+  `createMutation`, `MutationAction` and `CreateMutationOptions` live in the `@barefootjs/client/async` subpath next to `createQuery`, re-exported by the main entry and `/runtime`. The Hono SSR shim exports a `createMutation` stub.
+  
+  ERB, Mojolicious, Jinja, Twig, Xslate, Blade, Rust (minijinja) and Pebble now lower a dynamic HTML boolean attribute from the IR's pre-parsed expression tree instead of re-parsing its raw source text, so a seeded accessor reaches their output there too. Before, they emitted a read of the undeclared action (`save.isPending`), which rendered the same HTML only because the engine treated the missing variable as falsy.
+- e44b74e: `createProgramForFile` takes an optional third argument, `{ currentDirectory }`, which sets the directory a relative `filePath` resolves against and the Program's `getCurrentDirectory()`. When it is omitted, behaviour is unchanged. The `test-render` harnesses use it through `@barefootjs/adapter-tests`' `compileFixtureJSX`. Before this change, whether a fixture's `@barefootjs/*` imports resolved to real types or to `any` depended on the directory the tests were started from. The fixture filenames, and so the file-scope ids derived from them, are unchanged.
+- 135a074: The `test-render` harnesses now import `compileFixtureJSX` from the narrow `@barefootjs/adapter-tests/harness-program` subpath instead of the package barrel. This removes a module cycle between each adapter's `test-render` and `@barefootjs/adapter-tests`, and stops every `test-render` from loading the full fixture corpus.
+- cdfb970: `@barefootjs/pebble/test-render` starts its render JVMs with `-XX:-UsePerfData -Xlog:disable -Xlog:all=warning:stderr`. The rendered HTML is read from stdout, where the JVM prints warnings by default, so a warning such as an `hsperfdata` file-lock notice could be prepended to the HTML.
+- b17c4bf: `createQuery`'s action accessors, `action.isPending()` and `action.error()`, are now seeded as ordinary, IR-visible values (`false` / `undefined`, spec/async.md §7.3) at the template positions where the seed renders exactly like the Hono reference. Before, a read of either accessor in a template position was refused with BF117. Two positions are seeded:
+  
+  - a conditional test, for either accessor: `{fetchPosts.error() ? <Spinner/> : null}`;
+  - an ARIA boolean-state attribute on an intrinsic element, for `isPending()` only: `aria-busy={fetchPosts.isPending()}`.
+  
+  A component's pending and error branches render normally on every adapter, including Hono, and `renderToTest` shows both branches structurally. Recognition is structural: it is fed by `createQuery`'s own binding metadata, not by a name heuristic. One gate decides both the seed and BF117's refusal, and the upcoming `createMutation` reuses it unchanged.
+  
+  Every other read still refuses with BF117, because the seed would diverge from Hono there. `/* @client */` still works as an escape. The reads that still refuse:
+  
+  - a text child (`{fetchPosts.error()}`);
+  - `error()` in any attribute;
+  - `isPending()` in a non-ARIA-boolean attribute;
+  - a structured template attribute's ternary;
+  - calling the action itself (`fetchPosts()`);
+  - a compound or transitive read through a memo, constant, function or aliased action binding.
+  
+  Eight non-Hono DSL adapters now lower conditions and attributes from the IR's pre-parsed expression tree instead of re-parsing raw source text: ERB, Mojolicious, Jinja, Blade, Pebble, Twig, Xslate and Rust/minijinja. This is what lets a seeded accessor reach their output.
+- a720468: The `vite` peer range of `@barefootjs/vite` and of every adapter's `/vite` builder is now `^6.0.0 || ^7.0.0 || ^8.0.0`. Installing on Vite 7 or 8 no longer reports an unmet peer. The plugin imports only Vite's types. CI now runs every adapter builder's `vite build` tests and the `integrations/csr` E2E suite against each of these majors.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Patch Changes
