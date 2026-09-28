@@ -26,6 +26,7 @@ public class HomeController {
         + "    <li><a href=\"" + base + "/toggle\">Toggle</a></li>"
         + "    <li><a href=\"" + base + "/todos\">Todo (@client)</a></li>"
         + "    <li><a href=\"" + base + "/todos-ssr\">Todo (no @client markers)</a></li>"
+        + "    <li><a href=\"" + base + "/todos-query\">Todo (createQuery / createMutation)</a></li>"
         + "    <li><a href=\"" + base + "/ai-chat\">AI Chat (SSE Streaming)</a></li>"
         + "    <li><a href=\"" + base + "/blog\">Blog (@barefootjs/router - partial navigation)</a></li>"
         + "</ul>";

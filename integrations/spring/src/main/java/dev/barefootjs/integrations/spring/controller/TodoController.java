@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Todo pages (`/todos`, `/todos-ssr`) and the todo REST API
+ * Todo pages (`/todos`, `/todos-ssr`, `/todos-query`) and the todo REST API
  * (`/api/todos/*`), backed by the per-session in-memory store in
  * {@link SessionStore} — mirrors `integrations/axum/src/todo.rs`.
  */
@@ -99,6 +99,20 @@ public class TodoController {
     return todosPage(request, "TodoAppSSR", "TodoMVC SSR - BarefootJS");
   }
 
+  /**
+   * The createQuery / createMutation todo app. `initialTodos` seeds its
+   * query (mode A): the list is rendered here, and the client sends no
+   * request on mount. Writes go through the API below and re-fetch the
+   * list. Its rows (`QueryTodoItem`) are `render_child` calls inside the
+   * compiled template, registered from `manifest.json`, so there is no
+   * per-row data to build here. (`doneCount` in the shared stash is
+   * unused by this component; its template derives counts from `todos`.)
+   */
+  @GetMapping("${app.base-path}/todos-query")
+  public ResponseEntity<String> todosQuery(HttpServletRequest request) {
+    return todosPage(request, "QueryTodoApp", "TodoMVC (createQuery) - BarefootJS");
+  }
+
   // ---------------------------------------------------------------------
   // REST API
   // ---------------------------------------------------------------------
@@ -138,6 +152,42 @@ public class TodoController {
       return todo;
     });
     ResponseEntity<Map<String, Object>> response = ResponseEntity.status(HttpStatus.CREATED).body(resolved.value().toMap());
+    return withCookie(response, resolved.minted(), SessionStore.setCookieHeader(ctx.basePath, resolved.sessionId()));
+  }
+
+  public record SetAllDoneInput(Boolean done) {}
+
+  // The two list-wide writes of `/todos-query`, one request each. Spring
+  // prefers the literal `/api/todos/completed` over `/api/todos/{id}`
+  // regardless of declaration order; they sit before it anyway.
+
+  /** Set every todo's done flag ("toggle all"); responds with the full list. */
+  @PutMapping(value = "${app.base-path}/api/todos", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Object> setAllTodosDone(HttpServletRequest request, @RequestBody SetAllDoneInput input) {
+    if (input == null || input.done() == null) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Render.obj("error", "invalid input"));
+    }
+    boolean done = input.done();
+    Resolved<List<Map<String, Object>>> resolved = ctx.sessions.withSession(request, s -> {
+      List<Map<String, Object>> out = new ArrayList<>();
+      for (Todo t : s.todos) {
+        t.done = done;
+        out.add(t.toMap());
+      }
+      return out;
+    });
+    return withCookie(ResponseEntity.ok((Object) resolved.value()), resolved.minted(),
+        SessionStore.setCookieHeader(ctx.basePath, resolved.sessionId()));
+  }
+
+  /** Remove every done todo ("clear completed"); responds like the single-todo DELETE. */
+  @DeleteMapping("${app.base-path}/api/todos/completed")
+  public ResponseEntity<Void> clearCompletedTodos(HttpServletRequest request) {
+    Resolved<Void> resolved = ctx.sessions.withSession(request, s -> {
+      s.todos.removeIf(t -> t.done);
+      return null;
+    });
+    ResponseEntity<Void> response = ResponseEntity.noContent().build();
     return withCookie(response, resolved.minted(), SessionStore.setCookieHeader(ctx.basePath, resolved.sessionId()));
   }
 
