@@ -66,10 +66,11 @@ export default defineConfig({
       // that claim itself rather than trusting it (see its
       // `assertNoRealTemplateOutput`).
       adapter: new CSRAdapter(),
-      // `components/` holds the CSR-only examples (the createQuery /
-      // createMutation todo app); `../shared/components` is what every
-      // integration compiles.
-      components: ['../shared/components', 'components'],
+      // `../shared/components` is what every integration compiles;
+      // `../shared/query-todo` is the createQuery / createMutation todo app,
+      // which only the integrations serving `/api/todos`'s list-wide
+      // endpoints (csr, hono) compile.
+      components: ['../shared/components', '../shared/query-todo'],
     }),
   ],
 })

@@ -112,7 +112,7 @@ function handleTodoApi(req: Request, path: string): Response {
 
   // PUT /api/todos — set every todo's `done` (the todo app's "toggle all").
   // The two list-wide writes are one request each, so the createMutation
-  // behind them is one call (components/QueryTodoApp.tsx).
+  // behind them is one call (shared/query-todo/QueryTodoApp.tsx).
   if (path === '/api/todos' && method === 'PUT') {
     return (async () => {
       const body = await req.json()
