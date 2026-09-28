@@ -1,5 +1,62 @@
 # @barefootjs/jsx
 
+## 0.39.0
+
+### Minor Changes
+
+- 1b61b4d: `bf debug graph` shows `createQuery` and `createMutation`. Each factory is listed in `ComponentGraph.factories`, and its value signal is annotated with the factory and its action. When the value isn't destructured (`const [, save] = createMutation(…)`), the factory is keyed by its action.
+  
+  A query lists the signals, memos and props its request function reads, and each of them gets a `query:<key>` edge (the factory's key: its value's name, or its action's), since a change re-sends the request. Only the request function counts, because `options` is read once, at creation. A mutation has no such edges, because its request function is read untracked.
+  
+  Each action's `isPending()` and `error()` accessors are nodes (`ComponentGraph.accessors`), with edges to the template positions, memos and effects that read them. A binding's `deps` names such a read `<action>.<accessor>`, and a binding that reads one counts as reactive, not as a fallback. A loop parameter or arrow parameter that shadows the action name is not a read.
+  
+  `bf debug trace` accepts an accessor as its target, and the new `traceableNames` lists every name it accepts. `bf debug why-update` explains an accessor read, and a factory's value, by the handlers that call the action and by the query's request inputs. `--json` output carries the same data (`factories`, `signals[].factory`, `accessors`).
+  
+  The new `createAnchoredProgram` builds the Program a test harness passes to `compileJSX` when it compiles sources under relative names, so type resolution no longer depends on the current directory.
+- 3c5c771: Export `createMutation` (with `MutationAction` and `CreateMutationOptions`) from `@barefootjs/client`, and compile it. This is the first release that exports it. `const [saved, save] = createMutation(fn, { invalidates })` is recognised as a reactive factory, the same way as `createQuery`:
+  
+  - `saved()` is seeded `undefined` on the server on every adapter. A mutation has no `initial`, and passing one is refused with the new BF118, which names `createQuery` as the factory that takes it.
+  - The request function is emitted into client JS only, as the call's own argument, with prop reads kept live. It is never evaluated on the server and never wrapped in anything that tracks. `invalidates` passes through unchanged.
+  - `save.isPending()` and `save.error()` are seeded through the same gate as a query action's. The gate now also admits `isPending()` in an HTML boolean attribute on an intrinsic element, so `disabled={save.isPending()}` renders the enabled button on every adapter. This applies to a `createQuery` action too.
+  - A destructure with more than two elements, or a third argument, is refused with BF115 / BF116, as for `createQuery`.
+  
+  `createMutation`, `MutationAction` and `CreateMutationOptions` live in the `@barefootjs/client/async` subpath next to `createQuery`, re-exported by the main entry and `/runtime`. The Hono SSR shim exports a `createMutation` stub.
+  
+  ERB, Mojolicious, Jinja, Twig, Xslate, Blade, Rust (minijinja) and Pebble now lower a dynamic HTML boolean attribute from the IR's pre-parsed expression tree instead of re-parsing its raw source text, so a seeded accessor reaches their output there too. Before, they emitted a read of the undeclared action (`save.isPending`), which rendered the same HTML only because the engine treated the missing variable as falsy.
+- 33767d1: Export `createQuery` (with `QueryAction` and `CreateQueryOptions`) from `@barefootjs/client`, and compile it. `const [posts, fetchPosts] = createQuery(fn, { initial })` is recognised as a reactive factory: `posts()` is seeded from `initial` on the server on every adapter (`undefined` when `initial` is absent), and the request function is emitted into client JS only, with prop reads kept live. It is never evaluated on the server. Reading `fetchPosts.isPending()` or `fetchPosts.error()` in a template position is refused with the new BF117 on every adapter, including Hono, until the compiler seeds those accessors; defer the read with `/* @client */` or read it in an event handler or effect.
+  
+  `http`, `HttpError` and `createQuery` now live in the new `@barefootjs/client/async` subpath, which both the main entry and `/runtime` re-export. A page therefore has one query cache and one `HttpError` class, whichever entry each module imports from. `http` and `HttpError` are also exported from `/runtime` now, which compiled client JS imports from. Importing `http`, `HttpError` or `createQuery` from `@barefootjs/client` no longer reports BF051. The Hono SSR shim re-exports `http` and `HttpError`.
+- b17c4bf: `createQuery`'s action accessors, `action.isPending()` and `action.error()`, are now seeded as ordinary, IR-visible values (`false` / `undefined`, spec/async.md §7.3) at the template positions where the seed renders exactly like the Hono reference. Before, a read of either accessor in a template position was refused with BF117. Two positions are seeded:
+  
+  - a conditional test, for either accessor: `{fetchPosts.error() ? <Spinner/> : null}`;
+  - an ARIA boolean-state attribute on an intrinsic element, for `isPending()` only: `aria-busy={fetchPosts.isPending()}`.
+  
+  A component's pending and error branches render normally on every adapter, including Hono, and `renderToTest` shows both branches structurally. Recognition is structural: it is fed by `createQuery`'s own binding metadata, not by a name heuristic. One gate decides both the seed and BF117's refusal, and the upcoming `createMutation` reuses it unchanged.
+  
+  Every other read still refuses with BF117, because the seed would diverge from Hono there. `/* @client */` still works as an escape. The reads that still refuse:
+  
+  - a text child (`{fetchPosts.error()}`);
+  - `error()` in any attribute;
+  - `isPending()` in a non-ARIA-boolean attribute;
+  - a structured template attribute's ternary;
+  - calling the action itself (`fetchPosts()`);
+  - a compound or transitive read through a memo, constant, function or aliased action binding.
+  
+  Eight non-Hono DSL adapters now lower conditions and attributes from the IR's pre-parsed expression tree instead of re-parsing raw source text: ERB, Mojolicious, Jinja, Blade, Pebble, Twig, Xslate and Rust/minijinja. This is what lets a seeded accessor reach their output.
+
+### Patch Changes
+
+- 7eb4738: A fragment-rooted component now renders the same scope shape on a client mount (no SSR markup) as SSR and hydration produce. A stateless fragment-rooted child registered without an init (a `.map()` row's `<Tag>` returning `<>…</>`) now declares `comment` / `fragmentRoot` like any other fragment root, so it is scoped with a comment pair instead of getting `bf-s` stamped on its element. An element whose `ref` callback is the recognized SSR-portal pattern (`createPortal(el, document.body, { ownerScope })`) now gets the component's own `bf-po` owner marker right after its callback runs, matching the marker SSR renders at the portal outlet, which the callback's `el.closest('[bf-s]')` cannot find under a fragment root. `createPortal` also moves such an element after the component once a top-level node of a fragment root connects, instead of leaving it before the component. A row component whose fragment root nests another fragment (`<><><li/></></>`) now carries `data-key` on its first element at SSR, as the client already did.
+- 562ce5d: A signal seeded from a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`, `createSignal(props.initial.address.city)`) now renders its seed on go-template, matching Hono. Before, the Go adapter refused this shape with `BF101`. The constructor bakes the Input field path the member lives at (`Items: in.Initial.Items`), and the signal's own Props field takes that field's Go type (`Items []Item`), so the value reaches text, conditionals, keyed loops and child component props.
+  
+  The prop's type must lower to a generated Go struct: an inline object type, or a same-file `interface` / `type X = { … }` object type. An optional object prop, an imported type, or a member of a non-object prop (`name.length`) still refuses with `BF101`, and the message now says which hop has no struct field. A prop member read inside a larger seed expression (`createSignal(initial.count + 1)`, `createSignal(initial?.label ?? 'none')`) now also refuses with `BF101`, even on a required prop. Before, Go silently baked the type's zero value there.
+  
+  The analyzer now resolves a destructured prop typed by a same-file object type referenced by name (`{ initial }: { initial: State }`, `{ rows }: { rows: Item[] }`) the same way the `props`-object form already did. Before, it declined such a member to `unknown`. A generic, an `extends` clause, a non-property member, a union or function leaf, a recursive reference, or a name declared more than once (interface declaration merging) still declines.
+- e44b74e: `createProgramForFile` takes an optional third argument, `{ currentDirectory }`, which sets the directory a relative `filePath` resolves against and the Program's `getCurrentDirectory()`. When it is omitted, behaviour is unchanged. The `test-render` harnesses use it through `@barefootjs/adapter-tests`' `compileFixtureJSX`. Before this change, whether a fixture's `@barefootjs/*` imports resolved to real types or to `any` depended on the directory the tests were started from. The fixture filenames, and so the file-scope ids derived from them, are unchanged.
+- decf83c: Report two `createSignal` / `createMemo` call shapes that used to compile silently wrong. BF115: a tuple destructure whose arity does not match the primitive, such as `const [a, b, c] = createSignal(0)` or `const [a, b] = createMemo(...)`. BF116: extra arguments, which were dropped from the emitted client JS. `createSearchParams()` counts as taking no arguments.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Minor Changes

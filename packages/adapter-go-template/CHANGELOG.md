@@ -1,5 +1,23 @@
 # @barefootjs/go-template
 
+## 0.39.0
+
+### Minor Changes
+
+- 562ce5d: A signal seeded from a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`, `createSignal(props.initial.address.city)`) now renders its seed on go-template, matching Hono. Before, the Go adapter refused this shape with `BF101`. The constructor bakes the Input field path the member lives at (`Items: in.Initial.Items`), and the signal's own Props field takes that field's Go type (`Items []Item`), so the value reaches text, conditionals, keyed loops and child component props.
+  
+  The prop's type must lower to a generated Go struct: an inline object type, or a same-file `interface` / `type X = { … }` object type. An optional object prop, an imported type, or a member of a non-object prop (`name.length`) still refuses with `BF101`, and the message now says which hop has no struct field. A prop member read inside a larger seed expression (`createSignal(initial.count + 1)`, `createSignal(initial?.label ?? 'none')`) now also refuses with `BF101`, even on a required prop. Before, Go silently baked the type's zero value there.
+  
+  The analyzer now resolves a destructured prop typed by a same-file object type referenced by name (`{ initial }: { initial: State }`, `{ rows }: { rows: Item[] }`) the same way the `props`-object form already did. Before, it declined such a member to `unknown`. A generic, an `extends` clause, a non-property member, a union or function leaf, a recursive reference, or a name declared more than once (interface declaration merging) still declines.
+
+### Patch Changes
+
+- e44b74e: `createProgramForFile` takes an optional third argument, `{ currentDirectory }`, which sets the directory a relative `filePath` resolves against and the Program's `getCurrentDirectory()`. When it is omitted, behaviour is unchanged. The `test-render` harnesses use it through `@barefootjs/adapter-tests`' `compileFixtureJSX`. Before this change, whether a fixture's `@barefootjs/*` imports resolved to real types or to `any` depended on the directory the tests were started from. The fixture filenames, and so the file-scope ids derived from them, are unchanged.
+- 135a074: The `test-render` harnesses now import `compileFixtureJSX` from the narrow `@barefootjs/adapter-tests/harness-program` subpath instead of the package barrel. This removes a module cycle between each adapter's `test-render` and `@barefootjs/adapter-tests`, and stops every `test-render` from loading the full fixture corpus.
+- a720468: The `vite` peer range of `@barefootjs/vite` and of every adapter's `/vite` builder is now `^6.0.0 || ^7.0.0 || ^8.0.0`. Installing on Vite 7 or 8 no longer reports an unmet peer. The plugin imports only Vite's types. CI now runs every adapter builder's `vite build` tests and the `integrations/csr` E2E suite against each of these majors.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Patch Changes

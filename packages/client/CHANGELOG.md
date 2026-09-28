@@ -1,5 +1,35 @@
 # @barefootjs/client
 
+## 0.39.0
+
+### Minor Changes
+
+- 0c6e4f6: Add the `http` namespace of request descriptors (`http.get` / `query` / `head` / `post` / `put` / `patch` / `delete`), the first piece of the async data layer in `spec/async.md` §7. Each constructor returns a frozen, pure descriptor and performs no I/O; the response type is carried as a type parameter (`http.get<Post[]>(url)`). A body is sent as JSON by default; a string, `FormData`, `URLSearchParams`, `Blob` or bytes is sent as fetch would send it, and a `Content-Type` in the third argument replaces the default. Every request sends `Accept: application/json, */*;q=0.5` unless the third argument sets its own `Accept`. `HttpError` is exported for non-2xx responses (`{ status, body }`). `createQuery` builds on these in a later release.
+- 3c5c771: Export `createMutation` (with `MutationAction` and `CreateMutationOptions`) from `@barefootjs/client`, and compile it. This is the first release that exports it. `const [saved, save] = createMutation(fn, { invalidates })` is recognised as a reactive factory, the same way as `createQuery`:
+  
+  - `saved()` is seeded `undefined` on the server on every adapter. A mutation has no `initial`, and passing one is refused with the new BF118, which names `createQuery` as the factory that takes it.
+  - The request function is emitted into client JS only, as the call's own argument, with prop reads kept live. It is never evaluated on the server and never wrapped in anything that tracks. `invalidates` passes through unchanged.
+  - `save.isPending()` and `save.error()` are seeded through the same gate as a query action's. The gate now also admits `isPending()` in an HTML boolean attribute on an intrinsic element, so `disabled={save.isPending()}` renders the enabled button on every adapter. This applies to a `createQuery` action too.
+  - A destructure with more than two elements, or a third argument, is refused with BF115 / BF116, as for `createQuery`.
+  
+  `createMutation`, `MutationAction` and `CreateMutationOptions` live in the `@barefootjs/client/async` subpath next to `createQuery`, re-exported by the main entry and `/runtime`. The Hono SSR shim exports a `createMutation` stub.
+  
+  ERB, Mojolicious, Jinja, Twig, Xslate, Blade, Rust (minijinja) and Pebble now lower a dynamic HTML boolean attribute from the IR's pre-parsed expression tree instead of re-parsing its raw source text, so a seeded accessor reaches their output there too. Before, they emitted a read of the undeclared action (`save.isPending`), which rendered the same HTML only because the engine treated the missing variable as falsy.
+- 33767d1: Export `createQuery` (with `QueryAction` and `CreateQueryOptions`) from `@barefootjs/client`, and compile it. `const [posts, fetchPosts] = createQuery(fn, { initial })` is recognised as a reactive factory: `posts()` is seeded from `initial` on the server on every adapter (`undefined` when `initial` is absent), and the request function is emitted into client JS only, with prop reads kept live. It is never evaluated on the server. Reading `fetchPosts.isPending()` or `fetchPosts.error()` in a template position is refused with the new BF117 on every adapter, including Hono, until the compiler seeds those accessors; defer the read with `/* @client */` or read it in an event handler or effect.
+  
+  `http`, `HttpError` and `createQuery` now live in the new `@barefootjs/client/async` subpath, which both the main entry and `/runtime` re-export. A page therefore has one query cache and one `HttpError` class, whichever entry each module imports from. `http` and `HttpError` are also exported from `/runtime` now, which compiled client JS imports from. Importing `http`, `HttpError` or `createQuery` from `@barefootjs/client` no longer reports BF051. The Hono SSR shim re-exports `http` and `HttpError`.
+- 6900b15: Loops (`mapArray`, `mapArrayAnchored`, `mapArrayLazy`) no longer re-run a row whose new item is equal to its current one, where before any new object counted as a change. This applies to keyed loops and to loops without a key, which key rows by index. Equal means `Object.is`, or two arrays / two plain objects whose own values are `Object.is`-equal one level down. Nested objects, class instances, dates and functions still compare by reference. So data that is rebuilt rather than mutated (parsed again, mapped from another array, deserialized) reconciles like data that kept its references, and only the rows that really changed re-run their effects.
+  
+  The row still takes the new object as its item, without running anything. So it always holds the array's own object, and identity-based code such as `setTodos(todos().filter((t) => t !== todo))` keeps working after an equal rebuild. The lazy reconciler's re-subscribe seam follows the same rule: a rebuilt but equal item no longer re-runs `applyOuter`.
+
+### Patch Changes
+
+- 7eb4738: A fragment-rooted component now renders the same scope shape on a client mount (no SSR markup) as SSR and hydration produce. A stateless fragment-rooted child registered without an init (a `.map()` row's `<Tag>` returning `<>…</>`) now declares `comment` / `fragmentRoot` like any other fragment root, so it is scoped with a comment pair instead of getting `bf-s` stamped on its element. An element whose `ref` callback is the recognized SSR-portal pattern (`createPortal(el, document.body, { ownerScope })`) now gets the component's own `bf-po` owner marker right after its callback runs, matching the marker SSR renders at the portal outlet, which the callback's `el.closest('[bf-s]')` cannot find under a fragment root. `createPortal` also moves such an element after the component once a top-level node of a fragment root connects, instead of leaving it before the component. A row component whose fragment root nests another fragment (`<><><li/></></>`) now carries `data-key` on its first element at SSR, as the client already did.
+- ef3cd93: A `createQuery` / `createMutation` request whose successful response has an empty (or whitespace-only) body now resolves to `undefined` instead of rejecting, whatever the method. That covers `204 No Content`, `205 Reset Content`, and a bare 2xx, as `HEAD` already did. Before, such a response was parsed with `response.json()` and rejected, so a mutation against a REST `DELETE` answering `204` reported an error and never ran its `invalidates`. A non-empty body that is not JSON still rejects.
+- 195e385: When several effects or memos throw during one update, the errors after the first (which is rethrown to the writer) are now logged as `[BarefootJS] additional error during update:` so they can be attributed to the reactive runtime.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Minor Changes
