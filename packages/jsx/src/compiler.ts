@@ -166,6 +166,14 @@ function compileMultipleComponents(
   const files: FileOutput[] = []
   const errors: CompileResult['errors'] = []
   const adapter = options.adapter
+  // `emitsTemplates: false` (CSR) — nothing will ever read this file's
+  // markedTemplate, so every assembly step below (per-component module
+  // exports AND the combined multi-component template) skips straight to
+  // empty rather than trusting `generate()`'s own output to already be
+  // empty. One flag, read at both sites, so the invariant can't drift
+  // between them the way `moduleExports`-only skip did before it covered
+  // the combined-template site too (#3234).
+  const skipTemplateAssembly = adapter.emitsTemplates === false
 
   // --- Pass 1: analyze + jsxToIR for ALL components ---
   const entries: { componentIR: ComponentIR; ctx: ReturnType<typeof analyzeComponent> }[] = []
@@ -437,12 +445,14 @@ function compileMultipleComponents(
       scriptAssets: options.scriptAssets,
       preloadAssets: options.preloadAssets,
     })
-    const moduleExports = generateModuleExports(
-      componentIR,
-      fileWideInlineExported,
-      options.rewriteRelativeImport,
-      { skipValueDeclarations: adapterOutput.sections.moduleConstantsIncludeExports },
-    )
+    const moduleExports = skipTemplateAssembly
+      ? ''
+      : generateModuleExports(
+        componentIR,
+        fileWideInlineExported,
+        options.rewriteRelativeImport,
+        { skipValueDeclarations: adapterOutput.sections.moduleConstantsIncludeExports },
+      )
 
     const s = adapterOutput.sections
     const imports = s.imports
@@ -523,52 +533,66 @@ function compileMultipleComponents(
     return { files, errors }
   }
 
-  // Merge imports from all components. Named imports from the same source
-  // are combined into their first occurrence rather than deduplicated by
-  // exact line: in a multi-component file each component emits its own
-  // `import { … } from '@barefootjs/hono/utils'` listing only the symbols
-  // it uses, so plain line-dedup leaves several statements that re-declare
-  // the same binding (e.g. `bfComment`). Bun tolerates the redeclaration,
-  // but stricter ESM parsers — including Deno, used to render the SSR
-  // template — reject it as a SyntaxError.
-  const mergedImports = mergeTemplateImports(
-    allOutputs.flatMap(o => (o.imports ? o.imports.split('\n') : [])),
-  )
+  // `generate()`'s own `sections` (imports/types/component) aren't
+  // guaranteed empty just because `moduleExports` was skipped above —
+  // nothing in the `TemplateAdapter` contract stops a future
+  // `emitsTemplates: false` adapter from returning non-empty sections.
+  // Reusing `skipTemplateAssembly` here mirrors `compileJSX`'s
+  // single-component short-circuit, so the invariant ("this adapter's
+  // markedTemplate is always empty") is enforced once per adapter, not
+  // once per adapter per component-count code path (#3234).
+  let combinedTemplate: string
+  if (skipTemplateAssembly) {
+    combinedTemplate = ''
+  } else {
+    // Merge imports from all components. Named imports from the same
+    // source are combined into their first occurrence rather than
+    // deduplicated by exact line: in a multi-component file each
+    // component emits its own `import { … } from '@barefootjs/hono/utils'`
+    // listing only the symbols it uses, so plain line-dedup leaves
+    // several statements that re-declare the same binding (e.g.
+    // `bfComment`). Bun tolerates the redeclaration, but stricter ESM
+    // parsers — including Deno, used to render the SSR template — reject
+    // it as a SyntaxError.
+    const mergedImports = mergeTemplateImports(
+      allOutputs.flatMap(o => (o.imports ? o.imports.split('\n') : [])),
+    )
 
-  // Combine unique type definitions
-  const seenTypes = new Set<string>()
-  const uniqueTypes: string[] = []
-  for (const output of allOutputs) {
-    if (output.types && !seenTypes.has(output.types)) {
-      seenTypes.add(output.types)
-      uniqueTypes.push(output.types)
+    // Combine unique type definitions
+    const seenTypes = new Set<string>()
+    const uniqueTypes: string[] = []
+    for (const output of allOutputs) {
+      if (output.types && !seenTypes.has(output.types)) {
+        seenTypes.add(output.types)
+        uniqueTypes.push(output.types)
+      }
     }
-  }
 
-  // Deduplicate module-level exports across components
-  const seenModuleExports = new Set<string>()
-  const uniqueModuleExports: string[] = []
-  for (const output of allOutputs) {
-    if (output.moduleExports) {
-      for (const line of output.moduleExports.split('\n')) {
-        if (line.trim() && !seenModuleExports.has(line)) {
-          seenModuleExports.add(line)
-          uniqueModuleExports.push(line)
+    // Deduplicate module-level exports across components
+    const seenModuleExports = new Set<string>()
+    const uniqueModuleExports: string[] = []
+    for (const output of allOutputs) {
+      if (output.moduleExports) {
+        for (const line of output.moduleExports.split('\n')) {
+          if (line.trim() && !seenModuleExports.has(line)) {
+            seenModuleExports.add(line)
+            uniqueModuleExports.push(line)
+          }
         }
       }
     }
-  }
 
-  // Combine all components
-  const combinedTemplate = [
-    mergedImports,
-    moduleStatementsOrdered.join('\n\n'),
-    uniqueTypes.join('\n\n'),
-    uniqueModuleExports.length > 0 ? uniqueModuleExports.join('\n') : '',
-    ...allOutputs.map(o => o.component),
-  ]
-    .filter(Boolean)
-    .join('\n\n')
+    // Combine all components
+    combinedTemplate = [
+      mergedImports,
+      moduleStatementsOrdered.join('\n\n'),
+      uniqueTypes.join('\n\n'),
+      uniqueModuleExports.length > 0 ? uniqueModuleExports.join('\n') : '',
+      ...allOutputs.map(o => o.component),
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+  }
 
   files.push({
     path: filePath.replace(/\.tsx?$/, adapter.extension),
@@ -856,6 +880,14 @@ export function compileJSX(
   let content: string
   if (adapter.templatesPerComponent) {
     content = adapterOutput.template
+  } else if (adapter.emitsTemplates === false) {
+    // Nothing will ever read this file's markedTemplate (CSR) — skip
+    // assembly entirely, module-level value exports included. Otherwise a
+    // component file that also exports a plain constant/function would
+    // produce a markedTemplate whose only content is that export, which
+    // `@barefootjs/vite`'s `assertNoRealTemplateOutput` treats as real
+    // template output requiring a configured `templates` dir (#3234).
+    content = ''
   } else {
     const moduleExports = generateModuleExports(componentIR, undefined, options.rewriteRelativeImport, {
       skipValueDeclarations: s.moduleConstantsIncludeExports,

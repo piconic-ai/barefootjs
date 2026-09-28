@@ -9,9 +9,64 @@ import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-adapter'
+import { BaseAdapter } from '../adapters/interface'
+import type { AdapterOutput, TemplateSections } from '../adapters/interface'
 import { resolve, dirname } from 'node:path'
 
 const adapter = new TestAdapter()
+
+// Minimal stand-in for `@barefootjs/client`'s `CSRAdapter` — same shape
+// (empty `generate()`, `emitsTemplates: false`) without pulling in the
+// `@barefootjs/client` package, which `packages/jsx` does not (and must
+// not) depend on. See `CSRAdapter`'s docstring for the full contract this
+// mirrors.
+const EMPTY_SECTIONS: TemplateSections = Object.freeze({
+  imports: '',
+  types: '',
+  component: '',
+  defaultExport: '',
+})
+const EMPTY_OUTPUT: AdapterOutput = Object.freeze({
+  template: '',
+  sections: EMPTY_SECTIONS,
+  extension: '.tsx',
+})
+class EmptyNoTemplateAdapter extends BaseAdapter {
+  name = 'empty-no-template'
+  extension = '.tsx'
+  emitsTemplates = false
+  acceptsTemplateCall = (): boolean => true
+  generate(): AdapterOutput {
+    return EMPTY_OUTPUT
+  }
+  renderNode(): string { return '' }
+  renderElement(): string { return '' }
+  renderExpression(): string { return '' }
+  renderConditional(): string { return '' }
+  renderLoop(): string { return '' }
+  renderComponent(): string { return '' }
+  renderScopeMarker(): string { return '' }
+  renderSlotMarker(): string { return '' }
+  renderCondMarker(): string { return '' }
+}
+
+// A hypothetical `emitsTemplates: false` adapter whose `generate()` (unlike
+// `CSRAdapter`'s) returns non-empty `sections`. Nothing in the
+// `TemplateAdapter` contract requires an `emitsTemplates: false` adapter's
+// sections to be empty — `emitsTemplates` alone is what's supposed to
+// suppress assembly. Used to pin that `compileMultipleComponents` enforces
+// the same short-circuit as `compileJSX`'s single-component path, not just
+// a `moduleExports`-only skip (#3234).
+class LeakySectionsAdapter extends EmptyNoTemplateAdapter {
+  name = 'leaky-sections-no-template'
+  generate(): AdapterOutput {
+    return {
+      template: '',
+      sections: { imports: '', types: '', component: 'const LEAKED = 1;', defaultExport: '' },
+      extension: '.tsx',
+    }
+  }
+}
 
 describe('Adapter output', () => {
   describe('real components', () => {
@@ -262,6 +317,93 @@ describe('Adapter output', () => {
       const exportIndex = content.indexOf('export const PATTERN')
       const componentIndex = content.indexOf('export function InputField')
       expect(exportIndex).toBeLessThan(componentIndex)
+    })
+  })
+
+  describe('emitsTemplates: false adapters skip module-export assembly (#3234)', () => {
+    const emptyAdapter = new EmptyNoTemplateAdapter()
+
+    test('component with no value export: empty markedTemplate (baseline)', () => {
+      const source = `
+        'use client'
+        export function Hello() { return <p>hi</p> }
+      `
+      const result = compileJSX(source, 'Hello.tsx', { adapter: emptyAdapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('component + export const: markedTemplate stays empty instead of becoming the export alone', () => {
+      const source = `
+        'use client'
+        export const MAX = 3
+        export function Hello() { return <p>hi {MAX}</p> }
+      `
+      const result = compileJSX(source, 'Hello.tsx', { adapter: emptyAdapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('component + export function: markedTemplate stays empty', () => {
+      const source = `
+        'use client'
+        export function helper() { return 1 }
+        export function Hello() { return <p>hi {helper()}</p> }
+      `
+      const result = compileJSX(source, 'Hello.tsx', { adapter: emptyAdapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('server component (no "use client") + export const: markedTemplate stays empty', () => {
+      const source = `
+        export const MAX = 3
+        export function Hello() { return <p>hi {MAX}</p> }
+      `
+      const result = compileJSX(source, 'Hello.tsx', { adapter: emptyAdapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('multi-component file + export const: markedTemplate stays empty (compileMultipleComponents path)', () => {
+      const source = `
+        'use client'
+        export const MAX = 3
+        export function Hello() { return <p>hi {MAX}</p> }
+        export function World() { return <p>world</p> }
+      `
+      const result = compileJSX(source, 'Multi.tsx', { adapter: emptyAdapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('multi-component file: emitsTemplates:false still wins even when generate() returns non-empty sections', () => {
+      const source = `
+        'use client'
+        export function Hello() { return <p>hi</p> }
+        export function World() { return <p>world</p> }
+      `
+      const result = compileJSX(source, 'Multi.tsx', { adapter: new LeakySectionsAdapter() })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template?.content ?? '').toBe('')
+    })
+
+    test('an adapter WITHOUT emitsTemplates: false still gets its value exports appended (regression guard)', () => {
+      const source = `
+        'use client'
+        export const MAX = 3
+        export function Hello() { return <p>hi {MAX}</p> }
+      `
+      const result = compileJSX(source, 'Hello.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template.content).toContain('export const MAX = 3')
     })
   })
 

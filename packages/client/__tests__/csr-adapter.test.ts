@@ -19,6 +19,11 @@ describe('CSRAdapter', () => {
     expect(adapter.acceptsTemplateCall?.('anyArbitraryName')).toBe(true)
   })
 
+  test('emitsTemplates is false — no consumer ever reads this adapter\'s markedTemplate (#3234)', () => {
+    const adapter = new CSRAdapter()
+    expect(adapter.emitsTemplates).toBe(false)
+  })
+
   test('generate() returns an empty AdapterOutput', () => {
     const adapter = new CSRAdapter()
     const out = adapter.generate()
