@@ -32,20 +32,25 @@
  * - an intrinsic element's ARIA boolean-state attribute
  *   ({@link ARIA_BOOLEAN_STATE_ATTRS}), for `isPending()` only — Hono renders
  *   `aria-busy={false}` as `aria-busy="false"`, and every DSL adapter
- *   stringifies a boolean there JS-style (`bool_str`).
+ *   stringifies a boolean there JS-style (`bool_str`);
+ * - an intrinsic element's HTML boolean attribute (`disabled`, `readonly`, …;
+ *   the shared `isBooleanAttr` every adapter imports), for `isPending()` only
+ *   (#3210) — Hono omits `disabled={false}`, and every DSL adapter renders a
+ *   boolean attribute present-or-absent from the expression's truthiness.
  *
  * Everything else stays refused by BF117 exactly as before #3166, because the
  * seed would silently diverge there: a text child (`{fetchPosts.error()}` —
  * Hono renders nothing, a DSL adapter `false`), `error()` in any attribute
  * (Hono omits an `undefined` attribute; the `false` literal renders it), and
  * `isPending()` in any other attribute (Mojolicious / Xslate render the
- * literal as `0` outside the ARIA boolean set). A structured template
+ * literal as `0` outside the ARIA boolean set and the HTML boolean
+ * attributes). A structured template
  * attribute's ternary condition (`class={fetchPosts.isPending() ? 'a' : 'b'}`)
  * is a truthiness test too, but its condition is raw text every adapter lowers
  * on its own, so there is nothing to substitute — it stays refused rather
  * than lifted with no seed behind it.
  *
- * #3210 (`createMutation`) reuses this unchanged — `SignalFactoryCall.kind`
+ * `createMutation` (#3210) reuses this unchanged — `SignalFactoryCall.kind`
  * only distinguishes how the value seeds, never how the action's accessors
  * do, so nothing here is query-specific.
  *
@@ -58,6 +63,7 @@
  */
 
 import type { ParsedExpr } from './expression-parser.ts'
+import { isBooleanAttr } from './html-constants.ts'
 import type { IRNode, SignalInfo } from './types.ts'
 import { walkTemplatePositions, type TemplatePosition } from './template-position-walk.ts'
 
@@ -149,7 +155,7 @@ export function seedableActionAccessorRead(
     case 'element-attr':
       return read.accessor === 'isPending' &&
         position.attrName !== undefined &&
-        ARIA_BOOLEAN_STATE_ATTRS.has(position.attrName)
+        (ARIA_BOOLEAN_STATE_ATTRS.has(position.attrName) || isBooleanAttr(position.attrName))
         ? read
         : null
     default:
@@ -190,7 +196,7 @@ export function seedActionAccessorReads(root: IRNode, signals: readonly Pick<Sig
  * `ExpressionAttr.parsed`). That is only equivalent to the real value where
  * {@link seedableActionAccessorRead} admits the position: a truthiness test
  * (`false` ≡ `undefined`), or `isPending()` (really `false`) in an ARIA
- * boolean-state attribute. Unlike the `null` literal, `false` is valid in
+ * boolean-state attribute or an HTML boolean attribute. Unlike the `null` literal, `false` is valid in
  * every position every adapter's grammar accepts, including a bare
  * `{{if …}}` command (Go's `text/template` rejects a bare `nil` there — "nil
  * is not a command"). `ParsedExpr`'s `literal` kind has no `undefined`

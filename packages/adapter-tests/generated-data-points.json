@@ -1024,6 +1024,73 @@
       }
     }
   ],
+  "create-mutation-form": [
+    {
+      "name": "gen:postId:zero",
+      "props": {
+        "postId": 0,
+        "__instanceId": "CreateMutationForm_test"
+      }
+    },
+    {
+      "name": "gen:postId:negative",
+      "props": {
+        "postId": -7,
+        "__instanceId": "CreateMutationForm_test"
+      }
+    },
+    {
+      "name": "gen:postId:large",
+      "props": {
+        "postId": 1234567890,
+        "__instanceId": "CreateMutationForm_test"
+      }
+    }
+  ],
+  "create-mutation-request-client-only": [
+    {
+      "name": "gen:postId:zero",
+      "props": {
+        "postId": 0,
+        "label": "Post"
+      }
+    },
+    {
+      "name": "gen:postId:negative",
+      "props": {
+        "postId": -7,
+        "label": "Post"
+      }
+    },
+    {
+      "name": "gen:postId:large",
+      "props": {
+        "postId": 1234567890,
+        "label": "Post"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "postId": 7,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "postId": 7,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "postId": 7,
+        "label": "日本語"
+      }
+    }
+  ],
   "create-query-action-read": [
     {
       "name": "gen:posts:empty",

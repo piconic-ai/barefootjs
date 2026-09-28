@@ -1940,6 +1940,37 @@
         "text"
       ]
     },
+    "create-mutation-form": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "create-mutation-request-client-only": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "create-query-action-read": {
       "kinds": [
         "call",
@@ -8014,13 +8045,13 @@
     "array-method": 72,
     "arrow": 81,
     "binary": 119,
-    "call": 328,
+    "call": 330,
     "conditional": 44,
-    "identifier": 472,
+    "identifier": 474,
     "index-access": 15,
-    "literal": 374,
+    "literal": 376,
     "logical": 56,
-    "member": 291,
+    "member": 292,
     "object-literal": 115,
     "template-literal": 33,
     "unary": 38,
@@ -8062,9 +8093,9 @@
     "binary:===": 61,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 85,
-    "literal:null": 33,
-    "literal:number": 161,
+    "literal:boolean": 86,
+    "literal:null": 34,
+    "literal:number": 162,
     "literal:string": 256,
     "logical:&&": 7,
     "logical:??": 47,

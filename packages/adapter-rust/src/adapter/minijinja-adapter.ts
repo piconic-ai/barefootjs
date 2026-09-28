@@ -1514,7 +1514,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       }
       if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
-        const jinja = this.convertExpressionToJinja(value.expr)
+        const jinja = this.convertExpressionToJinja(value.expr, value.parsed)
         return `{{ ('${name}' if ${this.wrapConditionExpr(value.expr, jinja)} else '') }}`
       }
       if (value.presenceOrUndefined) {

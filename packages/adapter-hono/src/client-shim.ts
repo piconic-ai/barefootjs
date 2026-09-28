@@ -157,6 +157,11 @@ export function createRoot<T>(_fn: (dispose: () => void) => T): never {
 export function createQuery(_fn: () => unknown, _options?: unknown): never {
   return calledAtSSR('createQuery')
 }
+// A mutation's value is seeded `undefined` and its request function only runs
+// when the action is called on the client (#3210).
+export function createMutation(_fn: () => unknown, _options?: unknown): never {
+  return calledAtSSR('createMutation')
+}
 
 export function onMount(_fn: () => void): void {
   // no-op at SSR

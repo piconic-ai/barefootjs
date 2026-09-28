@@ -1603,7 +1603,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       }
       if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
-        return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr)}) ? '${name}' : '' %>`
+        // Thread the IR-carried `.parsed` tree (#3210): a recognised
+        // `<action>.isPending()` read has already been substituted with its
+        // seed literal there; re-parsing `value.expr` would lower it as a
+        // member read (`NoMethodError` on `nil`).
+        return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr, value.parsed)}) ? '${name}' : '' %>`
       }
       if (value.presenceOrUndefined) {
         // `attr={expr || undefined}` on a NON-boolean attribute: Hono

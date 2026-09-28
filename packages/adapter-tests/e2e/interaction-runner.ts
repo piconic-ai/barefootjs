@@ -40,22 +40,73 @@ export function actionStepsOf(steps: ReadonlyArray<InteractionStep> | undefined)
 
 /** Where `installFetchRecorder` keeps the URL of every `fetch()` call the page makes. */
 const FETCH_LOG = '__bfFetchLog'
+/** Where `installFetchRecorder` counts fetches and response-body reads that have not settled. */
+const FETCH_PENDING = '__bfFetchPending'
 
 /**
  * Record the URL of every `fetch()` call the page makes, at call time, for
- * `expectFetchCount`. Must run before navigation (it is an init script).
+ * `expectFetchCount`, and count the fetches and response-body reads that
+ * have not settled yet, for `waitForFetchesToSettle`. Must run before
+ * navigation (it is an init script). Installing it more than once on the
+ * same page is harmless: the first copy to run in a window wins.
  */
 export async function installFetchRecorder(page: Page): Promise<void> {
-  await page.addInitScript((logKey: string) => {
-    const w = window as unknown as Record<string, unknown>
-    const log: string[] = []
-    w[logKey] = log
-    const original = window.fetch.bind(window)
-    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-      log.push(input instanceof Request ? input.url : String(input))
-      return original(input, init)
-    }
-  }, FETCH_LOG)
+  await page.addInitScript(
+    ({ logKey, pendingKey }: { logKey: string; pendingKey: string }) => {
+      const w = window as unknown as Record<string, unknown>
+      if (w[logKey]) return
+      const log: string[] = []
+      w[logKey] = log
+      w[pendingKey] = 0
+      const track = <T>(promise: Promise<T>): Promise<T> => {
+        w[pendingKey] = (w[pendingKey] as number) + 1
+        const settle = () => {
+          w[pendingKey] = (w[pendingKey] as number) - 1
+        }
+        promise.then(settle, settle)
+        return promise
+      }
+      const original = window.fetch.bind(window)
+      window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+        log.push(input instanceof Request ? input.url : String(input))
+        return track(original(input, init))
+      }
+      // A caller reads the body after `fetch` resolves; its handlers run
+      // only once that read settles, so the read is pending work too.
+      for (const method of ['json', 'text', 'arrayBuffer', 'blob', 'formData'] as const) {
+        const read = Response.prototype[method] as (this: Response) => Promise<unknown>
+        Object.defineProperty(Response.prototype, method, {
+          configurable: true,
+          writable: true,
+          value(this: Response) {
+            return track(read.call(this))
+          },
+        })
+      }
+    },
+    { logKey: FETCH_LOG, pendingKey: FETCH_PENDING },
+  )
+}
+
+/**
+ * Wait until every fetch the page started, and every response-body read,
+ * has settled, then one frame: by then the handlers that run on a settled
+ * request have written their signals and the DOM. For a page that never
+ * fetched, this returns after that frame. Requires `installFetchRecorder`.
+ */
+export async function waitForFetchesToSettle(page: Page, timeout: number): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate((pendingKey: string) => {
+          const pending = (window as unknown as Record<string, number | undefined>)[pendingKey]
+          if (pending === undefined) throw new Error('waitForFetchesToSettle: installFetchRecorder was not called for this page')
+          return pending
+        }, FETCH_PENDING),
+      { timeout },
+    )
+    .toBe(0)
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => r(null))))
 }
 
 function assertNever(value: never): never {

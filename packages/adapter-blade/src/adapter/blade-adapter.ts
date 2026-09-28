@@ -1636,7 +1636,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       }
       if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
-        const blade = this.convertExpressionToBlade(value.expr)
+        const blade = this.convertExpressionToBlade(value.expr, value.parsed)
         return `{!! e((${this.wrapConditionExpr(value.expr, blade)} ? '${name}' : '')) !!}`
       }
       if (value.presenceOrUndefined) {

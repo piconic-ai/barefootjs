@@ -4,10 +4,10 @@
  * `action` is called, never automatically and never cached — a write is an
  * event, not a derivation.
  *
- * NOT exported yet: the compiler does not recognise the call until #3210
- * (spec/async.md §7.8's compiler-recognition gap), which also exports it
- * through `./async.ts` next to `createQuery`. Import it from this file
- * directly (tests, and that PR's own work) until then.
+ * Exported through `./async.ts` next to `createQuery`. The compiler
+ * recognises `const [value, action] = createMutation(fn, options?)` (#3210):
+ * it seeds `value()` as `undefined`, emits the call into client JS only, and
+ * refuses an `initial` option (BF118).
  */
 
 import { createSignal, onCleanup, untrack, type Reactive } from '@barefootjs/client/reactive'
@@ -18,8 +18,7 @@ import { invalidate } from '@barefootjs/shared'
 /**
  * Options `createMutation` accepts. Unlike `CreateQueryOptions`, there is no
  * `initial` — a mutation has no initial request to seed from (spec/async.md
- * §7.4); the compiler-side diagnostic for a caller who writes one anyway is
- * later work, not this runtime PR.
+ * §7.4); the compiler refuses one written anyway (BF118).
  *
  * @since 0.39.0
  * @stability alpha
@@ -49,9 +48,10 @@ export interface MutationAction<T> {
 /**
  * `createMutation(fn, options?)` — a value written only by calling the
  * returned action. Returns `[value, action]`, the same tuple shape as
- * `createQuery`. See spec/async.md §7.4/§7.5; the rules this implementation
- * follows (each pinned by its own describe block in
- * `create-mutation.test.ts`):
+ * `createQuery`. See spec/async.md §7.4/§7.5.
+ *
+ * The rules this implementation follows, each pinned by its own describe
+ * block in `create-mutation.test.ts`:
  *
  * 1. **Sends only when called.** Nothing at creation; nothing when a signal
  *    `fn` reads changes — there is no tracking effect at all. `fn` is

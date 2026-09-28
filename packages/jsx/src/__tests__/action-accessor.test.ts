@@ -113,6 +113,15 @@ describe('seedableActionAccessorRead — the one gate for the BF117 lift and the
     expect(at('fetchPosts.error()', 'element-attr', 'aria-busy')).toBeNull()
   })
 
+  test('an HTML boolean attribute admits isPending() only (#3210)', () => {
+    expect(at('fetchPosts.isPending()', 'element-attr', 'disabled')).toEqual({ action: 'fetchPosts', accessor: 'isPending' })
+    expect(at('fetchPosts.isPending()', 'element-attr', 'readonly')).not.toBeNull()
+    // Only truthiness is observed here, so `error()` would render the same,
+    // but it is not a boolean and no fixture covers it: the gate admits only
+    // what the conformance corpus pins.
+    expect(at('fetchPosts.error()', 'element-attr', 'disabled')).toBeNull()
+  })
+
   test('any other attribute refuses — Mojolicious / Xslate render the false literal as 0 there', () => {
     expect(at('fetchPosts.isPending()', 'element-attr', 'aria-label')).toBeNull()
     expect(at('fetchPosts.isPending()', 'element-attr', 'title')).toBeNull()
