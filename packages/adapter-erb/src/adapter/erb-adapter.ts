@@ -184,6 +184,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * as an inline Ruby Hash literal without re-walking the IR.
    */
   private propsObjectName: string | null = null
+  /**
+   * Name of the destructured `...rest` binding (`function X({ ...rest })`),
+   * if any. A closed-type rest-expanded attribute's expression is
+   * `${restPropsName}.${key}` (`expandSpreadAttribute`, #3057) — stripping
+   * this prefix the same way `propsObjectName.` is stripped below lets the
+   * nullable-optional-props nil-guard recognise it as a bare optional
+   * reference instead of falling through to unconditional emission.
+   */
+  private restPropsName: string | null = null
   private propsParams: { name: string }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
@@ -288,6 +297,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
+    this.restPropsName = ir.metadata.restPropsName ?? null
     // Enumerate inherited-attribute accesses for the props-object pattern
     // (`function Checkbox(props: CheckboxProps)`) before deriving
     // `nullableOptionalProps`, so a bare optional attribute like
@@ -1579,11 +1589,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // Normalize a props-object access (`props.id`) to its bare prop name
       // (`id`) so the nullable-optional set — keyed by bare name — matches
       // the SolidJS props-object pattern, not just destructured params
-      // (#checkbox `id={props.id}`).
+      // (#checkbox `id={props.id}`). Same for a closed-type rest-expanded
+      // key's `rest.tag`-shaped expression (#3057) — see `restPropsName`'s
+      // docstring.
       const normalizedBareId =
         this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
           ? bareId.slice(this.propsObjectName.length + 1)
-          : bareId
+          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
+            ? bareId.slice(this.restPropsName.length + 1)
+            : bareId
       if (
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&

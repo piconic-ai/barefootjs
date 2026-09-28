@@ -2001,6 +2001,14 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
+      "child-prop-rest-forward-undefined-start": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-undefined-signal-seed-not-nil"
+          ]
+        }
+      },
       "conditional-return-fragment-branch": {
         "blade": {
           "kind": "refusal",
@@ -5763,6 +5771,10 @@
       }
     },
     "docs": {
+      "child-prop-rest-forward-undefined-start": {
+        "description": "a child-component prop that starts undefined (never rendered by SSR) still reaches the child root…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-prop-rest-forward-undefined-start.ts"
+      },
       "conditional-return-fragment-branch": {
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
@@ -6289,6 +6301,19 @@
       ],
       "diagnostics": [
         "BF029"
+      ]
+    },
+    "go-undefined-signal-seed-not-nil": {
+      "title": "A nullable-typed signal seeded with a literal `undefined` bakes to the empty string, not nil",
+      "kind": "silent",
+      "given": "a component-local signal declared with a nullish union type and a literal `undefined` initial value (`createSignal<string | undefined>(undefined)`), forwarded to a child prop that the child reaches only via a closed-type `{...rest}` spread",
+      "expected": "the SSR constructor seeds the value as absent (Go `nil`), so the child omits the forwarded attribute entirely, matching the Hono reference",
+      "actual": "seeds the signal's own `interface{}`-typed field with the empty string (`\"\"`) instead of `nil` — `convertInitialValue`'s string-primitive fallback (`value-lowering.ts`) always returns `\"\"` for a value it can't recognise as a quoted literal, with no explicit check for the literal text `undefined`/`null` — so the child's rest bag receives `{\"tag\": \"\"}` instead of an absent key, and renders `tag=\"\"`",
+      "fixtures": [
+        "child-prop-rest-forward-undefined-start"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "jsx-wrapped-in-non-children-prop": {

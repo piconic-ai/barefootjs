@@ -1515,6 +1515,29 @@ export interface IRAttribute extends AttrMeta {
    * same opt-out, applied to element-attribute position.
    */
   clientOnly?: boolean
+  /**
+   * Set when this attribute entry was produced by statically expanding a
+   * closed-type `{...rest}` spread onto one of its known keys
+   * (`expandSpreadAttribute`'s per-key branch, jsx-to-ir.ts) — #3057. The
+   * expanded value (`<restName>.<key>`) reads the destructured rest
+   * OBJECT, a one-time snapshot built at component-init time, so Phase 2's
+   * string-level reactivity heuristics (`needsEffectWrapper`) never
+   * recognize it as reading a live prop the way a bare destructured
+   * parameter does — `rest` isn't itself a tracked prop name, and neither
+   * is the expanded key. Without this flag the attribute is silently
+   * treated as static: it renders once from SSR/the initial client
+   * construction and never updates again, even though the value the child
+   * forwards is exactly as live as any other prop.
+   *
+   * `collectElements` reads this to unconditionally push the attribute
+   * into `ctx.reactiveAttrs`, rewriting its expression onto a live
+   * `_p.<key>` read instead of the snapshot `<restName>.<key>` — the same
+   * write shape `emitAttrUpdate` already produces for a developer-authored
+   * reactive attribute, so a forwarded rest key updates reactively end to
+   * end (undefined → present, present → absent → present again) exactly
+   * like SSR / hydrated / csr-mount agree it should.
+   */
+  restExpandedKey?: boolean
 }
 
 export interface IREvent {

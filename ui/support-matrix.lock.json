@@ -2530,6 +2530,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4314,6 +4320,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5755,7 +5767,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -6085,6 +6106,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7663,6 +7690,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8776,6 +8809,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "loop-component-row-destructured-param",
               "limitations": [
@@ -13030,6 +13069,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "const-string-conditional-test",
               "limitations": [

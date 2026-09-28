@@ -9622,6 +9622,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const field = `.${capitalizeFieldName(propName)}`
         return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
       }
+      // A closed-type `{...rest}` key (#3057) reads off the rest bag's
+      // `map[string]any` field via `bf_get` (see the `restPropsName` member-
+      // access route above), never a capitalized Props-struct field, so it
+      // can't reuse the `nillablePropNames`/`capitalizeFieldName` route
+      // above. `bf_get` returns Go's untyped `nil` for a key the caller
+      // omitted, so the same nil-check omission still applies — value and
+      // guard share the identical `bf_get` expression.
+      if (
+        this.state.restPropsName &&
+        bareId.startsWith(`${this.state.restPropsName}.`) &&
+        /^[A-Za-z_$][\w$]*$/.test(bareId.slice(this.state.restPropsName.length + 1))
+      ) {
+        const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
+        return `{{if ne (${goExpr}) nil}}${name}="{{${goExpr}}}"{{end}}`
+      }
       // Lower once; if the result is already a self-contained action block (e.g.
       // an inlined `sortClass(k)` → `{{if …}}…{{end}}`), embed it as-is rather
       // than double-wrapping it in another `{{…}}`.

@@ -4,7 +4,7 @@
 
 import { type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
-import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, type LoopParamSpec } from './utils.ts'
+import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, toHtmlAttrName, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
@@ -1131,6 +1131,60 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
       if (attr.value.kind === 'expression' || attr.value.kind === 'template' || attr.value.kind === 'spread') {
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
+
+        // #3057: a statically expanded rest-key attribute (`{...rest}` onto
+        // this element, unrolled per-key by `expandSpreadAttribute` because
+        // the rest type is closed) reads the destructured rest OBJECT
+        // (`rest.tag`) — a snapshot taken once when the component
+        // initializes, never a live prop read. The string-level heuristics
+        // below (`needsEffectWrapper`/`decideWrapForAttr`) don't recognize
+        // `rest`/the expanded key as a tracked prop name, so this would
+        // otherwise be classified static and never get a `createEffect` —
+        // exactly the bug this issue reports. Bind it straight to a live
+        // `_p.<key>` read instead, unconditionally: forwarding a prop via
+        // `{...rest}` means it tracks the caller's current value by
+        // definition, so it can never be "static" the way an ordinary
+        // attribute expression can. `insideConditional` below just skips
+        // this element the same way the generic path does (#1071) — unlike
+        // the generic path, `collectBranchReactiveAttrs` does not read
+        // `restExpandedKey`, so a rest key inside a conditional branch gets
+        // no binding at all; that gap is intentionally out of scope for
+        // #3057 (see the PR description). Two cases
+        // fall back to the pre-#3057 classification below instead of this
+        // fast path (both found by review on #3252):
+        //   - `attr.name` is an explicit JSX attribute's HTML name too
+        //     (e.g. a closed `id` rest key alongside a literal `id="fixed"`
+        //     on the same element). An unconditional `_p.id` write would
+        //     `removeAttribute` the SSR value whenever the caller doesn't
+        //     pass `id`, clobbering the explicit attribute.
+        //   - `classifyDOMProp` says this key doesn't reach the DOM as a
+        //     plain attribute at all (`ref` / `event` / `skip`, e.g.
+        //     `onPing` or `children`). `applyRestAttrs` already excludes
+        //     these from its own attribute set for the same reason; an
+        //     unconditional `setAttribute` here would stringify a function
+        //     or children value onto the element, which the pre-#3057
+        //     path never did.
+        const restKeyHtmlName = toHtmlAttrName(attr.name)
+        const collidesWithExplicitAttr = element.attrs.some(
+          other => other !== attr && other.name !== '...' && toHtmlAttrName(other.name) === restKeyHtmlName,
+        )
+        const restKeyDomKind = classifyDOMProp(attr.name).kind
+        if (
+          attr.restExpandedKey &&
+          !collidesWithExplicitAttr &&
+          restKeyDomKind !== 'ref' &&
+          restKeyDomKind !== 'event' &&
+          restKeyDomKind !== 'skip'
+        ) {
+          if (insideConditional) continue
+          ctx.reactiveAttrs.push({
+            slotId: element.slotId,
+            attrName: attr.name,
+            expression: `${PROPS_PARAM}.${attr.name}`,
+            ...pickAttrMetaFromIR(attr),
+          })
+          continue
+        }
 
         // Expand local constant references to detect transitive prop dependencies.
         // e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
