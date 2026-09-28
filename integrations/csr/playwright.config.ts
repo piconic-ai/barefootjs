@@ -6,8 +6,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  // Use single worker to avoid conflicts with shared server state (/api/todos/reset)
-  workers: process.env.CI ? 1 : undefined,
+  // Single worker everywhere, not just in CI: two spec files (the shared
+  // todo suite and query-todo-app.spec.ts) reset and assert on the same
+  // in-memory /api/todos state, so parallel workers would race on it.
+  workers: 1,
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:3002',
