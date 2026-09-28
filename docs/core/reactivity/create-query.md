@@ -49,7 +49,7 @@ The value survives a refetch and a failure: while the next page loads, the previ
 
 The first argument is a function, like a memo or effect body. The signals it reads are its dependencies. The compiler emits it into the client JS only, with prop reads kept live. It never runs on the server, on any adapter.
 
-**Descriptors only.** The function must return an `http` request descriptor: `http.get(url, params?)`, `http.head`, `http.query`, `http.post`, `http.put`, `http.patch` or `http.delete`. A descriptor is plain data, so building one sends nothing, and the method, URL and body form the cache key. A function that returns anything else, such as a `Promise` from your own client, throws when it runs. Responses are parsed as JSON; a non-2xx response rejects with `HttpError` (`status`, `body`).
+**Descriptors only.** The function must return an `http` request descriptor: `http.get(url, params?)`, `http.head`, `http.query`, `http.post`, `http.put`, `http.patch` or `http.delete`. A descriptor is plain data, so building one sends nothing, and the method, URL and body form the cache key. A function that returns anything else, such as a `Promise` from your own client, throws when it runs. Responses are parsed as JSON, and a success with an empty body (such as `204 No Content`) resolves to `undefined`; a non-2xx response rejects with `HttpError` (`status`, `body`).
 
 **One send per tick.** Several writes to the function's dependencies in one handler can run the function more than once, but only the last descriptor of the tick is sent, at the end of the tick. A dependency shared through two memos runs it once.
 

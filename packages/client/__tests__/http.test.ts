@@ -259,6 +259,24 @@ describe('sendRequest', () => {
     expect(result).toBeUndefined()
   })
 
+  test('a success with an empty or blank body resolves to undefined, whatever the method', async () => {
+    const cases: Array<[number, string | null, ReturnType<typeof http.get>]> = [
+      [204, null, http.delete('/api/posts/1')],
+      [205, null, http.post('/api/posts/reset')],
+      [200, '', http.put('/api/posts/1', { title: 'x' })],
+      [200, '\n', http.get('/api/posts')],
+    ]
+    for (const [status, body, descriptor] of cases) {
+      stubFetch(() => new Response(body, { status }))
+      expect(await sendRequest(descriptor)).toBeUndefined()
+    }
+  })
+
+  test('a non-empty 2xx body that is not JSON still rejects', async () => {
+    stubFetch(() => new Response('ok', { status: 200 }))
+    await expect(sendRequest(http.post('/api/posts'))).rejects.toBeInstanceOf(SyntaxError)
+  })
+
   test('a non-2xx HEAD rejects with HttpError, like any other method', async () => {
     stubFetch(() => new Response(null, { status: 404 }))
     await expect(sendRequest(http.head('/api/posts'))).rejects.toMatchObject({ status: 404 })
