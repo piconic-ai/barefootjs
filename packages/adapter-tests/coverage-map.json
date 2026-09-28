@@ -1248,6 +1248,22 @@
         "attribute"
       ]
     },
+    "child-prop-rest-forward-undefined-start": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"

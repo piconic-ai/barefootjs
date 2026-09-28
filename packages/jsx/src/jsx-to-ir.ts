@@ -8286,7 +8286,14 @@ function processComponentProps(
 
   for (const attr of attributes.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
-      props.push(...expandSpreadAttribute(attr, ctx))
+      // `restExpandedKey` (#3057) is consumed only by the element-attribute
+      // path (`collect-elements.ts`'s `attr.restExpandedKey` branch) — a
+      // component-prop forwarded via `{...rest}` already gets a live
+      // `_p.<key>` read through `buildComponentPropsExpr`'s own rest
+      // rewrite, so `IRProp` declares no such field. Strip it here rather
+      // than letting the shared helper's per-key marking leak into IRProp
+      // as an inert flag nothing reads.
+      props.push(...expandSpreadAttribute(attr, ctx).map(({ restExpandedKey: _restExpandedKey, ...prop }) => prop))
       continue
     }
 
