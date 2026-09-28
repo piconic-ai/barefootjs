@@ -748,6 +748,28 @@ function disposeEffect(effect: EffectContext): void {
 }
 
 /**
+ * Whether a reactive owner is currently active (`Owner !== null`).
+ *
+ * Internal to the runtime — not an authoring API. `evalTemplateFn`
+ * (`runtime/template.ts`, #3235) uses this to decide whether a `template()`
+ * call needs its own throwaway root: with no ambient owner (the literal
+ * top-level `render()` entry point) anything the call registers has nothing
+ * to release it, so it needs one; with a real owner already active (e.g. a
+ * `.map()` row's per-item root, or a component's own `init()` root), that
+ * owner already outlives the call, and giving it a SEPARATE throwaway root
+ * instead would incorrectly dispose a nested live-child mount's `init()`
+ * effects the instant the call returns (#3254 review finding — a
+ * `renderNode`-style callback whose branch template synchronously mounts a
+ * real, persisted child via `materializeComponent`/`initFn`, not merely
+ * previewing markup).
+ *
+ * @internal
+ */
+export function hasOwner(): boolean {
+  return Owner !== null
+}
+
+/**
  * Create an isolated reactive scope with explicit disposal.
  * All effects/memos created inside run within this root and are
  * disposed together when the returned dispose function is called.
