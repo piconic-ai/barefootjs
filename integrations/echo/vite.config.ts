@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   plugins: barefoot({
-    components: ['../shared/components', '../shared/blog'],
+    components: ['../shared/components', '../shared/blog', '../shared/query-todo'],
     // `main.go`'s `loadTemplates` (`ParseGlob("dist/templates/*.tmpl")`)
     // and `e.Static(basePath+"/static", "dist")` already serve everything
     // under `dist/` (including `dist/templates`).

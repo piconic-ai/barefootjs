@@ -53,6 +53,7 @@ import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
 import TodoApp from '@/components/TodoApp'
 import TodoAppSSR from '@/components/TodoAppSSR'
+import QueryTodoApp from '@/components/QueryTodoApp'
 import { AIChatInteractive } from '@/components/AIChatInteractive'
 
 const PORT = Number(process.env.PORT ?? 3003)
@@ -144,6 +145,7 @@ const homeHandler = eventHandler(async () =>
           <li><a href={link('/toggle')}>Toggle</a></li>
           <li><a href={link('/todos')}>Todo (@client)</a></li>
           <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
+          <li><a href={link('/todos-query')}>Todo (createQuery / createMutation)</a></li>
           <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
           <li><a href={link('/blog')}>Blog (@barefootjs/router)</a></li>
         </ul>
@@ -226,6 +228,28 @@ router.get(
   ),
 )
 
+// The same list on createQuery / createMutation. Passing `initialTodos`
+// seeds the query (mode A): the list is rendered here, and the client sends
+// no request on mount. Writes go through the API below and re-fetch the list.
+router.get(
+  link('/todos-query'),
+  eventHandler(async (event) =>
+    page(
+      <Layout
+        title="TodoMVC (createQuery) - BarefootJS"
+        base={BASE}
+        styles={[link('/shared/styles/todo-app.css')]}
+      >
+        <h1>Todo (createQuery / createMutation)</h1>
+        <div id="app">
+          <QueryTodoApp initialTodos={getSession(event).todos} />
+        </div>
+        <p><a href={link('/')}>← Back</a></p>
+      </Layout>,
+    ),
+  ),
+)
+
 router.get(
   link('/ai-chat'),
   eventHandler(async () =>
@@ -262,6 +286,27 @@ router.post(
     session.todos.push(todo)
     setResponseStatus(event, 201)
     return todo
+  }),
+)
+
+// The two list-wide writes of `/todos-query` ("toggle all", "clear
+// completed"), one request each. Registered before the `:id` routes.
+router.put(
+  link('/api/todos'),
+  eventHandler(async (event) => {
+    const session = getSession(event)
+    const body = (await readBody(event)) as { done?: boolean }
+    for (const todo of session.todos) todo.done = body?.done === true
+    return session.todos
+  }),
+)
+
+router.delete(
+  link('/api/todos/completed'),
+  eventHandler((event) => {
+    const session = getSession(event)
+    session.todos = session.todos.filter((t) => !t.done)
+    return { success: true }
   }),
 )
 

@@ -12,11 +12,20 @@
 // mount): the list is requested on mount.
 //
 // URLs are relative, so they resolve under whatever base path the page is
-// served from (the Hono integration mounts under `/integrations/hono`).
-// An `invalidates` prefix matches the request URL as written, so it is
+// served from (the integrations mount under `/integrations/<name>`). An
+// `invalidates` prefix matches the request URL as written, so it is
 // relative too.
+//
+// The template reads the query value directly (`todos() ?? []`) instead of
+// through memos. A template adapter renders these expressions from the
+// seeded value on its own, while a memo over a prop-seeded value is not
+// seeded on every adapter (known limitation
+// `memo-length-of-prop-seeded-array`), so each backend's handler would have
+// to compute it. Restore the memos once that limitation is gone. Without
+// `initialTodos`, `todos()` is undefined until the first response, hence
+// the `?? []`.
 
-import { createMemo, createMutation, createQuery, createSignal, http, onMount } from '@barefootjs/client'
+import { createMutation, createQuery, createSignal, http, onMount } from '@barefootjs/client'
 import QueryTodoItem from './QueryTodoItem'
 
 type Todo = { id: number; text: string; done: boolean }
@@ -35,17 +44,12 @@ function QueryTodoApp(props: Props) {
   const [newText, setNewText] = createSignal('')
   const [filter, setFilter] = createSignal<Filter>('all')
 
-  // Without `initialTodos`, `todos()` is undefined until the first response.
-  const list = createMemo(() => todos() ?? [])
-  const activeCount = createMemo(() => list().filter(t => !t.done).length)
-  const allDone = createMemo(() => list().length > 0 && activeCount() === 0)
-
   const [, addTodo] = createMutation(
     () => http.post<Todo>('api/todos', { text: newText().trim() }),
     { invalidates },
   )
   const [, toggleAll] = createMutation(
-    () => http.put<Todo[]>('api/todos', { done: !allDone() }),
+    () => http.put<Todo[]>('api/todos', { done: !(todos() ?? []).every(t => t.done) }),
     { invalidates },
   )
   const [, clearCompleted] = createMutation(
@@ -101,21 +105,21 @@ function QueryTodoApp(props: Props) {
       {fetchTodos.error() ? <p className="load-error" role="alert">Could not load todos.</p> : null}
       {addTodo.error() ? <p className="load-error" role="alert">Could not add the todo.</p> : null}
       <section className="main">
-        {list().length > 0 && (
+        {todos()?.length ? (
           <>
             <input
               id="toggle-all"
               className="toggle-all"
               type="checkbox"
-              checked={allDone()}
+              checked={(todos() ?? []).every(t => t.done)}
               disabled={toggleAll.isPending()}
               onChange={() => toggleAll()}
             />
             <label for="toggle-all">Mark all as complete</label>
           </>
-        )}
+        ) : null}
         <ul className="todo-list">
-          {list().filter(t => {
+          {(todos() ?? []).filter(t => {
             const f = filter()
             if (f === 'active') return !t.done
             if (f === 'completed') return t.done
@@ -127,7 +131,7 @@ function QueryTodoApp(props: Props) {
       </section>
       <footer className="footer">
         <span className="todo-count">
-          <strong>{activeCount()}</strong>{' '}{activeCount() === 1 ? 'item' : 'items'} left
+          <strong>{(todos() ?? []).filter(t => !t.done).length}</strong>{' '}{(todos() ?? []).filter(t => !t.done).length === 1 ? 'item' : 'items'} left
         </span>
         <ul className="filters">
           <li>
@@ -140,7 +144,7 @@ function QueryTodoApp(props: Props) {
             <a href="#/completed" className={filter() === 'completed' ? 'selected' : ''} onClick={() => handleFilterChange('completed')}>Completed</a>
           </li>
         </ul>
-        {list().length > activeCount() && (
+        {(todos() ?? []).some(t => t.done) && (
           <button className="clear-completed" disabled={clearCompleted.isPending()} onClick={() => clearCompleted()}>
             Clear completed
           </button>

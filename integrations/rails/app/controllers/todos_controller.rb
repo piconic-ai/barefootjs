@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# Todo page (with/without @client markers) + the session-cookie-backed,
-# Mutex-guarded in-memory REST API. Direct port of the Sinatra example's todo
-# routes.
+# Todo pages (with/without @client markers, and the createQuery version) +
+# the session-cookie-backed, Mutex-guarded in-memory REST API. Direct port of
+# the Sinatra example's todo routes.
 class TodosController < ApplicationController
   def index
     session = bf_session
@@ -12,7 +12,22 @@ class TodosController < ApplicationController
     render_component(component,
                      children: { 'todo_item' => 'TodoItem' },
                      props: { initialTodos: todos },
-                     stash: { todos: todos, newText: '', filter: 'all', doneCount: done })
+                     stash: { initialTodos: todos, todos: todos, newText: '', filter: 'all', doneCount: done })
+  end
+
+  # The createQuery / createMutation todo app. `initialTodos` seeds its query
+  # (mode A): the list is rendered here, and the client sends no request on
+  # mount. Writes go through the API below and re-fetch the list. The ERB
+  # template reads `initialTodos` from the stash (`v`), while `props` is the
+  # client's bf-p hydration payload, so it goes in both.
+  def query
+    session = bf_session
+    todos = ExampleApp::SESSIONS_MUTEX.synchronize { session[:todos].map { |t| t.slice(:id, :text, :done) } }
+    render_component('QueryTodoApp',
+                     title: 'TodoMVC (createQuery) - BarefootJS',
+                     children: { 'query_todo_item' => 'QueryTodoItem' },
+                     props: { initialTodos: todos },
+                     stash: { initialTodos: todos, newText: '', filter: 'all' })
   end
 
   # --- todo REST API ---
@@ -55,6 +70,24 @@ class TodosController < ApplicationController
     session = bf_session
     id = params[:id].to_i
     ExampleApp::SESSIONS_MUTEX.synchronize { session[:todos].reject! { |t| t[:id] == id } }
+    head :no_content
+  end
+
+  # "Toggle all" on /todos-query: sets every todo's done flag.
+  def api_set_all_done
+    session = bf_session
+    done = !!parse_json_body[:done]
+    todos = ExampleApp::SESSIONS_MUTEX.synchronize do
+      session[:todos].each { |t| t[:done] = done }
+      session[:todos].map(&:dup)
+    end
+    render json: todos
+  end
+
+  # "Clear completed" on /todos-query: removes every done todo.
+  def api_clear_completed
+    session = bf_session
+    ExampleApp::SESSIONS_MUTEX.synchronize { session[:todos].reject! { |t| t[:done] } }
     head :no_content
   end
 

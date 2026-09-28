@@ -81,6 +81,8 @@ Root-level page renders are unaffected (they look up the real, PascalCase filena
   `/conditional-return[-link]` — component demos
 - `/integrations/spring/todos` / `/todos-ssr` — interactive todo list backed by an in-memory,
   per-session (`bf_session` cookie) store, plus the REST API under `/api/todos/*`
+- `/integrations/spring/todos-query` — the same list on `createQuery` / `createMutation`, seeded from
+  the session (its list-wide writes are `PUT /api/todos` and `DELETE /api/todos/completed`)
 - `/integrations/spring/ai-chat` + `/api/ai-chat` — token-by-token SSE streaming demo. The SSE
   endpoint returns an `SseEmitter` immediately and streams from a **virtual-thread executor**, never
   blocking a servlet (Tomcat) worker thread for the stream's duration (see `AiChatController`'s

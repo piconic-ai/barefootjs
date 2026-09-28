@@ -478,6 +478,26 @@ def todos_route():
     return with_session_cookie(html_response(html), minted)
 
 
+@bp.get("/todos-query")
+def todos_query_route():
+    """The createQuery / createMutation todo app. `initialTodos` seeds its
+    query (mode A): the list is rendered here, and the client sends no
+    request on mount. Writes go through the API below and re-fetch the list.
+    Each QueryTodoItem row takes only `todo`; its `editing` / `draft`
+    signals are seeded from the manifest's ssrDefaults."""
+    session, minted = get_session()
+    todos = [dict(t) for t in session["todos"]]
+    html = render_component(
+        "QueryTodoApp",
+        title="TodoMVC (createQuery) - BarefootJS",
+        children={"query_todo_item": "QueryTodoItem"},
+        signal_init={"query_todo_item": lambda p: stash_from_ssr_defaults("QueryTodoItem", p)},
+        props={"initialTodos": todos},
+        stash={"newText": "", "filter": "all"},
+    )
+    return with_session_cookie(html_response(html), minted)
+
+
 # --- todo REST API handlers ---
 @bp.get("/api/todos")
 def api_todos_list():
@@ -493,6 +513,26 @@ def api_todos_create():
     session["next_id"] += 1
     session["todos"].append(todo)
     return with_session_cookie(json_response(todo, 201), minted)
+
+
+# The two list-wide writes of /todos-query ("toggle all", "clear
+# completed"), one request each. Registered before the `<int:todo_id>`
+# routes.
+@bp.put("/api/todos")
+def api_todos_set_all_done():
+    session, _minted = get_session()
+    body = request.get_json(silent=True) or {}
+    done = jbool(body.get("done"))
+    for todo in session["todos"]:
+        todo["done"] = done
+    return json_response(session["todos"])
+
+
+@bp.delete("/api/todos/completed")
+def api_todos_clear_completed():
+    session, _minted = get_session()
+    session["todos"] = [t for t in session["todos"] if not t["done"]]
+    return Response(status=204)
 
 
 @bp.put("/api/todos/<int:todo_id>")
@@ -817,6 +857,7 @@ under a plain Flask app.</p>
     <li><a href="{BASE}/toggle">Toggle</a></li>
     <li><a href="{BASE}/todos">Todo (@client)</a></li>
     <li><a href="{BASE}/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="{BASE}/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="{BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="{BASE}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>

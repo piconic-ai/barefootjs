@@ -8,7 +8,11 @@ import { discoverComponents } from '@barefootjs/vite'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const basePath = process.env.BASE_PATH ?? '/integrations/elysia'
 const routerEntry = resolve(HERE, 'client/router-entry.ts')
-const componentDirs = [resolve(HERE, '../shared/components'), resolve(HERE, '../shared/blog')]
+const componentDirs = [
+  resolve(HERE, '../shared/components'),
+  resolve(HERE, '../shared/blog'),
+  resolve(HERE, '../shared/query-todo'),
+]
 
 // Elysia has no Hono `jsxRenderer` request context, so `HonoAdapter.
 // generate()`'s per-request `registerComponentScripts` codegen (the
@@ -45,7 +49,7 @@ export default defineConfig(async () => ({
     },
   },
   plugins: barefoot({
-    components: ['../shared/components', '../shared/blog'],
+    components: ['../shared/components', '../shared/blog', '../shared/query-todo'],
     // `tsconfig.json`'s `@/components/*` alias points here, and
     // `server.tsx` / `blog.tsx` import compiled components from it.
     templates: 'dist/components',

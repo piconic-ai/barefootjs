@@ -314,7 +314,22 @@ sub todos_route ($req, $suffix = '') {
     my $html = render_component($component,
         children => { todo_item => 'TodoItem' },
         props    => { initialTodos => \@todos },
-        stash    => { todos => \@todos, newText => '', filter => 'all', doneCount => $done });
+        stash    => { initialTodos => \@todos, todos => \@todos, newText => '', filter => 'all', doneCount => $done });
+    html_response($html, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
+}
+
+# The createQuery / createMutation todo app. `initialTodos` seeds its query
+# (mode A): the list is rendered here, and the client sends no request on
+# mount. Writes go through the API below and re-fetch the list.
+sub todos_query_route ($req) {
+    my ($session, $set_cookie) = get_session($req);
+    my @todos = map { {%$_} } @{ $session->{todos} };
+    my $html = render_component('QueryTodoApp',
+        title       => 'TodoMVC (createQuery) - BarefootJS',
+        children    => { query_todo_item => 'QueryTodoItem' },
+        signal_init => { query_todo_item => sub ($props) { (editing => jbool(0), draft => '') } },
+        props       => { initialTodos => \@todos },
+        stash       => { initialTodos => \@todos, newText => '', filter => 'all' });
     html_response($html, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
 }
 
@@ -330,6 +345,21 @@ sub api_todos_create ($req) {
     my $todo = { id => $session->{next_id}++, text => $input->{text}, done => jbool(0), editing => jbool(0) };
     push @{ $session->{todos} }, $todo;
     json_response($todo, 201, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
+}
+
+# The two list-wide writes of /todos-query, one request each.
+sub api_todos_set_all_done ($req) {
+    my ($session) = get_session($req);
+    my $input = eval { $J->decode($req->content) };
+    return json_response({ error => 'invalid input' }, 400) unless ref $input eq 'HASH';
+    $_->{done} = jbool($input->{done}) for @{ $session->{todos} };
+    json_response($session->{todos});
+}
+
+sub api_todos_clear_completed ($req) {
+    my ($session) = get_session($req);
+    $session->{todos} = [ grep { !$_->{done} } @{ $session->{todos} } ];
+    [204, [], []];
 }
 
 sub api_todos_update ($req, $id) {
@@ -604,10 +634,13 @@ my @ROUTES = (
     [ GET    => qr{^/props-reactivity$}           => \&props_reactivity_route ],
     [ GET    => qr{^/portal$}                     => \&portal_route ],
     [ GET    => qr{^/todos(-ssr)?$}               => \&todos_route ],
+    [ GET    => qr{^/todos-query$}                => \&todos_query_route ],
     [ GET    => qr{^/ai-chat$}                    => \&ai_chat_route ],
     [ GET    => qr{^/api/todos$}                  => \&api_todos_list ],
     [ POST   => qr{^/api/todos$}                  => \&api_todos_create ],
     [ POST   => qr{^/api/todos/reset$}            => \&api_todos_reset ],
+    [ PUT    => qr{^/api/todos$}                  => \&api_todos_set_all_done ],
+    [ DELETE => qr{^/api/todos/completed$}        => \&api_todos_clear_completed ],
     [ PUT    => qr{^/api/todos/(\d+)$}            => \&api_todos_update ],
     [ DELETE => qr{^/api/todos/(\d+)$}            => \&api_todos_delete ],
     [ GET    => qr{^/api/ai-chat$}                => \&ai_chat_stream ],
@@ -644,6 +677,7 @@ under a plain Plack/PSGI app — no web framework required.</p>
     <li><a href="$BASE/toggle">Toggle</a></li>
     <li><a href="$BASE/todos">Todo (\@client)</a></li>
     <li><a href="$BASE/todos-ssr">Todo (no \@client markers)</a></li>
+    <li><a href="$BASE/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="$BASE/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="$BASE/blog">Blog (\@barefootjs/router - partial navigation)</a></li>
 </ul>

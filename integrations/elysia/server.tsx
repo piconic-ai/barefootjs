@@ -27,6 +27,7 @@ import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
 import TodoApp from '@/components/TodoApp'
 import TodoAppSSR from '@/components/TodoAppSSR'
+import QueryTodoApp from '@/components/QueryTodoApp'
 import { AIChatInteractive } from '@/components/AIChatInteractive'
 
 const PORT = Number(process.env.PORT ?? 3005)
@@ -139,6 +140,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
               <li><a href={link('/toggle')}>Toggle</a></li>
               <li><a href={link('/todos')}>Todo (@client)</a></li>
               <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
+              <li><a href={link('/todos-query')}>Todo (createQuery / createMutation)</a></li>
               <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
               <li><a href={link('/blog')}>Blog (@barefootjs/router)</a></li>
             </ul>
@@ -214,6 +216,28 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
+  // The same list on createQuery / createMutation. Passing `initialTodos`
+  // seeds the query (mode A): the list is rendered here, and the client
+  // sends no request on mount. Writes go through the API below and re-fetch
+  // the list.
+  .get(link('/todos-query'), async ({ cookie }) =>
+    html(
+      await renderToHtml(
+        <Layout
+          title="TodoMVC (createQuery) - BarefootJS"
+          base={BASE}
+          styles={[link('/shared/styles/todo-app.css')]}
+        >
+          <h1>Todo (createQuery / createMutation)</h1>
+          <div id="app">
+            <QueryTodoApp initialTodos={getSession(cookie).todos} />
+          </div>
+          <p><a href={link('/')}>← Back</a></p>
+        </Layout>,
+      ),
+    ),
+  )
+
   .get(link('/ai-chat'), async () =>
     html(
       await renderToHtml(
@@ -258,6 +282,21 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     session.todos.push(todo)
     set.status = 201
     return todo
+  })
+
+  // The two list-wide writes of `/todos-query` ("toggle all", "clear
+  // completed"), one request each. Registered before the `:id` routes.
+  .put(link('/api/todos'), ({ cookie, body }) => {
+    const session = getSession(cookie)
+    const done = (body as { done?: boolean })?.done === true
+    for (const todo of session.todos) todo.done = done
+    return session.todos
+  })
+
+  .delete(link('/api/todos/completed'), ({ cookie }) => {
+    const session = getSession(cookie)
+    session.todos = session.todos.filter((t) => !t.done)
+    return { success: true }
   })
 
   .put(link('/api/todos/:id'), ({ cookie, set, params, body }) => {

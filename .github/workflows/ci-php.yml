@@ -11,6 +11,8 @@ on:
       - 'packages/adapter-twig/**'
       - 'packages/adapter-tests/**'
       - 'integrations/php/**'
+      - 'integrations/shared/query-todo/**'
+      - 'integrations/shared/e2e/**'
       - '.github/workflows/ci-php.yml'
   pull_request:
     # Heavy set: main-based PRs only, default activity types. A stacked PR
@@ -26,6 +28,8 @@ on:
       - 'packages/adapter-twig/**'
       - 'packages/adapter-tests/**'
       - 'integrations/php/**'
+      - 'integrations/shared/query-todo/**'
+      - 'integrations/shared/e2e/**'
       - '.github/workflows/ci-php.yml'
   # Nightly full-matrix data-point conformance (#2278): PR/push runs the
   # fast `pr` tier (sampled generated points); the scheduled run exercises

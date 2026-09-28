@@ -272,6 +272,7 @@ func main() {
 	g.GET("/toggle", toggleHandler)
 	g.GET("/todos", todosHandler)
 	g.GET("/todos-ssr", todosSSRHandler)
+	g.GET("/todos-query", todosQueryHandler)
 	g.GET("/reactive-props", reactivePropsHandler)
 	g.GET("/props-reactivity", propsReactivityHandler)
 	g.GET("/form", formHandler)
@@ -289,6 +290,9 @@ func main() {
 	// Todo API endpoints
 	g.GET("/api/todos", getTodosAPI)
 	g.POST("/api/todos", createTodoAPI)
+	// The two list-wide writes of /todos-query, one request each.
+	g.PUT("/api/todos", setAllTodosDoneAPI)
+	g.DELETE("/api/todos/completed", clearCompletedTodosAPI)
 	g.PUT("/api/todos/:id", updateTodoAPI)
 	g.DELETE("/api/todos/:id", deleteTodoAPI)
 	g.POST("/api/todos/reset", resetTodosAPI)
@@ -313,9 +317,10 @@ func indexHandler(c echo.Context) error {
         <li><a href="%s/toggle">Toggle</a></li>
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
+        <li><a href="%s/todos-query">Todo (createQuery / createMutation)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
         <li><a href="%s/blog">Blog (@barefootjs/router — partial navigation)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath)
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	return c.HTML(http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -476,6 +481,34 @@ func todosSSRHandler(c echo.Context) error {
 	})
 }
 
+// todosQueryHandler renders the createQuery / createMutation todo app.
+// `InitialTodos` seeds its query (mode A): the list is rendered here, and
+// the client sends no request on mount. Writes go through the API below
+// and re-fetch the list.
+func todosQueryHandler(c echo.Context) error {
+	state := getSession(c)
+	state.mu.Lock()
+	currentTodos := make([]Todo, len(state.todos))
+	copy(currentTodos, state.todos)
+	state.mu.Unlock()
+
+	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: currentTodos})
+	props.QueryTodoItems = make([]QueryTodoItemProps, len(currentTodos))
+	for i, t := range currentTodos {
+		// The generated constructor seeds the row's signal defaults and
+		// caller props. Its random ScopeID is cleared on purpose:
+		// bf.Renderer.Render backfills a unique one for each child.
+		row := NewQueryTodoItemProps(QueryTodoItemInput{Todo: t})
+		row.ScopeID = ""
+		props.QueryTodoItems[i] = row
+	}
+
+	return c.Render(http.StatusOK, "QueryTodoApp", bf.RenderOptions{
+		Props: &props,
+		Title: "TodoMVC (createQuery) - BarefootJS",
+	})
+}
+
 // Todo API handlers
 func getTodosAPI(c echo.Context) error {
 	state := getSession(c)
@@ -557,6 +590,39 @@ func deleteTodoAPI(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
+}
+
+// setAllTodosDoneAPI sets every todo's done flag ("toggle all").
+func setAllTodosDoneAPI(c echo.Context) error {
+	var input struct {
+		Done bool `json:"done"`
+	}
+	if err := json.NewDecoder(c.Request().Body).Decode(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid input"})
+	}
+
+	state := getSession(c)
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	for i := range state.todos {
+		state.todos[i].Done = input.Done
+	}
+	return c.JSON(http.StatusOK, state.todos)
+}
+
+// clearCompletedTodosAPI removes every done todo ("clear completed").
+func clearCompletedTodosAPI(c echo.Context) error {
+	state := getSession(c)
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	remaining := make([]Todo, 0, len(state.todos))
+	for _, todo := range state.todos {
+		if !todo.Done {
+			remaining = append(remaining, todo)
+		}
+	}
+	state.todos = remaining
+	return c.NoContent(http.StatusNoContent)
 }
 
 func resetTodosAPI(c echo.Context) error {
