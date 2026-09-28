@@ -647,6 +647,10 @@ import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
 // internally must never appear as an attribute, on SSR or after any
 // number of reactive updates.
 import { fixture as childPropRestForward } from './child-prop-rest-forward'
+// #3057: sibling of the above — the forwarded prop starts `undefined` (SSR
+// never renders the attribute at all), rather than cycling through
+// `undefined` after already having rendered once.
+import { fixture as childPropRestForwardUndefinedStart } from './child-prop-rest-forward-undefined-start'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -1291,6 +1295,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalEarlyReturn,
   branchRootPropAttr,
   childPropRestForward,
+  childPropRestForwardUndefinedStart,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,

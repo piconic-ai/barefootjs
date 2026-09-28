@@ -6525,6 +6525,7 @@ function expandSpreadAttribute(
   value: AttrValue
   loc: SourceLocation
   freeIdentifiers?: ReadonlySet<string>
+  restExpandedKey?: boolean
 }> {
   const spreadExpr = ctx.getJS(attr.expression)
   const expandedKeys = ctx.analyzer.restPropsExpandedKeys
@@ -6535,13 +6536,17 @@ function expandSpreadAttribute(
   if (expandedKeys.length > 0 && restName && spreadExpr === restName) {
     // Expanded per-key attrs reference `${restName}.${key}` — `restName` is
     // the only free identifier (the `.${key}` tail is a member-access name,
-    // not an identifier reference).
+    // not an identifier reference). `restExpandedKey` (#3057) marks these so
+    // Phase 2 (`collectElements`) can bind them reactively off a live
+    // `_p.<key>` read instead of the one-time `${restName}.${key}` snapshot
+    // — see `IRAttribute.restExpandedKey`'s docstring.
     const perKeyFreeIds: ReadonlySet<string> = new Set([restName])
     return expandedKeys.map(key => ({
       name: key,
       value: AttrValueOf.expression(`${restName}.${key}`),
       loc,
       freeIdentifiers: perKeyFreeIds,
+      restExpandedKey: true,
     }))
   }
 

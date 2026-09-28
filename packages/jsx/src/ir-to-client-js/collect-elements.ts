@@ -1132,6 +1132,32 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
 
+        // #3057: a statically expanded rest-key attribute (`{...rest}` onto
+        // this element, unrolled per-key by `expandSpreadAttribute` because
+        // the rest type is closed) reads the destructured rest OBJECT
+        // (`rest.tag`) — a snapshot taken once when the component
+        // initializes, never a live prop read. The string-level heuristics
+        // below (`needsEffectWrapper`/`decideWrapForAttr`) don't recognize
+        // `rest`/the expanded key as a tracked prop name, so this would
+        // otherwise be classified static and never get a `createEffect` —
+        // exactly the bug this issue reports. Bind it straight to a live
+        // `_p.<key>` read instead, unconditionally: forwarding a prop via
+        // `{...rest}` means it tracks the caller's current value by
+        // definition, so it can never be "static" the way an ordinary
+        // attribute expression can. Same conditional-branch carve-out as
+        // the generic path below (#1071) — a branch-local instance is
+        // collected separately by `collectBranchReactiveAttrs`.
+        if (attr.restExpandedKey) {
+          if (insideConditional) continue
+          ctx.reactiveAttrs.push({
+            slotId: element.slotId,
+            attrName: attr.name,
+            expression: `${PROPS_PARAM}.${attr.name}`,
+            ...pickAttrMetaFromIR(attr),
+          })
+          continue
+        }
+
         // Expand local constant references to detect transitive prop dependencies.
         // e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
         const expandedResult = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
