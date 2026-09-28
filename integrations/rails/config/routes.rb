@@ -25,9 +25,14 @@ Rails.application.routes.draw do
   # Todo pages (with/without @client markers) + the session-cookie REST API.
   get 'todos', to: 'todos#index'
   get 'todos-ssr', to: 'todos#index', defaults: { ssr: '1' }
+  get 'todos-query', to: 'todos#query'
   get 'api/todos', to: 'todos#api_index'
   post 'api/todos', to: 'todos#api_create'
   post 'api/todos/reset', to: 'todos#api_reset'
+  # The two list-wide writes of /todos-query, before the `:id` routes (which
+  # would otherwise match `completed` as an id).
+  put 'api/todos', to: 'todos#api_set_all_done'
+  delete 'api/todos/completed', to: 'todos#api_clear_completed'
   put 'api/todos/:id', to: 'todos#api_update'
   delete 'api/todos/:id', to: 'todos#api_destroy'
 

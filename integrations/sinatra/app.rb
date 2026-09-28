@@ -399,6 +399,7 @@ class SinatraApp < Sinatra::Base
           <li><a href="#{BASE}/toggle">Toggle</a></li>
           <li><a href="#{BASE}/todos">Todo (@client)</a></li>
           <li><a href="#{BASE}/todos-ssr">Todo (no @client markers)</a></li>
+          <li><a href="#{BASE}/todos-query">Todo (createQuery / createMutation)</a></li>
           <li><a href="#{BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
           <li><a href="#{BASE}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
       </ul>
@@ -482,6 +483,21 @@ class SinatraApp < Sinatra::Base
                       stash: { todos: todos, newText: '', filter: 'all', doneCount: done })
   end
 
+  # The createQuery / createMutation todo app. `initialTodos` seeds its query
+  # (mode A): the list is rendered here, and the client sends no request on
+  # mount. Writes go through the API below and re-fetch the list. The ERB
+  # template reads `initialTodos` from the stash (`v`), while `props` is the
+  # client's bf-p hydration payload, so it goes in both.
+  get '/todos-query' do
+    session = get_session
+    todos = SESSIONS_MUTEX.synchronize { session[:todos].map { |t| t.slice(:id, :text, :done) } }
+    render_component('QueryTodoApp',
+                      title: 'TodoMVC (createQuery) - BarefootJS',
+                      children: { 'query_todo_item' => 'QueryTodoItem' },
+                      props: { initialTodos: todos },
+                      stash: { initialTodos: todos, newText: '', filter: 'all' })
+  end
+
   # --- todo REST API ---
   get '/api/todos' do
     content_type :json
@@ -503,6 +519,28 @@ class SinatraApp < Sinatra::Base
     content_type :json
     status 201
     JSON.generate(todo)
+  end
+
+  # The two list-wide writes of /todos-query ("toggle all", "clear
+  # completed"), one request each. Defined before the `:id` routes, which
+  # would otherwise match `completed` as an id.
+  put '/api/todos' do
+    session = get_session
+    input = parse_json_body
+    done = !!input[:done]
+    todos = SESSIONS_MUTEX.synchronize do
+      session[:todos].each { |t| t[:done] = done }
+      session[:todos].map(&:dup)
+    end
+    content_type :json
+    JSON.generate(todos)
+  end
+
+  delete '/api/todos/completed' do
+    session = get_session
+    SESSIONS_MUTEX.synchronize { session[:todos].reject! { |t| t[:done] } }
+    status 204
+    ''
   end
 
   put '/api/todos/:id' do
