@@ -1,7 +1,8 @@
 /**
  * Type-only verification that the Popover API attributes (`popover`,
  * `popovertarget`, `popovertargetaction`) type-check in JSX without a
- * `@ts-expect-error` escape (#3236).
+ * `@ts-expect-error` escape (#3236) — except the one deliberately-rejected
+ * case noted below.
  *
  * `popover` is a global attribute (`HTMLBaseAttributes`, checked here via
  * `<div>`); `popovertarget`/`popovertargetaction` are checked on `<button>`
@@ -20,6 +21,13 @@ const _popoverEmpty = <div popover="">...</div>
 const _popoverAuto = <div popover="auto">...</div>
 const _popoverManual = <div popover="manual">...</div>
 const _popoverHint = <div popover="hint">...</div>
+
+// A `boolean` value is rejected on purpose (Pullfrog review on #3255):
+// `popover={false}` would render `popover="false"`, an invalid keyword the
+// spec maps to `manual` — so the element would STILL be a popover, not
+// opted out — and `popover={true}` renders `"true"`, also `manual`, not
+// `auto`. Neither reflects what the boolean value means.
+// @ts-expect-error - boolean is not a valid `popover` value, see html-types.ts
 const _popoverBoolean = <div popover={true}>...</div>
 
 // `popovertarget` / `popovertargetaction` on `<button>`.
