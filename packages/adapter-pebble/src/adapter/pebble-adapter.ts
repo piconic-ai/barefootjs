@@ -1573,7 +1573,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
         // Boolean attributes: render conditionally (present or absent).
         // Pebble's symbolic ternary (see the file header syntax table) —
         // `(test ? a : b)`, not Jinja's word-based `(a if test else b)`.
-        const pebble = this.convertExpressionToPebble(value.expr)
+        const pebble = this.convertExpressionToPebble(value.expr, value.parsed)
         return `{{ (${this.wrapConditionExpr(value.expr, pebble)} ? '${name}' : '') }}`
       }
       if (value.presenceOrUndefined) {

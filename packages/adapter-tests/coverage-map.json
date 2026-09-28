@@ -1940,6 +1940,37 @@
         "text"
       ]
     },
+    "create-mutation-form": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "create-mutation-request-client-only": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "create-query-action-read": {
       "kinds": [
         "call",

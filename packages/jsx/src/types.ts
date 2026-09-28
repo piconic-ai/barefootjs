@@ -1657,9 +1657,9 @@ export interface SignalInfo {
  * `initialValue` like any other signal.
  */
 export interface SignalFactoryCall {
-  /** Which factory. `createMutation` (#3210) adds its own kind. */
-  kind: 'query'
-  /** The callee as written: `createQuery`, an alias, or `bf.createQuery`. */
+  /** Which factory: `createQuery` (#3165) or `createMutation` (#3210). */
+  kind: 'query' | 'mutation'
+  /** The callee as written: `createQuery` / `createMutation`, an alias, or `bf.createQuery`. */
   callee: string
   /**
    * The call's argument list as JS (type annotations stripped), emitted

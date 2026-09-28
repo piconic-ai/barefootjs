@@ -67,6 +67,9 @@ export {
   createQuery,
   type CreateQueryOptions,
   type QueryAction,
+  createMutation,
+  type CreateMutationOptions,
+  type MutationAction,
 } from '@barefootjs/client/async'
 
 // Context API (real DOM-bound implementations; `createContext` is the

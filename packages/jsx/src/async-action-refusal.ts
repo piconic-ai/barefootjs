@@ -262,10 +262,10 @@ function pushDiagnostic(errors: CompilerError[], seen: Set<string>, loc: SourceL
   seen.add(key)
   const what =
     read.kind === 'accessor'
-      ? `'${read.action}.${read.accessor}' reads a query action's accessor`
+      ? `'${read.action}.${read.accessor}' reads an async action's accessor`
       : read.kind === 'call'
-        ? `'${read.action}()' calls a query action, which sends a request,`
-        : `${read.declaration} '${read.name}' reads the query action '${read.action}' and is used`
+        ? `'${read.action}()' calls an async action, which sends a request,`
+        : `${read.declaration} '${read.name}' reads the async action '${read.action}' and is used`
   errors.push({
     code: ErrorCodes.ASYNC_ACTION_READ_IN_TEMPLATE,
     severity: 'error',

@@ -362,7 +362,7 @@ export function PostList(props: { posts: Post[] }) {
         const { errors } = compile(withBody(body), { hono })
         const bf117 = errors.filter((e) => e.code === 'BF117')
         expect(bf117).toHaveLength(1)
-        expect(bf117[0].message).toContain("reads a query action's accessor")
+        expect(bf117[0].message).toContain("reads an async action's accessor")
       }
     })
   }
@@ -447,7 +447,7 @@ describe('BF117: query action reads in template positions', () => {
     // this pass doesn't seed structurally (`action-accessor.ts`'s docstring),
     // so it still refuses.
     expect(bf117.map((e) => e.loc.start.line)).toEqual([11])
-    expect(bf117[0].message).toContain("memo 'busy' reads the query action 'fetchPosts'")
+    expect(bf117[0].message).toContain("memo 'busy' reads the async action 'fetchPosts'")
     expect(bf117[0].suggestion?.escape).toEqual([{ kind: 'client-directive' }])
   })
 
@@ -478,7 +478,7 @@ export function C(props: { items: string[] }) {
 }
 `, { hono: true })
     expect(viaConstant.codes).toContain('BF117')
-    expect(viaConstant.errors.find((e) => e.code === 'BF117')!.message).toContain("constant 'busy' reads the query action 'fetchItems'")
+    expect(viaConstant.errors.find((e) => e.code === 'BF117')!.message).toContain("constant 'busy' reads the async action 'fetchItems'")
 
     const viaFunction = compile(`
 'use client'
@@ -519,7 +519,7 @@ export function C(props: { items: string[] }) {
 `)
     const bf117 = errors.filter((e) => e.code === 'BF117')
     expect(bf117).toHaveLength(1)
-    expect(bf117[0].message).toContain("constant 'label' reads the query action 'fetchItems'")
+    expect(bf117[0].message).toContain("constant 'label' reads the async action 'fetchItems'")
   })
 
   test('allows passing a function that reads the action as a value', () => {

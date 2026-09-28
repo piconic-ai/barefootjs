@@ -1517,7 +1517,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       }
       if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
-        const twig = this.convertExpressionToTwig(value.expr)
+        const twig = this.convertExpressionToTwig(value.expr, value.parsed)
         return `{{ (${this.wrapConditionExpr(value.expr, twig)} ? '${name}' : '') }}`
       }
       if (value.presenceOrUndefined) {

@@ -2,8 +2,8 @@
  * `createMutation` runtime (spec/async.md §7, async layer 0, #3200). One
  * describe per numbered rule in the doc comment on `createMutation` itself.
  *
- * `createMutation` is not exported from `../src/index.ts` yet (same gap as
- * `createQuery`, #3157) — imported directly from its module.
+ * Imported directly from its module so the rules are tested without the
+ * `@barefootjs/client/async` re-export in between.
  */
 
 import { describe, test, expect, afterEach } from 'bun:test'
