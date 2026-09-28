@@ -1667,8 +1667,6 @@ export interface SignalFactoryCall {
    * prop reads into live `_p` reads like any effect body.
    */
   argsText: string
-  /** Free identifiers of `argsText`: what the declaration depends on in client JS. */
-  argsFreeIdentifiers: ReadonlySet<string>
   /**
    * The request function alone (the first argument, type annotations
    * stripped) and its free identifiers — `''` / empty when the call has no

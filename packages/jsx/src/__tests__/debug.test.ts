@@ -1671,18 +1671,23 @@ export function Feed(props: { posts: Post[] }) {
 
   test('a query is a signal source with its request inputs; a mutation has none', () => {
     expect(graph.signals.find(s => s.name === 'posts')!.factory).toEqual({
+      key: 'posts',
       kind: 'query',
       callee: 'createQuery',
       action: 'fetchPosts',
+      value: 'posts',
       requestDeps: ['page'],
     })
     // The mutation's request function also reads `page`, but untracked.
     expect(graph.signals.find(s => s.name === 'saved')!.factory).toEqual({
+      key: 'saved',
       kind: 'mutation',
       callee: 'createMutation',
       action: 'save',
+      value: 'saved',
       requestDeps: [],
     })
+    expect(graph.factories.map(f => f.key)).toEqual(['posts', 'saved'])
     expect(graph.signals.find(s => s.name === 'page')!.consumers).toContain('query:posts')
     expect(graph.signals.find(s => s.name === 'page')!.consumers).not.toContain('query:saved')
   })
@@ -1695,7 +1700,7 @@ export function Feed(props: { posts: Post[] }) {
       'save.error',
     ])
     const consumersOf = (name: string) => graph.accessors.find(a => a.name === name)!.consumers
-    expect(consumersOf('fetchPosts.isPending')).toEqual(['dom:aria-busy', 'memo:busy'])
+    expect(consumersOf('fetchPosts.isPending')).toEqual(['memo:busy', 'dom:aria-busy'])
     expect(consumersOf('fetchPosts.error')).toEqual(['dom:conditional "s0"'])
     expect(consumersOf('save.isPending')).toEqual(['dom:disabled'])
     expect(consumersOf('save.error')).toEqual([])
@@ -1708,7 +1713,7 @@ export function Feed(props: { posts: Post[] }) {
     const path = traceUpdatePath(graph, 'page')!
     const query = path.dependents.find(d => d.name === 'posts')!
     expect(query.kind).toBe('query')
-    expect(query.children.map(c => c.name)).toEqual(['loop "s2"', 'aria-busy', 'busy', 'conditional "s0"'])
+    expect(query.children.map(c => c.name)).toEqual(['loop "s2"', 'busy', 'aria-busy', 'conditional "s0"'])
     expect(traceUpdatePath(graph, 'save.isPending')!.dependents.map(d => d.name)).toEqual(['disabled'])
   })
 
@@ -1723,13 +1728,14 @@ export function Feed(props: { posts: Post[] }) {
   })
 
   test('the JSON form carries the factory and the accessors', () => {
-    const json = graphToJSON(graph) as { signals: { name: string; factory?: unknown }[]; accessors: { name: string }[] }
-    expect(json.signals.find(s => s.name === 'saved')!.factory).toEqual({
-      kind: 'mutation',
-      callee: 'createMutation',
-      action: 'save',
-      requestDeps: [],
-    })
+    const json = graphToJSON(graph) as {
+      signals: { name: string; factory?: unknown }[]
+      factories: unknown[]
+      accessors: { name: string }[]
+    }
+    const saved = { key: 'saved', kind: 'mutation', callee: 'createMutation', action: 'save', value: 'saved', requestDeps: [] }
+    expect(json.signals.find(s => s.name === 'saved')!.factory).toEqual(saved)
+    expect(json.factories).toContainEqual(saved)
     expect(json.accessors.map(a => a.name)).toContain('save.error')
   })
 })
@@ -1766,8 +1772,8 @@ export function Edge(props: { id: string }) {
 
   test('an elided value ([, save]) is keyed by the action, never by the synthesized getter', () => {
     expect(graph.signals.map(s => s.name)).toEqual(['ttl', 'posts'])
-    const pending = graph.accessors.find(a => a.name === 'save.isPending')!
-    expect(pending).toMatchObject({ factory: 'save', value: null, callee: 'createMutation' })
+    expect(graph.accessors.find(a => a.name === 'save.isPending')!.factory).toBe('save')
+    expect(graph.factories.find(f => f.key === 'save')).toMatchObject({ value: null, callee: 'createMutation' })
     expect(formatComponentGraph(graph)).toContain('save.isPending() (createMutation, value not destructured)')
     expect(JSON.stringify(graphToJSON(graph))).not.toContain('__bfGet_')
   })
@@ -1793,5 +1799,34 @@ export function Edge(props: { id: string }) {
     const result = buildWhyUpdate(source, 'Edge.tsx', 's3')!
     expect(result.deps.find(d => d.name === 'posts')).toMatchObject({ kind: 'signal', dependsOn: ['props.id'] })
     expect(result.deps.map(d => d.name)).toContain('props.id')
+  })
+})
+
+describe('async factories in the graph: value not destructured, effects (#3167 review)', () => {
+  const source = `
+'use client'
+import { createQuery, createEffect, createSignal, http } from '@barefootjs/client'
+export function Bare() {
+  const [page, setPage] = createSignal(1)
+  const [, fetchPosts] = createQuery(() => http.get('/api/posts', { page: page() }))
+  createEffect(() => { if (fetchPosts.error()) console.warn('failed') })
+  return (
+    <div aria-busy={fetchPosts.isPending()}>
+      <button onClick={() => setPage(page() + 1)}>next</button>
+    </div>
+  )
+}
+`
+  const graph = buildComponentGraph(source, 'Bare.tsx')
+
+  test('an effect that reads an accessor is its consumer', () => {
+    expect(graph.effects[0].deps).toContain('fetchPosts.error')
+    expect(graph.accessors.find(a => a.name === 'fetchPosts.error')!.consumers).toEqual(['effect:e0'])
+  })
+
+  test('why-update keeps a query\'s request inputs when its value is not destructured', () => {
+    const result = buildWhyUpdate(source, 'Bare.tsx', 'aria-busy')!
+    expect(result.deps.find(d => d.name === 'fetchPosts.isPending')).toMatchObject({ kind: 'accessor', dependsOn: ['page'] })
+    expect(result.deps.find(d => d.name === 'page')!.changedBy[0]).toMatchObject({ setter: 'setPage' })
   })
 })

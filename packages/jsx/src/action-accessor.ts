@@ -112,6 +112,75 @@ export function matchActionAccessorCall(
 }
 
 /**
+ * The direct sub-expressions of `expr`, each with the arrow parameters it is
+ * evaluated under (`params`, set only for an arrow's body). The one traversal
+ * of a `ParsedExpr` for action reads: BF117's refusal walk
+ * (`async-action-refusal.ts`) and {@link collectActionAccessorReads} both
+ * recurse through it, so they cannot disagree about which sub-expressions a
+ * read can hide in, or which names an arrow parameter shadows.
+ */
+export function parsedExprChildren(expr: ParsedExpr): Array<{ expr: ParsedExpr; params?: readonly string[] }> {
+  const all = (...exprs: ParsedExpr[]) => exprs.map((e) => ({ expr: e }))
+  switch (expr.kind) {
+    case 'member':
+      return all(expr.object)
+    case 'call':
+      return all(expr.callee, ...expr.args)
+    case 'index-access':
+      return all(expr.object, expr.index)
+    case 'binary':
+    case 'logical':
+      return all(expr.left, expr.right)
+    case 'unary':
+      return all(expr.argument)
+    case 'conditional':
+      return all(expr.test, expr.consequent, expr.alternate)
+    case 'template-literal':
+      return all(...expr.parts.flatMap((p) => (p.type === 'expression' ? [p.expr] : [])))
+    case 'array-literal':
+      return all(...expr.elements)
+    case 'object-literal':
+      return all(...expr.properties.map((p) => (p.kind === 'spread' ? p.expr : p.value)))
+    case 'array-method':
+      return all(expr.object, ...expr.args, ...(expr.method === 'flat' && expr.depthExpr ? [expr.depthExpr] : []))
+    case 'arrow':
+      return [{ expr: expr.body, params: expr.params }]
+    case 'identifier':
+    case 'literal':
+    case 'regex':
+    case 'unsupported':
+      return []
+  }
+}
+
+/**
+ * Every `<action>.isPending()` / `<action>.error()` read in `expr`, in
+ * first-seen order and without duplicates (`bf debug graph`, #3167). An action
+ * name an enclosing arrow parameter rebinds, or that `isBound` reports bound
+ * (a loop row's parameter), is not the action.
+ */
+export function collectActionAccessorReads(
+  expr: ParsedExpr,
+  actions: ReadonlySet<string>,
+  isBound: (name: string) => boolean = () => false,
+): ActionAccessorRead[] {
+  const reads: ActionAccessorRead[] = []
+  if (actions.size === 0) return reads
+  const visit = (e: ParsedExpr, bound: ReadonlySet<string>): void => {
+    const read = matchActionAccessorCall(e, actions)
+    if (read && !bound.has(read.action) && !isBound(read.action)) {
+      if (!reads.some((r) => r.action === read.action && r.accessor === read.accessor)) reads.push(read)
+      return
+    }
+    for (const child of parsedExprChildren(e)) {
+      visit(child.expr, child.params ? new Set([...bound, ...child.params]) : bound)
+    }
+  }
+  visit(expr, new Set())
+  return reads
+}
+
+/**
  * ARIA boolean-state attributes: the attribute names on which every DSL
  * adapter stringifies a boolean value JS-style (`"true"` / `"false"`), which
  * is what Hono renders for `aria-*={false}`. Must stay a subset of each DSL

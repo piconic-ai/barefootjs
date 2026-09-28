@@ -20,7 +20,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
-  const { buildComponentGraph, traceUpdatePath, formatUpdatePath } = await import('@barefootjs/jsx')
+  const { buildComponentGraph, traceUpdatePath, traceableNames, formatUpdatePath } = await import('@barefootjs/jsx')
 
   const searched: string[] = []
   const resolved = resolveComponentSource(componentName, ctx, searched)
@@ -37,12 +37,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   if (!path) {
     console.error(`Error: Signal, memo, prop, or accessor "${targetName}" not found in ${graph.componentName}.`)
-    const available = [
-      ...graph.signals.map(s => s.name),
-      ...graph.memos.map(m => m.name),
-      ...graph.props.map(p => p.name),
-      ...graph.accessors.map(a => a.name),
-    ]
+    const available = traceableNames(graph)
     if (available.length > 0) {
       console.error(`Available: ${available.join(', ')}`)
     }

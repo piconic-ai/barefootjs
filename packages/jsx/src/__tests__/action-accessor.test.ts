@@ -30,7 +30,7 @@ import { isAriaBooleanAttr as twigIsAriaBooleanAttr } from '../../../adapter-twi
 import { isAriaBooleanAttr as xslateIsAriaBooleanAttr } from '../../../adapter-xslate/src/adapter/boolean-result'
 
 function factorySignal(action: string): Pick<SignalInfo, 'factory'> {
-  return { factory: { kind: 'query', callee: 'createQuery', argsText: '', argsFreeIdentifiers: new Set(), requestText: '', requestFreeIdentifiers: new Set(), action } }
+  return { factory: { kind: 'query', callee: 'createQuery', argsText: '', requestText: '', requestFreeIdentifiers: new Set(), action } }
 }
 
 describe('collectActionNames', () => {

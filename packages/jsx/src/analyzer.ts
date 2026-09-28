@@ -1566,11 +1566,7 @@ function collectFactorySignal(
     }
   }
 
-  const argsText = callExpr.arguments.map(arg => ctx.getJS(arg)).join(', ')
-  const argsFreeIdentifiers = new Set<string>()
-  for (const arg of callExpr.arguments) {
-    for (const id of extractFreeIdentifiersFromNode(arg)) argsFreeIdentifiers.add(id)
-  }
+  const argTexts = callExpr.arguments.map(arg => ctx.getJS(arg))
   const requestArg = callExpr.arguments[0]
 
   ctx.signals.push({
@@ -1586,10 +1582,9 @@ function collectFactorySignal(
     factory: {
       kind,
       callee: callExpr.expression.getText(ctx.sourceFile),
-      argsText,
-      argsFreeIdentifiers,
-      requestText: requestArg ? ctx.getJS(requestArg) : '',
-      requestFreeIdentifiers: requestArg ? new Set(extractFreeIdentifiersFromNode(requestArg)) : new Set(),
+      argsText: argTexts.join(', '),
+      requestText: argTexts[0] ?? '',
+      requestFreeIdentifiers: requestArg ? extractFreeIdentifiersFromNode(requestArg) : new Set(),
       action,
     },
   })

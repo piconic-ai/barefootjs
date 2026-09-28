@@ -256,6 +256,7 @@ export {
   buildLoopSummary,
   buildWhyUpdate,
   traceUpdatePath,
+  traceableNames,
   formatComponentGraph,
   formatUpdatePath,
   formatEventSummary,
