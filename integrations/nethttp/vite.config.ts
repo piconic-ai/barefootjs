@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   plugins: barefoot({
-    components: ['../shared/components', '../shared/blog'],
+    components: ['../shared/components', '../shared/blog', '../shared/query-todo'],
     // `main.go`'s `loadTemplates` walks `dist/templates` recursively, and
     // `mux.Handle("GET "+basePath+"/static/", ...)` already serves
     // everything under `dist/` (including `dist/templates`).

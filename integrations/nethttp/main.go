@@ -282,6 +282,7 @@ func main() {
 	mux.HandleFunc("GET "+basePath+"/toggle", toggleHandler)
 	mux.HandleFunc("GET "+basePath+"/todos", todosHandler)
 	mux.HandleFunc("GET "+basePath+"/todos-ssr", todosSSRHandler)
+	mux.HandleFunc("GET "+basePath+"/todos-query", todosQueryHandler)
 	mux.HandleFunc("GET "+basePath+"/reactive-props", reactivePropsHandler)
 	mux.HandleFunc("GET "+basePath+"/props-reactivity", propsReactivityHandler)
 	mux.HandleFunc("GET "+basePath+"/form", formHandler)
@@ -299,6 +300,9 @@ func main() {
 	// Todo API endpoints
 	mux.HandleFunc("GET "+basePath+"/api/todos", getTodosAPI)
 	mux.HandleFunc("POST "+basePath+"/api/todos", createTodoAPI)
+	// The two list-wide writes of /todos-query, one request each.
+	mux.HandleFunc("PUT "+basePath+"/api/todos", setAllTodosDoneAPI)
+	mux.HandleFunc("DELETE "+basePath+"/api/todos/completed", clearCompletedTodosAPI)
 	mux.HandleFunc("PUT "+basePath+"/api/todos/{id}", updateTodoAPI)
 	mux.HandleFunc("DELETE "+basePath+"/api/todos/{id}", deleteTodoAPI)
 	mux.HandleFunc("POST "+basePath+"/api/todos/reset", resetTodosAPI)
@@ -342,9 +346,10 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
         <li><a href="%s/toggle">Toggle</a></li>
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
+        <li><a href="%s/todos-query">Todo (createQuery / createMutation)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
         <li><a href="%s/blog">Blog (@barefootjs/router — partial navigation)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath)
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, `<!DOCTYPE html>
@@ -434,6 +439,31 @@ func todosSSRHandler(w http.ResponseWriter, req *http.Request) {
 	render(w, http.StatusOK, "TodoAppSSR", bf.RenderOptions{
 		Props: &props,
 		Title: "TodoMVC SSR - BarefootJS",
+	})
+}
+
+// todosQueryHandler renders the createQuery / createMutation todo app.
+// `InitialTodos` seeds its query (mode A): the list is rendered here, and
+// the client sends no request on mount. Writes go through the API below
+// and re-fetch the list.
+func todosQueryHandler(w http.ResponseWriter, req *http.Request) {
+	state := getSession(w, req)
+	state.mu.Lock()
+	currentTodos := make([]Todo, len(state.todos))
+	copy(currentTodos, state.todos)
+	state.mu.Unlock()
+
+	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: currentTodos})
+	props.QueryTodoItems = make([]QueryTodoItemProps, len(currentTodos))
+	for i, t := range currentTodos {
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		props.QueryTodoItems[i] = QueryTodoItemProps{Todo: t}
+	}
+
+	render(w, http.StatusOK, "QueryTodoApp", bf.RenderOptions{
+		Props: &props,
+		Title: "TodoMVC (createQuery) - BarefootJS",
 	})
 }
 
@@ -581,6 +611,40 @@ func deleteTodoAPI(w http.ResponseWriter, req *http.Request) {
 	}
 
 	writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+}
+
+// setAllTodosDoneAPI sets every todo's done flag ("toggle all").
+func setAllTodosDoneAPI(w http.ResponseWriter, req *http.Request) {
+	var input struct {
+		Done bool `json:"done"`
+	}
+	if err := json.NewDecoder(req.Body).Decode(&input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid input"})
+		return
+	}
+
+	state := getSession(w, req)
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	for i := range state.todos {
+		state.todos[i].Done = input.Done
+	}
+	writeJSON(w, http.StatusOK, state.todos)
+}
+
+// clearCompletedTodosAPI removes every done todo ("clear completed").
+func clearCompletedTodosAPI(w http.ResponseWriter, req *http.Request) {
+	state := getSession(w, req)
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	remaining := make([]Todo, 0, len(state.todos))
+	for _, todo := range state.todos {
+		if !todo.Done {
+			remaining = append(remaining, todo)
+		}
+	}
+	state.todos = remaining
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func resetTodosAPI(w http.ResponseWriter, req *http.Request) {
