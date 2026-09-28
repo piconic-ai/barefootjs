@@ -343,6 +343,8 @@ Then register in `fixtures/index.ts` and both adapter test suites will automatic
 
 A fixture change also moves four committed ledgers, each with its own CI drift gate: `expectedHtml`, `packages/adapter-tests/coverage-map.json`, `ui/compat.lock.json` and `ui/support-matrix.lock.json`. Run `bun run fixtures:regen` before pushing; it rebuilds the adapters and regenerates all four in dependency order.
 
+The three JSON ledgers commit per-fixture / per-cell facts only, never aggregates: no per-kind or per-axis fixture counts, no corpus size, no `pass`/`total`. Those lines would change on every fixture PR, so two unrelated fixture PRs would always conflict on them. Readers derive the numbers through one helper per file: `computeCoverageCounts` (`packages/adapter-tests/src/coverage-map-counts.ts`) for the coverage map and the render-conformance headline's corpus size, and `computeSupportMatrixCounts` (`packages/compat/src/support-matrix-counts.ts`) for the support matrix's `pass/total`. The drift gates are unchanged: they regenerate and diff the facts.
+
 Conformance cases that render through a real backend run as `test.concurrent` (`packages/adapter-tests/src/render-test.ts`), so several render processes are in flight at once. Set `BF_CONFORMANCE_SERIAL=1` to run them one by one when a failure looks order-dependent.
 
 ### Adapter test runner

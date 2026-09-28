@@ -163,7 +163,7 @@ describe('rowWorksEverywhere — decides which fixtures need a row in the "needs
 })
 
 const { loaded } = await loadCompatAdapters()
-const fd = buildFixtureDivergences(loaded, jsxFixtures.length, jsxFixtures)
+const fd = buildFixtureDivergences(loaded, jsxFixtures)
 
 /** First adapter column on `fixtureId`'s row whose escape state is `state`, or undefined. */
 function findColumnInState(

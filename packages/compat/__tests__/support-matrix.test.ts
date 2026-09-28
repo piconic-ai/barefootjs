@@ -19,6 +19,7 @@ import {
   type SupportMatrixAdapterInput,
   type SupportMatrixCoverageMap,
 } from '../src/support-matrix'
+import { computeSupportMatrixCounts } from '../src/support-matrix-counts'
 
 const LOCK_PATH = resolve(import.meta.dir, '../../../ui/support-matrix.lock.json')
 
@@ -26,8 +27,8 @@ const LOCK_PATH = resolve(import.meta.dir, '../../../ui/support-matrix.lock.json
  * Three synthetic fixtures: `f1` exercises `call` + `literal:string`,
  * `f2` exercises only `call`, `f3` exercises only `literal:string`. No
  * other `PARSED_EXPR_KINDS` entry (e.g. `identifier`, `regex`) is
- * exercised by anything here — those stay at `total: 0` in the report,
- * exactly like the real `regex` row.
+ * exercised by anything here — those derive `total: 0`, exactly like the
+ * real `regex` row.
  */
 function syntheticCoverage(): SupportMatrixCoverageMap {
   return {
@@ -36,9 +37,6 @@ function syntheticCoverage(): SupportMatrixCoverageMap {
       f2: { kinds: ['call'], axes: [] },
       f3: { kinds: [], axes: ['literal:string'] },
     },
-    kindCounts: { call: 2 },
-    axisCounts: { 'literal:string': 2 },
-    uncoveredKinds: ['regex'],
   }
 }
 
@@ -74,6 +72,9 @@ function syntheticAdapters(): SupportMatrixAdapterInput[] {
 
 describe('buildSupportMatrix (synthetic join)', () => {
   const report = buildSupportMatrix(syntheticCoverage(), syntheticAdapters())
+  // The report (= the committed lock shape) carries gaps only; `pass` /
+  // `total` are derived at read time by the one shared helper.
+  const counts = computeSupportMatrixCounts(report, syntheticCoverage())
 
   test('adapter columns: hono first, then alphabetical', () => {
     expect(report.adapters).toEqual(['hono', 'alpha', 'zeta'])
@@ -85,57 +86,63 @@ describe('buildSupportMatrix (synthetic join)', () => {
 
   test('a covered kind: total + ratio + gap drill-down', () => {
     const call = report.kinds.call
-    expect(call.total).toBe(2) // f1, f2
+    expect(counts.kinds.call.total).toBe(2) // f1, f2
 
     // zeta: no pins/divergences anywhere — fully clean.
-    expect(call.cells.zeta).toEqual({ pass: 2, total: 2 })
+    expect(call.cells.zeta).toEqual({})
+    expect(counts.kinds.call.cells.zeta).toEqual({ pass: 2, total: 2 })
 
     // alpha: no pins on f1/f2 either — clean, even though it has an
     // unrelated renderDivergence on f3 (which doesn't exercise `call`).
-    expect(call.cells.alpha).toEqual({ pass: 2, total: 2 })
+    expect(call.cells.alpha).toEqual({})
+    expect(counts.kinds.call.cells.alpha).toEqual({ pass: 2, total: 2 })
 
     // hono: f1 gapped via pins, f2 clean. Limitation ids dedup+sorted.
-    expect(call.cells.hono).toEqual({
-      pass: 1,
-      total: 2,
-      gaps: [{ fixture: 'f1', limitations: ['lim-1', 'lim-2'] }],
-    })
+    expect(call.cells.hono).toEqual({ gaps: [{ fixture: 'f1', limitations: ['lim-1', 'lim-2'] }] })
+    expect(counts.kinds.call.cells.hono).toEqual({ pass: 1, total: 2 })
   })
 
   test('an axis: total + ratio + render-divergence gap citing its limitation', () => {
     const axis = report.axes['literal:string']
-    expect(axis.total).toBe(2) // f1, f3
+    const axisCounts = counts.axes['literal:string']
+    expect(axisCounts.total).toBe(2) // f1, f3
 
     // zeta: clean.
-    expect(axis.cells.zeta).toEqual({ pass: 2, total: 2 })
+    expect(axis.cells.zeta).toEqual({})
+    expect(axisCounts.cells.zeta).toEqual({ pass: 2, total: 2 })
 
     // hono: f1 gapped via pins (same fixture, same limitations as the `call` case).
-    expect(axis.cells.hono).toEqual({
-      pass: 1,
-      total: 2,
-      gaps: [{ fixture: 'f1', limitations: ['lim-1', 'lim-2'] }],
-    })
+    expect(axis.cells.hono).toEqual({ gaps: [{ fixture: 'f1', limitations: ['lim-1', 'lim-2'] }] })
+    expect(axisCounts.cells.hono).toEqual({ pass: 1, total: 2 })
 
     // alpha: f3 gapped via renderDivergences only — cites the divergence's limitation.
-    expect(axis.cells.alpha).toEqual({
-      pass: 1,
-      total: 2,
-      gaps: [{ fixture: 'f3', limitations: ['lim-render'] }],
-    })
+    expect(axis.cells.alpha).toEqual({ gaps: [{ fixture: 'f3', limitations: ['lim-render'] }] })
+    expect(axisCounts.cells.alpha).toEqual({ pass: 1, total: 2 })
   })
 
   test('an uncovered construct reports total: 0 with no gaps, for every adapter', () => {
     // `identifier` isn't exercised by any synthetic fixture — same shape
-    // the real matrix gives `regex` (packages/adapter-tests/coverage-map.json's
-    // uncoveredKinds).
+    // the real matrix gives `regex`.
     const identifier = report.kinds.identifier
-    expect(identifier.total).toBe(0)
+    expect(counts.kinds.identifier.total).toBe(0)
     for (const adapterId of report.adapters) {
-      expect(identifier.cells[adapterId]).toEqual({ pass: 0, total: 0 })
+      expect(identifier.cells[adapterId]).toEqual({})
+      expect(counts.kinds.identifier.cells[adapterId]).toEqual({ pass: 0, total: 0 })
     }
   })
 
-  test('axes are exactly coverage.axisCounts keys (no uncovered-axis row)', () => {
+  test('the report stores no aggregate: no construct `total`, no cell `pass`/`total`', () => {
+    for (const section of [report.kinds, report.axes]) {
+      for (const construct of Object.values(section)) {
+        expect(construct).not.toHaveProperty('total')
+        for (const cell of Object.values(construct.cells)) {
+          expect(Object.keys(cell).filter(key => key !== 'gaps')).toEqual([])
+        }
+      }
+    }
+  })
+
+  test('axes are exactly the exercised axes (no uncovered-axis row)', () => {
     expect(Object.keys(report.axes)).toEqual(['literal:string'])
   })
 })

@@ -2,6 +2,8 @@ import { describe, test, expect, afterEach } from 'bun:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
+import coverageMapJson from '../../../adapter-tests/coverage-map.json' with { type: 'json' }
+import { computeCoverageCounts } from '../../../adapter-tests/src/coverage-map-counts'
 import { renderLockToMarkdown } from '../cli'
 import { buildCompatReport, formatCompatJson, formatCompatMarkdown } from '../report'
 
@@ -42,7 +44,24 @@ describe('renderLockToMarkdown', () => {
     writeFileSync(lockPath, formatCompatJson(report))
 
     const rendered = renderLockToMarkdown(lockPath)
-    expect(rendered).toBe(formatCompatMarkdown(report))
+    expect(rendered).toBe(formatCompatMarkdown(report, 0))
+  })
+
+  test('the render-conformance headline takes its corpus size from the committed coverage map', () => {
+    // The lock carries no corpus-size aggregate; `--render` derives the
+    // headline's denominator from `coverage-map.json`'s per-fixture facts.
+    const report = buildCompatReport(
+      { alpha: { 'adapter-a': { ok: true, diagnostics: [] } } },
+      { note: 'n', fixtures: { f1: { 'adapter-a': { kind: 'render', limitations: ['lim-1'] } } } },
+    )
+    const lockPath = tmpFile('compat.lock.json')
+    writeFileSync(lockPath, formatCompatJson(report))
+
+    const corpusSize = computeCoverageCounts(coverageMapJson).fixtureCount
+    expect(corpusSize).toBeGreaterThan(1)
+    const rendered = renderLockToMarkdown(lockPath)
+    expect(rendered).toBe(formatCompatMarkdown(report, corpusSize))
+    expect(rendered).toContain(`${corpusSize - 1} of ${corpusSize} fixtures work on every adapter`)
   })
 
   test('missing file throws a clear error', () => {

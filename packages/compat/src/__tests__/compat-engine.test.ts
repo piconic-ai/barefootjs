@@ -205,7 +205,8 @@ describe('formatCompatMarkdown', () => {
       },
     })
 
-    const md = formatCompatMarkdown(report)
+    // No fixture divergences, so the corpus size never reaches the output.
+    const md = formatCompatMarkdown(report, 0)
     const alphaLine = md.split('\n').find(line => line.startsWith('| alpha |'))
     expect(alphaLine).toBe('| alpha | ✓ | ? |')
   })

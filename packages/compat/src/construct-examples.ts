@@ -20,6 +20,7 @@
 import ts from 'typescript'
 import { ARRAY_METHOD_NAMES } from '@barefootjs/jsx'
 import { jsxFixtures } from '../../adapter-tests/fixtures'
+import { computeCoverageCounts } from '../../adapter-tests/src/coverage-map-counts'
 import { blobUrl, fixtureFileMap } from './repo-links'
 import type { SupportMatrixCoverageMap } from './support-matrix'
 
@@ -239,13 +240,14 @@ export function computeConstructExamples(coverage: SupportMatrixCoverageMap): Co
     return example
   }
 
+  const { kindCounts, axisCounts } = computeCoverageCounts(coverage)
   const kinds: Record<string, ConstructExample> = {}
   const axes: Record<string, ConstructExample> = {}
-  for (const c of Object.keys(coverage.kindCounts)) {
+  for (const c of Object.keys(kindCounts)) {
     const ex = exemplarFor(c, 'kinds')
     if (ex) kinds[c] = ex
   }
-  for (const c of Object.keys(coverage.axisCounts)) {
+  for (const c of Object.keys(axisCounts)) {
     const ex = exemplarFor(c, 'axes')
     if (ex) axes[c] = ex
   }

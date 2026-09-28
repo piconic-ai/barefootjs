@@ -8,7 +8,9 @@
  * 1. **Freshness** — the committed file equals a recomputation from the
  *    current fixtures + compiler, so the ledger can never silently
  *    drift from reality (regen:
- *    `bun packages/adapter-tests/scripts/coverage-map.ts`).
+ *    `bun packages/adapter-tests/scripts/coverage-map.ts`). The file
+ *    holds per-fixture facts only; every count below is derived from
+ *    them through `computeCoverageCounts`, never committed.
  * 2. **Ledger floor** — every kind in the `PARSED_EXPR_KINDS` registry
  *    is exercised by at least one fixture OR carries a documented
  *    exclusion below. A kind-level floor is bookkeeping, not behavioral
@@ -28,6 +30,7 @@ import {
   SORT_KEY_DIRECTIONS,
 } from '@barefootjs/jsx'
 import { computeCoverageMap } from '../coverage-map'
+import { computeCoverageCounts } from '../coverage-map-counts'
 
 /**
  * Registry kinds allowed to stay uncovered, each with the reason. An
@@ -79,6 +82,7 @@ const MAP_PATH = resolve(import.meta.dir, '../../coverage-map.json')
 
 describe('coverage ledger', () => {
   const recomputed = computeCoverageMap()
+  const counts = computeCoverageCounts(recomputed)
 
   test('committed coverage-map.json is fresh', () => {
     const committed = JSON.parse(readFileSync(MAP_PATH, 'utf8'))
@@ -99,21 +103,21 @@ describe('coverage ledger', () => {
       }
     }
     if (!Bun.deepEquals(committed, recomputed)) {
-      throw new Error(`coverage-map.json aggregates are stale (kindCounts/axisCounts/uncoveredKinds). ${REGEN}`)
+      throw new Error(`coverage-map.json has top-level content beyond per-fixture facts. ${REGEN}`)
     }
     expect(committed).toEqual(recomputed)
   })
 
   test('every ParsedExpr kind is exercised or documented uncovered', () => {
     const holes = PARSED_EXPR_KINDS.filter(
-      kind => !recomputed.kindCounts[kind] && !(kind in UNCOVERED_KIND_ALLOWLIST),
+      kind => !counts.kindCounts[kind] && !(kind in UNCOVERED_KIND_ALLOWLIST),
     )
     expect(holes).toEqual([])
   })
 
   test('no stale allowlist entries (covered kinds must graduate)', () => {
     const stale = Object.keys(UNCOVERED_KIND_ALLOWLIST).filter(
-      kind => (recomputed.kindCounts[kind] ?? 0) > 0,
+      kind => (counts.kindCounts[kind] ?? 0) > 0,
     )
     expect(stale).toEqual([])
   })
@@ -126,7 +130,7 @@ describe('coverage ledger', () => {
   test('every catalogued array-method is exercised by ≥1 fixture or documented uncovered', () => {
     const holes = ARRAY_METHOD_NAMES.filter(
       method =>
-        !recomputed.axisCounts[`array-method:${method}`] &&
+        !counts.axisCounts[`array-method:${method}`] &&
         !(method in UNCOVERED_ARRAY_METHOD_ALLOWLIST),
     )
     expect(holes).toEqual([])
@@ -134,7 +138,7 @@ describe('coverage ledger', () => {
 
   test('no stale array-method allowlist entries (covered methods must graduate)', () => {
     const stale = Object.keys(UNCOVERED_ARRAY_METHOD_ALLOWLIST).filter(
-      method => (recomputed.axisCounts[`array-method:${method}`] ?? 0) > 0,
+      method => (counts.axisCounts[`array-method:${method}`] ?? 0) > 0,
     )
     expect(stale).toEqual([])
   })
@@ -147,14 +151,14 @@ describe('coverage ledger', () => {
   // conformance fixture until the fixture landed alongside this test.
   test('every builtin lowering plugin is exercised by ≥1 fixture or documented uncovered', () => {
     const holes = BUILTIN_LOWERING_PLUGINS.map(p => p.name).filter(
-      name => !recomputed.axisCounts[`lowering:${name}`] && !(name in UNCOVERED_LOWERING_ALLOWLIST),
+      name => !counts.axisCounts[`lowering:${name}`] && !(name in UNCOVERED_LOWERING_ALLOWLIST),
     )
     expect(holes).toEqual([])
   })
 
   test('no stale lowering allowlist entries (covered plugins must graduate)', () => {
     const stale = Object.keys(UNCOVERED_LOWERING_ALLOWLIST).filter(
-      name => (recomputed.axisCounts[`lowering:${name}`] ?? 0) > 0,
+      name => (counts.axisCounts[`lowering:${name}`] ?? 0) > 0,
     )
     expect(stale).toEqual([])
   })
@@ -166,14 +170,14 @@ describe('coverage ledger', () => {
   // member a compile error; this floor then demands its fixture.
   test('every sort-catalogue member is exercised by ≥1 fixture or documented uncovered', () => {
     const holes = SORT_AXES.filter(
-      axis => !recomputed.axisCounts[axis] && !(axis in UNCOVERED_SORT_AXIS_ALLOWLIST),
+      axis => !counts.axisCounts[axis] && !(axis in UNCOVERED_SORT_AXIS_ALLOWLIST),
     )
     expect(holes).toEqual([])
   })
 
   test('no stale sort-axis allowlist entries (covered members must graduate)', () => {
     const stale = Object.keys(UNCOVERED_SORT_AXIS_ALLOWLIST).filter(
-      axis => (recomputed.axisCounts[axis] ?? 0) > 0,
+      axis => (counts.axisCounts[axis] ?? 0) > 0,
     )
     expect(stale).toEqual([])
   })

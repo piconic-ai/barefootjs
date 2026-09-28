@@ -141,8 +141,10 @@ single fixture cannot witness.
   `binary:<op>`, `unary:<op>`, `literal:<literalType>`,
   `array-method:<method>`, `member:optional`/`computed`), and lowering
   contexts (text / attribute / condition / loop). The committed
-  `coverage-map.json` is held by two meta-tests: **freshness** (equals a
-  recomputation) and the **ledger floor** (every kind in the
+  `coverage-map.json` (per-fixture facts only; the per-kind / per-axis
+  counts are derived at read time by `computeCoverageCounts`, never
+  committed, so fixture PRs don't conflict on them) is held by two
+  meta-tests: **freshness** (equals a recomputation) and the **ledger floor** (every kind in the
   `PARSED_EXPR_KINDS` registry — a runtime list exhaustiveness-pinned
   against the type union — is exercised or carries a documented
   exclusion, and covered kinds must graduate off the exclusion list).
