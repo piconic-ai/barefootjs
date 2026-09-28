@@ -46,6 +46,8 @@ component's Go template and wraps it in `defaultLayout`.
   `/integrations/chi/reactive-props`, `/integrations/chi/conditional-return` — component demos
 - `/integrations/chi/todos` / `/integrations/chi/todos-ssr` — interactive todo list backed by an
   in-memory, per-session (`bf_session` cookie) store
+- `/integrations/chi/todos-query` — the same list on `createQuery` / `createMutation`, seeded from
+  the session (its list-wide writes are `PUT /api/todos` and `DELETE /api/todos/completed`)
 - `/integrations/chi/ai-chat` + `/integrations/chi/api/ai-chat` — token-by-token SSE streaming demo
 - `/integrations/chi/static/assets/*` — compiled, content-hashed client JS (Vite `build.assetsDir` default)
 - `/integrations/chi/shared/styles/*` — shared CSS (copied into `dist/shared` by

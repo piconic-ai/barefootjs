@@ -77,7 +77,7 @@ import django
 
 django.setup()
 
-from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
+from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect
 from django.urls import path
 from django.views.static import serve as static_serve
@@ -513,7 +513,7 @@ def todos_query_route(request):
         children={"query_todo_item": "QueryTodoItem"},
         signal_init={"query_todo_item": lambda p: stash_from_ssr_defaults("QueryTodoItem", p)},
         props={"initialTodos": todos},
-        stash={"todos": todos, "newText": "", "filter": "all"},
+        stash={"newText": "", "filter": "all"},
     )
     return with_session_cookie(html_response(html), minted)
 
@@ -596,6 +596,10 @@ def api_todos_item(request, todo_id: int):
 # (DELETE /api/todos/completed). Routed before `<int:todo_id>` in
 # urlpatterns, next to /api/todos/reset.
 def api_todos_clear_completed(request):
+    # Django's path() routes every verb here; only DELETE may write, so a GET
+    # (a navigation, a prefetch) can never clear the list.
+    if request.method != "DELETE":
+        return HttpResponseNotAllowed(["DELETE"])
     session, _minted = get_session(request)
     session["todos"] = [t for t in session["todos"] if not t["done"]]
     return HttpResponse(status=204)

@@ -46,6 +46,8 @@ component's Go template and wraps it in `defaultLayout`.
   `/integrations/nethttp/reactive-props`, `/integrations/nethttp/conditional-return` — component demos
 - `/integrations/nethttp/todos` / `/integrations/nethttp/todos-ssr` — interactive todo list backed by an
   in-memory, per-session (`bf_session` cookie) store
+- `/integrations/nethttp/todos-query` — the same list on `createQuery` / `createMutation`, seeded from
+  the session (its list-wide writes are `PUT /api/todos` and `DELETE /api/todos/completed`)
 - `/integrations/nethttp/ai-chat` + `/integrations/nethttp/api/ai-chat` — token-by-token SSE streaming demo
 - `/integrations/nethttp/static/assets/*` — compiled, content-hashed client JS (Vite `build.assetsDir` default)
 - `/integrations/nethttp/shared/styles/*` — shared CSS (copied into `dist/shared` by

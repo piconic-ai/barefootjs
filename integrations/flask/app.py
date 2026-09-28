@@ -493,7 +493,7 @@ def todos_query_route():
         children={"query_todo_item": "QueryTodoItem"},
         signal_init={"query_todo_item": lambda p: stash_from_ssr_defaults("QueryTodoItem", p)},
         props={"initialTodos": todos},
-        stash={"todos": todos, "newText": "", "filter": "all"},
+        stash={"newText": "", "filter": "all"},
     )
     return with_session_cookie(html_response(html), minted)
 

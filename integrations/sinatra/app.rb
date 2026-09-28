@@ -480,7 +480,7 @@ class SinatraApp < Sinatra::Base
     render_component(component,
                       children: { 'todo_item' => 'TodoItem' },
                       props: { initialTodos: todos },
-                      stash: { todos: todos, newText: '', filter: 'all', doneCount: done })
+                      stash: { initialTodos: todos, todos: todos, newText: '', filter: 'all', doneCount: done })
   end
 
   # The createQuery / createMutation todo app. `initialTodos` seeds its query

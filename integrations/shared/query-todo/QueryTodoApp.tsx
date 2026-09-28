@@ -18,9 +18,12 @@
 //
 // The template reads the query value directly (`todos() ?? []`) instead of
 // through memos. A template adapter renders these expressions from the
-// seeded value on its own, while a memo's value would have to be computed
-// by each backend's handler. Without `initialTodos`, `todos()` is undefined
-// until the first response, hence the `?? []`.
+// seeded value on its own, while a memo over a prop-seeded value is not
+// seeded on every adapter (known limitation
+// `memo-length-of-prop-seeded-array`), so each backend's handler would have
+// to compute it. Restore the memos once that limitation is gone. Without
+// `initialTodos`, `todos()` is undefined until the first response, hence
+// the `?? []`.
 
 import { createMutation, createQuery, createSignal, http, onMount } from '@barefootjs/client'
 import QueryTodoItem from './QueryTodoItem'
