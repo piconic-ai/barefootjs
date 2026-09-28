@@ -1,9 +1,10 @@
-// bf debug trace <component> <signal|memo|prop> — Show update propagation path.
+// bf debug trace <component> <signal|memo|prop|accessor> — Show update propagation path.
 //
 // Reverse-lookup: "why does this DOM node update?"
 // Shows every signal, memo, effect, and DOM binding in the propagation chain.
 // A prop is named as `bf debug graph` spells it: `title` (destructured) or
-// `props.value` (props-object member) — #2903.
+// `props.value` (props-object member) — #2903. An async action's accessor is
+// named `<action>.isPending` / `<action>.error` (#3167).
 
 import { readFileSync } from 'fs'
 import type { CliContext } from '../context'
@@ -14,8 +15,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const targetName = args[1]
 
   if (!componentName || !targetName) {
-    console.error('Error: Component name and signal/memo/prop name required.')
-    console.error('Usage: bf debug trace <component> <signal|memo|prop>')
+    console.error('Error: Component name and signal/memo/prop/accessor name required.')
+    console.error('Usage: bf debug trace <component> <signal|memo|prop|accessor>')
     process.exit(1)
   }
 
@@ -35,11 +36,12 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const path = traceUpdatePath(graph, targetName)
 
   if (!path) {
-    console.error(`Error: Signal, memo, or prop "${targetName}" not found in ${graph.componentName}.`)
+    console.error(`Error: Signal, memo, prop, or accessor "${targetName}" not found in ${graph.componentName}.`)
     const available = [
       ...graph.signals.map(s => s.name),
       ...graph.memos.map(m => m.name),
       ...graph.props.map(p => p.name),
+      ...graph.accessors.map(a => a.name),
     ]
     if (available.length > 0) {
       console.error(`Available: ${available.join(', ')}`)

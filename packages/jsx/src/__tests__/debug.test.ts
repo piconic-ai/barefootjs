@@ -1733,3 +1733,65 @@ export function Feed(props: { posts: Post[] }) {
     expect(json.accessors.map(a => a.name)).toContain('save.error')
   })
 })
+
+describe('async factories in the graph: edge cases (#3167 review)', () => {
+  const source = `
+'use client'
+import { createQuery, createMutation, createMemo, createSignal, http } from '@barefootjs/client'
+export function Edge(props: { id: string }) {
+  const [ttl, setTtl] = createSignal(1000)
+  const [posts, fetchPosts] = createQuery(() => http.get('/api/posts/' + props.id), { ttl: ttl() })
+  const [, save] = createMutation(() => http.post('/api/likes'))
+  return (
+    <div>
+      <button disabled={save.isPending()} onClick={() => { save(); setTtl(1) }}>go</button>
+      <ul>{[1, 2].map((fetchPosts) => <li>{fetchPosts.error() ? 'a' : 'b'}</li>)}</ul>
+      <p>{posts() ? 'p' : 'n'}</p>
+    </div>
+  )
+}
+`
+  const graph = buildComponentGraph(source, 'Edge.tsx')
+
+  test('only the request function is an input: a signal read in options re-sends nothing', () => {
+    expect(graph.signals.find(s => s.name === 'posts')!.factory!.requestDeps).toEqual(['props.id'])
+    expect(graph.signals.find(s => s.name === 'ttl')!.consumers).not.toContain('query:posts')
+  })
+
+  test('a prop read in the request function is a query input with its own node', () => {
+    expect(graph.props.find(p => p.name === 'props.id')!.consumers).toEqual(['query:posts'])
+    const path = traceUpdatePath(graph, 'props.id')!
+    expect(path.dependents.map(d => d.name)).toEqual(['posts'])
+  })
+
+  test('an elided value ([, save]) is keyed by the action, never by the synthesized getter', () => {
+    expect(graph.signals.map(s => s.name)).toEqual(['ttl', 'posts'])
+    const pending = graph.accessors.find(a => a.name === 'save.isPending')!
+    expect(pending).toMatchObject({ factory: 'save', value: null, callee: 'createMutation' })
+    expect(formatComponentGraph(graph)).toContain('save.isPending() (createMutation, value not destructured)')
+    expect(JSON.stringify(graphToJSON(graph))).not.toContain('__bfGet_')
+  })
+
+  test('a loop param shadowing the action is not an accessor read', () => {
+    expect(graph.accessors.find(a => a.name === 'fetchPosts.error')!.consumers).toEqual([])
+  })
+
+  test('a binding that reads an accessor is proven reactive, not a fallback', () => {
+    const disabled = graph.domBindings.find(d => d.label === 'disabled')!
+    expect(disabled).toMatchObject({ deps: ['save.isPending'], classification: 'reactive' })
+  })
+
+  test('why-update explains an accessor read by the handler that calls the action', () => {
+    const result = buildWhyUpdate(source, 'Edge.tsx', 'disabled')!
+    expect(result.deps).toEqual([
+      { name: 'save.isPending', kind: 'accessor', dependsOn: [], changedBy: [expect.objectContaining({ setter: 'save' })] },
+    ])
+    expect(formatWhyUpdate(result)).toContain('save.isPending changes from:')
+  })
+
+  test('why-update follows a query value to its request inputs', () => {
+    const result = buildWhyUpdate(source, 'Edge.tsx', 's3')!
+    expect(result.deps.find(d => d.name === 'posts')).toMatchObject({ kind: 'signal', dependsOn: ['props.id'] })
+    expect(result.deps.map(d => d.name)).toContain('props.id')
+  })
+})

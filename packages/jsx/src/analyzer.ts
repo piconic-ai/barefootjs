@@ -165,6 +165,26 @@ export function createProgramForFile(
   }
 }
 
+/**
+ * The Program to pass as `compileJSX`'s `program` when a test harness
+ * compiles `source` under the relative virtual `filename`, with type
+ * resolution anchored at `anchorDir` instead of `process.cwd()` — or
+ * `undefined` when the compiler would not build a checker for this source.
+ *
+ * Without it, a harness compile resolves `@barefootjs/*` relative to the
+ * directory `bun test` was started from, so a `Reactive<T>` accessor read
+ * such as `fetchPosts.isPending()` is typed `any` from the repo root and
+ * its real type from a package (#3220). `anchorDir` need not exist: module
+ * resolution only probes its ancestors for `node_modules`. The one
+ * implementation for every harness that compiles under relative names:
+ * the conformance harness (`packages/adapter-tests/src/harness-program.ts`)
+ * and the docs-example suite (`doc-examples.test.ts`).
+ */
+export function createAnchoredProgram(source: string, filename: string, anchorDir: string): ts.Program | undefined {
+  if (!needsTypeBasedDetection(source)) return undefined
+  return createProgramForFile(source, filename, { currentDirectory: anchorDir })?.program
+}
+
 // =============================================================================
 // Main Entry Point
 // =============================================================================
@@ -1551,6 +1571,7 @@ function collectFactorySignal(
   for (const arg of callExpr.arguments) {
     for (const id of extractFreeIdentifiersFromNode(arg)) argsFreeIdentifiers.add(id)
   }
+  const requestArg = callExpr.arguments[0]
 
   ctx.signals.push({
     getter: valueName ?? `__bfGet_${action}`,
@@ -1567,6 +1588,8 @@ function collectFactorySignal(
       callee: callExpr.expression.getText(ctx.sourceFile),
       argsText,
       argsFreeIdentifiers,
+      requestText: requestArg ? ctx.getJS(requestArg) : '',
+      requestFreeIdentifiers: requestArg ? new Set(extractFreeIdentifiersFromNode(requestArg)) : new Set(),
       action,
     },
   })
