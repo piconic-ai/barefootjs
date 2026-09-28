@@ -71,12 +71,19 @@ test.describe.serial('QueryTodoApp on Hono (mode A)', () => {
   test('toggle all and clear completed each take one request', async ({ page }) => {
     await page.goto(`${baseUrl}/todos-query`)
     await waitForHydration(page)
+    // Every write the page sends, as "METHOD pathname".
+    const writes: string[] = []
+    page.on('request', req => {
+      if (req.method() !== 'GET') writes.push(`${req.method()} ${new URL(req.url()).pathname}`)
+    })
 
     await page.locator('label[for="toggle-all"]').click()
     await expect(page.locator('.todo-list li.completed')).toHaveCount(3)
     await expect(page.locator('.todo-count')).toContainText('0 items left')
+    expect(writes).toEqual([`PUT ${listPath}`])
 
     await page.click('.clear-completed')
     await expect(page.locator('.todo-list li')).toHaveCount(0)
+    expect(writes).toEqual([`PUT ${listPath}`, `DELETE ${listPath}/completed`])
   })
 })
