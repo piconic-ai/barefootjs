@@ -288,6 +288,7 @@ $r->get('/todos' => sub ($c) {
         children => { todo_item => 'TodoItem' },
         props    => { initialTodos => \@current_todos },
         stash    => {
+            initialTodos => \@current_todos,
             todos     => \@current_todos,
             newText   => '',
             filter    => 'all',
@@ -305,10 +306,33 @@ $r->get('/todos-ssr' => sub ($c) {
         children => { todo_item => 'TodoItem' },
         props    => { initialTodos => \@current_todos },
         stash    => {
+            initialTodos => \@current_todos,
             todos     => \@current_todos,
             newText   => '',
             filter    => 'all',
             doneCount => $done_count,
+        },
+    );
+});
+
+# The createQuery / createMutation todo app. `initialTodos` seeds its query
+# (mode A): the list is rendered here, and the client sends no request on
+# mount. Writes go through the API below and re-fetch the list.
+$r->get('/todos-query' => sub ($c) {
+    my $session = get_session($c);
+    my @current_todos = map { {%$_} } @{ $session->{todos} };
+
+    $c->render_component('QueryTodoApp',
+        title    => 'TodoMVC (createQuery) - BarefootJS',
+        children => { query_todo_item => 'QueryTodoItem' },
+        signal_init => {
+            query_todo_item => sub { return (editing => false, draft => '') },
+        },
+        props    => { initialTodos => \@current_todos },
+        stash    => {
+            initialTodos => \@current_todos,
+            newText      => '',
+            filter       => 'all',
         },
     );
 });
@@ -415,6 +439,24 @@ $r->post('/api/todos' => sub ($c) {
     };
     push @{ $session->{todos} }, $todo;
     $c->render(json => $todo, status => 201);
+});
+
+# The two list-wide writes of /todos-query, one request each. Registered
+# before the `:id` routes so `completed` is not captured as an id.
+$r->put('/api/todos' => sub ($c) {
+    my $session = get_session($c);
+    my $input = $c->req->json;
+    return $c->render(json => { error => 'invalid input' }, status => 400)
+        unless ref $input eq 'HASH';
+    my $done = $input->{done} ? true : false;
+    $_->{done} = $done for @{ $session->{todos} };
+    $c->render(json => $session->{todos});
+});
+
+$r->delete('/api/todos/completed' => sub ($c) {
+    my $session = get_session($c);
+    $session->{todos} = [ grep { !$_->{done} } @{ $session->{todos} } ];
+    $c->rendered(204);
 });
 
 $r->put('/api/todos/:id' => sub ($c) {
@@ -772,6 +814,7 @@ __DATA__
     <li><a href="<%= $bp %>/toggle">Toggle</a></li>
     <li><a href="<%= $bp %>/todos">Todo (@client)</a></li>
     <li><a href="<%= $bp %>/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="<%= $bp %>/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="<%= $bp %>/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="<%= $bp %>/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>
