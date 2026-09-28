@@ -30,6 +30,27 @@ export default defineConfig({
 
 `vite build` writes the templates and the hashed client bundle. `vite dev` serves the component modules itself, with a localhost-only CORS default because your backend renders on another origin, and rewrites the templates with dev-server URLs.
 
+The plugin and every adapter builder support Vite 6, 7, and 8 (peer range `^6.0.0 || ^7.0.0 || ^8.0.0`). CI builds and runs [`integrations/csr/`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/csr) against each of these majors.
+
+## Build entries
+
+The plugin adds every `'use client'` component as an entry in `build.rollupOptions.input`. Once `input` is set, Vite no longer falls back to its default `index.html` entry. If your app also has HTML pages for Vite to build, name them in `input` yourself. Vite merges your entries with the plugin's:
+
+```ts
+import { fileURLToPath } from 'node:url'
+
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: { main: fileURLToPath(new URL('./index.html', import.meta.url)) },
+    },
+  },
+  plugins: [barefoot({ /* ... */ })],
+})
+```
+
+Without this, the build contains only the component chunks. An app whose pages come from a backend template has no HTML entry and needs nothing here.
+
 ## Options
 
 | Option | Type | Default | Description |

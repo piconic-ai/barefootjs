@@ -59,7 +59,7 @@ import { resolve, join } from 'node:path'
 import { existsSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { $ } from 'bun'
 import ts from 'typescript'
-import { type PkgJson, discoverJsrPackages, jsrHasVersion } from './lib/jsr-packages'
+import { type PkgJson, discoverJsrPackages, jsrHasVersion, npmSpecifierRange } from './lib/jsr-packages'
 import { topoSort } from './lib/workspace-packages'
 
 const repoRoot = resolve(import.meta.dir, '..')
@@ -86,10 +86,9 @@ function buildManifest(dir: string, pkg: PkgJson) {
       const v = versions.get(name)
       importsOut[name] = v ? `jsr:${name}@^${v}` : `jsr:${name}`
     } else {
-      // workspace:* / catalog: have no meaning off-monorepo; fall back to
-      // a permissive range so JSR resolves the published npm package.
-      const clean = /^[~^]?\d/.test(range) ? range : '*'
-      importsOut[name] = `npm:${name}@${clean}`
+      // workspace:* / catalog: have no meaning off-monorepo, and Deno
+      // rejects compound ranges — see `npmSpecifierRange`.
+      importsOut[name] = `npm:${name}@${npmSpecifierRange(range)}`
     }
   }
   // Self-imports: source files reference the package's own subpaths

@@ -165,6 +165,21 @@ async function fetchMeta(name: string): Promise<Response> {
 }
 
 /** Has this exact version already been published to JSR? */
+/**
+ * The version part of the `npm:<name>@<range>` specifier a deno.json
+ * `imports` entry gets for a package.json dependency range. Deno takes one
+ * caret / tilde / exact range (or `*`) there and rejects any compound range:
+ * `^6.0.0 || ^7.0.0`, `>=6 <9`, and `6 - 8` all fail `deno check` with
+ * "Invalid specifier version requirement". So an `||` range keeps its first
+ * alternative (the floor, e.g. a peer range widened to `^6.0.0 || ^7.0.0 ||
+ * ^8.0.0` still resolves `^6.0.0`), and anything else Deno can't parse
+ * (`workspace:*`, `catalog:`, comparator sets) falls back to `*`.
+ */
+export function npmSpecifierRange(range: string): string {
+  const first = range.split('||')[0].trim()
+  return /^[~^]?\d\S*$/.test(first) ? first : '*'
+}
+
 export async function jsrHasVersion(name: string, version: string): Promise<boolean> {
   try {
     const res = await fetchMeta(name)
