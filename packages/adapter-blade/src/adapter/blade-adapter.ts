@@ -1619,13 +1619,19 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // (`id`) so the nullable-optional set — keyed by bare name — matches the
       // SolidJS props-object pattern, not just destructured params. Same for
       // a closed-type rest-expanded key's `rest.tag`-shaped expression
-      // (#3057) — see `restPropsName`'s docstring.
+      // (#3057) — see `restPropsName`'s docstring, EXCEPT that a rest key
+      // lowers to a `data_get($rest, 'tag')` call (below), never a bare
+      // `$tag` variable — `isset()` on a function-call result is a PHP
+      // fatal error ("Cannot use isset() on the result of an expression"),
+      // so this case alone needs the `!== null` form instead.
+      const restBareKey =
+        this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
+          ? bareId.slice(this.restPropsName.length + 1)
+          : null
       const normalizedBareId =
         this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
           ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
+          : (restBareKey ?? bareId)
       if (
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
@@ -1640,6 +1646,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
         const body = this.shouldBoolStr(value.expr, name)
             ? `${name}="{!! e($bf->bool_str(${blade})) !!}"`
             : `${name}="{!! e($bf->string(${blade})) !!}"`
+        if (restBareKey !== null) {
+          return `\n@if((${blade}) !== null)\n${body}\n@endif\n`
+        }
         // `blade` is a bare `$name` variable reference for this narrowly-
         // gated shape, so it doubles as both the `isset()` guard test and
         // the display value — a SINGLE check that covers both "never
