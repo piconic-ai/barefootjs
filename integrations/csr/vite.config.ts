@@ -66,7 +66,10 @@ export default defineConfig({
       // that claim itself rather than trusting it (see its
       // `assertNoRealTemplateOutput`).
       adapter: new CSRAdapter(),
-      components: ['../shared/components'],
+      // `components/` holds the CSR-only examples (the createQuery /
+      // createMutation todo app); `../shared/components` is what every
+      // integration compiles.
+      components: ['../shared/components', 'components'],
     }),
   ],
 })
