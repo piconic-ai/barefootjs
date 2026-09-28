@@ -25,9 +25,17 @@ export function queryTodoAppTests(baseUrl: string) {
     return () => count
   }
 
-  /** Wait until the rows are hydrated (their scope is the row component's). */
+  /**
+   * Wait until the page is hydrated. The rows' `bf-s` scope can already be
+   * `QueryTodoItem_…` in the server's HTML, so it proves nothing; filtering
+   * the list does, since only the hydrated component re-renders it. The
+   * filter goes back to "All" afterwards.
+   */
   async function waitForHydration(page: Page): Promise<void> {
-    await page.waitForSelector('.todo-list li[bf-s*="QueryTodoItem_"]', { timeout: 10000 })
+    await page.click('.filters a:has-text("Active")')
+    await expect(page.locator('.todo-list li')).toHaveCount(2, { timeout: 10000 })
+    await page.click('.filters a:has-text("All")')
+    await expect(page.locator('.todo-list li')).toHaveCount(3)
   }
 
   // Outside the describe below: it opens its own JavaScript-free context,
