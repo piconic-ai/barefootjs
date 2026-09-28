@@ -11,9 +11,9 @@ import { test, expect, type Page } from '@playwright/test'
 
 /**
  * @param baseUrl - The integration's base URL, e.g. 'http://localhost:3001/integrations/hono'
- * @param todosPath - The path to the page (default: '/todos-query')
  */
-export function queryTodoAppTests(baseUrl: string, todosPath: string = '/todos-query') {
+export function queryTodoAppTests(baseUrl: string) {
+  const pageUrl = `${baseUrl}/todos-query`
   const listPath = `${new URL(baseUrl).pathname.replace(/\/$/, '')}/api/todos`
 
   /** Count the list requests (GET api/todos) the page sends from now on. */
@@ -30,6 +30,22 @@ export function queryTodoAppTests(baseUrl: string, todosPath: string = '/todos-q
     await page.waitForSelector('.todo-list li[bf-s*="QueryTodoItem_"]', { timeout: 10000 })
   }
 
+  // Outside the describe below: it opens its own JavaScript-free context,
+  // so the describe's per-test reset of `page` would be wasted on it.
+  test('QueryTodoApp (mode A): the server renders the list from initialTodos', async ({ browser }) => {
+    test.setTimeout(30000)
+    // No JavaScript: what shows is the server's HTML alone.
+    const context = await browser.newContext({ javaScriptEnabled: false })
+    const page = await context.newPage()
+    await page.request.post(`${baseUrl}/api/todos/reset`)
+    await page.goto(pageUrl)
+    await expect(page.locator('.todo-list li')).toHaveCount(3)
+    await expect(page.locator('.todo-list li').nth(2)).toHaveClass(/completed/)
+    await expect(page.locator('.todo-count')).toContainText('2 items left')
+    await expect(page.locator('.clear-completed')).toBeVisible()
+    await context.close()
+  })
+
   test.describe.serial('QueryTodoApp (mode A)', () => {
     test.setTimeout(30000)
 
@@ -37,22 +53,9 @@ export function queryTodoAppTests(baseUrl: string, todosPath: string = '/todos-q
       await page.request.post(`${baseUrl}/api/todos/reset`)
     })
 
-    test('the server renders the list from initialTodos', async ({ browser }) => {
-      // No JavaScript: what shows is the server's HTML alone.
-      const context = await browser.newContext({ javaScriptEnabled: false })
-      const page = await context.newPage()
-      await page.request.post(`${baseUrl}/api/todos/reset`)
-      await page.goto(`${baseUrl}${todosPath}`)
-      await expect(page.locator('.todo-list li')).toHaveCount(3)
-      await expect(page.locator('.todo-list li').nth(2)).toHaveClass(/completed/)
-      await expect(page.locator('.todo-count')).toContainText('2 items left')
-      await expect(page.locator('.clear-completed')).toBeVisible()
-      await context.close()
-    })
-
     test('hydration sends no list request', async ({ page }) => {
       const listRequests = countListRequests(page)
-      await page.goto(`${baseUrl}${todosPath}`)
+      await page.goto(pageUrl)
       await waitForHydration(page)
       await expect(page.locator('.todo-list li')).toHaveCount(3)
       await expect(page.locator('.todoapp')).toHaveAttribute('aria-busy', 'false')
@@ -60,7 +63,7 @@ export function queryTodoAppTests(baseUrl: string, todosPath: string = '/todos-q
     })
 
     test('a write re-fetches the list under the base path', async ({ page }) => {
-      await page.goto(`${baseUrl}${todosPath}`)
+      await page.goto(pageUrl)
       await waitForHydration(page)
       const listRequests = countListRequests(page)
 
@@ -76,7 +79,7 @@ export function queryTodoAppTests(baseUrl: string, todosPath: string = '/todos-q
     })
 
     test('toggle all and clear completed each take one request', async ({ page }) => {
-      await page.goto(`${baseUrl}${todosPath}`)
+      await page.goto(pageUrl)
       await waitForHydration(page)
       // Every write the page sends, as "METHOD pathname".
       const writes: string[] = []

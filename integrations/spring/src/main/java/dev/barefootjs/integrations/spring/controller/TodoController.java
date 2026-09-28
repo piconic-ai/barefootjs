@@ -157,9 +157,7 @@ public class TodoController {
 
   public record SetAllDoneInput(Boolean done) {}
 
-  // The two list-wide writes of `/todos-query`, one request each. Spring
-  // prefers the literal `/api/todos/completed` over `/api/todos/{id}`
-  // regardless of declaration order; they sit before it anyway.
+  // The two list-wide writes of `/todos-query`, one request each.
 
   /** Set every todo's done flag ("toggle all"); responds with the full list. */
   @PutMapping(value = "${app.base-path}/api/todos", produces = MediaType.APPLICATION_JSON_VALUE)

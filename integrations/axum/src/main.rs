@@ -139,9 +139,7 @@ fn build_router(state: AppState, base: &str) -> Router {
             "/api/todos",
             get(todo::list_todos).post(todo::create_todo).put(todo::set_all_todos_done),
         )
-        // The list-wide "clear completed" write of /todos-query. axum's
-        // router prefers this static segment over `/api/todos/{id}` below
-        // regardless of registration order.
+        // The list-wide "clear completed" write of /todos-query.
         .route("/api/todos/completed", axum::routing::delete(todo::clear_completed_todos))
         .route("/api/todos/{id}", axum::routing::put(todo::update_todo).delete(todo::delete_todo))
         .route("/api/todos/reset", axum::routing::post(todo::reset_todos))

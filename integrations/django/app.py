@@ -77,8 +77,9 @@ import django
 
 django.setup()
 
-from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse, StreamingHttpResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect
+from django.views.decorators.http import require_http_methods
 from django.urls import path
 from django.views.static import serve as static_serve
 
@@ -595,11 +596,10 @@ def api_todos_item(request, todo_id: int):
 # The list-wide "clear completed" write of /todos-query
 # (DELETE /api/todos/completed). Routed before `<int:todo_id>` in
 # urlpatterns, next to /api/todos/reset.
+# Django's path() routes every verb here; only DELETE may write, so a GET
+# (a navigation, a prefetch) can never clear the list.
+@require_http_methods(["DELETE"])
 def api_todos_clear_completed(request):
-    # Django's path() routes every verb here; only DELETE may write, so a GET
-    # (a navigation, a prefetch) can never clear the list.
-    if request.method != "DELETE":
-        return HttpResponseNotAllowed(["DELETE"])
     session, _minted = get_session(request)
     session["todos"] = [t for t in session["todos"] if not t["done"]]
     return HttpResponse(status=204)

@@ -495,9 +495,12 @@ func todosQueryHandler(c echo.Context) error {
 	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: currentTodos})
 	props.QueryTodoItems = make([]QueryTodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
-		// unique one for each child at render time.
-		props.QueryTodoItems[i] = QueryTodoItemProps{Todo: t}
+		// The generated constructor seeds the row's signal defaults and
+		// caller props. Its random ScopeID is cleared on purpose:
+		// bf.Renderer.Render backfills a unique one for each child.
+		row := NewQueryTodoItemProps(QueryTodoItemInput{Todo: t})
+		row.ScopeID = ""
+		props.QueryTodoItems[i] = row
 	}
 
 	return c.Render(http.StatusOK, "QueryTodoApp", bf.RenderOptions{

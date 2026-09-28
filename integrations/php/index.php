@@ -822,32 +822,8 @@ if ($method === 'GET' && str_starts_with($route, '/styles/')) {
 }
 
 // --- todo REST API ---
-// The two list-wide writes of /todos-query, one request each. Matched
-// before `/api/todos/<id>` (whose `\d+` would not match `completed` anyway).
-if ($route === '/api/todos' && $method === 'PUT') {
-    // "Toggle all": set every todo's done flag, answer with the full list.
-    [$sid, $minted] = resolve_session_id();
-    $body = json_decode((string) file_get_contents('php://input'), true);
-    if (!is_array($body) || !array_key_exists('done', $body)) {
-        json_response(['error' => 'invalid input'], 400);
-        exit;
-    }
-    $done = (bool) $body['done'];
-    $todos = with_session($sid, function (array $state) use ($done) {
-        foreach ($state['todos'] as &$t) {
-            $t['done'] = $done;
-        }
-        unset($t);
-        return [$state, $state['todos']];
-    });
-    if ($minted) {
-        set_session_cookie($sid);
-    }
-    json_response($todos);
-    exit;
-}
+// "Clear completed" on /todos-query.
 if ($route === '/api/todos/completed' && $method === 'DELETE') {
-    // "Clear completed": drop every done todo.
     [$sid, $minted] = resolve_session_id();
     with_session($sid, function (array $state) {
         $state['todos'] = array_values(array_filter($state['todos'], fn ($t) => !$t['done']));
@@ -932,6 +908,27 @@ if ($route === '/api/todos') {
             set_session_cookie($sid);
         }
         json_response($todo, 201);
+        exit;
+    }
+    if ($method === 'PUT') {
+        // "Toggle all": set every todo's done flag, answer with the full list.
+        $body = json_decode((string) file_get_contents('php://input'), true);
+        if (!is_array($body) || !array_key_exists('done', $body)) {
+            json_response(['error' => 'invalid input'], 400);
+            exit;
+        }
+        $done = (bool) $body['done'];
+        $todos = with_session($sid, function (array $state) use ($done) {
+            foreach ($state['todos'] as &$t) {
+                $t['done'] = $done;
+            }
+            unset($t);
+            return [$state, $state['todos']];
+        });
+        if ($minted) {
+            set_session_cookie($sid);
+        }
+        json_response($todos);
         exit;
     }
 }
