@@ -13,28 +13,28 @@ import { onMount, onCleanup } from '../../src/reactive'
 import { evalTemplateFn } from '../../src/runtime/template'
 
 describe('evalTemplateFn disposes even when the wrapped call throws', () => {
-  test('onCleanup still runs when fn() throws before returning', () => {
-    let cleaned = false
+  test('onCleanup still runs exactly once when fn() throws before returning', () => {
+    let cleaned = 0
 
     expect(() =>
       evalTemplateFn(() => {
-        onMount(() => onCleanup(() => { cleaned = true }))
+        onMount(() => onCleanup(() => { cleaned++ }))
         throw new Error('boom')
       }),
     ).toThrow('boom')
 
-    expect(cleaned).toBe(true)
+    expect(cleaned).toBe(1)
   })
 
   test('a normal return still disposes exactly once', () => {
-    let cleaned = false
+    let cleaned = 0
 
     const result = evalTemplateFn(() => {
-      onMount(() => onCleanup(() => { cleaned = true }))
+      onMount(() => onCleanup(() => { cleaned++ }))
       return 'html'
     })
 
     expect(result).toBe('html')
-    expect(cleaned).toBe(true)
+    expect(cleaned).toBe(1)
   })
 })
