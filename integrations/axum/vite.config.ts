@@ -28,7 +28,7 @@ export default defineConfig({
     },
   },
   plugins: barefoot({
-    components: ['../shared/components', '../shared/blog'],
+    components: ['../shared/components', '../shared/blog', '../shared/query-todo'],
     // `main.rs` reads `dist/templates` and `dist/templates/manifest.json`
     // directly; neither is served over HTTP.
     templates: 'dist/templates',

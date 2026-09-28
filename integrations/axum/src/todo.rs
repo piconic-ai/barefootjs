@@ -1,5 +1,5 @@
-//! Todo pages (`/todos`, `/todos-ssr`) and the todo REST API
-//! (`/api/todos/*`), backed by the per-session in-memory store in
+//! Todo pages (`/todos`, `/todos-ssr`, `/todos-query`) and the todo REST
+//! API (`/api/todos/*`), backed by the per-session in-memory store in
 //! `session.rs`. Mirrors `integrations/flask/app.py`'s `todos_route` /
 //! `api_todos_*` handlers.
 
@@ -31,11 +31,26 @@ async fn todos_page(state: AppState, headers: HeaderMap, component: &str, title:
         ("doneCount", jn(done as f64)),
     ]);
 
-    let mut response = match render_component(&state, &session, component, props, stash) {
+    let response = render_todos_page(&state, &session, component, title, props, stash);
+    with_cookie(response, &state, minted, &sid)
+}
+
+/// Render a todo page's root component inside the layout. Shared by
+/// [`todos_page`] and [`todos_query_route`]; the caller attaches the
+/// session cookie.
+fn render_todos_page(
+    state: &AppState,
+    session: &std::sync::Arc<barefootjs::RenderSession>,
+    component: &str,
+    title: &str,
+    props: barefootjs::JsValue,
+    stash: barefootjs::JsValue,
+) -> Response {
+    match render_component(state, session, component, props, stash) {
         Ok((body, scripts)) => {
             let portals = session.portals();
             html_response(layout(
-                &state,
+                state,
                 LayoutOpts {
                     title: title.to_string(),
                     heading: String::new(),
@@ -48,14 +63,7 @@ async fn todos_page(state: AppState, headers: HeaderMap, component: &str, title:
             ))
         }
         Err(e) => render_error(e),
-    };
-    if minted {
-        response.headers_mut().insert(
-            header::SET_COOKIE,
-            crate::session::set_cookie_header(&state.base, &sid).parse().unwrap(),
-        );
     }
-    response
 }
 
 pub async fn todos_route(State(state): State<AppState>, headers: HeaderMap) -> Response {
@@ -64,6 +72,25 @@ pub async fn todos_route(State(state): State<AppState>, headers: HeaderMap) -> R
 
 pub async fn todos_ssr_route(State(state): State<AppState>, headers: HeaderMap) -> Response {
     todos_page(state, headers, "TodoAppSSR", "TodoMVC SSR - BarefootJS").await
+}
+
+/// `/todos-query`: the createQuery / createMutation todo app. `initialTodos`
+/// seeds its query (mode A): the list is rendered here, and the client sends
+/// no request on mount. Writes go through the API below and re-fetch the
+/// list. Each `QueryTodoItem` row gets its `todo` from the compiled
+/// template's `render_child` call; the child renderer is registered from
+/// the manifest (see `render.rs`).
+pub async fn todos_query_route(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let (todos, sid, minted) = state.sessions.with_session(&headers, |s| s.todos.clone());
+
+    let todos_js: Vec<_> = todos.iter().map(Todo::to_js).collect();
+    let session = new_session(&state, &Default::default());
+    let props = jobj([("initialTodos", jarr(todos_js))]);
+    let stash = jobj([("newText", js("")), ("filter", js("all"))]);
+
+    let response =
+        render_todos_page(&state, &session, "QueryTodoApp", "TodoMVC (createQuery) - BarefootJS", props, stash);
+    with_cookie(response, &state, minted, &sid)
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +164,36 @@ pub async fn update_todo(
 pub async fn delete_todo(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<i64>) -> Response {
     let ((), sid, minted) = state.sessions.with_session(&headers, |s| {
         s.todos.retain(|t| t.id != id);
+    });
+    let response = StatusCode::NO_CONTENT.into_response();
+    with_cookie(response, &state, minted, &sid)
+}
+
+#[derive(Deserialize)]
+pub struct SetAllDoneInput {
+    done: bool,
+}
+
+/// `PUT /api/todos`: set every todo's done flag ("toggle all").
+pub async fn set_all_todos_done(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(input): Json<SetAllDoneInput>,
+) -> Response {
+    let (todos, sid, minted) = state.sessions.with_session(&headers, |s| {
+        for t in s.todos.iter_mut() {
+            t.done = input.done;
+        }
+        s.todos.clone()
+    });
+    let response = Json(todos).into_response();
+    with_cookie(response, &state, minted, &sid)
+}
+
+/// `DELETE /api/todos/completed`: remove every done todo ("clear completed").
+pub async fn clear_completed_todos(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let ((), sid, minted) = state.sessions.with_session(&headers, |s| {
+        s.todos.retain(|t| !t.done);
     });
     let response = StatusCode::NO_CONTENT.into_response();
     with_cookie(response, &state, minted, &sid)
