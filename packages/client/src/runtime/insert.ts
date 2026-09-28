@@ -140,17 +140,23 @@ export interface BranchConfig {
    * captured live `Node` values via `__bfSlot`.
    *
    * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   *  INVARIANT — TEMPLATES RUN WITH REACTIVITY UNTRACKED, IN A THROWAWAY ROOT.
+   *  INVARIANT — TEMPLATES RUN WITH REACTIVITY UNTRACKED.
    * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    *
    * Every call site goes through `evalBranchTemplate()` in this file,
    * which routes the invocation through `evalTemplateFn()` (#3235). Signal
    * reads inside the template are therefore NOT registered as effect
-   * dependencies (`createRoot` isolates tracking the same way `untrack()`
-   * did), and anything the call creates (a signal, an `onMount`/`onCleanup`
-   * registration from an opaque helper call the compiler inlined into the
-   * template) is disposed before the call returns, instead of leaking with
-   * no owner to release it.
+   * dependencies. With no owner active yet (the top-level `render()` entry
+   * point, before `init()` has created one), the call also gets a throwaway
+   * owner, so a signal-creating call the compiler inlined into the template
+   * is disposed before the call returns instead of leaking with no owner to
+   * release it. With a real owner already active — the common case, since
+   * `insert()` itself always runs inside one — anything the call creates
+   * (including a live child mounted via `renderNode`-style JSX, whose
+   * `initFn` runs synchronously as part of producing this branch's result)
+   * is owned by that ambient owner and released on its normal schedule, not
+   * torn down the instant this call returns (`evalTemplateFn`'s docstring,
+   * `runtime/template.ts`).
    *
    * Consequences for authors of new branch shapes:
    *
@@ -192,9 +198,12 @@ function normalizeTemplate(value: string | BranchTemplateResult): BranchTemplate
  * effect is the active Listener when `insert()` runs, causing duplicate
  * inner constructs (notably duplicate `mapArray` instances) when an
  * outer effect re-runs and re-invokes `insert()`. `evalTemplateFn` also
- * gives the call a throwaway owner (#3235), so a signal-creating call the
- * compiler inlined into the template is torn down immediately rather than
- * leaking outside any owner.
+ * gives the call a throwaway owner when none is active yet (#3235), so a
+ * signal-creating call the compiler inlined into the template is torn down
+ * immediately rather than leaking outside any owner — but leaves an
+ * already-active owner alone, so a live child mounted during this call
+ * (e.g. a `renderNode` callback) stays owned by it instead of being
+ * disposed the instant this call returns (#3254 review finding).
  *
  * New `template()` call sites: route through here, never call directly.
  */
