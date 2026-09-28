@@ -412,6 +412,30 @@ describe('mapArray', () => {
     expect(accessors.get('1')?.()).toBe(next[0])
   })
 
+  test('a mutated object put back after an equal rebuild still re-runs the row', () => {
+    const x = { id: '1', n: 1 }
+    const [items, setItems] = createSignal([x])
+    const seen: number[] = []
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        const li = document.createElement('li')
+        createEffect(() => {
+          seen.push(item().n)
+        })
+        return li
+      },
+    )
+
+    setItems([{ id: '1', n: 1 }]) // equal rebuild: nothing runs
+    x.n = 2 // the pre-rebuild object, changed in place
+    setItems([x])
+    expect(seen).toEqual([1, 2])
+  })
+
   test('identity-based handlers keep working after an equal rebuild', () => {
     const [todos, setTodos] = createSignal([{ id: '1' }, { id: '2' }])
     const remove: Array<() => void> = []

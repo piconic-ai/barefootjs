@@ -68,7 +68,10 @@ function scopeIdOf(start: Comment): string {
  */
 function rowItem<T>(initial: T): [() => T, (next: T) => void] {
   let current = initial
-  const [version, setVersion] = createSignal(initial)
+  // A counter, not the item: the signal's own Object.is bail must never
+  // compare against an item it last saw, or putting back an object that was
+  // mutated since would be dropped.
+  const [version, setVersion] = createSignal(0)
   const read = () => {
     version()
     return current
@@ -76,8 +79,7 @@ function rowItem<T>(initial: T): [() => T, (next: T) => void] {
   const write = (next: T) => {
     const changed = !sameLoopItem(current, next)
     current = next
-    // Wrapped, so a function item is stored rather than called as an update.
-    if (changed) setVersion(() => next)
+    if (changed) setVersion((v) => v + 1)
   }
   return [read, write]
 }
