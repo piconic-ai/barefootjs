@@ -296,6 +296,11 @@ async function main(): Promise<void> {
   const docFixtureIds = new Set([...Object.keys(report.fixtureDivergences.fixtures), ...escapeTwinIds])
   report.fixtureDivergences.docs = computeFixtureDocs([...docFixtureIds])
 
+  // Live mode counts the corpus it just compiled (`jsxFixtures`), not the
+  // committed coverage map: this report is built from the working tree, so
+  // the headline must match it even while coverage-map.json is stale. The
+  // lock-render paths (`--render`, the docs page) have no live corpus and
+  // count through `computeCoverageCounts`; the freshness gate keeps the two equal.
   const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report, jsxFixtures.length)
 
   if (outPath) {
