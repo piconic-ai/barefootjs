@@ -1646,3 +1646,225 @@ describe('prop reads are tracked deps (#2903)', () => {
     expect(formatComponentGraph(graph)).toContain('~ <div title={pick()}> (no tracked deps)')
   })
 })
+
+describe('async factories in the graph (#3167, spec/async.md §7.8)', () => {
+  const source = `
+'use client'
+import { createQuery, createMutation, createMemo, createSignal, http } from '@barefootjs/client'
+type Post = { id: number; title: string }
+export function Feed(props: { posts: Post[] }) {
+  const [page, setPage] = createSignal(1)
+  const [posts, fetchPosts] = createQuery(() => http.get<Post[]>('/api/posts', { page: page() }), { initial: props.posts })
+  const busy = createMemo(() => fetchPosts.isPending())
+  const [saved, save] = createMutation(() => http.post('/api/likes', { body: { page: page() } }))
+  return (
+    <div aria-busy={fetchPosts.isPending()}>
+      {fetchPosts.error() ? <p>Failed</p> : null}
+      <ul>{posts().map((post) => <li key={post.id}>{post.title}</li>)}</ul>
+      <button disabled={save.isPending()} onClick={() => { setPage(page() + 1); save() }}>next</button>
+      <p>{busy() ? 'loading' : saved() ? 'liked' : 'idle'}</p>
+    </div>
+  )
+}
+`
+  const graph = buildComponentGraph(source, 'Feed.tsx')
+
+  test('a query is a signal source with its request inputs; a mutation has none', () => {
+    expect(graph.signals.find(s => s.name === 'posts')!.factory).toEqual({
+      key: 'posts',
+      kind: 'query',
+      callee: 'createQuery',
+      action: 'fetchPosts',
+      value: 'posts',
+      requestDeps: ['page'],
+    })
+    // The mutation's request function also reads `page`, but untracked.
+    expect(graph.signals.find(s => s.name === 'saved')!.factory).toEqual({
+      key: 'saved',
+      kind: 'mutation',
+      callee: 'createMutation',
+      action: 'save',
+      value: 'saved',
+      requestDeps: [],
+    })
+    expect(graph.factories.map(f => f.key)).toEqual(['posts', 'saved'])
+    expect(graph.signals.find(s => s.name === 'page')!.consumers).toContain('query:posts')
+    expect(graph.signals.find(s => s.name === 'page')!.consumers).not.toContain('query:saved')
+  })
+
+  test('accessor reads are nodes with DOM and memo consumers', () => {
+    expect(graph.accessors.map(a => a.name)).toEqual([
+      'fetchPosts.isPending',
+      'fetchPosts.error',
+      'save.isPending',
+      'save.error',
+    ])
+    const consumersOf = (name: string) => graph.accessors.find(a => a.name === name)!.consumers
+    expect(consumersOf('fetchPosts.isPending')).toEqual(['memo:busy', 'dom:aria-busy'])
+    expect(consumersOf('fetchPosts.error')).toEqual(['dom:conditional "s0"'])
+    expect(consumersOf('save.isPending')).toEqual(['dom:disabled'])
+    expect(consumersOf('save.error')).toEqual([])
+    expect(graph.memos.find(m => m.name === 'busy')!.deps).toEqual(['fetchPosts.isPending'])
+    // An accessor read is never mistaken for a prop read.
+    expect(graph.props.map(p => p.name)).toEqual([])
+  })
+
+  test('tracing a query input reaches the query value and accessor readers', () => {
+    const path = traceUpdatePath(graph, 'page')!
+    const query = path.dependents.find(d => d.name === 'posts')!
+    expect(query.kind).toBe('query')
+    expect(query.children.map(c => c.name)).toEqual(['loop "s2"', 'busy', 'aria-busy', 'conditional "s0"'])
+    expect(traceUpdatePath(graph, 'save.isPending')!.dependents.map(d => d.name)).toEqual(['disabled'])
+  })
+
+  test('the text format lists the factory, its accessors and their edges', () => {
+    const text = formatComponentGraph(graph)
+    expect(text).toContain('posts (initial: props.posts) [createQuery, action fetchPosts] <- page')
+    expect(text).toContain('saved (initial: undefined) [createMutation, action save]')
+    expect(text).toContain('  accessors:\n    fetchPosts.isPending() (of posts)')
+    expect(text).toContain('    page -> query:posts')
+    expect(text).toContain('    save.isPending -> dom:disabled')
+    expect(text).toContain('    busy <- fetchPosts.isPending')
+  })
+
+  test('the JSON form carries the factory and the accessors', () => {
+    const json = graphToJSON(graph) as {
+      signals: { name: string; factory?: unknown }[]
+      factories: unknown[]
+      accessors: { name: string }[]
+    }
+    const saved = { key: 'saved', kind: 'mutation', callee: 'createMutation', action: 'save', value: 'saved', requestDeps: [] }
+    expect(json.signals.find(s => s.name === 'saved')!.factory).toEqual(saved)
+    expect(json.factories).toContainEqual(saved)
+    expect(json.accessors.map(a => a.name)).toContain('save.error')
+  })
+})
+
+describe('async factories in the graph: edge cases (#3167 review)', () => {
+  const source = `
+'use client'
+import { createQuery, createMutation, createMemo, createSignal, http } from '@barefootjs/client'
+export function Edge(props: { id: string }) {
+  const [ttl, setTtl] = createSignal(1000)
+  const [posts, fetchPosts] = createQuery(() => http.get('/api/posts/' + props.id), { ttl: ttl() })
+  const [, save] = createMutation(() => http.post('/api/likes'))
+  return (
+    <div>
+      <button disabled={save.isPending()} onClick={() => { save(); setTtl(1) }}>go</button>
+      <ul>{[1, 2].map((fetchPosts) => <li>{fetchPosts.error() ? 'a' : 'b'}</li>)}</ul>
+      <p>{posts() ? 'p' : 'n'}</p>
+    </div>
+  )
+}
+`
+  const graph = buildComponentGraph(source, 'Edge.tsx')
+
+  test('only the request function is an input: a signal read in options re-sends nothing', () => {
+    expect(graph.signals.find(s => s.name === 'posts')!.factory!.requestDeps).toEqual(['props.id'])
+    expect(graph.signals.find(s => s.name === 'ttl')!.consumers).not.toContain('query:posts')
+  })
+
+  test('a prop read in the request function is a query input with its own node', () => {
+    expect(graph.props.find(p => p.name === 'props.id')!.consumers).toEqual(['query:posts'])
+    const path = traceUpdatePath(graph, 'props.id')!
+    expect(path.dependents.map(d => d.name)).toEqual(['posts'])
+  })
+
+  test('an elided value ([, save]) is keyed by the action, never by the synthesized getter', () => {
+    expect(graph.signals.map(s => s.name)).toEqual(['ttl', 'posts'])
+    expect(graph.accessors.find(a => a.name === 'save.isPending')!.factory).toBe('save')
+    expect(graph.factories.find(f => f.key === 'save')).toMatchObject({ value: null, callee: 'createMutation' })
+    expect(formatComponentGraph(graph)).toContain('save.isPending() (createMutation, value not destructured)')
+    expect(JSON.stringify(graphToJSON(graph))).not.toContain('__bfGet_')
+  })
+
+  test('a loop param shadowing the action is not an accessor read', () => {
+    expect(graph.accessors.find(a => a.name === 'fetchPosts.error')!.consumers).toEqual([])
+  })
+
+  test('a binding that reads an accessor is proven reactive, not a fallback', () => {
+    const disabled = graph.domBindings.find(d => d.label === 'disabled')!
+    expect(disabled).toMatchObject({ deps: ['save.isPending'], classification: 'reactive' })
+  })
+
+  test('why-update explains an accessor read by the handler that calls the action', () => {
+    const result = buildWhyUpdate(source, 'Edge.tsx', 'disabled')!
+    expect(result.deps).toEqual([
+      { name: 'save.isPending', kind: 'accessor', dependsOn: [], changedBy: [expect.objectContaining({ setter: 'save' })] },
+    ])
+    expect(formatWhyUpdate(result)).toContain('save.isPending changes from:')
+  })
+
+  test('why-update follows a query value to its request inputs', () => {
+    const result = buildWhyUpdate(source, 'Edge.tsx', 's3')!
+    expect(result.deps.find(d => d.name === 'posts')).toMatchObject({ kind: 'signal', dependsOn: ['props.id'] })
+    expect(result.deps.map(d => d.name)).toContain('props.id')
+  })
+})
+
+describe('async factories in the graph: value not destructured, effects (#3167 review)', () => {
+  const source = `
+'use client'
+import { createQuery, createEffect, createSignal, http } from '@barefootjs/client'
+export function Bare() {
+  const [page, setPage] = createSignal(1)
+  const [, fetchPosts] = createQuery(() => http.get('/api/posts', { page: page() }))
+  createEffect(() => { if (fetchPosts.error()) console.warn('failed') })
+  return (
+    <div aria-busy={fetchPosts.isPending()}>
+      <button onClick={() => setPage(page() + 1)}>next</button>
+    </div>
+  )
+}
+`
+  const graph = buildComponentGraph(source, 'Bare.tsx')
+
+  test('an effect that reads an accessor is its consumer', () => {
+    expect(graph.effects[0].deps).toContain('fetchPosts.error')
+    expect(graph.accessors.find(a => a.name === 'fetchPosts.error')!.consumers).toEqual(['effect:e0'])
+  })
+
+  test('why-update keeps a query\'s request inputs when its value is not destructured', () => {
+    const result = buildWhyUpdate(source, 'Bare.tsx', 'aria-busy')!
+    expect(result.deps.find(d => d.name === 'fetchPosts.isPending')).toMatchObject({ kind: 'accessor', dependsOn: ['page'] })
+    expect(result.deps.find(d => d.name === 'page')!.changedBy[0]).toMatchObject({ setter: 'setPage' })
+  })
+})
+
+describe('async factories in the graph: reads in memo / effect bodies (#3227 review)', () => {
+  const source = `
+'use client'
+import { createQuery, createEffect, createMemo, createSignal, http } from '@barefootjs/client'
+export function Bodies() {
+  const [items] = createSignal([1, 2])
+  const [, fetchPosts] = createQuery(() => http.get('/api/posts'))
+  const busy = createMemo(() => { console.log('x'); return fetchPosts.isPending() })
+  createEffect(() => { items().forEach((x) => { if (fetchPosts.error()) console.log(x) }) })
+  return <p>{busy() ? 'loading' : 'idle'}</p>
+}
+`
+  const graph = buildComponentGraph(source, 'Bodies.tsx')
+
+  test('a memo whose block body does not fold to one expression still records its accessor read', () => {
+    expect(graph.memos.find(m => m.name === 'busy')!.deps).toContain('fetchPosts.isPending')
+  })
+
+  test('an effect reading an accessor inside a block-bodied callback records the read', () => {
+    expect(graph.effects[0].deps).toEqual(['items', 'fetchPosts.error'])
+    expect(graph.accessors.find(a => a.name === 'fetchPosts.error')!.consumers).toEqual(['effect:e0'])
+  })
+})
+
+describe('consumer lists keep one entry per binding (#3227 review)', () => {
+  test('two bindings with the same label are both listed, as before async factories', () => {
+    const graph = buildComponentGraph(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Two() {
+  const [busy, setBusy] = createSignal(false)
+  return <div><button disabled={busy()} onClick={() => setBusy(true)}>a</button><button disabled={busy()}>b</button></div>
+}
+`, 'Two.tsx')
+    expect(graph.signals.find(s => s.name === 'busy')!.consumers.filter(c => c === 'dom:disabled')).toHaveLength(2)
+  })
+})

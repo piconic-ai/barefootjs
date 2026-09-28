@@ -46,7 +46,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { ErrorCodes } from './errors.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { walkTemplatePositions } from './template-position-walk.ts'
-import { seedableActionAccessorRead, collectActionNames, ACTION_ACCESSOR_NAMES } from './action-accessor.ts'
+import { seedableActionAccessorRead, collectActionNames, ACTION_ACCESSOR_NAMES, parsedExprChildren } from './action-accessor.ts'
 
 /** What a template position read, for the diagnostic. */
 type ActionRead =
@@ -196,14 +196,6 @@ function findActionRead(
   readers: ActionReaders,
   bound: ReadonlySet<string>,
 ): ActionRead | null {
-  const recurse = (e: ParsedExpr) => findActionRead(e, actions, readers, bound)
-  const first = (...exprs: ParsedExpr[]): ActionRead | null => {
-    for (const e of exprs) {
-      const read = recurse(e)
-      if (read) return read
-    }
-    return null
-  }
   switch (expr.kind) {
     case 'identifier': {
       if (bound.has(expr.name)) return null
@@ -219,41 +211,20 @@ function findActionRead(
       ) {
         return { kind: 'accessor', action: expr.object.name, accessor: expr.property }
       }
-      return recurse(expr.object)
+      break
     case 'call':
       if (expr.callee.kind === 'identifier' && !bound.has(expr.callee.name)) {
         if (actions.has(expr.callee.name)) return { kind: 'call', action: expr.callee.name }
         const reader = readers.callables.get(expr.callee.name)
         if (reader) return { kind: 'local', name: expr.callee.name, ...reader }
       }
-      return first(expr.callee, ...expr.args)
-    case 'index-access':
-      return first(expr.object, expr.index)
-    case 'binary':
-    case 'logical':
-      return first(expr.left, expr.right)
-    case 'unary':
-      return recurse(expr.argument)
-    case 'conditional':
-      return first(expr.test, expr.consequent, expr.alternate)
-    case 'template-literal':
-      return first(...expr.parts.flatMap((p) => (p.type === 'expression' ? [p.expr] : [])))
-    case 'array-literal':
-      return first(...expr.elements)
-    case 'object-literal':
-      return first(...expr.properties.map((p) => (p.kind === 'spread' ? p.expr : p.value)))
-    case 'array-method':
-      return first(expr.object, ...expr.args, ...(expr.method === 'flat' && expr.depthExpr ? [expr.depthExpr] : []))
-    case 'arrow': {
-      const inner = new Set(bound)
-      for (const p of expr.params) inner.add(p)
-      return findActionRead(expr.body, actions, readers, inner)
-    }
-    case 'literal':
-    case 'regex':
-    case 'unsupported':
-      return null
+      break
   }
+  for (const child of parsedExprChildren(expr)) {
+    const read = findActionRead(child.expr, actions, readers, child.params ? new Set([...bound, ...child.params]) : bound)
+    if (read) return read
+  }
+  return null
 }
 
 function pushDiagnostic(errors: CompilerError[], seen: Set<string>, loc: SourceLocation, read: ActionRead): void {

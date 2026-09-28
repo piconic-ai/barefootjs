@@ -1667,8 +1667,15 @@ export interface SignalFactoryCall {
    * prop reads into live `_p` reads like any effect body.
    */
   argsText: string
-  /** Free identifiers of `argsText`: what the declaration depends on in client JS. */
-  argsFreeIdentifiers: ReadonlySet<string>
+  /**
+   * The request function alone (the first argument, type annotations
+   * stripped) and its free identifiers — `''` / empty when the call has no
+   * argument. Kept apart from `argsText` because only the request function is
+   * tracked: `options` (`initial`, `ttl`, `invalidates`) is read once, at
+   * creation, so a signal read there re-sends nothing (`bf debug graph`, #3167).
+   */
+  requestText: string
+  requestFreeIdentifiers: ReadonlySet<string>
   /** The action binding (the second tuple element), or `null` when it isn't destructured. */
   action: string | null
 }

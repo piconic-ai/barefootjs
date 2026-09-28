@@ -71,11 +71,13 @@
  * once the mechanism is proven on more pages.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { afterAll, beforeAll, describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import ts from 'typescript'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+import { createAnchoredProgram } from '../analyzer'
 
 const DOCS_ROOT = resolve(__dirname, '../../../../docs')
 
@@ -290,6 +292,8 @@ const PAGES: PageSpec[] = [
   { path: 'core/reactivity/on-cleanup.md' },
   { path: 'core/reactivity/untrack.md' },
   { path: 'core/reactivity/batch.md' },
+  { path: 'core/reactivity/create-query.md' },
+  { path: 'core/reactivity/create-mutation.md' },
   { path: 'core/reactivity/props-reactivity.md' },
   { path: 'core/components/component-authoring.md' },
   { path: 'core/components/children-slots.md' },
@@ -319,8 +323,22 @@ const PAGES: PageSpec[] = [
 
 const adapter = new TestAdapter()
 
+/**
+ * Where the TypeChecker resolves `DocExample.tsx`'s imports from, so a
+ * `Reactive` accessor such as `fetchPosts.isPending()` types the same from
+ * the repo root (where CI runs) as from `packages/jsx` — see
+ * `createAnchoredProgram`. Resolution climbs to `packages/jsx/node_modules`.
+ * The brand guard at the bottom of this file fails if it stops resolving.
+ */
+const PROGRAM_ANCHOR = resolve(import.meta.dir, '__virtual__')
+
+function compileDocExample(source: string) {
+  const program = createAnchoredProgram(source, 'DocExample.tsx', PROGRAM_ANCHOR)
+  return compileJSX(source, 'DocExample.tsx', { adapter, ...(program ? { program } : {}) })
+}
+
 function compileOnce(source: string) {
-  const result = compileJSX(source, 'DocExample.tsx', { adapter })
+  const result = compileDocExample(source)
   const fatals = result.errors.filter(e => e.severity === 'error')
   const clientJsFile = result.files.find(f => f.type === 'clientJs')
   return { fatals, clientJs: clientJsFile?.content ?? null }
@@ -554,7 +572,7 @@ describe('docs/core/advanced/error-codes.md per-BFxxx matchers', () => {
       const source = isExpression
         ? EXPRESSION_SCAFFOLD_HEADER + c.body + EXPRESSION_SCAFFOLD_FOOTER
         : c.body + '\n'
-      const result = compileJSX(source, 'DocExample.tsx', { adapter })
+      const result = compileDocExample(source)
       const matched = result.errors.find(e => e.code === c.code)
       if (!matched) {
         const got = result.errors.map(e => `  ${e.severity} ${e.code}: ${e.message}`).join('\n') || '  (no diagnostics)'
@@ -564,4 +582,49 @@ describe('docs/core/advanced/error-codes.md per-BFxxx matchers', () => {
       }
     })
   }
+})
+
+// Guard for PROGRAM_ANCHOR (#3167), the twin of adapter-tests'
+// `harness-program-resolves-brand.test.ts`: type resolution reads
+// `@barefootjs/client`'s built `dist/*.d.ts`, so an unbuilt client (or a
+// broken anchor) silently types every `Reactive<T>` accessor `any` and the
+// snapshots above record non-reactive bindings with no red test. Runs from
+// the repo root, where CI runs and where an unanchored compile sees `any`.
+describe('doc-examples Program resolves @barefootjs/client types independent of cwd', () => {
+  const REPO_ROOT = resolve(import.meta.dir, '../../../..')
+  const SOURCE = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function Probe() {
+  const [, fetchProbe] = createQuery(() => http.get<number[]>('/api/probe'))
+  return <ul aria-busy={fetchProbe.isPending()}>{[1, 2].map(n => <li key={n}>{n}</li>)}</ul>
+}
+`
+  let savedCwd = ''
+  beforeAll(() => {
+    savedCwd = process.cwd()
+    process.chdir(REPO_ROOT)
+  })
+  afterAll(() => {
+    process.chdir(savedCwd)
+  })
+
+  test('a Reactive<T> accessor read is seen as its real type, not `any`', () => {
+    const program = createAnchoredProgram(SOURCE, 'DocExample.tsx', PROGRAM_ANCHOR)
+    const sourceFile = program?.getSourceFile('DocExample.tsx')
+    expect(sourceFile?.text).toBe(SOURCE)
+    if (!program || !sourceFile) return
+    const checker = program.getTypeChecker()
+    let typeAtCall = ''
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'isPending') {
+        typeAtCall = checker.typeToString(checker.getTypeAtLocation(node))
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(sourceFile)
+    // Unresolved, this is `any`; `boolean` is what tells "the brand
+    // resolved" apart from "TypeScript gave up".
+    expect(typeAtCall).toBe('boolean')
+  })
 })

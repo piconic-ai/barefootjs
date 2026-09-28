@@ -72,11 +72,11 @@ Solid ships components; BarefootJS lowers React's JSX shapes in the compiler, wi
 
 | Solid | React | BarefootJS |
 |---|---|---|
-| `createResource` | `use(promise)` + Suspense | — |
-| `action()` / `useSubmission` | `useActionState` / `useFormStatus` | — nearest: `createForm().isSubmitting()` |
+| `createResource` | `use(promise)` + Suspense | [`createQuery`](../reactivity/create-query.md) — `[value, action]`; the server seeds the value from `initial`, and the component folds "no value yet" as an ordinary conditional instead of suspending |
+| `action()` / `useSubmission` | `useActionState` / `useFormStatus` | [`createMutation`](../reactivity/create-mutation.md) — sent when `action()` is called; `action.isPending()` / `action.error()`, `invalidates` on success. Forms: `createForm().isSubmitting()` |
 | `renderToStream` | `renderToPipeableStream` | [`<Async>`](./api-reference.md#async) + [`setupStreaming()`](./api-reference.md#setupstreaming) |
 
-`createQuery` and `createMutation` — `[value, action]` with `action.isPending()` / `action.error()` — are a design draft in [`spec/async.md`](../../../spec/async.md), not a shipped API.
+`createQuery` and `createMutation` take a request function that returns an `http` descriptor, and are Alpha. [`spec/async.md`](../../../spec/async.md) has the full model; its layers 1 and 2 (a client-side `<Async>` fold, transitions) are still design.
 
 ## Mount and SSR
 
@@ -99,7 +99,7 @@ Solid ships components; BarefootJS lowers React's JSX shapes in the compiler, wi
 
 ## What BarefootJS deliberately does not have
 
-- **`createResource` / route loaders** — data fetching is the backend's job; the client-side async layer is a draft.
+- **Route loaders / render-suspend** — the backend fetches what the page needs and passes it as props; a client-side read is a `createQuery` whose `initial` is that prop, and nothing suspends.
 - **`on()` / deps arrays** — `untrack` is the one way to narrow what an effect tracks.
 - **Stores** — a signal holding an object, or `@barefootjs/form`, covers it.
 - **`<ErrorBoundary>`** — SSR errors belong to the backend; only client effects and handlers can throw.

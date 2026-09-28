@@ -248,6 +248,8 @@ export function MobileMenu() {
                   <a href="/docs/reactivity/on-cleanup" className={menuLinkClass}>onCleanup</a>
                   <a href="/docs/reactivity/untrack" className={menuLinkClass}>untrack</a>
                   <a href="/docs/reactivity/batch" className={menuLinkClass}>batch</a>
+                  <a href="/docs/reactivity/create-query" className={menuLinkClass}>createQuery</a>
+                  <a href="/docs/reactivity/create-mutation" className={menuLinkClass}>createMutation</a>
                   <a href="/docs/reactivity/props-reactivity" className={menuLinkClass}>Props Reactivity</a>
                 </div>
               </details>

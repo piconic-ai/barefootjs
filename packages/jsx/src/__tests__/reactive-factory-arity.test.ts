@@ -268,3 +268,44 @@ describe('BF116: createSignal/createMemo extra call arguments (#3159)', () => {
     expect(result.errors.find(e => e.code === 'BF116')).toBeUndefined()
   })
 })
+
+// Async factories (`createQuery` #3165, `createMutation` #3210) return
+// `[value, action]` and take a request function plus options, so the same
+// pass checks them against 2 elements and 2 arguments.
+describe('BF115 / BF116: async factories (#3165, #3210)', () => {
+  const compileWith = (factory: string, binding: string, args: string) =>
+    compileJSX(
+      `
+      'use client'
+      import { ${factory}, http } from '@barefootjs/client'
+
+      export function C() {
+        const ${binding} = ${factory}(${args})
+        return <p>x</p>
+      }
+    `,
+      'C.tsx',
+      { adapter },
+    )
+
+  for (const factory of ['createQuery', 'createMutation']) {
+    test(`${factory}: a 3-element destructure is BF115, naming the [value, action] shape`, () => {
+      const result = compileWith(factory, '[a, b, c]', "() => http.post('/x')")
+      const bf115 = result.errors.find(e => e.code === 'BF115')
+      expect(bf115).toBeDefined()
+      expect(bf115!.message).toContain(`'${factory}(...)' returns a 2-element tuple '[value, action]'`)
+    })
+
+    test(`${factory}: a third argument is BF116`, () => {
+      const result = compileWith(factory, '[a]', "() => http.post('/x'), {}, 'extra'")
+      expect(result.errors.map(e => e.code)).toEqual(['BF116'])
+    })
+
+    test(`${factory}: [value, action], [value] and [, action] with two arguments are valid`, () => {
+      for (const binding of ['[a, b]', '[a]', '[, b]']) {
+        const result = compileWith(factory, binding, "() => http.post('/x'), {}")
+        expect(result.errors.map(e => e.code)).toEqual([])
+      }
+    })
+  }
+})
