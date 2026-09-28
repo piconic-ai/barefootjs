@@ -60,12 +60,26 @@ function scopeIdOf(start: Comment): string {
 }
 
 /**
- * Wraps a row's item setter so an item equal to the current one
- * (`sameLoopItem`) leaves the row's signal, and every effect reading it,
- * alone. The row keeps its previous reference.
+ * A row's item: the accessor its body reads and the setter the reconciler
+ * calls. The accessor always returns the item now in the source array, so
+ * identity-based code (`todos().filter((t) => t !== todo)`, mutating `todo`
+ * in place) keeps working. Only an item that is not `sameLoopItem`-equal to
+ * the current one notifies, so a rebuilt but equal item runs nothing.
  */
-function keepSameItem<T>(set: (v: T | ((prev: T) => T)) => void): (v: T) => void {
-  return (next) => set((prev) => (sameLoopItem(prev, next) ? prev : next))
+function rowItem<T>(initial: T): [() => T, (next: T) => void] {
+  let current = initial
+  const [version, setVersion] = createSignal(initial)
+  const read = () => {
+    version()
+    return current
+  }
+  const write = (next: T) => {
+    const changed = !sameLoopItem(current, next)
+    current = next
+    // Wrapped, so a function item is stored rather than called as an update.
+    if (changed) setVersion(() => next)
+  }
+  return [read, write]
 }
 
 type ItemScope<T> = {
@@ -376,9 +390,9 @@ function createItemScope<T>(
 
   createRoot((d) => {
     dispose = d
-    const [itemAccessor, itemSetter] = createSignal(item)
+    const [itemAccessor, itemSetter] = rowItem(item)
     const [indexAccessor, indexSetter] = createSignal(index)
-    setItem = keepSameItem(itemSetter)
+    setItem = itemSetter
     setIndex = indexSetter
     // Fresh row: hand the mount point down so the row's own root — whether a
     // `createComponent` call or a `mountRowRoot(clone)` — observes a connected
@@ -898,9 +912,9 @@ function createAnchorScope<T>(
 
   createRoot((d) => {
     dispose = d
-    const [itemAccessor, itemSetter] = createSignal(item)
+    const [itemAccessor, itemSetter] = rowItem(item)
     const [indexAccessor, indexSetter] = createSignal(index)
-    setItem = keepSameItem(itemSetter)
+    setItem = itemSetter
     setIndex = indexSetter
     returned = renderItem(itemAccessor, indexAccessor, existingAnchor)
     return undefined

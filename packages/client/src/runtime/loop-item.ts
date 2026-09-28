@@ -12,8 +12,8 @@
  * Equal means `Object.is`, or two arrays / two plain objects whose own
  * values are `Object.is`-equal one level down. Nested objects compare by
  * reference, class instances and other non-plain objects too. An item that
- * compares equal keeps the row's previous reference, which is what a row
- * reads from then on: the values it can observe are the same.
+ * compares equal still becomes the row's item, so the row holds the array's
+ * own object, but nothing re-runs: the values it can observe are the same.
  */
 export function sameLoopItem(prev: unknown, next: unknown): boolean {
   if (Object.is(prev, next)) return true

@@ -264,22 +264,22 @@ describe('mapArrayLazy — item-driven updates', () => {
 })
 
 describe('mapArrayLazy — rebuilt items (sameLoopItem)', () => {
-  test('an item rebuilt but equal to the current one does not call applyItem', () => {
+  test('an item rebuilt but equal to the current one does not call applyItem, but is adopted', () => {
     const [items, setItems] = createSignal([item('1', 'A'), item('2', 'B')])
     const container = ssrContainer(rowHtml('1', 'A') + rowHtml('2', 'B'))
 
     const { plan, applyItemCalls } = makePlan()
     mapArrayLazy(items, container, keyOf, plan, 'l0')
-    const [a] = items()
 
     // New objects everywhere, only the second label differs.
-    setItems([item('1', 'A'), item('2', 'B2')])
+    const rebuilt = [item('1', 'A'), item('2', 'B2')]
+    setItems(rebuilt)
     expect(applyItemCalls.map((c) => c.key)).toEqual(['2'])
     expect(container.querySelectorAll('span')[1].textContent).toBe('B2')
 
-    // The equal row kept its previous reference as its item.
-    setItems([item('1', 'A2'), item('2', 'B2')])
-    expect(applyItemCalls.at(-1)?.prev).toBe(a)
+    // The equal row ran nothing, but took the array's own object as its item.
+    setItems([item('1', 'A2'), rebuilt[1] as Item])
+    expect(applyItemCalls.at(-1)?.prev).toBe(rebuilt[0])
   })
 })
 

@@ -416,7 +416,7 @@ export function mapArrayLazy<T>(
         // the previous item, and is untracked (mixed bindings may read
         // outer signals; the applyOuter effect owns the reactive side).
         // An item equal to the row's current one (`sameLoopItem`) is no
-        // change: the row keeps its previous reference.
+        // change: the row takes the new reference but runs nothing.
         const itemChanged = !sameLoopItem(existing.item, item)
         // A pure reorder (#2859 follow-up): the item is unchanged but the
         // row's POSITION is, and `plan.indexDriven` says some binding reads
@@ -430,10 +430,14 @@ export function mapArrayLazy<T>(
           untrack(() => plan.applyItem(existing, prevItem))
           markStranded()
         } else if (indexChanged) {
+          // An equal item still replaces the old one, so the row holds the
+          // array's own object; nothing but the position moved.
+          const prevItem = existing.item
+          existing.item = item
           existing.index = i
-          // prevItem === item here: nothing but the position moved.
-          untrack(() => plan.applyItem(existing, item))
+          untrack(() => plan.applyItem(existing, prevItem))
         } else {
+          existing.item = item
           existing.index = i
         }
         desiredOrder.push(existing)

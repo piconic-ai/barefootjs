@@ -375,13 +375,13 @@ describe('mapArray', () => {
     expect(container.children[0].textContent).toBe('B')
   })
 
-  test('same-key item that is rebuilt but equal leaves the row alone (sameLoopItem)', () => {
+  test('same-key item that is rebuilt but equal runs nothing, yet the row holds the new object (sameLoopItem)', () => {
     const [items, setItems] = createSignal([
       { id: '1', text: 'A' },
       { id: '2', text: 'B' },
     ])
     const runs: string[] = []
-    const seen: unknown[] = []
+    const accessors = new Map<string, () => { id: string; text: string }>()
 
     mapArray(
       items,
@@ -389,35 +389,50 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
+        accessors.set(item().id, item)
         createEffect(() => {
           const it = item()
           runs.push(it.id)
-          seen.push(it)
           li.textContent = it.text
         })
         return li
       },
     )
-    const first = items()[0]
     runs.length = 0
 
     // Every item rebuilt, only the second one different.
-    setItems([
+    const next = [
       { id: '1', text: 'A' },
       { id: '2', text: 'B2' },
-    ])
+    ]
+    setItems(next)
     expect(runs).toEqual(['2'])
     expect(container.children[1].textContent).toBe('B2')
+    // The equal row ran nothing, but reads the array's own object now.
+    expect(accessors.get('1')?.()).toBe(next[0])
+  })
 
-    // The unchanged row keeps its previous reference.
-    runs.length = 0
-    seen.length = 0
-    setItems([
-      { id: '1', text: 'A' },
-      { id: '2', text: 'B3' },
-    ])
-    expect(runs).toEqual(['2'])
-    expect(seen).not.toContain(first)
+  test('identity-based handlers keep working after an equal rebuild', () => {
+    const [todos, setTodos] = createSignal([{ id: '1' }, { id: '2' }])
+    const remove: Array<() => void> = []
+
+    mapArray(
+      todos,
+      container,
+      (t) => t.id,
+      (todo) => {
+        const li = document.createElement('li')
+        li.textContent = todo().id
+        remove.push(() => setTodos(todos().filter((t) => t !== todo())))
+        return li
+      },
+    )
+
+    // A refetch rebuilds every object with the same values.
+    setTodos([{ id: '1' }, { id: '2' }])
+    remove[0]?.()
+    expect(todos().map((t) => t.id)).toEqual(['2'])
+    expect(container.children.length).toBe(1)
   })
 
   test('same-key update does not re-call renderItem', () => {
