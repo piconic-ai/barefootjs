@@ -7107,7 +7107,10 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
 // independent of this fix. `props.count` exercises the identical
 // `renderConditionExpr` arm without that confound.
 describe('GoTemplateAdapter - condition-position `??` operand wrapping (#3249)', () => {
-  const REPRO_SOURCE = (consequents: [string, string, string, string], alternates: [string, string, string, string]) => `
+  // Every call site below exercises the same consequent/alternate text
+  // ('a'/'za', 'b'/'zb', …), so this is a plain constant rather than a
+  // parameterized builder.
+  const REPRO_SOURCE = `
 'use client'
 import { createSignal } from '@barefootjs/client'
 type Todo = { id: number }
@@ -7116,10 +7119,10 @@ export function C(props: Props) {
   const [todos] = createSignal<Todo[] | undefined>(props.initialTodos)
   return (
     <div>
-      {(todos() ?? []).length > 0 ? <i>${consequents[0]}</i> : <i>${alternates[0]}</i>}
-      {(todos()?.length ?? 0) > 0 ? <u>${consequents[1]}</u> : <u>${alternates[1]}</u>}
-      {(props.count ?? 0) > 0 ? <b>${consequents[2]}</b> : <b>${alternates[2]}</b>}
-      {(props.count ?? 0) === 2 ? <s>${consequents[3]}</s> : <s>${alternates[3]}</s>}
+      {(todos() ?? []).length > 0 ? <i>a</i> : <i>za</i>}
+      {(todos()?.length ?? 0) > 0 ? <u>b</u> : <u>zb</u>}
+      {(props.count ?? 0) > 0 ? <b>has</b> : <b>none</b>}
+      {(props.count ?? 0) === 2 ? <s>two</s> : <s>not-two</s>}
     </div>
   )
 }
@@ -7127,11 +7130,7 @@ export function C(props: Props) {
 
   test('a `??` operand under `.length`, and as a `>`/`===` comparison operand, is parenthesized', () => {
     const adapter = new GoTemplateAdapter()
-    const result = compileJSX(
-      REPRO_SOURCE(['a', 'b', 'has', 'two'], ['za', 'zb', 'none', 'not-two']).trimStart(),
-      'test.tsx',
-      { adapter },
-    )
+    const result = compileJSX(REPRO_SOURCE.trimStart(), 'test.tsx', { adapter })
     expect(result.errors ?? []).toEqual([])
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     // NOT the broken unparenthesised `gt (len or .Todos bf_arr) 0` /
@@ -7148,7 +7147,7 @@ export function C(props: Props) {
   test('end-to-end via real `go run`: truthy `??` condition operands compile and render the correct branch (not a render-time panic)', async () => {
     try {
       const html = await renderGoTemplateComponent({
-        source: REPRO_SOURCE(['a', 'b', 'has', 'two'], ['za', 'zb', 'none', 'not-two']),
+        source: REPRO_SOURCE,
         adapter: new GoTemplateAdapter(),
         props: { initialTodos: [{ id: 1 }], count: 2 },
       })
@@ -7172,7 +7171,7 @@ export function C(props: Props) {
   test('end-to-end via real `go run`: falsy/absent `??` condition operands also render correctly ("" and 0 are nullish-KEPT)', async () => {
     try {
       const html = await renderGoTemplateComponent({
-        source: REPRO_SOURCE(['a', 'b', 'has', 'two'], ['za', 'zb', 'none', 'not-two']),
+        source: REPRO_SOURCE,
         adapter: new GoTemplateAdapter(),
         // `count: 0` is PRESENT, not absent — `??` must keep it (not fall
         // back to the `?? 0` default), and `0 > 0`/`0 === 2` are both false,
