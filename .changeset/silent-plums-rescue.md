@@ -1,5 +1,0 @@
----
-"@barefootjs/jinja": patch
----
-
-Fix the Jinja adapter's Python runtime leaking a stray space between text and an immediately-following rendered child component. Every compiled `.jinja` file opens with `{% set _bf_regN = bf.register_script(...) %}` script-registration lines followed by a template-source newline; Jinja's default whitespace handling emits that newline literally, so `bf.render_child(...)` returned a value starting with `"\n\n"` ahead of the child's real markup. Normally invisible (it collapses away between two HTML tags), it surfaced as a real space the moment the preceding sibling was text rather than a tag — e.g. an `AccordionTrigger`'s label text immediately followed by its `ChevronDownIcon`, exposed once #3237's JSX-whitespace fix stopped Hono from emitting its own (incorrect) trailing space in that same spot. The `JinjaBackend`'s `Environment` now sets `trim_blocks`/`lstrip_blocks`, which drops the compiler's own template-formatting whitespace around block tags without touching interpolated values or literal HTML/text content.
