@@ -714,7 +714,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ? ''
       : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
-    let template = `{{define "${this.state.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
+    // Trim markers (`-}}` / `{{-`) strip the template-SOURCE formatting
+    // newlines that surround the define body -- unlike Jinja's
+    // `trim_blocks`/`lstrip_blocks`, Go's `text/template` has no
+    // environment-level auto-trim option, so these newlines are literal
+    // output text by default. That is invisible when this component is
+    // rendered as the page root or sits between two tags (ordinary
+    // whitespace collapse, including this repo's `normalizeHTML`, erases
+    // it there) but becomes a real, byte-visible leading/trailing space
+    // the moment `{{template "${this.state.componentName}" ...}}` is
+    // spliced immediately next to TEXT rather than a tag -- e.g. an
+    // `AccordionTrigger`'s `{props.children}` label immediately followed
+    // by its `<ChevronDownIcon/>`, whose OWN `{{define "ChevronDownIcon"}}`
+    // used to leak a `\n` in front of its `<svg`. See the analogous
+    // `trim_blocks`/`lstrip_blocks` fix in the Jinja adapter's
+    // `backend_jinja.py`.
+    let template = `{{define "${this.state.componentName}" -}}\n${scriptRegistrations}${templateBody}\n{{- end}}\n`
     // Companion children defines execute with the parent's data via `bf_tmpl`.
     for (const d of this.state.pendingChildrenDefines) {
       template += `{{define "${d.name}"}}${d.content}{{end}}\n`
@@ -859,7 +874,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         (url) => `{{.Scripts.RegisterPreload "${url}"}}`,
       )
       const registrations = scriptAssets.map((url) => `{{.Scripts.Register "${url}"}}`)
-      return `{{if .Scripts}}${preloadRegistrations.join('')}${registrations.join('')}{{end}}\n`
+      // `{{end -}}` trims the trailing `\n` below so it never becomes a
+      // literal newline ahead of `templateBody` in the caller -- see the
+      // trim-marker note on `generate()`'s `{{define}}` above.
+      return `{{if .Scripts}}${preloadRegistrations.join('')}${registrations.join('')}{{end -}}\n`
     }
 
     const hasInteractivity = hasClientInteractivity(ir)
@@ -876,7 +894,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const scriptName = scriptBaseName || ir.metadata.componentName
     registrations.push(`{{.Scripts.Register "${this.options.clientJsBasePath}${scriptName}.client.js"}}`)
 
-    return `{{if .Scripts}}${registrations.join('')}{{end}}\n`
+    // `{{end -}}` trims the trailing `\n` (see the sibling branch above).
+    return `{{if .Scripts}}${registrations.join('')}{{end -}}\n`
   }
 
   /**
