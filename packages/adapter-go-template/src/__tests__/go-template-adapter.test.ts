@@ -7087,6 +7087,112 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
   })
 })
 
+// #3249: `renderConditionExpr`'s `binary` arm gated parens via
+// `needsParensInGoTemplate` (AST-kind based: only member.length /
+// arithmetic-binary / unary-negation), which never recognized a `??`
+// (`logical`) operand — so `(x ?? []).length > 0` spliced its unparenthesised
+// `or`/`bf_nullish` rendering into `gt`/`len` as extra sibling args, which
+// `html/template` reads as extra sibling ARGS and fails at RENDER time
+// ("wrong number of args"), not compile time. The `member` `.length` arm had
+// the identical gap for its own operand (`len ${obj.expr}`, unwrapped). Fixed
+// by switching both arms to `wrapIfMultiToken` (whitespace-based, on the
+// rendered string), matching the `logical`/`unary` arms and the #2271 review
+// fix just above.
+//
+// `props.count` here is a plain optional SCALAR prop, not the issue's nested
+// `props.meta?.count` — that nested shape hits an unrelated, pre-existing
+// bug (a synthesized nested-object prop type never gets wired into the
+// generated struct field, which stays a generic `map[string]interface{}`
+// that `.Field` can't index case-sensitively against a lowercase JSON key),
+// independent of this fix. `props.count` exercises the identical
+// `renderConditionExpr` arm without that confound.
+describe('GoTemplateAdapter - condition-position `??` operand wrapping (#3249)', () => {
+  const REPRO_SOURCE = (consequents: [string, string, string, string], alternates: [string, string, string, string]) => `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Todo = { id: number }
+type Props = { initialTodos?: Todo[]; count?: number }
+export function C(props: Props) {
+  const [todos] = createSignal<Todo[] | undefined>(props.initialTodos)
+  return (
+    <div>
+      {(todos() ?? []).length > 0 ? <i>${consequents[0]}</i> : <i>${alternates[0]}</i>}
+      {(todos()?.length ?? 0) > 0 ? <u>${consequents[1]}</u> : <u>${alternates[1]}</u>}
+      {(props.count ?? 0) > 0 ? <b>${consequents[2]}</b> : <b>${alternates[2]}</b>}
+      {(props.count ?? 0) === 2 ? <s>${consequents[3]}</s> : <s>${alternates[3]}</s>}
+    </div>
+  )
+}
+`
+
+  test('a `??` operand under `.length`, and as a `>`/`===` comparison operand, is parenthesized', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(
+      REPRO_SOURCE(['a', 'b', 'has', 'two'], ['za', 'zb', 'none', 'not-two']).trimStart(),
+      'test.tsx',
+      { adapter },
+    )
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // NOT the broken unparenthesised `gt (len or .Todos bf_arr) 0` /
+    // `gt or (len .Todos) 0 0` / `gt or .Count 0 0` / `eq or .Count 0 2`
+    // a bare `needsParensInGoTemplate`/unwrapped-`len` miss would produce —
+    // `html/template` parses those as `gt`/`len`/`eq` receiving 3/4 sibling
+    // args instead of the intended 1/2.
+    expect(template).toContain('gt (len (or .Todos bf_arr)) 0')
+    expect(template).toContain('gt (or (len .Todos) 0) 0')
+    expect(template).toContain('gt (or .Count 0) 0')
+    expect(template).toContain('eq (or .Count 0) 2')
+  })
+
+  test('end-to-end via real `go run`: truthy `??` condition operands compile and render the correct branch (not a render-time panic)', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: REPRO_SOURCE(['a', 'b', 'has', 'two'], ['za', 'zb', 'none', 'not-two']),
+        adapter: new GoTemplateAdapter(),
+        props: { initialTodos: [{ id: 1 }], count: 2 },
+      })
+      expect(html).toContain('>a<')
+      expect(html).not.toContain('>za<')
+      expect(html).toContain('>b<')
+      expect(html).not.toContain('>zb<')
+      expect(html).toContain('>has<')
+      expect(html).not.toContain('>none<')
+      expect(html).toContain('>two<')
+      expect(html).not.toContain('>not-two<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #3249 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+
+  test('end-to-end via real `go run`: falsy/absent `??` condition operands also render correctly ("" and 0 are nullish-KEPT)', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: REPRO_SOURCE(['a', 'b', 'has', 'two'], ['za', 'zb', 'none', 'not-two']),
+        adapter: new GoTemplateAdapter(),
+        // `count: 0` is PRESENT, not absent — `??` must keep it (not fall
+        // back to the `?? 0` default), and `0 > 0`/`0 === 2` are both false,
+        // same outcome as `count` being entirely absent.
+        props: { initialTodos: [], count: 0 },
+      })
+      expect(html).toContain('>za<')
+      expect(html).toContain('>zb<')
+      expect(html).toContain('>none<')
+      expect(html).toContain('>not-two<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #3249 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
+
 describe('GoTemplateAdapter - scriptAssets (Vite late-binding)', () => {
   const CLIENT_COMPONENT = `
 'use client'
