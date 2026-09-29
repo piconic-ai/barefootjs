@@ -326,10 +326,13 @@ export function attachFlowSubsystems<
     )
     writeDragPosition(dragState.nodeId, clamped.x, clamped.y, true)
     // A press without a move is a click, not a drag: the callbacks start
-    // with the first move, and a drag that never started never stops.
+    // once the node has moved, and a drag that never started never stops.
+    // Browsers send pointermove without a move too (pen pressure or tilt,
+    // touch), so a move is the node leaving where it started.
     const node = draggedNode(dragState.nodeId)
     if (!node) return
     if (!dragState.moved) {
+      if (clamped.x === dragState.startNodeX && clamped.y === dragState.startNodeY) return
       dragState.moved = true
       store.onNodeDragStart?.(event, node, [node])
     }

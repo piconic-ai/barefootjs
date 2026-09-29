@@ -2,7 +2,8 @@
  * The node drag handler in `attachFlowSubsystems` calls the drag callbacks:
  * `onNodeDragStart` on the first move, `onNodeDrag` on every move and
  * `onNodeDragStop` on release, each with the node where it is by then. A
- * press without a move is a click and calls none of them.
+ * press without a move is a click and calls none of them, even when the
+ * browser sends a pointermove that does not move the node.
  */
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -67,6 +68,15 @@ describe('node drag callbacks', () => {
   test('a press without a move calls none of them', async () => {
     const { calls, node, el, pointer } = await setup()
     pointer('pointerdown', node, 100, 100)
+    pointer('pointerup', el, 100, 100)
+    expect(calls).toEqual([])
+  })
+
+  test('a pointermove that does not move the node starts no drag', async () => {
+    const { calls, node, el, pointer } = await setup()
+    // Pen pressure or tilt, or touch, sends pointermove at the same place.
+    pointer('pointerdown', node, 100, 100)
+    pointer('pointermove', el, 100, 100)
     pointer('pointerup', el, 100, 100)
     expect(calls).toEqual([])
   })
