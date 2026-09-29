@@ -31,10 +31,7 @@ Vendor `python/barefootjs/` from the npm package into your app; its only depende
 from barefootjs import BarefootJS
 from barefootjs.backend_jinja import JinjaBackend
 
-backend = JinjaBackend(
-    paths=["dist/templates"],
-    environment_options={"trim_blocks": True, "lstrip_blocks": True},
-)
+backend = JinjaBackend(paths=["dist/templates"])
 
 bf = BarefootJS(None, {"backend": backend})
 bf._scope_id("Counter_0")
@@ -42,7 +39,7 @@ body = backend.render_named("counter", bf, {"initial": 0})
 html = f"<!doctype html><body>{body}{bf.scripts()}</body>"
 ```
 
-The templates assume four `Environment` settings. `JinjaBackend` applies the first two by default; pass the other two in `environment_options`, or set all four when you hand it a pre-built `Environment` via `env=`:
+The templates assume four `Environment` settings. `JinjaBackend` applies all four by default when constructed with `paths=`; set all four yourself when you hand it a pre-built `Environment` via `env=` instead:
 
 | Setting | Why |
 |---------|-----|
