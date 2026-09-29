@@ -7235,19 +7235,26 @@ export function C(props: Props) {
     }
   })
 
-  test('a non-`.length` field access on a `??`-combined object is parenthesized, and picks the correct operand via real `go run`', async () => {
-    // A present `a` (non-nil Flag) must win over `b` in `a() ?? b()` — an
-    // unwrapped splice (`or .A .B.On`) would instead parse as `or` given
-    // `.A` (truthy: a non-nil struct) and `.B.On` as two sibling args,
-    // returning `.A` itself (still truthy) and rendering the WRONG branch
-    // regardless of `a`'s own `on` value.
+  test('a non-`.length` field access on a `??`-combined object is parenthesized, and reads the wrapped pipeline\'s field via real `go run`', async () => {
+    // Both `a` and `b` are REQUIRED struct-typed props (never optional) —
+    // an optional struct prop lowers to a generic `map[string]interface{}`
+    // via JSON decode with a lowercase key, which a capitalized `.Field`
+    // access can't reach (the same case-sensitive-lookup root cause as
+    // #3275, independent of this parenthesization fix), so it can't tell a
+    // correct wrap from a broken one. With a REQUIRED struct, `a` is a
+    // proper Go struct value, always truthy, so `a() ?? b()` always
+    // resolves to `a()` at runtime regardless of wrapping — the wrap only
+    // changes what `.On` is read FROM. Unwrapped (`or .A .B.On`), the whole
+    // `if` tests `.A` itself (a struct value: always truthy in Go
+    // templates) and ignores `a.on` entirely, so it renders "on" no matter
+    // what `a.on` is. Wrapped (`(or .A .B).On`), it correctly reads `a.on`.
     const source = `
 'use client'
 import { createSignal } from '@barefootjs/client'
 type Flag = { on: boolean }
-type Props = { a?: Flag; b: Flag }
+type Props = { a: Flag; b: Flag }
 export function C(props: Props) {
-  const [a] = createSignal<Flag | undefined>(props.a)
+  const [a] = createSignal<Flag>(props.a)
   const [b] = createSignal<Flag>(props.b)
   return <div>{(a() ?? b()).on ? <i>on</i> : <i>off</i>}</div>
 }
@@ -7264,13 +7271,16 @@ export function C(props: Props) {
         adapter: new GoTemplateAdapter(),
         props: { a: { on: false }, b: { on: true } },
       })
+      // A broken, unwrapped splice would render "on" here regardless of
+      // `a.on`, since it tests the always-truthy struct `.A` rather than
+      // reading `.A.On`.
       expect(offHtml).toContain('>off<')
       expect(offHtml).not.toContain('>on<')
 
       const onHtml = await renderGoTemplateComponent({
         source,
         adapter: new GoTemplateAdapter(),
-        props: { b: { on: true } },
+        props: { a: { on: true }, b: { on: false } },
       })
       expect(onHtml).toContain('>on<')
       expect(onHtml).not.toContain('>off<')
