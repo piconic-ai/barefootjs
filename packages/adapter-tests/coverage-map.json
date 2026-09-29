@@ -5432,6 +5432,26 @@
         "text"
       ]
     },
+    "optional-chain-length-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-chaining-prop": {
       "kinds": [
         "identifier",
