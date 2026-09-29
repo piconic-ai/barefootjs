@@ -331,13 +331,17 @@ function emitStaticIndexLookup(
   // nested static loop's own bindings (`stringify/static-array-child-init.ts`'s
   // `__ic`/`indexOf` shape, #2798): scope a `containerSlotId` lookup inside
   // the previously-resolved row, walk the ORIGINAL event target up to that
-  // container's direct child, and read its position. Declared inside this
-  // guard (not above) because a nested `array` expression may read the
-  // outer `param` (e.g. `CHOICES[group]`), which must exist first.
-  const nestedNames = emitNestedIndexParams(ls, ev, '__el', '          ')
-  const guarded = nestedNames.length > 0
-  if (guarded) ls.push(`          if (${nestedNames.join(' && ')}) {`)
+  // container's direct child, and read its position. The positional lookups
+  // run inside this guard (not above) because a nested `array` expression
+  // may read the outer `param` (e.g. `CHOICES[group]`), which must exist
+  // first; the params themselves are declared just below, once every
+  // level's index has resolved (see `emitNestedIndexParams`'s docstring on
+  // why the guard is on the indices, not the params).
+  const { guardNames: nestedGuardNames, paramLines: nestedParamLines } = emitNestedIndexParams(ls, ev, '__el', '          ')
+  const guarded = nestedGuardNames.length > 0
+  if (guarded) ls.push(`          if (${nestedGuardNames.join(' && ')}) {`)
   const bodyIndent = guarded ? '            ' : '          '
+  for (const line of nestedParamLines) ls.push(`${bodyIndent}${line}`)
   if (preambleLine) ls.push(`${bodyIndent}${preambleLine}`)
   if (idxLine) ls.push(`${bodyIndent}${idxLine}`)
   ls.push(`${bodyIndent};${handlerCall}`)
@@ -361,11 +365,39 @@ function emitStaticIndexLookup(
  * recovers that level's row regardless of how many levels are nested
  * beneath it.
  *
- * Declares one `const <nested.param> = ...` per level (`undefined` when the
- * row can't be resolved, e.g. a stale-DOM race) and returns the declared
- * names so the caller can fold them into the surrounding item guard. Returns
- * `[]` (emitting nothing) when `ev.nestedLoops` is empty, so a non-nested
- * event's emitted lines are unchanged.
+ * Emits the positional index resolution (`__icN`/`__irN`/`__iidxN`) for
+ * every level up front, and returns it split into two pieces the caller
+ * assembles around the rest of the handler body:
+ *
+ *   - `guardNames`: one `<idxVar> >= 0` condition per level, meant to be
+ *     `&&`-joined into the guard that wraps the param declarations and the
+ *     handler call.
+ *   - `paramLines`: one `const <nested.param> = <array>[<idxVar>]` per
+ *     level, in depth order, meant to be pushed INSIDE that guard.
+ *
+ * The guard checks the resolved INDEX, not the item's truthiness — unlike
+ * an earlier version of this function, which declared `const <param> =
+ * <idx> >= 0 ? <array>[<idx>] : undefined` and left the caller to guard on
+ * `<param>` directly. That silently dropped a click on a falsy item
+ * (`NUMS = [0, 1, 2]`, clicking `0`) since `if (0)` is false, and threw a
+ * `TypeError` for a destructured `nested.param` (`({ id, label }) => ...`
+ * destructuring `undefined` on a miss) since `if ({ id, label })` is always
+ * true regardless of whether the lookup actually resolved. Guarding on the
+ * index and declaring the (possibly-destructured) param only once every
+ * level's index is known to be `>= 0` fixes both: a `0` item still passes
+ * `__iidxN >= 0`, and a destructured param is never handed `undefined`.
+ *
+ * Declaring the params in depth order (rather than each next to its own
+ * index computation) still lets a nested `array` expression read an outer
+ * level's param (e.g. `CHOICES[group]`) — the container/row/index
+ * computations for every level never depend on any level's param, only on
+ * DOM structure, so they can all run first regardless of param order; only
+ * the actual item lookups (`paramLines`) need the depth ordering, and the
+ * caller pushes them in the order this function returns them.
+ *
+ * Returns `{ guardNames: [], paramLines: [] }` (emitting nothing) when
+ * `ev.nestedLoops` is empty, so a non-nested event's emitted lines are
+ * unchanged.
  *
  * Only `emitStaticIndexLookup` calls this today. `emitDynamicIndexLookup`
  * (the other unkeyed item-lookup shape) never sees a non-empty
@@ -384,9 +416,10 @@ function emitNestedIndexParams(
   ev: LoopChildEvent,
   baseScopeVar: string,
   indent: string,
-): string[] {
+): { guardNames: string[]; paramLines: string[] } {
   const evVar = varSlotId(ev.childSlotId)
-  const names: string[] = []
+  const guardNames: string[] = []
+  const paramLines: string[] = []
   let scopeVar = baseScopeVar
   for (const nested of ev.nestedLoops) {
     const containerVarName = `__ic${nested.depth}`
@@ -400,9 +433,9 @@ function emitNestedIndexParams(
     ls.push(`${indent}while (${rowVarName}.parentElement && ${rowVarName}.parentElement !== ${containerVarName}) ${rowVarName} = ${rowVarName}.parentElement`)
     const offsetSuffix = buildLoopChildIndexSubtraction(nested.offset)
     ls.push(`${indent}const ${idxVarName} = ${rowVarName}.parentElement === ${containerVarName} ? Array.from(${containerVarName}.children).indexOf(${rowVarName})${offsetSuffix} : -1`)
-    ls.push(`${indent}const ${nested.param} = ${idxVarName} >= 0 ? ${nested.array}[${idxVarName}] : undefined`)
-    names.push(nested.param)
+    guardNames.push(`${idxVarName} >= 0`)
+    paramLines.push(`const ${nested.param} = ${nested.array}[${idxVarName}]`)
     scopeVar = rowVarName
   }
-  return names
+  return { guardNames, paramLines }
 }

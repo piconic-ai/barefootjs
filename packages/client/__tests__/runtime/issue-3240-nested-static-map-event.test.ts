@@ -152,4 +152,43 @@ describe('#3240 — nested static .map(): inner-row event handler resolves the i
     b1.dispatchEvent(new window.Event('click', { bubbles: true }))
     expect(state.textContent).toBe('b1')
   })
+
+  test('clicking the inner item whose value is 0 still runs the handler', async () => {
+    // Pullfrog follow-up: the nested guard used to check the resolved
+    // ITEM's truthiness (`if (choice) {`), not whether the lookup resolved
+    // at all — so a numeric array containing `0` silently swallowed a click
+    // on that item (`if (0)` is false). Guarding on the resolved index
+    // (`__iidx1 >= 0`) instead means this now runs the handler.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const GROUPS = ['a', 'b']
+      const NUMS = [0, 1, 2]
+      export function App() {
+        const [picked, setPicked] = createSignal(-1)
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group}>
+                {NUMS.map(n => (
+                  <button key={n} data-btn={\`\${group}\${n}\`} onClick={() => setPicked(n)}>{group}{n}</button>
+                ))}
+              </div>
+            ))}
+            <pre id="state">{picked()}</pre>
+          </div>
+        )
+      }
+    `
+    const el = await mount(source, 'App.tsx', 'App')
+    const state = el.querySelector('#state')!
+    expect(state.textContent).toBe('-1')
+
+    const buttons = Array.from(el.querySelectorAll('button'))
+    const b0 = buttons.find((b) => b.getAttribute('data-btn') === 'a0')!
+    expect(b0).toBeDefined()
+
+    b0.dispatchEvent(new window.Event('click', { bubbles: true }))
+    expect(state.textContent).toBe('0')
+  })
 })

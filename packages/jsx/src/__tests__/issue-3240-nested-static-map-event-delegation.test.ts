@@ -66,16 +66,20 @@ describe('static-index event delegation resolves nested .map() params (#3240)', 
     // The outer item is still resolved positionally, unchanged.
     expect(content).toContain('const group = GROUPS[__idx]')
     // The inner item is now resolved too (pre-fix: never declared at all).
-    expect(content).toContain('const choice = __iidx1 >= 0 ? CHOICES[__iidx1] : undefined')
+    // Guarded on the resolved INDEX, not the item's truthiness (a `0`/`''`/
+    // `false` item must still run the handler — see `emitNestedIndexParams`'s
+    // docstring), so `choice` is declared only once `__iidx1 >= 0` is known.
+    expect(content).toContain('if (__iidx1 >= 0) {')
+    expect(content).toContain('const choice = CHOICES[__iidx1]')
     // The handler call is guarded on BOTH params, and runs after both are
     // declared (not before — a `choice` declared after the call would still
     // throw a TDZ `ReferenceError`).
-    const choiceDeclIdx = content.indexOf('const choice = __iidx1')
-    const guardIdx = content.indexOf('if (choice) {')
+    const guardIdx = content.indexOf('if (__iidx1 >= 0) {')
+    const choiceDeclIdx = content.indexOf('const choice = CHOICES[__iidx1]')
     const callIdx = content.indexOf('(() => setPicked(`${group}${choice}`))(__bfEvt)')
-    expect(choiceDeclIdx).toBeGreaterThan(0)
-    expect(guardIdx).toBeGreaterThan(choiceDeclIdx)
-    expect(callIdx).toBeGreaterThan(guardIdx)
+    expect(guardIdx).toBeGreaterThan(0)
+    expect(choiceDeclIdx).toBeGreaterThan(guardIdx)
+    expect(callIdx).toBeGreaterThan(choiceDeclIdx)
   })
 
   test('byte-stability: an event with no nested loops keeps the pre-#3240 shape', () => {
@@ -127,7 +131,8 @@ describe('static-index event delegation resolves nested .map() params (#3240)', 
       }
     `)
 
-    expect(content).toContain('const choice = __iidx1 >= 0 ? CHOICE_MAP[settingKey][__iidx1] : undefined')
+    expect(content).toContain('if (__iidx1 >= 0) {')
+    expect(content).toContain('const choice = CHOICE_MAP[settingKey][__iidx1]')
   })
 
   test('a static sibling before the inner .map() offsets the nested positional lookup', () => {
@@ -170,5 +175,71 @@ describe('static-index event delegation resolves nested .map() params (#3240)', 
     expect(content).toContain(
       'const __iidx1 = __ir1.parentElement === __ic1 ? Array.from(__ic1.children).indexOf(__ir1) - 1 : -1',
     )
+  })
+
+  test('a falsy inner item (0) still guards on the resolved index, not the item value', () => {
+    // Pullfrog follow-up on #3240: guarding on `if (choice)` (the item's
+    // truthiness) instead of `if (__iidx1 >= 0)` (whether the lookup
+    // resolved) meant a numeric array containing `0` silently dropped a
+    // click on that item — `if (0)` is false even though the index (0)
+    // resolved correctly. This asserts the emitted guard checks the index.
+    const content = clientJsFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const GROUPS = ['a', 'b']
+      const NUMS = [0, 1, 2]
+      export function Repro() {
+        const [picked, setPicked] = createSignal(-1)
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group}>
+                {NUMS.map(n => (
+                  <button key={n} onClick={() => setPicked(n)}>{group}{n}</button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `)
+
+    expect(content).toContain('if (__iidx1 >= 0) {')
+    expect(content).toContain('const n = NUMS[__iidx1]')
+    expect(content).not.toContain('if (n) {')
+  })
+
+  test('a destructured inner param is only declared once the index has resolved', () => {
+    // Pullfrog follow-up on #3240: guarding on the (destructured) param's
+    // truthiness is meaningless — an object pattern is always truthy — and
+    // declaring `const { id, label } = CHOICES[__iidx1]` unconditionally
+    // (with `__iidx1` possibly `-1`, i.e. `CHOICES[-1]` = `undefined`) threw
+    // a `TypeError` destructuring `undefined`. Declaring it only inside the
+    // `__iidx1 >= 0` guard means it's never handed `undefined`.
+    const content = clientJsFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const GROUPS = ['a', 'b']
+      const CHOICES = [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }]
+      export function Repro() {
+        const [picked, setPicked] = createSignal('')
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group}>
+                {CHOICES.map(({ id, label }) => (
+                  <button key={id} onClick={() => setPicked(\`\${group}\${id}\`)}>{group}{label}</button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `)
+
+    const guardIdx = content.indexOf('if (__iidx1 >= 0) {')
+    const declIdx = content.indexOf('const { id, label } = CHOICES[__iidx1]')
+    expect(guardIdx).toBeGreaterThan(0)
+    expect(declIdx).toBeGreaterThan(guardIdx)
   })
 })
