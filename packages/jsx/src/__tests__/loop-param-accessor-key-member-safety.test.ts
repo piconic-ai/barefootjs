@@ -333,6 +333,32 @@ describe('.map() row: declaration/member positions the old regex skipped via its
     expect(js).toContain('new choice()')
     expect(js).not.toContain('new choice()()')
   })
+
+  test('a self-reference inside a named `function choice() {...}` expression refers to itself, not the outer item', () => {
+    // Unlike a `function`/`class` DECLARATION (whose name reaches into the
+    // surrounding scope), a named function EXPRESSION's name is scoped to
+    // exactly its own body — so `choice.length` inside this one can only
+    // mean the inner function, never the outer loop item, and must be left
+    // completely untouched rather than wrapped into `choice().length`.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['aa', 'bb'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{(function choice() { return choice.length })()}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('function choice() { return choice.length }')
+    expect(js).not.toContain('choice().length')
+  })
 })
 
 describe('.map() row: a nested scope that shadows the loop param fails loudly instead of silently misrewriting', () => {

@@ -783,6 +783,21 @@ export function wrapIndexParamAsAccessor(expr: string, indexParam: string): stri
  * name is expected), so the module fails to parse instead of silently
  * running with the wrong value — the same loud, build-time failure the old
  * regex produced for this shape (it had no shadow-awareness either).
+ *
+ * A NAMED function expression is the one shadowing shape this function
+ * skips wholesale rather than leaving loud: `(function name() { ... })`'s
+ * own name is scoped to exactly that expression's body and nowhere else, so
+ * `visit` never descends into it at all once it sees the self-shadowing
+ * name — no reference inside can possibly mean the outer `name`. A
+ * `function`/`class` DECLARATION's name is different: its binding reaches
+ * into the surrounding scope too (a function declaration's name is hoisted
+ * above it; a class declaration's own static/instance members can
+ * self-reference it), so the same whole-subtree skip isn't sound here —
+ * a self-reference to a `function`/`class` declaration whose name happens
+ * to match `name` is still silently misrewritten, an accepted
+ * pre-existing-shaped gap the old regex had too (the "followed by `(`"
+ * exclusion below only protects the declaration's OWN name token, not
+ * references reachable from within or after it).
  */
 function rewriteIdentifierAsAccessor(expr: string, name: string): string {
   // Fast path: `name` doesn't occur in the text at all → nothing to rewrite.
@@ -796,21 +811,30 @@ function rewriteIdentifierAsAccessor(expr: string, name: string): string {
   const edits: Array<{ start: number; end: number; replacement: string }> = []
 
   const visit = (node: ts.Node): void => {
+    // A named function expression's own name is scoped to exactly its own
+    // body, so nothing reachable inside it can refer to the outer `name` —
+    // skip the whole subtree instead of only its declaration-name
+    // identifier (see this function's docstring for why a `function`/
+    // `class` DECLARATION can't get the same treatment this cheaply).
+    if (ts.isFunctionExpression(node) && node.name?.text === name) return
+
     if (ts.isIdentifier(node) && node.text === name) {
       const p = node.parent
       // Pure-key / non-reference positions — never rewrite. Shared with
       // `analyzer.ts`'s factory-rename `classify()`, which answers the same
       // "is this identifier actually a value reference" question.
       if (isNonReferenceIdentifierPosition(node)) return
-      // A function/method/accessor declaration's own name is always
-      // followed by `(` in valid source, which is exactly the shape the
-      // old `\bname\b(?!\s*\()`-style regex used to recognize and skip —
-      // so leaving these unwrapped (rather than declining loudly, as the
-      // shadowing declarations below do) matches the old behavior instead
-      // of regressing code that used to compile.
-      if ((ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p)
-        || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) || ts.isSetAccessorDeclaration(p))
-        && p.name === node) return
+      // A function declaration's own name is always followed by `(` in
+      // valid source, which is exactly the shape the old
+      // `\bname\b(?!\s*\()`-style regex used to recognize and skip. Leaving
+      // it unwrapped (rather than declining loudly, as the shadowing
+      // declarations below do) matches the old behavior instead of
+      // regressing code that used to compile. A `class name {}`
+      // declaration's name is followed by `{`/`extends`, not `(`, so the
+      // old regex did NOT protect it either — wrapping it is a pre-existing
+      // syntax break, not a regression, so it's left to the shadowing-decl
+      // path below like any other declaration name.
+      if (ts.isFunctionDeclaration(p) && p.name === node) return
       if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
       if (ts.isNewExpression(p) && p.expression === node) return // `new name()` — same "followed by (" shape as a call
 

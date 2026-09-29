@@ -62,7 +62,8 @@ const REACTIVE_BRAND_PACKAGES = [
  * deliberately NOT covered here: those introduce a new binding rather than
  * naming an existing one, and the two callers disagree on how to handle a
  * shadowing declaration (renaming wants to rename it too; accessor-wrapping
- * must never touch it), so each classifies those positions itself.
+ * deliberately wraps it so the shadow fails to parse), so each classifies
+ * those positions itself.
  */
 export function isNonReferenceIdentifierPosition(id: ts.Identifier): boolean {
   const p = id.parent
