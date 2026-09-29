@@ -1,5 +1,17 @@
 # @barefootjs/rust
 
+## 0.39.1
+
+### Patch Changes
+
+- fa57bd2: Fix the value-elided form of an async reactive factory declaration (`const [, save] = createMutation(...)`, `const [, fetchItems] = createQuery(...)`, #3245) leaking its synthesized internal getter name (`__bfGet_<action>`, analyzer.ts's `collectFactorySignal`) into server-facing output. Since nothing in the source ever references that name (it exists only so getter-keyed consumers like substitution env and SSR seeding stay total), it should never appear anywhere a backend author or the hydration wire format would see it — but it was still baked into the Hono/Test SSR module's getter stub, every template-stash adapter's SSR-defaults manifest and seed plan, and the Go adapter's generated props struct/constructor.
+  
+  Each of those four sites now skips a signal whose value binding is both a `factory` and `getterElided`, matching the `bf debug graph` precedent already established for this shape (#3227's `debug.ts` filter). The action's own SSR stub (`Object.assign(() => {}, { isPending: () => false, error: () => undefined })`) is unaffected and still emitted whenever the source references it.
+- 298e42d: Fix a closed-type `{...rest}`-forwarded attribute that starts absent (the caller never passed that key) rendering as `attr=""` instead of being omitted, on every template-string adapter (ERB, Jinja, minijinja, Mojolicious, Twig, Blade, Xslate, Pebble, Go template). Each adapter's "bare optional prop" nullish-omission guard only recognized a `props.<key>`-shaped expression, not the `rest.<key>`-shaped expression `{...rest}`'s per-key expansion produces (#3057), so the guard never fired for a rest-forwarded key and it always rendered unconditionally.
+  
+  The Go template adapter's own reactive-omission guard used the same fix, plus a Go-specific `bf_get`-vs-nil check for the rest bag (a `map[string]any` field, not a Props-struct field like other optional props). A separate, unrelated gap remains on Go: a signal declared `T | undefined` and seeded with a literal `undefined` still bakes to the empty string instead of `nil` when forwarded this way — tracked as the `go-undefined-signal-seed-not-nil` known limitation, with the affected fixture pinned there rather than fixed here.
+- @barefootjs/shared@0.39.1
+
 ## 0.39.0
 
 ### Patch Changes
