@@ -6,6 +6,7 @@
 import ts from 'typescript'
 import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
+import { isNonReferenceIdentifierPosition } from '../analyzer.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
 import { escapeIdentifierForRegex, ID_BOUNDARY_BEFORE, ID_BOUNDARY_AFTER } from '../identifier-pattern.ts'
@@ -683,9 +684,12 @@ function renderLoopBindingAccess(b: LoopParamBinding, base: string): string {
  * e.g., "item.text" → "item().text", "item" → "item()"
  * Does not double-wrap: "item().text" stays "item().text"
  *
- * String-context aware: skips replacements inside string literals and template
- * literal string parts (e.g., CSS class name "preview-field" stays unchanged
- * when paramName is "field"). Handles arbitrarily nested template literals.
+ * The plain-param branch (`rewriteIdentifierAsAccessor`) walks the real AST,
+ * so it is inherently string/template-literal-context aware (a CSS class
+ * name like "preview-field" never surfaces as an `Identifier` node when
+ * `paramName` is "field") AND skips object-literal keys, shorthand
+ * properties, and member/property names — tokens that spell `paramName`
+ * without referencing it (#3239).
  *
  * When `bindings` is supplied (destructured `.map()` callback, #951), each
  * binding name is rewritten to `__bfItem()${path}` instead of wrapping the
@@ -717,12 +721,7 @@ export function wrapLoopParamAsAccessor(
   if (bindings && bindings.length > 0) {
     result = rewriteLoopBindingRefs(expr, bindings, '__bfItem()')
   } else {
-    // `paramName` is a legal JS identifier and may itself start with `$`
-    // (`$1`, `$&`, …) — a plain string replacement would risk `String.replace`
-    // reading those as backreference/whole-match sequences, so use a replacer
-    // function to insert the accessor text literally (#2592).
-    const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(paramName)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
-    result = replaceInExprContexts(expr, re, () => `${paramName}()`)
+    result = rewriteIdentifierAsAccessor(expr, paramName)
   }
   if (indexParam && indexParam !== paramName) {
     result = wrapIndexParamAsAccessor(result, indexParam)
@@ -731,10 +730,11 @@ export function wrapLoopParamAsAccessor(
 }
 
 /**
- * The index-only half of `wrapLoopParamAsAccessor` — same regex shape, own
- * identifier. Factored out so `wrapLoopParamAsAccessor` can run it as a
- * second pass regardless of which item-rewrite branch (bindings vs. plain
- * param) ran first (#2859).
+ * The index-only half of `wrapLoopParamAsAccessor` — same AST-aware
+ * identifier rewrite (`rewriteIdentifierAsAccessor`), own identifier.
+ * Factored out so `wrapLoopParamAsAccessor` can run it as a second pass
+ * regardless of which item-rewrite branch (bindings vs. plain param) ran
+ * first (#2859).
  *
  * Also exported standalone for `build-loop.ts`/`build-branch-loop.ts`: a
  * plain loop's `template`/`mapPreambleWrapped` are built ONCE, before lazy
@@ -746,8 +746,123 @@ export function wrapLoopParamAsAccessor(
  * is NOT going lazy.
  */
 export function wrapIndexParamAsAccessor(expr: string, indexParam: string): string {
-  const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(indexParam)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
-  return replaceInExprContexts(expr, re, () => `${indexParam}()`)
+  return rewriteIdentifierAsAccessor(expr, indexParam)
+}
+
+/**
+ * AST-aware engine behind `wrapLoopParamAsAccessor`'s plain-param branch and
+ * `wrapIndexParamAsAccessor`: rewrite every genuine value reference to
+ * `name` in `expr` into `${name}()`, while leaving alone every token that
+ * merely SPELLS `name` without referencing it — an object-literal key
+ * (`{ name: 1 }`), a shorthand property (`{ name }`, expanded to
+ * `{ name: name() }` in one edit — the same transformation #1244 gave the
+ * destructured-binding path via `expandShorthandBindings`), and a
+ * member/property name (`obj.name`, `obj?.name`).
+ *
+ * The previous implementation was a `\bname\b`-style regex
+ * (`ID_BOUNDARY_BEFORE`/`AFTER` only know about identifier-character
+ * boundaries, not JS grammar), so it matched those non-reference tokens too:
+ * a key or shorthand rewrite produces invalid JS (`{ name(): 1 }`,
+ * `{ name() }`) that fails at parse time; a member-name rewrite produces
+ * valid-but-wrong JS (`obj.name()`) that throws `TypeError: obj.name is not
+ * a function` at row-creation time (#3239). Parsing the real AST — the same
+ * technique `expandShorthandBindings` already uses below — makes each of
+ * those positions a type of AST node this function can name and skip,
+ * instead of a regex guessing from surrounding characters.
+ *
+ * A nested declaration that re-binds `name` (a parameter, a `const`/`let`,
+ * or a destructured local) is deliberately NOT skipped, unlike
+ * `analyzer.ts`'s rename `classify()`: this rewrite has no scope tracking,
+ * so it cannot tell a reference to the shadowing local from a reference to
+ * the outer loop param past that point, and silently wrapping only the
+ * OUTER-scope references while leaving the shadowed ones alone (or vice
+ * versa) would just move the #3239 bug rather than fix it. Wrapping the
+ * shadowing declaration's own name is always a syntax break at the
+ * declaration site itself (`const name = 1` → `const name() = 1`, `(name)
+ * => …` → `(name()) => …` — a call can't legally appear where a binding
+ * name is expected), so the module fails to parse instead of silently
+ * running with the wrong value — the same loud, build-time failure the old
+ * regex produced for this shape (it had no shadow-awareness either).
+ *
+ * A NAMED function expression is the one shadowing shape this function
+ * skips wholesale rather than leaving loud: `(function name() { ... })`'s
+ * own name is scoped to exactly that expression's body and nowhere else, so
+ * `visit` never descends into it at all once it sees the self-shadowing
+ * name — no reference inside can possibly mean the outer `name`. A
+ * `function`/`class` DECLARATION's name is different: its binding reaches
+ * into the surrounding scope too (a function declaration's name is hoisted
+ * above it; a class declaration's own static/instance members can
+ * self-reference it), so the same whole-subtree skip isn't sound here —
+ * a self-reference to a `function`/`class` declaration whose name happens
+ * to match `name` is still silently misrewritten, an accepted
+ * pre-existing-shaped gap the old regex had too (the "followed by `(`"
+ * exclusion below only protects the declaration's OWN name token, not
+ * references reachable from within or after it).
+ */
+function rewriteIdentifierAsAccessor(expr: string, name: string): string {
+  // Fast path: `name` doesn't occur in the text at all → nothing to rewrite.
+  // A cheap substring check only ever causes an unnecessary parse below
+  // (e.g. `name` occurs only as part of a longer identifier), never a wrong
+  // answer, since the AST walk re-checks the exact identifier text.
+  if (!expr.includes(name)) return expr
+
+  const wrapped = `(${expr})`
+  const sf = ts.createSourceFile('__bf_expr.ts', wrapped, ts.ScriptTarget.Latest, /* setParentNodes */ true)
+  const edits: Array<{ start: number; end: number; replacement: string }> = []
+
+  const visit = (node: ts.Node): void => {
+    // A named function expression's own name is scoped to exactly its own
+    // body, so nothing reachable inside it can refer to the outer `name` —
+    // skip the whole subtree instead of only its declaration-name
+    // identifier (see this function's docstring for why a `function`/
+    // `class` DECLARATION can't get the same treatment this cheaply).
+    if (ts.isFunctionExpression(node) && node.name?.text === name) return
+
+    if (ts.isIdentifier(node) && node.text === name) {
+      const p = node.parent
+      // Pure-key / non-reference positions — never rewrite. Shared with
+      // `analyzer.ts`'s factory-rename `classify()`, which answers the same
+      // "is this identifier actually a value reference" question.
+      if (isNonReferenceIdentifierPosition(node)) return
+      // A function declaration's own name is always followed by `(` in
+      // valid source, which is exactly the shape the old
+      // `\bname\b(?!\s*\()`-style regex used to recognize and skip. Leaving
+      // it unwrapped (rather than declining loudly, as the shadowing
+      // declarations below do) matches the old behavior instead of
+      // regressing code that used to compile. A `class name {}`
+      // declaration's name is followed by `{`/`extends`, not `(`, so the
+      // old regex did NOT protect it either — wrapping it is a pre-existing
+      // syntax break, not a regression, so it's left to the shadowing-decl
+      // path below like any other declaration name.
+      if (ts.isFunctionDeclaration(p) && p.name === node) return
+      if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
+      if (ts.isNewExpression(p) && p.expression === node) return // `new name()` — same "followed by (" shape as a call
+
+      // Shorthand property (`{ name }`) expands key + wraps value in one
+      // edit — the plain-param analogue of `expandShorthandBindings` below.
+      // Every other reachable position here is a genuine value reference —
+      // OR a shadowing declaration name (nested parameter/`const`/`let`/
+      // destructured local): both get wrapped, per this function's
+      // docstring on why a shadow is left to fail loudly rather than
+      // silently misrewritten.
+      const isShorthand = ts.isShorthandPropertyAssignment(p) && p.name === node
+      const start = node.getStart(sf) - 1
+      const end = node.getEnd() - 1
+      edits.push({ start, end, replacement: isShorthand ? `${name}: ${name}()` : `${name}()` })
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+
+  if (edits.length === 0) return expr
+  // Apply right-to-left so earlier offsets stay valid as later ones grow.
+  edits.sort((a, b) => b.start - a.start)
+  let out = expr
+  for (const e of edits) {
+    out = out.slice(0, e.start) + e.replacement + out.slice(e.end)
+  }
+  return out
 }
 
 /**
