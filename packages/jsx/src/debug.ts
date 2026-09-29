@@ -2181,7 +2181,38 @@ function collectDomBindings(
       // `hasFunctionCalls` without reactive-getter hit is the fallback case
       // (e.g. `getItems().map(...)` with an opaque helper).
       if (node.slotId) {
-        const deps = extractReactiveDeps(node.array, signalGetters, memoNames)
+        // #3246: `.filter()` / `.sort()` predicates are lifted off the chain
+        // into `IRLoop.filterPredicate` / `.sortComparator` during IR
+        // construction (`loop-chain.ts`) and kept separate from `array` — so
+        // a signal/memo read inside either callback (`items().filter(t =>
+        // filter() === 'all' || !t.done)`) never showed up in the loop's own
+        // deps, even though that read is exactly why the loop re-renders.
+        // (The `/* @client */` path keeps the whole chain in `array`, which
+        // is why the edge was already there in that case.) Collect each
+        // callback's reads too, shadow-guarded via the shared `BindingScope`
+        // service — `enterCallback` exists for exactly this ("a filter
+        // predicate's `x`, a sort comparator's `(a, b)`", see its doc
+        // comment) — so a predicate/comparator that names its parameter the
+        // same as an unrelated signal isn't mistaken for a real read of it.
+        // Built on `scope` (not `childScope` below): the filter/sort
+        // callback's own param(s) are a sibling scope to the loop row, not
+        // nested under it.
+        //
+        // The `sortComparator` half is defensive: `classifySortOperand`
+        // (expression-parser.ts) can't route a signal call into it under
+        // today's grammar, so this branch is untested in practice.
+        const { filterPredicate, sortComparator } = node
+        const callbackDeps = (raw: string, params: string[]) => {
+          const callbackScope = scope.enterCallback(params)
+          return extractReactiveDeps(raw, signalGetters, memoNames).filter(name => !callbackScope.isBound(name))
+        }
+        const deps = [
+          ...new Set([
+            ...extractReactiveDeps(node.array, signalGetters, memoNames),
+            ...(filterPredicate ? callbackDeps(filterPredicate.raw, [filterPredicate.param]) : []),
+            ...(sortComparator ? callbackDeps(sortComparator.raw, [sortComparator.paramA, sortComparator.paramB]) : []),
+          ]),
+        ]
         // An inner loop whose array reads an outer loop param (`r.tags.map(...)`)
         // is reactive per item — use the resolved `arrayFreeIdentifiers`.
         const loopReactive =
