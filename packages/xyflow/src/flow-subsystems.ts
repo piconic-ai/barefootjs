@@ -254,7 +254,12 @@ export function attachFlowSubsystems<
     startNodeX: number
     startNodeY: number
     captureEl: HTMLElement
+    /** Whether the node has moved, which is when a drag starts. */
+    moved: boolean
   } | null = null
+
+  // The node a drag is on, as the drag callbacks report it: after the move.
+  const draggedNode = (nodeId: string) => untrack(store.nodes).find((n) => n.id === nodeId)
 
   const onNodePointerDown = (event: PointerEvent) => {
     if (event.button !== 0) return
@@ -280,6 +285,7 @@ export function attachFlowSubsystems<
       startNodeX: internal.position.x,
       startNodeY: internal.position.y,
       captureEl: nodeEl,
+      moved: false,
     }
     nodeEl.setPointerCapture?.(event.pointerId)
     store.setDragging(true)
@@ -319,12 +325,22 @@ export function attachFlowSubsystems<
       untrack(store.nodeLookup),
     )
     writeDragPosition(dragState.nodeId, clamped.x, clamped.y, true)
+    // A press without a move is a click, not a drag: the callbacks start
+    // with the first move, and a drag that never started never stops.
+    const node = draggedNode(dragState.nodeId)
+    if (!node) return
+    if (!dragState.moved) {
+      dragState.moved = true
+      store.onNodeDragStart?.(event, node, [node])
+    }
+    store.onNodeDrag?.(event, node, [node])
   }
   const onNodePointerUp = (event: PointerEvent) => {
     if (!dragState || event.pointerId !== dragState.pointerId) return
     const captureEl = dragState.captureEl
     captureEl.releasePointerCapture?.(event.pointerId)
     const finalNodeId = dragState.nodeId
+    const moved = dragState.moved
     dragState = null
     // Final commit clears the dragging flag without changing the
     // position; reuse writeDragPosition for the same code path.
@@ -335,6 +351,8 @@ export function attachFlowSubsystems<
     } else {
       store.setDragging(false)
     }
+    const node = draggedNode(finalNodeId)
+    if (moved && node) store.onNodeDragStop?.(event, node, [node])
   }
   el.addEventListener('pointerdown', onNodePointerDown)
   el.addEventListener('pointermove', onNodePointerMove)

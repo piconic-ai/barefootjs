@@ -516,6 +516,7 @@ export function createFlowStore<
     // Lifecycle callbacks
     onInit: options.onInit,
     onNodeDragStart: options.onNodeDragStart,
+    onNodeDrag: options.onNodeDrag,
     onNodeDragStop: options.onNodeDragStop,
     onMoveEnd: options.onMoveEnd,
     onPaneClick: options.onPaneClick,
