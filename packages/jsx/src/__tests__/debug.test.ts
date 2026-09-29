@@ -502,6 +502,89 @@ describe('DomBinding classification (#944)', () => {
     expect(loop!.deps).toContain('items')
   })
 
+  test('filter().map() loop deps include signals read by the filter predicate (#3246)', () => {
+    // Repro from #3246: `filter` is only read inside the `.filter()`
+    // predicate, lifted off the chain into `IRLoop.filterPredicate` and kept
+    // separate from `array` (`items()`) by `jsx-to-ir.ts` — so it must still
+    // show up as a loop dependency, exactly as it does for the DOM
+    // bindings that live inside the loop body.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ListA() {
+        const [items] = createSignal([{ id: 1, done: false }])
+        const [filter, setFilter] = createSignal('all')
+        return (
+          <div>
+            <button onClick={() => setFilter('active')}>Active</button>
+            <ul>{items().filter(t => filter() === 'all' || !t.done).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'ListA.tsx')
+    const loop = graph.domBindings.find(d => d.type === 'loop')
+    expect(loop).toBeDefined()
+    expect(loop!.deps).toContain('items')
+    expect(loop!.deps).toContain('filter')
+
+    // `bf debug trace ListA.tsx filter` must show `filter -> loop`.
+    const filterPath = traceUpdatePath(graph, 'filter')
+    expect(filterPath).not.toBeNull()
+    const loopDependent = filterPath!.dependents.find(d => d.kind === 'dom' && d.name === loop!.label)
+    expect(loopDependent).toBeDefined()
+  })
+
+  test('filter().map() loop deps include signals read by a block-bodied predicate (#3246)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ListB() {
+        const [items] = createSignal([{ id: 1, done: false }])
+        const [filter, setFilter] = createSignal('all')
+        return (
+          <div>
+            <button onClick={() => setFilter('active')}>Active</button>
+            <ul>{items().filter(t => { const f = filter(); return f === 'all' || !t.done }).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'ListB.tsx')
+    const loop = graph.domBindings.find(d => d.type === 'loop')
+    expect(loop).toBeDefined()
+    expect(loop!.deps).toContain('filter')
+  })
+
+  test("filter predicate's own param is excluded from deps even when it shadows a signal name and is called as a function (#3246)", () => {
+    // The predicate's parameter is named `filter`, same as the unrelated
+    // outer `filter` signal, and — unlike the signal getter — is itself a
+    // function being invoked (`filter()`). Naive text matching on the raw
+    // predicate body would mistake that call for a read of the `filter`
+    // signal; the predicate's own param must be excluded first.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ListC() {
+        const [items] = createSignal([() => true, () => false])
+        const [filter, setFilter] = createSignal('all')
+        return (
+          <div>
+            <button onClick={() => setFilter('active')}>Active</button>
+            <ul>{items().filter(filter => filter()).map(fn => <li>{String(fn)}</li>)}</ul>
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'ListC.tsx')
+    const loop = graph.domBindings.find(d => d.type === 'loop')
+    expect(loop).toBeDefined()
+    expect(loop!.deps).not.toContain('filter')
+  })
+
   test('opaque call in child-component prop is fallback (#944 concern 1)', () => {
     // `<Card title={formatTitle(page)} />` — the #942 motivating example.
     // The child-prop emitter wraps this in a reactive child-prop entry via

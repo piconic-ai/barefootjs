@@ -2181,7 +2181,48 @@ function collectDomBindings(
       // `hasFunctionCalls` without reactive-getter hit is the fallback case
       // (e.g. `getItems().map(...)` with an opaque helper).
       if (node.slotId) {
-        const deps = extractReactiveDeps(node.array, signalGetters, memoNames)
+        // #3246: `.filter()` / `.sort()` predicates are lifted off the chain
+        // into `IRLoop.filterPredicate` / `.sortComparator` during IR
+        // construction (`loop-chain.ts`) and kept separate from `array` — so
+        // a signal/memo read inside either callback (`items().filter(t =>
+        // filter() === 'all' || !t.done)`) never showed up in the loop's own
+        // deps, even though that read is exactly why the loop re-renders.
+        // (The `/* @client */` path keeps the whole chain in `array`, which
+        // is why the edge was already there in that case.) Collect each
+        // callback's reads too, excluding that callback's own bound param(s)
+        // so a predicate/comparator that names its parameter the same as an
+        // unrelated signal isn't mistaken for a real read of it.
+        //
+        // The `sortComparator` half is defensive rather than independently
+        // verified: `classifySortOperand`/`classifyLeafComparator`
+        // (expression-parser.ts) only accept a bare param or a single-level
+        // field access on it as an operand, so no comparator that actually
+        // reaches `IRLoop.sortComparator` today can contain a signal/memo
+        // call — an unrecognized shape falls back to leaving the whole
+        // `.sort(...)` chain inline in `array` instead (already covered by
+        // the existing `array` scan above). This keeps the two callbacks
+        // handled uniformly and costs nothing if that grammar ever widens.
+        const filterOwnParams = node.filterPredicate ? new Set([node.filterPredicate.param]) : undefined
+        const sortOwnParams = node.sortComparator ? new Set([node.sortComparator.paramA, node.sortComparator.paramB]) : undefined
+        const deps = [
+          ...new Set([
+            ...extractReactiveDeps(node.array, signalGetters, memoNames),
+            ...(node.filterPredicate
+              ? extractReactiveDeps(
+                  node.filterPredicate.raw,
+                  excludeNames(signalGetters, filterOwnParams!),
+                  excludeNames(memoNames, filterOwnParams!),
+                )
+              : []),
+            ...(node.sortComparator
+              ? extractReactiveDeps(
+                  node.sortComparator.raw,
+                  excludeNames(signalGetters, sortOwnParams!),
+                  excludeNames(memoNames, sortOwnParams!),
+                )
+              : []),
+          ]),
+        ]
         // An inner loop whose array reads an outer loop param (`r.tags.map(...)`)
         // is reactive per item — use the resolved `arrayFreeIdentifiers`.
         const loopReactive =
@@ -2343,6 +2384,24 @@ function attrValueToString(value: AttrValue): string | null {
     case 'jsx-children':
       return null
   }
+}
+
+/**
+ * Set difference, used to hide a loop's `filterPredicate`/`sortComparator`
+ * callback param(s) from the signal/memo name sets before scanning that
+ * callback's own body (#3246) — a predicate/comparator that names its
+ * parameter the same as an unrelated signal must not be mistaken for a read
+ * of it. Returns `names` unchanged (no copy) when nothing needs excluding.
+ */
+function excludeNames(names: Set<string>, exclude: ReadonlySet<string>): Set<string> {
+  let filtered: Set<string> | undefined
+  for (const n of exclude) {
+    if (names.has(n)) {
+      filtered ??= new Set(names)
+      filtered.delete(n)
+    }
+  }
+  return filtered ?? names
 }
 
 /** Extract reactive getter names (signal/memo calls) from an expression. */
