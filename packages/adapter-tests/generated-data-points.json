@@ -2444,6 +2444,14 @@
       }
     }
   ],
+  "optional-chain-length-condition": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "optional-object-prop-member-signal-seed": [
     {
       "name": "gen:initial:absent",
