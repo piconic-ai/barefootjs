@@ -796,19 +796,13 @@ function rewriteIdentifierAsAccessor(expr: string, name: string): string {
         || (ts.isBreakOrContinueStatement(p) && p.label === node)) return
       if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
 
-      // Shorthand property (`{ name }`): expand key + wrap value in one
+      // Shorthand property (`{ name }`) expands key + wraps value in one
       // edit — the plain-param analogue of `expandShorthandBindings` below.
-      if (ts.isShorthandPropertyAssignment(p) && p.name === node) {
-        const start = node.getStart(sf) - 1
-        const end = node.getEnd() - 1
-        edits.push({ start, end, replacement: `${name}: ${name}()` })
-        return
-      }
-
-      // Genuine value reference.
+      // Every other reachable position here is a genuine value reference.
+      const isShorthand = ts.isShorthandPropertyAssignment(p) && p.name === node
       const start = node.getStart(sf) - 1
       const end = node.getEnd() - 1
-      edits.push({ start, end, replacement: `${name}()` })
+      edits.push({ start, end, replacement: isShorthand ? `${name}: ${name}()` : `${name}()` })
       return
     }
     ts.forEachChild(node, visit)
