@@ -8471,7 +8471,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // or Go reads it as extra sibling args of `len` (#3249).
           return { preamble: obj.preamble, expr: `len ${wrapIfMultiToken(obj.expr)}` }
         }
-        return { preamble: obj.preamble, expr: `${obj.expr}.${capitalizeFieldName(expr.property)}` }
+        // Same wrapping rule as the `.length` arm above: a multi-token
+        // object (`or .A .B`, from a `??`/`||` object — e.g.
+        // `(props.a ?? props.b)?.name`) must be parenthesised before the
+        // `.Field` access, or Go reads the unparenthesised tail as an extra
+        // sibling arg of the prefix call (`or .A .B.Name` — silently wrong,
+        // not a panic, since `or`/`and` tolerate extra args).
+        return { preamble: obj.preamble, expr: `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}` }
       }
 
       case 'index-access': {
@@ -8534,13 +8540,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '/':
             result = `bf_div ${left} ${right}`; break
           case '%':
-            // #2873: this switch had no `%` case even though `bf_mod`'s
-            // arithmetic operands (rendered as `bf_add .A .B`-shaped calls)
-            // already need parens — so the `default` arm below emitted a
-            // literal ` % ` into a ternary/condition's template text, which
-            // `html/template` can't parse (`unexpected "%" in operand`).
-            // Mirrors the general binary emitter's `%` case (`bf_mod`,
-            // outside condition position).
+            // #2873: this switch had no `%` case, so the `default` arm below
+            // emitted a literal ` % ` into a ternary/condition's template text,
+            // which `html/template` can't parse (`unexpected "%" in operand`).
+            // Mirrors the general binary emitter's `%` case (`bf_mod`, outside
+            // condition position).
             result = `bf_mod ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
@@ -8555,7 +8559,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // argument parenthesised, or e.g. `not or a b` parses as `not`
         // applied to 3 sibling args instead of 1 (#2758).
         if (expr.op === '!') return { preamble: arg.preamble, expr: `not ${wrapIfMultiToken(arg.expr)}` }
-        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${arg.expr}` }
+        // Same rule as `!` just above: `bf_neg` is a prefix builtin too, so a
+        // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
+        // parenthesised or Go reads it as extra sibling args (#3249).
+        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${wrapIfMultiToken(arg.expr)}` }
         return arg
       }
 

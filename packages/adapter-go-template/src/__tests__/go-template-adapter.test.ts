@@ -7101,10 +7101,13 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
 //
 // `props.count` here is a plain optional SCALAR prop, not the issue's nested
 // `props.meta?.count` — that nested shape hits an unrelated, pre-existing
-// bug (a synthesized nested-object prop type never gets wired into the
-// generated struct field, which stays a generic `map[string]interface{}`
-// that `.Field` can't index case-sensitively against a lowercase JSON key),
-// independent of this fix. `props.count` exercises the identical
+// bug tracked as #3275: `renderConditionExpr`'s `member` arm special-cases a
+// direct `props.X` read as `rootFieldRef`, but for `member(member(props,
+// meta), count)` that special case only matches the INNER member (resolving
+// to `.Meta`), so the outer arm appends `.Count` via plain field-name
+// capitalization — bypassing the `bf_get` runtime helper the text-position
+// renderer uses for the identical optional-chain shape, and landing on the
+// wrong value instead of a panic. `props.count` exercises the identical
 // `renderConditionExpr` arm without that confound.
 describe('GoTemplateAdapter - condition-position `??` operand wrapping (#3249)', () => {
   // Every call site below exercises the same consequent/alternate text
@@ -7185,6 +7188,95 @@ export function C(props: Props) {
     } catch (err) {
       if (err instanceof GoNotAvailableError) {
         console.log('Skipping #3249 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
+
+// Pullfrog review follow-up on #3249: two more `renderConditionExpr` sites
+// spliced an unwrapped multi-token operand the same way `binary`/`.length`
+// used to — `unary` `-` (`bf_neg`) and the generic `member` fallback (a
+// non-`.length` field access on a `??`/logical result).
+describe('GoTemplateAdapter - condition-position `??` operand wrapping, unary/member follow-up (#3249 review)', () => {
+  test('a `??` operand under unary `-` is parenthesized, and evaluates correctly via real `go run`', async () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Props = { count?: number }
+export function C(props: Props) {
+  const [n] = createSignal<number | undefined>(props.count)
+  return <div>{-(n() ?? 0) < 0 ? <i>neg</i> : <i>nonneg</i>}</div>
+}
+`
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // NOT `lt bf_neg or .N 0 0` — Go would read that as `lt` given `bf_neg`,
+    // `or`, `.N`, `0`, `0` as five sibling args.
+    expect(template).toContain('lt (bf_neg (or .N 0)) 0')
+
+    try {
+      const negHtml = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), props: { count: 2 } })
+      expect(negHtml).toContain('>neg<')
+      expect(negHtml).not.toContain('>nonneg<')
+
+      const nonnegHtml = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), props: {} })
+      expect(nonnegHtml).toContain('>nonneg<')
+      expect(nonnegHtml).not.toContain('>neg<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping unary `??` e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+
+  test('a non-`.length` field access on a `??`-combined object is parenthesized, and picks the correct operand via real `go run`', async () => {
+    // A present `a` (non-nil Flag) must win over `b` in `a() ?? b()` — an
+    // unwrapped splice (`or .A .B.On`) would instead parse as `or` given
+    // `.A` (truthy: a non-nil struct) and `.B.On` as two sibling args,
+    // returning `.A` itself (still truthy) and rendering the WRONG branch
+    // regardless of `a`'s own `on` value.
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Flag = { on: boolean }
+type Props = { a?: Flag; b: Flag }
+export function C(props: Props) {
+  const [a] = createSignal<Flag | undefined>(props.a)
+  const [b] = createSignal<Flag>(props.b)
+  return <div>{(a() ?? b()).on ? <i>on</i> : <i>off</i>}</div>
+}
+`
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    expect(template).toContain('(or .A .B).On')
+
+    try {
+      const offHtml = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { a: { on: false }, b: { on: true } },
+      })
+      expect(offHtml).toContain('>off<')
+      expect(offHtml).not.toContain('>on<')
+
+      const onHtml = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { b: { on: true } },
+      })
+      expect(onHtml).toContain('>on<')
+      expect(onHtml).not.toContain('>off<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping member-after-`??` e2e: go command not found')
         return
       }
       throw err

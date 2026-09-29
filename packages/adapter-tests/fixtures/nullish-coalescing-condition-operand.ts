@@ -19,12 +19,14 @@ import { createFixture } from '../src/types'
  * Three shapes from the issue, all through the same two `renderConditionExpr`
  * arms (`binary`, `member` `.length`) — the issue's fourth shape
  * (`props.meta?.count ?? 0`, a NESTED object prop) hits an unrelated,
- * pre-existing gap (a synthesized nested-object prop type is never wired
- * into the generated struct field, which stays a generic
- * `map[string]interface{}` that `.Field` can't index case-sensitively) and
- * is deliberately NOT reproduced here; `props.count` (a plain optional
- * SCALAR prop) exercises the identical `renderConditionExpr` arm without
- * that confound:
+ * pre-existing bug tracked as #3275: the `member` arm's `props.X` special
+ * case only matches the inner `member(props, meta)`, so the outer `.count`
+ * is appended via plain field-name capitalization instead of the `bf_get`
+ * runtime helper the text-position renderer uses for the same optional-chain
+ * shape, landing on the wrong value instead of a panic. That shape is
+ * deliberately NOT reproduced here; `props.count` (a plain optional SCALAR
+ * prop) exercises the identical `renderConditionExpr` arm without that
+ * confound:
  *   - `(todos() ?? []).length > 0`   — `.length`'s OBJECT is `??`
  *   - `(todos()?.length ?? 0) > 0`   — `>`'s LEFT operand is `??`
  *   - `(props.count ?? 0) > 0`       — same, over an optional scalar prop
