@@ -1956,6 +1956,18 @@
         "text"
       ]
     },
+    "create-mutation-elided-value": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "create-mutation-form": {
       "kinds": [
         "call",

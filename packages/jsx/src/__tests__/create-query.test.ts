@@ -149,6 +149,58 @@ export function C() {
     expect(initBody).toContain("const [, fetchItems] = createQuery(() => http.get('/api/items'))")
   })
 
+  // #3245: the value-elided form synthesizes an internal getter name
+  // (`__bfGet_<action>`, analyzer.ts's `collectFactorySignal`) that nothing in
+  // the source ever references. It must not leak into any adapter's
+  // server-facing output — the SSR module, the SSR-defaults manifest, or a
+  // generated props struct/constructor.
+  test('an elided value never leaks `__bfGet_` into SSR-facing output', () => {
+    const source = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C() {
+  const [, fetchItems] = createQuery(() => http.get<string[]>('/api/items'))
+  return <button disabled={fetchItems.isPending()} onClick={() => fetchItems()}>load</button>
+}
+`
+    const honoResult = compileJSX(source, 'C.tsx', { adapter: new HonoAdapter() })
+    expect(honoResult.errors).toEqual([])
+    const ssr = honoResult.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+    expect(ssr).not.toContain('__bfGet_')
+    expect(ssr).toContain('Object.assign(() => {}, { isPending: () => false, error: () => undefined })')
+    const honoSsrDefaults = honoResult.files.find((f) => f.type === 'ssrDefaults')?.content ?? ''
+    expect(honoSsrDefaults).not.toContain('__bfGet_')
+
+    const goResult = compileJSX(source, 'C.tsx', { adapter: new GoTemplateAdapter() })
+    expect(goResult.errors).toEqual([])
+    const goSsrDefaults = goResult.files.find((f) => f.type === 'ssrDefaults')?.content ?? ''
+    expect(goSsrDefaults).not.toContain('__bfGet_')
+    const goTypes = goResult.files.find((f) => f.type === 'types')?.content ?? ''
+    expect(goTypes).not.toContain('__bfGet_')
+  })
+
+  // #3245 follow-up (Pullfrog): an untyped object-array `initial` makes the
+  // Go adapter synthesize a struct for the elided value's item shape
+  // (`emitSynthStructs`) even though the field/ctor-init that would
+  // reference it is already skipped — the struct itself still leaked the
+  // internal `__bfGet_<action>` name into `.types`. The previous test's
+  // `initial`-less repro can't catch this, since no object-array shape means
+  // no struct is synthesized either way.
+  test('an elided value with an object-array `initial` does not leak `__bfGet_` into a Go synth struct', () => {
+    const source = `
+'use client'
+import { createQuery, http } from '@barefootjs/client'
+export function C() {
+  const [, fetchItems] = createQuery(() => http.get('/api/items'), { initial: [{ id: 1, name: 'a' }] })
+  return <button disabled={fetchItems.isPending()} onClick={() => fetchItems()}>load</button>
+}
+`
+    const goResult = compileJSX(source, 'C.tsx', { adapter: new GoTemplateAdapter() })
+    expect(goResult.errors).toEqual([])
+    const goTypes = goResult.files.find((f) => f.type === 'types')?.content ?? ''
+    expect(goTypes).not.toContain('__bfGet_')
+  })
+
   test('`initial` absent seeds undefined; a shorthand `initial` is read structurally', () => {
     const absent = compile(`
 'use client'

@@ -956,9 +956,6 @@ type QueryTodoAppProps struct {
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
-	__bfGet_addTodo interface{} `json:"-"`
-	__bfGet_toggleAll interface{} `json:"-"`
-	__bfGet_clearCompleted interface{} `json:"-"`
 	QueryTodoItems []QueryTodoItemProps `json:"-"`
 }
 
@@ -984,9 +981,6 @@ type QueryTodoItemProps struct {
 	Todo Todo `json:"todo"`
 	Editing bool `json:"-"`
 	Draft string `json:"-"`
-	__bfGet_toggle interface{} `json:"-"`
-	__bfGet_rename interface{} `json:"-"`
-	__bfGet_remove interface{} `json:"-"`
 }
 
 // NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
@@ -1880,9 +1874,6 @@ func NewQueryTodoAppProps(in QueryTodoAppInput) QueryTodoAppProps {
 		Todos: in.InitialTodos,
 		NewText: "",
 		Filter: "all",
-		__bfGet_addTodo: nil,
-		__bfGet_toggleAll: nil,
-		__bfGet_clearCompleted: nil,
 	}
 }
 
@@ -1904,8 +1895,5 @@ func NewQueryTodoItemProps(in QueryTodoItemInput) QueryTodoItemProps {
 		Todo: in.Todo,
 		Editing: false,
 		Draft: "",
-		__bfGet_toggle: nil,
-		__bfGet_rename: nil,
-		__bfGet_remove: nil,
 	}
 }

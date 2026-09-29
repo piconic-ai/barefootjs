@@ -23,6 +23,7 @@ import type {
   SourceLocation,
   OriginInfo,
 } from './types.ts'
+import { isElidedFactoryGetter } from './types.ts'
 import { analyzeComponent, listComponentFunctions } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
 import { buildMetadata } from './compiler.ts'
@@ -567,7 +568,7 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   for (const f of factories) for (const dep of f.requestDeps) addConsumer(dep, `query:${f.key}`, true)
   for (const m of memos) m.consumers = memoConsumers.get(m.name) ?? []
 
-  const signals: SignalNode[] = meta.signals.filter(s => !(s.factory && s.getterElided)).map(s => {
+  const signals: SignalNode[] = meta.signals.filter(s => !isElidedFactoryGetter(s)).map(s => {
     const factory = factoryOf.get(s)
     return {
       kind: 'signal',

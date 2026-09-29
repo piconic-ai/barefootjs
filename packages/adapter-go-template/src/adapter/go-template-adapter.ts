@@ -38,6 +38,7 @@ import type {
   ConstantInfo,
   ImportInfo,
 } from '@barefootjs/jsx'
+import { isElidedFactoryGetter } from '@barefootjs/jsx'
 import {
   BaseAdapter,
   type AdapterOutput,
@@ -2470,6 +2471,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Env signals are the request-scoped `SearchParams` reader field, not a
       // stored value — no baked initial value to emit here (#2057).
       if (signal.envReader) continue
+      // An elided async-factory value (#3245): no field was emitted for it in
+      // `emitPropsDataFields` above, so a ctor init here would set a
+      // nonexistent field. See that loop's comment (and
+      // `isElidedFactoryGetter`'s docstring) for the full rationale.
+      if (isElidedFactoryGetter(signal)) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // Bake against the synthesised struct type if one was inferred for this
@@ -3863,6 +3869,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.synthStructTypes = new Map<string, TypeInfo>()
     for (const signal of ir.metadata.signals) {
       if (signal.envReader) continue // env signal has no bakeable initial shape (#2057)
+      // The struct field/ctor-init that would reference this synthesized
+      // struct are already skipped (#3245) — see `isElidedFactoryGetter`'s
+      // docstring for the full rationale — so emitting the struct itself is
+      // dead output that still leaks the internal `__bfGet_<action>` name.
+      if (isElidedFactoryGetter(signal)) continue
       const synth = this.synthesizeStructFromSignal(signal, componentName)
       if (!synth) continue
       // Nested-first order (`synthesizeStructFromSignal`'s contract): a
@@ -4174,6 +4185,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Env signals are bound as the `SearchParams bf.SearchParams` reader field
       // (see generateInputStruct), not as a generic value field (#2057).
       if (signal.envReader) continue
+      // An elided async-factory value (#3245): `signal.getter` is a
+      // synthesized internal name nothing in the source ever references. A
+      // backend author reading the generated Go props should see only the
+      // component's own props and state, not this compiler-internal name.
+      // See `isElidedFactoryGetter`'s docstring for the full rationale.
+      if (isElidedFactoryGetter(signal)) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // Signal fields are component-internal state, not caller input (#2672):

@@ -105,6 +105,7 @@ import { fixture as textEscape } from './text-escape'
 import { fixture as signalWithFallback } from './signal-with-fallback'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
+import { fixture as createMutationElidedValue } from './create-mutation-elided-value'
 import { fixture as signalPropSameName } from './signal-prop-same-name'
 import { fixture as signalPropSameNameDerived } from './signal-prop-same-name-derived'
 import { fixture as signalPropSameNameViaConst } from './signal-prop-same-name-via-const'
@@ -1383,4 +1384,5 @@ export const jsxFixtures: JSXFixture[] = [
   constStringConditionalTest,
   conditionalThenColonText,
   conditionalThenPercentText,
+  createMutationElidedValue,
 ]
