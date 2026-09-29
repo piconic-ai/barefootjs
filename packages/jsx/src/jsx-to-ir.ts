@@ -2207,7 +2207,7 @@ function isTransparentFragment(
   // Filter out whitespace-only text nodes
   const children = node.children.filter(child => {
     if (ts.isJsxText(child)) {
-      return child.text.trim() !== ''
+      return cleanJsxWhitespace(child.text) !== ''
     }
     return true
   })
