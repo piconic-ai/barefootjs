@@ -34,6 +34,7 @@ import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
 import { resolveBodyDestructuredPropAliases } from './props-binding.ts'
 import type { IRMetadata } from './types.ts'
+import { isElidedFactoryGetter } from './types.ts'
 
 /**
  * A single template-variable default. Keyed in the manifest by the
@@ -248,16 +249,14 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // baked initial value.
     if (sig.envReader) continue
     // An elided async-factory value (#3245): `getter` holds a synthesized
-    // internal name (`__bfGet_<action>`, analyzer.ts's `collectFactorySignal`)
-    // that no expression in the source ever references — see
-    // `SignalInfo.getterElided`'s docstring. Seeding it here would leak that
-    // compiler-internal name into every template-stash backend's manifest
-    // (and, transitively, the Perl/etc. stash) for a binding nothing reads.
-    // Scoped to `factory` signals only, matching #3227's `bf debug graph`
-    // precedent (`debug.ts`'s `!(s.factory && s.getterElided)` filter) — a
-    // plain `createSignal` getter-elided form is a pre-existing, separate
-    // question this issue doesn't cover.
-    if (sig.factory && sig.getterElided) continue
+    // internal name that no expression in the source ever references.
+    // Seeding it here would leak that compiler-internal name into every
+    // template-stash backend's manifest (and, transitively, the Perl/etc.
+    // stash) for a binding nothing reads. See `isElidedFactoryGetter`'s
+    // docstring for the full rationale — a plain `createSignal`
+    // getter-elided form is unaffected, a pre-existing, separate question
+    // this issue doesn't cover.
+    if (isElidedFactoryGetter(sig)) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
     // Self-derivation collision (#2669): a signal whose getter shares its
     // name with the prop its OWN initializer derives from

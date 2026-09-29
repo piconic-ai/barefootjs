@@ -87,6 +87,7 @@ export type {
   RenderDivergences,
   ImportInfo,
 } from './types.ts'
+export { isElidedFactoryGetter } from './types.ts'
 
 // Analyzer
 export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, createAnchoredProgram, needsTypeBasedDetection, resolveRelativeImportToFile, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'

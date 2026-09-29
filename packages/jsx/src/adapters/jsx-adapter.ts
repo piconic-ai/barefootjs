@@ -12,6 +12,7 @@ import type {
   IRTemplatePart,
   ImportSpecifier,
 } from '../types.ts'
+import { isElidedFactoryGetter } from '../types.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface.ts'
@@ -151,15 +152,13 @@ export abstract class JsxAdapter extends BaseAdapter {
         continue
       }
       // An elided async-factory value (#3245) has no getter binding in the
-      // source at all — `signal.getter` is a synthesized internal name
-      // (`__bfGet_<action>`, see `SignalInfo.getterElided`'s docstring) that
+      // source at all — `signal.getter` is a synthesized internal name that
       // nothing in the template or event handlers ever references. Emitting
       // its SSR stub would leak that compiler-internal name into the SSR
-      // module for a binding nothing reads. Scoped to `factory` signals only,
-      // matching #3227's `bf debug graph` precedent (`debug.ts`'s
-      // `!(s.factory && s.getterElided)` filter); the action's own SSR stub
-      // (below) is unaffected and still emitted when referenced.
-      if (!(signal.factory && signal.getterElided)) {
+      // module for a binding nothing reads; the action's own SSR stub
+      // (below) is unaffected and still emitted when referenced. See
+      // `isElidedFactoryGetter`'s docstring for the full rationale.
+      if (!isElidedFactoryGetter(signal)) {
         // Create a getter that returns the initial value for SSR
         const rawInitialValue = preserveTypes
           ? (signal.typedInitialValue ?? signal.initialValue)
