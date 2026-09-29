@@ -683,9 +683,12 @@ function renderLoopBindingAccess(b: LoopParamBinding, base: string): string {
  * e.g., "item.text" → "item().text", "item" → "item()"
  * Does not double-wrap: "item().text" stays "item().text"
  *
- * String-context aware: skips replacements inside string literals and template
- * literal string parts (e.g., CSS class name "preview-field" stays unchanged
- * when paramName is "field"). Handles arbitrarily nested template literals.
+ * The plain-param branch (`rewriteIdentifierAsAccessor`) walks the real AST,
+ * so it is inherently string/template-literal-context aware (a CSS class
+ * name like "preview-field" never surfaces as an `Identifier` node when
+ * `paramName` is "field") AND skips object-literal keys, shorthand
+ * properties, and member/property names — tokens that spell `paramName`
+ * without referencing it (#3239).
  *
  * When `bindings` is supplied (destructured `.map()` callback, #951), each
  * binding name is rewritten to `__bfItem()${path}` instead of wrapping the
@@ -717,12 +720,7 @@ export function wrapLoopParamAsAccessor(
   if (bindings && bindings.length > 0) {
     result = rewriteLoopBindingRefs(expr, bindings, '__bfItem()')
   } else {
-    // `paramName` is a legal JS identifier and may itself start with `$`
-    // (`$1`, `$&`, …) — a plain string replacement would risk `String.replace`
-    // reading those as backreference/whole-match sequences, so use a replacer
-    // function to insert the accessor text literally (#2592).
-    const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(paramName)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
-    result = replaceInExprContexts(expr, re, () => `${paramName}()`)
+    result = rewriteIdentifierAsAccessor(expr, paramName)
   }
   if (indexParam && indexParam !== paramName) {
     result = wrapIndexParamAsAccessor(result, indexParam)
@@ -731,10 +729,11 @@ export function wrapLoopParamAsAccessor(
 }
 
 /**
- * The index-only half of `wrapLoopParamAsAccessor` — same regex shape, own
- * identifier. Factored out so `wrapLoopParamAsAccessor` can run it as a
- * second pass regardless of which item-rewrite branch (bindings vs. plain
- * param) ran first (#2859).
+ * The index-only half of `wrapLoopParamAsAccessor` — same AST-aware
+ * identifier rewrite (`rewriteIdentifierAsAccessor`), own identifier.
+ * Factored out so `wrapLoopParamAsAccessor` can run it as a second pass
+ * regardless of which item-rewrite branch (bindings vs. plain param) ran
+ * first (#2859).
  *
  * Also exported standalone for `build-loop.ts`/`build-branch-loop.ts`: a
  * plain loop's `template`/`mapPreambleWrapped` are built ONCE, before lazy
@@ -746,8 +745,84 @@ export function wrapLoopParamAsAccessor(
  * is NOT going lazy.
  */
 export function wrapIndexParamAsAccessor(expr: string, indexParam: string): string {
-  const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(indexParam)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
-  return replaceInExprContexts(expr, re, () => `${indexParam}()`)
+  return rewriteIdentifierAsAccessor(expr, indexParam)
+}
+
+/**
+ * AST-aware engine behind `wrapLoopParamAsAccessor`'s plain-param branch and
+ * `wrapIndexParamAsAccessor`: rewrite every genuine value reference to
+ * `name` in `expr` into `${name}()`, while leaving alone every token that
+ * merely SPELLS `name` without referencing it — an object-literal key
+ * (`{ name: 1 }`), a shorthand property (`{ name }`, expanded to
+ * `{ name: name() }` in one edit — the same transformation #1244 gave the
+ * destructured-binding path via `expandShorthandBindings`), and a
+ * member/property name (`obj.name`, `obj?.name`).
+ *
+ * The previous implementation was a `\bname\b`-style regex
+ * (`ID_BOUNDARY_BEFORE`/`AFTER` only know about identifier-character
+ * boundaries, not JS grammar), so it matched those non-reference tokens too:
+ * a key or shorthand rewrite produces invalid JS (`{ name(): 1 }`,
+ * `{ name() }`) that fails at parse time; a member-name rewrite produces
+ * valid-but-wrong JS (`obj.name()`) that throws `TypeError: obj.name is not
+ * a function` at row-creation time (#3239). Parsing the real AST — the same
+ * technique `expandShorthandBindings` already uses below — makes each of
+ * those positions a type of AST node this function can name and skip,
+ * instead of a regex guessing from surrounding characters.
+ */
+function rewriteIdentifierAsAccessor(expr: string, name: string): string {
+  // Fast path: `name` doesn't occur in the text at all → nothing to rewrite.
+  // A cheap substring check only ever causes an unnecessary parse below
+  // (e.g. `name` occurs only as part of a longer identifier), never a wrong
+  // answer, since the AST walk re-checks the exact identifier text.
+  if (!expr.includes(name)) return expr
+
+  const wrapped = `(${expr})`
+  const sf = ts.createSourceFile('__bf_expr.ts', wrapped, ts.ScriptTarget.Latest, /* setParentNodes */ true)
+  const edits: Array<{ start: number; end: number; replacement: string }> = []
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && node.text === name) {
+      const p = node.parent
+      // Pure-key / non-reference positions — never rewrite. Mirrors the
+      // "is this identifier actually a value reference" classification
+      // `analyzer.ts`'s factory-rename `classify()` uses for the same
+      // question over a wider (full-statement) surface.
+      if (ts.isPropertyAccessExpression(p) && p.name === node) return // obj.name tail (incl. ?. chains)
+      if (ts.isPropertyAssignment(p) && p.name === node) return // { name: v } key
+      if (ts.isBindingElement(p) && (p.name === node || p.propertyName === node)) return // nested destructure pattern
+      if (ts.isParameter(p) && p.name === node) return // nested (name) => ... shadows the outer one
+      if (ts.isVariableDeclaration(p) && p.name === node) return // nested `const name = ...` shadows the outer one
+      if ((ts.isLabeledStatement(p) && p.label === node)
+        || (ts.isBreakOrContinueStatement(p) && p.label === node)) return
+      if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
+
+      // Shorthand property (`{ name }`): expand key + wrap value in one
+      // edit — the plain-param analogue of `expandShorthandBindings` below.
+      if (ts.isShorthandPropertyAssignment(p) && p.name === node) {
+        const start = node.getStart(sf) - 1
+        const end = node.getEnd() - 1
+        edits.push({ start, end, replacement: `${name}: ${name}()` })
+        return
+      }
+
+      // Genuine value reference.
+      const start = node.getStart(sf) - 1
+      const end = node.getEnd() - 1
+      edits.push({ start, end, replacement: `${name}()` })
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+
+  if (edits.length === 0) return expr
+  // Apply right-to-left so earlier offsets stay valid as later ones grow.
+  edits.sort((a, b) => b.start - a.start)
+  let out = expr
+  for (const e of edits) {
+    out = out.slice(0, e.start) + e.replacement + out.slice(e.end)
+  }
+  return out
 }
 
 /**
