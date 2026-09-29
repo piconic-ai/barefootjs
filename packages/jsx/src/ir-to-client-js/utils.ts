@@ -6,6 +6,7 @@
 import ts from 'typescript'
 import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
+import { isNonReferenceIdentifierPosition } from '../analyzer.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
 import { escapeIdentifierForRegex, ID_BOUNDARY_BEFORE, ID_BOUNDARY_AFTER } from '../identifier-pattern.ts'
@@ -768,6 +769,20 @@ export function wrapIndexParamAsAccessor(expr: string, indexParam: string): stri
  * technique `expandShorthandBindings` already uses below — makes each of
  * those positions a type of AST node this function can name and skip,
  * instead of a regex guessing from surrounding characters.
+ *
+ * A nested declaration that re-binds `name` (a parameter, a `const`/`let`,
+ * or a destructured local) is deliberately NOT skipped, unlike
+ * `analyzer.ts`'s rename `classify()`: this rewrite has no scope tracking,
+ * so it cannot tell a reference to the shadowing local from a reference to
+ * the outer loop param past that point, and silently wrapping only the
+ * OUTER-scope references while leaving the shadowed ones alone (or vice
+ * versa) would just move the #3239 bug rather than fix it. Wrapping the
+ * shadowing declaration's own name is always a syntax break at the
+ * declaration site itself (`const name = 1` → `const name() = 1`, `(name)
+ * => …` → `(name()) => …` — a call can't legally appear where a binding
+ * name is expected), so the module fails to parse instead of silently
+ * running with the wrong value — the same loud, build-time failure the old
+ * regex produced for this shape (it had no shadow-awareness either).
  */
 function rewriteIdentifierAsAccessor(expr: string, name: string): string {
   // Fast path: `name` doesn't occur in the text at all → nothing to rewrite.
@@ -783,22 +798,29 @@ function rewriteIdentifierAsAccessor(expr: string, name: string): string {
   const visit = (node: ts.Node): void => {
     if (ts.isIdentifier(node) && node.text === name) {
       const p = node.parent
-      // Pure-key / non-reference positions — never rewrite. Mirrors the
-      // "is this identifier actually a value reference" classification
-      // `analyzer.ts`'s factory-rename `classify()` uses for the same
-      // question over a wider (full-statement) surface.
-      if (ts.isPropertyAccessExpression(p) && p.name === node) return // obj.name tail (incl. ?. chains)
-      if (ts.isPropertyAssignment(p) && p.name === node) return // { name: v } key
-      if (ts.isBindingElement(p) && (p.name === node || p.propertyName === node)) return // nested destructure pattern
-      if (ts.isParameter(p) && p.name === node) return // nested (name) => ... shadows the outer one
-      if (ts.isVariableDeclaration(p) && p.name === node) return // nested `const name = ...` shadows the outer one
-      if ((ts.isLabeledStatement(p) && p.label === node)
-        || (ts.isBreakOrContinueStatement(p) && p.label === node)) return
+      // Pure-key / non-reference positions — never rewrite. Shared with
+      // `analyzer.ts`'s factory-rename `classify()`, which answers the same
+      // "is this identifier actually a value reference" question.
+      if (isNonReferenceIdentifierPosition(node)) return
+      // A function/method/accessor declaration's own name is always
+      // followed by `(` in valid source, which is exactly the shape the
+      // old `\bname\b(?!\s*\()`-style regex used to recognize and skip —
+      // so leaving these unwrapped (rather than declining loudly, as the
+      // shadowing declarations below do) matches the old behavior instead
+      // of regressing code that used to compile.
+      if ((ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p)
+        || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) || ts.isSetAccessorDeclaration(p))
+        && p.name === node) return
       if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
+      if (ts.isNewExpression(p) && p.expression === node) return // `new name()` — same "followed by (" shape as a call
 
       // Shorthand property (`{ name }`) expands key + wraps value in one
       // edit — the plain-param analogue of `expandShorthandBindings` below.
-      // Every other reachable position here is a genuine value reference.
+      // Every other reachable position here is a genuine value reference —
+      // OR a shadowing declaration name (nested parameter/`const`/`let`/
+      // destructured local): both get wrapped, per this function's
+      // docstring on why a shadow is left to fail loudly rather than
+      // silently misrewritten.
       const isShorthand = ts.isShorthandPropertyAssignment(p) && p.name === node
       const start = node.getStart(sf) - 1
       const end = node.getEnd() - 1

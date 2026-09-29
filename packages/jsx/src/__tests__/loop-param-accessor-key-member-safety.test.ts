@@ -25,6 +25,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import ts from 'typescript'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 
@@ -41,19 +42,37 @@ function getClientJs(source: string, filename = 'App.tsx'): string {
 
 /**
  * Every emitted row-construction function (`createRow`, `applyItem`,
- * `applyOuter`, …) must be syntactically valid JS. `new Function` uses the
- * host's real JS parser — the same class of check esbuild's transform
+ * `applyOuter`, …) must be syntactically valid JS. `ts.transpileModule`'s
+ * `reportDiagnostics` runs the host's real JS/TS parser over the whole
+ * compiled module as-is — the same class of check esbuild's transform
  * performs during a real `vite build` — so a corrupted key/shorthand
- * position (invalid JS) throws a `SyntaxError` here exactly as it did in
- * the reported esbuild failure, without needing esbuild itself as a test
- * dependency.
+ * position (invalid JS) surfaces as a syntactic diagnostic here exactly as
+ * it did in the reported esbuild failure, without needing esbuild itself as
+ * a test dependency, and without the module-level `import`/`export`
+ * statements needing to be stripped out first (CLAUDE.md forbids
+ * regex/string-based handling of compiled client JS — see `combine-client-js.ts`'s
+ * AST-walk precedent).
  */
+function syntaxErrorsOf(clientJs: string): readonly ts.Diagnostic[] {
+  const result = ts.transpileModule(clientJs, {
+    reportDiagnostics: true,
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.Latest },
+  })
+  return (result.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error)
+}
+
 function assertParses(clientJs: string): void {
-  const body = clientJs
-    .replace(/^import[^\n]*\n/gm, '')
-    .replace(/^export function/gm, 'function')
-    .replace(/^export \{[^}]*\}\n?/gm, '')
-  expect(() => new Function(body)).not.toThrow()
+  expect(syntaxErrorsOf(clientJs)).toHaveLength(0)
+}
+
+/**
+ * The counterpart to `assertParses`: a nested declaration that shadows the
+ * loop param (see the `rewriteIdentifierAsAccessor` docstring in
+ * `ir-to-client-js/utils.ts`) is expected to fail loudly at this
+ * parse-check rather than silently emit a value that's wrong at runtime.
+ */
+function assertDoesNotParse(clientJs: string): void {
+  expect(syntaxErrorsOf(clientJs).length).toBeGreaterThan(0)
 }
 
 describe('.map() row: object-literal key / shorthand / member positions vs. the loop param (#3239)', () => {
@@ -101,7 +120,6 @@ describe('.map() row: object-literal key / shorthand / member positions vs. the 
     const js = getClientJs(source)
     assertParses(js)
     expect(js).toContain('JSON.stringify({ choice: 1 })')
-    expect(js).not.toContain('choice(): 1')
     expect(js).not.toContain('choice(): 1')
   })
 
@@ -228,5 +246,174 @@ describe('.map() row: object-literal key / shorthand / member positions vs. the 
     // in the row's own text) are still wrapped as accessor calls.
     expect(js).toContain('return i()')
     expect(js).toContain('String(i())')
+  })
+})
+
+describe('.map() row: declaration/member positions the old regex skipped via its "followed by (" lookahead', () => {
+  test('object-literal method `{ choice() {...} }` is left alone (not `{ choice()() {...} }`)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{JSON.stringify({ choice() { return 1 } })}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('choice() { return 1 }')
+    expect(js).not.toContain('choice()()')
+  })
+
+  test('accessor method `{ get choice() {...} }` is left alone (not `{ get choice()() {...} }`)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{JSON.stringify({ get choice() { return 1 } })}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('get choice() { return 1 }')
+    expect(js).not.toContain('choice()()')
+  })
+
+  test('nested `function choice() {...}` declaration is left alone (not `function choice()() {...}`)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{(function choice() { return 1 })()}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('function choice() { return 1 }')
+    expect(js).not.toContain('choice()()')
+  })
+
+  test('`new choice()` is left alone (not `new choice()()`)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{String(new choice())}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('new choice()')
+    expect(js).not.toContain('new choice()()')
+  })
+})
+
+describe('.map() row: a nested scope that shadows the loop param fails loudly instead of silently misrewriting', () => {
+  // `rewriteIdentifierAsAccessor` has no scope tracking (see its docstring
+  // in ir-to-client-js/utils.ts): once a nested scope re-binds the loop
+  // param's name, the rewrite can no longer tell a reference to the outer
+  // item from a reference to the shadowing local, so it deliberately wraps
+  // the shadowing declaration's own name too. That's always a syntax break
+  // at the declaration site, so the module fails a syntax check instead of
+  // silently compiling into a runtime `TypeError` against the wrong value
+  // — matching what the pre-#3239 regex already did for this shape (it had
+  // no shadow-awareness either).
+
+  test('a nested `.map(choice => ...)` that reuses the outer loop param name fails to parse', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['ab', 'cd'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{choice.split('').map(choice => choice.toUpperCase()).join('')}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertDoesNotParse(js)
+  })
+
+  test('a nested `const choice = ...` that reuses the outer loop param name fails to parse', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{(() => { const choice = 1; return choice })()}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertDoesNotParse(js)
+  })
+})
+
+describe('destructured loop-param path (rewriteLoopBindingRefs) has the same key/member defect as the plain-param path (#3239 follow-up)', () => {
+  // `rewriteLoopBindingRefs` (a few lines below `rewriteIdentifierAsAccessor`
+  // in ir-to-client-js/utils.ts) rewrites a DESTRUCTURED loop param's
+  // bindings (`({ color, label }) => ...`) with the same kind of
+  // \bname\b-style regex the plain-param path used before this PR, and has
+  // the identical object-literal-key defect: a binding whose name matches
+  // an unrelated object-literal key gets that key corrupted into an
+  // accessor call. Left out of this PR (see the PR description) because a
+  // correct fix means touching the heavily-exercised #951/#1244
+  // destructured-binding machinery, which is a larger, separate change.
+  // Drop `.todo` once `rewriteLoopBindingRefs` gets the same AST-aware
+  // treatment `rewriteIdentifierAsAccessor` got here.
+  test.todo('an object-literal key matching a destructured binding name is left alone', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal([{ color: 'red', label: 'a' }])
+        return (
+          <div>
+            {items().map(({ color, label }) => (
+              <b key={label}>{JSON.stringify({ color: 1 })}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('JSON.stringify({ color: 1 })')
   })
 })

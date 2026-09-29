@@ -48,6 +48,39 @@ const REACTIVE_BRAND_PACKAGES = [
 ]
 
 /**
+ * Is `id` sitting in a position where it names something rather than
+ * referencing a value — an object/class member key, a JSX attribute or
+ * intrinsic tag name, or a statement label? These positions merely SPELL an
+ * identifier's text without evaluating it as a variable reference, so any
+ * pass that resolves identifier text to a binding (a rename, an
+ * accessor-wrap, a free-reference scan) must leave them untouched.
+ *
+ * Shared by `classify()` below (factory-rename sites) and
+ * `rewriteIdentifierAsAccessor` (`ir-to-client-js/utils.ts`, #3239) — see
+ * CLAUDE.md's "one decision, two implementations" rule. Declaration-name
+ * positions (a parameter, `const`, `function`/`class` name) are
+ * deliberately NOT covered here: those introduce a new binding rather than
+ * naming an existing one, and the two callers disagree on how to handle a
+ * shadowing declaration (renaming wants to rename it too; accessor-wrapping
+ * must never touch it), so each classifies those positions itself.
+ */
+export function isNonReferenceIdentifierPosition(id: ts.Identifier): boolean {
+  const p = id.parent
+  if (ts.isPropertyAccessExpression(p) && p.name === id) return true // obj.name tail (incl. ?. chains)
+  if (ts.isPropertyAssignment(p) && p.name === id) return true // { name: v } key
+  if (ts.isBindingElement(p) && p.propertyName === id) return true // { name: local } pattern key
+  if ((ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) ||
+       ts.isSetAccessorDeclaration(p) || ts.isPropertyDeclaration(p) ||
+       ts.isEnumMember(p)) && p.name === id) return true // member keys
+  if (ts.isJsxAttribute(p) && p.name === id) return true // JSX attr name
+  if ((ts.isLabeledStatement(p) && p.label === id)
+    || ((ts.isBreakStatement(p) || ts.isContinueStatement(p)) && p.label === id)) return true
+  if ((ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxClosingElement(p))
+    && p.tagName === id && /^[a-z]/.test(id.text)) return true // intrinsic tag <div>
+  return false
+}
+
+/**
  * Check if a source file needs ts.TypeChecker for static analysis.
  * Reactive-brand detection requires the checker for library accessor patterns.
  * Loop-key nullability (BF023 case 3) also requires it for any file that has .map() calls.
@@ -5804,17 +5837,7 @@ function detectReactiveFactory(
       if (!relevantNames.has(id.text)) return
       const p = id.parent
       // Pure-key / non-reference positions — never rename:
-      if (ts.isPropertyAccessExpression(p) && p.name === id) return        // obj.name tail (incl. ?. chains)
-      if (ts.isPropertyAssignment(p) && p.name === id) return              // { name: v } key
-      if (ts.isBindingElement(p) && p.propertyName === id) return          // { name: local } pattern key
-      if ((ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) ||
-           ts.isSetAccessorDeclaration(p) || ts.isPropertyDeclaration(p) ||
-           ts.isEnumMember(p)) && p.name === id) return                    // member keys
-      if (ts.isJsxAttribute(p) && p.name === id) return                    // JSX attr name
-      if ((ts.isLabeledStatement(p) && p.label === id) ||
-          ((ts.isBreakStatement(p) || ts.isContinueStatement(p)) && p.label === id)) return
-      if ((ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxClosingElement(p)) &&
-          p.tagName === id && /^[a-z]/.test(id.text)) return               // intrinsic tag <div>
+      if (isNonReferenceIdentifierPosition(id)) return
 
       // Shorthand dual-role positions → expansion form (renaming must
       // preserve the implied key): `{ name }` object literal / pattern.
