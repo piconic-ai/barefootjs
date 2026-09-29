@@ -95,6 +95,8 @@ export type FlowStoreOptions<
   // Lifecycle callbacks
   onInit?: (store: FlowStore<NodeType, EdgeType>) => void
   onNodeDragStart?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void
+  /** Called on every pointer move of a node drag, with the node where it is now. */
+  onNodeDrag?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void
   onNodeDragStop?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void
   onMoveEnd?: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => void
   onPaneClick?: (event: MouseEvent) => void
@@ -222,6 +224,8 @@ export type FlowStore<
   // Lifecycle callbacks
   onInit?: (store: FlowStore<NodeType, EdgeType>) => void
   onNodeDragStart?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void
+  /** Called on every pointer move of a node drag, with the node where it is now. */
+  onNodeDrag?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void
   onNodeDragStop?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void
   onMoveEnd?: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => void
   onPaneClick?: (event: MouseEvent) => void
