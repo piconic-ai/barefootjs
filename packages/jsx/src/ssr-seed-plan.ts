@@ -197,7 +197,18 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
     }
     const expr = signal.initialValue.trim()
     steps.push(
-      expr === ''
+      // An elided async-factory value (#3245): `signal.getter` is a
+      // synthesized internal name (`__bfGet_<action>`, see
+      // `SignalInfo.getterElided`'s docstring) nothing in the source ever
+      // references. Forced `opaque` (never `derived`) so an adapter that
+      // seeds `derived` steps in-template (Jinja/Erb/Pebble's
+      // `generateDerivedMemoSeed`) can't emit a `{% set __bfGet_x = ... %}`
+      // for it — the invariant "one step per signal" still holds (the name
+      // stays out of every backend's rendered output; only ITS OWN classify
+      // outcome is overridden, not the name's presence in `steps`/`available`
+      // for other signals' scope checks). Scoped to `factory` signals only,
+      // matching #3227's `bf debug graph` precedent.
+      expr === '' || (signal.factory && signal.getterElided)
         ? { kind: 'opaque', name: signal.getter, origin: 'signal' }
         : classify(
             signal.getter,

@@ -2451,6 +2451,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Env signals are the request-scoped `SearchParams` reader field, not a
       // stored value — no baked initial value to emit here (#2057).
       if (signal.envReader) continue
+      // An elided async-factory value (#3245): no field was emitted for it in
+      // `emitPropsDataFields` above, so a ctor init here would set a
+      // nonexistent field. See that loop's comment for the full rationale.
+      if (signal.factory && signal.getterElided) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // Bake against the synthesised struct type if one was inferred for this
@@ -4155,6 +4159,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Env signals are bound as the `SearchParams bf.SearchParams` reader field
       // (see generateInputStruct), not as a generic value field (#2057).
       if (signal.envReader) continue
+      // An elided async-factory value (#3245): `signal.getter` is a
+      // synthesized internal name (`__bfGet_<action>`, see
+      // `SignalInfo.getterElided`'s docstring) nothing in the source ever
+      // references. A backend author reading the generated Go props should
+      // see only the component's own props and state, not this compiler-
+      // internal name. Scoped to `factory` signals only, matching #3227's
+      // `bf debug graph` precedent (`debug.ts`'s
+      // `!(s.factory && s.getterElided)` filter).
+      if (signal.factory && signal.getterElided) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // Signal fields are component-internal state, not caller input (#2672):

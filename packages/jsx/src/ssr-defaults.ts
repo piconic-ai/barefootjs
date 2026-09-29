@@ -247,6 +247,17 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // request-scoped reader, seeded by the adapter's env-signal binding, not a
     // baked initial value.
     if (sig.envReader) continue
+    // An elided async-factory value (#3245): `getter` holds a synthesized
+    // internal name (`__bfGet_<action>`, analyzer.ts's `collectFactorySignal`)
+    // that no expression in the source ever references — see
+    // `SignalInfo.getterElided`'s docstring. Seeding it here would leak that
+    // compiler-internal name into every template-stash backend's manifest
+    // (and, transitively, the Perl/etc. stash) for a binding nothing reads.
+    // Scoped to `factory` signals only, matching #3227's `bf debug graph`
+    // precedent (`debug.ts`'s `!(s.factory && s.getterElided)` filter) — a
+    // plain `createSignal` getter-elided form is a pre-existing, separate
+    // question this issue doesn't cover.
+    if (sig.factory && sig.getterElided) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
     // Self-derivation collision (#2669): a signal whose getter shares its
     // name with the prop its OWN initializer derives from
