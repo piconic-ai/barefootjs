@@ -3850,6 +3850,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.synthStructTypes = new Map<string, TypeInfo>()
     for (const signal of ir.metadata.signals) {
       if (signal.envReader) continue // env signal has no bakeable initial shape (#2057)
+      // The struct field/ctor-init that would reference this synthesized
+      // struct are already skipped (#3245) — see `isElidedFactoryGetter`'s
+      // docstring for the full rationale — so emitting the struct itself is
+      // dead output that still leaks the internal `__bfGet_<action>` name.
+      if (isElidedFactoryGetter(signal)) continue
       const synth = this.synthesizeStructFromSignal(signal, componentName)
       if (!synth) continue
       // Nested-first order (`synthesizeStructFromSignal`'s contract): a

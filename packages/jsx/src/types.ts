@@ -1681,8 +1681,16 @@ export interface SignalInfo {
  * into caller-facing output (an SSR getter stub, a props struct/constructor
  * field, an SSR-defaults manifest entry, an SSR seed-plan step) checks this
  * first and skips it — see `bf debug graph`'s `debug.ts` precedent (#3227)
- * this generalizes. A plain `createSignal` getter-elided form (`getterElided`
- * without `factory`) is unaffected: it still has a real, reachable getter.
+ * this generalizes.
+ *
+ * A plain `createSignal` getter-elided form (`const [, setX] =
+ * createSignal(0)`) is NOT covered by this predicate, even though
+ * `analyzer.ts`'s synthesis and `SignalInfo.getterElided`'s own docstring
+ * make clear its getter is *equally* synthesized and unreferenced — it
+ * leaks `__bfGet_<setter>` through the exact same sites today. #3245 scoped
+ * this fix to the `factory` case only; widening this predicate to plain
+ * `getterElided` (dropping the `factory` restriction) would close that gap
+ * too, but is left for a separate follow-up rather than folded in here.
  */
 export function isElidedFactoryGetter(signal: Pick<SignalInfo, 'factory' | 'getterElided'>): boolean {
   return Boolean(signal.factory && signal.getterElided)
