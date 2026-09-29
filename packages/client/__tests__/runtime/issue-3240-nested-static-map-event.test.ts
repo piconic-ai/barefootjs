@@ -102,4 +102,54 @@ describe('#3240 — nested static .map(): inner-row event handler resolves the i
     expect(a1.getAttribute('aria-pressed')).toBe('true')
     expect(b2.getAttribute('aria-pressed')).toBe('false')
   })
+
+  test('a static sibling before the inner .map() does not shift which item a click resolves to', async () => {
+    // Follow-up to the fix above: `emitNestedIndexParams` recovers a nested
+    // level's item by DOM position within its container. A static element
+    // (`<span>hdr</span>`) preceding `CHOICES.map()` inside the row shifts
+    // every button one slot later in `__ic1.children` — pre-fix, the missing
+    // offset subtraction (`NestedLoop.offset` went unset on the
+    // delegated-event chain) silently resolved the FIRST button to
+    // `CHOICES[1]` instead of `CHOICES[0]`: no error, just the wrong item —
+    // a silent divergence, not the loud `ReferenceError` the first test
+    // guards against.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const GROUPS = ['a', 'b']
+      const CHOICES = ['1', '2']
+      export function App() {
+        const [picked, setPicked] = createSignal('')
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group}>
+                <span>hdr</span>
+                {CHOICES.map(choice => (
+                  <button
+                    key={choice}
+                    data-choice={\`\${group}\${choice}\`}
+                    onClick={() => setPicked(\`\${group}\${choice}\`)}
+                  >
+                    {group}{choice}
+                  </button>
+                ))}
+              </div>
+            ))}
+            <pre id="state">{picked()}</pre>
+          </div>
+        )
+      }
+    `
+    const el = await mount(source, 'App.tsx', 'App')
+    const state = el.querySelector('#state')!
+
+    const buttons = Array.from(el.querySelectorAll('button'))
+    expect(buttons).toHaveLength(4)
+    const b1 = buttons.find((b) => b.getAttribute('data-choice') === 'b1')!
+    expect(b1).toBeDefined()
+
+    b1.dispatchEvent(new window.Event('click', { bubbles: true }))
+    expect(state.textContent).toBe('b1')
+  })
 })

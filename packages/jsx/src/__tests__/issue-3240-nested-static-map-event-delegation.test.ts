@@ -129,4 +129,46 @@ describe('static-index event delegation resolves nested .map() params (#3240)', 
 
     expect(content).toContain('const choice = __iidx1 >= 0 ? CHOICE_MAP[settingKey][__iidx1] : undefined')
   })
+
+  test('a static sibling before the inner .map() offsets the nested positional lookup', () => {
+    // #3240 follow-up: `emitNestedIndexParams` recovers a nested level's item
+    // from its DOM position within its container — but it read
+    // `nested.offset`, a `NestedLoop` field the delegated-event `NestedLoop`
+    // chain (`collectLoopChildEventsWithNesting`'s `loop` visitor) never
+    // populated, unlike the hydration-side `NestedLoop`
+    // (`collectInnerLoops`, which resolves it via
+    // `resolveLoopOffset(siblingOffsets.get(n))`). Left unset, the offset
+    // silently defaulted to zero: a static `<span>` before `CHOICES.map()`
+    // here shifts every button one slot right in `__ic1.children`, so
+    // `Array.from(__ic1.children).indexOf(__ir1)` must subtract 1 to land
+    // back on the right `CHOICES` index — the runtime half of this repro
+    // (`issue-3240-nested-static-map-event.test.ts`) clicks the first button
+    // and asserts it resolves to `CHOICES[0]`, not the silently-wrong
+    // `CHOICES[1]`.
+    const content = clientJsFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const GROUPS = ['a', 'b']
+      const CHOICES = ['1', '2']
+      export function Repro() {
+        const [picked, setPicked] = createSignal('')
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group}>
+                <span>hdr</span>
+                {CHOICES.map(choice => (
+                  <button key={choice} onClick={() => setPicked(\`\${group}\${choice}\`)}>{group}{choice}</button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `)
+
+    expect(content).toContain(
+      'const __iidx1 = __ir1.parentElement === __ic1 ? Array.from(__ic1.children).indexOf(__ir1) - 1 : -1',
+    )
+  })
 })
