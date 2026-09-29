@@ -2198,27 +2198,19 @@ function collectDomBindings(
         // callback's own param(s) are a sibling scope to the loop row, not
         // nested under it.
         //
-        // The `sortComparator` half is defensive rather than independently
-        // verified: `classifySortOperand`/`classifyLeafComparator`
-        // (expression-parser.ts) only accept a bare param or a single-level
-        // field access on it as an operand, so no comparator that actually
-        // reaches `IRLoop.sortComparator` today can contain a signal/memo
-        // call — an unrecognized shape falls back to leaving the whole
-        // `.sort(...)` chain inline in `array` instead (already covered by
-        // the existing `array` scan above). This keeps the two callbacks
-        // handled uniformly and costs nothing if that grammar ever widens.
+        // The `sortComparator` half is defensive: `classifySortOperand`
+        // (expression-parser.ts) can't route a signal call into it under
+        // today's grammar, so this branch is untested in practice.
         const { filterPredicate, sortComparator } = node
-        const filterCallbackScope = filterPredicate ? scope.enterCallback([filterPredicate.param]) : undefined
-        const sortCallbackScope = sortComparator ? scope.enterCallback([sortComparator.paramA, sortComparator.paramB]) : undefined
+        const callbackDeps = (raw: string, params: string[]) => {
+          const callbackScope = scope.enterCallback(params)
+          return extractReactiveDeps(raw, signalGetters, memoNames).filter(name => !callbackScope.isBound(name))
+        }
         const deps = [
           ...new Set([
             ...extractReactiveDeps(node.array, signalGetters, memoNames),
-            ...(filterPredicate
-              ? extractReactiveDeps(filterPredicate.raw, signalGetters, memoNames).filter(name => !filterCallbackScope!.isBound(name))
-              : []),
-            ...(sortComparator
-              ? extractReactiveDeps(sortComparator.raw, signalGetters, memoNames).filter(name => !sortCallbackScope!.isBound(name))
-              : []),
+            ...(filterPredicate ? callbackDeps(filterPredicate.raw, [filterPredicate.param]) : []),
+            ...(sortComparator ? callbackDeps(sortComparator.raw, [sortComparator.paramA, sortComparator.paramB]) : []),
           ]),
         ]
         // An inner loop whose array reads an outer loop param (`r.tags.map(...)`)
