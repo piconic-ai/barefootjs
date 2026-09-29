@@ -2189,9 +2189,14 @@ function collectDomBindings(
         // deps, even though that read is exactly why the loop re-renders.
         // (The `/* @client */` path keeps the whole chain in `array`, which
         // is why the edge was already there in that case.) Collect each
-        // callback's reads too, excluding that callback's own bound param(s)
-        // so a predicate/comparator that names its parameter the same as an
-        // unrelated signal isn't mistaken for a real read of it.
+        // callback's reads too, shadow-guarded via the shared `BindingScope`
+        // service — `enterCallback` exists for exactly this ("a filter
+        // predicate's `x`, a sort comparator's `(a, b)`", see its doc
+        // comment) — so a predicate/comparator that names its parameter the
+        // same as an unrelated signal isn't mistaken for a real read of it.
+        // Built on `scope` (not `childScope` below): the filter/sort
+        // callback's own param(s) are a sibling scope to the loop row, not
+        // nested under it.
         //
         // The `sortComparator` half is defensive rather than independently
         // verified: `classifySortOperand`/`classifyLeafComparator`
@@ -2202,24 +2207,17 @@ function collectDomBindings(
         // `.sort(...)` chain inline in `array` instead (already covered by
         // the existing `array` scan above). This keeps the two callbacks
         // handled uniformly and costs nothing if that grammar ever widens.
-        const filterOwnParams = node.filterPredicate ? new Set([node.filterPredicate.param]) : undefined
-        const sortOwnParams = node.sortComparator ? new Set([node.sortComparator.paramA, node.sortComparator.paramB]) : undefined
+        const { filterPredicate, sortComparator } = node
+        const filterCallbackScope = filterPredicate ? scope.enterCallback([filterPredicate.param]) : undefined
+        const sortCallbackScope = sortComparator ? scope.enterCallback([sortComparator.paramA, sortComparator.paramB]) : undefined
         const deps = [
           ...new Set([
             ...extractReactiveDeps(node.array, signalGetters, memoNames),
-            ...(node.filterPredicate
-              ? extractReactiveDeps(
-                  node.filterPredicate.raw,
-                  excludeNames(signalGetters, filterOwnParams!),
-                  excludeNames(memoNames, filterOwnParams!),
-                )
+            ...(filterPredicate
+              ? extractReactiveDeps(filterPredicate.raw, signalGetters, memoNames).filter(name => !filterCallbackScope!.isBound(name))
               : []),
-            ...(node.sortComparator
-              ? extractReactiveDeps(
-                  node.sortComparator.raw,
-                  excludeNames(signalGetters, sortOwnParams!),
-                  excludeNames(memoNames, sortOwnParams!),
-                )
+            ...(sortComparator
+              ? extractReactiveDeps(sortComparator.raw, signalGetters, memoNames).filter(name => !sortCallbackScope!.isBound(name))
               : []),
           ]),
         ]
@@ -2384,24 +2382,6 @@ function attrValueToString(value: AttrValue): string | null {
     case 'jsx-children':
       return null
   }
-}
-
-/**
- * Set difference, used to hide a loop's `filterPredicate`/`sortComparator`
- * callback param(s) from the signal/memo name sets before scanning that
- * callback's own body (#3246) — a predicate/comparator that names its
- * parameter the same as an unrelated signal must not be mistaken for a read
- * of it. Returns `names` unchanged (no copy) when nothing needs excluding.
- */
-function excludeNames(names: Set<string>, exclude: ReadonlySet<string>): Set<string> {
-  let filtered: Set<string> | undefined
-  for (const n of exclude) {
-    if (names.has(n)) {
-      filtered ??= new Set(names)
-      filtered.delete(n)
-    }
-  }
-  return filtered ?? names
 }
 
 /** Extract reactive getter names (signal/memo calls) from an expression. */
