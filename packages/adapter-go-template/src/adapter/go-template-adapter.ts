@@ -7740,30 +7740,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
-  /**
-   * Whether a ParsedExpr renders to a Go template function call (`len .X`,
-   * `bf_add .A .B`) that needs parentheses when used as an argument to a
-   * comparison operator (eq, gt, lt, …).
-   */
-  private needsParensInGoTemplate(expr: ParsedExpr): boolean {
-    switch (expr.kind) {
-      case 'member':
-        // .length → `len .X`
-        return expr.property === 'length'
-
-      case 'binary':
-        // Arithmetic operators → bf_add, bf_sub, …
-        return ['+', '-', '*', '/', '%'].includes(expr.op)
-
-      case 'unary':
-        // Negation → `bf_neg .X`
-        return expr.op === '-'
-
-      default:
-        return false
-    }
-  }
-
   /** Convert a JS expression to Go template syntax. */
   private convertExpressionToGo(
     jsExpr: string,
@@ -8488,9 +8464,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
         const obj = this.renderConditionExpr(expr.object)
         if (expr.property === 'length') {
-          return { preamble: obj.preamble, expr: `len ${obj.expr}` }
+          // `len` is a prefix builtin like `index`/`and`/`or` above: a
+          // multi-token operand (`or .X bf_arr`, from a `??` object here —
+          // e.g. `(todos()?.length ?? 0)`'s inner `todos()?.length`, or
+          // `(todos() ?? []).length`'s `todos() ?? []`) must be parenthesised
+          // or Go reads it as extra sibling args of `len` (#3249).
+          return { preamble: obj.preamble, expr: `len ${wrapIfMultiToken(obj.expr)}` }
         }
-        return { preamble: obj.preamble, expr: `${obj.expr}.${capitalizeFieldName(expr.property)}` }
+        // Same wrapping rule as the `.length` arm above: a multi-token
+        // object (`or .A .B`, from a `??`/`||` object — e.g.
+        // `(props.a ?? props.b)?.name`) must be parenthesised before the
+        // `.Field` access, or Go reads the unparenthesised tail as an extra
+        // sibling arg of the prefix call (`or .A .B.Name` — silently wrong,
+        // not a panic, since `or`/`and` tolerate extra args).
+        return { preamble: obj.preamble, expr: `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}` }
       }
 
       case 'index-access': {
@@ -8506,13 +8493,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'binary': {
-        const leftNeedsParens = this.needsParensInGoTemplate(expr.left)
+        // `wrapIfMultiToken` (whitespace-based, on the RENDERED string) — not
+        // the old `needsParensInGoTemplate` (AST-kind-based: only
+        // member.length/arithmetic-binary/unary-negation) — matches the
+        // `logical`/`unary` arms just below. AST-kind gating missed a `??`
+        // operand here: `(x ?? []).length > 0` renders `expr.left` through
+        // the `logical` arm to `or .X bf_arr` (or `bf_nullish …`), which
+        // `needsParensInGoTemplate` never flagged, so it spliced
+        // unparenthesised into `gt` as extra sibling args — `html/template`
+        // then fails at render time ("wrong number of args"), not at compile
+        // time (#3249).
         const leftResult = this.renderConditionExpr(expr.left)
-        const left = leftNeedsParens ? `(${leftResult.expr})` : leftResult.expr
+        const left = wrapIfMultiToken(leftResult.expr)
 
-        const rightNeedsParens = this.needsParensInGoTemplate(expr.right)
         const rightResult = this.renderConditionExpr(expr.right)
-        const right = rightNeedsParens ? `(${rightResult.expr})` : rightResult.expr
+        const right = wrapIfMultiToken(rightResult.expr)
 
         const preamble = leftResult.preamble + rightResult.preamble
 
@@ -8545,13 +8540,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '/':
             result = `bf_div ${left} ${right}`; break
           case '%':
-            // #2873: this switch had no `%` case even though
-            // `needsParensInGoTemplate` (above) already treats `%` as an
-            // arithmetic operator needing parens — so the `default` arm
-            // below emitted a literal ` % ` into a ternary/condition's
-            // template text, which `html/template` can't parse
-            // (`unexpected "%" in operand`). Mirrors the general binary
-            // emitter's `%` case (`bf_mod`, outside condition position).
+            // #2873: this switch had no `%` case, so the `default` arm below
+            // emitted a literal ` % ` into a ternary/condition's template text,
+            // which `html/template` can't parse (`unexpected "%" in operand`).
+            // Mirrors the general binary emitter's `%` case (`bf_mod`, outside
+            // condition position).
             result = `bf_mod ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
@@ -8566,7 +8559,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // argument parenthesised, or e.g. `not or a b` parses as `not`
         // applied to 3 sibling args instead of 1 (#2758).
         if (expr.op === '!') return { preamble: arg.preamble, expr: `not ${wrapIfMultiToken(arg.expr)}` }
-        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${arg.expr}` }
+        // Same rule as `!` just above: `bf_neg` is a prefix builtin too, so a
+        // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
+        // parenthesised or Go reads it as extra sibling args (#3249).
+        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${wrapIfMultiToken(arg.expr)}` }
         return arg
       }
 

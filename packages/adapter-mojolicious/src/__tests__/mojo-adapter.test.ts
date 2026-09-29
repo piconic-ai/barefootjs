@@ -6,11 +6,11 @@
 
 import { describe, test, expect } from 'bun:test'
 import { MojoAdapter } from '../adapter/mojo-adapter'
-import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
+import { runAdapterConformanceTests, findLimitation } from '@barefootjs/adapter-tests'
 import { renderMojoComponent, PerlNotAvailableError } from '../test-render'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
-import { renderDivergences } from '../render-divergences'
+import { renderDivergences, dataPointDivergences } from '../render-divergences'
 import { escapePerlSingleQuoted, perlHashKey } from '../adapter/lib/perl-naming'
 
 runAdapterConformanceTests({
@@ -60,7 +60,7 @@ runAdapterConformanceTests({
     // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>(),
+  skipDataPoints: new Set(Object.keys(dataPointDivergences)),
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -2323,4 +2323,16 @@ describe('MojoAdapter - Perl single-quote escaping order (#2698 review)', () => 
   test('perlHashKey applies the same backslash-first rule to a non-identifier key', () => {
     expect(perlHashKey("a\\'b")).toBe("'a\\\\\\'b'")
   })
+})
+
+describe('dataPointDivergences', () => {
+  for (const [point, { limitation }] of Object.entries(dataPointDivergences)) {
+    test(`[${point}] cites an existing limitation`, () => {
+      expect(
+        findLimitation(limitation),
+        `'${point}' cites limitation '${limitation}', which is not in the registry: ` +
+          'if it graduated, the data point renders like Hono now, so delete this skip too',
+      ).toBeDefined()
+    })
+  }
 })

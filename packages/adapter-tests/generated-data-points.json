@@ -2237,6 +2237,68 @@
       }
     }
   ],
+  "nullish-coalescing-condition-operand": [
+    {
+      "name": "gen:initialTodos:absent",
+      "props": {
+        "count": 2
+      }
+    },
+    {
+      "name": "gen:initialTodos:empty",
+      "props": {
+        "initialTodos": [],
+        "count": 2
+      }
+    },
+    {
+      "name": "gen:count:absent",
+      "props": {
+        "initialTodos": [
+          {
+            "id": 1,
+            "done": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "initialTodos": [
+          {
+            "id": 1,
+            "done": false
+          }
+        ],
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "initialTodos": [
+          {
+            "id": 1,
+            "done": false
+          }
+        ],
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "initialTodos": [
+          {
+            "id": 1,
+            "done": false
+          }
+        ],
+        "count": 1234567890
+      }
+    }
+  ],
   "nullish-coalescing-destructured": [
     {
       "name": "gen:label:absent",
@@ -2379,6 +2441,14 @@
           "id": 0,
           "label": ""
         }
+      }
+    }
+  ],
+  "optional-chain-length-condition": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],

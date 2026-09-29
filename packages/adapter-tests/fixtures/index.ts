@@ -203,6 +203,8 @@ import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-impo
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
 import { fixture as nullishCoalescingDestructured } from './nullish-coalescing-destructured'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
+import { fixture as nullishCoalescingConditionOperand } from './nullish-coalescing-condition-operand'
+import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
 import { fixture as branchMap } from './branch-map'
@@ -992,6 +994,8 @@ export const jsxFixtures: JSXFixture[] = [
   nullishCoalescingText,
   nullishCoalescingDestructured,
   nullishCoalescingJsx,
+  nullishCoalescingConditionOperand,
+  optionalChainLengthCondition,
   logicalOrJsx,
   branchSelfClosing,
   branchMap,

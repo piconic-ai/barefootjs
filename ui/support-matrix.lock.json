@@ -1989,6 +1989,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5118,6 +5124,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -6719,6 +6731,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7328,6 +7346,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -8275,6 +8299,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -11752,7 +11782,16 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {},
         "xslate": {}
@@ -12649,6 +12688,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13412,6 +13457,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13831,6 +13882,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14049,7 +14106,16 @@
         },
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {},
         "xslate": {}
