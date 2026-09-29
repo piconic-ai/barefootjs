@@ -196,8 +196,14 @@ export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, IRNode[]> {
  * undecidable fall back to `legacyElementCount` (the pre-#1693 behaviour).
  * Returns `undefined` when nothing precedes the loop (or only non-element
  * nodes do), so the loop keeps bare `children[idx]`.
+ *
+ * Exported for `collectLoopChildEventsWithNesting` (`reactivity.ts`), which
+ * builds its own `NestedLoop` chain for delegated-event metadata and needs
+ * the same static-sibling-count resolution the hydration side
+ * (`collectInnerLoops`, below) already applies — see that call site's
+ * comment (#3240 follow-up).
  */
-function resolveLoopOffset(preceding: IRNode[] | undefined): LoopOffset | undefined {
+export function resolveLoopOffset(preceding: IRNode[] | undefined): LoopOffset | undefined {
   if (!preceding || preceding.length === 0) return undefined
   let staticCount = 0
   const dynamicTerms: string[] = []
@@ -411,7 +417,7 @@ export function collectInnerLoops(
           }
 
           for (const child of n.children) {
-            bindings.events.push(...collectLoopChildEventsWithNesting(child))
+            bindings.events.push(...collectLoopChildEventsWithNesting(child, [], siblingOffsets))
           }
         }
 
@@ -1598,7 +1604,7 @@ export function collectLoopChildBindings(
 ): LoopChildBindings {
   const bindings = emptyLoopChildBindings()
   for (const child of children) {
-    bindings.events.push(...collectLoopChildEventsWithNesting(child))
+    bindings.events.push(...collectLoopChildEventsWithNesting(child, [], siblingOffsets))
     // stopAtReactiveConditionals=true (#2347): this function always also
     // collects nested reactive conditionals below via
     // `collectLoopChildConditionals`, which gives each its own insert() +
