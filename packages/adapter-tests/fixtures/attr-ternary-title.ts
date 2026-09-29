@@ -22,6 +22,6 @@ export function AttrTernaryTitle() {
 }
 `,
   expectedHtml: `
-    <button bf-s="test" bf="s0" data-step="1" title="turn on"> toggle </button>
+    <button bf-s="test" bf="s0" data-step="1" title="turn on">toggle</button>
   `,
 })

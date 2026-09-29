@@ -45,5 +45,5 @@ export function initConditionalReturn(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('ConditionalReturn', { init: initConditionalReturn, template: (_p) => `${_p.variant === 'link' ? `<a href="#" class="conditional-link" ${((0) > 0) != null ? 'data-active="' + escapeAttr((0) > 0) + '"' : ''} bf="s3"> link variant: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></a>` : `<button class="conditional-button" ${((0) > 0) != null ? 'data-active="' + escapeAttr((0) > 0) + '"' : ''} bf="s1"> button variant: <!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button>`}` })
+hydrate('ConditionalReturn', { init: initConditionalReturn, template: (_p) => `${_p.variant === 'link' ? `<a href="#" class="conditional-link" ${((0) > 0) != null ? 'data-active="' + escapeAttr((0) > 0) + '"' : ''} bf="s3">link variant: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></a>` : `<button class="conditional-button" ${((0) > 0) != null ? 'data-active="' + escapeAttr((0) > 0) + '"' : ''} bf="s1">button variant: <!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button>`}` })
 export function ConditionalReturn(_p, __bfKey) { return createComponent('ConditionalReturn', _p, __bfKey) }

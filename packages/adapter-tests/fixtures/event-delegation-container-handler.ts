@@ -71,9 +71,9 @@ export function EventDelegationContainerHandler() {
 `,
   expectedHtml: `
     <div bf-s="test" bf="s2" class="container">
-      <div bf="s1" data-item="a" data-key="a"> row <!--bf:s0-->a<!--/--></div>
-      <div bf="s1" data-item="b" data-key="b"> row <!--bf:s0-->b<!--/--></div>
-      <div bf="s1" data-item="c" data-key="c"> row <!--bf:s0-->c<!--/--></div>
+      <div bf="s1" data-item="a" data-key="a">row <!--bf:s0-->a<!--/--></div>
+      <div bf="s1" data-item="b" data-key="b">row <!--bf:s0-->b<!--/--></div>
+      <div bf="s1" data-item="c" data-key="c">row <!--bf:s0-->c<!--/--></div>
     </div>
   `,
 })

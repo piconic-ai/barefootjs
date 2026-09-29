@@ -41,7 +41,7 @@ export function initStaticNestedLoopConditional(__scope, _p = {}) {
 
 }
 
-hydrate('StaticNestedLoopConditional', { init: initStaticNestedLoopConditional, template: (_p) => `<div><button type="button" class="toggle" bf="s0"> Toggle </button><ul bf="s4"><!--bf-loop:l1-->${([
+hydrate('StaticNestedLoopConditional', { init: initStaticNestedLoopConditional, template: (_p) => `<div><button type="button" class="toggle" bf="s0">Toggle</button><ul bf="s4"><!--bf-loop:l1-->${([
     { id: 1, children: [{ id: 11 }, { id: 12 }] },
   ]).map((row) => `<li data-key="${escapeAttr(row.id)}" bf="s3"><!--bf-loop:l0-->${row.children.map((child) => `<span data-key-1="${escapeAttr(child.id)}" class="child" bf="s2">${(true) ? `<b bf-c="s1" class="on">on</b>` : `<i bf-c="s1" class="off">off</i>`}</span>`).join('')}<!--bf-/loop:l0--></li>`).join('')}<!--bf-/loop:l1--></ul></div>` })
 export function StaticNestedLoopConditional(_p, __bfKey) { return createComponent('StaticNestedLoopConditional', _p, __bfKey) }

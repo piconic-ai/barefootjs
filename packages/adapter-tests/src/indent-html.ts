@@ -115,6 +115,28 @@ export function indentHTML(html: string, baseIndent = 4, indentSize = 2): string
   let depth = 0
   let i = 0
 
+  // Emit `raw` as its own new indented line, UNLESS the immediately
+  // preceding token was text that ended flush against this one (no
+  // whitespace at all in the flat HTML) — then append `raw` directly
+  // onto the line already holding that text instead. Putting it on a
+  // new line would insert a newline the flat HTML never had, and
+  // `normalizeHTML`'s `\s+` → ' ' collapse (at comparison time) turns
+  // that fabricated newline into a real space, silently changing the
+  // pinned `expectedHtml`. This used to be unreachable in practice
+  // because a JSX text node almost always carried genuine trailing/
+  // leading whitespace at exactly this boundary; a correctly-trimmed
+  // text node (#3237) can now end flush against its neighbor, so this
+  // pretty-printer can no longer assume there's always whitespace to
+  // absorb the line break into.
+  function emit(raw: string, indent: string): void {
+    const prev = i > 0 ? tokens[i - 1] : undefined
+    if (prev && prev.type === 'text' && lines.length > 0 && !/\s$/.test(prev.raw)) {
+      lines[lines.length - 1] += raw
+    } else {
+      lines.push(`${indent}${raw}`)
+    }
+  }
+
   while (i < tokens.length) {
     const token = tokens[i]
     const indent = ' '.repeat(baseIndent + depth * indentSize)
@@ -123,7 +145,7 @@ export function indentHTML(html: string, baseIndent = 4, indentSize = 2): string
       const closeIndex = findMatchingClose(tokens, i)
       if (closeIndex === -1) {
         // Malformed HTML: just output as-is
-        lines.push(`${indent}${token.raw}`)
+        emit(token.raw, indent)
         i++
         continue
       }
@@ -131,24 +153,31 @@ export function indentHTML(html: string, baseIndent = 4, indentSize = 2): string
       const childCount = countDirectChildElements(tokens, i)
       if (childCount < 2) {
         // Inline/leaf: keep everything on one line
-        lines.push(`${indent}${concatTokens(tokens, i, closeIndex)}`)
+        emit(concatTokens(tokens, i, closeIndex), indent)
         i = closeIndex + 1
         continue
       }
 
       // Expanded: open tag on its own line
-      lines.push(`${indent}${token.raw}`)
+      emit(token.raw, indent)
       depth++
     } else if (token.type === 'close') {
       depth--
       const closeIndent = ' '.repeat(baseIndent + depth * indentSize)
-      lines.push(`${closeIndent}${token.raw}`)
+      emit(token.raw, closeIndent)
     } else if (token.type === 'void') {
-      lines.push(`${indent}${token.raw}`)
+      emit(token.raw, indent)
     } else if (token.type === 'comment') {
-      lines.push(`${indent}${token.raw}`)
+      emit(token.raw, indent)
     } else if (token.type === 'text') {
-      lines.push(`${indent}${token.raw}`)
+      // Symmetric case: this text itself started flush against the
+      // token before it (no leading whitespace) — glue it onto the
+      // previous line rather than indenting it onto a new one.
+      if (i > 0 && lines.length > 0 && !/^\s/.test(token.raw)) {
+        lines[lines.length - 1] += token.raw
+      } else {
+        lines.push(`${indent}${token.raw}`)
+      }
     }
 
     i++

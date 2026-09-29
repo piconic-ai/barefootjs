@@ -3528,6 +3528,7 @@
     },
     "jsx-text-whitespace": {
       "kinds": [
+        "identifier",
         "literal"
       ],
       "axes": [

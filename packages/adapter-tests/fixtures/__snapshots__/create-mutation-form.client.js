@@ -43,5 +43,5 @@ export function initCreateMutationForm(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => { save() })
 }
 
-hydrate('CreateMutationForm', { init: initCreateMutationForm, template: (_p) => `<form bf="s3">${undefined ? `<p bf-c="s0" role="alert">Failed to save</p>` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}${(undefined) ? `<p bf-c="s1">Saved</p>` : `<!--bf-cond-start:s1--><!--bf-cond-end:s1-->`}<button type="button" ${false ? 'disabled' : ''} bf="s2"> Send </button></form>` })
+hydrate('CreateMutationForm', { init: initCreateMutationForm, template: (_p) => `<form bf="s3">${undefined ? `<p bf-c="s0" role="alert">Failed to save</p>` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}${(undefined) ? `<p bf-c="s1">Saved</p>` : `<!--bf-cond-start:s1--><!--bf-cond-end:s1-->`}<button type="button" ${false ? 'disabled' : ''} bf="s2">Send</button></form>` })
 export function CreateMutationForm(_p, __bfKey) { return createComponent('CreateMutationForm', _p, __bfKey) }

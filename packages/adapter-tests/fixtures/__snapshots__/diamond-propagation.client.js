@@ -57,5 +57,5 @@ export function initDiamondPropagation(__scope, _p = {}) {
   })
 }
 
-hydrate('DiamondPropagation', { init: initDiamondPropagation, template: (_p) => `<div class="diamond-propagation"><span class="a" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></span><span class="b" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(((1) * 10))}<!--/--></span><span class="c" bf="s5"><!--bf:s4-->${escapeTextOrMarkup(((1) * 100))}<!--/--></span><span class="runs" bf="s7"><!--bf:s6-->${escapeTextOrMarkup((0))}<!--/--></span><span class="glitches" bf="s9"><!--bf:s8-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-inc" bf="s10"> +1 </button></div>` })
+hydrate('DiamondPropagation', { init: initDiamondPropagation, template: (_p) => `<div class="diamond-propagation"><span class="a" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></span><span class="b" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(((1) * 10))}<!--/--></span><span class="c" bf="s5"><!--bf:s4-->${escapeTextOrMarkup(((1) * 100))}<!--/--></span><span class="runs" bf="s7"><!--bf:s6-->${escapeTextOrMarkup((0))}<!--/--></span><span class="glitches" bf="s9"><!--bf:s8-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-inc" bf="s10">+1</button></div>` })
 export function DiamondPropagation(_p, __bfKey) { return createComponent('DiamondPropagation', _p, __bfKey) }

@@ -2207,7 +2207,7 @@ function isTransparentFragment(
   // Filter out whitespace-only text nodes
   const children = node.children.filter(child => {
     if (ts.isJsxText(child)) {
-      return child.text.trim() !== ''
+      return cleanJsxWhitespace(child.text) !== ''
     }
     return true
   })
@@ -2375,11 +2375,15 @@ function transformChildren(
 
     const transformed = transformNode(child, ctx)
     if (transformed) {
-      // Skip empty text nodes
-      if (transformed.type === 'text' && transformed.value.trim() === '') {
-        continue
-      }
-
+      // `transformText` (the only producer of `type: 'text'` reached from
+      // here — a `JsxText` child) already returns `null` for a node the
+      // JSX whitespace rule says renders nothing, and keeps a node whose
+      // cleaned value is a meaningful single space (`<b>a</b> <i>b</i>`,
+      // #3237). Re-checking `.value.trim() === ''` here duplicated that
+      // decision with a looser rule that silently discarded exactly that
+      // meaningful space — the "one decision, two implementations"
+      // pattern CLAUDE.md's Reference Adapter section calls out. Trust
+      // the single source of truth instead of re-deciding here.
       result.push(transformed)
     }
   }
@@ -2427,10 +2431,25 @@ function isRenderNothingLiteral(expr: ts.Expression, ctx: TransformContext): boo
 }
 
 function transformText(node: ts.JsxText, ctx: TransformContext): IRText | null {
-  // Normalize whitespace (React-like behavior)
-  const text = node.text.replace(/\s+/g, ' ')
+  // Normalize whitespace the way JSX itself does (TypeScript/Babel/React
+  // agree): a text node is split on line breaks, and only whitespace that
+  // sits at a line break — the leading run of a non-first line, the
+  // trailing run of a non-last line — is trimmed away; empty lines are
+  // dropped and the rest are rejoined with a single space. Whitespace
+  // that does NOT straddle a line break (interior runs on one line, or
+  // the entirety of a single-line text node) is left exactly as written.
+  // A naive `\s+` collapse over the whole node (the previous behavior)
+  // over-trims: `<div>\n  Light\n</div>` compiled to `" Light "` instead
+  // of `"Light"` (#3237).
+  const text = cleanJsxWhitespace(node.text)
 
-  if (text.trim() === '') {
+  // Empty STRING, not empty-after-trim: a single-line text node made
+  // entirely of whitespace (no line break) is a meaningful single space
+  // in JSX — `<b>a</b> <i>b</i>` — and `cleanJsxWhitespace` already
+  // reduces a multi-line, indentation-only node (no line break survives
+  // the per-line trim) to `''`. Checking `.trim() === ''` here would
+  // discard that meaningful single space too.
+  if (text === '') {
     return null
   }
 
@@ -2444,6 +2463,38 @@ function transformText(node: ts.JsxText, ctx: TransformContext): IRText | null {
     value: decodeEntities(text),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
+}
+
+/**
+ * JSX's whitespace-cleanup rule for a text child, as TypeScript, Babel and
+ * React all implement it (see e.g. Babel's `cleanJSXElementLiteralChild`):
+ *
+ *   - Split the raw text on line breaks.
+ *   - A tab is treated as a space.
+ *   - On every line except the first, strip the leading run of spaces
+ *     (it is indentation introduced by the line break, not authored text).
+ *   - On every line except the last, strip the trailing run of spaces
+ *     (same reasoning, from the other side).
+ *   - Drop lines that are empty after that trim.
+ *   - Join what's left with a single space.
+ *
+ * A single-line text node (no line break at all) is both "first" and
+ * "last", so neither trim applies and the text passes through untouched —
+ * `<b>a</b> <i>b</i>`'s single-space text node, or `const x = 1;  ` inside
+ * a `<pre>`, keep their interior whitespace exactly as written.
+ */
+function cleanJsxWhitespace(raw: string): string {
+  const lines = raw.split(/\r\n|\n|\r/)
+  const kept: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const isFirstLine = i === 0
+    const isLastLine = i === lines.length - 1
+    let line = lines[i].replace(/\t/g, ' ')
+    if (!isFirstLine) line = line.replace(/^ +/, '')
+    if (!isLastLine) line = line.replace(/ +$/, '')
+    if (line !== '') kept.push(line)
+  }
+  return kept.join(' ')
 }
 
 // =============================================================================

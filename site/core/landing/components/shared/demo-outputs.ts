@@ -36,63 +36,63 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "label": "go",
         "file": "counter.tmpl",
         "lang": "go-html-template",
-        "code": "{{define \"Counter\"}}\n{{if .Scripts}}{{.Scripts.Register \"/static/client/barefoot.js\"}}{{.Scripts.Register \"/static/client/Counter.client.js\"}}{{end}}\n<button bf-s=\"{{bfScopeAttr .}}\" {{bfHydrationAttrs .}} {{bfPropsAttr .}}{{if .BfDataKey}} data-key=\"{{.BfDataKey}}\"{{end}} bf=\"s1\"> Count: {{bfTextStart \"s0\"}}{{.Count}}{{bfTextEnd}}</button>\n{{end}}"
+        "code": "{{define \"Counter\" -}}\n{{if .Scripts}}{{.Scripts.Register \"/static/client/barefoot.js\"}}{{.Scripts.Register \"/static/client/Counter.client.js\"}}{{end -}}\n<button bf-s=\"{{bfScopeAttr .}}\" {{bfHydrationAttrs .}} {{bfPropsAttr .}}{{if .BfDataKey}} data-key=\"{{.BfDataKey}}\"{{end}} bf=\"s1\">Count: {{bfTextStart \"s0\"}}{{.Count}}{{bfTextEnd}}</button>\n{{- end}}"
       },
       {
         "id": "erb",
         "label": "rails",
         "file": "counter.erb",
         "lang": "erb",
-        "code": "<%- bf.register_script('/static/components/barefoot.js') -%>\n<%- bf.register_script('/static/components/Counter.client.js') -%>\n<button bf-s=\"<%= bf.scope_attr %>\" <%= bf.hydration_attrs %> <%= bf.props_attr %> <%= bf.data_key_attr %> bf=\"s1\"> Count: <%= bf.text_start(\"s0\") %><%= bf.h(v[:count]) %><%= bf.text_end %></button>"
+        "code": "<%- bf.register_script('/static/components/barefoot.js') -%>\n<%- bf.register_script('/static/components/Counter.client.js') -%>\n<button bf-s=\"<%= bf.scope_attr %>\" <%= bf.hydration_attrs %> <%= bf.props_attr %> <%= bf.data_key_attr %> bf=\"s1\">Count: <%= bf.text_start(\"s0\") %><%= bf.h(v[:count]) %><%= bf.text_end %></button>"
       },
       {
         "id": "jinja",
         "label": "django",
         "file": "counter.jinja",
         "lang": "jinja",
-        "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | safe }} {{ bf.props_attr() | safe }} {{ bf.data_key_attr() | safe }} bf=\"s1\"> Count: {{ bf.text_start(\"s0\") | safe }}{{ bf.string(count) }}{{ bf.text_end() | safe }}</button>"
+        "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | safe }} {{ bf.props_attr() | safe }} {{ bf.data_key_attr() | safe }} bf=\"s1\">Count: {{ bf.text_start(\"s0\") | safe }}{{ bf.string(count) }}{{ bf.text_end() | safe }}</button>"
       },
       {
         "id": "ep",
         "label": "perl",
         "file": "counter.html.ep",
         "lang": "perl",
-        "code": "% bf->register_script('/static/components/barefoot.js');\n% bf->register_script('/static/components/Counter.client.js');\n<button bf-s=\"<%= bf->scope_attr %>\" <%== bf->hydration_attrs %> <%== bf->props_attr %> <%== bf->data_key_attr %> bf=\"s1\"> Count: <%== bf->text_start(\"s0\") %><%= $count %><%== bf->text_end %></button>"
+        "code": "% bf->register_script('/static/components/barefoot.js');\n% bf->register_script('/static/components/Counter.client.js');\n<button bf-s=\"<%= bf->scope_attr %>\" <%== bf->hydration_attrs %> <%== bf->props_attr %> <%== bf->data_key_attr %> bf=\"s1\">Count: <%== bf->text_start(\"s0\") %><%= $count %><%== bf->text_end %></button>"
       },
       {
         "id": "twig",
         "label": "php",
         "file": "counter.twig",
         "lang": "twig",
-        "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | raw }} {{ bf.props_attr() | raw }} {{ bf.data_key_attr() | raw }} bf=\"s1\"> Count: {{ bf.text_start(\"s0\") | raw }}{{ bf.string(count) }}{{ bf.text_end() | raw }}</button>"
+        "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | raw }} {{ bf.props_attr() | raw }} {{ bf.data_key_attr() | raw }} bf=\"s1\">Count: {{ bf.text_start(\"s0\") | raw }}{{ bf.string(count) }}{{ bf.text_end() | raw }}</button>"
       },
       {
         "id": "blade",
         "label": "laravel",
         "file": "counter.blade.php",
         "lang": "php",
-        "code": "@php($bf->register_script('/static/components/barefoot.js'))\n@php($bf->register_script('/static/components/Counter.client.js'))\n<button bf-s=\"{!! e($bf->scope_attr()) !!}\" {!! $bf->hydration_attrs() !!} {!! $bf->props_attr() !!} {!! $bf->data_key_attr() !!} bf=\"s1\"> Count: {!! $bf->text_start(\"s0\") !!}{!! e($bf->string($count)) !!}{!! $bf->text_end() !!}</button>"
+        "code": "@php($bf->register_script('/static/components/barefoot.js'))\n@php($bf->register_script('/static/components/Counter.client.js'))\n<button bf-s=\"{!! e($bf->scope_attr()) !!}\" {!! $bf->hydration_attrs() !!} {!! $bf->props_attr() !!} {!! $bf->data_key_attr() !!} bf=\"s1\">Count: {!! $bf->text_start(\"s0\") !!}{!! e($bf->string($count)) !!}{!! $bf->text_end() !!}</button>"
       },
       {
         "id": "minijinja",
         "label": "rust",
         "file": "counter.j2",
         "lang": "jinja",
-        "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | safe }} {{ bf.props_attr() | safe }} {{ bf.data_key_attr() | safe }} bf=\"s1\"> Count: {{ bf.text_start(\"s0\") | safe }}{{ bf.string(count) }}{{ bf.text_end() | safe }}</button>"
+        "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | safe }} {{ bf.props_attr() | safe }} {{ bf.data_key_attr() | safe }} bf=\"s1\">Count: {{ bf.text_start(\"s0\") | safe }}{{ bf.string(count) }}{{ bf.text_end() | safe }}</button>"
       },
       {
         "id": "xslate",
         "label": "xslate",
         "file": "counter.tx",
         "lang": "perl",
-        "code": ": my $_bf_reg0 = $bf.register_script('/static/components/barefoot.js');\n: my $_bf_reg1 = $bf.register_script('/static/components/Counter.client.js');\n<button bf-s=\"<: $bf.scope_attr() :>\" <: $bf.hydration_attrs() | mark_raw :> <: $bf.props_attr() | mark_raw :> <: $bf.data_key_attr() | mark_raw :> bf=\"s1\"> Count: <: $bf.text_start(\"s0\") | mark_raw :><: $count :><: $bf.text_end() | mark_raw :></button>"
+        "code": ": my $_bf_reg0 = $bf.register_script('/static/components/barefoot.js');\n: my $_bf_reg1 = $bf.register_script('/static/components/Counter.client.js');\n<button bf-s=\"<: $bf.scope_attr() :>\" <: $bf.hydration_attrs() | mark_raw :> <: $bf.props_attr() | mark_raw :> <: $bf.data_key_attr() | mark_raw :> bf=\"s1\">Count: <: $bf.text_start(\"s0\") | mark_raw :><: $count :><: $bf.text_end() | mark_raw :></button>"
       },
       {
         "id": "hono",
         "label": "hono",
         "file": "Counter.tsx",
         "lang": "tsx",
-        "code": "import { bfText, bfTextEnd } from '@barefootjs/hono/utils'\nimport { createSignal } from '@barefootjs/hono/client-shim'\n\nexport function Counter({ __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps: _bfParentProps, __bfParent, __bfMount, \"data-key\": __dataKey }: { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number } = {} as { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number }) {\n  const __scopeId = __instanceId || `Counter_${Math.random().toString(36).slice(2, 8)}`\n  const count = () => 0\n\n  return (\n    <button onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { \"bf-h\": __bfParent } : {})} {...(__bfMount ? { \"bf-m\": __bfMount } : {})} {...(!__bfChild ? { \"bf-r\": \"\" } : {})} {...(__dataKey !== undefined ? { \"data-key\": __dataKey } : {})} bf=\"s1\"> Count: {bfText(\"s0\")}{count()}{bfTextEnd()}</button>\n  )\n}"
+        "code": "import { bfText, bfTextEnd } from '@barefootjs/hono/utils'\nimport { createSignal } from '@barefootjs/hono/client-shim'\n\nexport function Counter({ __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize: _bfNoSerialize, __bfParentProps: _bfParentProps, __bfParent, __bfMount, \"data-key\": __dataKey }: { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number } = {} as { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number }) {\n  const __scopeId = __instanceId || `Counter_${Math.random().toString(36).slice(2, 8)}`\n  const count = () => 0\n\n  return (\n    <button onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { \"bf-h\": __bfParent } : {})} {...(__bfMount ? { \"bf-m\": __bfMount } : {})} {...(!__bfChild ? { \"bf-r\": \"\" } : {})} {...(__dataKey !== undefined ? { \"data-key\": __dataKey } : {})} bf=\"s1\">Count: {bfText(\"s0\")}{count()}{bfTextEnd()}</button>\n  )\n}"
       }
     ]
   },
@@ -106,7 +106,7 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "label": "go",
         "file": "toggle.tmpl",
         "lang": "go-html-template",
-        "code": "{{define \"Toggle\"}}\n{{if .Scripts}}{{.Scripts.Register \"/static/client/barefoot.js\"}}{{.Scripts.Register \"/static/client/Toggle.client.js\"}}{{end}}\n<button aria-pressed=\"{{.On}}\" bf-s=\"{{bfScopeAttr .}}\" {{bfHydrationAttrs .}} {{bfPropsAttr .}}{{if .BfDataKey}} data-key=\"{{.BfDataKey}}\"{{end}} bf=\"s1\">{{if .On}}{{bfComment \"cond-start:s0\"}}{{\"On\"}}{{bfComment \"cond-end:s0\"}}{{else}}{{bfComment \"cond-start:s0\"}}{{\"Off\"}}{{bfComment \"cond-end:s0\"}}{{end}}</button>\n{{end}}"
+        "code": "{{define \"Toggle\" -}}\n{{if .Scripts}}{{.Scripts.Register \"/static/client/barefoot.js\"}}{{.Scripts.Register \"/static/client/Toggle.client.js\"}}{{end -}}\n<button aria-pressed=\"{{.On}}\" bf-s=\"{{bfScopeAttr .}}\" {{bfHydrationAttrs .}} {{bfPropsAttr .}}{{if .BfDataKey}} data-key=\"{{.BfDataKey}}\"{{end}} bf=\"s1\">{{if .On}}{{bfComment \"cond-start:s0\"}}{{\"On\"}}{{bfComment \"cond-end:s0\"}}{{else}}{{bfComment \"cond-start:s0\"}}{{\"Off\"}}{{bfComment \"cond-end:s0\"}}{{end}}</button>\n{{- end}}"
       },
       {
         "id": "erb",
@@ -162,7 +162,7 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "label": "hono",
         "file": "Toggle.tsx",
         "lang": "tsx",
-        "code": "import { bfComment } from '@barefootjs/hono/utils'\nimport { createSignal } from '@barefootjs/hono/client-shim'\n\nexport function Toggle({ __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps: _bfParentProps, __bfParent, __bfMount, \"data-key\": __dataKey }: { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number } = {} as { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number }) {\n  const __scopeId = __instanceId || `Toggle_${Math.random().toString(36).slice(2, 8)}`\n  const on = () => false\n\n  return (\n    <button aria-pressed={on()} onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { \"bf-h\": __bfParent } : {})} {...(__bfMount ? { \"bf-m\": __bfMount } : {})} {...(!__bfChild ? { \"bf-r\": \"\" } : {})} {...(__dataKey !== undefined ? { \"data-key\": __dataKey } : {})} bf=\"s1\">{on() ? <>{bfComment(\"cond-start:s0\")}{'On'}{bfComment(\"cond-end:s0\")}</> : <>{bfComment(\"cond-start:s0\")}{'Off'}{bfComment(\"cond-end:s0\")}</>}</button>\n  )\n}"
+        "code": "import { bfComment } from '@barefootjs/hono/utils'\nimport { createSignal } from '@barefootjs/hono/client-shim'\n\nexport function Toggle({ __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize: _bfNoSerialize, __bfParentProps: _bfParentProps, __bfParent, __bfMount, \"data-key\": __dataKey }: { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number } = {} as { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; \"data-key\"?: string | number }) {\n  const __scopeId = __instanceId || `Toggle_${Math.random().toString(36).slice(2, 8)}`\n  const on = () => false\n\n  return (\n    <button aria-pressed={on()} onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { \"bf-h\": __bfParent } : {})} {...(__bfMount ? { \"bf-m\": __bfMount } : {})} {...(!__bfChild ? { \"bf-r\": \"\" } : {})} {...(__dataKey !== undefined ? { \"data-key\": __dataKey } : {})} bf=\"s1\">{on() ? <>{bfComment(\"cond-start:s0\")}{'On'}{bfComment(\"cond-end:s0\")}</> : <>{bfComment(\"cond-start:s0\")}{'Off'}{bfComment(\"cond-end:s0\")}</>}</button>\n  )\n}"
       }
     ]
   },
@@ -176,14 +176,14 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "label": "go",
         "file": "items.tmpl",
         "lang": "go-html-template",
-        "code": "{{define \"Items\"}}\n<ul bf-s=\"{{bfScopeAttr .}}\" {{bfHydrationAttrs .}} {{bfPropsAttr .}}{{if .BfDataKey}} data-key=\"{{.BfDataKey}}\"{{end}} bf=\"s1\">{{bfComment \"loop:l0\"}}{{range $_, $item := .Items}}<li data-key=\"{{.}}\">{{bfTextStart \"s0\"}}{{.}}{{bfTextEnd}}</li>{{end}}{{bfComment \"/loop:l0\"}}</ul>\n{{end}}"
+        "code": "{{define \"Items\" -}}\n<ul bf-s=\"{{bfScopeAttr .}}\" {{bfHydrationAttrs .}} {{bfPropsAttr .}}{{if .BfDataKey}} data-key=\"{{.BfDataKey}}\"{{end}} bf=\"s1\">{{bfComment \"loop:l0\"}}{{range $_, $item := .Items}}<li data-key=\"{{.}}\">{{bfTextStart \"s0\"}}{{.}}{{bfTextEnd}}</li>{{end}}{{bfComment \"/loop:l0\"}}</ul>\n{{- end}}"
       },
       {
         "id": "erb",
         "label": "rails",
         "file": "items.erb",
         "lang": "erb",
-        "code": "<%- bf.register_script('/static/components/barefoot.js') -%>\n<%- bf.register_script('/static/components/Items.client.js') -%>\n<ul bf-s=\"<%= bf.scope_attr %>\" <%= bf.hydration_attrs %> <%= bf.props_attr %> <%= bf.data_key_attr %> bf=\"s1\"><%= bf.comment(\"loop:l0\") %>\n<%- (0...v[:items].length).each do |_i| -%>\n<%- item = v[:items][_i] -%>\n<li data-key=\"<%= bf.h(item) %>\"><%= bf.text_start(\"s0\") %><%= bf.h(item) %><%= bf.text_end %></li>\n<%- end -%>\n<%= bf.comment(\"/loop:l0\") %></ul>"
+        "code": "<%- bf.register_script('/static/components/barefoot.js') -%>\n<%- bf.register_script('/static/components/Items.client.js') -%>\n<ul bf-s=\"<%= bf.scope_attr %>\" <%= bf.hydration_attrs %> <%= bf.props_attr %> <%= bf.data_key_attr %> bf=\"s1\"><%= bf.comment(\"loop:l0\") %>\n<%- v[:items].each_with_index do |item, _i| -%>\n<li data-key=\"<%= bf.h(item) %>\"><%= bf.text_start(\"s0\") %><%= bf.h(item) %><%= bf.text_end %></li>\n<%- end -%>\n<%= bf.comment(\"/loop:l0\") %></ul>"
       },
       {
         "id": "jinja",
@@ -232,7 +232,7 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "label": "hono",
         "file": "Items.tsx",
         "lang": "tsx",
-        "code": "import { bfComment, bfText, bfTextEnd, serializeHydrationProps } from '@barefootjs/hono/utils'\n\ntype ItemsPropsWithHydration = { items: string[] } & {\n  __instanceId?: string\n  __bfScope?: string\n  __bfChild?: boolean\n  __bfParentProps?: string\n  __bfParent?: string\n  __bfMount?: string\n  \"data-key\"?: string | number\n}\n\nexport function Items({ items, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, \"data-key\": __dataKey }: ItemsPropsWithHydration) {\n  const __scopeId = __instanceId || `Items_${Math.random().toString(36).slice(2, 8)}`\n\n  // Serialize props for client hydration\n  const __hydrateProps: Record<string, unknown> = {}\n  if (typeof items !== 'function' && !(typeof items === 'object' && items !== null && 'isEscaped' in items)) __hydrateProps['items'] = items\n  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Items')\n\n  return (\n    <ul bf-s={__scopeId} {...(__bfParent ? { \"bf-h\": __bfParent } : {})} {...(__bfMount ? { \"bf-m\": __bfMount } : {})} {...(!__bfChild ? { \"bf-r\": \"\" } : {})} {...(!__bfChild && __bfPropsJson ? { \"bf-p\": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { \"data-key\": __dataKey } : {})} bf=\"s1\">{bfComment('loop:l0')}{items.map((item) => <li key={item} data-key={String(item)}>{bfText(\"s0\")}{item}{bfTextEnd()}</li>)}{bfComment('/loop:l0')}</ul>\n  )\n}"
+        "code": "import { bfComment, bfText, bfTextEnd, serializeHydrationProps } from '@barefootjs/hono/utils'\n\ntype ItemsPropsWithHydration = { items: string[] } & {\n  __instanceId?: string\n  __bfScope?: string\n  __bfChild?: boolean\n  __bfNoSerialize?: boolean\n  __bfParentProps?: string\n  __bfParent?: string\n  __bfMount?: string\n  \"data-key\"?: string | number\n}\n\nexport function Items({ items, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, \"data-key\": __dataKey }: ItemsPropsWithHydration) {\n  const __scopeId = __instanceId || `Items_${Math.random().toString(36).slice(2, 8)}`\n\n  // Serialize props for client hydration — root mounts only. A child's bf-p\n  // is never read (it gets props live via initChild), and __bfNoSerialize\n  // says the same for a component that is its parent's entire JSX body, so\n  // neither one pays for — or can fail SSR on — a value nothing will read.\n  let __bfPropsJson = __bfParentProps\n  if (!__bfChild && !__bfNoSerialize) {\n    const __hydrateProps: Record<string, unknown> = {}\n    if (!(typeof items === 'object' && items !== null && 'isEscaped' in items)) __hydrateProps['items'] = items\n    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Items', {})\n  }\n\n  return (\n    <ul bf-s={__scopeId} {...(__bfParent ? { \"bf-h\": __bfParent } : {})} {...(__bfMount ? { \"bf-m\": __bfMount } : {})} {...(!__bfChild ? { \"bf-r\": \"\" } : {})} {...(!__bfChild && __bfPropsJson ? { \"bf-p\": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { \"data-key\": __dataKey } : {})} bf=\"s1\">{bfComment('loop:l0')}{items.map((item) => <li key={item} data-key={String(item)}>{bfText(\"s0\")}{item}{bfTextEnd()}</li>)}{bfComment('/loop:l0')}</ul>\n  )\n}"
       }
     ]
   }

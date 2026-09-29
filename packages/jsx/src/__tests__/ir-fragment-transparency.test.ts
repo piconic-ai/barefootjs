@@ -92,6 +92,29 @@ describe('transparent fragment (Context Provider pattern)', () => {
     }
   })
 
+  test('does NOT mark <> {children} </> with single-line padding as transparent', () => {
+    // Unlike a text node split across a line break (cleans to ''), a
+    // same-line space around `{children}` is real, rendered text per
+    // `cleanJsxWhitespace` — so the fragment has three children, not one,
+    // and can't be a pure pass-through.
+    const source = `
+        'use client'
+
+        export function DialogRoot({ children }) {
+          return <> {children} </>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'DialogRoot.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    expect(ir!.type).toBe('fragment')
+    if (ir!.type === 'fragment') {
+      expect(ir!.transparent).toBeFalsy()
+    }
+  })
+
   test('does NOT mark fragment with non-children expression as transparent', () => {
     const source = `
         'use client'
