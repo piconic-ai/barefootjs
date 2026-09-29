@@ -89,6 +89,29 @@ class JinjaBackend:
             options = dict(environment_options or {})
             options.setdefault("autoescape", True)
             options.setdefault("undefined", ChainableUndefined)
+            # The compile-time adapter (`@barefootjs/jinja`'s
+            # `jinja-adapter.ts` file header) documents `trim_blocks=True,
+            # lstrip_blocks=True` as part of the render `Environment`'s
+            # required contract -- every compiled `.jinja` file places
+            # `{% ... %}` control tags on their own source line (including
+            # the `{% set _bf_regN = bf.register_script(...) %}` pair every
+            # template opens with), and without these two options that
+            # line's own newline leaks into the rendered HTML as literal
+            # text. This was documented but never actually set here, so the
+            # leaked newline silently became a stray space wherever a
+            # `render_named`-rendered child (via `bf.render_child`) directly
+            # followed TEXT rather than a tag -- e.g. an `AccordionTrigger`'s
+            # label immediately followed by its `ChevronDownIcon`. Sitting
+            # between two tags it stayed invisible (ordinary whitespace
+            # collapse, including this repo's cross-adapter `normalizeHTML`,
+            # erases it there), which is why this went unnoticed until
+            # #3237's JSX-whitespace fix stopped an unrelated bug from
+            # papering over it with a text node of its own. Fulfilling the
+            # documented contract here fixes the leak at its source; neither
+            # option touches a `{{ ... }}` interpolation's value or newlines
+            # inside literal HTML/text content.
+            options.setdefault("trim_blocks", True)
+            options.setdefault("lstrip_blocks", True)
             self._env = Environment(loader=FileSystemLoader(list(paths or [])), **options)
 
     @property
