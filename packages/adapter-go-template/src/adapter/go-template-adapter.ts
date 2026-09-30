@@ -8471,6 +8471,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // or Go reads it as extra sibling args of `len` (#3249).
           return { preamble: obj.preamble, expr: `len ${wrapIfMultiToken(obj.expr)}` }
         }
+        // A `?.`-written member hop must use the same nil-safe, case-tolerant
+        // runtime getter as the value-position emitter. In particular, an
+        // optional object prop is decoded as a map with JS-cased keys, so
+        // `props.meta?.count` cannot be reached with a capitalized `.Count`
+        // dot access after the direct `props.meta` read has resolved to
+        // `.Meta` (#3275). `bf_get` also preserves optional-chain behavior
+        // when the object itself is absent.
+        if (expr.optional) {
+          return {
+            preamble: obj.preamble,
+            expr: `bf_get ${wrapIfMultiToken(obj.expr)} ${JSON.stringify(goFieldNameForKey(expr.property))}`,
+          }
+        }
         // Same wrapping rule as the `.length` arm above: a multi-token
         // object (`or .A .B`, from a `??`/`||` object — e.g.
         // `(props.a ?? props.b)?.name`) must be parenthesised before the
