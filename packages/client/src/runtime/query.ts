@@ -319,6 +319,56 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
   return false
 }
 
+/**
+ * True when `candidate` (found somewhere in a comment-anchored scope's DOM
+ * range via `candidatesInScope`) genuinely belongs to `scope` itself, as
+ * opposed to some OTHER, nested child component's own scope range.
+ *
+ * Shared by `find()` and `findCondTarget()` — both need the identical
+ * comment-scope ownership rule; see CLAUDE.md's "one decision, two
+ * implementations" note (a prior version of this repo had this exact
+ * three-line check duplicated between the two, and only one of the two
+ * copies got the `nearestScope === scope` fix below).
+ *
+ * Rules, in order:
+ *  1. A top-level sibling of the comment (same parent as the comment
+ *     itself) is always accepted — even if it carries `bf-s` (e.g. the
+ *     proxy element).
+ *  2. `nearestScope === scope`: the candidate's nearest `[bf-s]` ancestor
+ *     IS `scope` itself. This matters for a comment-scoped root whose sole
+ *     child is itself a real, `[bf-s]`-addressable component (#3277): the
+ *     proxy element registered in `commentScopeRegistry` then ALSO carries
+ *     its own `bf-s` (the child's own scope id), so
+ *     `candidate.closest('[bf-s]')` resolves to `scope` itself for any of
+ *     that child's own slots. Without this rule those slots were
+ *     misclassified as belonging to a foreign nested child scope and
+ *     silently dropped — `$()`/`$t()` returned `null`, so the child's own
+ *     event listeners and reactive bindings (e.g. `mapArrayLazy`) were
+ *     never wired up. Mirrors `belongsToScope`'s `nearestScope !== scope`
+ *     rule for the non-comment-scope path; a no-op here whenever `scope`
+ *     carries no `bf-s` of its own (the common fragment-root shape), since
+ *     `.closest()` can then never resolve to `scope`.
+ *  3. No `[bf-s]` ancestor at all, or that ancestor sits OUTSIDE our own
+ *     comment range (so it can't be one of our own nested children) —
+ *     accept. `.closest()` alone can't otherwise tell "our own top-level
+ *     sibling that happens to have bf-s" from "a genuinely nested foreign
+ *     child scope" (#2302), so anything actually IN range and not `scope`
+ *     itself is rejected as belonging to that nested child.
+ */
+function belongsToCommentScope(
+  candidate: Element,
+  scope: Element,
+  commentInfo: { commentNode: Comment; scopeId: string },
+): boolean {
+  if (candidate.parentElement === commentInfo.commentNode.parentElement) return true
+  const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
+  return (
+    !nearestScope ||
+    nearestScope === scope ||
+    !isInCommentScopeRange(nearestScope, commentInfo.commentNode)
+  )
+}
+
 // --- find ---
 
 /**
@@ -348,17 +398,7 @@ export function find(
   for (const candidate of candidatesInScope(scope, selector)) {
     if (ignoreScope) return candidate
     if (commentInfo) {
-      // Comment scope: top-level siblings in the comment range are always
-      // accepted (even if they have bf-s, like proxy elements). A descendant
-      // nested inside one of those siblings is accepted unless a *nested*
-      // child scope sits between it and this one — i.e. its nearest bf-s
-      // ancestor falls within this comment's own sibling range. An ancestor
-      // bf-s element outside that range doesn't disqualify the candidate:
-      // a fragment-root child mounted inside a normal parent island always
-      // has one, and `.closest()` alone can't tell the two apart (#2302).
-      if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
-      const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
-      if (!nearestScope || !isInCommentScopeRange(nearestScope, commentInfo.commentNode)) return candidate
+      if (belongsToCommentScope(candidate, scope, commentInfo)) return candidate
     } else {
       if (belongsToScope(candidate, scope)) return candidate
     }
@@ -399,9 +439,7 @@ export function findCondTarget(scope: Element, selector: string): Element | null
     return scope.querySelector(selector)
   }
   for (const candidate of candidatesInScope(scope, selector)) {
-    if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
-    const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
-    if (!nearestScope || !isInCommentScopeRange(nearestScope, commentInfo.commentNode)) return candidate
+    if (belongsToCommentScope(candidate, scope, commentInfo)) return candidate
   }
   return null
 }
