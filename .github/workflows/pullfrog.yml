@@ -52,14 +52,8 @@ jobs:
         uses: pullfrog/pullfrog@bdfbbb10174fce866562fb079c196728dfe026c6 # v0.1.85
         with:
           prompt: ${{ inputs.prompt }}
-          # ↓↓↓ EDIT BELOW ↓↓↓
-          # Applies to every trigger this workflow serves, not just review — today that
-          # is review only. Use the exact OpenAI model ID rather than a rolling alias.
-          model: openai/gpt-5.6-terra
+          model: openai/gpt-6.1-sol
           # Feature branches only — the agent can never push to `main` or move tags.
           push: restricted
           # Hard stop well under the action's 1h default.
           timeout: 30m
-          # `effort` stays unset: it is a repo setting in the Pullfrog console, so it can
-          # be tuned without opening a PR. Setting it here would override the console.
-          # ↑↑↑ EDIT ABOVE ↑↑↑
