@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
-import { findScope, find, $, $c, $t, qsa } from '../../src/runtime/query'
+import { findScope, find, findCondTarget, $, $c, $t, qsa } from '../../src/runtime/query'
 import { hydratedScopes } from '../../src/runtime/hydration-state'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
@@ -253,9 +253,18 @@ describe('find', () => {
   })
 
   describe('with comment-based scopes', () => {
-    test('finds slot in proxy element (sibling with bf-s)', () => {
-      // Comment scope: proxy element has bf-s but is a top-level sibling
-      // in the comment range — should be searchable for its own slots
+    // #3277: when the comment-scoped root's PROXY element is itself the
+    // child's own `[bf-s]` scope (the degenerate single-child-root shape,
+    // `component-root-scope-comment.ts`) — as opposed to a plain, un-
+    // addressed top-level element that merely happens to CONTAIN some
+    // OTHER, separately-scoped nested child — a slot search on that same
+    // proxy for one of ITS OWN slots must find it, not reject it as
+    // "belonging to a nested child scope". Before the fix, `nearestScope
+    // === scope` had no acceptance rule of its own, so any slot whose
+    // nearest `[bf-s]` ancestor was the proxy itself was misclassified as
+    // foreign — silently dropping every slot lookup the child's own init
+    // makes (no click listeners, no `mapArrayLazy`/`$t` bindings).
+    test('finds own slot when proxy element IS the slot’s nearest bf-s (single-child-root)', () => {
       document.body.innerHTML = `
         <!--bf-scope:FragComp_abc-->
         <div bf-s="Child_xyz">
@@ -264,10 +273,50 @@ describe('find', () => {
       `
       const scope = findScope('FragComp', 0, null, true)
       expect(scope).not.toBeNull()
-      // The proxy element has bf-s, but find() should still search into it
+      // scope IS <div bf-s="Child_xyz">: s0 is one of ITS OWN slots.
       const btn = find(scope, '[bf="s0"]')
-      // Should be null — s0 is inside Child_xyz's scope, not FragComp's
+      expect(btn).not.toBeNull()
+      expect(btn?.textContent).toBe('Click')
+    })
+
+    test('still excludes a slot inside a genuinely different, separately-scoped nested child', () => {
+      // Here the proxy (first top-level sibling) has NO bf-s of its own —
+      // a plain fragment element — and a LATER top-level sibling is a real,
+      // independently-scoped nested child. A slot inside that sibling must
+      // stay excluded: its nearest bf-s ancestor is that sibling, never
+      // `scope` itself, so the #3277 fix's `nearestScope === scope` rule
+      // does not (and must not) apply here.
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <div>own content</div>
+        <div bf-s="NestedChild_xyz">
+          <button bf="s0">Click</button>
+        </div>
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      expect(scope).not.toBeNull()
+      expect(scope?.getAttribute('bf-s')).toBeNull()
+      const btn = find(scope, '[bf="s0"]')
       expect(btn).toBeNull()
+    })
+
+    test('skips a nested fragment child with colliding slot and conditional IDs', () => {
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <div bf-s="Child_xyz">
+          <!--bf-scope:NestedChild_def-->
+          <button bf="s0">Nested slot</button>
+          <div bf-c="c0">Nested conditional</div>
+          <!--bf-/scope:NestedChild_def-->
+          <button bf="s0">Own slot</button>
+          <div bf-c="c0">Own conditional</div>
+        </div>
+        <!--bf-/scope:FragComp_abc-->
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      expect(scope).not.toBeNull()
+      expect(find(scope, '[bf="s0"]')?.textContent).toBe('Own slot')
+      expect(findCondTarget(scope!, '[bf-c="c0"]')?.textContent).toBe('Own conditional')
     })
 
     test('finds slot directly in comment range (no nested scope)', () => {
