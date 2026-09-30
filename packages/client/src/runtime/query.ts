@@ -334,7 +334,8 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
  *  1. A top-level sibling of the comment (same parent as the comment
  *     itself) is always accepted — even if it carries `bf-s` (e.g. the
  *     proxy element).
- *  2. `nearestScope === scope`: the candidate's nearest `[bf-s]` ancestor
+ *  2. `nearestScope === scope` (unless it sits inside a nested comment
+ *     scope): the candidate's nearest `[bf-s]` ancestor
  *     IS `scope` itself. This matters for a comment-scoped root whose sole
  *     child is itself a real, `[bf-s]`-addressable component (#3277): the
  *     proxy element registered in `commentScopeRegistry` then ALSO carries
@@ -347,7 +348,9 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
  *     never wired up. Mirrors `belongsToScope`'s `nearestScope !== scope`
  *     rule for the non-comment-scope path; a no-op here whenever `scope`
  *     carries no `bf-s` of its own (the common fragment-root shape), since
- *     `.closest()` can then never resolve to `scope`.
+ *     `.closest()` can then never resolve to `scope`. A nested
+ *     fragment-root child also resolves `.closest()` to this proxy, but
+ *     `isInsideNestedCommentScope` preserves that child's boundary.
  *  3. No `[bf-s]` ancestor at all, or that ancestor sits OUTSIDE our own
  *     comment range (so it can't be one of our own nested children) —
  *     accept. `.closest()` alone can't otherwise tell "our own top-level
@@ -364,7 +367,7 @@ function belongsToCommentScope(
   const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
   return (
     !nearestScope ||
-    nearestScope === scope ||
+    (nearestScope === scope && !isInsideNestedCommentScope(candidate, scope)) ||
     !isInCommentScopeRange(nearestScope, commentInfo.commentNode)
   )
 }

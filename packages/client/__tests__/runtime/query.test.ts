@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
-import { findScope, find, $, $c, $t, qsa } from '../../src/runtime/query'
+import { findScope, find, findCondTarget, $, $c, $t, qsa } from '../../src/runtime/query'
 import { hydratedScopes } from '../../src/runtime/hydration-state'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
@@ -298,6 +298,25 @@ describe('find', () => {
       expect(scope?.getAttribute('bf-s')).toBeNull()
       const btn = find(scope, '[bf="s0"]')
       expect(btn).toBeNull()
+    })
+
+    test('skips a nested fragment child with colliding slot and conditional IDs', () => {
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <div bf-s="Child_xyz">
+          <!--bf-scope:NestedChild_def-->
+          <button bf="s0">Nested slot</button>
+          <div bf-c="c0">Nested conditional</div>
+          <!--bf-/scope:NestedChild_def-->
+          <button bf="s0">Own slot</button>
+          <div bf-c="c0">Own conditional</div>
+        </div>
+        <!--bf-/scope:FragComp_abc-->
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      expect(scope).not.toBeNull()
+      expect(find(scope, '[bf="s0"]')?.textContent).toBe('Own slot')
+      expect(findCondTarget(scope!, '[bf-c="c0"]')?.textContent).toBe('Own conditional')
     })
 
     test('finds slot directly in comment range (no nested scope)', () => {
