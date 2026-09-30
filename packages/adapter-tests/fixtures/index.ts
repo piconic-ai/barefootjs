@@ -204,6 +204,9 @@ import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
 import { fixture as nullishCoalescingDestructured } from './nullish-coalescing-destructured'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
 import { fixture as nullishCoalescingConditionOperand } from './nullish-coalescing-condition-operand'
+import { fixture as optionalChainObjectCondition } from './optional-chain-object-condition'
+import { fixture as optionalChainComputedCondition } from './optional-chain-computed-condition'
+import { fixture as optionalChainPunctuationCondition } from './optional-chain-punctuation-condition'
 import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
@@ -995,6 +998,9 @@ export const jsxFixtures: JSXFixture[] = [
   nullishCoalescingDestructured,
   nullishCoalescingJsx,
   nullishCoalescingConditionOperand,
+  optionalChainObjectCondition,
+  optionalChainComputedCondition,
+  optionalChainPunctuationCondition,
   optionalChainLengthCondition,
   logicalOrJsx,
   branchSelfClosing,

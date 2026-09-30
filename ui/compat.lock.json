@@ -4508,11 +4508,69 @@
           }
         }
       },
+      "optional-chain-computed-condition": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "optional-numeric-member-lookup"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "optional-numeric-member-lookup"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "optional-numeric-member-lookup"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "optional-numeric-member-lookup"
+          ]
+        }
+      },
       "optional-chain-length-condition": {
         "mojolicious": {
           "kind": "render",
           "limitations": [
             "mojo-optional-chain-length-unguarded-deref"
+          ]
+        }
+      },
+      "optional-chain-punctuation-condition": {
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "optional-computed-key-template-syntax"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "optional-computed-key-template-syntax"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "optional-computed-key-template-syntax"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "optional-computed-key-template-syntax"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "optional-computed-key-template-syntax"
           ]
         }
       },
@@ -5951,9 +6009,17 @@
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
       },
+      "optional-chain-computed-condition": {
+        "description": "Optional computed members retain numeric indices in conditions and text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-computed-condition.ts"
+      },
       "optional-chain-length-condition": {
         "description": "`props.x?.length ?? 0` as a condition operand, with the array absent",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-condition.ts"
+      },
+      "optional-chain-punctuation-condition": {
+        "description": "Optional computed members retain punctuation keys in conditions and text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-punctuation-condition.ts"
       },
       "optional-object-prop-member-signal-seed": {
         "description": "a signal seeded from a member of an optional object prop renders its seed (or the fallback) at SSR",
@@ -6682,6 +6748,39 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "optional-computed-key-template-syntax": {
+      "title": "Optional computed punctuation keys fail to resolve",
+      "kind": "silent",
+      "given": "an optional object prop accessed with a literal punctuation-containing key (`props.meta?.['data-x'] ?? 0`) in conditions and text",
+      "expected": "renders the stored value and selects the matching condition branch, or uses the fallback when absent",
+      "actual": "renders the fallback for a present key or throws a template syntax, undefined-symbol, or invalid-operation error",
+      "fixtures": [
+        "optional-chain-punctuation-condition"
+      ],
+      "adapters": [
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "optional-numeric-member-lookup": {
+      "title": "Optional numeric element access misses the array element",
+      "kind": "silent",
+      "given": "an optional array prop read at a literal index (`props.items?.[0] ?? 0`) in conditions and text",
+      "expected": "renders the first array element and selects the matching condition branch, or uses the fallback when absent",
+      "actual": "renders the fallback for a present element or throws a template syntax, symbol-to-integer conversion, or non-hash-reference error",
+      "fixtures": [
+        "optional-chain-computed-condition"
+      ],
+      "adapters": [
+        "erb",
+        "jinja",
+        "mojolicious",
+        "pebble"
       ]
     },
     "prop-member-chain-signal-seed": {

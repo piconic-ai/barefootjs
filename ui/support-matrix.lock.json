@@ -1739,6 +1739,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1879,6 +1885,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1937,6 +1949,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1989,9 +2007,21 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -2053,6 +2083,18 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2111,6 +2153,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2166,6 +2214,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -4268,6 +4322,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4756,6 +4816,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4937,6 +5003,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -5124,9 +5196,21 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -5320,6 +5404,18 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5501,6 +5597,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -5691,6 +5793,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -6064,6 +6172,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
               ]
             },
             {
@@ -6441,6 +6555,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -6580,6 +6700,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -6731,9 +6857,21 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -6885,6 +7023,18 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7024,6 +7174,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -7175,6 +7331,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7271,6 +7433,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7315,6 +7483,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7330,6 +7504,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7347,9 +7527,21 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -7369,6 +7561,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7385,6 +7589,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7400,6 +7610,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7659,6 +7875,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
               ]
             },
             {
@@ -8042,6 +8264,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8169,6 +8397,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -8302,9 +8536,21 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -8450,6 +8696,18 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8577,6 +8835,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -8713,6 +8977,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -11778,23 +12048,95 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            }
+          ]
+        },
         "go-template": {},
-        "jinja": {},
-        "minijinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
             {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
               ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
             }
           ]
         },
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -12402,6 +12744,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12560,6 +12908,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12621,6 +12975,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -12688,9 +13048,21 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -12770,6 +13142,18 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12834,6 +13218,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12895,6 +13285,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -13078,6 +13474,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
               ]
             },
             {
@@ -13299,6 +13701,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13372,6 +13780,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -13457,9 +13871,21 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -13545,6 +13971,18 @@
               ]
             },
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13618,6 +14056,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -13700,6 +14144,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -13806,6 +14256,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13850,6 +14306,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13865,6 +14327,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -13882,9 +14350,21 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -13904,6 +14384,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13920,6 +14412,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13935,6 +14433,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -14062,14 +14566,89 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            }
+          ]
+        },
         "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -14077,17 +14656,26 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "pagination",
-        "description": "site/ui Pagination demo — one signal drives data-active across seven links; href=\"#\" handlers must preventDefault",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/pagination.ts",
-        "code": "strokePaths['x']"
+        "fixture": "optional-chain-computed-condition",
+        "description": "Optional computed members retain numeric indices in conditions and text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-computed-condition.ts",
+        "code": "props.items?.[0]"
       }
     },
     "member:optional": {
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -14104,21 +14692,84 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
             {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
               ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
             }
           ]
         },
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-computed-condition",
+              "limitations": [
+                "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

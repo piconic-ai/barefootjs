@@ -2444,11 +2444,29 @@
       }
     }
   ],
+  "optional-chain-computed-condition": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "optional-chain-length-condition": [
     {
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "optional-chain-object-condition": [
+    {
+      "name": "gen:meta:object:minimal",
+      "props": {
+        "meta": {
+          "count": 0
+        }
       }
     }
   ],

@@ -7195,6 +7195,45 @@ export function C(props: Props) {
   })
 })
 
+describe('GoTemplateAdapter - optional object-prop member in a condition (#3275)', () => {
+  const REPRO_SOURCE = `
+'use client'
+type Props = { meta?: { count: number } }
+export function C(props: Props) {
+  return <div>{(props.meta?.count ?? 0) > 0 ? <b>has</b> : <b>none</b>}</div>
+}
+`
+
+  test('routes the optional hop through bf_get instead of a map-incompatible dot access', () => {
+    const result = compileJSX(REPRO_SOURCE.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // Optional object props are decoded as maps retaining JS-cased keys, so
+    // `.Meta.Count` reads the wrong value. This must match the value-position
+    // lowering: `bf_get .Meta "count"` handles both map keys and structs.
+    expect(template).toContain('gt (or (bf_get .Meta "count") 0) 0')
+    expect(template).not.toContain('gt (or .Meta.Count 0) 0')
+  })
+
+  test('end-to-end via real `go run`: a present nested count selects the has branch', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: REPRO_SOURCE,
+        adapter: new GoTemplateAdapter(),
+        props: { meta: { count: 2 } },
+      })
+      expect(html).toContain('>has</b>')
+      expect(html).not.toContain('>none</b>')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #3275 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
+
 // Pullfrog review follow-up on #3249: two more `renderConditionExpr` sites
 // spliced an unwrapped multi-token operand the same way `binary`/`.length`
 // used to — `unary` `-` (`bf_neg`) and the generic `member` fallback (a
