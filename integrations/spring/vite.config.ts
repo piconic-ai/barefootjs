@@ -31,7 +31,7 @@ export default defineConfig({
     },
   },
   plugins: barefoot({
-    components: ['../shared/components', '../shared/blog'],
+    components: ['../shared/components', '../shared/blog', '../shared/query-todo'],
     templates: 'src/main/resources/templates',
     // The runtime is a shared ESM chunk the browser follows on its own
     // (see `client/router-entry.ts`'s docstring). `dist/bf-assets.json`'s

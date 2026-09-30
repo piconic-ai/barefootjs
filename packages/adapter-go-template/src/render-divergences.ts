@@ -88,6 +88,16 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
 // undelivered.
 export const renderDivergences: RenderDivergences = {
+  // #3057's `child-prop-rest-forward-undefined-start`: the fixture's own
+  // top-level signal (`createSignal<string | undefined>(undefined)`) seeds
+  // its `interface{}` field with `""` instead of `nil` (`convertInitialValue`
+  // in `value/value-lowering.ts` has no explicit `undefined`/`null` literal
+  // check, only quoted-string-literal ones, so it falls to its blanket `""`
+  // string fallback) — a general signal-seeding gap, not specific to rest
+  // forwarding, which this PR's `elementAttrEmitter.emitExpression` /
+  // `bf_get`-nil-check fix does not reach. See
+  // `go-undefined-signal-seed-not-nil` (`packages/adapter-tests/limitations/`).
+  'child-prop-rest-forward-undefined-start': { limitation: 'go-undefined-signal-seed-not-nil' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback

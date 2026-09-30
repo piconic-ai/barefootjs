@@ -474,6 +474,7 @@ under a plain PHP app.</p>
     <li><a href="{$BASE}/toggle">Toggle</a></li>
     <li><a href="{$BASE}/todos">Todo (@client)</a></li>
     <li><a href="{$BASE}/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="{$BASE}/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="{$BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="{$BASE}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>
@@ -821,6 +822,19 @@ if ($method === 'GET' && str_starts_with($route, '/styles/')) {
 }
 
 // --- todo REST API ---
+// "Clear completed" on /todos-query.
+if ($route === '/api/todos/completed' && $method === 'DELETE') {
+    [$sid, $minted] = resolve_session_id();
+    with_session($sid, function (array $state) {
+        $state['todos'] = array_values(array_filter($state['todos'], fn ($t) => !$t['done']));
+        return [$state, null];
+    });
+    if ($minted) {
+        set_session_cookie($sid);
+    }
+    http_response_code(204);
+    exit;
+}
 if (preg_match('#^/api/todos/(\d+)$#', $route, $m)) {
     $todoId = (int) $m[1];
     [$sid, $minted] = resolve_session_id();
@@ -894,6 +908,27 @@ if ($route === '/api/todos') {
             set_session_cookie($sid);
         }
         json_response($todo, 201);
+        exit;
+    }
+    if ($method === 'PUT') {
+        // "Toggle all": set every todo's done flag, answer with the full list.
+        $body = json_decode((string) file_get_contents('php://input'), true);
+        if (!is_array($body) || !array_key_exists('done', $body)) {
+            json_response(['error' => 'invalid input'], 400);
+            exit;
+        }
+        $done = (bool) $body['done'];
+        $todos = with_session($sid, function (array $state) use ($done) {
+            foreach ($state['todos'] as &$t) {
+                $t['done'] = $done;
+            }
+            unset($t);
+            return [$state, $state['todos']];
+        });
+        if ($minted) {
+            set_session_cookie($sid);
+        }
+        json_response($todos);
         exit;
     }
 }
@@ -1046,6 +1081,30 @@ if ($method === 'GET') {
                 children: ['todo_item' => 'TodoItem'],
                 props: ['initialTodos' => $todos],
                 stash: ['todos' => $todos, 'newText' => '', 'filter' => 'all', 'doneCount' => $done],
+            );
+            if ($minted) {
+                set_session_cookie($sid);
+            }
+            html_response($html);
+            exit;
+
+        case $route === '/todos-query':
+            // The createQuery / createMutation todo app. `initialTodos`
+            // seeds its query (mode A): the list is rendered here, and the
+            // client sends no request on mount. Writes go through the API
+            // above and re-fetch the list.
+            [$sid, $minted] = resolve_session_id();
+            $state = read_session($sid);
+            $todos = $state['todos'];
+            $html = render_component(
+                'QueryTodoApp',
+                title: 'TodoMVC (createQuery) - BarefootJS',
+                children: ['query_todo_item' => 'QueryTodoItem'],
+                // Each row's own signals (`editing`, `draft`) are seeded from
+                // its ssrDefaults: the loop passes only `todo`.
+                signalInit: ['query_todo_item' => fn (array $p) => stash_from_ssr_defaults('QueryTodoItem', $p)],
+                props: ['initialTodos' => $todos],
+                stash: ['newText' => '', 'filter' => 'all'],
             );
             if ($minted) {
                 set_session_cookie($sid);

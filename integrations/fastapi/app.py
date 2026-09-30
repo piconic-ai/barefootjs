@@ -478,6 +478,26 @@ async def todos_route(request: Request) -> Response:
     return with_session_cookie(html_response(html), minted)
 
 
+@router.get("/todos-query")
+async def todos_query_route(request: Request) -> Response:
+    """The createQuery / createMutation todo app. `initialTodos` seeds its
+    query (mode A): the list is rendered here, and the client sends no
+    request on mount. Writes go through the API below and re-fetch the list.
+    Each QueryTodoItem row takes only `todo`; its `editing` / `draft`
+    signals are seeded from the manifest's ssrDefaults."""
+    session, minted = get_session(request)
+    todos = [dict(t) for t in session["todos"]]
+    html = render_component(
+        "QueryTodoApp",
+        title="TodoMVC (createQuery) - BarefootJS",
+        children={"query_todo_item": "QueryTodoItem"},
+        signal_init={"query_todo_item": lambda p: stash_from_ssr_defaults("QueryTodoItem", p)},
+        props={"initialTodos": todos},
+        stash={"newText": "", "filter": "all"},
+    )
+    return with_session_cookie(html_response(html), minted)
+
+
 # --- todo REST API handlers ---
 @router.get("/api/todos")
 async def api_todos_list(request: Request) -> Response:
@@ -496,6 +516,29 @@ async def api_todos_create(request: Request) -> Response:
     session["next_id"] += 1
     session["todos"].append(todo)
     return with_session_cookie(json_response(todo, 201), minted)
+
+
+# The two list-wide writes of /todos-query ("toggle all", "clear
+# completed"), one request each. Registered before the `{todo_id}` routes,
+# which would otherwise match `completed` (and reject it as a non-int).
+@router.put("/api/todos")
+async def api_todos_set_all_done(request: Request) -> Response:
+    session, _minted = get_session(request)
+    try:
+        body = await request.json()
+    except _json.JSONDecodeError:
+        body = {}
+    done = jbool(body.get("done"))
+    for todo in session["todos"]:
+        todo["done"] = done
+    return json_response(session["todos"])
+
+
+@router.delete("/api/todos/completed")
+async def api_todos_clear_completed(request: Request) -> Response:
+    session, _minted = get_session(request)
+    session["todos"] = [t for t in session["todos"] if not t["done"]]
+    return Response(status_code=204)
 
 
 @router.put("/api/todos/{todo_id}")
@@ -811,6 +854,7 @@ under a plain FastAPI app.</p>
     <li><a href="{BASE}/toggle">Toggle</a></li>
     <li><a href="{BASE}/todos">Todo (@client)</a></li>
     <li><a href="{BASE}/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="{BASE}/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="{BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="{BASE}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>

@@ -12,6 +12,7 @@ import type {
   IRTemplatePart,
   ImportSpecifier,
 } from '../types.ts'
+import { isElidedFactoryGetter } from '../types.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface.ts'
@@ -150,26 +151,35 @@ export abstract class JsxAdapter extends BaseAdapter {
         }
         continue
       }
-      // Create a getter that returns the initial value for SSR
-      const rawInitialValue = preserveTypes
-        ? (signal.typedInitialValue ?? signal.initialValue)
-        : signal.initialValue
-      const initialValue = rawInitialValue.trim().startsWith('{') ? `(${rawInitialValue})` : rawInitialValue
+      // An elided async-factory value (#3245) has no getter binding in the
+      // source at all — `signal.getter` is a synthesized internal name that
+      // nothing in the template or event handlers ever references. Emitting
+      // its SSR stub would leak that compiler-internal name into the SSR
+      // module for a binding nothing reads; the action's own SSR stub
+      // (below) is unaffected and still emitted when referenced. See
+      // `isElidedFactoryGetter`'s docstring for the full rationale.
+      if (!isElidedFactoryGetter(signal)) {
+        // Create a getter that returns the initial value for SSR
+        const rawInitialValue = preserveTypes
+          ? (signal.typedInitialValue ?? signal.initialValue)
+          : signal.initialValue
+        const initialValue = rawInitialValue.trim().startsWith('{') ? `(${rawInitialValue})` : rawInitialValue
 
-      // When preserveTypes and typedInitialValue is absent but signal.type has a meaningful
-      // type from a generic parameter, add a type assertion to prevent TS inference issues.
-      // A bare `object` raw is the analyzer's coarse KIND, not a real type — asserting
-      // `as object` only destroys the initializer's inferred literal type (a
-      // `{ x: 0, y: 0 }` signal getter stops matching `() => { x: number; y: number }`).
-      const needsTypeAssertion = preserveTypes
-        && !signal.typedInitialValue
-        && signal.type.kind !== 'unknown'
-        && signal.type.kind !== 'primitive'
-        && signal.type.raw !== 'object'
-      if (needsTypeAssertion) {
-        lines.push(`  const ${signal.getter} = () => ${initialValue} as ${signal.type.raw}`)
-      } else {
-        lines.push(`  const ${signal.getter} = () => ${initialValue}`)
+        // When preserveTypes and typedInitialValue is absent but signal.type has a meaningful
+        // type from a generic parameter, add a type assertion to prevent TS inference issues.
+        // A bare `object` raw is the analyzer's coarse KIND, not a real type — asserting
+        // `as object` only destroys the initializer's inferred literal type (a
+        // `{ x: 0, y: 0 }` signal getter stops matching `() => { x: number; y: number }`).
+        const needsTypeAssertion = preserveTypes
+          && !signal.typedInitialValue
+          && signal.type.kind !== 'unknown'
+          && signal.type.kind !== 'primitive'
+          && signal.type.raw !== 'object'
+        if (needsTypeAssertion) {
+          lines.push(`  const ${signal.getter} = () => ${initialValue} as ${signal.type.raw}`)
+        } else {
+          lines.push(`  const ${signal.getter} = () => ${initialValue}`)
+        }
       }
 
       // An async factory's action (#3165): the request function never runs on

@@ -36,6 +36,16 @@
 //     just hand back empty strings and let the pipeline drop the
 //     empty `markedTemplate` file at the gate.
 //
+//   - `emitsTemplates: false`. `generate()` returning empty sections is
+//     not by itself enough: the compiler appends a file's module-level
+//     value exports (`export const` / `export function`) to the marked
+//     template unconditionally, adapter output aside, so a component file
+//     that also exports a plain value would otherwise become the ONLY
+//     content of an all-else-empty CSR template — tripping
+//     `assertNoRealTemplateOutput` as if it were real output (#3234).
+//     `emitsTemplates: false` tells the compiler to skip template-content
+//     assembly entirely for this adapter, module exports included.
+//
 //   - No-op render methods. The `TemplateAdapter` interface lists
 //     them (`renderNode`, `renderElement`, etc.) but they are only
 //     ever invoked from inside an adapter's own `generate()`. Since
@@ -87,6 +97,19 @@ const EMPTY_OUTPUT: AdapterOutput = Object.freeze({
 export class CSRAdapter extends BaseAdapter {
   name: string
   extension = '.tsx'
+
+  // No consumer ever reads this adapter's markedTemplate output — see
+  // `TemplateAdapter.emitsTemplates`'s docstring. This tells `compileJSX`
+  // to skip template-content assembly entirely, INCLUDING a component
+  // file's own module-level value exports (`export const` / `export
+  // function`), which are otherwise appended unconditionally regardless of
+  // `generate()`'s own output. Without this a file that exports a plain
+  // constant/function next to its component produces a markedTemplate
+  // whose only content is that export — which `@barefootjs/vite`'s
+  // `assertNoRealTemplateOutput` then treats as real template output
+  // requiring a configured `templates` dir, even though nothing will ever
+  // read it (#3234).
+  emitsTemplates = false
 
   // Broad acceptance — matches Hono's contract, see the comment at
   // the top of this file for why CSR shares it.

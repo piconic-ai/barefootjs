@@ -429,7 +429,7 @@ async function parseErrorBody(response: Response): Promise<unknown> {
 
 /**
  * The default `Accept` on every request. The response side is JSON-only in v0
- * (`response.json()`), so ask for JSON first; the any-type wildcard at a lower
+ * (see `sendRequest`), so ask for JSON first; the any-type wildcard at a lower
  * weight keeps a server that cannot produce JSON from answering 406 instead of
  * its error body. The same default as HTTPie's.
  */
@@ -455,8 +455,8 @@ const DEFAULT_CONTENT_TYPE: Partial<Record<BodyKind, string>> = {
  * `FormData` / `URLSearchParams` / `Blob` / bytes unchanged with the type fetch
  * derives. Every request asks for JSON with `DEFAULT_ACCEPT`. An `Accept` or
  * `Content-Type` in `init.headers`, in any casing, replaces the default. The response side is JSON-only in v0: a successful
- * response is parsed with `response.json()` — except `HEAD`, whose successful
- * response resolves to `undefined` (a `HEAD` response has no body). A non-2xx
+ * response is parsed as JSON, and one whose body is empty or whitespace (a
+ * `HEAD`, a `204 No Content`, a bare `200`) resolves to `undefined`. A non-2xx
  * response rejects with `HttpError`, `HEAD` included; a network failure rejects
  * with the underlying error unchanged.
  *
@@ -490,7 +490,8 @@ export async function sendRequest<T>(descriptor: HttpDescriptor<T>, signal?: Abo
     throw new HttpError(response.status, await parseErrorBody(response))
   }
 
-  if (descriptor.method === 'HEAD') return undefined as T
-
-  return (await response.json()) as T
+  // An empty body (a `HEAD`, a `204`, a REST `DELETE`'s bare `200`) has no
+  // value to parse; see the JSDoc above.
+  const text = await response.text()
+  return (text.trim() === '' ? undefined : JSON.parse(text)) as T
 }

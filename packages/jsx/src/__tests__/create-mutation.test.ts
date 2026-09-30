@@ -103,6 +103,36 @@ export function C() {
     expect(codes).toEqual([])
     expect(initBody).toContain("const [, send] = createMutation(() => http.post('/api/ping'))")
   })
+
+  // #3245: the value-elided form synthesizes an internal getter name
+  // (`__bfGet_<action>`, analyzer.ts's `collectFactorySignal`) that nothing in
+  // the source ever references. It must not leak into any adapter's
+  // server-facing output — the SSR module, the SSR-defaults manifest, or a
+  // generated props struct/constructor.
+  test('an elided value never leaks `__bfGet_` into SSR-facing output', () => {
+    const source = `
+'use client'
+import { createMutation, http } from '@barefootjs/client'
+export function Save() {
+  const [, save] = createMutation(() => http.post('/api/items', {}))
+  return <button disabled={save.isPending()} onClick={() => save()}>Save</button>
+}
+`
+    const honoResult = compileJSX(source, 'Save.tsx', { adapter: new HonoAdapter() })
+    expect(honoResult.errors).toEqual([])
+    const ssr = honoResult.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
+    expect(ssr).not.toContain('__bfGet_')
+    expect(ssr).toContain('Object.assign(() => {}, { isPending: () => false, error: () => undefined })')
+    const honoSsrDefaults = honoResult.files.find((f) => f.type === 'ssrDefaults')?.content ?? ''
+    expect(honoSsrDefaults).not.toContain('__bfGet_')
+
+    const goResult = compileJSX(source, 'Save.tsx', { adapter: new GoTemplateAdapter() })
+    expect(goResult.errors).toEqual([])
+    const goSsrDefaults = goResult.files.find((f) => f.type === 'ssrDefaults')?.content ?? ''
+    expect(goSsrDefaults).not.toContain('__bfGet_')
+    const goTypes = goResult.files.find((f) => f.type === 'types')?.content ?? ''
+    expect(goTypes).not.toContain('__bfGet_')
+  })
 })
 
 describe('createMutation action accessors (#3210, via #3166)', () => {

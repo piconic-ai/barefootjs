@@ -87,9 +87,10 @@ export type {
   RenderDivergences,
   ImportInfo,
 } from './types.ts'
+export { isElidedFactoryGetter } from './types.ts'
 
 // Analyzer
-export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, needsTypeBasedDetection, resolveRelativeImportToFile, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'
+export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, createAnchoredProgram, needsTypeBasedDetection, resolveRelativeImportToFile, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'
 export { createProgramForCorpus, type SharedProgramOptions } from './shared-program.ts'
 
 // JSX to IR transformer
@@ -256,6 +257,7 @@ export {
   buildLoopSummary,
   buildWhyUpdate,
   traceUpdatePath,
+  traceableNames,
   formatComponentGraph,
   formatUpdatePath,
   formatEventSummary,

@@ -243,6 +243,25 @@ export interface TemplateAdapter {
    */
   templatesPerComponent?: boolean
   /**
+   * `false` for an adapter whose `markedTemplate` output has no consumer at
+   * all — the whole file is discarded after compilation (CSR: the browser
+   * runs the compiled client JS, not a rendered template). Defaults to
+   * `true` (every other adapter: a template file is read by something,
+   * whether that's a backend framework's renderer or, for the reference
+   * `HonoAdapter`, the JS module itself).
+   *
+   * When `false`, `compileJSX` skips assembling `markedTemplate` content
+   * ENTIRELY for that adapter, including the file's module-level value
+   * exports (`export const` / `export function`) that would otherwise be
+   * appended unconditionally regardless of the adapter's own `generate()`
+   * output. Without this, a component file that also exports a plain value
+   * produces a `markedTemplate` whose only content is that export — which
+   * looks like real template output to a consumer like `@barefootjs/vite`'s
+   * `assertNoRealTemplateOutput`, even though nothing will ever read it
+   * (#3234).
+   */
+  emitsTemplates?: boolean
+  /**
    * Module specifier of the SSR shim for `@barefootjs/client` (and
    * `/runtime`). When set, the compiler rewrites client-package imports in
    * SSR templates to point at this shim instead of stripping them. The shim

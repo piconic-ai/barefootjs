@@ -1,5 +1,19 @@
 # @barefootjs/vite
 
+## 0.39.1
+
+### Patch Changes
+
+- @barefootjs/shared@0.39.1
+
+## 0.39.0
+
+### Patch Changes
+
+- a720468: The `vite` peer range of `@barefootjs/vite` and of every adapter's `/vite` builder is now `^6.0.0 || ^7.0.0 || ^8.0.0`. Installing on Vite 7 or 8 no longer reports an unmet peer. The plugin imports only Vite's types. CI now runs every adapter builder's `vite build` tests and the `integrations/csr` E2E suite against each of these majors.
+- Updated dependencies [e8ff400]
+  - @barefootjs/shared@0.39.0
+
 ## 0.38.0
 
 ### Patch Changes

@@ -14,5 +14,5 @@ export function initRefMountAttrRendered(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('RefMountAttrRendered', { init: initRefMountAttrRendered, template: (_p) => `<div data-slot="target" data-mounted="1" bf="s0"> content </div>` })
+hydrate('RefMountAttrRendered', { init: initRefMountAttrRendered, template: (_p) => `<div data-slot="target" data-mounted="1" bf="s0">content</div>` })
 export function RefMountAttrRendered(_p, __bfKey) { return createComponent('RefMountAttrRendered', _p, __bfKey) }

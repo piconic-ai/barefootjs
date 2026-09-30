@@ -79,6 +79,7 @@ django.setup()
 
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect
+from django.views.decorators.http import require_http_methods
 from django.urls import path
 from django.views.static import serve as static_serve
 
@@ -499,6 +500,25 @@ def todos_route(request):
     return with_session_cookie(html_response(html), minted)
 
 
+def todos_query_route(request):
+    """The createQuery / createMutation todo app. `initialTodos` seeds its
+    query (mode A): the list is rendered here, and the client sends no
+    request on mount. Writes go through the API below and re-fetch the list.
+    Each QueryTodoItem row takes only `todo`; its `editing` / `draft`
+    signals are seeded from the manifest's ssrDefaults."""
+    session, minted = get_session(request)
+    todos = [dict(t) for t in session["todos"]]
+    html = render_component(
+        "QueryTodoApp",
+        title="TodoMVC (createQuery) - BarefootJS",
+        children={"query_todo_item": "QueryTodoItem"},
+        signal_init={"query_todo_item": lambda p: stash_from_ssr_defaults("QueryTodoItem", p)},
+        props={"initialTodos": todos},
+        stash={"newText": "", "filter": "all"},
+    )
+    return with_session_cookie(html_response(html), minted)
+
+
 # --- todo REST API handlers ---
 def _read_json_body(request) -> dict:
     try:
@@ -521,13 +541,27 @@ def api_todos_create(request):
     return with_session_cookie(json_response(todo, 201), minted)
 
 
+# The list-wide "toggle all" write of /todos-query (PUT /api/todos), one
+# request for the whole list.
+def api_todos_set_all_done(request):
+    session, _minted = get_session(request)
+    body = _read_json_body(request)
+    done = jbool(body.get("done"))
+    for todo in session["todos"]:
+        todo["done"] = done
+    return json_response(session["todos"])
+
+
 def api_todos_collection(request):
-    """`/api/todos` serves both list (GET) and create (POST) -- one Django
-    `path()` entry can only route to one view, so this dispatches by verb the
-    way Flask's `@bp.get("/api/todos")` / `@bp.post("/api/todos")` pair on
-    the same URL did."""
+    """`/api/todos` serves list (GET), create (POST) and set-all-done (PUT)
+    -- one Django `path()` entry can only route to one view, so this
+    dispatches by verb the way Flask's `@bp.get("/api/todos")` /
+    `@bp.post("/api/todos")` / `@bp.put("/api/todos")` on the same URL
+    did."""
     if request.method == "POST":
         return api_todos_create(request)
+    if request.method == "PUT":
+        return api_todos_set_all_done(request)
     return api_todos_list(request)
 
 
@@ -557,6 +591,18 @@ def api_todos_item(request, todo_id: int):
     if request.method == "DELETE":
         return api_todos_delete(request, todo_id)
     return api_todos_update(request, todo_id)
+
+
+# The list-wide "clear completed" write of /todos-query
+# (DELETE /api/todos/completed). Routed before `<int:todo_id>` in
+# urlpatterns, next to /api/todos/reset.
+# Django's path() routes every verb here; only DELETE may write, so a GET
+# (a navigation, a prefetch) can never clear the list.
+@require_http_methods(["DELETE"])
+def api_todos_clear_completed(request):
+    session, _minted = get_session(request)
+    session["todos"] = [t for t in session["todos"] if not t["done"]]
+    return HttpResponse(status=204)
 
 
 def api_todos_reset(request):
@@ -855,6 +901,7 @@ under a plain Django app.</p>
     <li><a href="{BASE}/toggle">Toggle</a></li>
     <li><a href="{BASE}/todos">Todo (@client)</a></li>
     <li><a href="{BASE}/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="{BASE}/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="{BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="{BASE}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>
@@ -906,8 +953,10 @@ urlpatterns = [
     path(f"{_prefix}/ai-chat", ai_chat_route),
     path(f"{_prefix}/todos", todos_route),
     path(f"{_prefix}/todos-ssr", todos_route),
+    path(f"{_prefix}/todos-query", todos_query_route),
     path(f"{_prefix}/api/todos", api_todos_collection),
     path(f"{_prefix}/api/todos/reset", api_todos_reset),
+    path(f"{_prefix}/api/todos/completed", api_todos_clear_completed),
     path(f"{_prefix}/api/todos/<int:todo_id>", api_todos_item),
     path(f"{_prefix}/api/ai-chat", ai_chat_stream),
     path(f"{_prefix}/client/<path:asset_path>", client_static),

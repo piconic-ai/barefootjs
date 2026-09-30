@@ -28,7 +28,7 @@ export default defineConfig({
     },
   },
   plugins: barefoot({
-    components: ['../shared/components', '../shared/blog'],
+    components: ['../shared/components', '../shared/blog', '../shared/query-todo'],
     // `ExampleApp::backend()`'s `BladeBackend` reads `dist/templates`
     // directly; it is never served over HTTP.
     templates: 'dist/templates',

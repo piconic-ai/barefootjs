@@ -1,5 +1,13 @@
 # @barefootjs/chart
 
+## 0.39.1
+
+No changes in this release.
+
+## 0.39.0
+
+No changes in this release.
+
 ## 0.38.0
 
 No changes in this release.

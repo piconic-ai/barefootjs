@@ -26,5 +26,5 @@ export function initDetailsFaq(__scope, _p = {}) {
         })
 }
 
-hydrate('DetailsFaq', { init: initDetailsFaq, template: (_p) => `<details class="faq-details" ${(false) ? 'open' : ''} bf="s1"><summary class="faq-summary" bf="s0"> What is BarefootJS? </summary><p class="faq-body">A JSX-to-marked-template compiler with signal-based reactivity.</p></details>` })
+hydrate('DetailsFaq', { init: initDetailsFaq, template: (_p) => `<details class="faq-details" ${(false) ? 'open' : ''} bf="s1"><summary class="faq-summary" bf="s0">What is BarefootJS?</summary><p class="faq-body">A JSX-to-marked-template compiler with signal-based reactivity.</p></details>` })
 export function DetailsFaq(_p, __bfKey) { return createComponent('DetailsFaq', _p, __bfKey) }

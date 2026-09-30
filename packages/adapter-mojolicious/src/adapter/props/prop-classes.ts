@@ -53,8 +53,8 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * (#2259).
  */
 export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
-  return new Set(
-    ir.metadata.propsParams
+  return new Set([
+    ...ir.metadata.propsParams
       .filter(
         p =>
           p.defaultValue === undefined &&
@@ -62,7 +62,14 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
           (p.type?.kind !== 'primitive' || p.optional),
       )
       .map(p => p.name),
-  )
+    // A closed-type `{...rest}` key (#3057) is never destructured with its
+    // own default the way a normal prop can be, so it is always presence-
+    // uncertain the same way a no-default optional prop is — guard it the
+    // same way so `<span {...rest}>` omits a caller-omitted key instead of
+    // rendering `key=""`. Harmless for a required (non-optional) rest key
+    // too: the guard is simply always true for it.
+    ...ir.metadata.restPropsExpandedKeys,
+  ])
 }
 
 /**

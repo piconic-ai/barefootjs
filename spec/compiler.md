@@ -716,6 +716,20 @@ is type-visible:
   languages never declare reactive bindings inside the template body —
   values reach the template via target-language-native mechanisms
   (Go struct fields, Mojo stash).
+- `emitsTemplates?: boolean` — `false` for an adapter whose
+  `markedTemplate` output has no consumer at all (CSR: the browser runs
+  the compiled client JS, never a rendered template). Defaults to `true`.
+  The compiler appends a file's module-level value exports (`export
+  const` / `export function`) to `markedTemplate` unconditionally,
+  independent of what `generate()` returned, so `generate()` alone
+  returning empty sections is not sufficient for an adapter with no
+  template consumer — a component file that also exports a plain value
+  would otherwise become the ONLY content of an all-else-empty template,
+  which looks like real output to a consumer like `@barefootjs/vite`'s
+  `assertNoRealTemplateOutput` (#3234). `emitsTemplates: false` tells
+  `compileJSX` to skip `markedTemplate` assembly entirely, module exports
+  included. Set by `CSRAdapter`; every DSL/SSR adapter leaves it
+  `undefined`, since their templates do have a consumer.
 
 `JsxAdapter` is an internal helper base class that JS-runtime adapters
 (Hono, TestAdapter) extend for shared TS-output utilities (signal-init

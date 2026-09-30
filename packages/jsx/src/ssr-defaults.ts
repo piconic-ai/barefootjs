@@ -34,6 +34,7 @@ import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
 import { resolveBodyDestructuredPropAliases } from './props-binding.ts'
 import type { IRMetadata } from './types.ts'
+import { isElidedFactoryGetter } from './types.ts'
 
 /**
  * A single template-variable default. Keyed in the manifest by the
@@ -247,6 +248,15 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // request-scoped reader, seeded by the adapter's env-signal binding, not a
     // baked initial value.
     if (sig.envReader) continue
+    // An elided async-factory value (#3245): `getter` holds a synthesized
+    // internal name that no expression in the source ever references.
+    // Seeding it here would leak that compiler-internal name into every
+    // template-stash backend's manifest (and, transitively, the Perl/etc.
+    // stash) for a binding nothing reads. See `isElidedFactoryGetter`'s
+    // docstring for the full rationale — a plain `createSignal`
+    // getter-elided form is unaffected, a pre-existing, separate question
+    // this issue doesn't cover.
+    if (isElidedFactoryGetter(sig)) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
     // Self-derivation collision (#2669): a signal whose getter shares its
     // name with the prop its OWN initializer derives from

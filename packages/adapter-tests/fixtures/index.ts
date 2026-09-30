@@ -105,6 +105,7 @@ import { fixture as textEscape } from './text-escape'
 import { fixture as signalWithFallback } from './signal-with-fallback'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
+import { fixture as createMutationElidedValue } from './create-mutation-elided-value'
 import { fixture as signalPropSameName } from './signal-prop-same-name'
 import { fixture as signalPropSameNameDerived } from './signal-prop-same-name-derived'
 import { fixture as signalPropSameNameViaConst } from './signal-prop-same-name-via-const'
@@ -202,6 +203,8 @@ import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-impo
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
 import { fixture as nullishCoalescingDestructured } from './nullish-coalescing-destructured'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
+import { fixture as nullishCoalescingConditionOperand } from './nullish-coalescing-condition-operand'
+import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
 import { fixture as branchMap } from './branch-map'
@@ -647,6 +650,10 @@ import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
 // internally must never appear as an attribute, on SSR or after any
 // number of reactive updates.
 import { fixture as childPropRestForward } from './child-prop-rest-forward'
+// #3057: sibling of the above — the forwarded prop starts `undefined` (SSR
+// never renders the attribute at all), rather than cycling through
+// `undefined` after already having rendered once.
+import { fixture as childPropRestForwardUndefinedStart } from './child-prop-rest-forward-undefined-start'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -987,6 +994,8 @@ export const jsxFixtures: JSXFixture[] = [
   nullishCoalescingText,
   nullishCoalescingDestructured,
   nullishCoalescingJsx,
+  nullishCoalescingConditionOperand,
+  optionalChainLengthCondition,
   logicalOrJsx,
   branchSelfClosing,
   branchMap,
@@ -1291,6 +1300,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalEarlyReturn,
   branchRootPropAttr,
   childPropRestForward,
+  childPropRestForwardUndefinedStart,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,
@@ -1378,4 +1388,5 @@ export const jsxFixtures: JSXFixture[] = [
   constStringConditionalTest,
   conditionalThenColonText,
   conditionalThenPercentText,
+  createMutationElidedValue,
 ]

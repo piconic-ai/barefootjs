@@ -57,7 +57,7 @@ export function initLazyRowIndexReorder(__scope, _p = {}) {
 
 }
 
-hydrate('LazyRowIndexReorder', { init: initLazyRowIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul bf="s3"><!--bf-loop:l0-->${([
+hydrate('LazyRowIndexReorder', { init: initLazyRowIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0">Rotate</button><ul bf="s3"><!--bf-loop:l0-->${([
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Bravo' },
     { id: 3, label: 'Charlie' },

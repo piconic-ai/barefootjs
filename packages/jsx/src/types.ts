@@ -1515,6 +1515,29 @@ export interface IRAttribute extends AttrMeta {
    * same opt-out, applied to element-attribute position.
    */
   clientOnly?: boolean
+  /**
+   * Set when this attribute entry was produced by statically expanding a
+   * closed-type `{...rest}` spread onto one of its known keys
+   * (`expandSpreadAttribute`'s per-key branch, jsx-to-ir.ts) — #3057. The
+   * expanded value (`<restName>.<key>`) reads the destructured rest
+   * OBJECT, a one-time snapshot built at component-init time, so Phase 2's
+   * string-level reactivity heuristics (`needsEffectWrapper`) never
+   * recognize it as reading a live prop the way a bare destructured
+   * parameter does — `rest` isn't itself a tracked prop name, and neither
+   * is the expanded key. Without this flag the attribute is silently
+   * treated as static: it renders once from SSR/the initial client
+   * construction and never updates again, even though the value the child
+   * forwards is exactly as live as any other prop.
+   *
+   * `collectElements` reads this to unconditionally push the attribute
+   * into `ctx.reactiveAttrs`, rewriting its expression onto a live
+   * `_p.<key>` read instead of the snapshot `<restName>.<key>` — the same
+   * write shape `emitAttrUpdate` already produces for a developer-authored
+   * reactive attribute, so a forwarded rest key updates reactively end to
+   * end (undefined → present, present → absent → present again) exactly
+   * like SSR / hydrated / csr-mount agree it should.
+   */
+  restExpandedKey?: boolean
 }
 
 export interface IREvent {
@@ -1650,6 +1673,30 @@ export interface SignalInfo {
 }
 
 /**
+ * True for the value-elided form of an async reactive factory declaration
+ * (`const [, save] = createMutation(...)`, #3245): `signal.getter` then
+ * holds the synthesized internal name (`__bfGet_<action>`, see
+ * `SignalInfo.getterElided`'s docstring) that nothing in the source ever
+ * references. Every consumer that would otherwise re-emit or seed that name
+ * into caller-facing output (an SSR getter stub, a props struct/constructor
+ * field, an SSR-defaults manifest entry, an SSR seed-plan step) checks this
+ * first and skips it — see `bf debug graph`'s `debug.ts` precedent (#3227)
+ * this generalizes.
+ *
+ * A plain `createSignal` getter-elided form (`const [, setX] =
+ * createSignal(0)`) is NOT covered by this predicate, even though
+ * `analyzer.ts`'s synthesis and `SignalInfo.getterElided`'s own docstring
+ * make clear its getter is *equally* synthesized and unreferenced — it
+ * leaks `__bfGet_<setter>` through the exact same sites today. #3245 scoped
+ * this fix to the `factory` case only; widening this predicate to plain
+ * `getterElided` (dropping the `factory` restriction) would close that gap
+ * too, but is left for a separate follow-up rather than folded in here.
+ */
+export function isElidedFactoryGetter(signal: Pick<SignalInfo, 'factory' | 'getterElided'>): boolean {
+  return Boolean(signal.factory && signal.getterElided)
+}
+
+/**
  * The async reactive factory call a signal's value comes from (#3165). Every
  * backend that re-emits the declaration reads this instead of assuming
  * `createSignal`: client JS re-emits `<callee>(<argsText>)` (the request
@@ -1667,8 +1714,15 @@ export interface SignalFactoryCall {
    * prop reads into live `_p` reads like any effect body.
    */
   argsText: string
-  /** Free identifiers of `argsText`: what the declaration depends on in client JS. */
-  argsFreeIdentifiers: ReadonlySet<string>
+  /**
+   * The request function alone (the first argument, type annotations
+   * stripped) and its free identifiers — `''` / empty when the call has no
+   * argument. Kept apart from `argsText` because only the request function is
+   * tracked: `options` (`initial`, `ttl`, `invalidates`) is read once, at
+   * creation, so a signal read there re-sends nothing (`bf debug graph`, #3167).
+   */
+  requestText: string
+  requestFreeIdentifiers: ReadonlySet<string>
   /** The action binding (the second tuple element), or `null` when it isn't destructured. */
   action: string | null
 }

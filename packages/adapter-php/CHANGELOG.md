@@ -1,5 +1,17 @@
 # @barefootjs/php
 
+## 0.39.1
+
+### Patch Changes
+
+- fa57bd2: Fix the value-elided form of an async reactive factory declaration (`const [, save] = createMutation(...)`, `const [, fetchItems] = createQuery(...)`, #3245) leaking its synthesized internal getter name (`__bfGet_<action>`, analyzer.ts's `collectFactorySignal`) into server-facing output. Since nothing in the source ever references that name (it exists only so getter-keyed consumers like substitution env and SSR seeding stay total), it should never appear anywhere a backend author or the hydration wire format would see it — but it was still baked into the Hono/Test SSR module's getter stub, every template-stash adapter's SSR-defaults manifest and seed plan, and the Go adapter's generated props struct/constructor.
+  
+  Each of those four sites now skips a signal whose value binding is both a `factory` and `getterElided`, matching the `bf debug graph` precedent already established for this shape (#3227's `debug.ts` filter). The action's own SSR stub (`Object.assign(() => {}, { isPending: () => false, error: () => undefined })`) is unaffected and still emitted whenever the source references it.
+
+## 0.39.0
+
+No changes in this release.
+
 ## 0.38.0
 
 ### Patch Changes

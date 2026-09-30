@@ -14,6 +14,7 @@ import { Counter } from '@/components/Counter'
 import Toggle from '@/components/Toggle'
 import TodoApp from '@/components/TodoApp'
 import TodoAppSSR from '@/components/TodoAppSSR'
+import QueryTodoApp from '@/components/QueryTodoApp'
 import { ReactiveProps, PropsReactivityComparison } from '@/components/ReactiveProps'
 import { Form } from '@/components/Form'
 import { PortalExample } from '@/components/PortalExample'
@@ -132,6 +133,7 @@ app.get('/', (c) => {
           <li><a href={link('/toggle')}>Toggle</a></li>
           <li><a href={link('/todos')}>Todo (@client)</a></li>
           <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
+          <li><a href={link('/todos-query')}>Todo (createQuery / createMutation)</a></li>
           <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
           <li><a href={link('/blog')}>Blog (@barefootjs/router — partial navigation)</a></li>
         </ul>
@@ -180,6 +182,20 @@ app.get('/todos-ssr', (c) => {
   return c.render(
     <div id="app">
       <TodoAppSSR initialTodos={session.todos} />
+      <p><a href={link('/')}>← Back</a></p>
+    </div>
+  )
+})
+
+// The same list as `/todos`, on createQuery / createMutation. Passing
+// `initialTodos` seeds the query (mode A): the list is rendered here, and
+// the client sends no request on mount. Writes go through the API below and
+// re-fetch the list.
+app.get('/todos-query', (c) => {
+  const session = getSession(c)
+  return c.render(
+    <div id="app">
+      <QueryTodoApp initialTodos={session.todos} />
       <p><a href={link('/')}>← Back</a></p>
     </div>
   )
@@ -291,6 +307,21 @@ app.post('/api/todos', async (c) => {
   const newTodo: Todo = { id: session.nextId++, text: body.text, done: false }
   session.todos.push(newTodo)
   return c.json(newTodo, 201)
+})
+
+// The two list-wide writes of `/todos-query` ("toggle all", "clear
+// completed"), one request each. Registered before the `:id` routes.
+app.put('/api/todos', async (c) => {
+  const session = getSession(c)
+  const body = await c.req.json()
+  for (const todo of session.todos) todo.done = body.done === true
+  return c.json(session.todos)
+})
+
+app.delete('/api/todos/completed', (c) => {
+  const session = getSession(c)
+  session.todos = session.todos.filter(t => !t.done)
+  return c.json({ success: true })
 })
 
 app.put('/api/todos/:id', async (c) => {

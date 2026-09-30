@@ -1248,6 +1248,22 @@
         "attribute"
       ]
     },
+    "child-prop-rest-forward-undefined-start": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"
@@ -1938,6 +1954,18 @@
       ],
       "contexts": [
         "text"
+      ]
+    },
+    "create-mutation-elided-value": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "create-mutation-form": {
@@ -3512,6 +3540,7 @@
     },
     "jsx-text-whitespace": {
       "kinds": [
+        "identifier",
         "literal"
       ],
       "axes": [
@@ -5249,6 +5278,29 @@
         "condition"
       ]
     },
+    "nullish-coalescing-condition-operand": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "nullish-coalescing-destructured": {
       "kinds": [
         "call",
@@ -5377,6 +5429,26 @@
         "literal:number"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "optional-chain-length-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },

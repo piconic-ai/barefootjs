@@ -39,7 +39,7 @@ export function initNestedLoopIndependentSignal(__scope, _p = {}) {
 
 }
 
-hydrate('NestedLoopIndependentSignal', { init: initNestedLoopIndependentSignal, template: (_p) => `<div><button type="button" class="add-tag" bf="s0"> Add tag </button><ul class="rows" bf="s4"><!--bf-loop:l1-->${([
+hydrate('NestedLoopIndependentSignal', { init: initNestedLoopIndependentSignal, template: (_p) => `<div><button type="button" class="add-tag" bf="s0">Add tag</button><ul class="rows" bf="s4"><!--bf-loop:l1-->${([
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Bravo' },
   ]).map((row) => `<li data-key="${escapeAttr(row.id)}"><span class="label"><!--bf:s1-->${escapeText(row.label)}<!--/--></span><ul class="tags" bf="s3"><!--bf-loop:l0-->${(['a', 'b']).map((t) => `<li data-key-1="${escapeAttr(t)}" class="tag"><!--bf:s2-->${escapeText(t)}<!--/--></li>`).join('')}<!--bf-/loop:l0--></ul></li>`).join('')}<!--bf-/loop:l1--></ul></div>` })

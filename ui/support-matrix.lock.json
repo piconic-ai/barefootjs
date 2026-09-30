@@ -1989,6 +1989,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2529,6 +2535,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -4314,6 +4326,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5103,6 +5121,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -5755,7 +5779,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -6085,6 +6118,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6689,6 +6728,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -7302,6 +7347,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7662,6 +7713,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -8245,6 +8302,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8776,6 +8839,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
             {
               "fixture": "loop-component-row-destructured-param",
               "limitations": [
@@ -11713,7 +11782,16 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {},
         "xslate": {}
@@ -12610,6 +12688,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13031,6 +13115,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "child-prop-rest-forward-undefined-start",
+              "limitations": [
+                "go-undefined-signal-seed-not-nil"
+              ]
+            },
+            {
               "fixture": "const-string-conditional-test",
               "limitations": [
                 "literal-const-conditional-test"
@@ -13364,6 +13454,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -13786,6 +13882,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14004,7 +14106,16 @@
         },
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-condition",
+              "limitations": [
+                "mojo-optional-chain-length-unguarded-deref"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {},
         "xslate": {}

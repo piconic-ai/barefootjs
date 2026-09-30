@@ -46,6 +46,8 @@ component's Go template and wraps it in `defaultLayout`.
   `/integrations/gin/reactive-props`, `/integrations/gin/conditional-return` — component demos
 - `/integrations/gin/todos` / `/integrations/gin/todos-ssr` — interactive todo list backed by an
   in-memory, per-session (`bf_session` cookie) store
+- `/integrations/gin/todos-query` — the same list on `createQuery` / `createMutation`, seeded from
+  the session (its list-wide writes are `PUT /api/todos` and `DELETE /api/todos/completed`)
 - `/integrations/gin/ai-chat` + `/integrations/gin/api/ai-chat` — token-by-token SSE streaming demo
 - `/integrations/gin/static/assets/*` — compiled, content-hashed client JS (Vite `build.assetsDir` default)
 - `/integrations/gin/shared/styles/*` — shared CSS (copied into `dist/shared` by

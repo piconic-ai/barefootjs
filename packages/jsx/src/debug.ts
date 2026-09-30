@@ -23,6 +23,7 @@ import type {
   SourceLocation,
   OriginInfo,
 } from './types.ts'
+import { isElidedFactoryGetter } from './types.ts'
 import { analyzeComponent, listComponentFunctions } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
 import { buildMetadata } from './compiler.ts'
@@ -32,6 +33,8 @@ import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity.ts'
 import { tokenContainsIdent } from './ir-to-client-js/utils.ts'
 import { identifierCallPattern } from './identifier-pattern.ts'
 import { BindingScope } from './scope/binding-scope.ts'
+import { ACTION_ACCESSOR_NAMES, collectActionAccessorReads, collectActionNames, parsedExprChildren, type ActionAccessorName } from './action-accessor.ts'
+import { parseExpression, tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
 
 // =============================================================================
 // Types
@@ -44,6 +47,55 @@ export interface SignalNode {
   initialValue: string
   consumers: string[] // names of memos/effects/DOM nodes that read this signal
   loc: { file: string; line: number }
+  /**
+   * Set when this signal is the value half of an async reactive factory
+   * (`createQuery` / `createMutation`, spec/async.md §7.8): the value is
+   * written by the factory's request, not by a setter. The same object as the
+   * factory's entry in `ComponentGraph.factories`.
+   */
+  factory?: AsyncFactoryInfo
+}
+
+/**
+ * The async factory behind a signal node (#3167). A query is a signal
+ * source with inputs: `requestDeps` are the signals, memos and props its
+ * request function reads, each of which re-sends the request when it changes
+ * (so each lists `query:<value>` among its consumers). Only the request
+ * function counts: `options` is read once, at creation. A mutation's request
+ * function is read untracked, only when the action is called, so its
+ * `requestDeps` is always empty.
+ */
+export interface AsyncFactoryInfo {
+  /**
+   * How `query:<key>` edges and `AccessorNode.factory` name the factory: its
+   * value signal, or its action when the value isn't destructured
+   * (`const [, save] = createMutation(…)` — the graph never shows the
+   * synthesized getter such a declaration gets).
+   */
+  key: string
+  kind: 'query' | 'mutation'
+  /** The callee as written: `createQuery`, `createMutation`, an alias, or `bf.createQuery`. */
+  callee: string
+  /** The action binding, or `null` when it isn't destructured. */
+  action: string | null
+  /** The value signal, or `null` when the value isn't destructured. */
+  value: string | null
+  requestDeps: string[]
+}
+
+/**
+ * An async action's reactive accessor, `<action>.isPending()` or
+ * `<action>.error()` (#3167). Named `<action>.<accessor>` — the same
+ * spelling a binding's `deps` uses for a read of it.
+ */
+export interface AccessorNode {
+  kind: 'accessor'
+  name: string
+  action: string
+  accessor: ActionAccessorName
+  /** The owning factory's `AsyncFactoryInfo.key`. */
+  factory: string
+  consumers: string[] // names of memos/effects/DOM nodes that read this accessor
 }
 
 export interface MemoNode {
@@ -74,8 +126,10 @@ export interface DomBinding {
    * member as `<propsObject>.<member>` (`props.value`) — and a prop read
    * through a prop-derived local const (`class={classes}`) is reported as the
    * underlying prop(s), never the const. Every entry resolves to a node in
-   * `ComponentGraph.signals` / `.memos` / `.props`. Event handlers instead list
-   * the setters / getters the handler body references.
+   * `ComponentGraph.signals` / `.memos` / `.props`, or — for an async action's
+   * accessor read (`save.isPending()`, #3167) — `<action>.<accessor>`, a node
+   * in `ComponentGraph.accessors`. Event handlers instead list the setters /
+   * getters the handler body references.
    */
   deps: string[]
   type: 'text' | 'event' | 'conditional' | 'loop' | 'attribute'
@@ -142,18 +196,22 @@ export interface ComponentGraph {
   memos: MemoNode[]
   effects: EffectNode[]
   props: PropNode[]
+  /** Async factories (`createQuery` / `createMutation`, #3167), in declaration order. */
+  factories: AsyncFactoryInfo[]
+  /** Their actions' accessors. */
+  accessors: AccessorNode[]
   domBindings: DomBinding[]
 }
 
 export interface UpdatePath {
   target: string
-  kind: 'signal' | 'memo' | 'prop'
+  kind: 'signal' | 'memo' | 'prop' | 'accessor'
   dependents: UpdatePathEntry[]
 }
 
 export interface UpdatePathEntry {
   name: string
-  kind: 'memo' | 'effect' | 'dom'
+  kind: 'memo' | 'effect' | 'dom' | 'query'
   label: string
   /** Transitive dependents — memos/effects that depend on this entry */
   children: UpdatePathEntry[]
@@ -230,7 +288,7 @@ export interface WhyUpdateResult {
 
 export interface WhyUpdateDep {
   name: string
-  kind: 'signal' | 'memo' | 'prop'
+  kind: 'signal' | 'memo' | 'prop' | 'accessor'
   dependsOn: string[]
   changedBy: WhyUpdateSource[]
 }
@@ -286,6 +344,8 @@ export function buildComponentGraph(source: string, filePath: string, componentN
       memos: [],
       effects: [],
       props: [],
+      factories: [],
+      accessors: [],
       domBindings: [],
     }
   }
@@ -299,6 +359,8 @@ export function buildComponentGraph(source: string, filePath: string, componentN
       memos: [],
       effects: [],
       props: [],
+      factories: [],
+      accessors: [],
       domBindings: [],
     }
   }
@@ -415,91 +477,58 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
     return [...out]
   }
 
+  // Async factories (#3167, spec/async.md §7.8). An action's accessor read
+  // (`save.isPending()`) is a reactive source like a signal read, so it lands
+  // in a binding's deps as `<action>.<accessor>`. Reads are found by the same
+  // `ParsedExpr` traversal BF117 uses, over the ORIGINAL expression text: the
+  // IR's own `.parsed` / `.parsedCondition` at an admitted position has
+  // already been replaced by the SSR seed (`seedActionAccessorReads`), so the
+  // read is no longer there. Parsed only when an action name appears in the
+  // text as a token.
+  const actions = collectActionNames(meta.signals)
+  const accessorNames = new Set<string>()
+  for (const action of actions) for (const accessor of ACTION_ACCESSOR_NAMES) accessorNames.add(`${action}.${accessor}`)
+  const accessorDepsOf = (expr: string, isShadowed?: (name: string) => boolean): string[] =>
+    [...actions].some(action => tokenContainsIdent(expr, action))
+      ? collectActionAccessorReads(parseExpression(expr), actions, isShadowed).map(r => `${r.action}.${r.accessor}`)
+      : []
+
   // Collect DOM bindings from IR tree
   const domBindings: DomBinding[] = []
-  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, BindingScope.EMPTY, propDepsOf)
+  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, BindingScope.EMPTY, propDepsOf, accessorDepsOf)
 
-  // Build consumer lists for signals
-  const signalConsumers = new Map<string, string[]>()
-  for (const s of meta.signals) signalConsumers.set(s.getter, [])
-
-  // Memos consume signals
-  for (const memo of meta.memos) {
-    for (const dep of memo.deps) {
-      signalConsumers.get(dep)?.push(`memo:${memo.name}`)
+  // A query's request function re-sends when a signal, memo or prop it reads
+  // changes, so each of those is an input of the query. `options` is read once
+  // at creation, and a mutation's request function is read untracked (at call
+  // time only): neither has inputs.
+  const factories: AsyncFactoryInfo[] = []
+  const factoryOf = new Map<SignalInfo, AsyncFactoryInfo>()
+  for (const s of meta.signals) {
+    if (!s.factory) continue
+    const value = s.getterElided ? null : s.getter
+    const ids = s.factory.requestFreeIdentifiers
+    const info: AsyncFactoryInfo = {
+      key: value ?? s.factory.action ?? s.getter,
+      kind: s.factory.kind,
+      callee: s.factory.callee,
+      action: s.factory.action,
+      value,
+      requestDeps: s.factory.kind === 'query'
+        ? [
+            ...[...ids].filter(id => id !== s.getter && (signalGetters.has(id) || memoNames.has(id))),
+            ...propDepsOf(s.factory.requestText, ids),
+          ]
+        : [],
     }
+    factories.push(info)
+    factoryOf.set(s, info)
   }
-
-  // Effects consume signals
-  for (let i = 0; i < meta.effects.length; i++) {
-    const effect = meta.effects[i]
-    for (const dep of effect.deps) {
-      signalConsumers.get(dep)?.push(`effect:e${i}`)
-    }
-  }
-
-  // DOM bindings consume signals
-  for (const dom of domBindings) {
-    for (const dep of dom.deps) {
-      signalConsumers.get(dep)?.push(`dom:${dom.label}`)
-    }
-  }
-
-  // Build consumer lists for memos
-  const memoConsumers = new Map<string, string[]>()
-  for (const m of meta.memos) memoConsumers.set(m.name, [])
-
-  for (let i = 0; i < meta.effects.length; i++) {
-    const effect = meta.effects[i]
-    for (const dep of effect.deps) {
-      memoConsumers.get(dep)?.push(`effect:e${i}`)
-    }
-  }
-
-  for (const dom of domBindings) {
-    for (const dep of dom.deps) {
-      memoConsumers.get(dep)?.push(`dom:${dom.label}`)
-    }
-  }
-
-  // Also track memo→memo dependencies
-  for (const memo of meta.memos) {
-    for (const dep of memo.deps) {
-      memoConsumers.get(dep)?.push(`memo:${memo.name}`)
-    }
-  }
-
-  // Props are nodes too (#2903): every binding dep that is neither a signal
-  // nor a memo is a prop read (that is the only other thing `propDepsOf`
-  // contributes), keyed in first-seen order so the graph is stable.
-  const propConsumers = new Map<string, string[]>()
-  for (const dom of domBindings) {
-    if (dom.type === 'event') continue
-    for (const dep of dom.deps) {
-      if (signalGetters.has(dep) || memoNames.has(dep)) continue
-      let consumers = propConsumers.get(dep)
-      if (!consumers) {
-        consumers = []
-        propConsumers.set(dep, consumers)
-      }
-      consumers.push(`dom:${dom.label}`)
-    }
-  }
-
-  const signals: SignalNode[] = meta.signals.map(s => ({
-    kind: 'signal',
-    name: s.getter,
-    setter: s.setter,
-    initialValue: s.initialValue,
-    consumers: signalConsumers.get(s.getter) ?? [],
-    loc: { file: s.loc.file, line: s.loc.start.line },
-  }))
 
   const memos: MemoNode[] = meta.memos.map(m => ({
     kind: 'memo',
     name: m.name,
-    deps: m.deps,
-    consumers: memoConsumers.get(m.name) ?? [],
+    deps: [...m.deps, ...bodyAccessorDeps(m.computation, actions)],
+    consumers: [],
     computation: m.computation,
     loc: { file: m.loc.file, line: m.loc.start.line },
   }))
@@ -507,16 +536,74 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   const effects: EffectNode[] = meta.effects.map((e, i) => ({
     kind: 'effect',
     label: `e${i}`,
-    deps: e.deps,
+    deps: [...e.deps, ...bodyAccessorDeps(e.body, actions)],
     body: e.body,
     loc: { file: e.loc.file, line: e.loc.start.line },
   }))
+
+  // Consumer lists: signals, memos and accessors are keyed up front; a prop
+  // is keyed the first time something reads it (#2903), in first-seen order
+  // so the graph is stable. A binding dep that is neither a signal, a memo
+  // nor an accessor is a prop read.
+  const signalConsumers = new Map<string, string[]>(meta.signals.map(s => [s.getter, []]))
+  const memoConsumers = new Map<string, string[]>(meta.memos.map(m => [m.name, []]))
+  const accessorConsumers = new Map<string, string[]>([...accessorNames].map(name => [name, []]))
+  const propConsumers = new Map<string, string[]>()
+  const addConsumer = (dep: string, consumer: string, props: boolean): void => {
+    const consumers = signalConsumers.get(dep) ?? memoConsumers.get(dep) ?? accessorConsumers.get(dep)
+    if (consumers) {
+      consumers.push(consumer)
+    } else if (props) {
+      const list = propConsumers.get(dep) ?? []
+      propConsumers.set(dep, list)
+      list.push(consumer)
+    }
+  }
+  for (const m of memos) for (const dep of m.deps) addConsumer(dep, `memo:${m.name}`, false)
+  for (const e of effects) for (const dep of e.deps) addConsumer(dep, `effect:${e.label}`, false)
+  for (const dom of domBindings) {
+    for (const dep of dom.deps) addConsumer(dep, `dom:${dom.label}`, dom.type !== 'event')
+  }
+  // A query's request inputs, props included (#3167).
+  for (const f of factories) for (const dep of f.requestDeps) addConsumer(dep, `query:${f.key}`, true)
+  for (const m of memos) m.consumers = memoConsumers.get(m.name) ?? []
+
+  const signals: SignalNode[] = meta.signals.filter(s => !isElidedFactoryGetter(s)).map(s => {
+    const factory = factoryOf.get(s)
+    return {
+      kind: 'signal',
+      name: s.getter,
+      setter: s.setter,
+      initialValue: s.initialValue,
+      consumers: signalConsumers.get(s.getter) ?? [],
+      loc: { file: s.loc.file, line: s.loc.start.line },
+      ...(factory && { factory }),
+    }
+  })
 
   const props: PropNode[] = [...propConsumers].map(([name, consumers]) => ({
     kind: 'prop',
     name,
     consumers,
   }))
+
+  // Every accessor of every destructured action is a node, read or not, in
+  // declaration order — the same way every signal is listed.
+  const accessors: AccessorNode[] = factories.flatMap(f =>
+    f.action === null
+      ? []
+      : [...ACTION_ACCESSOR_NAMES].map(accessor => {
+          const name = `${f.action}.${accessor}`
+          return {
+            kind: 'accessor' as const,
+            name,
+            action: f.action!,
+            accessor: accessor as ActionAccessorName,
+            factory: f.key,
+            consumers: accessorConsumers.get(name) ?? [],
+          }
+        }),
+  )
 
   return {
     componentName: meta.componentName,
@@ -525,8 +612,42 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
     memos,
     effects,
     props,
+    factories,
+    accessors,
     domBindings,
   }
+}
+
+/**
+ * Accessor reads in a memo or effect body (#3167). Neither has a `ParsedExpr`
+ * that always covers its body — a block body only folds to a value expression
+ * in simple cases — so each expression the body holds is converted with
+ * `tsNodeToParsedExpr` and read by the same collector as a binding. A
+ * conversion that is not complete (it contains an `unsupported` node, such as
+ * a block-bodied callback passed to `forEach`) is searched inside instead of
+ * accepted, so a read under it is never lost; arrow-parameter shadowing holds
+ * wherever a conversion is complete. The body is parsed only when an action
+ * name appears in it as a token.
+ */
+function bodyAccessorDeps(body: string, actions: ReadonlySet<string>): string[] {
+  if (![...actions].some(action => tokenContainsIdent(body, action))) return []
+  const found = new Set<string>()
+  const visit = (node: ts.Node): void => {
+    if (ts.isExpression(node)) {
+      const parsed = tsNodeToParsedExpr(node)
+      if (!containsUnsupported(parsed)) {
+        for (const r of collectActionAccessorReads(parsed, actions)) found.add(`${r.action}.${r.accessor}`)
+        return
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(ts.createSourceFile('__body.tsx', `(${body})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX))
+  return [...found]
+}
+
+function containsUnsupported(expr: ParsedExpr): boolean {
+  return expr.kind === 'unsupported' || parsedExprChildren(expr).some(child => containsUnsupported(child.expr))
 }
 
 /**
@@ -1120,7 +1241,19 @@ export function traceUpdatePath(graph: ComponentGraph, targetName: string): Upda
   if (memo) return { target: targetName, kind: 'memo', dependents: traceConsumers(memo.consumers, graph) }
   const prop = graph.props.find(p => p.name === targetName)
   if (prop) return { target: targetName, kind: 'prop', dependents: traceConsumers(prop.consumers, graph) }
+  const accessor = graph.accessors.find(a => a.name === targetName)
+  if (accessor) return { target: targetName, kind: 'accessor', dependents: traceConsumers(accessor.consumers, graph) }
   return null
+}
+
+/** Every name `traceUpdatePath` accepts: signals, memos, props and action accessors (#3167). */
+export function traceableNames(graph: ComponentGraph): string[] {
+  return [
+    ...graph.signals.map(s => s.name),
+    ...graph.memos.map(m => m.name),
+    ...graph.props.map(p => p.name),
+    ...graph.accessors.map(a => a.name),
+  ]
 }
 
 function traceConsumers(consumers: string[], graph: ComponentGraph): UpdatePathEntry[] {
@@ -1158,6 +1291,19 @@ function buildUpdateEntry(consumer: string, graph: ComponentGraph, visited: Set<
     return { name: name, kind: 'dom', label: name, children: [] }
   }
 
+  // A query re-sends its request (#3167): its value and its accessors update,
+  // so their readers are its dependents. `name` is the factory key: the value
+  // signal, or the action when the value isn't destructured.
+  if (type === 'query') {
+    const value = graph.signals.find(s => s.name === name)
+    const readers = [
+      ...(value?.consumers ?? []),
+      ...graph.accessors.filter(a => a.factory === name).flatMap(a => a.consumers),
+    ]
+    const children = [...new Set(readers)].map(c => buildUpdateEntry(c, graph, new Set(visited)))
+    return { name, kind: 'query', label: `${name} (query)`, children }
+  }
+
   return { name: consumer, kind: 'effect', label: consumer, children: [] }
 }
 
@@ -1188,12 +1334,26 @@ export function buildWhyUpdate(
   }
   const binding = matches[0]
 
+  // An async action is its factory's setter for this purpose (#3167): a
+  // handler that calls it (`onClick={() => save()}`, directly or through a
+  // local function) changes the factory's value and accessors, so it maps to
+  // the factory's key and rides the same setter-call resolution.
   const setterToSignal = new Map<string, string>()
   for (const s of ir.metadata.signals) {
     if (s.setter) setterToSignal.set(s.setter, s.getter)
   }
+  for (const f of graph.factories) {
+    if (f.action) setterToSignal.set(f.action, f.key)
+  }
   const fnSetters = buildLocalFunctionSetterMap(ir.metadata, setterToSignal)
   const events = collectEventBindings(ir.root, setterToSignal, fnSetters)
+  const changedByOf = (key: string): WhyUpdateSource[] =>
+    events.flatMap(ev =>
+      ev.setterCalls
+        .filter(sc => sc.signal === key)
+        .map(sc => ({ handler: ev.eventName, setter: sc.setter, elementContext: ev.elementContext, via: sc.via })),
+    )
+  const factoryByKey = new Map(graph.factories.map(f => [f.key, f]))
 
   const deps: WhyUpdateDep[] = []
   const visited = new Set<string>()
@@ -1202,7 +1362,17 @@ export function buildWhyUpdate(
     if (visited.has(name)) return
     visited.add(name)
 
-    const signal = graph.signals.find(s => s.name === name)
+    // A factory's value, or one of its action's accessors (#3167): changed by
+    // a call of the action, and — for a query — by any of its request inputs.
+    const accessor = graph.accessors.find(a => a.name === name)
+    const signal = accessor ? undefined : graph.signals.find(s => s.name === name)
+    const factory = factoryByKey.get(accessor?.factory ?? signal?.factory?.key ?? '')
+    if (factory) {
+      deps.push({ name, kind: accessor ? 'accessor' : 'signal', dependsOn: factory.requestDeps, changedBy: changedByOf(factory.key) })
+      for (const dep of factory.requestDeps) traceDep(dep)
+      return
+    }
+
     if (signal) {
       const changedBy: WhyUpdateSource[] = []
       for (const ev of events) {
@@ -1272,7 +1442,9 @@ export function formatWhyUpdate(result: WhyUpdateResult): string {
       lines.push('  (prop — the parent component passes a new value)')
     } else {
       lines.push(`${dep.name} changes from:`)
-      if (dep.changedBy.length === 0) {
+      // A query's value and accessors also change when a request input does (#3167).
+      for (const d of dep.dependsOn) lines.push(`  ${d} (re-sends the request)`)
+      if (dep.changedBy.length === 0 && dep.dependsOn.length === 0) {
         lines.push('  (no event handlers found)')
       }
       for (const src of dep.changedBy) {
@@ -1301,7 +1473,25 @@ export function formatComponentGraph(graph: ComponentGraph): string {
   if (graph.signals.length > 0) {
     lines.push(`  signals:`)
     for (const s of graph.signals) {
-      lines.push(`    ${s.name} (initial: ${s.initialValue})`)
+      // An async factory's value (#3167): which factory writes it, its
+      // action, and — for a query — the inputs its request function reads.
+      const factory = s.factory
+        ? ` [${s.factory.callee}${s.factory.action ? `, action ${s.factory.action}` : ''}]` +
+          (s.factory.requestDeps.length > 0 ? ` <- ${s.factory.requestDeps.join(', ')}` : '')
+        : ''
+      lines.push(`    ${s.name} (initial: ${s.initialValue})${factory}`)
+    }
+  }
+
+  // Async actions' accessors (#3167), listed so the `<action>.<accessor> ->`
+  // edges below have a node to point at.
+  if (graph.accessors.length > 0) {
+    const factoryByKey = new Map(graph.factories.map(f => [f.key, f]))
+    lines.push(`  accessors:`)
+    for (const a of graph.accessors) {
+      const f = factoryByKey.get(a.factory)
+      const owner = f?.value ? `of ${f.value}` : `${f?.callee}, value not destructured`
+      lines.push(`    ${a.name}() (${owner})`)
     }
   }
 
@@ -1373,7 +1563,7 @@ export function formatComponentGraph(graph: ComponentGraph): string {
   }
 
   // Dependency graph
-  if (graph.signals.length > 0 || graph.memos.length > 0 || graph.props.length > 0) {
+  if (graph.signals.length > 0 || graph.memos.length > 0 || graph.props.length > 0 || graph.accessors.length > 0) {
     lines.push(`  dependency graph:`)
     for (const s of graph.signals) {
       for (const consumer of s.consumers) {
@@ -1388,6 +1578,11 @@ export function formatComponentGraph(graph: ComponentGraph): string {
     for (const p of graph.props) {
       for (const consumer of p.consumers) {
         lines.push(`    ${p.name} -> ${consumer}`)
+      }
+    }
+    for (const a of graph.accessors) {
+      for (const consumer of a.consumers) {
+        lines.push(`    ${a.name} -> ${consumer}`)
       }
     }
   }
@@ -1433,6 +1628,7 @@ export function graphToJSON(graph: ComponentGraph): object {
       initialValue: s.initialValue,
       consumers: s.consumers,
       loc: s.loc,
+      ...(s.factory && { factory: s.factory }),
     })),
     memos: graph.memos.map(m => ({
       name: m.name,
@@ -1450,6 +1646,14 @@ export function graphToJSON(graph: ComponentGraph): object {
     props: graph.props.map(p => ({
       name: p.name,
       consumers: p.consumers,
+    })),
+    factories: graph.factories,
+    accessors: graph.accessors.map(a => ({
+      name: a.name,
+      action: a.action,
+      accessor: a.accessor,
+      factory: a.factory,
+      consumers: a.consumers,
     })),
     domBindings: graph.domBindings.map(d => ({
       label: d.label,
@@ -1806,6 +2010,11 @@ function collectDomBindings(
   // the graph prints `(no tracked deps)` for it (#2903). Returns the prop
   // names, which join `deps` alongside signal / memo reads.
   propDepsOf: (expr: string, freeIds?: ReadonlySet<string>, isShadowed?: (name: string) => boolean) => string[] = () => [],
+  // Which async action accessors (`save.isPending()`, #3167) does a binding's
+  // expression read, as `<action>.<accessor>`? A statically known reactive
+  // source like a signal read, under the same loop-scope shadow guard as
+  // `propDepsOf`.
+  accessorDepsOf: (expr: string, isShadowed?: (name: string) => boolean) => string[] = () => [],
 ): void {
   const boundNames = scope.valueBoundNames()
   // Shadow guard for prop deps (see `propDepsOf`'s `isShadowed` in
@@ -1850,7 +2059,10 @@ function collectDomBindings(
         if (attr.name === 'key' && boundNames.size > 0) continue
         const expr = attrValueToString(attr.value)
         if (!expr) continue
-        const signalDeps = extractReactiveDeps(expr, signalGetters, memoNames)
+        const signalDeps = [
+          ...extractReactiveDeps(expr, signalGetters, memoNames),
+          ...accessorDepsOf(expr, isShadowed),
+        ]
         const isReactive = signalDeps.length > 0 || attrReadsLoopParam(attr.freeIdentifiers)
         // A prop-driven attribute (`id={props.id}`, `class={`…${props.x}`}`) is
         // wrapped in a `createEffect` by the emitter even with no signal/memo
@@ -1892,7 +2104,7 @@ function collectDomBindings(
       }
       // Recurse — pass element tag as parent context for text bindings
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, scope, propDepsOf)
+        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, scope, propDepsOf, accessorDepsOf)
       }
       break
     }
@@ -1901,9 +2113,11 @@ function collectDomBindings(
       // `node.reactive || node.callsReactiveGetters || node.hasFunctionCalls`.
       const decision = decideWrapFromAstFlags(node)
       const loopReactive = exprReadsLoopParam(node)
-      if ((decision.wrap || loopReactive) && node.slotId) {
+      const accessorDeps = accessorDepsOf(node.expr, isShadowed)
+      if ((decision.wrap || loopReactive || accessorDeps.length > 0) && node.slotId) {
         const deps = [
           ...extractReactiveDeps(node.expr, signalGetters, memoNames),
+          ...accessorDeps,
           ...propDepsOf(node.expr, freeIdsOf(node.origin), isShadowed),
         ]
         const preview = parentTag
@@ -1916,11 +2130,11 @@ function collectDomBindings(
           deps,
           type: 'text',
           classification:
-            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive
+            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive || accessorDeps.length > 0
               ? 'reactive'
               : 'fallback',
           expression: node.expr,
-          wrapReason: decision.wrap ? decision.reason : 'string-reactive',
+          wrapReason: decision.wrap && accessorDeps.length === 0 ? decision.reason : 'string-reactive',
           loc: node.loc,
           jsxPreview: preview,
         })
@@ -1934,9 +2148,11 @@ function collectDomBindings(
       // param is neither signal nor memo. Use the resolved `origin.freeRefs`.
       const loopReactive =
         boundNames.size > 0 && (node.origin?.freeRefs?.some(r => boundNames.has(r.name)) ?? false)
-      if ((decision.wrap || loopReactive) && node.slotId) {
+      const accessorDeps = accessorDepsOf(node.condition, isShadowed)
+      if ((decision.wrap || loopReactive || accessorDeps.length > 0) && node.slotId) {
         const deps = [
           ...extractReactiveDeps(node.condition, signalGetters, memoNames),
+          ...accessorDeps,
           ...propDepsOf(node.condition, freeIdsOf(node.origin), isShadowed),
         ]
         bindings.push({
@@ -1946,17 +2162,17 @@ function collectDomBindings(
           deps,
           type: 'conditional',
           classification:
-            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive
+            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive || accessorDeps.length > 0
               ? 'reactive'
               : 'fallback',
           expression: node.condition,
-          wrapReason: decision.wrap ? decision.reason : 'string-reactive',
+          wrapReason: decision.wrap && accessorDeps.length === 0 ? decision.reason : 'string-reactive',
           loc: node.loc,
           jsxPreview: `{${truncateExpr(node.condition)} ? ... : ...}`,
         })
       }
-      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
-      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
+      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf, accessorDepsOf)
+      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf, accessorDepsOf)
       break
     }
     case 'loop': {
@@ -1966,7 +2182,38 @@ function collectDomBindings(
       // `hasFunctionCalls` without reactive-getter hit is the fallback case
       // (e.g. `getItems().map(...)` with an opaque helper).
       if (node.slotId) {
-        const deps = extractReactiveDeps(node.array, signalGetters, memoNames)
+        // #3246: `.filter()` / `.sort()` predicates are lifted off the chain
+        // into `IRLoop.filterPredicate` / `.sortComparator` during IR
+        // construction (`loop-chain.ts`) and kept separate from `array` — so
+        // a signal/memo read inside either callback (`items().filter(t =>
+        // filter() === 'all' || !t.done)`) never showed up in the loop's own
+        // deps, even though that read is exactly why the loop re-renders.
+        // (The `/* @client */` path keeps the whole chain in `array`, which
+        // is why the edge was already there in that case.) Collect each
+        // callback's reads too, shadow-guarded via the shared `BindingScope`
+        // service — `enterCallback` exists for exactly this ("a filter
+        // predicate's `x`, a sort comparator's `(a, b)`", see its doc
+        // comment) — so a predicate/comparator that names its parameter the
+        // same as an unrelated signal isn't mistaken for a real read of it.
+        // Built on `scope` (not `childScope` below): the filter/sort
+        // callback's own param(s) are a sibling scope to the loop row, not
+        // nested under it.
+        //
+        // The `sortComparator` half is defensive: `classifySortOperand`
+        // (expression-parser.ts) can't route a signal call into it under
+        // today's grammar, so this branch is untested in practice.
+        const { filterPredicate, sortComparator } = node
+        const callbackDeps = (raw: string, params: string[]) => {
+          const callbackScope = scope.enterCallback(params)
+          return extractReactiveDeps(raw, signalGetters, memoNames).filter(name => !callbackScope.isBound(name))
+        }
+        const deps = [
+          ...new Set([
+            ...extractReactiveDeps(node.array, signalGetters, memoNames),
+            ...(filterPredicate ? callbackDeps(filterPredicate.raw, [filterPredicate.param]) : []),
+            ...(sortComparator ? callbackDeps(sortComparator.raw, [sortComparator.paramA, sortComparator.paramB]) : []),
+          ]),
+        ]
         // An inner loop whose array reads an outer loop param (`r.tags.map(...)`)
         // is reactive per item — use the resolved `arrayFreeIdentifiers`.
         const loopReactive =
@@ -2007,7 +2254,7 @@ function collectDomBindings(
       // `paramBindings`/`preamble`), so no bespoke Set bookkeeping is needed.
       const childScope = scope.enterLoopRow(node)
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childScope, propDepsOf)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childScope, propDepsOf, accessorDepsOf)
       }
       break
     }
@@ -2047,21 +2294,21 @@ function collectDomBindings(
         }
       }
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf, accessorDepsOf)
       }
       break
     }
     case 'fragment':
     case 'provider': {
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf, accessorDepsOf)
       }
       break
     }
     case 'if-statement': {
-      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
+      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf, accessorDepsOf)
       if (node.alternate) {
-        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
+        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf, accessorDepsOf)
       }
       break
     }

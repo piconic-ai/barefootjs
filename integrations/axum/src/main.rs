@@ -134,7 +134,13 @@ fn build_router(state: AppState, base: &str) -> Router {
         .route("/api/ai-chat", get(ai_chat::sse_route))
         .route("/todos", get(todo::todos_route))
         .route("/todos-ssr", get(todo::todos_ssr_route))
-        .route("/api/todos", get(todo::list_todos).post(todo::create_todo))
+        .route("/todos-query", get(todo::todos_query_route))
+        .route(
+            "/api/todos",
+            get(todo::list_todos).post(todo::create_todo).put(todo::set_all_todos_done),
+        )
+        // The list-wide "clear completed" write of /todos-query.
+        .route("/api/todos/completed", axum::routing::delete(todo::clear_completed_todos))
         .route("/api/todos/{id}", axum::routing::put(todo::update_todo).delete(todo::delete_todo))
         .route("/api/todos/reset", axum::routing::post(todo::reset_todos))
         .route("/blog", get(blog::index_route))
@@ -275,6 +281,7 @@ runtime crate (minijinja) as the rendering backend.</p>
     <li><a href="{base}/toggle">Toggle</a></li>
     <li><a href="{base}/todos">Todo (@client)</a></li>
     <li><a href="{base}/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="{base}/todos-query">Todo (createQuery / createMutation)</a></li>
     <li><a href="{base}/ai-chat">AI Chat (SSE Streaming)</a></li>
     <li><a href="{base}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>"#

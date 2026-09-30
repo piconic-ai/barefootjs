@@ -10,6 +10,8 @@ on:
       - 'packages/adapter-pebble/**'
       - 'packages/adapter-tests/**'
       - 'integrations/spring/**'
+      - 'integrations/shared/query-todo/**'
+      - 'integrations/shared/e2e/**'
       - '.github/workflows/ci-pebble.yml'
   pull_request:
     # Heavy set: main-based PRs only, default activity types. A stacked PR
@@ -24,6 +26,8 @@ on:
       - 'packages/adapter-pebble/**'
       - 'packages/adapter-tests/**'
       - 'integrations/spring/**'
+      - 'integrations/shared/query-todo/**'
+      - 'integrations/shared/e2e/**'
       - '.github/workflows/ci-pebble.yml'
   # Nightly full-matrix data-point conformance (#2278): PR/push runs the
   # fast `pr` tier (sampled generated points); the scheduled run exercises

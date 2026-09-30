@@ -73,7 +73,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type ts from 'typescript'
-import { compileJSX, createProgramForFile, needsTypeBasedDetection } from '@barefootjs/jsx'
+import { compileJSX, createAnchoredProgram } from '@barefootjs/jsx'
 import type { CompileOptionsWithAdapter, CompileResult } from '@barefootjs/jsx'
 
 /**
@@ -88,8 +88,7 @@ const ANCHOR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '__
  * would not build a checker for this source at all.
  */
 export function harnessProgramFor(source: string, filename: string): ts.Program | undefined {
-  if (!needsTypeBasedDetection(source)) return undefined
-  return createProgramForFile(source, filename, { currentDirectory: ANCHOR })?.program
+  return createAnchoredProgram(source, filename, ANCHOR)
 }
 
 /**

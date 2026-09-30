@@ -7087,6 +7087,213 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
   })
 })
 
+// #3249: `renderConditionExpr`'s `binary` arm gated parens via
+// `needsParensInGoTemplate` (AST-kind based: only member.length /
+// arithmetic-binary / unary-negation), which never recognized a `??`
+// (`logical`) operand — so `(x ?? []).length > 0` spliced its unparenthesised
+// `or`/`bf_nullish` rendering into `gt`/`len` as extra sibling args, which
+// `html/template` reads as extra sibling ARGS and fails at RENDER time
+// ("wrong number of args"), not compile time. The `member` `.length` arm had
+// the identical gap for its own operand (`len ${obj.expr}`, unwrapped). Fixed
+// by switching both arms to `wrapIfMultiToken` (whitespace-based, on the
+// rendered string), matching the `logical`/`unary` arms and the #2271 review
+// fix just above.
+//
+// `props.count` here is a plain optional SCALAR prop, not the issue's nested
+// `props.meta?.count` — that nested shape hits an unrelated, pre-existing
+// bug tracked as #3275: `renderConditionExpr`'s `member` arm special-cases a
+// direct `props.X` read as `rootFieldRef`, but for `member(member(props,
+// meta), count)` that special case only matches the INNER member (resolving
+// to `.Meta`), so the outer arm appends `.Count` via plain field-name
+// capitalization — bypassing the `bf_get` runtime helper the text-position
+// renderer uses for the identical optional-chain shape, and landing on the
+// wrong value instead of a panic. `props.count` exercises the identical
+// `renderConditionExpr` arm without that confound.
+describe('GoTemplateAdapter - condition-position `??` operand wrapping (#3249)', () => {
+  // Every call site below exercises the same consequent/alternate text
+  // ('a'/'za', 'b'/'zb', …), so this is a plain constant rather than a
+  // parameterized builder.
+  const REPRO_SOURCE = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Todo = { id: number }
+type Props = { initialTodos?: Todo[]; count?: number }
+export function C(props: Props) {
+  const [todos] = createSignal<Todo[] | undefined>(props.initialTodos)
+  return (
+    <div>
+      {(todos() ?? []).length > 0 ? <i>a</i> : <i>za</i>}
+      {(todos()?.length ?? 0) > 0 ? <u>b</u> : <u>zb</u>}
+      {(props.count ?? 0) > 0 ? <b>has</b> : <b>none</b>}
+      {(props.count ?? 0) === 2 ? <s>two</s> : <s>not-two</s>}
+    </div>
+  )
+}
+`
+
+  test('a `??` operand under `.length`, and as a `>`/`===` comparison operand, is parenthesized', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(REPRO_SOURCE.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // NOT the broken unparenthesised `gt (len or .Todos bf_arr) 0` /
+    // `gt or (len .Todos) 0 0` / `gt or .Count 0 0` / `eq or .Count 0 2`
+    // a bare `needsParensInGoTemplate`/unwrapped-`len` miss would produce —
+    // `html/template` parses those as `gt`/`len`/`eq` receiving 3/4 sibling
+    // args instead of the intended 1/2.
+    expect(template).toContain('gt (len (or .Todos bf_arr)) 0')
+    expect(template).toContain('gt (or (len .Todos) 0) 0')
+    expect(template).toContain('gt (or .Count 0) 0')
+    expect(template).toContain('eq (or .Count 0) 2')
+  })
+
+  test('end-to-end via real `go run`: truthy `??` condition operands compile and render the correct branch (not a render-time panic)', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: REPRO_SOURCE,
+        adapter: new GoTemplateAdapter(),
+        props: { initialTodos: [{ id: 1 }], count: 2 },
+      })
+      expect(html).toContain('>a<')
+      expect(html).not.toContain('>za<')
+      expect(html).toContain('>b<')
+      expect(html).not.toContain('>zb<')
+      expect(html).toContain('>has<')
+      expect(html).not.toContain('>none<')
+      expect(html).toContain('>two<')
+      expect(html).not.toContain('>not-two<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #3249 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+
+  test('end-to-end via real `go run`: falsy/absent `??` condition operands also render correctly ("" and 0 are nullish-KEPT)', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: REPRO_SOURCE,
+        adapter: new GoTemplateAdapter(),
+        // `count: 0` is PRESENT, not absent — `??` must keep it (not fall
+        // back to the `?? 0` default), and `0 > 0`/`0 === 2` are both false,
+        // same outcome as `count` being entirely absent.
+        props: { initialTodos: [], count: 0 },
+      })
+      expect(html).toContain('>za<')
+      expect(html).toContain('>zb<')
+      expect(html).toContain('>none<')
+      expect(html).toContain('>not-two<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #3249 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
+
+// Pullfrog review follow-up on #3249: two more `renderConditionExpr` sites
+// spliced an unwrapped multi-token operand the same way `binary`/`.length`
+// used to — `unary` `-` (`bf_neg`) and the generic `member` fallback (a
+// non-`.length` field access on a `??`/logical result).
+describe('GoTemplateAdapter - condition-position `??` operand wrapping, unary/member follow-up (#3249 review)', () => {
+  test('a `??` operand under unary `-` is parenthesized, and evaluates correctly via real `go run`', async () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Props = { count?: number }
+export function C(props: Props) {
+  const [n] = createSignal<number | undefined>(props.count)
+  return <div>{-(n() ?? 0) < 0 ? <i>neg</i> : <i>nonneg</i>}</div>
+}
+`
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // NOT `lt bf_neg or .N 0 0` — Go would read that as `lt` given `bf_neg`,
+    // `or`, `.N`, `0`, `0` as five sibling args.
+    expect(template).toContain('lt (bf_neg (or .N 0)) 0')
+
+    try {
+      const negHtml = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), props: { count: 2 } })
+      expect(negHtml).toContain('>neg<')
+      expect(negHtml).not.toContain('>nonneg<')
+
+      const nonnegHtml = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), props: {} })
+      expect(nonnegHtml).toContain('>nonneg<')
+      expect(nonnegHtml).not.toContain('>neg<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping unary `??` e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+
+  test('a non-`.length` field access on a `??`-combined object is parenthesized, and reads the wrapped pipeline\'s field via real `go run`', async () => {
+    // Both `a` and `b` are REQUIRED struct-typed props (never optional) —
+    // an optional struct prop lowers to a generic `map[string]interface{}`
+    // via JSON decode with a lowercase key, which a capitalized `.Field`
+    // access can't reach (the same case-sensitive-lookup root cause as
+    // #3275, independent of this parenthesization fix), so it can't tell a
+    // correct wrap from a broken one. With a REQUIRED struct, `a` is a
+    // proper Go struct value, always truthy, so `a() ?? b()` always
+    // resolves to `a()` at runtime regardless of wrapping — the wrap only
+    // changes what `.On` is read FROM. Unwrapped (`or .A .B.On`), the whole
+    // `if` tests `.A` itself (a struct value: always truthy in Go
+    // templates) and ignores `a.on` entirely, so it renders "on" no matter
+    // what `a.on` is. Wrapped (`(or .A .B).On`), it correctly reads `a.on`.
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Flag = { on: boolean }
+type Props = { a: Flag; b: Flag }
+export function C(props: Props) {
+  const [a] = createSignal<Flag>(props.a)
+  const [b] = createSignal<Flag>(props.b)
+  return <div>{(a() ?? b()).on ? <i>on</i> : <i>off</i>}</div>
+}
+`
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    expect(template).toContain('(or .A .B).On')
+
+    try {
+      const offHtml = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { a: { on: false }, b: { on: true } },
+      })
+      // A broken, unwrapped splice would render "on" here regardless of
+      // `a.on`, since it tests the always-truthy struct `.A` rather than
+      // reading `.A.On`.
+      expect(offHtml).toContain('>off<')
+      expect(offHtml).not.toContain('>on<')
+
+      const onHtml = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { a: { on: true }, b: { on: false } },
+      })
+      expect(onHtml).toContain('>on<')
+      expect(onHtml).not.toContain('>off<')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping member-after-`??` e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
+
 describe('GoTemplateAdapter - scriptAssets (Vite late-binding)', () => {
   const CLIENT_COMPONENT = `
 'use client'

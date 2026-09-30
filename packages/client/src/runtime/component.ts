@@ -5,7 +5,7 @@
  * Used by mapArray()/mapArrayAnchored() when rendering components in loops.
  */
 
-import { getTemplate } from './template.ts'
+import { evalTemplateFn, getTemplate } from './template.ts'
 import { getComponentInit } from './registry.ts'
 import { getRegisteredDef } from './hydrate.ts'
 import { hydratedScopes } from './hydration-state.ts'
@@ -415,7 +415,7 @@ function materializeComponent(
   }
   let html: string
   try {
-    html = templateFn(unwrappedProps)
+    html = evalTemplateFn(() => templateFn(unwrappedProps))
   } finally {
     _parentScopeId = prevParentScopeId
   }
@@ -1231,13 +1231,14 @@ function createComponentFromDef(
   rowMount?: { container: Node; anchor: Node | null } | null,
   keyAttrName: string = BF_KEY,
 ): HTMLElement {
-  if (!def.template) {
+  const template = def.template
+  if (!template) {
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
   }
 
   // Generate HTML from template
   const unwrappedProps = unwrapPropsForTemplate(props)
-  const html = def.template(unwrappedProps)
+  const html = evalTemplateFn(() => template(unwrappedProps))
 
   // Create DOM element
   const element = parseHTML(html.trim()).firstChild as HTMLElement

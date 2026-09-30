@@ -263,6 +263,26 @@ describe('mapArrayLazy — item-driven updates', () => {
   })
 })
 
+describe('mapArrayLazy — rebuilt items (sameLoopItem)', () => {
+  test('an item rebuilt but equal to the current one does not call applyItem, but is adopted', () => {
+    const [items, setItems] = createSignal([item('1', 'A'), item('2', 'B')])
+    const container = ssrContainer(rowHtml('1', 'A') + rowHtml('2', 'B'))
+
+    const { plan, applyItemCalls } = makePlan()
+    mapArrayLazy(items, container, keyOf, plan, 'l0')
+
+    // New objects everywhere, only the second label differs.
+    const rebuilt = [item('1', 'A'), item('2', 'B2')]
+    setItems(rebuilt)
+    expect(applyItemCalls.map((c) => c.key)).toEqual(['2'])
+    expect(container.querySelectorAll('span')[1].textContent).toBe('B2')
+
+    // The equal row ran nothing, but took the array's own object as its item.
+    setItems([item('1', 'A2'), rebuilt[1] as Item])
+    expect(applyItemCalls.at(-1)?.prev).toBe(rebuilt[0])
+  })
+})
+
 describe('mapArrayLazy — CSR create / remove / reorder / clear', () => {
   test('CSR append creates via plan.createRow with data-key stamped by the runtime', () => {
     const a = item('1', 'A')
@@ -703,9 +723,9 @@ describe('mapArrayLazy — re-subscribe seam', () => {
   })
 
   test('a removal alone does not re-run applyOuter (removals strand nothing)', () => {
-    // The surviving row keeps its item OBJECT: the reconciler compares items
-    // with Object.is, so handing back a fresh `{ id: 1 }` would register as
-    // an item change and legitimately bump. Removal on its own must not.
+    // The surviving row keeps its item OBJECT, so the only thing that moved is
+    // the removal (a fresh but equal `{ id: 1 }` would not count either, see
+    // below). Removal on its own must not bump.
     const keep = { id: 1 }
     const t = perKeyLoop({ initial: [keep, { id: 2 }] })
     const before = t.runs()
@@ -713,12 +733,16 @@ describe('mapArrayLazy — re-subscribe seam', () => {
     expect(t.runs()).toBe(before)
   })
 
-  test('an item change bumps even when identity is the only thing that moved', () => {
-    // The flip side of the test above, pinned so the Object.is-based
-    // stranding rule is explicit rather than incidental.
+  test('a rebuilt but equal item does not bump: nothing a binding keys on moved', () => {
+    // The stranding rule follows `sameLoopItem`, pinned so it is explicit
+    // rather than incidental. An equal item has the same values one level
+    // down, so any per-key subscription built from them is still the right
+    // one; a nested value that changed is a new reference, which is a change.
     const t = perKeyLoop({ initial: [{ id: 1 }] })
     const before = t.runs()
     t.setRows([{ id: 1 }])
+    expect(t.runs()).toBe(before)
+    t.setRows([{ id: 2 }])
     expect(t.runs()).toBe(before + 1)
   })
 

@@ -31,5 +31,5 @@ export function initPortalFragmentRoot(__scope, _p = {}) {
   if (_s2) { (moveToBody)(_s2); if (__scopeId) _s2.setAttribute('bf-po', __scopeId) }
 }
 
-hydrate('PortalFragmentRoot', { init: initPortalFragmentRoot, template: (_p) => `<button type="button" class="open" bf="s0"> open </button><div class="panel" ${!(false) ? 'hidden' : ''} bf="s2"><button type="button" class="close" bf="s1"> close </button></div>`, comment: true, fragmentRoot: true })
+hydrate('PortalFragmentRoot', { init: initPortalFragmentRoot, template: (_p) => `<button type="button" class="open" bf="s0">open</button><div class="panel" ${!(false) ? 'hidden' : ''} bf="s2"><button type="button" class="close" bf="s1">close</button></div>`, comment: true, fragmentRoot: true })
 export function PortalFragmentRoot(_p, __bfKey) { return createComponent('PortalFragmentRoot', _p, __bfKey) }

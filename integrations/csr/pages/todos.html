@@ -10,13 +10,10 @@
   <div id="app"></div>
   <script type="module">
     import { render } from '@barefootjs/client/runtime'
-    await import('../../shared/components/TodoApp.tsx')
+    await import('../../shared/query-todo/QueryTodoApp.tsx')
 
-    // Fetch initial todos from API
-    const response = await fetch('/api/todos')
-    const initialTodos = await response.json()
-
-    render(document.getElementById('app'), 'TodoApp', { initialTodos })
+    // No props: the component's createQuery requests /api/todos itself.
+    render(document.getElementById('app'), 'QueryTodoApp', {})
   </script>
 </body>
 </html>

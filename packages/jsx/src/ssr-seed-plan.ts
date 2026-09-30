@@ -41,6 +41,7 @@ import {
   type ParsedExpr,
 } from './expression-parser.ts'
 import type { IRMetadata } from './types.ts'
+import { isElidedFactoryGetter } from './types.ts'
 
 /**
  * One binding in component declaration order (signals first, then memos —
@@ -197,7 +198,17 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
     }
     const expr = signal.initialValue.trim()
     steps.push(
-      expr === ''
+      // An elided async-factory value (#3245): `signal.getter` is a
+      // synthesized internal name nothing in the source ever references
+      // (see `isElidedFactoryGetter`'s docstring). Forced `opaque` (never
+      // `derived`) so an adapter that seeds `derived` steps in-template
+      // (Jinja/Erb/Pebble's `generateDerivedMemoSeed`) can't emit a
+      // `{% set __bfGet_x = ... %}` for it — the invariant "one step per
+      // signal" still holds (the name stays out of every backend's
+      // rendered output; only ITS OWN classify outcome is overridden, not
+      // the name's presence in `steps`/`available` for other signals'
+      // scope checks).
+      expr === '' || isElidedFactoryGetter(signal)
         ? { kind: 'opaque', name: signal.getter, origin: 'signal' }
         : classify(
             signal.getter,

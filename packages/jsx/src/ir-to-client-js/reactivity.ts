@@ -2,7 +2,7 @@
  * Reactivity detection: reactive expression checking, event/ref collection.
  */
 
-import { type IRNode, type IRElement, type IRComponent, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types.ts'
+import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types.ts'
 import type {
   ClientJsContext,
   ConditionalBranchEvent,
@@ -15,6 +15,16 @@ import type {
   NestedLoop,
 } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils.ts'
+// `resolveLoopOffset` lives in `collect-elements.ts` (the sibling-offset
+// pre-pass, #1693) — imported here (not duplicated) so the delegated-event
+// `NestedLoop` chain built below resolves the SAME static-sibling-count
+// offset the hydration-side `NestedLoop` (`collectInnerLoops`) already
+// applies, rather than growing a second copy of that resolution (#3240
+// follow-up). `collect-elements.ts` imports several collectors back from
+// this module, so this is a deliberate circular import; both sides only use
+// the other's export inside function bodies invoked well after module init,
+// never at top-level, so the cycle resolves safely.
+import { resolveLoopOffset } from './collect-elements.ts'
 import { expandConstantForReactivity } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
@@ -570,6 +580,14 @@ export function collectLoopChildEvents(node: IRNode): LoopChildEvent[] {
 export function collectLoopChildEventsWithNesting(
   node: IRNode,
   initialNestingStack: NestedLoop[] = [],
+  /**
+   * The whole-component sibling-offset pre-pass (`computeLoopSiblingOffsets`,
+   * `collect-elements.ts`), keyed by IR loop-node identity. Optional — a
+   * caller with no sibling-offset data (none exist today) gets `nested.offset`
+   * left `undefined`, same as before #3240's follow-up fix, rather than a
+   * required param forcing every call site to thread an empty Map.
+   */
+  siblingOffsets?: Map<IRLoop, IRNode[]>,
 ): LoopChildEvent[] {
   type Scope = {
     nestingStack: NestedLoop[]
@@ -625,6 +643,18 @@ export function collectLoopChildEventsWithNesting(
             markerId: l.markerId,
             containerSlotId: scope.lastElementSlotId,
             bindings: emptyLoopChildBindings(),
+            // #3240 follow-up: a static-index delegated event resolves each
+            // nested level's item POSITIONALLY (`emitStaticIndexLookup` /
+            // `emitNestedIndexParams` in `stringify/event-delegation.ts`),
+            // so this level's item is wrong whenever anything precedes its
+            // `.map()` within its container (a static sibling, or another
+            // loop sharing the same parent) and this offset is left unset —
+            // the keyed path's nested resolution (`data-key-N` + `find()`)
+            // never needed it, which is why this field went unset from
+            // #2189 through the original #3240 fix. Resolved the same way
+            // the hydration-side `NestedLoop` does (`collectInnerLoops`
+            // above, `offset: resolveLoopOffset(siblingOffsets.get(n))`).
+            offset: siblingOffsets ? resolveLoopOffset(siblingOffsets.get(l)) : undefined,
           },
         ],
       })

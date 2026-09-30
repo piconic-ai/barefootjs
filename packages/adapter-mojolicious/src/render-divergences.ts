@@ -65,4 +65,31 @@ export const renderDivergences: RenderDivergences = {
   // read as Perl code and the template fails to compile ("Missing right
   // curly or square bracket").
   'conditional-then-percent-text': { limitation: 'line-statement-sigil-text-after-conditional' },
+
+  // `props.x?.length ?? 0` as a condition operand, over an absent array:
+  // the `member` emitter's `.length` arm (`emitters.ts`) dereferences the
+  // object unconditionally (`scalar(@{$items})`) before the ENCLOSING `??`
+  // ever gets a chance to fall back, so an absent array dies at render time
+  // ("Can't use an undefined value as an ARRAY reference") instead of
+  // falling back to `0`.
+  'optional-chain-length-condition': { limitation: 'mojo-optional-chain-length-unguarded-deref' },
+}
+
+/**
+ * Data points (`<fixture>:<point>`) that render divergent from the Hono
+ * reference on real Mojolicious while the fixture's primary render matches,
+ * so the fixture itself is not in `renderDivergences`. The conformance
+ * `skipDataPoints` set derives from the keys, and each entry cites the
+ * limitation it is an instance of — same pattern as
+ * `@barefootjs/go-template`'s `dataPointDivergences`.
+ */
+export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // `nullish-coalescing-condition-operand`'s `(todos()?.length ?? 0) > 0`
+  // span is the SAME shape as `optional-chain-length-condition` (a signal
+  // getter instead of a bare prop read), hitting the identical unguarded
+  // `.length` deref whenever `todos`/`initialTodos` is absent. The
+  // fixture's other three `??`-in-condition spans (including its PRIMARY
+  // point, where `initialTodos` is present) render correctly.
+  'nullish-coalescing-condition-operand:empty-todos-no-count': { limitation: 'mojo-optional-chain-length-unguarded-deref' },
+  'nullish-coalescing-condition-operand:gen:initialTodos:absent': { limitation: 'mojo-optional-chain-length-unguarded-deref' },
 }

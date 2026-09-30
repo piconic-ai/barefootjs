@@ -11,7 +11,7 @@
  */
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { createSignal, createRoot } from '../../src/reactive'
+import { createEffect, createSignal, createRoot } from '../../src/reactive'
 import { mapArrayAnchored } from '../../src/runtime/map-array'
 import { insert } from '../../src/runtime/insert'
 import { loopItemMarker, loopStartMarker, loopEndMarker, BF_SCOPE } from '@barefootjs/shared'
@@ -69,6 +69,43 @@ const anchorKeys = (host: HTMLElement) =>
   Array.from(host.childNodes)
     .filter((n) => n.nodeType === Node.COMMENT_NODE && (n as Comment).nodeValue?.startsWith('bf-loop-i:'))
     .map((n) => (n as Comment).nodeValue!.slice('bf-loop-i:'.length))
+
+describe('mapArrayAnchored — rebuilt items (sameLoopItem)', () => {
+  beforeEach(() => { document.body.innerHTML = '' })
+
+  test('an item rebuilt but equal to the current one leaves the row alone', () => {
+    const host = makeContainer('l0')
+    const [items, setItems] = createSignal([
+      { id: 'a', n: 1 },
+      { id: 'b', n: 1 },
+    ])
+    const runs: string[] = []
+    createRoot(() => {
+      mapArrayAnchored(
+        () => items(),
+        host,
+        (it) => it.id,
+        (itemAccessor: () => { id: string; n: number }, _index: () => number, existing?: Comment) => {
+          const anchor = existing ?? document.createComment(loopItemMarker(itemAccessor().id))
+          createEffect(() => {
+            runs.push(`${itemAccessor().id}:${itemAccessor().n}`)
+          })
+          if (existing) return anchor
+          const frag = document.createDocumentFragment()
+          frag.appendChild(anchor)
+          return frag
+        },
+        'l0',
+      )
+    })
+    runs.length = 0
+    setItems([
+      { id: 'a', n: 1 },
+      { id: 'b', n: 2 },
+    ])
+    expect(runs).toEqual(['b:2'])
+  })
+})
 
 describe('mapArrayAnchored — CSR creation & per-item toggle', () => {
   beforeEach(() => { document.body.innerHTML = '' })

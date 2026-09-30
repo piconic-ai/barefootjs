@@ -38,6 +38,7 @@ import type {
   ConstantInfo,
   ImportInfo,
 } from '@barefootjs/jsx'
+import { isElidedFactoryGetter } from '@barefootjs/jsx'
 import {
   BaseAdapter,
   type AdapterOutput,
@@ -714,7 +715,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ? ''
       : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
-    let template = `{{define "${this.state.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
+    // Trim markers (`-}}` / `{{-`) strip the template-SOURCE formatting
+    // newlines that surround the define body -- unlike Jinja's
+    // `trim_blocks`/`lstrip_blocks`, Go's `text/template` has no
+    // environment-level auto-trim option, so these newlines are literal
+    // output text by default. That is invisible when this component is
+    // rendered as the page root or sits between two tags (ordinary
+    // whitespace collapse, including this repo's `normalizeHTML`, erases
+    // it there) but becomes a real, byte-visible leading/trailing space
+    // the moment `{{template "${this.state.componentName}" ...}}` is
+    // spliced immediately next to TEXT rather than a tag -- e.g. an
+    // `AccordionTrigger`'s `{props.children}` label immediately followed
+    // by its `<ChevronDownIcon/>`, whose OWN `{{define "ChevronDownIcon"}}`
+    // used to leak a `\n` in front of its `<svg`. See the analogous
+    // `trim_blocks`/`lstrip_blocks` fix in the Jinja adapter's
+    // `backend_jinja.py`.
+    let template = `{{define "${this.state.componentName}" -}}\n${scriptRegistrations}${templateBody}\n{{- end}}\n`
     // Companion children defines execute with the parent's data via `bf_tmpl`.
     for (const d of this.state.pendingChildrenDefines) {
       template += `{{define "${d.name}"}}${d.content}{{end}}\n`
@@ -859,7 +875,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         (url) => `{{.Scripts.RegisterPreload "${url}"}}`,
       )
       const registrations = scriptAssets.map((url) => `{{.Scripts.Register "${url}"}}`)
-      return `{{if .Scripts}}${preloadRegistrations.join('')}${registrations.join('')}{{end}}\n`
+      // `{{end -}}` trims the trailing `\n` below so it never becomes a
+      // literal newline ahead of `templateBody` in the caller -- see the
+      // trim-marker note on `generate()`'s `{{define}}` above.
+      return `{{if .Scripts}}${preloadRegistrations.join('')}${registrations.join('')}{{end -}}\n`
     }
 
     const hasInteractivity = hasClientInteractivity(ir)
@@ -876,7 +895,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const scriptName = scriptBaseName || ir.metadata.componentName
     registrations.push(`{{.Scripts.Register "${this.options.clientJsBasePath}${scriptName}.client.js"}}`)
 
-    return `{{if .Scripts}}${registrations.join('')}{{end}}\n`
+    // `{{end -}}` trims the trailing `\n` (see the sibling branch above).
+    return `{{if .Scripts}}${registrations.join('')}{{end -}}\n`
   }
 
   /**
@@ -2451,6 +2471,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Env signals are the request-scoped `SearchParams` reader field, not a
       // stored value — no baked initial value to emit here (#2057).
       if (signal.envReader) continue
+      // An elided async-factory value (#3245): no field was emitted for it in
+      // `emitPropsDataFields` above, so a ctor init here would set a
+      // nonexistent field. See that loop's comment (and
+      // `isElidedFactoryGetter`'s docstring) for the full rationale.
+      if (isElidedFactoryGetter(signal)) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // Bake against the synthesised struct type if one was inferred for this
@@ -3844,6 +3869,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.synthStructTypes = new Map<string, TypeInfo>()
     for (const signal of ir.metadata.signals) {
       if (signal.envReader) continue // env signal has no bakeable initial shape (#2057)
+      // The struct field/ctor-init that would reference this synthesized
+      // struct are already skipped (#3245) — see `isElidedFactoryGetter`'s
+      // docstring for the full rationale — so emitting the struct itself is
+      // dead output that still leaks the internal `__bfGet_<action>` name.
+      if (isElidedFactoryGetter(signal)) continue
       const synth = this.synthesizeStructFromSignal(signal, componentName)
       if (!synth) continue
       // Nested-first order (`synthesizeStructFromSignal`'s contract): a
@@ -4155,6 +4185,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Env signals are bound as the `SearchParams bf.SearchParams` reader field
       // (see generateInputStruct), not as a generic value field (#2057).
       if (signal.envReader) continue
+      // An elided async-factory value (#3245): `signal.getter` is a
+      // synthesized internal name nothing in the source ever references. A
+      // backend author reading the generated Go props should see only the
+      // component's own props and state, not this compiler-internal name.
+      // See `isElidedFactoryGetter`'s docstring for the full rationale.
+      if (isElidedFactoryGetter(signal)) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // Signal fields are component-internal state, not caller input (#2672):
@@ -7704,30 +7740,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
-  /**
-   * Whether a ParsedExpr renders to a Go template function call (`len .X`,
-   * `bf_add .A .B`) that needs parentheses when used as an argument to a
-   * comparison operator (eq, gt, lt, …).
-   */
-  private needsParensInGoTemplate(expr: ParsedExpr): boolean {
-    switch (expr.kind) {
-      case 'member':
-        // .length → `len .X`
-        return expr.property === 'length'
-
-      case 'binary':
-        // Arithmetic operators → bf_add, bf_sub, …
-        return ['+', '-', '*', '/', '%'].includes(expr.op)
-
-      case 'unary':
-        // Negation → `bf_neg .X`
-        return expr.op === '-'
-
-      default:
-        return false
-    }
-  }
-
   /** Convert a JS expression to Go template syntax. */
   private convertExpressionToGo(
     jsExpr: string,
@@ -8452,9 +8464,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
         const obj = this.renderConditionExpr(expr.object)
         if (expr.property === 'length') {
-          return { preamble: obj.preamble, expr: `len ${obj.expr}` }
+          // `len` is a prefix builtin like `index`/`and`/`or` above: a
+          // multi-token operand (`or .X bf_arr`, from a `??` object here —
+          // e.g. `(todos()?.length ?? 0)`'s inner `todos()?.length`, or
+          // `(todos() ?? []).length`'s `todos() ?? []`) must be parenthesised
+          // or Go reads it as extra sibling args of `len` (#3249).
+          return { preamble: obj.preamble, expr: `len ${wrapIfMultiToken(obj.expr)}` }
         }
-        return { preamble: obj.preamble, expr: `${obj.expr}.${capitalizeFieldName(expr.property)}` }
+        // Same wrapping rule as the `.length` arm above: a multi-token
+        // object (`or .A .B`, from a `??`/`||` object — e.g.
+        // `(props.a ?? props.b)?.name`) must be parenthesised before the
+        // `.Field` access, or Go reads the unparenthesised tail as an extra
+        // sibling arg of the prefix call (`or .A .B.Name` — silently wrong,
+        // not a panic, since `or`/`and` tolerate extra args).
+        return { preamble: obj.preamble, expr: `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}` }
       }
 
       case 'index-access': {
@@ -8470,13 +8493,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'binary': {
-        const leftNeedsParens = this.needsParensInGoTemplate(expr.left)
+        // `wrapIfMultiToken` (whitespace-based, on the RENDERED string) — not
+        // the old `needsParensInGoTemplate` (AST-kind-based: only
+        // member.length/arithmetic-binary/unary-negation) — matches the
+        // `logical`/`unary` arms just below. AST-kind gating missed a `??`
+        // operand here: `(x ?? []).length > 0` renders `expr.left` through
+        // the `logical` arm to `or .X bf_arr` (or `bf_nullish …`), which
+        // `needsParensInGoTemplate` never flagged, so it spliced
+        // unparenthesised into `gt` as extra sibling args — `html/template`
+        // then fails at render time ("wrong number of args"), not at compile
+        // time (#3249).
         const leftResult = this.renderConditionExpr(expr.left)
-        const left = leftNeedsParens ? `(${leftResult.expr})` : leftResult.expr
+        const left = wrapIfMultiToken(leftResult.expr)
 
-        const rightNeedsParens = this.needsParensInGoTemplate(expr.right)
         const rightResult = this.renderConditionExpr(expr.right)
-        const right = rightNeedsParens ? `(${rightResult.expr})` : rightResult.expr
+        const right = wrapIfMultiToken(rightResult.expr)
 
         const preamble = leftResult.preamble + rightResult.preamble
 
@@ -8509,13 +8540,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '/':
             result = `bf_div ${left} ${right}`; break
           case '%':
-            // #2873: this switch had no `%` case even though
-            // `needsParensInGoTemplate` (above) already treats `%` as an
-            // arithmetic operator needing parens — so the `default` arm
-            // below emitted a literal ` % ` into a ternary/condition's
-            // template text, which `html/template` can't parse
-            // (`unexpected "%" in operand`). Mirrors the general binary
-            // emitter's `%` case (`bf_mod`, outside condition position).
+            // #2873: this switch had no `%` case, so the `default` arm below
+            // emitted a literal ` % ` into a ternary/condition's template text,
+            // which `html/template` can't parse (`unexpected "%" in operand`).
+            // Mirrors the general binary emitter's `%` case (`bf_mod`, outside
+            // condition position).
             result = `bf_mod ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
@@ -8530,7 +8559,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // argument parenthesised, or e.g. `not or a b` parses as `not`
         // applied to 3 sibling args instead of 1 (#2758).
         if (expr.op === '!') return { preamble: arg.preamble, expr: `not ${wrapIfMultiToken(arg.expr)}` }
-        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${arg.expr}` }
+        // Same rule as `!` just above: `bf_neg` is a prefix builtin too, so a
+        // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
+        // parenthesised or Go reads it as extra sibling args (#3249).
+        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${wrapIfMultiToken(arg.expr)}` }
         return arg
       }
 
@@ -9621,6 +9653,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (/^[A-Za-z_$][\w$]*$/.test(propName) && this.state.nillablePropNames.has(propName)) {
         const field = `.${capitalizeFieldName(propName)}`
         return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
+      }
+      // A closed-type `{...rest}` key (#3057) reads off the rest bag's
+      // `map[string]any` field via `bf_get` (see the `restPropsName` member-
+      // access route above), never a capitalized Props-struct field, so it
+      // can't reuse the `nillablePropNames`/`capitalizeFieldName` route
+      // above. `bf_get` returns Go's untyped `nil` for a key the caller
+      // omitted, so the same nil-check omission still applies — value and
+      // guard share the identical `bf_get` expression.
+      if (
+        this.state.restPropsName &&
+        bareId.startsWith(`${this.state.restPropsName}.`) &&
+        /^[A-Za-z_$][\w$]*$/.test(bareId.slice(this.state.restPropsName.length + 1))
+      ) {
+        const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
+        return `{{if ne (${goExpr}) nil}}${name}="{{${goExpr}}}"{{end}}`
       }
       // Lower once; if the result is already a self-contained action block (e.g.
       // an inlined `sortClass(k)` → `{{if …}}…{{end}}`), embed it as-is rather

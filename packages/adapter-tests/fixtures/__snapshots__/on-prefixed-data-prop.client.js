@@ -97,5 +97,5 @@ hydrate('OnPrefixedDataProp', { init: initOnPrefixedDataProp, template: (_p) => 
   ]).map((o) => `<li data-key="${escapeAttr(o.id)}">${renderChild('Badge__cc8941c3', {once: (true), label: o.label}, undefined, 's1')}</li>`).join('')}<!--bf-/loop:l0--></ul><p class="direct" bf="s4"><!--bf-loop:l1-->${([
     { id: 'a', label: 'A' },
     { id: 'b', label: 'B' },
-  ]).map((o) => `${renderChild('Badge__cc8941c3', {once: (true), label: o.label}, o.id, 's3', true)}`).join('')}<!--bf-/loop:l1--></p><button type="button" class="toggle" bf="s5"> toggle </button></div>` })
+  ]).map((o) => `${renderChild('Badge__cc8941c3', {once: (true), label: o.label}, o.id, 's3', true)}`).join('')}<!--bf-/loop:l1--></p><button type="button" class="toggle" bf="s5">toggle</button></div>` })
 export function OnPrefixedDataProp(_p, __bfKey) { return createComponent('OnPrefixedDataProp', _p, __bfKey) }
