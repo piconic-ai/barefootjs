@@ -6,9 +6,9 @@
 # trigger list itself lives in the Pullfrog console — NOT in this file.
 #
 # Cost posture for this repo (see PR that added this file):
-#   - Model billing uses an OpenAI API key (`OPENAI_API_KEY`), stored as a GitHub Actions
-#     secret. The key must have access to GPT-5.6 Terra; usage is billed to its OpenAI
-#     API project.
+#   - Model access uses the ChatGPT/Codex subscription authenticated with
+#     `npx pullfrog auth codex`, not a metered OpenAI API key. Pullfrog keeps the
+#     resulting credential in its encrypted store and injects it for each run.
 #   - `model` pins Terra so every Pullfrog run uses the same balanced model.
 #   - `timeout` bounds a single run's wall clock so a stuck agent cannot burn quota.
 #   - GitHub Actions minutes are free here because the repo is public.
@@ -62,10 +62,4 @@ jobs:
           timeout: 30m
           # `effort` stays unset: it is a repo setting in the Pullfrog console, so it can
           # be tuned without opening a PR. Setting it here would override the console.
-          # ↑↑↑ EDIT ABOVE ↑↑↑
-        env:
-          # ↓↓↓ EDIT BELOW ↓↓↓
-          # OpenAI API key with access to GPT-5.6 Terra. Store this only as the
-          # repository's GitHub Actions secret named OPENAI_API_KEY.
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           # ↑↑↑ EDIT ABOVE ↑↑↑
