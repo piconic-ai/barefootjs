@@ -6429,13 +6429,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // getter instead — `bf_get`/`getFieldValue` (bf.go), already used for
     // map-rooted context chains above, guards the nil case and returns Go
     // `nil` (which `or`/`bf.truthy?`-style fallbacks treat as falsy) —
-    // unlike that map-rooted call site, this passes the Go-cased field
-    // name (`goFieldNameForKey`), matching `getFieldValue`'s struct-branch
-    // exact-match fast path. Only guards the single written `?.` hop, not
+    // preserve the source key so computed indices and punctuation are not
+    // rewritten. The getter also handles Go struct casing. Only guards the
+    // single written `?.` hop, not
     // a JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
     // variant's docstring for the multi-hop caveat.
     if (optional) {
-      return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(goFieldNameForKey(property))}`
+      return this.renderOptionalMember(obj, property)
     }
     // A plain member access rooted in an inline-object-typed prop
     // (`props.cfg.id`, #2299) reads off a `map[string]interface{}` field:
@@ -6448,6 +6448,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(property)}`
     }
     return `${obj}.${goFieldNameForKey(property)}`
+  }
+
+  /** Shared by value and condition emitters: optional hops need nil-safe,
+   * case-tolerant lookup for both generated structs and JSON-decoded maps. */
+  private renderOptionalMember(object: string, property: string): string {
+    return `bf_get ${wrapIfMultiToken(object)} ${JSON.stringify(property)}`
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
@@ -8481,7 +8487,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.optional) {
           return {
             preamble: obj.preamble,
-            expr: `bf_get ${wrapIfMultiToken(obj.expr)} ${JSON.stringify(goFieldNameForKey(expr.property))}`,
+            expr: this.renderOptionalMember(obj.expr, expr.property),
           }
         }
         // Same wrapping rule as the `.length` arm above: a multi-token

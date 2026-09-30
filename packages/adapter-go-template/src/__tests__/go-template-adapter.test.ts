@@ -7210,8 +7210,8 @@ export function C(props: Props) {
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     // Optional object props are decoded as maps retaining JS-cased keys, so
     // `.Meta.Count` reads the wrong value. This must match the value-position
-    // lowering: `bf_get .Meta "Count"` handles both map keys and structs.
-    expect(template).toContain('gt (or (bf_get .Meta "Count") 0) 0')
+    // lowering: `bf_get .Meta "count"` handles both map keys and structs.
+    expect(template).toContain('gt (or (bf_get .Meta "count") 0) 0')
     expect(template).not.toContain('gt (or .Meta.Count 0) 0')
   })
 

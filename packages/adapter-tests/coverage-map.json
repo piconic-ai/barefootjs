@@ -5432,6 +5432,27 @@
         "text"
       ]
     },
+    "optional-chain-computed-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-chain-length-condition": {
       "kinds": [
         "binary",
@@ -5450,6 +5471,24 @@
       "contexts": [
         "condition",
         "text"
+      ]
+    },
+    "optional-chain-object-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition"
       ]
     },
     "optional-chaining-prop": {
