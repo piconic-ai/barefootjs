@@ -6,12 +6,10 @@
 # trigger list itself lives in the Pullfrog console — NOT in this file.
 #
 # Cost posture for this repo (see PR that added this file):
-#   - Model billing runs off a Claude subscription OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`,
-#     minted with `claude setup-token`), not a metered API key. The subscription's own
-#     rate limits are the ceiling; there is no per-token invoice to overrun. Deliberately
-#     no `ANTHROPIC_API_KEY` below — adding one would silently reintroduce usage billing
-#     whenever the OAuth token is missing or expired.
-#   - `model` pins Sonnet, which is the cheaper tier against those limits.
+#   - Model access uses the ChatGPT/Codex subscription authenticated with
+#     `npx pullfrog auth codex`, not a metered OpenAI API key. Pullfrog keeps the
+#     resulting credential in its encrypted store and injects it for each run.
+#   - `model` pins Terra so every Pullfrog run uses the same balanced model.
 #   - `timeout` bounds a single run's wall clock so a stuck agent cannot burn quota.
 #   - GitHub Actions minutes are free here because the repo is public.
 #
@@ -55,20 +53,13 @@ jobs:
         with:
           prompt: ${{ inputs.prompt }}
           # ↓↓↓ EDIT BELOW ↓↓↓
-          # Curated alias; currently resolves to anthropic/claude-sonnet-5. Applies to
-          # every trigger this workflow serves, not just review — today that is review
-          # only. Move to Opus (`anthropic/claude-opus`) if review quality falls short.
-          model: anthropic/claude-opus
+          # Applies to every trigger this workflow serves, not just review — today that
+          # is review only. Use the exact OpenAI model ID rather than a rolling alias.
+          model: openai/gpt-5.6-terra
           # Feature branches only — the agent can never push to `main` or move tags.
           push: restricted
           # Hard stop well under the action's 1h default.
           timeout: 30m
           # `effort` stays unset: it is a repo setting in the Pullfrog console, so it can
           # be tuned without opening a PR. Setting it here would override the console.
-          # ↑↑↑ EDIT ABOVE ↑↑↑
-        env:
-          # ↓↓↓ EDIT BELOW ↓↓↓
-          # Claude subscription OAuth token — flat-rate. See the cost note at the top of
-          # this file before adding any metered `*_API_KEY` alongside it.
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # ↑↑↑ EDIT ABOVE ↑↑↑
