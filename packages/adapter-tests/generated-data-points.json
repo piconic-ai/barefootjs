@@ -2446,39 +2446,9 @@
   ],
   "optional-chain-computed-condition": [
     {
-      "name": "gen:items:absent",
-      "props": {
-        "meta": {
-          "data-x": 2
-        }
-      }
-    },
-    {
       "name": "gen:items:empty",
       "props": {
-        "items": [],
-        "meta": {
-          "data-x": 2
-        }
-      }
-    },
-    {
-      "name": "gen:meta:absent",
-      "props": {
-        "items": [
-          2
-        ]
-      }
-    },
-    {
-      "name": "gen:meta:object:minimal",
-      "props": {
-        "items": [
-          2
-        ],
-        "meta": {
-          "data-x": 0
-        }
+        "items": []
       }
     }
   ],

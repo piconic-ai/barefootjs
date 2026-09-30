@@ -5491,6 +5491,27 @@
         "condition"
       ]
     },
+    "optional-chain-punctuation-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-chaining-prop": {
       "kinds": [
         "identifier",
