@@ -4555,6 +4555,12 @@
             "optional-computed-key-template-syntax"
           ]
         },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "optional-computed-key-template-syntax"
+          ]
+        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -6756,6 +6762,7 @@
       "adapters": [
         "minijinja",
         "mojolicious",
+        "pebble",
         "twig",
         "xslate"
       ]

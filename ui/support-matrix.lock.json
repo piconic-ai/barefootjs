@@ -2089,6 +2089,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5404,6 +5410,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7017,6 +7029,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7546,6 +7564,12 @@
               "fixture": "optional-chain-computed-condition",
               "limitations": [
                 "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -8675,6 +8699,12 @@
               "fixture": "optional-chain-computed-condition",
               "limitations": [
                 "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             },
             {
@@ -12078,6 +12108,12 @@
               "limitations": [
                 "optional-numeric-member-lookup"
               ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
             }
           ]
         },
@@ -13112,6 +13148,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13935,6 +13977,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14342,6 +14390,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14566,6 +14620,12 @@
               "limitations": [
                 "optional-numeric-member-lookup"
               ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
+              ]
             }
           ]
         },
@@ -14680,6 +14740,12 @@
               "fixture": "optional-chain-computed-condition",
               "limitations": [
                 "optional-numeric-member-lookup"
+              ]
+            },
+            {
+              "fixture": "optional-chain-punctuation-condition",
+              "limitations": [
+                "optional-computed-key-template-syntax"
               ]
             }
           ]

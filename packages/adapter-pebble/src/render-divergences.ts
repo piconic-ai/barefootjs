@@ -28,6 +28,7 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
   'optional-chain-computed-condition': { limitation: 'optional-numeric-member-lookup' },
+  'optional-chain-punctuation-condition': { limitation: 'optional-computed-key-template-syntax' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`
