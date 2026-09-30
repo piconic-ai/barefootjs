@@ -6,7 +6,7 @@
  * nested scope boundaries and comment-based scopes.
  */
 
-import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange } from './scope.ts'
+import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange, type CommentScopeInfo } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { BF_SCOPE, BF_SLOT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
@@ -358,7 +358,7 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
 function belongsToCommentScope(
   candidate: Element,
   scope: Element,
-  commentInfo: { commentNode: Comment; scopeId: string },
+  commentInfo: CommentScopeInfo,
 ): boolean {
   if (candidate.parentElement === commentInfo.commentNode.parentElement) return true
   const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
