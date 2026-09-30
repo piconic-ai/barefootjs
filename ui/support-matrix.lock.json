@@ -14077,10 +14077,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "pagination",
-        "description": "site/ui Pagination demo — one signal drives data-active across seven links; href=\"#\" handlers must preventDefault",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/pagination.ts",
-        "code": "strokePaths['x']"
+        "fixture": "optional-chain-computed-condition",
+        "description": "Optional computed members retain numeric indices and punctuation in conditions and text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-computed-condition.ts",
+        "code": "props.items?.[0]"
       }
     },
     "member:optional": {
