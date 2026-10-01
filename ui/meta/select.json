@@ -190,7 +190,7 @@
   "source": "ui/components/ui/select/index.tsx",
   "signals": [
     {
-      "getter": "open",
+      "getter": "bfSignal_open",
       "setter": "setOpen",
       "initialValue": "false"
     },

@@ -173,15 +173,13 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.n).toEqual({ value: 0 })
   })
 
-  test('NON-self-derived collision (#2669, shape C — out of scope, must be unchanged): signal value still wins, no `propName`', () => {
+  test('literal-seeded collision has distinct raw-prop and internal-signal defaults', () => {
     // Same-named `label` getter and `label` prop, but the signal's OWN
     // initializer does NOT derive from `props.label` (it's a plain
     // string literal) — the JSX body separately reads `label()` AND
-    // `props.label`. That's a template-variable-ALIASING defect (both
-    // expressions lower to the same template variable, so no seeding
-    // choice can be right for both readers) — a different bug, tracked
-    // separately, and this fix must leave it byte-identical: the entry
-    // stays the plain evaluated-signal-value shape with no `propName`.
+    // `props.label`. Analysis separates the local binding before IR is
+    // built, so the prop keeps its caller-facing seed while the signal
+    // remains an internal entry without `propName`.
     const metadata = metadataFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -192,7 +190,8 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ value: 'sig' })
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.[metadata.signals[0].getter]).toEqual({ value: 'sig' })
   })
 
   test('self-derived signal collision THROUGH a component-scope const (#2685 review): entry stays a PROP entry', () => {

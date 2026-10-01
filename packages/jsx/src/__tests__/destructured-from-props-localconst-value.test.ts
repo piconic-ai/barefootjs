@@ -77,8 +77,9 @@ describe('destructured-from-props-object → localConstants value rewrite', () =
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     const content = clientJs?.content ?? ''
 
-    // `count` is the signal getter — must stay as `count()`, not `_p.count()`
-    expect(content).toMatch(/const\s+doubled\s*=\s*count\(\)\s*\*\s*2/)
+    // The signal remains a local getter (now hygienically distinct from
+    // the bare prop), never a read/call of the caller's `_p.count`.
+    expect(content).toMatch(/const\s+doubled\s*=\s*bfSignal_count\(\)\s*\*\s*2/)
     expect(content).not.toMatch(/const\s+doubled\s*=\s*_p\.count\(\)/)
   })
 

@@ -32,6 +32,7 @@ import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
 import fs from 'node:fs'
 import { signalSecondBinding } from './signal-initializer.ts'
+import { separateLiteralSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -373,6 +374,15 @@ export function analyzeComponent(
     if (!signal.initialValue) continue
     const parsed = parseExpression(`(${signal.initialValue})`)
     if (parsed.kind !== 'unsupported') signal.parsed = parsed
+  }
+
+  const separatedSource = separateLiteralSignalPropBindings(ctx, isNonReferenceIdentifierPosition)
+  if (separatedSource !== null) {
+    // The checker supplied by the caller names the old AST. Re-analyze the
+    // structurally renamed source, preserving the shared-program contract
+    // (BF050), just as the reactive-factory prepass does above.
+    const separatedProgram = program && programWithSeparatedSource(program, filePath, separatedSource)
+    return analyzeComponent(separatedSource, filePath, targetComponentName, separatedProgram, acceptsCallbackBody, hadSharedProgram)
   }
 
   // #2040: fold a complete, value-producing block-bodied memo into a single

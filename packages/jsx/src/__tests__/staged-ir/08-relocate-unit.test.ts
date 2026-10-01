@@ -219,9 +219,12 @@ describe('buildRelocateEnv: builds env from analyzer/IR state', () => {
       }
     `, 'Foo.tsx')
     const env = buildRelocateEnv(ctx)
-    // `count` is the signal getter, NOT the prop. Critical for #1132.
-    expect(env.bindings.get('count')).toBe('signal-getter')
-    expect(env.propsForLift.has('count')).toBe(false)
+    // The local getter is distinct from the bare prop. It must still
+    // classify as a getter, never as a prop eligible for lifting.
+    const getter = ctx.signals[0].getter
+    expect(env.bindings.get(getter)).toBe('signal-getter')
+    expect(env.propsForLift.has(getter)).toBe(false)
+    expect(env.bindings.get('count')).toBe('prop')
   })
 
   test('pure prop alias stays classified as prop (eligible for lift)', async () => {

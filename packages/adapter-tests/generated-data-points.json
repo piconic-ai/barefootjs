@@ -3014,6 +3014,20 @@
       }
     }
   ],
+  "signal-literal-prop-scalar-collision": [
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    }
+  ],
   "signal-prop-same-name": [
     {
       "name": "gen:label:absent",

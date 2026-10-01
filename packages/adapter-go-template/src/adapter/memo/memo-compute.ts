@@ -222,7 +222,7 @@ export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
   body: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
-  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr; optional?: boolean }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   currentMemoName: string,
   resolving: ReadonlySet<string> = new Set(),
@@ -565,6 +565,34 @@ export function memoInitialFromParsedBody(
     const depInitial = resolveGetterValueAsGo(ctx, simpleDep, signals, propsParams, propFallbackVars, resolving)
     if (depInitial !== null) {
       return depInitial
+    }
+  }
+
+  // Numeric getter/prop combinations must not fall through to a zero
+  // seed merely because the RHS isn't a literal. Resolve both atoms via
+  // the same getter/prop paths used below; the shared runtime owns JS
+  // arithmetic and safely accepts Go's concrete or interface values.
+  if (body.kind === 'binary' && ['+', '-', '*'].includes(body.op)) {
+    const numericAtom = (expr: ParsedExpr): string | null => {
+      const getter = getterCallName(expr)
+      if (getter) {
+        const type = signals.find(s => s.getter === getter)?.type
+          ?? ctx.state.currentMemos?.find(m => m.name === getter)?.type
+        if (type?.kind !== 'primitive' || type.primitive !== 'number') return null
+        return resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
+      }
+      const propName = propNameForPropsBinding(ctx, expr)
+      const prop = propName ? propsParams.find(p => p.name === propName) : undefined
+      if (propName && prop?.type?.kind === 'primitive' && prop.type.primitive === 'number' && !prop.optional) {
+        return propRef(propName)
+      }
+      return null
+    }
+    const left = numericAtom(body.left)
+    const right = numericAtom(body.right)
+    if (left !== null && right !== null) {
+      const helper = body.op === '+' ? 'Add' : body.op === '-' ? 'Sub' : 'Mul'
+      return `bf.ToInt(bf.${helper}(${left}, ${right}))`
     }
   }
 
