@@ -10,7 +10,8 @@
  *
  * Ordering / acyclicity guarantee: `steps` lists the component's signals
  * first, then its memos, each group in declaration order (matching
- * `IRMetadata.signals` / `IRMetadata.memos`). A binding's name only enters
+ * `IRMetadata.signals` / `IRMetadata.memos`), then canonical getter aliases.
+ * A binding's name only enters
  * the scope set AFTER its own step is decided, so a `derived` step's `frees`
  * can only name `baseScope` entries or EARLIER steps — self- and
  * forward-references are rejected by construction, and a consumer emitting
@@ -31,6 +32,7 @@
  */
 
 import { collectModuleStringConsts } from './augment-inherited-props.ts'
+import { collectAliasableGetterNames, resolveGetterAliases } from './ir-to-client-js/csr-substitute.ts'
 import { envSignalReaderFor, type EnvSignalReader } from './adapters/env-signal.ts'
 import {
   extractArrowBodyExpression,
@@ -44,7 +46,7 @@ import type { IRMetadata } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
 /**
- * One binding in component declaration order (signals first, then memos —
+ * One binding in dependency order (signals, memos, then getter aliases —
  * matching `IRMetadata` order and the adapters' iteration).
  *
  * - `env-reader`: an env signal whose `envReader` key resolves in the shared
@@ -250,5 +252,15 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
     available.add(memo.name)
   }
 
+  // A getter alias names the live binding, not its pre-recompute default.
+  // Seed aliases after every signal/memo so stash adapters do not freeze an
+  // unresolved prop-derived memo before its runtime value is available.
+  const getters = collectAliasableGetterNames(metadata.signals, metadata.memos)
+  for (const [alias, origin] of resolveGetterAliases(metadata.localConstants ?? [], name => getters.has(name))) {
+    if (metadata.propsParams.some(p => p.name === alias)) continue
+    const parsed: ParsedExpr = { kind: 'call', callee: { kind: 'identifier', name: origin }, args: [] }
+    steps.push(classify(alias, 'memo', `${origin}()`, parsed, available))
+    available.add(alias)
+  }
   return { baseScope, steps }
 }

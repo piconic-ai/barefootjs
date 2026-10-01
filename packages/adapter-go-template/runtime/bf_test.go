@@ -1989,6 +1989,28 @@ func TestString(t *testing.T) {
 	}
 }
 
+func TestNumberStringJSNotation(t *testing.T) {
+	for _, tt := range []struct {
+		value float64
+		want  string
+	}{
+		{1234567891.5, "1234567891.5"},
+		{-1234567888.5, "-1234567888.5"},
+		{1851851835, "1851851835"},
+		{1e-6, "0.000001"}, {1e-7, "1e-7"},
+		{1e20, "100000000000000000000"}, {1e21, "1e+21"},
+		{math.Copysign(0, -1), "0"},
+		{math.NaN(), "NaN"}, {math.Inf(1), "Infinity"}, {math.Inf(-1), "-Infinity"},
+	} {
+		if got := String(tt.value); got != tt.want {
+			t.Errorf("String(%v) = %q, want %q", tt.value, got, tt.want)
+		}
+		if got := toString(tt.value); got != tt.want {
+			t.Errorf("toString(%v) = %q, want %q", tt.value, got, tt.want)
+		}
+	}
+}
+
 func TestNumber(t *testing.T) {
 	if got := Number("3.14"); got != 3.14 {
 		t.Errorf("Number(3.14 string) = %v, want 3.14", got)

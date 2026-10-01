@@ -33,7 +33,7 @@ describe('Shadow guards: bare names that shadow props are NOT rewritten to _p.X'
 
     expect(errors).toEqual([])
     // The local must use the signal getter, not _p.count.
-    expect(initBody).toMatch(/doubled\s*=\s*count\(\)\s*\*\s*2/)
+    expect(initBody).toMatch(/doubled\s*=\s*bfSignal_count\(\)\s*\*\s*2/)
     expect(initBody).not.toMatch(/_p\.count\(\)/)
   })
 

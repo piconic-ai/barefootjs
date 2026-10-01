@@ -20,8 +20,8 @@ describe('Select', () => {
     expect(result.componentName).toBe('Select')
   })
 
-  test('has signal: open (createSignal)', () => {
-    expect(result.signals).toContain('open')
+  test('has an internal open signal distinct from the public open prop', () => {
+    expect(result.signals).toContain('bfSignal_open')
   })
 
   test('renders a div with data-slot=select', () => {

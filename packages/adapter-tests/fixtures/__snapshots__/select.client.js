@@ -2887,7 +2887,7 @@ export function initSelect(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [open, setOpen] = createSignal(false)
+  const [bfSignal_open, setOpen] = createSignal(false)
   const [internalValue, setInternalValue] = createSignal(_p.value ?? '')
   createEffect(() => {
     const __val = _p.value
@@ -2898,7 +2898,7 @@ export function initSelect(__scope, _p = {}) {
 
   // Provide context for child components
   provideContext(SelectContext, {
-      open,
+      open: bfSignal_open,
       onOpenChange: (v) => { setOpen(v); _p.onOpenChange?.(v) },
       value: () => isControlled() ? (_p.value ?? '') : internalValue(),
       onValueChange: (v) => {

@@ -139,6 +139,9 @@ export class CompileState {
    *  Full `MemoInfo` so consumers can read the analyzer-attached `parsed` tree. */
   currentMemos: MemoInfo[] = []
 
+  /** Signal metadata for the shared numeric-memo decision at text emission. */
+  currentSignals: IRMetadata['signals'] = []
+
   /** Full type definitions from the current IR, stashed for loop-datum field resolution. */
   currentTypeDefinitions: TypeDefinition[] = []
 

@@ -148,7 +148,7 @@ export type { SelectProps, SelectTriggerProps, SelectValueProps, SelectContentPr
 export function Select(__allProps: SelectProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Select_${Math.random().toString(36).slice(2, 8)}`
-  const open = () => false
+  const bfSignal_open = () => false
   const setOpen: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
   const internalValue = () => props.value ?? ''
   const setInternalValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
@@ -170,7 +170,7 @@ export function Select(__allProps: SelectProps & { __instanceId?: string; __bfSc
 
   return (
     <>{provideContextSSR(SelectContext, {
-      open,
+      open: bfSignal_open,
       onOpenChange: (v) => { setOpen(v); props.onOpenChange?.(v) },
       value: () => isControlled() ? (props.value ?? '') : internalValue(),
       onValueChange: (v) => {

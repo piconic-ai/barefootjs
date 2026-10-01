@@ -157,7 +157,7 @@ import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, numericMemoOperands } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -619,6 +619,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.state.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
     )
     this.state.currentMemos = ir.metadata.memos ?? []
+    this.state.currentSignals = ir.metadata.signals ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.currentPropsParams = ir.metadata.propsParams ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
@@ -5043,7 +5044,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private inferMemoType(
     memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
     signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }>
+    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr; optional?: boolean }>
   ): string {
     // A LIST-valued `.filter(arrow)` memo (#2075 — the blog PostList `visible`
     // shape) is a slice of the receiver's boxed elements, not a scalar.
@@ -5063,6 +5064,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // heuristic below into `int`. The analyzer classified the body shape from
     // the arrow AST (`MemoInfo.bodyIsTemplateLiteral`).
     if (memo.bodyIsTemplateLiteral) return 'string'
+
+    // The shared arithmetic runtime returns an integer or float as needed;
+    // keep its boxed result rather than truncating it to an int field.
+    if (numericMemoOperands(this.emitCtx, memo.parsed, signals, [...propsParamMap.values()])) return 'interface{}'
 
     // Arithmetic operators → likely a number.
     if (memo.computation.includes('*') || memo.computation.includes('/') ||
@@ -5812,12 +5817,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `collectTextConsumedPropNames`) needs a nil-safe stringify: plain
     // `{{.X}}` prints a nil `interface{}` as the literal `<no value>`, not
     // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
-    // nil and formats a present value identically to `text/template`'s own
-    // default printing, so this is a no-op for the non-nil case.
+    // nil and uses JS-compatible notation for a present float; other
+    // present values retain the existing default printing behavior.
     const finalExpr =
       this.textNillablePropNameOf(classify.parsed) !== null
         ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : goExpr
+        : this.numericMemoTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -6693,6 +6698,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return lowerTernary(this.emitCtx, test, consequent, alternate)
   }
 
+  /** One text-sink decision for direct expressions and template interpolations.
+   * Numeric values remain boxed everywhere outside text rendering. */
+  private numericMemoTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
+    if (expr?.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return goExpr
+    const name = this.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
+    const memo = this.state.currentMemos.find(m => m.name === name)
+    return memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams)
+      ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+  }
+
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
     let result = ''
     for (const part of parts) {
@@ -6704,7 +6719,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // template parse error. Same `isTemplateFragment` guard as
         // `renderExpression`.
         const e = emit(part.expr)
-        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${e}}}`
+        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericMemoTextExpression(e, part.expr)}}}`
       }
     }
     return result

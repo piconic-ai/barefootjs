@@ -277,11 +277,9 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     //
     // NOT self-derived (the initializer references a DIFFERENT prop, or no
     // prop at all) keeps today's behavior: the signal's evaluated value
-    // wins the entry outright. This also correctly leaves alone the
-    // separate (out-of-scope) case where the signal's OWN initializer does
-    // NOT reference the same-named prop but the JSX body separately reads
-    // both `label()` and `props.label` — that's a template-variable-
-    // aliasing defect, not this one, and must render byte-identically.
+    // wins its own entry. Literal-seeded getters that originally shared
+    // a bare prop's name have already been separated during analysis;
+    // their internal signal entry cannot overwrite the raw prop entry.
     //
     // Invariant this establishes (relied on by every template-stash
     // conformance harness's seeding loops — see `test-render.ts`): a

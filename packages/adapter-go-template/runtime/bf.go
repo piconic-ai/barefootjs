@@ -1557,7 +1557,8 @@ func Ternary(cond bool, a, b any) any {
 }
 
 // String returns the string form of v. Mirrors JS `String(v)` for
-// non-nil values via `fmt.Sprintf("%v", ...)`. Diverges from JS on
+// numeric values using JS's decimal/exponent thresholds. Other non-nil
+// values retain their existing `fmt.Sprintf("%v", ...)` behavior. Diverges on
 // nil: JS `String(null)` is "null", but the template path renders
 // `nil` as the empty string here so an unset prop doesn't surface
 // as a literal "null"/"undefined" in user-facing HTML. Document the
@@ -1566,7 +1567,36 @@ func String(v any) string {
 	if v == nil {
 		return ""
 	}
+	if number, ok := v.(float64); ok {
+		return numberString(number)
+	}
 	return fmt.Sprintf("%v", v)
+}
+
+// numberString owns float-to-text conversion for both template String and
+// arithmetic/string helpers. JS uses decimal notation in [1e-6, 1e21),
+// unlike Go's default %v, and never pads an exponent with leading zeroes.
+func numberString(number float64) string {
+	if math.IsNaN(number) {
+		return "NaN"
+	}
+	if math.IsInf(number, 1) {
+		return "Infinity"
+	}
+	if math.IsInf(number, -1) {
+		return "-Infinity"
+	}
+	if number == 0 {
+		return "0"
+	}
+	abs := math.Abs(number)
+	if abs >= 1e-6 && abs < 1e21 {
+		return strconv.FormatFloat(number, 'f', -1, 64)
+	}
+	text := strconv.FormatFloat(number, 'e', -1, 64)
+	parts := strings.SplitN(text, "e", 2)
+	exponent, _ := strconv.Atoi(parts[1])
+	return parts[0] + fmt.Sprintf("e%+d", exponent)
 }
 
 // RawHTML marks a value as trusted, pre-formatted HTML so html/template's
@@ -4081,7 +4111,7 @@ func toString(v any) string {
 	case int64:
 		return strconv.FormatInt(s, 10)
 	case float64:
-		return strconv.FormatFloat(s, 'f', -1, 64)
+		return numberString(s)
 	case bool:
 		return strconv.FormatBool(s)
 	default:
