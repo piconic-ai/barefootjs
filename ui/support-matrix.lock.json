@@ -631,6 +631,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3410,6 +3416,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5470,6 +5482,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7083,6 +7101,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8693,6 +8717,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -13064,6 +13094,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -14365,10 +14401,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "optional-chain-computed-condition",
-        "description": "Optional computed members retain numeric indices in conditions and text",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-computed-condition.ts",
-        "code": "props.items?.[0]"
+        "fixture": "optional-nested-object-signal-seed",
+        "description": "A signal seeded from an optional nested object retains its nullable field type",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-nested-object-signal-seed.ts",
+        "code": "meta()?.['active']"
       }
     },
     "member:optional": {

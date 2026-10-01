@@ -210,6 +210,7 @@ import { fixture as optionalChainPunctuationCondition } from './optional-chain-p
 import { fixture as optionalChainNumericKeyCondition } from './optional-chain-numeric-key-condition'
 import { fixture as optionalComputedFilterPredicate } from './optional-computed-filter-predicate'
 import { fixture as optionalComputedFilterPresence } from './optional-computed-filter-presence'
+import { fixture as optionalNestedObjectSignalSeed } from './optional-nested-object-signal-seed'
 import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
@@ -1008,6 +1009,7 @@ export const jsxFixtures: JSXFixture[] = [
   optionalChainNumericKeyCondition,
   optionalComputedFilterPredicate,
   optionalComputedFilterPresence,
+  optionalNestedObjectSignalSeed,
   signalLiteralPropNameCollision,
   optionalChainLengthCondition,
   logicalOrJsx,

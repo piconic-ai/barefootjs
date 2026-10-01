@@ -5122,6 +5122,12 @@
             "signal-literal-prop-name-collision"
           ]
         },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "signal-literal-prop-name-collision"
+          ]
+        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -6823,6 +6829,7 @@
         "jinja",
         "minijinja",
         "mojolicious",
+        "pebble",
         "twig",
         "xslate"
       ]

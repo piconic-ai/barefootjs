@@ -5599,6 +5599,26 @@
         "text"
       ]
     },
+    "optional-nested-object-signal-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:string",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-object-prop-member-signal-seed": {
       "kinds": [
         "call",
