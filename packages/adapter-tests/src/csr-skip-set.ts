@@ -4,6 +4,12 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
+  // The client-directive escape intentionally elides the outer loop's
+  // SSR rows. Its native-element CSR template eagerly creates those rows,
+  // so comparing it with the empty SSR placeholder is not its contract.
+  // The prop-precompute twin supplies the SSR/CSR parity proof; this twin's
+  // mounted interactions were also verified in the real browser.
+  'conditional-nested-loop-client-reactivity',
   // #2073 graduated by #2988: `format` (a module-scope arrow-valued const
   // with no free identifiers beyond its own param) is now classified
   // `module-scope-safe` by `compute-inlinability.ts` instead of the old

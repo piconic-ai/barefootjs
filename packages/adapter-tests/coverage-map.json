@@ -1686,6 +1686,98 @@
         "text"
       ]
     },
+    "conditional-nested-loop-client-reactivity": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "conditional-nested-loop-precomputed-reactivity": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "conditional-nested-loop-signal-reactivity": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "conditional-nested-loop-static-reactivity": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "conditional-return-button": {
       "kinds": [
         "binary",
@@ -5156,6 +5248,25 @@
       ],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-string-addition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "loop",
         "text"
       ]

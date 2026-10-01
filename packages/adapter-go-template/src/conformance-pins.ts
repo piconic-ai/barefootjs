@@ -10,6 +10,9 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
+  'conditional-nested-loop-static-reactivity': [{ code: 'BF101', severity: 'error', limitation: 'conditional-nested-const-loop-source' }],
+  'conditional-nested-loop-signal-reactivity': [{ code: 'BF101', severity: 'error', limitation: 'conditional-nested-const-loop-source' }],
+
   'format-date': [{ code: 'BF056', severity: 'error', limitation: 'authored-format-date-call' }],
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error', limitation: 'off-subset-callback-body' }],
   'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
