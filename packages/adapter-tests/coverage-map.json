@@ -6644,6 +6644,24 @@
         "condition"
       ]
     },
+    "signal-literal-prop-fractional-collision": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-literal-prop-name-collision": {
       "kinds": [
         "array-literal",

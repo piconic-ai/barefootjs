@@ -3006,6 +3006,20 @@
       }
     }
   ],
+  "signal-literal-prop-fractional-collision": [
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    }
+  ],
   "signal-literal-prop-name-collision": [
     {
       "name": "gen:rows:empty",

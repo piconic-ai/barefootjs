@@ -3,6 +3,16 @@ import path from 'node:path'
 import type { AnalyzerContext } from './analyzer-context.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 
+// TypeScript exposes these resolution-cache readers on Program at runtime
+// (its own incremental rebuild uses them), but omits them from the public
+// declaration. Replaying the resolved graph preserves custom host hooks:
+// renaming a local binding never changes any import or type directive.
+type ResolvedProgram = ts.Program & {
+  getResolvedModule(file: ts.SourceFile, name: string, mode: ts.ResolutionMode): ts.ResolvedModuleWithFailedLookupLocations | undefined
+  getResolvedTypeReferenceDirective(file: ts.SourceFile, name: string, mode: ts.ResolutionMode): ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations | undefined
+  getAutomaticTypeDirectiveResolutions(): { get(name: string, mode: ts.ResolutionMode): ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations | undefined }
+}
+
 /** Preserve a build-supplied Program's virtual files and resolution options
  * when one root's source changes. Other SourceFiles remain untouched. */
 export function programWithSeparatedSource(program: ts.Program, filePath: string, source: string): ts.Program {
@@ -11,6 +21,7 @@ export function programWithSeparatedSource(program: ts.Program, filePath: string
   const directory = program.getCurrentDirectory()
   const target = path.resolve(directory, filePath)
   const matches = (name: string) => path.resolve(directory, name) === target
+  const resolvedProgram = program as ResolvedProgram
   const virtualDirectories = new Set<string>()
   for (const file of program.getSourceFiles()) {
     let dir = path.dirname(path.resolve(directory, file.fileName))
@@ -21,16 +32,37 @@ export function programWithSeparatedSource(program: ts.Program, filePath: string
       dir = parent
     }
   }
-  return ts.createProgram(program.getRootFileNames(), options, {
+  return ts.createProgram({ rootNames: program.getRootFileNames(), options, projectReferences: program.getProjectReferences(), host: {
     ...host,
     getCurrentDirectory: () => directory,
+    resolveModuleNameLiterals: (literals, containingFile, redirected, compilerOptions, containingSourceFile) => {
+      const original = program.getSourceFile(containingFile)
+      return literals.map(literal => {
+        const mode = program.getModeForUsageLocation(containingSourceFile, literal)
+        return (original && resolvedProgram.getResolvedModule(original, literal.text, mode))
+          ?? ts.resolveModuleName(literal.text, containingFile, compilerOptions, host, undefined, redirected, mode)
+      })
+    },
+    resolveTypeReferenceDirectiveReferences: (references, containingFile, redirected, compilerOptions, containingSourceFile) => {
+      const original = program.getSourceFile(containingFile)
+      return references.map(reference => {
+        const name = typeof reference === 'string' ? reference : reference.fileName
+        const mode = ts.getModeForFileReference(reference, containingSourceFile?.impliedNodeFormat)
+        return (original ? resolvedProgram.getResolvedTypeReferenceDirective(original, name, mode)
+          : resolvedProgram.getAutomaticTypeDirectiveResolutions().get(name, mode))
+          ?? ts.resolveTypeReferenceDirective(name, containingFile, compilerOptions, host, redirected, undefined, mode)
+      })
+    },
     directoryExists: name => virtualDirectories.has(path.resolve(directory, name)) || host.directoryExists!(name),
     fileExists: name => matches(name) || program.getSourceFile(name) !== undefined || host.fileExists(name),
     readFile: name => matches(name) ? source : program.getSourceFile(name)?.text ?? host.readFile(name),
-    getSourceFile: (name, version, onError, shouldCreateNewSourceFile) => matches(name)
-      ? ts.createSourceFile(name, source, version, true, ts.ScriptKind.TSX)
-      : program.getSourceFile(name) ?? host.getSourceFile(name, version, onError, shouldCreateNewSourceFile),
-  })
+    getSourceFile: (name, version, onError, shouldCreateNewSourceFile) => {
+      if (!matches(name)) return program.getSourceFile(name) ?? host.getSourceFile(name, version, onError, shouldCreateNewSourceFile)
+      const file = ts.createSourceFile(name, source, version, true, ts.ScriptKind.TSX)
+      file.impliedNodeFormat = program.getSourceFile(name)?.impliedNodeFormat
+      return file
+    },
+  } })
 }
 
 function isLiteralTree(expr: ParsedExpr): boolean {

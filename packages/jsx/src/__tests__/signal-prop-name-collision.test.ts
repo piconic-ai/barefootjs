@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import ts from 'typescript'
 import { analyzeComponent } from '../analyzer.ts'
 import { compileJSX } from '../compiler.ts'
+import { programWithSeparatedSource } from '../signal-prop-name-collision.ts'
 import { TestAdapter } from '../adapters/test-adapter.ts'
 import { fixture } from '../../../adapter-tests/fixtures/signal-literal-prop-name-collision.ts'
 
@@ -128,4 +129,43 @@ test('multi-component production compilation separates each component independen
   expect(clientJs).toContain('initFirst')
   expect(clientJs).toContain('initSecond')
   expect(clientJs.match(/\[bfSignal_count\]/g)).toHaveLength(2)
+})
+
+test.each([false, true])('custom module and type resolutions survive reanalysis (automatic: %s)', automatic => {
+  const source = `${automatic ? '' : '/// <reference types="custom-globals" />'}
+    'use client'
+    import { n } from 'custom-values'
+    export function App(props: { count: number }) {
+      const [count] = createSignal(7)
+      const extra = n
+      return <p>{props.count}{count()}{extra}</p>
+    }
+  `
+  const files = new Map([
+    ['/virtual/app.tsx', source],
+    ['/virtual/value.ts', 'export const n = 42'],
+    ['/virtual/globals.d.ts', 'declare function createSignal(v: number): [() => number]'],
+  ])
+  const options: ts.CompilerOptions = { noLib: true, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.Preserve, types: automatic ? ['custom-globals'] : [] }
+  const program = ts.createProgram(['/virtual/app.tsx'], options, {
+    ...ts.createCompilerHost(options),
+    getCurrentDirectory: () => '/virtual',
+    directoryExists: name => name === '/virtual',
+    fileExists: name => files.has(name),
+    readFile: name => files.get(name),
+    getSourceFile: (name, version) => files.has(name)
+      ? ts.createSourceFile(name, files.get(name)!, version, true, ts.ScriptKind.TSX) : undefined,
+    resolveModuleNames: names => names.map(name => name === 'custom-values'
+      ? { resolvedFileName: '/virtual/value.ts', extension: ts.Extension.Ts } : undefined),
+    resolveTypeReferenceDirectives: names => names.map(() => ({ resolvedFileName: '/virtual/globals.d.ts', primary: true })),
+  })
+  const ctx = analyzeComponent(source, '/virtual/app.tsx', undefined, program)
+  expect(ctx.signals[0].getter).not.toBe('count')
+  const rebuilt = programWithSeparatedSource(program, '/virtual/app.tsx', ctx.sourceFile.text)
+  const originalDiagnostics = program.getSemanticDiagnostics().map(d => d.code)
+  expect(rebuilt.getSemanticDiagnostics().map(d => d.code)).toEqual(originalDiagnostics)
+  const module = rebuilt.getSourceFile('/virtual/value.ts')!
+  const declaration = (module.statements[0] as ts.VariableStatement).declarationList.declarations[0]
+  expect(rebuilt.getTypeChecker().typeToString(rebuilt.getTypeChecker().getTypeAtLocation(declaration.name))).toBe('42')
+  expect(rebuilt.getSourceFile('/virtual/globals.d.ts')).toBeDefined()
 })

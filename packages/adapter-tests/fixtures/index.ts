@@ -214,6 +214,7 @@ import { fixture as optionalNestedObjectSignalSeed } from './optional-nested-obj
 import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as signalLiteralPropScalarCollision } from './signal-literal-prop-scalar-collision'
 import { fixture as signalLiteralPropObjectCollision } from './signal-literal-prop-object-collision'
+import { fixture as signalLiteralPropFractionalCollision } from './signal-literal-prop-fractional-collision'
 import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
@@ -1015,6 +1016,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalLiteralPropNameCollision,
   signalLiteralPropScalarCollision,
   signalLiteralPropObjectCollision,
+  signalLiteralPropFractionalCollision,
   optionalChainLengthCondition,
   logicalOrJsx,
   branchSelfClosing,

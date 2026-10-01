@@ -157,7 +157,7 @@ import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, numericMemoOperands } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -5043,7 +5043,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private inferMemoType(
     memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
     signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }>
+    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr; optional?: boolean }>
   ): string {
     // A LIST-valued `.filter(arrow)` memo (#2075 — the blog PostList `visible`
     // shape) is a slice of the receiver's boxed elements, not a scalar.
@@ -5063,6 +5063,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // heuristic below into `int`. The analyzer classified the body shape from
     // the arrow AST (`MemoInfo.bodyIsTemplateLiteral`).
     if (memo.bodyIsTemplateLiteral) return 'string'
+
+    // The shared arithmetic runtime returns an integer or float as needed;
+    // keep its boxed result rather than truncating it to an int field.
+    if (numericMemoOperands(this.emitCtx, memo.parsed, signals, [...propsParamMap.values()])) return 'interface{}'
 
     // Arithmetic operators → likely a number.
     if (memo.computation.includes('*') || memo.computation.includes('/') ||

@@ -209,6 +209,30 @@ export function computeMemoInitialValue(
   return '0'
 }
 
+/** Numeric atoms supported by the shared-runtime memo path. Its result is
+ * boxed (`any`), preserving integer and fractional values alike. The field
+ * classifier and constructor use this same decision. */
+export function numericMemoOperands(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  signals: { getter: string; type?: TypeInfo }[],
+  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
+): readonly [ParsedExpr, ParsedExpr] | null {
+  if (!body || body.kind !== 'binary' || !['+', '-', '*'].includes(body.op)) return null
+  const numericAtom = (expr: ParsedExpr): boolean => {
+    const getter = getterCallName(expr)
+    if (getter) {
+      const type = signals.find(s => s.getter === getter)?.type
+        ?? ctx.state.currentMemos?.find(m => m.name === getter)?.type
+      return type?.kind === 'primitive' && type.primitive === 'number'
+    }
+    const name = propNameForPropsBinding(ctx, expr)
+    const prop = name ? propsParams.find(p => p.name === name) : undefined
+    return prop?.type?.kind === 'primitive' && prop.type.primitive === 'number' && !prop.optional
+  }
+  return numericAtom(body.left) && numericAtom(body.right) ? [body.left, body.right] : null
+}
+
 /**
  * Structural matcher for the common expression-bodied memo shapes, driven by
  * the analyzer-attached `MemoInfo.parsed` (the memo arrow's body): `getter() ===
@@ -572,27 +596,21 @@ export function memoInitialFromParsedBody(
   // seed merely because the RHS isn't a literal. Resolve both atoms via
   // the same getter/prop paths used below; the shared runtime owns JS
   // arithmetic and safely accepts Go's concrete or interface values.
-  if (body.kind === 'binary' && ['+', '-', '*'].includes(body.op)) {
-    const numericAtom = (expr: ParsedExpr): string | null => {
+  const numericOperands = numericMemoOperands(ctx, body, signals, propsParams)
+  if (numericOperands && body.kind === 'binary') {
+    const resolveAtom = (expr: ParsedExpr): string | null => {
       const getter = getterCallName(expr)
       if (getter) {
-        const type = signals.find(s => s.getter === getter)?.type
-          ?? ctx.state.currentMemos?.find(m => m.name === getter)?.type
-        if (type?.kind !== 'primitive' || type.primitive !== 'number') return null
         return resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
       }
       const propName = propNameForPropsBinding(ctx, expr)
-      const prop = propName ? propsParams.find(p => p.name === propName) : undefined
-      if (propName && prop?.type?.kind === 'primitive' && prop.type.primitive === 'number' && !prop.optional) {
-        return propRef(propName)
-      }
-      return null
+      return propName ? propRef(propName) : null
     }
-    const left = numericAtom(body.left)
-    const right = numericAtom(body.right)
+    const left = resolveAtom(numericOperands[0])
+    const right = resolveAtom(numericOperands[1])
     if (left !== null && right !== null) {
       const helper = body.op === '+' ? 'Add' : body.op === '-' ? 'Sub' : 'Mul'
-      return `bf.ToInt(bf.${helper}(${left}, ${right}))`
+      return `bf.${helper}(${left}, ${right})`
     }
   }
 
