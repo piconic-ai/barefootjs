@@ -540,18 +540,14 @@ fn read_property(obj: &JsValue, key: &str) -> JsValue {
     }
 }
 
-fn read_index(obj: &JsValue, index: &JsValue) -> JsValue {
+pub(crate) fn read_index(obj: &JsValue, index: &JsValue) -> JsValue {
     match obj {
         JsValue::Array(a) => {
-            let f = to_number(index);
-            if f.is_nan() || f.is_infinite() {
-                return JsValue::Null;
+            let key = to_string(index);
+            match key.parse::<usize>() {
+                Ok(i) if i.to_string() == key && i < a.len() => a[i].clone(),
+                _ => JsValue::Null,
             }
-            let i = f as i64;
-            if i as f64 != f || i < 0 || i as usize >= a.len() {
-                return JsValue::Null;
-            }
-            a[i as usize].clone()
         }
         JsValue::Object(map) => map.get(&to_string(index)).cloned().unwrap_or(JsValue::Null),
         _ => JsValue::Null,

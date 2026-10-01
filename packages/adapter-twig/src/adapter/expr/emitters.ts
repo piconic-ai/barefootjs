@@ -60,6 +60,7 @@
  */
 
 import { groupBinaryOperand,
+  literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
@@ -192,7 +193,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
@@ -204,6 +205,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     }
     // Attribute / hash-key access — Twig `.` resolves array keys, object
     // properties, and getter methods transparently.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}.${property}`
   }
 
@@ -413,7 +415,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -428,6 +430,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return `bf.length(${obj})`
     // Twig `.` access works for arrays, objects, and getter methods.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}.${property}`
   }
 

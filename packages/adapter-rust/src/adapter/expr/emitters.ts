@@ -49,6 +49,7 @@
  */
 
 import { groupBinaryOperand,
+  literalMemberIndex,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -105,6 +106,10 @@ const PREDICATE_METHODS = new Set<HigherOrderMethod>([
  */
 export function truthyTest(node: ParsedExpr, rendered: string): string {
   return isBooleanResultParsed(node) ? rendered : `bf.truthy(${rendered})`
+}
+
+function emitComputedMember(object: ParsedExpr, property: string, emit: (e: ParsedExpr) => string): string {
+  return `bf.get(${emit(object)}, ${emit(literalMemberIndex(property))})`
 }
 
 /**
@@ -179,7 +184,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
@@ -190,6 +195,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
       return `bf.length(${emit(object)})`
     }
     // Attribute / dict-key access — Jinja `.` resolves both transparently.
+    if (computed) return emitComputedMember(object, property, emit)
     return `${emit(object)}.${property}`
   }
 
@@ -388,7 +394,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -403,6 +409,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return `bf.length(${obj})`
     // Jinja `.` access works for both dicts and objects.
+    if (computed) return emitComputedMember(object, property, emit)
     return `${obj}.${property}`
   }
 

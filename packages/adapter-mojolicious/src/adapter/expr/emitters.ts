@@ -12,6 +12,7 @@
  */
 
 import { groupBinaryOperand,
+  literalMemberIndex,
   isStringTypedOperand,
   isStringConcatBinary,
   type ParsedExprEmitter,
@@ -138,13 +139,13 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${value}'`
+    if (literalType === 'string') return `'${escapePerlSingleQuoted(String(value))}'`
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'undef'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` on a higher-order result (e.g.
@@ -157,6 +158,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     if (property === 'length' && (asCallbackMethodCall(object) !== null || object.kind === 'array-literal')) {
       return `scalar(@{${emit(object)}})`
     }
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}->{${property}}`
   }
 
@@ -392,13 +394,13 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${value}'`
+    if (literalType === 'string') return `'${escapePerlSingleQuoted(String(value))}'`
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'undef'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -431,6 +433,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       if (isStringReceiver) return `bf->length(${obj})`
       return `scalar(@{${obj}})`
     }
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}->{${property}}`
   }
 

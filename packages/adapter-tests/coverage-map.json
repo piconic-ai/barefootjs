@@ -5473,6 +5473,27 @@
         "text"
       ]
     },
+    "optional-chain-numeric-key-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-chain-object-condition": {
       "kinds": [
         "binary",
@@ -5525,6 +5546,28 @@
         "member:optional"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "optional-computed-filter-predicate": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "logical:&&",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },

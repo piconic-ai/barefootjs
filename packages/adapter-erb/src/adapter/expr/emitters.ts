@@ -33,6 +33,7 @@
  */
 
 import {
+  literalMemberIndex,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -178,7 +179,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` needs no special higher-order form here — see the file
@@ -196,6 +197,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // dotted method call. Only guards the single written `?.` hop, not a
     // JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
     // variant's docstring for the multi-hop caveat.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     if (optional) return `${emit(object)}&.[](${rubySymbolLiteral(property)})`
     return `${emit(object)}[${rubySymbolLiteral(property)}]`
   }
@@ -427,7 +429,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -447,6 +449,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // see `ErbFilterEmitter.member()`'s comment above for why `&.[](...)`
     // (not a dotted `&.name`) is the right safe-nav form for a Hash-keyed
     // prop, and for the single-hop caveat.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     if (optional) return `${obj}&.[](${rubySymbolLiteral(property)})`
     return `${obj}[${rubySymbolLiteral(property)}]`
   }

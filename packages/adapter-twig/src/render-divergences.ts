@@ -40,7 +40,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  'optional-chain-punctuation-condition': { limitation: 'optional-computed-key-template-syntax' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`

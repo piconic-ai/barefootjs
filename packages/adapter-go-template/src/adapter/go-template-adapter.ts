@@ -7550,6 +7550,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case 'member': {
         // t.done -> .Done (or .Todo.Done under a wrapper struct, #2228)
         if (expr.object.kind === 'identifier' && expr.object.name === param) {
+          if ((expr.optional || expr.computed) && expr.property !== 'length') {
+            return `(${this.renderOptionalMember(paramDot, expr.property)})`
+          }
           return `${paramPrefix}.${capitalizeFieldName(expr.property)}`
         }
         // props.x on a bare-props-form component (#2879): props are
@@ -7583,6 +7586,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Nested member access or local var.prop.
         const obj = this.renderFilterExpr(expr.object, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
+        if ((expr.optional || expr.computed) && expr.property !== 'length') {
+          return `(${this.renderOptionalMember(obj, expr.property)})`
+        }
         return `${obj}.${capitalizeFieldName(expr.property)}`
       }
 
