@@ -619,6 +619,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.state.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
     )
     this.state.currentMemos = ir.metadata.memos ?? []
+    this.state.currentSignals = ir.metadata.signals ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.currentPropsParams = ir.metadata.propsParams ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
@@ -5816,10 +5817,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `collectTextConsumedPropNames`) needs a nil-safe stringify: plain
     // `{{.X}}` prints a nil `interface{}` as the literal `<no value>`, not
     // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
-    // nil and formats a present value identically to `text/template`'s own
-    // default printing, so this is a no-op for the non-nil case.
+    // nil and uses JS-compatible notation for a present float; other
+    // present values retain the existing default printing behavior.
+    const memoName = classify.parsed?.kind === 'call' && classify.parsed.callee.kind === 'identifier' && classify.parsed.args.length === 0
+      ? classify.parsed.callee.name : null
+    const numericMemo = memoName && this.state.currentMemos?.find(m => m.name === memoName)
+    // Boxed arithmetic results can be float64. Go's default printing uses
+    // scientific notation earlier than JS; stringify only at the text sink,
+    // preserving the numeric value for comparisons and child props.
+    const needsNumericString = numericMemo && numericMemoOperands(
+      this.emitCtx, numericMemo.parsed, this.state.currentSignals ?? [], this.state.currentPropsParams ?? [],
+    )
     const finalExpr =
-      this.textNillablePropNameOf(classify.parsed) !== null
+      this.textNillablePropNameOf(classify.parsed) !== null || needsNumericString
         ? `bf_string ${wrapIfMultiToken(goExpr)}`
         : goExpr
 
