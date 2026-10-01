@@ -1187,10 +1187,9 @@ function parseGoStructFields(goTypes: string | undefined, typeName: string): Map
   // Field lines are always `\t<GoName> <GoType>[ \`json:"..."\`][ // comment]`
   // — GoType is one whitespace-free token in every shape this harness bakes
   // (`string`, `[]string`, `map[string]interface{}`, `[]TaggedListItemsItem`,
-  // `interface{}`); a pointer-typed framework field (`*bf.ScriptCollector`)
-  // doesn't match this class and is skipped — this harness never bakes a
-  // VALUE for one of those.
-  const fieldRe = /\n[ \t]*(\w+)[ \t]+([\w.[\]{}]+)/g
+  // `interface{}`, `*RowMeta`). Optional nested objects retain pointers,
+  // so an omitted field stays nil rather than a zero-valued object.
+  const fieldRe = /\n[ \t]*(\w+)[ \t]+([\w.*[\]{}]+)/g
   let m: RegExpExecArray | null
   while ((m = fieldRe.exec(struct[1])) !== null) {
     fields.set(m[1], m[2])
@@ -1232,6 +1231,9 @@ function goScalarSliceLiteral(arr: unknown[], elemGoType: string): string {
  * longer compiles against those.
  */
 function goStructLiteral(obj: Record<string, unknown>, typeName: string, goTypes?: string): string {
+  if (typeName.startsWith('*')) {
+    return `&${goStructLiteral(obj, typeName.slice(1), goTypes)}`
+  }
   const fieldTypes = parseGoStructFields(goTypes, typeName)
   const fields: string[] = []
   for (const [k, v] of Object.entries(obj)) {

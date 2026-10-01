@@ -79,6 +79,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -146,6 +152,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -267,6 +279,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -361,6 +379,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -437,6 +461,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -504,6 +534,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -671,6 +707,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -744,6 +786,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -2354,6 +2402,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2499,6 +2553,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -2716,6 +2776,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -2876,6 +2942,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3030,6 +3102,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3175,6 +3253,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -3480,6 +3564,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3631,6 +3721,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -4108,6 +4204,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4283,6 +4385,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -4578,6 +4686,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -4774,6 +4888,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4955,6 +5075,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -5145,6 +5271,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -5522,6 +5654,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5709,6 +5847,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -5943,6 +6087,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6082,6 +6232,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -6305,6 +6461,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -6459,6 +6621,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6598,6 +6766,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -6752,6 +6926,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -7045,6 +7225,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7190,6 +7376,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -7556,6 +7748,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7677,6 +7875,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -7912,6 +8116,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -8060,6 +8270,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8187,6 +8403,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -8323,6 +8545,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -8598,6 +8826,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8731,6 +8965,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -12356,6 +12596,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -12417,6 +12663,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -12502,6 +12754,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -12578,6 +12836,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -12639,6 +12903,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -12709,6 +12979,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {
@@ -12852,6 +13128,12 @@
               ]
             },
             {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -12913,6 +13195,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-literal-prop-name-collision",
+              "limitations": [
+                "signal-literal-prop-name-collision"
               ]
             },
             {

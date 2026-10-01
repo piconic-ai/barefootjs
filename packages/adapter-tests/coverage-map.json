@@ -5571,6 +5571,34 @@
         "text"
       ]
     },
+    "optional-computed-filter-presence": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "optional-object-prop-member-signal-seed": {
       "kinds": [
         "call",
@@ -6594,6 +6622,23 @@
       ],
       "contexts": [
         "condition"
+      ]
+    },
+    "signal-literal-prop-name-collision": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "signal-object-field": {

@@ -25,10 +25,10 @@ import type { ParsedExpr, TypeDefinition, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { goFieldNameForKey } from '../lib/go-naming.ts'
-import { typeInfoToGo } from '../type/type-codegen.ts'
+import { propertyInfoToGo, typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
- * Look up a struct property's declared `TypeInfo` by source key. Resolves
+ * Look up a struct property's declared type and optionality by source key. Resolves
  * against ANY registered `TypeDefinition` — a user-written type, a #2674
  * anonymous-object synthesis, or (#2800) an untyped-literal signal struct
  * synthesized by `synthesizeStructFromSignal`, which pushes one
@@ -40,9 +40,9 @@ import { typeInfoToGo } from '../type/type-codegen.ts'
  * that as "nested type unknown" and fall back to the generic/inline
  * lowering.
  */
-function structPropertyType(ctx: GoEmitContext, structGoType: string, key: string): TypeInfo | undefined {
+function structProperty(ctx: GoEmitContext, structGoType: string, key: string) {
   const td = ctx.state.currentTypeDefinitions.find((t: TypeDefinition) => t.name === structGoType)
-  return td?.properties?.find(p => p.name === key)?.type
+  return td?.properties?.find(p => p.name === key)
 }
 
 /**
@@ -165,7 +165,8 @@ export function parsedLiteralToGo(
       // and defers the whole object.
       const goField = structFields.get(prop.key)
       if (!goField) return null
-      const propType = structPropertyType(ctx, goType, prop.key)
+      const property = structProperty(ctx, goType, prop.key)
+      const propType = property?.type
       let go: string | null
       if (prop.value.kind === 'array-literal') {
         // A nested array property (`cells: readonly string[]`, #2087):
@@ -182,6 +183,9 @@ export function parsedLiteralToGo(
           nestedGoType && ctx.state.localStructFields.has(nestedGoType)
             ? parsedLiteralToGo(ctx, prop.value, propType)
             : bakeInlineObjectAsGoMap(ctx, prop.value)
+        if (go !== null && property && propertyInfoToGo(ctx, property).startsWith('*')) {
+          go = `&${go}`
+        }
       } else {
         go = parsedLiteralToGo(ctx, prop.value)
       }

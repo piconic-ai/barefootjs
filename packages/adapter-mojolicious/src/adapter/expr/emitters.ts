@@ -98,6 +98,28 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
   return null
 }
 
+/** Perl coerces an absent lookup (`undef`) to zero in numeric equality.
+ * A strict comparison against a non-null literal must instead keep it
+ * distinct from false/0/empty string. Evaluate the lookup once, shared
+ * by value and filter emission. */
+function emitLookupLiteralEquality(
+  op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string,
+  isStringName: (name: string) => boolean,
+): string | null {
+  if (op !== '===' && op !== '!==') return null
+  const isLookup = (expr: ParsedExpr) => expr.kind === 'index-access' ||
+    (expr.kind === 'member' && (expr.optional || expr.computed))
+  const isLiteral = (expr: ParsedExpr) => expr.kind === 'literal' && expr.literalType !== 'null'
+  const [lookup, literal] = isLookup(left) && isLiteral(right) ? [left, right]
+    : isLookup(right) && isLiteral(left) ? [right, left] : []
+  if (!lookup || !literal) return null
+  const cmp = isStringTypedOperand(literal, isStringName) ? 'eq' : '=='
+  // Evaluate the lookup outside the helper's lexical scope: its temporary
+  // cannot shadow a source binding used by the lookup argument.
+  const equality = `(sub { my $bf_lookup = shift; defined($bf_lookup) && ($bf_lookup ${cmp} ${emit(literal)}) })->(${emit(lookup)})`
+  return op === '!==' ? `!(${equality})` : equality
+}
+
 export class MojoFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -186,6 +208,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, this.isStringName)
+    if (lookupEquality !== null) return lookupEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -521,6 +545,8 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, n => this.ctx._isStringValueName(n))
+    if (lookupEquality !== null) return lookupEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).

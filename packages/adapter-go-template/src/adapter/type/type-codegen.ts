@@ -11,9 +11,17 @@
  * pure.
  */
 
-import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, PropertyInfo, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
+
+/** Optional nested objects need a nil representation, not a populated zero struct.
+ * Shared by field emission and literal baking so omitted and present objects
+ * keep the same representation in caller-provided and compiler-baked rows. */
+export function propertyInfoToGo(ctx: GoEmitContext, property: PropertyInfo): string {
+  const base = typeInfoToGo(ctx, property.type)
+  return property.optional && ctx.state.localStructFields.has(base) ? `*${base}` : base
+}
 
 /**
  * Collapse a homogeneous LITERAL union (`'a' | 'b'`, `1 | 2`, `true | false`)

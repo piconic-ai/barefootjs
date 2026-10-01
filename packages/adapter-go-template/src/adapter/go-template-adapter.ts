@@ -151,7 +151,7 @@ import {
   objectLiteralToGoComposite,
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
-import { typeInfoToGo } from "./type/type-codegen.ts"
+import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
@@ -1566,9 +1566,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const fields = this.structFieldsFor(td)
     if (fields.length === 0) return null
 
-    const goFields = fields.map(
-      f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``,
-    )
+    const goFields = fields.map(f => this.structFieldDeclaration(f))
     return `// ${td.name} represents a ${td.name.toLowerCase()}.\ntype ${td.name} struct {\n${goFields.join('\n')}\n}`
   }
 
@@ -1591,12 +1589,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * pre-pass share one field-derivation path.
    */
   private structFieldsFor(td: { properties?: PropertyInfo[] }): Array<{ tsName: string; goName: string; goType: string }> {
-    const typeByName = new Map((td.properties ?? []).map(p => [p.name, p.type]))
+    const propertyByName = new Map((td.properties ?? []).map(p => [p.name, p]))
     return structFieldNamePairs(td.properties ?? []).map(({ tsName, goName }) => ({
       tsName,
       goName,
-      goType: typeInfoToGo(this.emitCtx, typeByName.get(tsName)!),
+      goType: propertyInfoToGo(this.emitCtx, propertyByName.get(tsName)!),
     }))
+  }
+
+  private structFieldDeclaration(field: { tsName: string; goName: string; goType: string }): string {
+    // Pointer fields represent optional nested objects. Keep a nil field
+    // absent from the hydration payload rather than serializing it as null.
+    const omit = field.goType.startsWith('*') ? ',omitempty' : ''
+    return `\t${field.goName} ${field.goType} \`json:"${this.toJsonTag(field.tsName)}${omit}"\``
   }
 
   /**
@@ -1790,7 +1795,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       properties,
       loc: SYNTH_TYPE_LOC,
     })
-    const goFields = fields.map(f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``)
+    const goFields = fields.map(f => this.structFieldDeclaration(f))
     lines.push(comment)
     lines.push(`type ${name} struct {\n${goFields.join('\n')}\n}`)
     lines.push('')
@@ -2084,15 +2089,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!typeName) return []
     for (const td of this.state.currentTypeDefinitions) {
       if (td.name === typeName) {
-        const fields: Array<{ tsName: string; goName: string; goType: string }> = []
-        for (const prop of td.properties ?? []) {
-          if (!GO_IDENTIFIER.test(prop.name)) continue
-          fields.push({
-            tsName: prop.name,
-            goName: capitalizeFieldName(prop.name),
-            goType: typeInfoToGo(this.emitCtx, prop.type),
-          })
-        }
+        const fields = this.structFieldsFor(td).filter(f => GO_IDENTIFIER.test(f.tsName))
         if (fields.length > 0) return fields
         break
       }

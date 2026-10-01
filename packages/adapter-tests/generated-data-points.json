@@ -3006,6 +3006,14 @@
       }
     }
   ],
+  "signal-literal-prop-name-collision": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "signal-prop-same-name": [
     {
       "name": "gen:label:absent",
