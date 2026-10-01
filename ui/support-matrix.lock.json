@@ -2249,10 +2249,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
-        "fixture": "filter-predicate-props-member",
-        "description": ".filter() predicate reading props.x directly on a bare-props-form component (#2879)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-props-member.ts",
-        "code": "it.id !== props.hiddenId"
+        "fixture": "entries-loop-string-addition",
+        "description": "Normalized array and object entries row values retain scalar string evidence",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/entries-loop-string-addition.ts",
+        "code": "value + value"
       }
     },
     "call": {
@@ -11425,10 +11425,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "string-concat-plus",
-        "description": "String concatenation via the + operator",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-concat-plus.ts",
-        "code": "'Hello, ' + name"
+        "fixture": "entries-loop-string-addition",
+        "description": "Normalized array and object entries row values retain scalar string evidence",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/entries-loop-string-addition.ts",
+        "code": "value + value"
       }
     },
     "binary:-": {

@@ -1187,7 +1187,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // position relative to the pop is inert either way.
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
-    const shadowedNames = this.scope.shadowedNames()
+    const savedBindings = this.scope.shadowedNames().map((name, ordinal) => {
+      let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
+      while (this.scope.isBound(temporary) || this.propsParams.some(p => p.name === temporary) ||
+        this.localConstants.some(c => c.name === temporary)) temporary += '_'
+      return { name, temporary }
+    })
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1218,8 +1223,8 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     const lines: string[] = []
     // PHP foreach shares its surrounding variable scope. Preserve bindings
     // shadowed by this callback so the enclosing row continues with its value.
-    for (const name of shadowedNames) {
-      lines.push(`@php($__bf_saved_${loop.markerId}_${name} = ${bladeVar(name)})`)
+    for (const { name, temporary } of savedBindings) {
+      lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)})`)
     }
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
@@ -1282,8 +1287,8 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     }
 
     lines.push(`@endforeach`)
-    for (const name of shadowedNames) {
-      lines.push(`@php(${bladeVar(name)} = $__bf_saved_${loop.markerId}_${name})`)
+    for (const { name, temporary } of savedBindings) {
+      lines.push(`@php(${bladeVar(name)} = ${bladeVar(temporary)})`)
     }
     lines.push(`{!! $bf->comment("/loop:${loop.markerId}") !!}`)
 

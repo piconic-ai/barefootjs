@@ -2736,6 +2736,21 @@
         "text"
       ]
     },
+    "entries-loop-string-addition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:+"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "event-delegation-container-handler": {
       "kinds": [
         "array-literal",
@@ -5220,7 +5235,8 @@
       ],
       "axes": [
         "binary:+",
-        "literal:number"
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "attribute",

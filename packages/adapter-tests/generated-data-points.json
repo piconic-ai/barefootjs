@@ -1614,6 +1614,18 @@
       }
     }
   ],
+  "entries-loop-string-addition": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": [],
+        "labels": {
+          "first": "b",
+          "second": "2"
+        }
+      }
+    }
+  ],
   "filter-predicate-props-member": [
     {
       "name": "gen:items:empty",

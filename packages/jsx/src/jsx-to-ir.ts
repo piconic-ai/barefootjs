@@ -4831,11 +4831,13 @@ function transformMapCall(
   let children: IRNode[] = []
   let paramBindings: LoopParamBinding[] | undefined
   let flatMapCallback: FlatMapCallback | undefined
+  let itemTypeNode: ts.Node | undefined
 
   if (ts.isArrowFunction(callback)) {
     // Extract parameter names and type annotations
     if (callback.parameters.length > 0) {
       const firstParam = callback.parameters[0]
+      itemTypeNode = firstParam
       param = firstParam.name.getText(ctx.sourceFile)
       if (firstParam.type) {
         paramType = firstParam.type.getText(ctx.sourceFile)
@@ -4864,6 +4866,7 @@ function transformMapCall(
             ts.isBindingElement(elements[1]) && ts.isIdentifier(elements[1].name)) {
           index = elements[0].name.text
           param = elements[1].name.text
+          itemTypeNode = elements[1].name
           // Don't populate paramBindings — the destructure is fully
           // resolved into index + param by the iteration shape.
         } else {
@@ -5589,8 +5592,8 @@ function transformMapCall(
 
   // Scalar operand evidence only. Inferring object rows here would bypass
   // adapters' existing row-structure capability checks and their diagnostics.
-  const callbackType = ts.isArrowFunction(callback) && callback.parameters[0] && ctx.analyzer.checker
-    ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(callback.parameters[0]), ctx.analyzer.checker)
+  const callbackType = itemTypeNode && ctx.analyzer.checker
+    ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(itemTypeNode), ctx.analyzer.checker)
     : null
   const scalarItemType = callbackType?.kind === 'primitive' ||
     (callbackType?.kind === 'union' && callbackType.unionTypes?.every(t => t.kind === 'primitive'))
