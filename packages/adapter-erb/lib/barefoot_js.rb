@@ -885,7 +885,7 @@ module BarefootJS
       when Hash
         return collection[key] if collection.key?(key)
 
-        sym = key.respond_to?(:to_sym) ? key.to_sym : nil
+        sym = key.to_s.to_sym
         return collection[sym] if sym && collection.key?(sym)
 
         str = key.to_s
@@ -902,7 +902,7 @@ module BarefootJS
           case key
           when Integer then key
           when Numeric then (key % 1).zero? ? key.to_i : nil
-          when String then (key =~ /\A-?\d+\z/ ? key.to_i : nil)
+          when String then (key =~ /\A(?:0|[1-9]\d*)\z/ ? key.to_i : nil)
           end
         return nil if idx.nil?
 

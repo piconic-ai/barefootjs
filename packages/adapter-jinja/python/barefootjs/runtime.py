@@ -1370,6 +1370,9 @@ class BarefootJS:
         sep = "," if sep is None else sep
         return sep.join(js_string(x) for x in recv)
 
+    def get(self, recv: Any, key: Any) -> Any:
+        return _evaluator._read_index(recv, key)
+
     def length(self, recv: Any) -> int:
         if isinstance(recv, list):
             return len(recv)

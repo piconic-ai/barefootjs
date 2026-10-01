@@ -2460,6 +2460,49 @@
       }
     }
   ],
+  "optional-chain-numeric-key-condition": [
+    {
+      "name": "gen:items:absent",
+      "props": {
+        "meta": {
+          "0": 3,
+          "01": 4
+        }
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "meta": {
+          "0": 3,
+          "01": 4
+        }
+      }
+    },
+    {
+      "name": "gen:meta:absent",
+      "props": {
+        "items": [
+          2,
+          7
+        ]
+      }
+    },
+    {
+      "name": "gen:meta:object:minimal",
+      "props": {
+        "items": [
+          2,
+          7
+        ],
+        "meta": {
+          "0": 0,
+          "01": 0
+        }
+      }
+    }
+  ],
   "optional-chain-object-condition": [
     {
       "name": "gen:meta:object:minimal",
@@ -2960,6 +3003,14 @@
       "name": "gen:x:large",
       "props": {
         "x": 1234567890
+      }
+    }
+  ],
+  "signal-literal-prop-name-collision": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
       }
     }
   ],

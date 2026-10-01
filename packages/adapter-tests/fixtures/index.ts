@@ -207,6 +207,11 @@ import { fixture as nullishCoalescingConditionOperand } from './nullish-coalesci
 import { fixture as optionalChainObjectCondition } from './optional-chain-object-condition'
 import { fixture as optionalChainComputedCondition } from './optional-chain-computed-condition'
 import { fixture as optionalChainPunctuationCondition } from './optional-chain-punctuation-condition'
+import { fixture as optionalChainNumericKeyCondition } from './optional-chain-numeric-key-condition'
+import { fixture as optionalComputedFilterPredicate } from './optional-computed-filter-predicate'
+import { fixture as optionalComputedFilterPresence } from './optional-computed-filter-presence'
+import { fixture as optionalNestedObjectSignalSeed } from './optional-nested-object-signal-seed'
+import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
@@ -1001,6 +1006,11 @@ export const jsxFixtures: JSXFixture[] = [
   optionalChainObjectCondition,
   optionalChainComputedCondition,
   optionalChainPunctuationCondition,
+  optionalChainNumericKeyCondition,
+  optionalComputedFilterPredicate,
+  optionalComputedFilterPresence,
+  optionalNestedObjectSignalSeed,
+  signalLiteralPropNameCollision,
   optionalChainLengthCondition,
   logicalOrJsx,
   branchSelfClosing,

@@ -1552,6 +1552,7 @@ impl Object for BfInstance {
             "uc" => Ok(MjValue::from(js_string(a(0)).to_uppercase())),
             "join" => Ok(MjValue::from(join(a(0), a(1)))),
             "length" => Ok(MjValue::from(length(a(0)))),
+            "get" => Ok(js_to_mj(&evaluator::read_index(a(0), a(1)))),
             "is_element" => Ok(MjValue::from(is_element(a(0)))),
             "style_object" => Ok(safe(style_object(&js_args))),
             "index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), false))),

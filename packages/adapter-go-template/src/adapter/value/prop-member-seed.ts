@@ -14,7 +14,7 @@
  * `generateInputStruct` emits), and each hop's field name and type come from
  * the struct that type names — `localStructFields` (named same-file types and
  * #2674's synthesized anonymous-object structs alike) plus the hop property's
- * own `TypeInfo` through `typeInfoToGo`, which is exactly how
+ * own type and optionality through `propertyInfoToGo`, which is exactly how
  * `structFieldsFor` typed that struct field. No second prop-type → Go
  * decision is made here.
  */
@@ -24,7 +24,7 @@ import type { ParsedExpr, PropertyInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { resolvePropGoType } from '../props/prop-types.ts'
-import { typeInfoToGo } from '../type/type-codegen.ts'
+import { propertyInfoToGo } from '../type/type-codegen.ts'
 
 export type PropMemberSeed =
   | {
@@ -119,7 +119,7 @@ export function resolvePropMemberSeed(
       return unresolved(`Go struct '${goType}' has no field for '${property}'`)
     }
     goRef = `${goRef}.${goName}`
-    goType = typeInfoToGo(ctx, propInfo.type)
+    goType = propertyInfoToGo(ctx, propInfo)
     owner = `'${property}'`
   }
   return { kind: 'resolved', propName, path, goRef, goType }

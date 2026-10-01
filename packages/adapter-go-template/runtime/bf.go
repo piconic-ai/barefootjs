@@ -2713,6 +2713,15 @@ func getFieldValue(item any, field any) any {
 
 	fieldVal := v.FieldByName(fieldStr)
 	if !fieldVal.IsValid() {
+		// Generated row structs retain the source key in their JSON tag,
+		// including keys that cannot be spelled as a Go field identifier.
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Type().Field(i)
+			tag := strings.Split(field.Tag.Get("json"), ",")[0]
+			if field.PkgPath == "" && tag != "" && tag != "-" && tag == fieldStr {
+				return v.Field(i).Interface()
+			}
+		}
 		// Case-variant fallback: the evaluator carries the JS field name
 		// (`id` / `url`) against a Go-capitalised struct field (`ID` / `URL`),
 		// which exact `FieldByName` misses and the initialism rules can't be
@@ -2754,7 +2763,7 @@ func fieldAsIndex(field any) (int, bool) {
 		return int(n), true
 	case string:
 		i, err := strconv.Atoi(n)
-		if err != nil {
+		if err != nil || i < 0 || strconv.Itoa(i) != n {
 			return 0, false
 		}
 		return i, true

@@ -405,6 +405,10 @@ public final class Bf {
   @SuppressWarnings("unchecked")
   public Object get(Object receiver, Object key) {
     if (receiver instanceof List) {
+      String property = JsValue.jsString(key);
+      if (!property.matches("0|[1-9][0-9]*")) {
+        return null;
+      }
       double idx = JsNumber.jsNumber(key);
       List<?> list = (List<?>) receiver;
       if (idx != Math.floor(idx) || idx < 0 || idx >= list.size()) {

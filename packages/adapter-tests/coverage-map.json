@@ -5473,6 +5473,27 @@
         "text"
       ]
     },
+    "optional-chain-numeric-key-condition": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-chain-object-condition": {
       "kinds": [
         "binary",
@@ -5525,6 +5546,76 @@
         "member:optional"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "optional-computed-filter-predicate": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "logical:&&",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "optional-computed-filter-presence": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "optional-nested-object-signal-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:string",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -6551,6 +6642,23 @@
       ],
       "contexts": [
         "condition"
+      ]
+    },
+    "signal-literal-prop-name-collision": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "signal-object-field": {

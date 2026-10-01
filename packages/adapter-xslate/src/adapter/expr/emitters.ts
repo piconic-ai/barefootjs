@@ -12,6 +12,7 @@
  */
 
 import { groupBinaryOperand,
+  literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
@@ -127,13 +128,13 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${value}'`
+    if (literalType === 'string') return `'${escapeKolonSingleQuoted(String(value))}'`
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `$bf.length` (handles both array element
@@ -143,14 +144,14 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
       return `$bf.length(${emit(object)})`
     }
     // Hash field access — Kolon dot works on hash refs.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}.${property}`
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // Kolon's `[]` postfix is polymorphic (array index or hash key),
-    // mirroring JS — no array/hash split is needed (unlike Perl's
-    // `->[]` vs `->{}`). #1897 (data-table's `selected()[index]`).
-    return `${emit(object)}[${emit(index)}]`
+    // The runtime getter distinguishes canonical array indices from
+    // string keys such as '01', which Kolon's subscript coerces to 1.
+    return `$bf.get(${emit(object)}, ${emit(index)})`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -333,13 +334,13 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${value}'`
+    if (literalType === 'string') return `'${escapeKolonSingleQuoted(String(value))}'`
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -355,13 +356,13 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // Kolon's builtin `.size()` is array-only and faults on a string.
     if (property === 'length') return `$bf.length(${obj})`
     // Kolon dot access works for hash refs.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}.${property}`
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // Kolon's `[]` postfix is polymorphic (array index or hash key),
-    // mirroring JS. #1897 (data-table's `selected()[index]`).
-    return `${emit(object)}[${emit(index)}]`
+    // Same receiver-aware, canonical-index lookup as the filter emitter.
+    return `$bf.get(${emit(object)}, ${emit(index)})`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

@@ -41,6 +41,7 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  'signal-literal-prop-name-collision': { limitation: 'signal-literal-prop-name-collision' },
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through
   // `BarefootJS::register_portal_element` / `bf.portals()` (an

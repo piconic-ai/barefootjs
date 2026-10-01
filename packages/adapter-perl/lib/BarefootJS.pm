@@ -1103,7 +1103,7 @@ sub get ($self, $collection, $key) {
         return $collection->{$key};
     }
     if (ref($collection) eq 'ARRAY') {
-        return undef unless $key =~ /^-?\d+$/;
+        return undef unless $key =~ /^(?:0|[1-9]\d*)$/;
         my $idx = $key + 0;
         # JS-semantics negative index is "not found" (`arr[-1] ===
         # undefined`), NOT Perl's native from-the-end wraparound — guard

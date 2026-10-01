@@ -101,6 +101,7 @@
  */
 
 import { groupBinaryOperand,
+  literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
@@ -229,7 +230,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
@@ -239,9 +240,9 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     if (property === 'length') {
       return `bf.length(${emit(object)})`
     }
-    // Dot access — see the file header, divergence 6: a JS member property
-    // is always a source-level identifier, and Pebble's dot accessor
-    // resolves a `Map` key by that name.
+    // Computed keys use the runtime getter; only plain property names
+    // can be appended safely to Pebble's dot accessor.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}.${property}`
   }
 
@@ -457,7 +458,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -472,6 +473,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return `bf.length(${obj})`
     // Dot access — see the file header, divergence 6.
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}.${property}`
   }
 

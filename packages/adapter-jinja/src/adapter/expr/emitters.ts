@@ -49,6 +49,7 @@
  */
 
 import { groupBinaryOperand,
+  literalMemberIndex,
   groupObjectLiteralSegments,
   type ParsedExprEmitter,
   type LoweringEmitter,
@@ -106,6 +107,10 @@ const PREDICATE_METHODS = new Set<HigherOrderMethod>([
  */
 export function truthyTest(node: ParsedExpr, rendered: string): string {
   return isBooleanResultParsed(node) ? rendered : `bf.truthy(${rendered})`
+}
+
+function emitComputedMember(object: ParsedExpr, property: string, emit: (e: ParsedExpr) => string): string {
+  return `bf.get(${emit(object)}, ${emit(literalMemberIndex(property))})`
 }
 
 /**
@@ -179,7 +184,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
@@ -198,6 +203,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // `getitem`, which tries the KEY first, sidestepping any built-in
     // dict method name (items/keys/values/get/pop/update/...) that would
     // otherwise shadow a same-named JS object field.
+    if (computed) return emitComputedMember(object, property, emit)
     return `${emit(object)}['${escapeJinjaSingleQuoted(property)}']`
   }
 
@@ -406,7 +412,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -426,6 +432,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // built-in dict method (`items`, `keys`, `values`, `get`, ...) resolves
     // to the bound method instead of the value. `[...]` (Jinja `getitem`)
     // tries the key first.
+    if (computed) return emitComputedMember(object, property, emit)
     return `${obj}['${escapeJinjaSingleQuoted(property)}']`
   }
 

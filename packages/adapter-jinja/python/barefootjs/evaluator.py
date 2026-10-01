@@ -568,11 +568,11 @@ def _read_property(obj: Any, key: Any) -> Any:
 
 def _read_index(obj: Any, index: Any) -> Any:
     if isinstance(obj, list):
-        f = _to_number(index)
-        if f != f or f in (float("inf"), float("-inf")):
+        key = _to_string(index)
+        if not key.isascii() or not key.isdecimal():
             return None
-        i = int(f)
-        if i != f or i < 0 or i >= len(obj):
+        i = int(key)
+        if str(i) != key or i >= len(obj):
             return None
         return obj[i]
     if isinstance(obj, dict):
