@@ -5,7 +5,7 @@ const CHOICES = ['1', '2']
 export function ConditionalNestedStatic() {
   const [open, setOpen] = createSignal(true)
   const [picked, setPicked] = createSignal('a1')
-  
+
   return <section>
     <button id="toggle" onClick={() => setOpen(!open())}>toggle</button>
     <output>{picked()}</output>
