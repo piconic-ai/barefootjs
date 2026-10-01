@@ -95,7 +95,7 @@ Implement `TemplateAdapter` (`packages/jsx/src/adapters/interface.ts`). Non-nego
   the `helper` id** (guarded by `isValidHelperId`) mapped to your runtime naming (e.g. `query` →
   `bf_query`). Reference: `packages/adapter-go-template/src/adapter/expr/url-builder.ts`. Never
   render an unmapped helper verbatim, and never special-case a built-in like `queryHref` outside
-  this path (see CLAUDE.md "Structural lowering registration").
+  this path (see AGENTS.md "Structural lowering registration").
 - Keep the object thin: per-compile state in `CompileState` reset per `generate()`, logic in pure
   functions over `emit-context.ts`, stateless helpers in `lib/`.
 
@@ -181,7 +181,7 @@ easy to miss — check off each one:
       (copy the closest `ci-*.yml`). It belongs to the heavy set: keep the copied
       `pull_request` trigger's `branches: [main]` and its default activity types (no `edited`),
       and do not add it to `EVERY_PR_WORKFLOWS` in `scripts/lib/heavy-gate.ts`. The lint
-      `bun test scripts/lib/__tests__/heavy-gate.test.ts` fails otherwise (CLAUDE.md, "CI on
+      `bun test scripts/lib/__tests__/heavy-gate.test.ts` fails otherwise (AGENTS.md, "CI on
       stacked PRs").
 - [ ] `.github/workflows/release.yml` — per-language registry publish job (gem/crates/PyPI/CPAN/
       Packagist…), following the existing Trusted-Publishing patterns.
@@ -199,7 +199,7 @@ easy to miss — check off each one:
 - [ ] `spec/compiler.md` — "Available Adapters" list.
 - [ ] `spec/template-helpers.md` — helper naming column, if a new convention.
 - [ ] `packages/adapter-tests/vectors/README.md` — runners table.
-- [ ] `CLAUDE.md` — Architecture adapter list.
+- [ ] `AGENTS.md` — Architecture adapter list.
 - [ ] `docs/core/llms.txt` index.
 
 ## Working discipline (how to run this as a long task)
@@ -227,7 +227,7 @@ Paste this (filled in) to start the task in a fresh session:
 ```
 Add a new BarefootJS adapter for <TEMPLATE ENGINE / LANGUAGE> as packages/adapter-<name>.
 
-Follow .claude/skills/add-adapter/SKILL.md exactly, phase by phase — read its "Read first"
+Follow .agents/skills/add-adapter/SKILL.md exactly, phase by phase — read its "Read first"
 list before writing code. Scoping answers: runtime model = <DSL | JS-engine>; copy skeleton
 from packages/adapter-<closest>; native runtime lives <in-package | shared with X>; helper
 naming = <bf_* | bf.* | …>.

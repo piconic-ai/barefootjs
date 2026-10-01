@@ -10,7 +10,7 @@ name: Update API Reference
 # longer exists — and nothing would notice.
 #
 # No `branches` filter: a stacked PR's head can drift the same as a
-# main-based one (see CLAUDE.md's "When main Breaks" section).
+# main-based one (see AGENTS.md's "When main Breaks" section).
 
 on:
   pull_request:

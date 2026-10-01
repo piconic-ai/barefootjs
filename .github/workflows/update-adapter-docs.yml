@@ -10,7 +10,7 @@ name: Update Adapter Docs
 #
 # No `branches` filter: a stacked PR's head can drift the same as a
 # main-based one, and this is the only check that would catch it (see
-# CLAUDE.md's "When main Breaks" section for the general pattern).
+# AGENTS.md's "When main Breaks" section for the general pattern).
 
 on:
   pull_request:

@@ -43,7 +43,7 @@
 エスケープして書く。**エスケープが既定**で、raw 出力は明示した場合だけ。
 
 - 根拠: 「JS テキストと JSX の混在物」を番兵付き文字列で運ぶと、規約を
-  知らない出力先が1つあるだけで silent leak になる（CLAUDE.md の
+  知らない出力先が1つあるだけで silent leak になる（AGENTS.md の
   write-side 規則）。値の種別は型ではなく実行時の値で判別する。
 - 施行箇所: `__bfSlot` と構造化 IR（`MapCallbackPreamble` など）、
   単一の描画扉 `renderPreamble`。

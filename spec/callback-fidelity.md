@@ -396,7 +396,7 @@ Each stage is independently shippable, tested, and PR-sized. Value/risk-ordered.
   (or a neutral-IR desugaring) can express; the rest is `/* @client */`.
 - **No behaviour drift.** SSR/CSR parity is preserved on every backend within
   what it renders.
-- **No new "adjust emitted output" compiler hook** (per `CLAUDE.md`); everything
+- **No new "adjust emitted output" compiler hook** (per `AGENTS.md`); everything
   flows through neutral IR, the ParsedExpr evaluator, or the capability
   predicate.
 

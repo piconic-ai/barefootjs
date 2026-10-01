@@ -2,7 +2,7 @@
  * Decision logic and workflow lint for the heavy-CI gate
  * (`.github/workflows/ci-heavy-gate.yml`, job `heavy-ci-ran`).
  *
- * Policy (CLAUDE.md, "CI on stacked PRs"): a stacked PR (base != main) runs
+ * Policy (AGENTS.md, "CI on stacked PRs"): a stacked PR (base != main) runs
  * only the light set; the heavy set is `on: pull_request: branches: [main]`
  * with the default activity types (opened, synchronize, reopened). When a
  * stack's bottom PR merges, GitHub retargets the next PR onto main without a

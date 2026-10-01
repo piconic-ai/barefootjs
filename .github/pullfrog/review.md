@@ -1,12 +1,12 @@
 # PR review instructions
 
-Read `CLAUDE.md` (symlinked as `AGENTS.md`) before reviewing. It is the design contract for this
+Read `AGENTS.md` before reviewing. It is the shared design contract for this
 codebase, not style guidance — use it as review criteria. When you flag a violation, name the
 section instead of restating it.
 
 ## Design conformance (must-address)
 
-Check the diff against the four **"Never …"** conventions in CLAUDE.md's Code Conventions section.
+Check the diff against the **"Never …"** conventions in AGENTS.md's Code Conventions section.
 A violation is must-address even when the code works. Name the violated convention and point to the
 sanctioned alternative it prescribes (IR metadata / AST walk, structured IR through a single
 renderer, the lowering-plugin registry, `BindingScope`).
@@ -25,7 +25,7 @@ what CI cannot check:
 
 ## Test placement
 
-Flag tests at the wrong layer per CLAUDE.md's testing table: an E2E test for static-only
+Flag tests at the wrong layer per AGENTS.md's testing table: an E2E test for static-only
 attribute/class/ARIA changes (an explicit anti-pattern), event→setter wiring asserted anywhere but
 a component IR test, template HTML asserted outside adapter conformance fixtures, client JS
 behavior asserted outside CSR conformance fixtures, and hydration-correctness fixes not verified

@@ -560,7 +560,7 @@ All four run the same oracle bodies (`e2e/oracle-core.ts`) against the same host
 
 | Sweep | Input | Question a red row answers | Oracles | Cadence | Ledger |
 |---|---|---|---|---|---|
-| fixture-hydrate + oracle (`test:fixture-hydrate`) | the frozen fixture corpus | does a committed fixture hydrate and mount consistently? | snap, three-point, idempotence, scripted interactions | every main-based PR (`ci.yml`; skipped on stacked PRs, see CLAUDE.md "CI on stacked PRs") | `oracle-quarantine.ts` |
+| fixture-hydrate + oracle (`test:fixture-hydrate`) | the frozen fixture corpus | does a committed fixture hydrate and mount consistently? | snap, three-point, idempotence, scripted interactions | every main-based PR (`ci.yml`; skipped on stacked PRs, see AGENTS.md "CI on stacked PRs") | `oracle-quarantine.ts` |
 | mutation (`test:mutation`) | corpus × single meaning-preserving mutations | does a mutation that should not change meaning change the render? | snap, three-point, idempotence | nightly (`mutation-sweep.yml`) | `mutation-quarantine.ts` |
 | pairwise (`test:pairwise`) | generated t=2 / t=3 combinations of the five static feature axes | does a **static feature combination** the corpus never wrote render, hydrate and mount consistently at its SSR-time state? | snap, three-point, idempotence (one scripted click) | nightly (`pairwise-sweep.yml`) | `pairwise-quarantine.ts` |
 | explore (`test:explore`) | hand-modelled scenarios × bounded action sequences (× SSR adapter) | does a **transition** from a given state preserve the component's declarative meaning? | snap, three-point per state; transition-hydrate, transition-csr, identity-hydrate, identity-csr per path; render per adapter run | nightly (`explore-sweep.yml`) | `explore-quarantine.ts` |
@@ -569,7 +569,7 @@ Pairwise is breadth over the *grammar*: every case is one covering-array tuple r
 
 The pairwise composer (`pairwise/compose.ts`) is deliberately the only *generator* of components today; explore scenarios are written by hand with a mirrored reducer. #3046 leaves the door open for the composer to become a second producer of explore scenarios once a generating action DSL exists — that is the point at which the two sweeps stop being separate corpora. Until then the split is: pairwise generates, explore models.
 
-**A nightly sweep is a gate for its ledger, not a dashboard.** Its only legitimate steady state is green: every known divergence quarantined against a registry entry, every graduated one deleted (the rot-check makes a stale row fail loudly for exactly this reason). A nightly that has been red for days is a sweep nobody is reading, and its findings are being lost — treat it like a red `main` (CLAUDE.md, "When `main` Breaks"): triage the rows the same day, either into the registry with a fixture or out of the ledger, and never let a second class of failure pile up behind the first.
+**A nightly sweep is a gate for its ledger, not a dashboard.** Its only legitimate steady state is green: every known divergence quarantined against a registry entry, every graduated one deleted (the rot-check makes a stale row fail loudly for exactly this reason). A nightly that has been red for days is a sweep nobody is reading, and its findings are being lost — treat it like a red `main` (AGENTS.md, "When `main` Breaks"): triage the rows the same day, either into the registry with a fixture or out of the ledger, and never let a second class of failure pile up behind the first.
 
 ---
 

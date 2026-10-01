@@ -234,7 +234,7 @@ convention as `spec/adapter-architecture.md`):
 | Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`); and the generated `kind × axis × adapter` support matrix (`support-matrix.lock.json`, #2275) — the coverage ledger (`coverage-map.json` + `PARSED_EXPR_KINDS` registry + freshness/floor meta-tests) supplies the kind/axis denominators, joined against each adapter's pins/divergences, published on the docs compatibility-matrix page and held by a CI drift gate | Attribution is fixture-granular — a construct's `pass/total` counts the fixtures that exercise it (pins are per-fixture, not per-construct), so the ratio, not a binary verdict, is the queryable signal |
 
 Cross-cutting: the change-time coupling rule (subset extensions merge only
-with fixtures in the same PR) is written into `CLAUDE.md`'s Testing section
+with fixtures in the same PR) is written into `AGENTS.md`'s Testing section
 (#2276) so agent-driven PRs pick it up automatically. All four of its named
 halves are enforced mechanically: the `PARSED_EXPR_KINDS` and
 `ARRAY_METHOD_NAMES` exhaustiveness pins for kinds and the method catalogue,

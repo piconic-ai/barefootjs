@@ -1303,7 +1303,7 @@ would cost more than a typical subset extension:
   reaching into the build hot path (`bf build`), not a local analysis.
 - Every one of the ~9 backend adapters has its OWN `bf-p`-equivalent prop producer. A
   cross-component answer computed once and consumed nine different ways is exactly the "one
-  decision, two implementations" defect pattern this codebase's CLAUDE.md warns against
+  decision, two implementations" defect pattern this codebase's AGENTS.md warns against
   (see "Reference Adapter" / "One decision, two implementations, no test comparing them")
   unless it's built as a single shared implementation from day one — real design and
   maintenance cost for a change the measurement above shows saves nothing today.

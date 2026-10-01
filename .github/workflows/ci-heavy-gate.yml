@@ -1,6 +1,6 @@
 name: CI — Heavy gate
 
-# Stacked-PR policy (CLAUDE.md, "CI on stacked PRs"): heavy workflows are
+# Stacked-PR policy (AGENTS.md, "CI on stacked PRs"): heavy workflows are
 # `pull_request: branches: [main]` with the default activity types, so a
 # stacked PR runs only the light set. When the layer below merges, GitHub
 # retargets this PR onto main without a push. No default type fires on that,
