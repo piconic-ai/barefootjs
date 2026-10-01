@@ -1273,6 +1273,21 @@
         "text"
       ]
     },
+    "children-nullish-fallback": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-passthrough-no-children": {
       "kinds": [
         "identifier",

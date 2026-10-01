@@ -105,6 +105,36 @@ describe('templates: optional for an adapter with always-empty output (CSR)', ()
     expect(await pathExists(join(dir, 'manifest.json'))).toBe(false)
   })
 
+  test('CSR discovery and transform preserve children with an empty fallback (#3264)', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-csr-children-fallback-'))
+    const componentDir = join(dir, 'src/components')
+    await mkdir(componentDir, { recursive: true })
+    const sources = {
+      Box: `'use client'
+export function Box(props: { children?: unknown }) {
+  return <div>{props.children ?? ''}</div>
+}`,
+      Leaf: `'use client'
+export function Leaf() { return <span>leaf</span> }`,
+      Page: `'use client'
+import { Box } from './Box'
+import { Leaf } from './Leaf'
+export function Page() { return <Box><Leaf /></Box> }`,
+    }
+    for (const [name, source] of Object.entries(sources)) {
+      await writeFile(join(componentDir, `${name}.tsx`), source)
+    }
+    const plugin: AnyPlugin = barefoot({ adapter: new CSRAdapter(), components: ['src/components'] })
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    await plugin.configResolved({ root: dir, base: '/', build: { outDir: 'dist', manifest: true } })
+    // Repeated transforms cover the production compile cache as well.
+    for (let pass = 0; pass < 2; pass++) {
+      const box = plugin.transform(sources.Box, join(componentDir, 'Box.tsx'))
+      expect(box.code).toContain('markupOrEmpty(')
+      expect(plugin.transform(sources.Page, join(componentDir, 'Page.tsx')).code).toContain('renderChild(')
+    }
+  })
+
   test('dev pass also builds clean with `templates` omitted', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-templates-optional-csr-dev-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
