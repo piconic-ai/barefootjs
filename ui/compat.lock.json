@@ -3483,7 +3483,25 @@
             "loop-param-prop-member-collision"
           ]
         },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        },
         "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        },
+        "pebble": {
           "kind": "render",
           "limitations": [
             "loop-param-prop-member-collision"
@@ -6544,7 +6562,10 @@
       ],
       "adapters": [
         "blade",
+        "jinja",
+        "minijinja",
         "mojolicious",
+        "pebble",
         "twig",
         "xslate"
       ]
