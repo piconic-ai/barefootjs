@@ -35,7 +35,7 @@ is normative.
 3. **Discriminate child positions at runtime.** A `Node` value is spliced
    by identity; a string is escaped. Escaping is the default; raw is
    explicit. (`__bfSlot` + structured IR; the write-side rule in
-   CLAUDE.md.)
+   AGENTS.md.)
 4. **Rows own no resources.** A loop row allocates no reactive resources;
    you pay only for the rows that update. (§9's lazy row graph; the
    eligibility gate in §9.4 falls back to eager emission, never to

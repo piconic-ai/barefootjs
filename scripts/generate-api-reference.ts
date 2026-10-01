@@ -33,7 +33,7 @@
 // signature stops naming the type — so it cannot outlive its reason.
 //
 // Resolution is a TypeScript Program over the entry files (never a regex
-// over source text — CLAUDE.md): re-exports are followed through the
+// over source text — AGENTS.md): re-exports are followed through the
 // checker to the declaring symbol, and the tags are read off the JSDoc
 // block that carries them.
 //

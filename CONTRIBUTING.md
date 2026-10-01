@@ -115,9 +115,23 @@ Quick guide:
 Run the relevant suite before submitting, and `bun run lint` to keep formatting
 consistent.
 
+## Shared coding-agent instructions
+
+Claude and Codex share [AGENTS.md](AGENTS.md) and `.agents/skills/`; Claude's
+`.claude/skills` path links to the same skills. This repository intentionally has
+no `CLAUDE.md` bridge.
+
+For Claude Code, use **v2.1.281 or later** with the built-in `agents-md` plugin
+enabled. Native discovery started in v2.1.277, but some environments required
+v2.1.281; see the [official discovery requirements](https://code.claude.com/docs/en/memory#when-agents-md-support-is-unavailable).
+Older installations must upgrade. If an ancestor `CLAUDE.md` or a local
+`CLAUDE.local.md` shadows this file, select `claude-md-and-agents-md` under Project
+instructions in `/config`. Otherwise the default `claude-md-or-agents-md` works.
+Start a new session after upgrading and use `/memory` to confirm `AGENTS.md` loads.
+
 ## Coding conventions
 
-A few rules the codebase enforces (see [`CLAUDE.md`](CLAUDE.md) for the full set):
+A few rules the codebase enforces (see [`AGENTS.md`](AGENTS.md) for the full set):
 
 - **Never parse imports or any JS/TS syntax with regex or string matching.**
   Use the established AST-based patterns — the IR's parsed metadata for source

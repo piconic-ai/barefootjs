@@ -106,7 +106,7 @@ graph TD
 ```
 
 A violation of this square is not a stylistic bug — it is a hydration mismatch, the same
-class of defect the compiler already treats as an invariant to fix (CLAUDE.md: "Hydration
+class of defect the compiler already treats as an invariant to fix (AGENTS.md: "Hydration
 correctness is a compiler invariant").
 
 ## 3. Composition

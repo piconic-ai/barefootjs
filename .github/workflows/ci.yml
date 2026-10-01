@@ -39,7 +39,7 @@ on:
       - 'integrations/shared/lib/**'
       - 'integrations/*/Dockerfile'
       - 'integrations/*/wrangler.toml'
-  # Split workflow under the stacked-PR policy (CLAUDE.md, "CI on stacked
+  # Split workflow under the stacked-PR policy (AGENTS.md, "CI on stacked
   # PRs"): the unit/IR jobs (`test`, `test-ui`) are the light set and run on
   # every PR; the browser jobs (`e2e-site-core`, `fixture-hydrate`,
   # `e2e-site-ui`) are the heavy set, gated to main-based PRs by their

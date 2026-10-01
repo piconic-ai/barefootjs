@@ -74,7 +74,7 @@ function.
 1. **No expression parsing in adapters.** `parseExpression`,
    `ts.createSourceFile`, and regex-over-expression-strings are forbidden in
    adapter code. The IR supplies a `ParsedExpr`. (Extends the existing
-   CLAUDE.md "never parse JS/TS with regex" rule.)
+   AGENTS.md "never parse JS/TS with regex" rule.)
 2. **Object methods are dispatch + thin delegation only.** Logic goes into a
    domain function that takes `EmitContext`.
 3. **Per-compile mutable state lives in `CompileState`**, reset per
