@@ -888,6 +888,30 @@
       }
     }
   ],
+  "conditional-nested-loop-precomputed-reactivity": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "choices": [
+          "1",
+          "2"
+        ],
+        "__instanceId": "ConditionalNestedPrecomputed_test"
+      }
+    },
+    {
+      "name": "gen:choices:empty",
+      "props": {
+        "groups": [
+          "a",
+          "b"
+        ],
+        "choices": [],
+        "__instanceId": "ConditionalNestedPrecomputed_test"
+      }
+    }
+  ],
   "conditional-return-button": [
     {
       "name": "gen:variant:empty",
@@ -2214,6 +2238,28 @@
       "name": "gen:groups:empty",
       "props": {
         "groups": []
+      }
+    }
+  ],
+  "nested-loop-string-addition": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "choices": [
+          "1",
+          "2"
+        ]
+      }
+    },
+    {
+      "name": "gen:choices:empty",
+      "props": {
+        "groups": [
+          "a",
+          "b"
+        ],
+        "choices": []
       }
     }
   ],
