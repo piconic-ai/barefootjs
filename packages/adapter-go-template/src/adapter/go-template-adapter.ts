@@ -6571,7 +6571,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     leftRendered: string,
     rightRendered: string,
   ): string {
-    if (isStringConcatBinary('+', leftExpr, rightExpr, n => this._isStringValueName(n))) {
+    if (isStringConcatBinary('+', leftExpr, rightExpr, (n, property) => this._isStringValueName(n, property))) {
       return `bf_concat_str ${leftRendered} ${rightRendered}`
     }
     return `bf_add ${leftRendered} ${rightRendered}`
@@ -6580,8 +6580,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Whether `name` (a signal getter or prop) holds a string value — drives
    *  `isStringConcatBinary`'s string-vs-numeric `+` decision (#2168
    *  string-concat-plus). */
-  private _isStringValueName(name: string): boolean {
-    return this.state.stringValueNames.has(name)
+  private _isStringValueName(name: string, componentProperty = false): boolean {
+    return this.scope.isStringValueName(name, n => this.state.stringValueNames.has(n), componentProperty)
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {

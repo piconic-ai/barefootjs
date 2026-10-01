@@ -1,6 +1,10 @@
 import { fixture as conditionalNestedClient } from './conditional-nested-loop-client-reactivity'
 import { fixture as conditionalNestedPrecomputed } from './conditional-nested-loop-precomputed-reactivity'
 import { fixture as nestedLoopStringAddition } from './nested-loop-string-addition'
+import { fixture as nestedLoopAdditionShadowing } from './nested-loop-addition-shadowing'
+import { fixture as fractionalNumberArrayProp } from './fractional-number-array-prop'
+import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
+import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
 import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
 import { fixture as counter } from './counter'
@@ -1416,6 +1420,10 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalThenColonText,
   conditionalThenPercentText,
   nestedLoopStringAddition,
+  nestedLoopAdditionShadowing,
+  fractionalNumberArrayProp,
+  loopParamPropMemberCollision,
+  numberAdditionTextFormatting,
   conditionalNestedClient,
   conditionalNestedPrecomputed,
   conditionalNestedStatic,

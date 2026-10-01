@@ -54,7 +54,7 @@ export interface BladeEmitContext {
   _resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
-  _isStringValueName(name: string): boolean
+  _isStringValueName(name: string, componentProperty?: boolean): boolean
 
   /**
    * #3144: whether `name` is a component-body local bound to an opaque

@@ -198,3 +198,30 @@ describe('BindingScope', () => {
     })
   })
 })
+
+describe('scoped string value types', () => {
+  test('nested string rows retain outer types; numeric shadows and indexes do not inherit them', () => {
+    const outer = BindingScope.EMPTY.enterLoopRow({ param: 'item', itemType: { primitive: 'string' } })
+    const inner = outer.enterLoopRow({ param: 'choice', index: 'i', itemType: { primitive: 'string' } })
+    expect(inner.isStringValueName('item', () => false)).toBe(true)
+    expect(inner.isStringValueName('choice', () => false)).toBe(true)
+    expect(inner.isStringValueName('choice', () => false, true)).toBe(false)
+    expect(inner.isStringValueName('i', () => true)).toBe(false)
+    const shadow = inner.enterLoopRow({ param: 'item', itemType: { primitive: 'number' } })
+    expect(shadow.isStringValueName('item', () => true)).toBe(false)
+    expect(shadow.shadowedNames()).toEqual(['item'])
+    expect(inner.shadowedNames()).toEqual([])
+    expect(outer.isStringValueName('item', () => false)).toBe(true)
+    expect(inner.isStringValueName('title', () => true)).toBe(true)
+  })
+  test('a union of string literals is string-valued; mixed unions are not', () => {
+    const stringRow = BindingScope.EMPTY.enterLoopRow({ param: 'row', itemType: {
+      unionTypes: [{ primitive: 'string' }, { primitive: 'string' }],
+    } })
+    expect(stringRow.isStringValueName('row', () => false)).toBe(true)
+    const mixedRow = stringRow.enterLoopRow({ param: 'row', itemType: {
+      unionTypes: [{ primitive: 'string' }, { primitive: 'number' }],
+    } })
+    expect(mixedRow.isStringValueName('row', () => true)).toBe(false)
+  })
+})

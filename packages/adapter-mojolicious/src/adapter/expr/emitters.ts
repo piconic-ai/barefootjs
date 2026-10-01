@@ -134,7 +134,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   // Reports whether a getter/prop name is string-typed, so `===`/`!==`
   // against it lowers to `eq`/`ne` (#1672). Defaults to "never" for callers
   // that don't thread it through.
-  private readonly isStringName: (n: string) => boolean
+  private readonly isStringName: (n: string, componentProperty?: boolean) => boolean
   // Records a BF101 for nested callback shapes this emitter can only
   // degrade — `find*` and the non-predicate methods (#2038). Optional so
   // emitter construction stays possible without an adapter; a missing hook
@@ -144,7 +144,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string) => boolean = () => false,
+    isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
   ) {
     this.param = param
@@ -445,7 +445,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       // string prop/getter (`isStringTypedOperand`) or a bare
       // identifier bound to one — the same `_isStringValueName` witness
       // the `eq`/concat lowering already consults.
-      const isStr = (e: ParsedExpr) => isStringTypedOperand(e, n => this.ctx._isStringValueName(n))
+      const isStr = (e: ParsedExpr) => isStringTypedOperand(e, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
       const isStringReceiver =
         isStr(object) ||
         (object.kind === 'identifier' && this.ctx._isStringValueName(object.name))
@@ -462,7 +462,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    return emitIndexAccessPerl(object, index, emit, n => this.ctx._isStringValueName(n))
+    return emitIndexAccessPerl(object, index, emit, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -545,7 +545,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, n => this.ctx._isStringValueName(n))
+    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
     if (lookupEquality !== null) return lookupEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
@@ -557,7 +557,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // string prop (`props.x`). Falling back to numeric `==`/`!=` would make
     // Perl coerce both sides to 0 and match unrelated non-numeric strings
     // (`"b" == "a"` → true), so all loop items render their true branch (#1672).
-    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, n => this.ctx._isStringValueName(n))
+    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
     const stringCmp = isStr(left) || isStr(right)
     if ((op === '===' || op === '==') && stringCmp) {
       return `${l} eq ${r}`
@@ -568,7 +568,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
     // to Perl's `.` concat operator.
-    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
+    if (isStringConcatBinary(op, left, right, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))) {
       return `${l} . ${r}`
     }
     const opMap: Record<string, string> = {

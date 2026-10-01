@@ -3273,6 +3273,18 @@
         "text"
       ]
     },
+    "fractional-number-array-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "fragment": {
       "kinds": [
         "call",
@@ -3973,6 +3985,25 @@
       ],
       "axes": [
         "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-prop-member-collision": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
         "literal:string"
       ],
       "contexts": [
@@ -5180,6 +5211,23 @@
         "text"
       ]
     },
+    "nested-loop-addition-shadowing": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-independent-signal": {
       "kinds": [
         "array-literal",
@@ -5257,7 +5305,8 @@
         "binary",
         "identifier",
         "literal",
-        "member"
+        "member",
+        "template-literal"
       ],
       "axes": [
         "binary:+",
@@ -5457,6 +5506,21 @@
         "literal:number",
         "literal:string",
         "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-addition-text-formatting": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
       ],
       "contexts": [
         "text"

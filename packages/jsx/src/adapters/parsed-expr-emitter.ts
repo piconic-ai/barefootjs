@@ -244,14 +244,14 @@ export interface ParsedExprEmitter {
  * Consumed by `===`/`!==` lowering on backends whose `==` is numeric
  * (Perl `eq`/`ne`) and by `isStringConcatBinary` below.
  */
-export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string) => boolean): boolean {
+export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string, componentProperty?: boolean) => boolean): boolean {
   if (expr.kind === 'literal' && expr.literalType === 'string') return true
   if (expr.kind === 'template-literal') return true
   if (expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0) {
     return isStringName(expr.callee.name)
   }
   if (expr.kind === 'member' && expr.object.kind === 'identifier' && expr.object.name === 'props') {
-    return isStringName(expr.property)
+    return isStringName(expr.property, true)
   }
   // A bare identifier (#2212): a destructured prop param or a same-file
   // local const, string-typed per the caller's `isStringName` set — each
@@ -282,7 +282,7 @@ export function isStringConcatBinary(
   op: string,
   left: ParsedExpr,
   right: ParsedExpr,
-  isStringName: (n: string) => boolean,
+  isStringName: (n: string, componentProperty?: boolean) => boolean,
 ): boolean {
   return op === '+' && (isStringTypedOperand(left, isStringName) || isStringTypedOperand(right, isStringName))
 }

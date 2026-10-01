@@ -88,7 +88,8 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
 // undelivered.
 export const renderDivergences: RenderDivergences = {
-  'nested-loop-string-addition': { limitation: 'nested-loop-string-addition' },
+  'number-addition-text-formatting': { limitation: 'number-addition-text-formatting' },
+  'fractional-number-array-prop': { limitation: 'fractional-number-array-prop' },
   // #3057's `child-prop-rest-forward-undefined-start`: the fixture's own
   // top-level signal (`createSignal<string | undefined>(undefined)`) seeds
   // its `interface{}` field with `""` instead of `nil` (`convertInitialValue`

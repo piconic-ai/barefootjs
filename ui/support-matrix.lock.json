@@ -1699,12 +1699,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1848,12 +1842,6 @@
               "fixture": "loop-row-child-children-nested-destructured-prop",
               "limitations": [
                 "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -2025,12 +2013,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -2153,12 +2135,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2214,12 +2190,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -4150,12 +4120,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4494,6 +4458,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-prop",
+              "limitations": [
+                "fractional-number-array-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -4623,12 +4593,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -5208,12 +5172,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5594,12 +5552,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5787,12 +5739,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -6024,12 +5970,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -6398,12 +6338,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -6857,12 +6791,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7159,12 +7087,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7310,12 +7232,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -7688,12 +7604,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7942,6 +7852,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-prop",
+              "limitations": [
+                "fractional-number-array-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8035,12 +7951,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -8464,12 +8374,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -8748,12 +8652,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8887,12 +8785,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -11295,12 +11187,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11339,12 +11225,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11375,12 +11255,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11401,12 +11275,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11416,12 +11284,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -11560,12 +11422,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11691,12 +11547,6 @@
               "fixture": "loop-row-child-children-nested-destructured-prop",
               "limitations": [
                 "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -11850,12 +11700,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11960,12 +11804,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12015,12 +11853,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -13305,12 +13137,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13532,12 +13358,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -13781,12 +13601,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -13951,12 +13765,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14036,12 +13844,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {

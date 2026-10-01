@@ -1746,6 +1746,14 @@
       }
     }
   ],
+  "fractional-number-array-prop": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": []
+      }
+    }
+  ],
   "fragment-body-keyed-loop-row": [
     {
       "name": "gen:items:empty",
@@ -1969,6 +1977,45 @@
       "name": "gen:rows:empty",
       "props": {
         "rows": []
+      }
+    }
+  ],
+  "loop-param-prop-member-collision": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": [],
+        "value": 4
+      }
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": 1234567890
       }
     }
   ],
@@ -2233,6 +2280,28 @@
       }
     }
   ],
+  "nested-loop-addition-shadowing": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "values": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "groups": [
+          "a",
+          "b"
+        ],
+        "values": []
+      }
+    }
+  ],
   "nested-loop-outer-binding": [
     {
       "name": "gen:groups:empty",
@@ -2454,6 +2523,20 @@
       "props": {
         "label": "Custom",
         "size": 1234567890
+      }
+    }
+  ],
+  "number-addition-text-formatting": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
       }
     }
   ],

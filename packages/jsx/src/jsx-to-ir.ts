@@ -40,7 +40,7 @@ import {
   isReactiveOrigin,
   AttrValueOf,
 } from './types.ts'
-import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
+import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
@@ -5593,7 +5593,9 @@ function transformMapCall(
     array,
     templateArray,
     arrayType: null,
-    itemType: null,
+    itemType: ts.isArrowFunction(callback) && callback.parameters[0] && ctx.analyzer.checker
+      ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(callback.parameters[0]), ctx.analyzer.checker)
+      : null,
     param,
     index,
     key,

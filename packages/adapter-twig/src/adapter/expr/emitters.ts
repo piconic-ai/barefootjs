@@ -161,7 +161,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
   private readonly param: string
   private readonly localVarMap: Map<string, string>
-  private readonly isStringName: (n: string) => boolean
+  private readonly isStringName: (n: string, componentProperty?: boolean) => boolean
   // Records a BF101 for predicate shapes this emitter can only degrade
   // (#2038). Optional so emitter construction stays possible without an
   // adapter; a missing hook keeps the old silent-degrade emit.
@@ -170,7 +170,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string) => boolean = () => false,
+    isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
   ) {
     this.param = param
@@ -538,7 +538,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // non-numeric strings, #2176). Lower to Twig's `~` concat operator.
     // The adapter's string-value registry catches getter/prop operands
     // with no literal present (`firstName() + lastName()`).
-    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
+    if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
       return `${l} ~ ${r}`
     }
     const opMap: Record<string, string> = {

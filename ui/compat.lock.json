@@ -3276,6 +3276,14 @@
           ]
         }
       },
+      "fractional-number-array-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "fractional-number-array-prop"
+          ]
+        }
+      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -4416,38 +4424,6 @@
           "kind": "render",
           "limitations": [
             "negated-empty-array-condition"
-          ]
-        }
-      },
-      "nested-loop-string-addition": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-string-addition"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-string-addition"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-string-addition"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-string-addition"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-string-addition"
           ]
         }
       },
@@ -5925,6 +5901,10 @@
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
+      "fractional-number-array-prop": {
+        "description": "A number-array prop preserves fractional values in loop rows",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-prop.ts"
+      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -6016,10 +5996,6 @@
       "negated-empty-array-condition": {
         "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
-      },
-      "nested-loop-string-addition": {
-        "description": "String addition of outer and inner row bindings preserves both values in attributes and conditions",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-string-addition.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -6385,6 +6361,19 @@
         "BF101"
       ]
     },
+    "fractional-number-array-prop": {
+      "title": "Fractional values in a number-array prop",
+      "kind": "silent",
+      "given": "a number-array prop containing fractional values, rendered by a map callback",
+      "expected": "the fractional values render unchanged",
+      "actual": "fails native rendering with a fractional-to-integer array initialization error without a compiler diagnostic",
+      "fixtures": [
+        "fractional-number-array-prop"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "fragment-wrapped-conditional-return-branch-scope": {
       "title": "Fragment-wrapped branch of a conditional return is never hydrated",
       "kind": "refusal",
@@ -6501,6 +6490,17 @@
       "adapters": [
         "go-template"
       ]
+    },
+    "loop-param-prop-member-collision": {
+      "title": "A loop variable collides with an explicit prop member",
+      "kind": "silent",
+      "given": "a map callback binding the same name as a numeric prop, with an explicit prop member read in a row conditional",
+      "expected": "the conditional reads the root prop independently of the row binding",
+      "actual": "renders the conditional using the loop-local value instead of the root prop",
+      "fixtures": [
+        "loop-param-prop-member-collision"
+      ],
+      "adapters": []
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
@@ -6724,22 +6724,16 @@
         "BF101"
       ]
     },
-    "nested-loop-string-addition": {
-      "title": "String addition across nested loop bindings",
+    "number-addition-text-formatting": {
+      "title": "Large fractional addition in text",
       "kind": "silent",
-      "given": "nested `.map()` rows over string-array props, with `outer + inner` in an attribute or a conditional comparison",
-      "expected": "the two string row values concatenate, so the attribute and conditional compare the complete combined value",
-      "actual": "renders an incomplete or numeric combined value, or throws a runtime operand-type error, with no compile-time diagnostic",
+      "given": "a large numeric prop plus a fractional literal rendered directly in text",
+      "expected": "renders the JavaScript decimal spelling of the result",
+      "actual": "renders the result in exponential notation instead of JavaScript decimal notation",
       "fixtures": [
-        "nested-loop-string-addition"
+        "number-addition-text-formatting"
       ],
-      "adapters": [
-        "blade",
-        "go-template",
-        "mojolicious",
-        "twig",
-        "xslate"
-      ]
+      "adapters": []
     },
     "off-subset-callback-body": {
       "title": "Off-subset expression in a collection-method callback",
