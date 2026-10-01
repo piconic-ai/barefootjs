@@ -6650,7 +6650,8 @@
         "call",
         "identifier",
         "literal",
-        "member"
+        "member",
+        "template-literal"
       ],
       "axes": [
         "binary:*",

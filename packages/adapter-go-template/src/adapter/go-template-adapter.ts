@@ -5819,19 +5819,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
     // nil and uses JS-compatible notation for a present float; other
     // present values retain the existing default printing behavior.
-    const memoName = classify.parsed?.kind === 'call' && classify.parsed.callee.kind === 'identifier' && classify.parsed.args.length === 0
-      ? classify.parsed.callee.name : null
-    const numericMemo = memoName && this.state.currentMemos?.find(m => m.name === memoName)
-    // Boxed arithmetic results can be float64. Go's default printing uses
-    // scientific notation earlier than JS; stringify only at the text sink,
-    // preserving the numeric value for comparisons and child props.
-    const needsNumericString = numericMemo && numericMemoOperands(
-      this.emitCtx, numericMemo.parsed, this.state.currentSignals ?? [], this.state.currentPropsParams ?? [],
-    )
     const finalExpr =
-      this.textNillablePropNameOf(classify.parsed) !== null || needsNumericString
+      this.textNillablePropNameOf(classify.parsed) !== null
         ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : goExpr
+        : this.numericMemoTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -6707,6 +6698,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return lowerTernary(this.emitCtx, test, consequent, alternate)
   }
 
+  /** One text-sink decision for direct expressions and template interpolations.
+   * Numeric values remain boxed everywhere outside text rendering. */
+  private numericMemoTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
+    if (expr?.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return goExpr
+    const name = this.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
+    const memo = this.state.currentMemos.find(m => m.name === name)
+    return memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams)
+      ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+  }
+
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
     let result = ''
     for (const part of parts) {
@@ -6718,7 +6719,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // template parse error. Same `isTemplateFragment` guard as
         // `renderExpression`.
         const e = emit(part.expr)
-        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${e}}}`
+        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericMemoTextExpression(e, part.expr)}}}`
       }
     }
     return result

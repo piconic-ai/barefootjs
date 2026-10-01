@@ -23,6 +23,29 @@ function step(plan: SsrSeedPlan, name: string): SsrSeedStep {
 }
 
 describe('computeSsrSeedPlan', () => {
+  test('getter aliases seed after their prop-derived memo, including alias hops', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      function App(props: { count: number }) {
+        const [n] = createSignal(1.5)
+        const total = createMemo(() => n() + props.count)
+        const totalAlias = total
+        const secondAlias = totalAlias
+        return <p>{totalAlias()}{secondAlias()}</p>
+      }
+    `)
+    expect(plan.steps.map(s => s.name)).toEqual(['n', 'total', 'totalAlias', 'secondAlias'])
+    for (const name of ['totalAlias', 'secondAlias']) {
+      const alias = step(plan, name)
+      expect(alias.kind).toBe('derived')
+      if (alias.kind === 'derived') {
+        expect(alias.parsed).toEqual({ kind: 'call', callee: { kind: 'identifier', name: 'total' }, args: [] })
+        expect(alias.frees).toContain('total')
+      }
+    }
+  })
+
   test('env signal (aliased) → env-reader step; derived memo over it', () => {
     const plan = planFor(`
       'use client'
