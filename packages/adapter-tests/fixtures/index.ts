@@ -1,3 +1,6 @@
+import { fixture as conditionalNestedClient } from './conditional-nested-loop-client-reactivity'
+import { fixture as conditionalNestedPrecomputed } from './conditional-nested-loop-precomputed-reactivity'
+import { fixture as nestedLoopStringAddition } from './nested-loop-string-addition'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
 import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
 import { fixture as counter } from './counter'
@@ -1412,6 +1415,9 @@ export const jsxFixtures: JSXFixture[] = [
   constStringConditionalTest,
   conditionalThenColonText,
   conditionalThenPercentText,
+  nestedLoopStringAddition,
+  conditionalNestedClient,
+  conditionalNestedPrecomputed,
   conditionalNestedStatic,
   conditionalNestedSignal,
   createMutationElidedValue,

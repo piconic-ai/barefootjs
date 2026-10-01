@@ -1,3 +1,4 @@
+import type { JSXFixture } from '../src/types'
 import { defineSharedFixture, type SharedFixtureSpec } from './_helpers'
 
 export const spec: SharedFixtureSpec = {
@@ -24,4 +25,10 @@ export const spec: SharedFixtureSpec = {
   ],
 }
 
-export const fixture = defineSharedFixture(spec)
+export const fixture: JSXFixture = {
+  ...defineSharedFixture(spec),
+  escapes: [
+    { kind: 'client-directive', fixture: 'conditional-nested-loop-client-reactivity' },
+    { kind: 'prop-precompute', fixture: 'conditional-nested-loop-precomputed-reactivity' },
+  ],
+}

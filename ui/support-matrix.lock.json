@@ -165,6 +165,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1687,6 +1699,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1761,6 +1779,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -1818,6 +1848,12 @@
               "fixture": "loop-row-child-children-nested-destructured-prop",
               "limitations": [
                 "loop-component-row-destructured-param"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -1989,6 +2025,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -2111,6 +2153,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2166,6 +2214,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -2539,6 +2593,18 @@
               "fixture": "child-prop-rest-forward-undefined-start",
               "limitations": [
                 "go-undefined-signal-seed-not-nil"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
               ]
             },
             {
@@ -4084,6 +4150,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4332,6 +4404,18 @@
               ]
             },
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4539,6 +4623,12 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -5118,6 +5208,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5498,6 +5594,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5685,6 +5787,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -5919,6 +6027,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6125,6 +6239,18 @@
               ]
             },
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6272,6 +6398,12 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -6725,6 +6857,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7021,6 +7159,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7166,6 +7310,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -7538,6 +7688,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7879,6 +8035,12 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -8302,6 +8464,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -8580,6 +8748,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8713,6 +8887,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -9132,6 +9312,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
             {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
@@ -11103,6 +11295,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11123,9 +11321,27 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -11159,6 +11375,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11179,6 +11401,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11188,6 +11416,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -11326,6 +11560,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11388,6 +11628,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11439,6 +11691,12 @@
               "fixture": "loop-row-child-children-nested-destructured-prop",
               "limitations": [
                 "loop-component-row-destructured-param"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -11592,6 +11850,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11696,6 +11960,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11745,6 +12015,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -11927,6 +12203,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
             {
               "fixture": "const-boolean-conditional-test",
               "limitations": [
@@ -12237,6 +12525,18 @@
         "erb": {},
         "go-template": {
           "gaps": [
+            {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
             {
               "fixture": "loop-component-row-destructured-param",
               "limitations": [
@@ -13005,6 +13305,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13121,6 +13427,18 @@
               ]
             },
             {
+              "fixture": "conditional-nested-loop-signal-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "conditional-nested-loop-static-reactivity",
+              "limitations": [
+                "conditional-nested-const-loop-source"
+              ]
+            },
+            {
               "fixture": "const-string-conditional-test",
               "limitations": [
                 "literal-const-conditional-test"
@@ -13214,6 +13532,12 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {
@@ -13457,6 +13781,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -13621,6 +13951,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13700,6 +14036,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "nested-loop-string-addition",
+              "limitations": [
+                "nested-loop-string-addition"
               ]
             },
             {

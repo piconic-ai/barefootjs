@@ -1,15 +1,12 @@
 import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, getLoopChildren, hydrate, insert, lazySlots, mapArray, mountRowRoot, qsa } from '@barefootjs/client/runtime'
 
 
-export function initConditionalNestedSignal(__scope, _p = {}) {
+export function initConditionalNestedPrecomputed(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const GROUPS = ['a', 'b']
-  const CHOICES = ['1', '2']
   const [open, setOpen] = createSignal(true)
   const [picked, setPicked] = createSignal('a1')
-  const [groups] = createSignal(GROUPS)
 
   const [_s0, _s3] = $(__scope, 's0', 's3')
 
@@ -20,21 +17,21 @@ export function initConditionalNestedSignal(__scope, _p = {}) {
   })
 
   insert(__scope, 's3', () => open(), {
-    template: () => { const __slots = []; return { html: `<div bf-c="s3" bf="s10"><!--bf-loop:l1-->${groups().map((group) => `<div data-key="${escapeAttr(group)}" bf="s9"><!--bf-loop:l0-->${CHOICES.map((choice) => `<button data-key-1="${escapeAttr(choice)}" ${(`${group}${choice}`) != null ? 'data-choice="' + escapeAttr(`${group}${choice}`) + '"' : ''} ${(`${picked() === `${group}${choice}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${picked() === `${group}${choice}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${picked() === `${group}${choice}` ? `<!--bf-cond-start:s4-->${__bfSlot('on', __slots)}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${__bfSlot('off', __slots)}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${__bfSlot(picked() + ':' + `${group}${choice}`, __slots)}<!--/--></span></button>`).join('')}<!--bf-/loop:l0--></div>`).join('')}<!--bf-/loop:l1--></div>`, slots: __slots } },
+    template: () => { const __slots = []; return { html: `<div bf-c="s3" bf="s10"><!--bf-loop:l1-->${_p.groups.map((group) => `<div data-key="${escapeAttr(group)}" bf="s9"><!--bf-loop:l0-->${_p.choices.map((choice) => `<button data-key-1="${escapeAttr(choice)}" ${(`${group}${choice}`) != null ? 'data-choice="' + escapeAttr(`${group}${choice}`) + '"' : ''} ${(`${picked() === `${group}${choice}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${picked() === `${group}${choice}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${picked() === `${group}${choice}` ? `<!--bf-cond-start:s4-->${__bfSlot('on', __slots)}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${__bfSlot('off', __slots)}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${__bfSlot(picked() + ':' + `${group}${choice}`, __slots)}<!--/--></span></button>`).join('')}<!--bf-/loop:l0--></div>`).join('')}<!--bf-/loop:l1--></div>`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
       const [__loop_s10] = $(__branchScope, 's10')
       if (__loop_s10 && !__bfFirstRun) getLoopChildren(__loop_s10, 'l1').forEach(__el => __el.remove())
       __disposers.push(createDisposableEffect(() => {
-        if (__loop_s10) mapArray(() => groups(), __loop_s10, (group) => String(group), (group, __idx, __existing) => {
+        if (__loop_s10) mapArray(() => _p.groups, __loop_s10, (group) => String(group), (group, __idx, __existing) => {
           const __el = __existing ?? mountRowRoot((() => {
             const __tpl = document.createElement('template')
-            __tpl.innerHTML = `<div data-key="${escapeAttr(group())}" bf="s9"><!--bf-loop:l0-->${CHOICES.map((choice) => `<button data-key-1="${escapeAttr(choice)}" ${(`${group()}${choice}`) != null ? 'data-choice="' + escapeAttr(`${group()}${choice}`) + '"' : ''} ${(`${picked() === `${group()}${choice}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${picked() === `${group()}${choice}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${picked() === `${group()}${choice}` ? `<!--bf-cond-start:s4-->${escapeText('on')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${escapeText('off')}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${escapeText(picked() + ':' + `${group()}${choice}`)}<!--/--></span></button>`).join('')}<!--bf-/loop:l0--></div>`
+            __tpl.innerHTML = `<div data-key="${escapeAttr(group())}" bf="s9"><!--bf-loop:l0-->${_p.choices.map((choice) => `<button data-key-1="${escapeAttr(choice)}" ${(`${group()}${choice}`) != null ? 'data-choice="' + escapeAttr(`${group()}${choice}`) + '"' : ''} ${(`${picked() === `${group()}${choice}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${picked() === `${group()}${choice}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${picked() === `${group()}${choice}` ? `<!--bf-cond-start:s4-->${escapeText('on')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${escapeText('off')}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${escapeText(picked() + ':' + `${group()}${choice}`)}<!--/--></span></button>`).join('')}<!--bf-/loop:l0--></div>`
             return __tpl.content.firstElementChild.cloneNode(true)
           })())
-          // Reactive inner loop: CHOICES
+          // Reactive inner loop: props.choices
           { const __ic1_0 = qsa(__el, '[bf="s9"]')
-          if (__ic1_0) mapArray(() => CHOICES || [], __ic1_0, (choice) => String(choice), (choice, __innerIdx1_0, __existing) => {
+          if (__ic1_0) mapArray(() => _p.choices || [], __ic1_0, (choice) => String(choice), (choice, __innerIdx1_0, __existing) => {
             let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<button data-key-1="${escapeAttr(choice())}" ${(`${group()}${choice()}`) != null ? 'data-choice="' + escapeAttr(`${group()}${choice()}`) + '"' : ''} ${(`${picked() === `${group()}${choice()}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${picked() === `${group()}${choice()}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${picked() === `${group()}${choice()}` ? `<!--bf-cond-start:s4-->${escapeText('on')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${escapeText('off')}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${escapeText(picked() + ':' + `${group()}${choice()}`)}<!--/--></span></button>`; return __t.content.firstElementChild.cloneNode(true) })()
             __innerEl1_0.setAttribute('data-key-1', String(choice()))
             { const __e = qsa(__innerEl1_0, '[bf="s8"]'); if (__e) __e.addEventListener('click', () => { setPicked(`${group()}${choice()}`) }) }
@@ -82,5 +79,5 @@ export function initConditionalNestedSignal(__scope, _p = {}) {
   if (_s0) _s0.addEventListener('click', () => { setOpen(!open()) })
 }
 
-hydrate('ConditionalNestedSignal', { init: initConditionalNestedSignal, template: (_p) => `<section bf="s11"><button id="toggle" bf="s0">toggle</button><output bf="s2"><!--bf:s1-->${escapeTextOrMarkup(('a1'))}<!--/--></output>${(true) ? `<div bf-c="s3" bf="s10"><!--bf-loop:l1-->${((['a', 'b'])).map((group) => `<div data-key="${escapeAttr(group)}" bf="s9"><!--bf-loop:l0-->${(['1', '2']).map((choice) => `<button data-key-1="${escapeAttr(choice)}" ${(`${group}${choice}`) != null ? 'data-choice="' + escapeAttr(`${group}${choice}`) + '"' : ''} ${(`${('a1') === `${group}${choice}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${('a1') === `${group}${choice}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${('a1') === `${group}${choice}` ? `<!--bf-cond-start:s4-->${escapeText('on')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${escapeText('off')}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${escapeText(('a1') + ':' + `${group}${choice}`)}<!--/--></span></button>`).join('')}<!--bf-/loop:l0--></div>`).join('')}<!--bf-/loop:l1--></div>` : `<!--bf-cond-start:s3--><!--bf-cond-end:s3-->`}</section>` })
-export function ConditionalNestedSignal(_p, __bfKey) { return createComponent('ConditionalNestedSignal', _p, __bfKey) }
+hydrate('ConditionalNestedPrecomputed', { init: initConditionalNestedPrecomputed, template: (_p) => `<section bf="s11"><button id="toggle" bf="s0">toggle</button><output bf="s2"><!--bf:s1-->${escapeTextOrMarkup(('a1'))}<!--/--></output>${(true) ? `<div bf-c="s3" bf="s10"><!--bf-loop:l1-->${_p.groups.map((group) => `<div data-key="${escapeAttr(group)}" bf="s9"><!--bf-loop:l0-->${_p.choices.map((choice) => `<button data-key-1="${escapeAttr(choice)}" ${(`${group}${choice}`) != null ? 'data-choice="' + escapeAttr(`${group}${choice}`) + '"' : ''} ${(`${('a1') === `${group}${choice}` ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${('a1') === `${group}${choice}` ? 'true' : 'false'}`) + '"' : ''} bf="s8"><span class="status" bf="s5">${('a1') === `${group}${choice}` ? `<!--bf-cond-start:s4-->${escapeText('on')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4-->${escapeText('off')}<!--bf-cond-end:s4-->`}</span><span class="value" bf="s7"><!--bf:s6-->${escapeText(('a1') + ':' + `${group}${choice}`)}<!--/--></span></button>`).join('')}<!--bf-/loop:l0--></div>`).join('')}<!--bf-/loop:l1--></div>` : `<!--bf-cond-start:s3--><!--bf-cond-end:s3-->`}</section>` })
+export function ConditionalNestedPrecomputed(_p, __bfKey) { return createComponent('ConditionalNestedPrecomputed', _p, __bfKey) }
