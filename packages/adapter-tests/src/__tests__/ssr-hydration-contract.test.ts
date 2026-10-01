@@ -172,6 +172,10 @@ const statelessFixtures = new Set([
   // `qsa(...)` lookup (`applyOuter`), never `insert()`, so it emits no
   // marker this test's `insert()` scan would catch.
   'static-nested-loop-conditional-client',
+  // Same deliberate client-only row elision: the escape renders no SSR
+  // rows, while its inner conditional's insert() materializes s4 on init.
+  // The full-SSR prop-precompute twin remains checked by this contract.
+  'conditional-nested-loop-client-reactivity',
 ])
 
 describe('SSR-Hydration Contract', () => {
