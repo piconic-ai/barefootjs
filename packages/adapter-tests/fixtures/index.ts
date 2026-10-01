@@ -1,3 +1,5 @@
+import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
+import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
 import { fixture as counter } from './counter'
 // Same-file reactive-factory helpers (#931, #2325): a helper wrapping
 // createSignal in a shorthand-object return inlines pre-analysis, so the
@@ -1410,5 +1412,7 @@ export const jsxFixtures: JSXFixture[] = [
   constStringConditionalTest,
   conditionalThenColonText,
   conditionalThenPercentText,
+  conditionalNestedStatic,
+  conditionalNestedSignal,
   createMutationElidedValue,
 ]

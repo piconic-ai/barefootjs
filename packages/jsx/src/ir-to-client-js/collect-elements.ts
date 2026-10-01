@@ -469,14 +469,15 @@ export function collectInnerLoops(
  *
  * Used by both the top-level `case 'loop'` in `collectElements` and the
  * branch-loop collector in `collectBranchLoops`. Each call site applies
- * its own final-emission rule over `innerLoops` (top-level also emits
- * them on `isStaticArray && innerLoops.length`, branch only on
- * `useElementReconciliation`).
+ * its own final-emission rule over `innerLoops`. Static top-level loops
+ * hydrate existing rows; branch-scoped loops materialize rows via mapArray
+ * and therefore use composite rendering for static nested loops too.
  */
 function decideLoopRendering(
   loop: IRLoop,
   siblingOffsets: Map<IRLoop, IRNode[]>,
   ctx: ClientJsContext | undefined,
+  branchScope = false,
 ): { useElementReconciliation: boolean; innerLoops: NestedLoop[] | undefined } {
   const hasNestedComps = (loop.nestedComponents?.length ?? 0) > 0
   // Collect inner loops even when the outer item is a child component
@@ -495,7 +496,7 @@ function decideLoopRendering(
   )
   const hasInnerLoops = (innerLoops?.length ?? 0) > 0
   const useElementReconciliation =
-    !loop.childComponent && !loop.isStaticArray && (hasNestedComps || hasInnerLoops)
+    !loop.childComponent && (!loop.isStaticArray || (branchScope && hasInnerLoops)) && (hasNestedComps || hasInnerLoops)
   return { useElementReconciliation, innerLoops }
 }
 
@@ -1342,10 +1343,8 @@ function collectBranchLoops(
       // the top-level `useElementReconciliation` rule so a `.map()` directly
       // inside an outer `.map()` gets its own reactive mapArray even when
       // the outer loop lives inside a conditional branch.
-      // Pass `undefined` for ctx to preserve the legacy branch behaviour:
-      // reactive-text collection on inner loops reached from this call path
-      // is handled at the enclosing branch-loop level below (`if (ctx)` block
-      // around `collectLoopChildReactiveTexts`), not per inner loop.
+      // Branch rows are materialized by mapArray even for static arrays.
+      // Collect each inner row's bindings and reconcile nested rows there too.
       // flatMap PROJECTION loop — see the top-level handler's note: children
       // are SSR-only; the client rides the descriptor mapArray path.
       const projectionInner =
@@ -1355,7 +1354,7 @@ function collectBranchLoops(
 
       const { useElementReconciliation, innerLoops: innerLoopsCollected } = projectionInner
         ? { useElementReconciliation: false, innerLoops: undefined }
-        : decideLoopRendering(n, siblingOffsets, undefined)
+        : decideLoopRendering(n, siblingOffsets, ctx, true)
 
       // Build the item template from loop children.
       // Use loopDepth=0: this loop gets its own mapArray/mapArrayAnchored call (independent
