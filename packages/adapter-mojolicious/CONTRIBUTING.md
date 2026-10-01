@@ -110,7 +110,7 @@ consistent.
 
 ## Coding conventions
 
-A few rules the codebase enforces (see [`CLAUDE.md`](CLAUDE.md) for the full set):
+A few rules the codebase enforces (see [`AGENTS.md`](../../AGENTS.md) for the full set):
 
 - **Never parse imports or any JS/TS syntax with regex or string matching.**
   Use the established AST-based patterns — the IR's parsed metadata for source

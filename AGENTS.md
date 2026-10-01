@@ -7,6 +7,11 @@ JSX → Marked Template + client JS compiler. Signal-based reactivity for any ba
 This file is the repository instruction source for Claude and Codex. Shared skills
 live in `.agents/skills/`; `.claude/skills` is a compatibility link, not another copy.
 
+Claude Code sessions use native `AGENTS.md` discovery (v2.1.281 or later, with
+the built-in `agents-md` plugin enabled). Older versions are not supported by this
+instruction layout. See `CONTRIBUTING.md` for discovery settings and verification;
+do not reintroduce a duplicate `CLAUDE.md` or an import bridge.
+
 - For issue implementation or a tracked-limitation fix through a PR, read
   `.agents/skills/implement-issues/SKILL.md`.
 - For finishing a PR, CI failures, or Pullfrog review responses, read
