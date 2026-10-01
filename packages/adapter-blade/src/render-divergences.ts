@@ -41,7 +41,7 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  'nested-loop-string-addition': { limitation: 'nested-loop-string-addition' },
+  'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
 
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through

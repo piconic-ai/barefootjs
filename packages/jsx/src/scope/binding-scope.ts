@@ -39,6 +39,7 @@ export type ScopeBindingSource = 'item' | 'index' | 'destructure' | 'preamble' |
 
 export interface ScopeBinding {
   readonly source: ScopeBindingSource
+  readonly stringValue?: boolean
 }
 
 export interface ScopeFrame {
@@ -54,9 +55,20 @@ export interface ScopeFrame {
  */
 export interface LoopBindingSource {
   readonly param: string
+  readonly itemType?: LoopValueType | null
   readonly index?: string | null
   readonly paramBindings?: readonly { readonly name: string }[]
   readonly preamble?: { readonly declaredNames: readonly string[] } | null
+}
+
+interface LoopValueType {
+  readonly primitive?: string
+  readonly unionTypes?: readonly LoopValueType[]
+}
+
+function isStringLoopValue(type: LoopValueType): boolean {
+  return type.primitive === 'string' ||
+    (type.unionTypes !== undefined && type.unionTypes.length > 0 && type.unionTypes.every(isStringLoopValue))
 }
 
 /**
@@ -112,7 +124,10 @@ export class BindingScope {
     if (loop.paramBindings && loop.paramBindings.length > 0) {
       for (const b of loop.paramBindings) bindings.set(b.name, { source: 'destructure' })
     } else {
-      bindings.set(loop.param, { source: 'item' })
+      bindings.set(loop.param, {
+        source: 'item',
+        ...(loop.itemType ? { stringValue: isStringLoopValue(loop.itemType) } : {}),
+      })
     }
     if (loop.index != null) bindings.set(loop.index, { source: 'index' })
     for (const name of loop.preamble?.declaredNames ?? []) bindings.set(name, { source: 'preamble' })
@@ -139,6 +154,21 @@ export class BindingScope {
       if (frame.bindings.has(name)) return true
     }
     return false
+  }
+
+  /** Resolve string typing at this position, respecting the nearest binding. */
+  isStringValueName(name: string, outer: (name: string) => boolean, componentProperty = false): boolean {
+    if (componentProperty) return outer(name)
+    const hit = this.lookup(name)
+    return hit ? hit.binding.stringValue === true : outer(name)
+  }
+
+  /** Names this frame shadows in an enclosing callback/row frame. */
+  shadowedNames(): readonly string[] {
+    if (!this.frames[0]) return []
+    return [...this.frames[0].bindings.keys()].filter(name =>
+      this.frames.slice(1).some(frame => frame.bindings.has(name)),
+    )
   }
 
   /**

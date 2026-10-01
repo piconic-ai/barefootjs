@@ -1675,7 +1675,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       new XslateFilterEmitter(
         param,
         localVarMap,
-        n => this._isStringValueName(n),
+        (n, property) => this._isStringValueName(n, property),
         // A nested callback method inside the predicate has no Kolon scalar
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
@@ -1780,7 +1780,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
-      _isStringValueName: (name) => this._isStringValueName(name),
+      _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
@@ -1879,8 +1879,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an
    *  equality comparison against it should use Perl `eq`/`ne`. */
-  private _isStringValueName(name: string): boolean {
-    return this.stringValueNames.has(name)
+  private _isStringValueName(name: string, componentProperty = false): boolean {
+    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
   }
 
   /**

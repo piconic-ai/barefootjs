@@ -1699,9 +1699,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -1851,9 +1851,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "number-addition-text-formatting",
               "limitations": [
-                "nested-loop-string-addition"
+                "number-addition-text-formatting"
               ]
             },
             {
@@ -1915,6 +1915,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1973,6 +1979,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2025,9 +2037,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -2095,6 +2107,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2153,9 +2171,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -2217,9 +2235,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -2249,10 +2267,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
-        "fixture": "filter-predicate-props-member",
-        "description": ".filter() predicate reading props.x directly on a bare-props-form component (#2879)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-props-member.ts",
-        "code": "it.id !== props.hiddenId"
+        "fixture": "entries-loop-string-addition",
+        "description": "Normalized array and object entries row values retain scalar string evidence",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/entries-loop-string-addition.ts",
+        "code": "value + value"
       }
     },
     "call": {
@@ -4108,6 +4126,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -4147,12 +4171,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -4494,6 +4512,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-prop",
+              "limitations": [
+                "fractional-number-array-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -4626,9 +4650,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "number-addition-text-formatting",
               "limitations": [
-                "nested-loop-string-addition"
+                "number-addition-text-formatting"
               ]
             },
             {
@@ -4795,6 +4819,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -4982,6 +5012,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5166,6 +5202,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5205,12 +5247,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -5365,6 +5401,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -5552,6 +5594,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5591,12 +5639,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -5748,6 +5790,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5787,12 +5835,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -6003,6 +6045,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6024,12 +6072,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -6401,9 +6443,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "number-addition-text-formatting",
               "limitations": [
-                "nested-loop-string-addition"
+                "number-addition-text-formatting"
               ]
             },
             {
@@ -6540,6 +6582,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -6682,6 +6730,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -6833,6 +6887,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6854,12 +6914,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -6990,6 +7044,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -7135,6 +7195,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7156,12 +7222,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -7289,6 +7349,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7310,12 +7376,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -7676,6 +7736,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -7685,12 +7751,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -7942,6 +8002,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-prop",
+              "limitations": [
+                "fractional-number-array-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8038,9 +8104,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "number-addition-text-formatting",
               "limitations": [
-                "nested-loop-string-addition"
+                "number-addition-text-formatting"
               ]
             },
             {
@@ -8192,6 +8258,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8319,6 +8391,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -8452,6 +8530,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8461,12 +8545,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -8606,6 +8684,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8736,6 +8820,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8745,12 +8835,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -8878,6 +8962,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8887,12 +8977,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
               ]
             },
             {
@@ -11295,12 +11379,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11339,9 +11417,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "number-addition-text-formatting",
               "limitations": [
-                "nested-loop-string-addition"
+                "number-addition-text-formatting"
               ]
             },
             {
@@ -11375,12 +11453,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11401,12 +11473,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11416,12 +11482,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -11437,10 +11497,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "string-concat-plus",
-        "description": "String concatenation via the + operator",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-concat-plus.ts",
-        "code": "'Hello, ' + name"
+        "fixture": "entries-loop-string-addition",
+        "description": "Normalized array and object entries row values retain scalar string evidence",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/entries-loop-string-addition.ts",
+        "code": "value + value"
       }
     },
     "binary:-": {
@@ -11560,9 +11620,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -11694,12 +11754,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11749,6 +11803,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -11804,6 +11864,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11850,9 +11916,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -11908,6 +11974,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11960,9 +12032,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -12018,9 +12090,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -12614,6 +12686,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12778,6 +12856,12 @@
               ]
             },
             {
+              "fixture": "number-addition-text-formatting",
+              "limitations": [
+                "number-addition-text-formatting"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12833,6 +12917,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -12900,6 +12990,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12961,6 +13057,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13046,6 +13148,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -13110,6 +13218,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -13171,6 +13285,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13305,9 +13425,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13535,12 +13655,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
-              "limitations": [
-                "nested-loop-string-addition"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13623,6 +13737,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13696,6 +13816,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13781,9 +13907,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13875,6 +14001,12 @@
               ]
             },
             {
+              "fixture": "loop-param-prop-member-collision",
+              "limitations": [
+                "loop-param-prop-member-collision"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13951,9 +14083,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -14039,9 +14171,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-string-addition",
+              "fixture": "loop-param-prop-member-collision",
               "limitations": [
-                "nested-loop-string-addition"
+                "loop-param-prop-member-collision"
               ]
             },
             {

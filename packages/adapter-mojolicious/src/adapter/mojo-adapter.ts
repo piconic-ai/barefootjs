@@ -1770,7 +1770,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       new MojoFilterEmitter(
         param,
         localVarMap,
-        n => this._isStringValueName(n),
+        (n, property) => this._isStringValueName(n, property),
         (message, reason) => this._recordExprBF101(message, reason),
       ),
     )
@@ -1904,7 +1904,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
-      _isStringValueName: (name) => this._isStringValueName(name),
+      _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPerlFilterExprPublic: (e, p) => this._renderPerlFilterExprPublic(e, p),
@@ -2007,8 +2007,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   /** Whether `name` (a signal getter or prop) holds a string value, so an
    *  equality comparison against it should use Perl `eq`/`ne` (#1672). */
-  private _isStringValueName(name: string): boolean {
-    return this.stringValueNames.has(name)
+  private _isStringValueName(name: string, componentProperty = false): boolean {
+    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
   }
 
   private _recordExprBF101(message: string, reason?: string): void {

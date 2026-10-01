@@ -1187,6 +1187,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // position relative to the pop is inert either way.
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
+    const savedBindings = this.scope.shadowedNames().map((name, ordinal) => {
+      let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
+      while (this.scope.isBound(temporary) || this.propsParams.some(p => p.name === temporary) ||
+        this.localConstants.some(c => c.name === temporary)) temporary += '_'
+      return { name, temporary }
+    })
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1215,6 +1221,11 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     this.scope = prevScope
 
     const lines: string[] = []
+    // PHP foreach shares its surrounding variable scope. Preserve bindings
+    // shadowed by this callback so the enclosing row continues with its value.
+    for (const { name, temporary } of savedBindings) {
+      lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)})`)
+    }
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`{!! $bf->comment("loop:${loop.markerId}") !!}`)
@@ -1276,6 +1287,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     }
 
     lines.push(`@endforeach`)
+    for (const { name, temporary } of savedBindings) {
+      lines.push(`@php(${bladeVar(name)} = ${bladeVar(temporary)})`)
+    }
     lines.push(`{!! $bf->comment("/loop:${loop.markerId}") !!}`)
 
     return lines.join('\n')
@@ -1872,7 +1886,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       new BladeFilterEmitter(
         param,
         localVarMap,
-        n => this._isStringValueName(n),
+        (n, property) => this._isStringValueName(n, property),
         // A nested callback method inside the predicate has no Blade scalar
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
@@ -1988,7 +2002,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
-      _isStringValueName: (name) => this._isStringValueName(name),
+      _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderBladeFilterExprPublic: (e, p) => this._renderBladeFilterExprPublic(e, p),
@@ -2113,8 +2127,8 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
    *  for parity with the Perl-family adapters; the Blade emitters don't
    *  consume it (`===`/`!==` always routes through `$bf->eq`/`$bf->neq`
    *  regardless of operand type). */
-  private _isStringValueName(name: string): boolean {
-    return this.stringValueNames.has(name)
+  private _isStringValueName(name: string, componentProperty = false): boolean {
+    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
   }
 
   /**

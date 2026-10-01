@@ -40,7 +40,7 @@ import {
   isReactiveOrigin,
   AttrValueOf,
 } from './types.ts'
-import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
+import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
@@ -4831,11 +4831,13 @@ function transformMapCall(
   let children: IRNode[] = []
   let paramBindings: LoopParamBinding[] | undefined
   let flatMapCallback: FlatMapCallback | undefined
+  let itemTypeNode: ts.Node | undefined
 
   if (ts.isArrowFunction(callback)) {
     // Extract parameter names and type annotations
     if (callback.parameters.length > 0) {
       const firstParam = callback.parameters[0]
+      itemTypeNode = firstParam
       param = firstParam.name.getText(ctx.sourceFile)
       if (firstParam.type) {
         paramType = firstParam.type.getText(ctx.sourceFile)
@@ -4864,6 +4866,7 @@ function transformMapCall(
             ts.isBindingElement(elements[1]) && ts.isIdentifier(elements[1].name)) {
           index = elements[0].name.text
           param = elements[1].name.text
+          itemTypeNode = elements[1].name
           // Don't populate paramBindings — the destructure is fully
           // resolved into index + param by the iteration shape.
         } else {
@@ -5587,13 +5590,22 @@ function transformMapCall(
   // createComponent replacement).
   const nestedComponents = collectNestedComponents(children).filter(c => c.name !== childComponent?.name)
 
+  // Scalar operand evidence only. Inferring object rows here would bypass
+  // adapters' existing row-structure capability checks and their diagnostics.
+  const callbackType = itemTypeNode && ctx.analyzer.checker
+    ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(itemTypeNode), ctx.analyzer.checker)
+    : null
+  const scalarItemType = callbackType?.kind === 'primitive' ||
+    (callbackType?.kind === 'union' && callbackType.unionTypes?.every(t => t.kind === 'primitive'))
+    ? callbackType : null
+
   return {
     type: 'loop',
     method: method === 'flatMap' ? 'flatMap' : undefined,
     array,
     templateArray,
     arrayType: null,
-    itemType: null,
+    itemType: scalarItemType,
     param,
     index,
     key,

@@ -35,7 +35,7 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  'nested-loop-string-addition': { limitation: 'nested-loop-string-addition' },
+  'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
 
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
