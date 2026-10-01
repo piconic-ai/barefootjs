@@ -3476,6 +3476,32 @@
           ]
         }
       },
+      "loop-param-prop-member-collision": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-prop-member-collision"
+          ]
+        }
+      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -4424,6 +4450,14 @@
           "kind": "render",
           "limitations": [
             "negated-empty-array-condition"
+          ]
+        }
+      },
+      "number-addition-text-formatting": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "number-addition-text-formatting"
           ]
         }
       },
@@ -5917,6 +5951,10 @@
         "description": "A component loop row whose callback destructures the row param renders every row with its own key…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-component-row-destructured-param.ts"
       },
+      "loop-param-prop-member-collision": {
+        "description": "An explicit prop member remains a root value when a loop binds the same name",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-prop-member-collision.ts"
+      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
@@ -5996,6 +6034,10 @@
       "negated-empty-array-condition": {
         "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
+      },
+      "number-addition-text-formatting": {
+        "description": "A large fractional addition in text uses JavaScript number spelling",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-addition-text-formatting.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -6500,7 +6542,12 @@
       "fixtures": [
         "loop-param-prop-member-collision"
       ],
-      "adapters": []
+      "adapters": [
+        "blade",
+        "mojolicious",
+        "twig",
+        "xslate"
+      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
@@ -6733,7 +6780,9 @@
       "fixtures": [
         "number-addition-text-formatting"
       ],
-      "adapters": []
+      "adapters": [
+        "go-template"
+      ]
     },
     "off-subset-callback-body": {
       "title": "Off-subset expression in a collection-method callback",

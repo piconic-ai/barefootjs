@@ -5587,15 +5587,22 @@ function transformMapCall(
   // createComponent replacement).
   const nestedComponents = collectNestedComponents(children).filter(c => c.name !== childComponent?.name)
 
+  // Scalar operand evidence only. Inferring object rows here would bypass
+  // adapters' existing row-structure capability checks and their diagnostics.
+  const callbackType = ts.isArrowFunction(callback) && callback.parameters[0] && ctx.analyzer.checker
+    ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(callback.parameters[0]), ctx.analyzer.checker)
+    : null
+  const scalarItemType = callbackType?.kind === 'primitive' ||
+    (callbackType?.kind === 'union' && callbackType.unionTypes?.every(t => t.kind === 'primitive'))
+    ? callbackType : null
+
   return {
     type: 'loop',
     method: method === 'flatMap' ? 'flatMap' : undefined,
     array,
     templateArray,
     arrayType: null,
-    itemType: ts.isArrowFunction(callback) && callback.parameters[0] && ctx.analyzer.checker
-      ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(callback.parameters[0]), ctx.analyzer.checker)
-      : null,
+    itemType: scalarItemType,
     param,
     index,
     key,
