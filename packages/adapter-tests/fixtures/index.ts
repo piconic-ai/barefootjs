@@ -1,3 +1,4 @@
+import { fixture as childrenNullishFallback } from './children-nullish-fallback'
 import { fixture as conditionalNestedClient } from './conditional-nested-loop-client-reactivity'
 import { fixture as conditionalNestedPrecomputed } from './conditional-nested-loop-precomputed-reactivity'
 import { fixture as nestedLoopStringAddition } from './nested-loop-string-addition'
@@ -1240,6 +1241,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxElementPropNoChildren,
   childrenPassthroughNoChildren,
   childrenPassthroughRenamed,
+  childrenNullishFallback,
   textareaRowBreakout,
   textareaRowBreakoutComposite,
   jsxElementPropFragmentConditional,

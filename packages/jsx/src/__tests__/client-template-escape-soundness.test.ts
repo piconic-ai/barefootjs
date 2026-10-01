@@ -171,6 +171,23 @@ export function Box(props: { children?: any }) {
     pin: (js) => expect(js).toContain('${markupOrEmpty((_p.children))}'),
   },
   {
+    id: 'children-nullish-empty-fallback',
+    source: `
+export function Box(props: { children?: unknown }) {
+  const { children: kids } = props
+  return <div>{(kids) ?? ''}</div>
+}`,
+    pin: (js) => expect(js).toContain('markupOrEmpty('),
+  },
+  {
+    id: 'children-nullish-text-fallback',
+    source: `
+export function Box(props: { children?: unknown }) {
+  return <div>{props.children ?? '<b>text</b>'}</div>
+}`,
+    pin: (js) => expect(js).toContain('escapeText('),
+  },
+  {
     // The author-facing escape hatch, by name.
     id: 'dangerously-set-inner-html',
     source: `
