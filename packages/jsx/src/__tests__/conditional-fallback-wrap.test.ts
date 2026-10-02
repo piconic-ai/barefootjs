@@ -182,4 +182,24 @@ describe('Solid-style wrap-by-default fallback for conditionals (#941)', () => {
     const insertCount = (clientJs.match(/\binsert\s*\(/g) ?? []).length
     expect(insertCount).toBe(2)
   })
+
+  test('unrecognised call in a branch\'s text wraps in the branch bindEvents (#3266)', () => {
+    // The same `{v().text}` gets a createEffect outside the conditional
+    // (#939's fallback for top-level text). Inside a branch, the text
+    // effects were gated on `reactive` alone, so the branch kept its
+    // mount-time text until the condition flipped (#3266).
+    const source = `
+      'use client'
+
+      export function Card(props: any) {
+        const s = props.data.s
+        const v = () => s.get()
+        return <div>{v().kind === 'a' ? <p className="a">{v().text}</p> : <p className="b">{v().text}</p>}</div>
+      }
+    `
+
+    const clientJs = getClientJs(source, 'Card.tsx')
+    const branchTextEffects = clientJs.match(/__disposers\.push\(createDisposableEffect\(\(\) => \{ __bfw_s\d+\('s\d+', escapeTextOrNode\(v\(\)\.text\)\) \}\)\)/g) ?? []
+    expect(branchTextEffects).toHaveLength(2)
+  })
 })

@@ -216,4 +216,28 @@ describe('Solid-style wrap-by-default fallback for attributes (#940)', () => {
     expect(clientJs).not.toContain('Reactive attributes')
     expect(clientJs).not.toMatch(/setAttribute\(\s*['"]style['"]/)
   })
+
+  test('a wrapped attribute on an element with no other dynamic content gets a slot (#3266)', () => {
+    // `v()` reads a store the analyzer can't see into (an untyped prop
+    // holding a class instance), so only the call shape marks
+    // `hidden={v().hide}` for wrapping. The <p> has no event, ref or
+    // dynamic child, so before #3266 it got no slot id: the wrapped effect
+    // had no element to address and `hidden` was never applied on the
+    // client, not even initially.
+    const source = `
+      'use client'
+
+      export function Card(props: any) {
+        const s = props.data.s
+        const v = () => s.get()
+        return <div><p className="h" hidden={v().hide}>x</p></div>
+      }
+    `
+
+    const clientJs = getClientJs(source, 'Card.tsx')
+    const slot = clientJs.match(/<p class="h" [^>]*bf="(s\d+)"/)?.[1]
+    expect(slot).toBeDefined()
+    expect(clientJs).toContain(`_${slot}.hidden = !!(__x)`)
+    expect(clientJs).toContain('const __x = v().hide')
+  })
 })

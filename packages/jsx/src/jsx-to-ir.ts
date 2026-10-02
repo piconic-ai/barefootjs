@@ -9203,6 +9203,13 @@ function hasReactiveAttributes(attrs: IRAttribute[], ctx: TransformContext): boo
     if (isSignalOrMemoReference(valueToCheck, ctx) || isPropsReference(valueToCheck, ctx)) {
       return true
     }
+    // The Solid-style wrap-by-default fallback (#940): an attribute with a
+    // call the analyzer can't prove non-reactive (`hidden={v().hide}`,
+    // `v` reading an untyped or class-held store) gets a createEffect from
+    // `decideWrapForAttr`. That effect addresses the element by slot id,
+    // so the element needs one even with no other dynamic content —
+    // otherwise the attribute is never applied on the client (#3266).
+    if (attr.callsReactiveGetters || attr.hasFunctionCalls) return true
     // Check if attribute references any active loop-bound VALUE names —
     // loop root elements need a slotId so className can be updated
     // reactively. REACTIVITY/slotId classifier — value bindings only
