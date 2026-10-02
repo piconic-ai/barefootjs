@@ -235,6 +235,34 @@ test.describe('xyflow Reference Page', () => {
     })
   })
 
+  // #3267: `<NodeWrapper>` never called `setupNodeSelection`, so a click
+  // did not select a node (only the selection rectangle did).
+  test.describe('Node Selection', () => {
+    const SELECTED = 'bf-flow__node--selected'
+
+    test('click selects a node, shift-click adds, a plain click replaces', async ({ page }) => {
+      const container = firstScope(page, '[bf-s^="XyflowPreviewDemo_"][bf-r]:not([data-slot])')
+      const nodes = container.locator('.bf-flow__node')
+      const first = nodes.nth(0)
+      const second = nodes.nth(1)
+      await expect(first).toBeAttached()
+      await first.scrollIntoViewIfNeeded()
+      await expect(container.locator(`.${SELECTED}`)).toHaveCount(0)
+
+      await first.click()
+      await expect(first).toHaveClass(new RegExp(SELECTED))
+      await expect(container.locator(`.${SELECTED}`)).toHaveCount(1)
+
+      await second.click({ modifiers: ['Shift'] })
+      await expect(first).toHaveClass(new RegExp(SELECTED))
+      await expect(second).toHaveClass(new RegExp(SELECTED))
+
+      await second.click()
+      await expect(second).toHaveClass(new RegExp(SELECTED))
+      await expect(first).not.toHaveClass(new RegExp(SELECTED))
+    })
+  })
+
   test.describe('Pan / Zoom', () => {
     test('wheel zoom updates the viewport scale', async ({ page }) => {
       const container = firstScope(page, '[bf-s^="XyflowPreviewDemo_"][bf-r]:not([data-slot])')

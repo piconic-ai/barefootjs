@@ -68,6 +68,7 @@ import {
   FlowContext,
   getEdgePath,
   Position,
+  setupNodeSelection,
   XYFLOW_VIEWPORT,
 } from '@barefootjs/xyflow'
 import type {
@@ -264,6 +265,10 @@ export function NodeWrapper(props: NodeWrapperProps) {
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     onCleanup(() => ro.disconnect())
+    // Click (shift-click to add) selects the node (#3267). Edges select
+    // through `SimpleEdge`'s `onMouseDown`; nodes share
+    // `setupNodeSelection` with consumers that build their own wrapper.
+    setupNodeSelection(el, props.nodeId, store)
     props.ref?.(el)
   }
 

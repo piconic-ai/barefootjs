@@ -78,7 +78,8 @@ export function setupKeyboardHandlers<
 
 /**
  * Set up click-to-select on node elements.
- * Called from node-wrapper when creating each node.
+ * Called from `<NodeWrapper>`'s ref for each node; the listener is removed
+ * when the calling owner is cleaned up.
  */
 export function setupNodeSelection<NodeType extends NodeBase>(
   nodeElement: HTMLElement,
@@ -88,7 +89,7 @@ export function setupNodeSelection<NodeType extends NodeBase>(
   // Use mousedown instead of click — D3 zoom's mousedown handler on the
   // container calls stopImmediatePropagation, which prevents the native
   // click event from reaching the node element.
-  nodeElement.addEventListener('mousedown', (event) => {
+  const onMouseDown = (event: MouseEvent) => {
     if (event.button !== 0) return
 
     const multiSelect = untrack(store.multiSelectionActive) || event.shiftKey
@@ -110,7 +111,9 @@ export function setupNodeSelection<NodeType extends NodeBase>(
           : n,
       ),
     )
-  })
+  }
+  nodeElement.addEventListener('mousedown', onMouseDown)
+  onCleanup(() => nodeElement.removeEventListener('mousedown', onMouseDown))
 }
 
 /**
