@@ -46,8 +46,7 @@ class PagesController < ApplicationController
                      heading: 'Toggle Component',
                      children: { 'toggle_item' => 'ToggleItem' },
                      signal_init: { 'toggle_item' => ->(p) { { on: !!p[:defaultOn] } } },
-                     props: { toggleItems: items },
-                     stash: { toggleItems: items })
+                     props: { toggleItems: items })
   end
 
   def form
@@ -69,7 +68,7 @@ class PagesController < ApplicationController
     render_component('ConditionalReturn',
                      heading: "Conditional Return Example#{variant.empty? ? '' : ' (Link)'}",
                      props: { variant: variant },
-                     stash: { variant: variant, count: 0 })
+                     stash: { count: 0 })
   end
 
   def props_reactivity

@@ -104,6 +104,47 @@ sub get_session ($req) {
 # Rendering: build a per-request runtime, register child renderers, render the
 # component template, and wrap the result in the page layout.
 # ---------------------------------------------------------------------------
+sub _slurp_json ($path) {
+    open my $fh, '<:raw', $path or return undef;
+    local $/;
+    my $content = <$fh>;
+    close $fh;
+    return eval { $J->decode($content) };
+}
+
+# The build manifest -- a plain build artifact (dist/templates/manifest.json)
+# -- lists each component's `ssrDefaults`: the template vars a render needs
+# bound, each with its static fallback and, for a prop, the prop it comes
+# from. `render_component` and the blog helpers below derive a component's
+# vars from it, so a route passes a prop once (as `props`) and no signal
+# default by hand (#3251).
+my $MANIFEST = _slurp_json('dist/templates/manifest.json') // {};
+
+# Component name -> its `ssrDefaults`. A source file with several components
+# (Toggle.tsx: ToggleItem + Toggle) lists each under `components`, and its
+# file-level `ssrDefaults` belong to only one of them, so the per-component
+# entry wins.
+my %SSR_DEFAULTS;
+for my $entry (values %$MANIFEST) {
+    next unless ref $entry eq 'HASH' && ref $entry->{components} eq 'HASH';
+    for my $name (keys %{ $entry->{components} }) {
+        my $component = $entry->{components}{$name};
+        $SSR_DEFAULTS{$name} = $component->{ssrDefaults}
+            if ref $component eq 'HASH' && $component->{ssrDefaults};
+    }
+}
+for my $name (keys %$MANIFEST) {
+    my $entry = $MANIFEST->{$name};
+    $SSR_DEFAULTS{$name} //= $entry->{ssrDefaults} if ref $entry eq 'HASH';
+}
+
+# A component's template vars derived from its `ssrDefaults`: the caller's
+# prop where one is given, the static default otherwise.
+sub ssr_vars ($component, $props) {
+    my $defaults = $SSR_DEFAULTS{$component} or return ();
+    return BarefootJS::_derive_stash_from_defaults($defaults, $props // {});
+}
+
 sub rand_suffix () { return substr(sprintf('%f', rand()) =~ s/^0\.//r, 0, 6) }
 
 sub render_component ($component, %opts) {
@@ -147,12 +188,19 @@ sub render_component ($component, %opts) {
             $child_bf->_scripts($bf->_scripts);
             $child_bf->_script_seen($bf->_script_seen);
             $child_bf->_portal_elements($bf->_portal_elements);
+            # The child's ssrDefaults applied to its props, then the props
+            # themselves, then the route's `signal_init` for a signal whose
+            # initial value the manifest cannot express statically.
+            my %defaults = ssr_vars($child_template, $props);
             my %extra = $child_init ? $child_init->($props) : ();
-            return $backend->render_named($child_template, $child_bf, { %$props, %extra });
+            return $backend->render_named($child_template, $child_bf, { %defaults, %$props, %extra });
         });
     }
 
-    my $body = $backend->render_named($component, $bf, $opts{stash} // {});
+    # Root vars: the component's ssrDefaults applied to `props`, then the
+    # route's `stash` on top (#3251).
+    my $body = $backend->render_named($component, $bf,
+        { ssr_vars($component, $opts{props}), %{ $opts{stash} // {} } });
     return layout(
         title     => $opts{title}   // "$component - BarefootJS",
         heading   => $opts{heading} // '',
@@ -254,7 +302,6 @@ sub toggle_route ($req) {
         children    => { toggle_item => 'ToggleItem' },
         signal_init => { toggle_item => sub ($p) { (on => ($p->{defaultOn} ? 1 : 0)) } },
         props       => { toggleItems => $items },
-        stash       => { toggleItems => $items },
     ), 'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
@@ -277,7 +324,7 @@ sub conditional_return_route ($req, $suffix = '') {
     html_response(render_component('ConditionalReturn',
         heading => 'Conditional Return Example' . ($variant ? ' (Link)' : ''),
         props   => { variant => $variant },
-        stash   => { variant => $variant, count => 0 }),
+        stash   => { count => 0 }),
         'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
@@ -314,7 +361,7 @@ sub todos_route ($req, $suffix = '') {
     my $html = render_component($component,
         children => { todo_item => 'TodoItem' },
         props    => { initialTodos => \@todos },
-        stash    => { initialTodos => \@todos, todos => \@todos, newText => '', filter => 'all', doneCount => $done });
+        stash    => { todos => \@todos, newText => '', filter => 'all', doneCount => $done });
     html_response($html, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
 }
 
@@ -327,9 +374,8 @@ sub todos_query_route ($req) {
     my $html = render_component('QueryTodoApp',
         title       => 'TodoMVC (createQuery) - BarefootJS',
         children    => { query_todo_item => 'QueryTodoItem' },
-        signal_init => { query_todo_item => sub ($props) { (editing => jbool(0), draft => '') } },
         props       => { initialTodos => \@todos },
-        stash       => { initialTodos => \@todos, newText => '', filter => 'all' });
+        stash       => { newText => '', filter => 'all' });
     html_response($html, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
 }
 
@@ -418,21 +464,12 @@ sub api_todos_reset ($req) {
 # the full list, so the server renders all posts; the client re-derives the
 # sorted/filtered list + active controls from `searchParams()` on hydration.
 # ---------------------------------------------------------------------------
-sub _slurp_json ($path) {
-    open my $fh, '<:raw', $path or return undef;
-    local $/;
-    my $content = <$fh>;
-    close $fh;
-    return eval { $J->decode($content) };
-}
-my $BLOG_MANIFEST = _slurp_json('dist/templates/manifest.json') // {};
 # The Vite-generated asset map (dist/bf-assets.json, written by
 # `@barefootjs/xslate/vite`'s `afterEmit` hook) — resolves a hand-written,
 # non-component script entry's bundled URL (dev: Vite origin URL;
-# production: content-hashed manifest path). Read once at startup, same
-# rationale as $BLOG_MANIFEST above: there is no compile step needing the
-# URL baked in ahead of time — a fresh copy lands under gitignored dist/ on
-# every build (dev AND production).
+# production: content-hashed manifest path). Read once at startup: there is
+# no compile step needing the URL baked in ahead of time — a fresh copy lands
+# under gitignored dist/ on every build (dev AND production).
 my $BLOG_ASSETS = _slurp_json('dist/bf-assets.json') // {};
 my $BLOG_DATA = _slurp_json('dist/blog-data.json')
     // { posts => [], listItems => [], allTags => [] };
@@ -444,7 +481,7 @@ sub _esc ($s) { return BarefootJS::_html_escape($s) }
 # a fresh child scope chained off the caller's slot, the shared script collector
 # + renderer registry, and the manifest's ssrDefaults seeded (caller prop wins).
 sub _register_blog_child ($parent_bf, $slot, $component, $extra_seed = {}) {
-    my $entry = $BLOG_MANIFEST->{$component} or return;
+    my $entry = $MANIFEST->{$component} or return;
     my $defaults = $entry->{ssrDefaults};
     $parent_bf->register_child_renderer($slot, sub {
         my ($props, $caller) = @_;
@@ -495,7 +532,7 @@ sub blog_island ($root, $component, $props = {}, $extra = {}, $children = {}) {
         my ($tpl, $seed) = ref($spec) eq 'ARRAY' ? @$spec : ($spec, {});
         _register_blog_child($bf, $slot, $tpl, $seed);
     }
-    my $defaults = ($BLOG_MANIFEST->{$component} // {})->{ssrDefaults};
+    my $defaults = ($MANIFEST->{$component} // {})->{ssrDefaults};
     my %seed = $defaults
         ? BarefootJS::_derive_stash_from_defaults($defaults, $props) : ();
     return $backend->render_named($component, $bf, { %seed, %$props, %$extra });
