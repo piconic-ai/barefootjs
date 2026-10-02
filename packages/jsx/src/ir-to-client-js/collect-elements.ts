@@ -1292,6 +1292,12 @@ function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): Conditi
  * Collect reactive text expressions from a conditional branch IR subtree.
  * Walks the branch tree to find expression nodes that need createEffect updates.
  * Does NOT recurse into nested conditionals (they get their own insert() call).
+ *
+ * Uses the same wrap decision as top-level text (`decideWrapFromAstFlags`,
+ * #937): a call the analyzer can't prove non-reactive (`{v().text}`, `v`
+ * reading an untyped or class-held store) wraps too. Gating on
+ * `n.reactive` alone left such text frozen at its first value inside a
+ * branch while the same expression outside it updated (#3266).
  */
 function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
   const effects: ConditionalBranchTextEffect[] = []
@@ -1302,7 +1308,7 @@ function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
     // element / fragment / component / provider / async use default descent.
     ...stopAt<null>('conditional', 'ifStatement', 'loop'),
     expression: ({ node: n }) => {
-      if (n.reactive && n.slotId && !n.clientOnly) {
+      if (decideWrapFromAstFlags(n).wrap && n.slotId && !n.clientOnly) {
         effects.push({ slotId: n.slotId, expression: n.expr })
       }
     },
