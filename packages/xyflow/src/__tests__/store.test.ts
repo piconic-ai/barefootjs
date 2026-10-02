@@ -397,3 +397,107 @@ describe('createFlowStore', () => {
     })
   })
 })
+
+// fitView before the pane or the nodes are measured (#3269). Before the
+// fix, a 0×0 pane produced `{ x: NaN, y: NaN, zoom: NaN }`, and unmeasured
+// nodes were skipped, fitting an empty box at max zoom.
+describe('fitView before measurement (#3269)', () => {
+  type Viewport = { x: number; y: number; zoom: number }
+
+  function setup() {
+    const calls: Viewport[] = []
+    const store = createFlowStore()
+    store.setPanZoom({
+      setViewport: async (v: Viewport) => {
+        calls.push(v)
+        return true
+      },
+    } as never)
+    return { store, calls }
+  }
+
+  // Two 100×50 nodes spanning (0,0)–(400,250), fitted into an 800×600 pane
+  // with the default padding — what `getViewportForBounds` returns for
+  // exactly those bounds.
+  const declaredNodes = [
+    { id: 'a', position: { x: 0, y: 0 }, width: 100, height: 50, data: {} },
+    { id: 'b', position: { x: 300, y: 200 }, width: 100, height: 50, data: {} },
+  ]
+  const fitted: Viewport = { x: 36, y: 72.5, zoom: 1.82 }
+
+  test('uses declared node sizes while the nodes are unmeasured', () => {
+    createRoot(() => {
+      const { store, calls } = setup()
+      store.setWidth(800)
+      store.setHeight(600)
+      store.setNodes(declaredNodes)
+      store.fitView()
+      expect(calls).toEqual([fitted])
+    })
+  })
+
+  test('waits for the pane size instead of writing NaN', () => {
+    createRoot(() => {
+      const { store, calls } = setup()
+      store.setNodes(declaredNodes)
+      store.fitView()
+      expect(calls).toEqual([])
+
+      store.setWidth(800)
+      store.setHeight(600)
+      expect(calls).toEqual([fitted])
+    })
+  })
+
+  test('waits for nodes with no declared size to be measured', () => {
+    createRoot(() => {
+      const { store, calls } = setup()
+      store.setWidth(800)
+      store.setHeight(600)
+      store.setNodes([
+        { id: 'a', position: { x: 0, y: 0 }, data: {} },
+        { id: 'b', position: { x: 300, y: 200 }, data: {} },
+      ])
+      store.fitView()
+      expect(calls).toEqual([])
+
+      // What `<NodeWrapper>`'s ResizeObserver does once a node renders.
+      const measure = (id: string) => {
+        store.nodeLookup().get(id)!.measured = { width: 100, height: 50 }
+        store.triggerPositionUpdate()
+      }
+      measure('a')
+      expect(calls).toEqual([])
+      measure('b')
+      expect(calls).toEqual([fitted])
+
+      // The pending fit is consumed: later measurements do not re-fit.
+      measure('a')
+      expect(calls).toHaveLength(1)
+    })
+  })
+
+  test('a fit that can run immediately drops an earlier pending one', () => {
+    createRoot(() => {
+      const { store, calls } = setup()
+      store.setWidth(800)
+      store.setHeight(600)
+      store.setNodes([
+        ...declaredNodes,
+        { id: 'c', position: { x: 600, y: 400 }, data: {} },
+      ])
+      // `c` has no size yet, so this fit is held.
+      store.fitView({ nodes: [{ id: 'c' }] as never })
+      expect(calls).toEqual([])
+
+      // `a`/`b` have declared sizes, so this one runs now…
+      store.fitView({ nodes: [{ id: 'a' }, { id: 'b' }] as never })
+      expect(calls).toEqual([fitted])
+
+      // …and replaces the held one: measuring `c` must not fit to it.
+      store.nodeLookup().get('c')!.measured = { width: 100, height: 50 }
+      store.triggerPositionUpdate()
+      expect(calls).toEqual([fitted])
+    })
+  })
+})

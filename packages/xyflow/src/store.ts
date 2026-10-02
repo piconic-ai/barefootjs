@@ -9,6 +9,7 @@ import {
   updateAbsolutePositions,
   updateConnectionLookup,
   fitViewport,
+  getNodeDimensions,
   panBy as panByUtil,
 } from '@xyflow/system'
 import type {
@@ -399,17 +400,43 @@ export function createFlowStore<
     }
   }
 
-  function fitView(fitViewOptions?: FitViewOptions) {
-    const pz = untrack(panZoom)
-    if (!pz) return
+  // A `fitView` that arrives before the pane or the nodes it fits are
+  // measured is held here and retried when they are (#3269). Fitting
+  // early would divide by a zero-sized pane (a NaN viewport) or, since
+  // `fitViewport` skips unmeasured nodes, fit an empty box.
+  const [pendingFitView, setPendingFitView] = createSignal<FitViewOptions | null>(null)
 
-    const lookup = untrack(nodeLookup)
+  /**
+   * Fit now if the pane and every node to fit have a size; returns
+   * whether it did. A node not yet measured by its `<NodeWrapper>` uses
+   * its declared `width`/`height` (or `initialWidth`/`initialHeight`).
+   */
+  function tryFitView(fitViewOptions: FitViewOptions): boolean {
+    const pz = untrack(panZoom)
     const w = untrack(width)
     const h = untrack(height)
+    if (!pz || !(w > 0) || !(h > 0)) return false
+
+    const lookup = untrack(nodeLookup)
+    const onlyIds = fitViewOptions.nodes
+      ? new Set(fitViewOptions.nodes.map((n) => n.id))
+      : null
+    const nodesToFit = new Map<string, InternalNodeBase<NodeType>>()
+    for (const [id, node] of lookup) {
+      if (onlyIds && !onlyIds.has(id)) continue
+      if (node.hidden && !fitViewOptions.includeHiddenNodes) continue
+      if (node.measured.width && node.measured.height) {
+        nodesToFit.set(id, node)
+        continue
+      }
+      const size = getNodeDimensions(node)
+      if (!size.width || !size.height) return false
+      nodesToFit.set(id, { ...node, measured: size })
+    }
 
     fitViewport(
       {
-        nodes: lookup,
+        nodes: nodesToFit,
         width: w,
         height: h,
         panZoom: pz,
@@ -418,7 +445,26 @@ export function createFlowStore<
       },
       { padding: 0.1, ...fitViewOptions }
     )
+    return true
   }
+
+  function fitView(fitViewOptions?: FitViewOptions) {
+    const opts = { ...fitViewOptions }
+    setPendingFitView(() => (tryFitView(opts) ? null : opts))
+  }
+
+  createEffect(() => {
+    const pending = pendingFitView()
+    if (!pending) return
+    // Re-run when the pane is sized or a node is added or measured
+    // (`<NodeWrapper>` reports measurements through `positionEpoch`).
+    panZoom()
+    width()
+    height()
+    nodeLookup()
+    positionEpoch()
+    if (tryFitView(pending)) setPendingFitView(null)
+  })
 
   return {
     // Signal getters
