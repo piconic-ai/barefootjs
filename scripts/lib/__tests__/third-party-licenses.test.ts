@@ -6,7 +6,7 @@ import { afterAll, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { type BuildMetafile, bundledPackages, packageRootOf, renderThirdPartyLicenses } from '../third-party-licenses'
+import { bundledPackages, packageRootOf, readMetafile, renderThirdPartyLicenses } from '../third-party-licenses'
 
 const repoRoot = join(import.meta.dir, '..', '..', '..')
 
@@ -30,22 +30,37 @@ describe('packageRootOf', () => {
 })
 
 describe('@barefootjs/xyflow bundle', () => {
-  test('the notice covers every inlined package and no external one', async () => {
+  test('the notice covers every inlined package and no external one', () => {
     const xyflowDir = join(repoRoot, 'packages', 'xyflow')
     const pkg = JSON.parse(readFileSync(join(xyflowDir, 'package.json'), 'utf8'))
-    // Same entry and externals as the package's `build:js` script.
+    // Same entry and externals as the package's `build:js` script, in a
+    // `bun build` subprocess: `Bun.build` inside the `bun test` process
+    // cannot resolve the package's dependencies.
     const externals = [...String(pkg.scripts['build:js']).matchAll(/--external '([^']+)'/g)].map((m) => m[1])
     expect(externals).toContain('@barefootjs/client')
-    const result = await Bun.build({
-      entrypoints: [join(xyflowDir, 'src', 'index.ts')],
-      external: externals,
-      format: 'esm',
-      metafile: true,
-    } as Parameters<typeof Bun.build>[0])
-    expect(result.success).toBe(true)
-    const metafile = (result as unknown as { metafile: BuildMetafile }).metafile
+    const outdir = mkdtempSync(join(tmpdir(), 'xyflow-bundle-'))
+    const metafilePath = join(outdir, 'meta.json')
+    const build = Bun.spawnSync({
+      cmd: [
+        process.execPath,
+        'build',
+        './src/index.ts',
+        '--outdir',
+        outdir,
+        '--format',
+        'esm',
+        ...externals.flatMap((e) => ['--external', e]),
+        `--metafile=${metafilePath}`,
+      ],
+      cwd: xyflowDir,
+      stderr: 'pipe',
+    })
+    expect(build.stderr.toString()).toBe('')
+    expect(build.exitCode).toBe(0)
+    const metafile = readMetafile(metafilePath)
+    rmSync(outdir, { recursive: true, force: true })
 
-    const packages = bundledPackages([metafile], process.cwd())
+    const packages = bundledPackages([metafile], xyflowDir)
     expect(packages.map((p) => p.name)).toEqual([
       '@xyflow/system',
       'd3-color',
