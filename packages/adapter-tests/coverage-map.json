@@ -8553,6 +8553,21 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "zero-arg-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
     }
   }
 }

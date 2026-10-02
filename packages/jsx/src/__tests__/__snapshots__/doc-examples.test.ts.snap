@@ -859,7 +859,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/create-signal.md doc-examples L31 — (no label) 1`] = `
+exports[`docs/core/reactivity/create-signal.md doc-examples L33 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 
@@ -875,7 +875,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/create-signal.md doc-examples L34 — ❌ Mutating the same array — no update 1`] = `
+exports[`docs/core/reactivity/create-signal.md doc-examples L36 — ❌ Mutating the same array — no update 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 
@@ -894,7 +894,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/create-signal.md doc-examples L39 — ✅ New array — triggers update 1`] = `
+exports[`docs/core/reactivity/create-signal.md doc-examples L41 — ✅ New array — triggers update 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 

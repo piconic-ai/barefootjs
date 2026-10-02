@@ -23,6 +23,8 @@ setCount(n => n + 1) // write with an updater function; count() is now 6
 
 The getter is a function call — `count()`, not `count`. That call is what registers a dependency. The type is inferred from the initial value; pass a type parameter for unions: `createSignal<User | null>(null)`.
 
+Called with no argument, the signal starts as `undefined`, and its type includes `undefined`: `createSignal<User>()` returns a `User | undefined` getter.
+
 ## Equality check
 
 The setter compares with `Object.is`. Setting the same value does nothing, so an object or array needs a new reference to trigger an update:

@@ -64,17 +64,6 @@ function bfIdArg(bfId: string | undefined): string {
   return bfId ? `, ${JSON.stringify(bfId)}` : ''
 }
 
-/**
- * `createSignal`'s argument list. A source `createSignal()` has no initial
- * value (`initialValueExpr` is `''`), so in profile mode the id needs an
- * explicit `undefined` before it — `createSignal(, "id")` is a syntax
- * error (#3217).
- */
-function signalArgs(plan: SignalEmitPlan): string {
-  if (!plan.bfId) return plan.initialValueExpr
-  return `${plan.initialValueExpr || 'undefined'}${bfIdArg(plan.bfId)}`
-}
-
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {
   // Getter-elided source form (`const [, setX] = createSignal(...)`):
   // reproduce the hole instead of introducing the synthesized internal
@@ -99,7 +88,7 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     lines.push(`  const [${bindings}] = ${plan.initializerOverride}`)
     return
   }
-  const args = signalArgs(plan)
+  const args = `${plan.initialValueExpr}${bfIdArg(plan.bfId)}`
   if (plan.branchCondition) {
     // #1414 cell #8: signal declared inside an early-return `if`-block.
     // Hoist as `let` so closures and event handlers hoisted to outer

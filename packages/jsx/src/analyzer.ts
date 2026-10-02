@@ -1484,7 +1484,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     : null
   if (getterElided && !setter) return
   const getter = getterElided ? `__bfGet_${setter}` : (elements[0] as ts.BindingElement & { name: ts.Identifier }).name.text
-  const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const initialValue = signalInitialValueText(callExpr, ctx)
   const typedInitialValue = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
 
   // Try to infer type from initial value or type argument
@@ -1730,6 +1730,18 @@ function isSignalIndexAccess(
   return null
 }
 
+/**
+ * A `createSignal` call's initial value as JS text. A call with no argument
+ * starts the signal as `undefined` (what the runtime does with a missing
+ * argument), so it is recorded as `'undefined'` rather than `''` — every
+ * consumer that splices the initial value into an expression (the SSR
+ * getter, the CSR template, the client-JS call) would otherwise emit an
+ * empty operand (#3215). `createQuery`'s factory path records the same.
+ */
+function signalInitialValueText(callExpr: ts.CallExpression, ctx: AnalyzerContext): string {
+  return callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : 'undefined'
+}
+
 function collectSignalTupleRef(
   node: ts.VariableDeclaration,
   ctx: AnalyzerContext
@@ -1737,7 +1749,7 @@ function collectSignalTupleRef(
   const name = (node.name as ts.Identifier).text
   const callExpr = node.initializer as ts.CallExpression
 
-  const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const initialValue = signalInitialValueText(callExpr, ctx)
   const typedInitialValue = callExpr.arguments[0]
     ? callExpr.arguments[0].getText(ctx.sourceFile)
     : undefined
@@ -1773,7 +1785,7 @@ function collectSignalFromIndexAccess(
     // Pattern A — each declaration is a standalone signal. Pair [0] -> getter
     // or [1] -> setter; the missing half stays null.
     const callExpr = match.callExpr
-    const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+    const initialValue = signalInitialValueText(callExpr, ctx)
     const typedInitialValue = callExpr.arguments[0]
       ? callExpr.arguments[0].getText(ctx.sourceFile)
       : undefined
