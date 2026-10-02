@@ -51,7 +51,11 @@ export interface BaseEventAttributes {
   onAnimationStart?: (event: AnimationEvent) => void
   onAnimationEnd?: (event: AnimationEvent) => void
   onAnimationIteration?: (event: AnimationEvent) => void
+  onAnimationCancel?: (event: AnimationEvent) => void
+  onTransitionStart?: (event: TransitionEvent) => void
+  onTransitionRun?: (event: TransitionEvent) => void
   onTransitionEnd?: (event: TransitionEvent) => void
+  onTransitionCancel?: (event: TransitionEvent) => void
   onCopy?: (event: ClipboardEvent) => void
   onCut?: (event: ClipboardEvent) => void
   onPaste?: (event: ClipboardEvent) => void
@@ -134,6 +138,17 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
   onPointerMove?: (event: PointerEvent) => void
   onPointerEnter?: (event: PointerEvent) => void
   onPointerLeave?: (event: PointerEvent) => void
+  onPointerCancel?: (event: PointerEvent) => void
+  onPointerOver?: (event: PointerEvent) => void
+  onPointerOut?: (event: PointerEvent) => void
+  onGotPointerCapture?: (event: PointerEvent) => void
+  onLostPointerCapture?: (event: PointerEvent) => void
+  onMouseOver?: MouseEventHandler<HTMLElement>
+  onMouseOut?: MouseEventHandler<HTMLElement>
+  onAuxClick?: MouseEventHandler<HTMLElement>
+  onFocusIn?: FocusEventHandler<HTMLElement>
+  onFocusOut?: FocusEventHandler<HTMLElement>
+  onBeforeInput?: InputEventHandler<HTMLElement>
   onContextMenu?: MouseEventHandler<HTMLElement>
   onDoubleClick?: MouseEventHandler<HTMLElement>
 
