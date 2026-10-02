@@ -7,6 +7,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import ts from 'typescript'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { buildIdIndex } from '../profiler'
@@ -119,5 +120,48 @@ describe('binding-effect ids', () => {
     expect(node.kind).toBe('effect')
     expect(node.loc.file).toBe('Widget.tsx')
     expect(node.loc.line).toBeGreaterThan(0)
+  })
+})
+
+describe('a zero-arg createSignal() emits valid client JS (#3217)', () => {
+  const zeroArgSource = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function Empty() {
+      const [v, setV] = createSignal<string>()
+      return <button onClick={() => setV('x')}>{v() ?? '-'}</button>
+    }
+  `
+
+  function emit(profile: boolean): string {
+    return compileJSX(zeroArgSource, 'Empty.tsx', { adapter, profile })
+      .files.find(f => f.type === 'clientJs')!.content
+  }
+
+  function parseErrors(js: string): string[] {
+    const diagnostics = ts.transpileModule(js, {
+      reportDiagnostics: true,
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.Latest },
+    }).diagnostics ?? []
+    return diagnostics
+      .filter(d => d.category === ts.DiagnosticCategory.Error)
+      .map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n'))
+  }
+
+  test('profile on: the signal id follows an explicit `undefined`, not a bare comma', () => {
+    const on = emit(true)
+    expect(on).toContain('createSignal(undefined, "Empty#signal:v")')
+    expect(on).not.toContain('createSignal(,')
+    expect(parseErrors(on)).toEqual([])
+  })
+
+  test('profile off: the call stays `createSignal()` and the template inlines `undefined`', () => {
+    // The CSR template substitutes `v()` with the signal's initial value.
+    // An empty one used to inline as `()`, so the module failed to parse
+    // even without profiling.
+    const off = emit(false)
+    expect(off).toContain('createSignal()')
+    expect(off).toContain("escapeTextOrMarkup((undefined) ?? '-')")
+    expect(parseErrors(off)).toEqual([])
   })
 })
