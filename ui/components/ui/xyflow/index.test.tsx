@@ -273,3 +273,52 @@ describe('FlowNodeTypeBridge', () => {
     expect(result.effects).toBe(1)
   })
 })
+
+// ============================================================================
+// The registry source is copied into a consumer's project by `bf add xyflow`
+// and type-checked there against the published `@barefootjs/xyflow` types.
+// `ui`'s own `tsc -p ui` does not get that far (it stops on unrelated
+// errors, and CI does not run it), so a missing required prop on a call
+// into `@barefootjs/xyflow` reached consumers unnoticed (#3270:
+// `FlowNodeTypeBridge` omitted `type` from `NodeComponentProps`). This
+// checks just this file against the package sources, the way a consumer's
+// `tsc` sees it.
+describe('registry source type-checks against @barefootjs/xyflow (#3270)', () => {
+  test('index.tsx has no type errors', () => {
+    const ts = require('typescript') as typeof import('typescript')
+    const repo = resolve(__dirname, '../../../..')
+    const file = resolve(__dirname, 'index.tsx')
+    const program = ts.createProgram({
+      rootNames: [file],
+      options: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        lib: ['lib.es2022.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+        allowImportingTsExtensions: true,
+        jsx: ts.JsxEmit.ReactJSX,
+        jsxImportSource: '@barefootjs/jsx',
+        types: [],
+        paths: {
+          '@barefootjs/jsx': [`${repo}/packages/jsx/src`],
+          '@barefootjs/jsx/jsx-runtime': [`${repo}/packages/jsx/src/jsx-runtime/index.ts`],
+          '@barefootjs/jsx/jsx-dev-runtime': [`${repo}/packages/jsx/src/jsx-dev-runtime/index.ts`],
+          '@barefootjs/client': [`${repo}/packages/client/src`],
+          '@barefootjs/xyflow': [`${repo}/packages/xyflow/src`],
+        },
+      },
+    })
+    const sf = program.getSourceFile(file)!
+    const diagnostics = [
+      ...program.getSyntacticDiagnostics(sf),
+      ...program.getSemanticDiagnostics(sf),
+    ].map((d) => {
+      const { line } = sf.getLineAndCharacterOfPosition(d.start ?? 0)
+      return `index.tsx(${line + 1}): TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, '\n')}`
+    })
+    expect(diagnostics).toEqual([])
+  }, 60_000)
+})
