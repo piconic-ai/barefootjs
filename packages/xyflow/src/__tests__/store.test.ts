@@ -480,14 +480,24 @@ describe('fitView before measurement (#3269)', () => {
   test('a fit that can run immediately drops an earlier pending one', () => {
     createRoot(() => {
       const { store, calls } = setup()
-      store.setNodes(declaredNodes)
-      store.fitView({ padding: 0.5 })
       store.setWidth(800)
       store.setHeight(600)
-      expect(calls).toHaveLength(1)
-      store.fitView()
-      expect(calls).toHaveLength(2)
-      expect(calls[1]).toEqual(fitted)
+      store.setNodes([
+        ...declaredNodes,
+        { id: 'c', position: { x: 600, y: 400 }, data: {} },
+      ])
+      // `c` has no size yet, so this fit is held.
+      store.fitView({ nodes: [{ id: 'c' }] as never })
+      expect(calls).toEqual([])
+
+      // `a`/`b` have declared sizes, so this one runs now…
+      store.fitView({ nodes: [{ id: 'a' }, { id: 'b' }] as never })
+      expect(calls).toEqual([fitted])
+
+      // …and replaces the held one: measuring `c` must not fit to it.
+      store.nodeLookup().get('c')!.measured = { width: 100, height: 50 }
+      store.triggerPositionUpdate()
+      expect(calls).toEqual([fitted])
     })
   })
 })
