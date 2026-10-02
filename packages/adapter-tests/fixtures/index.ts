@@ -264,6 +264,7 @@ import { fixture as nestedPropObjectArrayWithComponent } from './nested-prop-obj
 // Priority 8: CSR conformance
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
+import { fixture as reservedWordChildSignal } from './reserved-word-child-signal'
 import { fixture as aliasedImportChildComponent } from './aliased-import-child-component'
 import { fixture as aliasedImportChildComponentLoop } from './aliased-import-child-component-loop'
 import { fixture as childComponentRefProp } from './child-component-ref-prop'
@@ -1059,6 +1060,7 @@ export const jsxFixtures: JSXFixture[] = [
   aliasedImportChildComponent,
   aliasedImportChildComponentLoop,
   childComponentInit,
+  reservedWordChildSignal,
   childComponentRefProp,
   componentRowLoopPreambleHandler,
   childComponentRootScopePrefix,
