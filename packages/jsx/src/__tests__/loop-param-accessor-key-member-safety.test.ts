@@ -411,35 +411,73 @@ describe('.map() row: a nested scope that shadows the loop param fails loudly in
   })
 })
 
-describe('destructured loop-param path (rewriteLoopBindingRefs) has the same key/member defect as the plain-param path (#3239 follow-up)', () => {
-  // `rewriteLoopBindingRefs` (a few lines below `rewriteIdentifierAsAccessor`
-  // in ir-to-client-js/utils.ts) rewrites a DESTRUCTURED loop param's
-  // bindings (`({ color, label }) => ...`) with the same kind of
-  // \bname\b-style regex the plain-param path used before this PR, and has
-  // the identical object-literal-key defect: a binding whose name matches
-  // an unrelated object-literal key gets that key corrupted into an
-  // accessor call. Left out of this PR (see the PR description) because a
-  // correct fix means touching the heavily-exercised #951/#1244
-  // destructured-binding machinery, which is a larger, separate change.
-  // Drop `.todo` once `rewriteLoopBindingRefs` gets the same AST-aware
-  // treatment `rewriteIdentifierAsAccessor` got here.
-  test.todo('an object-literal key matching a destructured binding name is left alone', () => {
-    const source = `
+describe('destructured loop-param path (rewriteLoopBindingRefs) shares the plain-param AST rewrite (#3260)', () => {
+  // `rewriteLoopBindingRefs` rewrites a DESTRUCTURED loop param's bindings
+  // (`({ color, label }) => ...`) to `__bfItem().color` etc. It used a
+  // \bname\b-style regex plus a shorthand-only AST pre-pass (#1244), so an
+  // explicit object-literal key or a member name spelling a binding name was
+  // corrupted the same way #3239 described for the plain param. It now runs
+  // the same AST walk as `rewriteIdentifierAsAccessor`.
+  function compileRow(row: string, item = "{ color: 'red', label: 'a', onPick: () => 1, extra: 1 }", pattern = '{ color, label }'): string {
+    return getClientJs(`
       'use client'
       import { createSignal } from '@barefootjs/client'
+      const THEME = { color: 'blue' }
       export function App() {
-        const [items] = createSignal([{ color: 'red', label: 'a' }])
+        const [items] = createSignal([${item}])
         return (
           <div>
-            {items().map(({ color, label }) => (
-              <b key={label}>{JSON.stringify({ color: 1 })}</b>
+            {items().map((${pattern}) => (
+              ${row}
             ))}
           </div>
         )
       }
-    `
-    const js = getClientJs(source)
+    `)
+  }
+
+  test('an object-literal key matching a destructured binding name is left alone', () => {
+    const js = compileRow('<b key={label}>{JSON.stringify({ color: 1 })}</b>')
     assertParses(js)
     expect(js).toContain('JSON.stringify({ color: 1 })')
+  })
+
+  test('a member name matching a destructured binding name is left alone', () => {
+    const js = compileRow('<b key={label}>{THEME.color}</b>')
+    assertParses(js)
+    expect(js).toContain('THEME.color')
+    expect(js).not.toContain('THEME.__bfItem()')
+  })
+
+  test('explicit key with a matching value `{ color: color }` rewrites only the value', () => {
+    const js = compileRow('<b key={label}>{JSON.stringify({ color: color })}</b>')
+    assertParses(js)
+    expect(js).toContain('JSON.stringify({ color: __bfItem().color })')
+  })
+
+  test('shorthand `{ color }` still expands to `{ color: __bfItem().color }` (#1244)', () => {
+    const js = compileRow('<b key={label}>{JSON.stringify({ color })}</b>')
+    assertParses(js)
+    expect(js).toContain('JSON.stringify({ color: __bfItem().color })')
+  })
+
+  test('a destructured binding called as a function becomes a call on the item field', () => {
+    // Unlike the plain param, `onPick()` is not an accessor call already —
+    // it calls the item's `onPick` field — so the callee is rewritten.
+    const js = compileRow('<b key={label}>{String(onPick())}</b>', undefined, '{ label, onPick }')
+    assertParses(js)
+    expect(js).toContain('String(__bfItem().onPick())')
+  })
+
+  test('a rest binding still renders through its residual form', () => {
+    const js = compileRow('<b key={label}>{JSON.stringify(rest)}</b>', undefined, '{ label, ...rest }')
+    assertParses(js)
+    expect(js).toContain('JSON.stringify((({ label: __bfR0, ...__bfRest }) => __bfRest)(__bfItem()))')
+  })
+
+  test('a named function expression shadows only its own name; other bindings inside are still rewritten', () => {
+    const js = compileRow('<b key={label}>{String((function color() { return label })())}</b>')
+    assertParses(js)
+    expect(js).toContain('(function color() { return __bfItem().label })()')
   })
 })
