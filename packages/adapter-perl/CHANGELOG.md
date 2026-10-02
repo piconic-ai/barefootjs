@@ -1,5 +1,11 @@
 # @barefootjs/perl
 
+## 0.39.2
+
+### Patch Changes
+
+- 2f65656: Render literal computed members through index/key lookup, preserving optional numeric indices and punctuation-containing object keys in values, conditions, and filter predicates. Keep absent optional nested Go objects distinct from present zero-valued objects, and prevent Mojolicious strict literal comparisons from matching an absent lookup to false or zero. Graduate the corresponding silent limitations while retaining their conformance fixtures as regression coverage.
+
 ## 0.39.1
 
 No changes in this release.

@@ -1,5 +1,13 @@
 # @barefootjs/erb
 
+## 0.39.2
+
+### Patch Changes
+
+- 2f65656: Render literal computed members through index/key lookup, preserving optional numeric indices and punctuation-containing object keys in values, conditions, and filter predicates. Keep absent optional nested Go objects distinct from present zero-valued objects, and prevent Mojolicious strict literal comparisons from matching an absent lookup to false or zero. Graduate the corresponding silent limitations while retaining their conformance fixtures as regression coverage.
+- a0ca4f5: Keep literal-seeded signals independent from same-named bare props by separating their lexical bindings before building IR. Preserve object keys, shadowed callback bindings, caller-facing prop names, and build-supplied type information including custom module/type resolutions. Compute Go numeric memos over distinct signal and required prop values instead of silently seeding zero or truncating fractional results, and render direct/interpolated numeric memo text using JS's decimal/exponent notation. Seed getter aliases after memo recomputation so template backends preserve their live values. Graduate the signal/prop name-collision limitation and retain its fixture as a regression test.
+- @barefootjs/shared@0.39.2
+
 ## 0.39.1
 
 ### Patch Changes

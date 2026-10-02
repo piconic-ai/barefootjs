@@ -1,5 +1,18 @@
 # @barefootjs/go-template
 
+## 0.39.2
+
+### Patch Changes
+
+- 5ddcc51: Fix an optional-chained member read from an object prop used in a condition. The Go template adapter now lowers `props.meta?.count` through `bf_get`, matching value-position behavior and correctly reading JSON-decoded map keys instead of silently testing an empty `.Meta.Count` field (#3275).
+- c650faf: Fix a `??` expression used as an operand inside a condition (a ternary/`&&` test that lowers to `{{if …}}`), either as a comparison operand or underneath `.length`, emitting unparenthesised into the enclosing Go template call (`gt (len or .Todos bf_arr) 0`, `gt or .Count 0 0`, #3249). `html/template` parsed the bare `or`/`bf_nullish` call as extra sibling arguments of `gt`/`eq`/`len`, so the template compiled without error but panicked at render time ("wrong number of args").
+  
+  `renderConditionExpr`'s `binary` arm gated parens with `needsParensInGoTemplate`, an AST-kind check (`member.length` / arithmetic `binary` / unary negation) that never recognized a `logical` (`??`) operand, and its `member`/`.length` arm didn't wrap its object operand at all. Both now use `wrapIfMultiToken` on the rendered operand string, matching the sibling `logical`/`unary`/`index-access` arms in the same function.
+- f8bf1c4: Preserve string addition in nested loop rows using scoped item-type information. Restore enclosing loop values after shadowing callbacks in Blade.
+- 2f65656: Render literal computed members through index/key lookup, preserving optional numeric indices and punctuation-containing object keys in values, conditions, and filter predicates. Keep absent optional nested Go objects distinct from present zero-valued objects, and prevent Mojolicious strict literal comparisons from matching an absent lookup to false or zero. Graduate the corresponding silent limitations while retaining their conformance fixtures as regression coverage.
+- a0ca4f5: Keep literal-seeded signals independent from same-named bare props by separating their lexical bindings before building IR. Preserve object keys, shadowed callback bindings, caller-facing prop names, and build-supplied type information including custom module/type resolutions. Compute Go numeric memos over distinct signal and required prop values instead of silently seeding zero or truncating fractional results, and render direct/interpolated numeric memo text using JS's decimal/exponent notation. Seed getter aliases after memo recomputation so template backends preserve their live values. Graduate the signal/prop name-collision limitation and retain its fixture as a regression test.
+- @barefootjs/shared@0.39.2
+
 ## 0.39.1
 
 ### Patch Changes
