@@ -12,14 +12,12 @@ class TodosController < ApplicationController
     render_component(component,
                      children: { 'todo_item' => 'TodoItem' },
                      props: { initialTodos: todos },
-                     stash: { initialTodos: todos, todos: todos, newText: '', filter: 'all', doneCount: done })
+                     stash: { todos: todos, newText: '', filter: 'all', doneCount: done })
   end
 
   # The createQuery / createMutation todo app. `initialTodos` seeds its query
   # (mode A): the list is rendered here, and the client sends no request on
-  # mount. Writes go through the API below and re-fetch the list. The ERB
-  # template reads `initialTodos` from the stash (`v`), while `props` is the
-  # client's bf-p hydration payload, so it goes in both.
+  # mount. Writes go through the API below and re-fetch the list.
   def query
     session = bf_session
     todos = ExampleApp::SESSIONS_MUTEX.synchronize { session[:todos].map { |t| t.slice(:id, :text, :done) } }
@@ -27,7 +25,7 @@ class TodosController < ApplicationController
                      title: 'TodoMVC (createQuery) - BarefootJS',
                      children: { 'query_todo_item' => 'QueryTodoItem' },
                      props: { initialTodos: todos },
-                     stash: { initialTodos: todos, newText: '', filter: 'all' })
+                     stash: { newText: '', filter: 'all' })
   end
 
   # --- todo REST API ---

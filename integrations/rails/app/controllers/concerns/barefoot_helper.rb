@@ -56,12 +56,18 @@ module BarefootHelper
         child_bf._scripts(bf._scripts)
         child_bf._script_seen(bf._script_seen)
         child_bf._portal_elements(bf._portal_elements)
+        # The child's ssrDefaults applied to its props, then the props
+        # themselves, then the route's `signal_init` for a signal whose
+        # initial value the manifest cannot express statically.
         extra = child_init ? child_init.call(child_props) : {}
-        ExampleApp::BACKEND.render_named(child_template, child_bf, child_props.merge(extra))
+        vars = ExampleApp.ssr_vars(child_template, child_props).merge(child_props, extra)
+        ExampleApp::BACKEND.render_named(child_template, child_bf, vars)
       end)
     end
 
-    body = ExampleApp::BACKEND.render_named(component, bf, stash)
+    # Root vars: the component's ssrDefaults applied to `props`, then the
+    # route's `stash` on top (#3251).
+    body = ExampleApp::BACKEND.render_named(component, bf, ExampleApp.ssr_vars(component, props).merge(stash))
     document = layout(
       title: title || "#{component} - BarefootJS",
       heading: heading,

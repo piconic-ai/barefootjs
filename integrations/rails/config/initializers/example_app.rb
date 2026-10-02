@@ -110,7 +110,7 @@ module ExampleApp
   # shared script collector + renderer registry, and the manifest's
   # ssrDefaults seeded (caller prop wins).
   def register_blog_child(parent_bf, slot, component, extra_seed = {})
-    entry = BLOG_MANIFEST[component.to_sym]
+    entry = MANIFEST[component.to_sym]
     return unless entry
 
     defaults = entry[:ssrDefaults]
@@ -157,7 +157,7 @@ module ExampleApp
       tpl, seed = spec.is_a?(Array) ? spec : [spec, {}]
       register_blog_child(bf, slot, tpl, seed)
     end
-    entry = BLOG_MANIFEST[component.to_sym]
+    entry = MANIFEST[component.to_sym]
     defaults = entry && entry[:ssrDefaults]
     seed = defaults ? BarefootJS::Context.derive_vars_from_defaults(defaults, props) : {}
     BACKEND.render_named(component, bf, seed.merge(props).merge(extra))
@@ -216,14 +216,45 @@ module ExampleApp
     HTML
   end
 
-  BLOG_MANIFEST = slurp_json(Rails.root.join('dist/templates/manifest.json').to_s) || {}
+  # The build manifest -- a plain build artifact (dist/templates/manifest.json)
+  # -- lists each component's `ssrDefaults`: the template vars a render needs
+  # bound, each with its static fallback and, for a prop, the prop it comes
+  # from. `render_component` and the blog helpers derive a component's vars
+  # from it, so a route passes a prop once (as `props`) and no signal default
+  # by hand (#3251).
+  MANIFEST = slurp_json(Rails.root.join('dist/templates/manifest.json').to_s) || {}
+
+  # Component name (Symbol) -> its `ssrDefaults`. A source file with several
+  # components (Toggle.tsx: ToggleItem + Toggle) lists each under
+  # `components`, and its file-level `ssrDefaults` belong to only one of them,
+  # so the per-component entry wins.
+  SSR_DEFAULTS = {}.tap do |by_name|
+    MANIFEST.each_value do |entry|
+      next unless entry.is_a?(Hash) && entry[:components].is_a?(Hash)
+
+      entry[:components].each do |name, component|
+        by_name[name] = component[:ssrDefaults] if component.is_a?(Hash) && component[:ssrDefaults]
+      end
+    end
+    MANIFEST.each do |name, entry|
+      by_name[name] ||= entry[:ssrDefaults] if entry.is_a?(Hash)
+    end
+  end.freeze
+
+  # A component's template vars derived from its `ssrDefaults`: the caller's
+  # prop where one is given, the static default otherwise.
+  def ssr_vars(component, props)
+    defaults = SSR_DEFAULTS[component.to_sym]
+    defaults ? BarefootJS::Context.derive_vars_from_defaults(defaults, props || {}) : {}
+  end
+
   BLOG_DATA = slurp_json(Rails.root.join('dist/blog-data.json').to_s) || { posts: [], listItems: [], allTags: [] }
 
   # The Vite-generated asset map (dist/bf-assets.json, written by
   # `@barefootjs/erb/vite`'s `afterEmit` hook) -- resolves a hand-written,
   # non-component script entry's bundled URL (dev: Vite origin URL;
   # production: content-hashed manifest path). String-keyed (NOT
-  # symbolize_names, unlike BLOG_MANIFEST above): a small flat map, not a
+  # symbolize_names, unlike MANIFEST above): a small flat map, not a
   # per-component structure with downstream symbol-keyed reads. Ruby has no
   # compile step, so there is nothing to commit -- a fresh copy lands under
   # gitignored dist/ on every build (dev AND production).

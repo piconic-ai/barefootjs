@@ -103,14 +103,45 @@ rescue JSON::ParserError
   nil
 end
 
-BLOG_MANIFEST = slurp_json('dist/templates/manifest.json') || {}
+# The build manifest -- a plain build artifact (dist/templates/manifest.json)
+# -- lists each component's `ssrDefaults`: the template vars a render needs
+# bound, each with its static fallback and, for a prop, the prop it comes
+# from. `render_component` and the blog helpers derive a component's vars from
+# it, so a route passes a prop once (as `props`) and no signal default by hand
+# (#3251).
+MANIFEST = slurp_json('dist/templates/manifest.json') || {}
+
+# Component name (Symbol) -> its `ssrDefaults`. A source file with several
+# components (Toggle.tsx: ToggleItem + Toggle) lists each under `components`,
+# and its file-level `ssrDefaults` belong to only one of them, so the
+# per-component entry wins.
+SSR_DEFAULTS = {}.tap do |by_name|
+  MANIFEST.each_value do |entry|
+    next unless entry.is_a?(Hash) && entry[:components].is_a?(Hash)
+
+    entry[:components].each do |name, component|
+      by_name[name] = component[:ssrDefaults] if component.is_a?(Hash) && component[:ssrDefaults]
+    end
+  end
+  MANIFEST.each do |name, entry|
+    by_name[name] ||= entry[:ssrDefaults] if entry.is_a?(Hash)
+  end
+end.freeze
+
+# A component's template vars derived from its `ssrDefaults`: the caller's
+# prop where one is given, the static default otherwise.
+def ssr_vars(component, props)
+  defaults = SSR_DEFAULTS[component.to_sym]
+  defaults ? BarefootJS::Context.derive_vars_from_defaults(defaults, props || {}) : {}
+end
+
 BLOG_DATA = slurp_json('dist/blog-data.json') || { posts: [], listItems: [], allTags: [] }
 
 # The Vite-generated asset map (dist/bf-assets.json, written by
 # `@barefootjs/erb/vite`'s `afterEmit` hook) -- resolves a hand-written,
 # non-component script entry's bundled URL (dev: Vite origin URL;
 # production: content-hashed manifest path). String-keyed (NOT
-# symbolize_names, unlike BLOG_MANIFEST above): a small flat map, not a
+# symbolize_names, unlike MANIFEST above): a small flat map, not a
 # per-component structure with downstream symbol-keyed reads. Ruby has no
 # compile step, so there is nothing to commit -- a fresh copy lands under
 # gitignored dist/ on every build (dev AND production).
@@ -137,7 +168,7 @@ end
 # shared script collector + renderer registry, and the manifest's
 # ssrDefaults seeded (caller prop wins).
 def register_blog_child(parent_bf, slot, component, extra_seed = {})
-  entry = BLOG_MANIFEST[component.to_sym]
+  entry = MANIFEST[component.to_sym]
   return unless entry
 
   defaults = entry[:ssrDefaults]
@@ -190,7 +221,7 @@ def blog_island(root, component, props = {}, extra = {}, children = {})
     tpl, seed = spec.is_a?(Array) ? spec : [spec, {}]
     register_blog_child(bf, slot, tpl, seed)
   end
-  entry = BLOG_MANIFEST[component.to_sym]
+  entry = MANIFEST[component.to_sym]
   defaults = entry && entry[:ssrDefaults]
   seed = defaults ? BarefootJS::Context.derive_vars_from_defaults(defaults, props) : {}
   BACKEND.render_named(component, bf, seed.merge(props).merge(extra))
@@ -289,12 +320,17 @@ class SinatraApp < Sinatra::Base
         child_bf._scripts(bf._scripts)
         child_bf._script_seen(bf._script_seen)
         child_bf._portal_elements(bf._portal_elements)
+        # The child's ssrDefaults applied to its props, then the props
+        # themselves, then the route's `signal_init` for a signal whose
+        # initial value the manifest cannot express statically.
         extra = child_init ? child_init.call(child_props) : {}
-        BACKEND.render_named(child_template, child_bf, child_props.merge(extra))
+        BACKEND.render_named(child_template, child_bf, ssr_vars(child_template, child_props).merge(child_props, extra))
       end)
     end
 
-    body = BACKEND.render_named(component, bf, stash)
+    # Root vars: the component's ssrDefaults applied to `props`, then the
+    # route's `stash` on top (#3251).
+    body = BACKEND.render_named(component, bf, ssr_vars(component, props).merge(stash))
     layout(
       title: title || "#{component} - BarefootJS",
       heading: heading,
@@ -422,8 +458,7 @@ class SinatraApp < Sinatra::Base
                       heading: 'Toggle Component',
                       children: { 'toggle_item' => 'ToggleItem' },
                       signal_init: { 'toggle_item' => ->(p) { { on: !!p[:defaultOn] } } },
-                      props: { toggleItems: items },
-                      stash: { toggleItems: items })
+                      props: { toggleItems: items })
   end
 
   get '/form' do
@@ -445,7 +480,7 @@ class SinatraApp < Sinatra::Base
     render_component('ConditionalReturn',
                       heading: "Conditional Return Example#{variant.empty? ? '' : ' (Link)'}",
                       props: { variant: variant },
-                      stash: { variant: variant, count: 0 })
+                      stash: { count: 0 })
   end
 
   get '/props-reactivity' do
@@ -480,14 +515,12 @@ class SinatraApp < Sinatra::Base
     render_component(component,
                       children: { 'todo_item' => 'TodoItem' },
                       props: { initialTodos: todos },
-                      stash: { initialTodos: todos, todos: todos, newText: '', filter: 'all', doneCount: done })
+                      stash: { todos: todos, newText: '', filter: 'all', doneCount: done })
   end
 
   # The createQuery / createMutation todo app. `initialTodos` seeds its query
   # (mode A): the list is rendered here, and the client sends no request on
-  # mount. Writes go through the API below and re-fetch the list. The ERB
-  # template reads `initialTodos` from the stash (`v`), while `props` is the
-  # client's bf-p hydration payload, so it goes in both.
+  # mount. Writes go through the API below and re-fetch the list.
   get '/todos-query' do
     session = get_session
     todos = SESSIONS_MUTEX.synchronize { session[:todos].map { |t| t.slice(:id, :text, :done) } }
@@ -495,7 +528,7 @@ class SinatraApp < Sinatra::Base
                       title: 'TodoMVC (createQuery) - BarefootJS',
                       children: { 'query_todo_item' => 'QueryTodoItem' },
                       props: { initialTodos: todos },
-                      stash: { initialTodos: todos, newText: '', filter: 'all' })
+                      stash: { newText: '', filter: 'all' })
   end
 
   # --- todo REST API ---
