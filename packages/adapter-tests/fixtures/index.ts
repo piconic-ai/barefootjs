@@ -678,6 +678,7 @@ import { fixture as childPropRestForward } from './child-prop-rest-forward'
 // `undefined` after already having rendered once.
 import { fixture as childPropRestForwardUndefinedStart } from './child-prop-rest-forward-undefined-start'
 import { fixture as zeroArgSignal } from './zero-arg-signal'
+import { fixture as nullishSignalAttr } from './nullish-signal-attr'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -1339,6 +1340,7 @@ export const jsxFixtures: JSXFixture[] = [
   childPropRestForward,
   childPropRestForwardUndefinedStart,
   zeroArgSignal,
+  nullishSignalAttr,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,

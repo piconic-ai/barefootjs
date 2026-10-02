@@ -99,6 +99,13 @@ function nillableAwarePropRef(
   return fieldRef
 }
 
+/** `undefined` / `null` as an already-parsed initial value. */
+function isNullishLiteral(expr: ParsedExpr | undefined): boolean {
+  if (!expr) return false
+  if (expr.kind === 'identifier') return expr.name === 'undefined'
+  return expr.kind === 'literal' && expr.literalType === 'null'
+}
+
 /**
  * Lower a signal/const initial value to its Go SSR literal: a prop reference
  * becomes `in.<Field>`, a non-literal falls back to the type's zero value.
@@ -195,6 +202,13 @@ export function convertInitialValue(
   // `undefined` step of a toggling signal keeps its `nil` zero value on the
   // branches that don't match below.
   const literalTypeInfo = unwrapNullableUnion(typeInfo)
+  // ...but a nullish initial value of that union is the absent value
+  // itself, not a literal of the non-nullish branch: it stays the field's
+  // `nil`. Baking it as the branch's zero value (`""`, `0`) rendered an
+  // attribute Hono omits (`title=""`, `data-n="0"`) — `createSignal<string |
+  // undefined>(undefined)` and the equivalent zero-arg `createSignal<T>()`
+  // (#3215).
+  if (literalTypeInfo !== typeInfo && isNullishLiteral(preParsed)) return 'nil'
 
   if (literalTypeInfo.kind === 'primitive') {
     if (literalTypeInfo.primitive === 'boolean') {

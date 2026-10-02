@@ -87,19 +87,15 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // sibling already used, synced onto every render-consulted bag field
 // (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
 // undelivered.
+// #3215 graduated `child-prop-rest-forward-undefined-start`
+// (`go-undefined-signal-seed-not-nil`): `convertInitialValue` now keeps a
+// nullable union's `undefined`/`null` initial value as the field's `nil`
+// instead of baking the non-nullish branch's zero value (`""`), so the
+// child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
+  'nullish-signal-attr': { limitation: 'nullish-dynamic-attr-rendered-empty' },
   'number-addition-text-formatting': { limitation: 'number-addition-text-formatting' },
   'fractional-number-array-prop': { limitation: 'fractional-number-array-prop' },
-  // #3057's `child-prop-rest-forward-undefined-start`: the fixture's own
-  // top-level signal (`createSignal<string | undefined>(undefined)`) seeds
-  // its `interface{}` field with `""` instead of `nil` (`convertInitialValue`
-  // in `value/value-lowering.ts` has no explicit `undefined`/`null` literal
-  // check, only quoted-string-literal ones, so it falls to its blanket `""`
-  // string fallback) — a general signal-seeding gap, not specific to rest
-  // forwarding, which this PR's `elementAttrEmitter.emitExpression` /
-  // `bf_get`-nil-check fix does not reach. See
-  // `go-undefined-signal-seed-not-nil` (`packages/adapter-tests/limitations/`).
-  'child-prop-rest-forward-undefined-start': { limitation: 'go-undefined-signal-seed-not-nil' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback

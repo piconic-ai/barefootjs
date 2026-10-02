@@ -2001,14 +2001,6 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
-      "child-prop-rest-forward-undefined-start": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-undefined-signal-seed-not-nil"
-          ]
-        }
-      },
       "conditional-nested-loop-signal-reactivity": {
         "go-template": {
           "kind": "refusal",
@@ -4471,6 +4463,62 @@
           ]
         }
       },
+      "nullish-signal-attr": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "nullish-dynamic-attr-rendered-empty"
+          ]
+        }
+      },
       "number-addition-text-formatting": {
         "go-template": {
           "kind": "render",
@@ -5869,10 +5917,6 @@
       }
     },
     "docs": {
-      "child-prop-rest-forward-undefined-start": {
-        "description": "a child-component prop that starts undefined (never rendered by SSR) still reaches the child root…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-prop-rest-forward-undefined-start.ts"
-      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -6052,6 +6096,10 @@
       "negated-empty-array-condition": {
         "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
+      },
+      "nullish-signal-attr": {
+        "description": "an attribute bound to an undefined-valued signal is omitted, for a zero-arg createSignal<T>() and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-signal-attr.ts"
       },
       "number-addition-text-formatting": {
         "description": "A large fractional addition in text uses JavaScript number spelling",
@@ -6459,19 +6507,6 @@
         "BF029"
       ]
     },
-    "go-undefined-signal-seed-not-nil": {
-      "title": "A nullable-typed signal seeded with a literal `undefined` bakes to the empty string, not nil",
-      "kind": "silent",
-      "given": "a component-local signal declared with a nullish union type and a literal `undefined` initial value (`createSignal<string | undefined>(undefined)`), forwarded to a child prop that the child reaches only via a closed-type `{...rest}` spread",
-      "expected": "the SSR constructor seeds the value as absent (Go `nil`), so the child omits the forwarded attribute entirely, matching the Hono reference",
-      "actual": "seeds the signal's own `interface{}`-typed field with the empty string (`\"\"`) instead of `nil` — `convertInitialValue`'s string-primitive fallback (`value-lowering.ts`) always returns `\"\"` for a value it can't recognise as a quoted literal, with no explicit check for the literal text `undefined`/`null` — so the child's rest bag receives `{\"tag\": \"\"}` instead of an absent key, and renders `tag=\"\"`",
-      "fixtures": [
-        "child-prop-rest-forward-undefined-start"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
     "jsx-wrapped-in-non-children-prop": {
       "title": "JSX wrapped in a ternary or array at a non-children prop",
       "kind": "by-design",
@@ -6790,6 +6825,27 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "nullish-dynamic-attr-rendered-empty": {
+      "title": "An attribute bound to an undefined-valued signal renders empty instead of being omitted",
+      "kind": "silent",
+      "given": "a non-boolean element attribute (`title`, `data-*`) whose whole value is a signal read, where the signal starts as `undefined`",
+      "expected": "the attribute is omitted from the SSR output, the way Hono omits any `undefined`-valued attribute",
+      "actual": "renders the attribute with an empty value (`title=\"\"`)",
+      "fixtures": [
+        "nullish-signal-attr"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "number-addition-text-formatting": {

@@ -1487,16 +1487,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   const initialValue = signalInitialValueText(callExpr, ctx)
   const typedInitialValue = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
 
-  // Try to infer type from initial value or type argument
-  let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
-
-  // Check for type argument: createSignal<number>(0)
-  if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
-    type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
-  } else {
-    // Infer from initial value
-    type = inferTypeFromValue(initialValue)
-  }
+  const type = signalTypeInfo(callExpr, initialValue, ctx)
 
   const envReader = resolveEnvSignalKey(callExpr, ctx) ?? undefined
   // The factory as written (identifier, alias, or `ns.factory`), so emit re-emits
@@ -1742,6 +1733,32 @@ function signalInitialValueText(callExpr: ts.CallExpression, ctx: AnalyzerContex
   return callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : 'undefined'
 }
 
+/**
+ * A `createSignal` call's value type: its type argument, else inferred from
+ * the initial value. A zero-arg call with a type argument is `T | undefined`
+ * (the zero-arg overload's return type), not `T` — a typed backend would
+ * otherwise seed the type's zero value (`0`, `""`) where the signal holds
+ * `undefined` (#3215).
+ */
+function signalTypeInfo(callExpr: ts.CallExpression, initialValue: string, ctx: AnalyzerContext): TypeInfo {
+  const typeArg = callExpr.typeArguments?.[0]
+  if (!typeArg) return inferTypeFromValue(initialValue)
+  const type = typeNodeToTypeInfo(typeArg, ctx.sourceFile) ?? { kind: 'unknown', raw: 'unknown' }
+  return callExpr.arguments[0] ? type : withUndefined(type)
+}
+
+/** `T | undefined`, flattening a union `T` and leaving one that already admits `undefined` as is. */
+function withUndefined(type: TypeInfo): TypeInfo {
+  const members = type.kind === 'union' && type.unionTypes ? type.unionTypes : [type]
+  if (members.some(t => t.kind === 'primitive' && t.primitive === 'undefined')) return type
+  if (type.kind === 'unknown') return type
+  return {
+    kind: 'union',
+    raw: `${type.raw} | undefined`,
+    unionTypes: [...members, { kind: 'primitive', raw: 'undefined', primitive: 'undefined' }],
+  }
+}
+
 function collectSignalTupleRef(
   node: ts.VariableDeclaration,
   ctx: AnalyzerContext
@@ -1754,12 +1771,7 @@ function collectSignalTupleRef(
     ? callExpr.arguments[0].getText(ctx.sourceFile)
     : undefined
 
-  let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
-  if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
-    type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
-  } else {
-    type = inferTypeFromValue(initialValue)
-  }
+  const type = signalTypeInfo(callExpr, initialValue, ctx)
 
   ctx.signalTupleRefs.set(name, {
     initialValue,
@@ -1790,12 +1802,7 @@ function collectSignalFromIndexAccess(
       ? callExpr.arguments[0].getText(ctx.sourceFile)
       : undefined
 
-    let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
-    if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
-      type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
-    } else {
-      type = inferTypeFromValue(initialValue)
-    }
+    const type = signalTypeInfo(callExpr, initialValue, ctx)
 
     const loc = getSourceLocation(node, ctx.sourceFile, ctx.filePath)
     const initialFreeIdentifiers = callExpr.arguments[0]

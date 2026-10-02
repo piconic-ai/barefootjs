@@ -27,6 +27,7 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  'nullish-signal-attr': { limitation: 'nullish-dynamic-attr-rendered-empty' },
   'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
 
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an

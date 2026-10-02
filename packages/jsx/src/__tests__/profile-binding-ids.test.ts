@@ -188,7 +188,38 @@ describe('the analyzer records `undefined` for a zero-arg createSignal() (#3215)
       `
       const signals = analyzeComponent(source, 'Empty.tsx').signals
       expect(signals.length).toBeGreaterThan(0)
-      for (const signal of signals) expect(signal.initialValue).toBe('undefined')
+      for (const signal of signals) {
+        expect(signal.initialValue).toBe('undefined')
+        // The zero-arg overload's `T | undefined`, so a typed backend seeds
+        // nil rather than the type's zero value.
+        expect(signal.type.raw).toBe('string | undefined')
+      }
     })
   }
+
+  test('a type argument that already admits undefined is not widened again', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Empty() {
+        const [v] = createSignal<'a' | 'b' | undefined>()
+        return <p>{v() ?? '-'}</p>
+      }
+    `
+    const [signal] = analyzeComponent(source, 'Empty.tsx').signals
+    expect(signal.type.raw).toBe("'a' | 'b' | undefined")
+  })
+
+  test('an explicit initial value keeps the type argument as written', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Empty() {
+        const [v] = createSignal<string>('x')
+        return <p>{v()}</p>
+      }
+    `
+    const [signal] = analyzeComponent(source, 'Empty.tsx').signals
+    expect(signal.type.raw).toBe('string')
+  })
 })
