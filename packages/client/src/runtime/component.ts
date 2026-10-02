@@ -1142,14 +1142,33 @@ export function escapeTextOrNode(value: unknown): string | Node {
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
 
+// Elements whose children the HTML parser reads as HTML even though the
+// element itself is SVG / MathML — the spec's HTML integration points and
+// MathML text integration points
+// (https://html.spec.whatwg.org/multipage/parsing.html#html-integration-point).
+const SVG_HTML_INTEGRATION_POINTS = new Set(['foreignObject', 'desc', 'title'])
+const MATHML_TEXT_INTEGRATION_POINTS = new Set(['mi', 'mo', 'mn', 'ms', 'mtext'])
+
+function childrenParseAsHtml(parent: Element): boolean {
+  if (parent.namespaceURI === SVG_NS) return SVG_HTML_INTEGRATION_POINTS.has(parent.localName)
+  if (parent.namespaceURI === MATHML_NS) {
+    if (MATHML_TEXT_INTEGRATION_POINTS.has(parent.localName)) return true
+    if (parent.localName === 'annotation-xml') {
+      const encoding = (parent.getAttribute('encoding') ?? '').toLowerCase()
+      return encoding === 'text/html' || encoding === 'application/xhtml+xml'
+    }
+  }
+  return false
+}
+
 /**
  * Synthetic wrap tag for a parent's namespace, or null when its children are
- * plain HTML — including an SVG `<foreignObject>`, whose content is HTML
- * even though the element itself is in the SVG namespace.
+ * plain HTML — including an SVG / MathML element whose content the parser
+ * reads as HTML (`<foreignObject>`, `<desc>`, `<title>`, `<mtext>`, …).
  */
 function namespaceWrapTagFor(parent: Element | null | undefined): 'svg' | 'math' | null {
-  if (!parent) return null
-  if (parent.namespaceURI === SVG_NS) return parent.localName === 'foreignObject' ? null : 'svg'
+  if (!parent || childrenParseAsHtml(parent)) return null
+  if (parent.namespaceURI === SVG_NS) return 'svg'
   if (parent.namespaceURI === MATHML_NS) return 'math'
   return null
 }

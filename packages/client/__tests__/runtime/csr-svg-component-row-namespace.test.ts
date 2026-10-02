@@ -21,6 +21,7 @@ import { TestAdapter } from '../../../jsx/src/adapters/test-adapter'
 import { writeFileSync, mkdtempSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
+import ts from 'typescript'
 
 beforeAll(() => {
   if (typeof window === 'undefined') GlobalRegistrator.register()
@@ -28,6 +29,28 @@ beforeAll(() => {
 
 const adapter = new TestAdapter()
 const runtimePath = join(__dirname, '../../src/runtime/index.ts')
+
+/**
+ * Point the compiled module's runtime import at the runtime source and drop
+ * the `/* @bf-child:… *\/` marker imports, by walking the module's top-level
+ * import declarations (the AGENTS.md rule: no regex over JS syntax).
+ */
+function rewriteImports(clientJs: string): string {
+  const sf = ts.createSourceFile('client.mjs', clientJs, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const edits: { start: number; end: number; text: string }[] = []
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt) || !ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    const spec = stmt.moduleSpecifier
+    if (spec.text === '@barefootjs/client/runtime') {
+      edits.push({ start: spec.getStart(sf), end: spec.getEnd(), text: JSON.stringify(runtimePath) })
+    } else if (!stmt.importClause && spec.text.startsWith('/* @bf-child:')) {
+      edits.push({ start: stmt.getStart(sf), end: stmt.getEnd(), text: '' })
+    }
+  }
+  let out = clientJs
+  for (const e of edits.sort((a, b) => b.start - a.start)) out = out.slice(0, e.start) + e.text + out.slice(e.end)
+  return out
+}
 
 async function load(source: string, filename: string): Promise<void> {
   const result = compileJSX(source, filename, { adapter })
@@ -37,12 +60,9 @@ async function load(source: string, filename: string): Promise<void> {
   }
   const clientJs = result.files.find((f) => f.type === 'clientJs')?.content
   if (!clientJs) throw new Error('No client JS emitted')
-  const rewritten = clientJs
-    .replace(/from\s+['"]@barefootjs\/client\/runtime['"]/g, `from '${runtimePath}'`)
-    .replace(/^import '\/\* @bf-child:\w+ \*\/'\n/gm, '')
   const dir = mkdtempSync(join(tmpdir(), 'bf-3265-'))
   const file = join(dir, `${filename.replace(/\W/g, '_')}.mjs`)
-  writeFileSync(file, rewritten)
+  writeFileSync(file, rewriteImports(clientJs))
   await import(file)
 }
 
@@ -163,49 +183,57 @@ describe('#3265 — SVG-rooted component rows added to an <svg> loop after mount
   })
 })
 
-describe('#3265 — rows inside <foreignObject> stay HTML', () => {
+describe('#3265 — rows under an HTML integration point stay HTML', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
 
-  // `<foreignObject>` is an SVG element whose children are HTML, so its
-  // rows must NOT be parsed as SVG just because their container is in the
-  // SVG namespace.
-  test('a component row added to a <foreignObject> loop after mount is an HTML element', async () => {
-    await load(
-      `
-      'use client'
-      import { createSignal } from '@barefootjs/client'
-      export function Card3265(props: { id: string }) {
-        return <div className="card" data-id={props.id}><span>{props.id}</span></div>
-      }
-      export function Cards3265() {
-        const [ids, setIds] = createSignal<string[]>([])
-        return (
-          <svg onClick={() => setIds(['c1', 'c2'])}>
-            <foreignObject width="100" height="100">
-              {ids().map((id) => <Card3265 key={id} id={id} />)}
-            </foreignObject>
-          </svg>
-        )
-      }
-    `,
-      'Cards3265.tsx',
-    )
-    const el = await mount('Cards3265')
+  const HTML_NS = 'http://www.w3.org/1999/xhtml'
 
-    el.dispatchEvent(new window.Event('click', { bubbles: true }))
+  // `<foreignObject>`, `<desc>` and `<title>` (SVG) and `<mtext>` (MathML)
+  // are elements whose children the HTML parser reads as HTML, so their
+  // rows must NOT be parsed as SVG / MathML just because their container
+  // is in that namespace.
+  for (const [parent, open, close] of [
+    ['foreignObject', '<svg><foreignObject width="100" height="100">', '</foreignObject></svg>'],
+    ['desc', '<svg><desc>', '</desc></svg>'],
+    ['title', '<svg><title>', '</title></svg>'],
+    ['mtext', '<math><mtext>', '</mtext></math>'],
+  ] as const) {
+    test(`a component row added to a <${parent}> loop after mount is an HTML element`, async () => {
+      const tag = parent.charAt(0).toUpperCase() + parent.slice(1)
+      await load(
+        `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function Link${tag}3265(props: { id: string }) {
+          return <a href={'#' + props.id} data-id={props.id}><span>{props.id}</span></a>
+        }
+        export function Host${tag}3265() {
+          const [ids, setIds] = createSignal<string[]>([])
+          return (
+            <div onClick={() => setIds(['c1', 'c2'])}>
+              ${open}
+                {ids().map((id) => <Link${tag}3265 key={id} id={id} />)}
+              ${close}
+            </div>
+          )
+        }
+      `,
+        `Host${tag}3265.tsx`,
+      )
+      const el = await mount(`Host${tag}3265`)
 
-    const HTML_NS = 'http://www.w3.org/1999/xhtml'
-    expect(namespaces(el, 'div, span')).toEqual([
-      `div:${HTML_NS}`,
-      `span:${HTML_NS}`,
-      `div:${HTML_NS}`,
-      `span:${HTML_NS}`,
-    ])
-    expect(Array.from(el.querySelectorAll('foreignObject > div')).map((d) => d.getAttribute('data-id'))).toEqual([
-      'c1',
-      'c2',
-    ])
-  })
+      el.dispatchEvent(new window.Event('click', { bubbles: true }))
+
+      expect(namespaces(el, 'a, span')).toEqual([
+        `a:${HTML_NS}`,
+        `span:${HTML_NS}`,
+        `a:${HTML_NS}`,
+        `span:${HTML_NS}`,
+      ])
+      const container = el.querySelector(parent === 'foreignObject' ? 'foreignObject' : parent)!
+      expect(Array.from(container.children).map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c2'])
+    })
+  }
 })
