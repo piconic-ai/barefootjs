@@ -1142,34 +1142,43 @@ export function escapeTextOrNode(value: unknown): string | Node {
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
 
-// Elements whose children the HTML parser reads as HTML even though the
-// element itself is SVG / MathML — the spec's HTML integration points and
-// MathML text integration points
+// SVG elements whose children the HTML parser reads as HTML: the HTML
+// integration points
 // (https://html.spec.whatwg.org/multipage/parsing.html#html-integration-point).
 const SVG_HTML_INTEGRATION_POINTS = new Set(['foreignObject', 'desc', 'title'])
+// MathML text integration points: their children are HTML except `<mglyph>`
+// and `<malignmark>`, which stay MathML
+// (https://html.spec.whatwg.org/multipage/parsing.html#tree-construction).
 const MATHML_TEXT_INTEGRATION_POINTS = new Set(['mi', 'mo', 'mn', 'ms', 'mtext'])
 
-function childrenParseAsHtml(parent: Element): boolean {
-  if (parent.namespaceURI === SVG_NS) return SVG_HTML_INTEGRATION_POINTS.has(parent.localName)
-  if (parent.namespaceURI === MATHML_NS) {
-    if (MATHML_TEXT_INTEGRATION_POINTS.has(parent.localName)) return true
-    if (parent.localName === 'annotation-xml') {
-      const encoding = (parent.getAttribute('encoding') ?? '').toLowerCase()
-      return encoding === 'text/html' || encoding === 'application/xhtml+xml'
-    }
-  }
-  return false
-}
-
 /**
- * Synthetic wrap tag for a parent's namespace, or null when its children are
- * plain HTML — including an SVG / MathML element whose content the parser
- * reads as HTML (`<foreignObject>`, `<desc>`, `<title>`, `<mtext>`, …).
+ * Markup that recreates `parent`'s parsing context, for `parseHTML` to wrap
+ * dynamic markup in — or null when `parent`'s children parse as plain HTML.
+ *
+ * - An HTML parent, an SVG HTML integration point, or `<annotation-xml>`
+ *   with an HTML `encoding`: every child is HTML, so no wrapper.
+ * - A MathML text integration point: wrapped in `<math>` AND the parent
+ *   itself (`<math><mi>…</mi></math>`), so the parser applies the parent's
+ *   own token-level rule — HTML children, MathML `<mglyph>`/`<malignmark>`.
+ *   A parent-level yes/no cannot express that split.
+ * - Any other SVG / MathML parent: `<svg>…</svg>` / `<math>…</math>`.
  */
-function namespaceWrapTagFor(parent: Element | null | undefined): 'svg' | 'math' | null {
-  if (!parent || childrenParseAsHtml(parent)) return null
-  if (parent.namespaceURI === SVG_NS) return 'svg'
-  if (parent.namespaceURI === MATHML_NS) return 'math'
+function foreignParseContext(parent: Element | null | undefined): { open: string; close: string; depth: 1 | 2 } | null {
+  if (!parent) return null
+  const name = parent.localName
+  if (parent.namespaceURI === SVG_NS) {
+    return SVG_HTML_INTEGRATION_POINTS.has(name) ? null : { open: '<svg>', close: '</svg>', depth: 1 }
+  }
+  if (parent.namespaceURI === MATHML_NS) {
+    if (name === 'annotation-xml') {
+      const encoding = (parent.getAttribute('encoding') ?? '').toLowerCase()
+      if (encoding === 'text/html' || encoding === 'application/xhtml+xml') return null
+    }
+    if (MATHML_TEXT_INTEGRATION_POINTS.has(name)) {
+      return { open: `<math><${name}>`, close: `</${name}></math>`, depth: 2 }
+    }
+    return { open: '<math>', close: '</math>', depth: 1 }
+  }
   return null
 }
 
@@ -1197,8 +1206,9 @@ function mountNamespaceParent(
  * use this instead of raw innerHTML assignment.
  *
  * When `parent` is provided and lives in the SVG or MathML namespace, the
- * markup is parsed under the matching foreign-content context by wrapping
- * it in `<svg>...</svg>` / `<math>...</math>`; the wrapper's children are
+ * markup is parsed in `parent`'s own context by wrapping it in the foreign
+ * root (and, for a MathML text integration point, `parent` itself — see
+ * `foreignParseContext`); the wrapper's children are
  * moved into the returned fragment so callers see the same shape as the
  * HTML path. Without this, dynamically-inserted SVG/MathML elements (e.g.,
  * a `<path>` in a conditional drag preview, or an `<mrow>` in a dynamic
@@ -1209,10 +1219,11 @@ function mountNamespaceParent(
 export function parseHTML(html: string, parent?: Element | null): DocumentFragment {
   const tpl = document.createElement('template')
   const escaped = escapeAttrGt(html)
-  const wrapTag = namespaceWrapTagFor(parent)
-  if (wrapTag) {
-    tpl.innerHTML = `<${wrapTag}>${escaped}</${wrapTag}>`
-    const wrapper = tpl.content.firstElementChild
+  const context = foreignParseContext(parent)
+  if (context) {
+    tpl.innerHTML = `${context.open}${escaped}${context.close}`
+    let wrapper = tpl.content.firstElementChild
+    if (context.depth === 2) wrapper = wrapper?.firstElementChild ?? null
     const frag = document.createDocumentFragment()
     if (wrapper) {
       while (wrapper.firstChild) frag.appendChild(wrapper.firstChild)
