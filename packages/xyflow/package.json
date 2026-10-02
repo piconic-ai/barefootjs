@@ -19,9 +19,10 @@
     "src"
   ],
   "scripts": {
-    "build": "bun run build:js && bun run build:browser && bun run build:types",
-    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
-    "build:browser": "bun build ./src/index.ts --outdir ./dist --entry-naming 'xyflow.browser.min.[ext]' --format esm --minify --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
+    "build": "bun run build:js && bun run build:browser && bun run build:licenses && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive' --metafile=./dist/meta.js.json --banner '/*! @barefootjs/xyflow | MIT | bundles @xyflow/system and d3 modules, see THIRD_PARTY_LICENSES.txt */'",
+    "build:browser": "bun build ./src/index.ts --outdir ./dist --entry-naming 'xyflow.browser.min.[ext]' --format esm --minify --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive' --metafile=./dist/meta.browser.json --banner '/*! @barefootjs/xyflow | MIT | bundles @xyflow/system and d3 modules, see THIRD_PARTY_LICENSES.txt */'",
+    "build:licenses": "bun ../../scripts/third-party-licenses.ts @barefootjs/xyflow ./dist/THIRD_PARTY_LICENSES.txt ./dist/meta.js.json ./dist/meta.browser.json && rm ./dist/meta.js.json ./dist/meta.browser.json",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test src/ && bun run typecheck:tests",
     "typecheck:tests": "tsgo --noEmit -p src/__tests__/tsconfig.json",
