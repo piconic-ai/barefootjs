@@ -983,6 +983,7 @@ export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
       dispatchNodeType(el, initFn, {
         id,
         data,
+        type,
         // Fine-grained per-node subscription. `nodeSignal(id)` only
         // wakes consumers when this specific node's entry changes;
         // sibling-node updates stay silent (#1270).
