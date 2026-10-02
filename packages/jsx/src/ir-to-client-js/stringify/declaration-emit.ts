@@ -64,6 +64,17 @@ function bfIdArg(bfId: string | undefined): string {
   return bfId ? `, ${JSON.stringify(bfId)}` : ''
 }
 
+/**
+ * `createSignal`'s argument list. A source `createSignal()` has no initial
+ * value (`initialValueExpr` is `''`), so in profile mode the id needs an
+ * explicit `undefined` before it — `createSignal(, "id")` is a syntax
+ * error (#3217).
+ */
+function signalArgs(plan: SignalEmitPlan): string {
+  if (!plan.bfId) return plan.initialValueExpr
+  return `${plan.initialValueExpr || 'undefined'}${bfIdArg(plan.bfId)}`
+}
+
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {
   // Getter-elided source form (`const [, setX] = createSignal(...)`):
   // reproduce the hole instead of introducing the synthesized internal
@@ -88,7 +99,7 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     lines.push(`  const [${bindings}] = ${plan.initializerOverride}`)
     return
   }
-  const id = bfIdArg(plan.bfId)
+  const args = signalArgs(plan)
   if (plan.branchCondition) {
     // #1414 cell #8: signal declared inside an early-return `if`-block.
     // Hoist as `let` so closures and event handlers hoisted to outer
@@ -99,12 +110,12 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     if (plan.setter) {
       lines.push(plan.getterElided ? `  let ${plan.setter}` : `  let ${plan.getter}, ${plan.setter}`)
       lines.push(`  if (${plan.branchCondition}) {`)
-      lines.push(`    ;[${getterSlot}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
+      lines.push(`    ;[${getterSlot}, ${plan.setter}] = createSignal(${args})`)
       lines.push(`  }`)
     } else {
       lines.push(`  let ${plan.getter}`)
       lines.push(`  if (${plan.branchCondition}) {`)
-      lines.push(`    ;[${plan.getter}] = createSignal(${plan.initialValueExpr}${id})`)
+      lines.push(`    ;[${plan.getter}] = createSignal(${args})`)
       lines.push(`  }`)
     }
     // Controlled effects don't apply to branch-conditioned signals — a
@@ -113,9 +124,9 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     return
   }
   if (plan.setter) {
-    lines.push(`  const [${getterSlot}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
+    lines.push(`  const [${getterSlot}, ${plan.setter}] = createSignal(${args})`)
   } else {
-    lines.push(`  const [${plan.getter}] = createSignal(${plan.initialValueExpr}${id})`)
+    lines.push(`  const [${plan.getter}] = createSignal(${args})`)
   }
   if (plan.controlledEffect) {
     emitControlledEffect(lines, plan.controlledEffect)

@@ -2386,7 +2386,12 @@ function collectLocalDeclarations(root: ts.Node): Set<string> {
 // Reactive primitives are DOM-free. The context/portal entries here are
 // type-level shims — their implementations live in @barefootjs/client/runtime
 // and are emitted by the compiler for 'use client' components.
-const CLIENT_EXPORTS = new Set([
+//
+// The compiler re-points a recognised import at `@barefootjs/client/runtime`
+// in client JS, and at the Hono SSR shim on the server, so every name here
+// must exist on both. `client-exports-contract.test.ts` (adapter-hono) pins
+// this set against both, and against the root entry's own exports (#3217).
+export const CLIENT_EXPORTS: ReadonlySet<string> = new Set([
   'createSignal', 'createEffect', 'createDisposableEffect', 'createMemo',
   'createRoot', 'onCleanup', 'onMount', 'untrack', 'batch', 'splitProps',
   'forwardProps', 'unwrap', '__slot',

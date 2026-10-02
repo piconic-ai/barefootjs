@@ -90,7 +90,7 @@ export type {
 export { isElidedFactoryGetter } from './types.ts'
 
 // Analyzer
-export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, createAnchoredProgram, needsTypeBasedDetection, resolveRelativeImportToFile, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'
+export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, createAnchoredProgram, needsTypeBasedDetection, resolveRelativeImportToFile, REACTIVE_PRIMITIVES, CLIENT_EXPORTS, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'
 export { createProgramForCorpus, type SharedProgramOptions } from './shared-program.ts'
 
 // JSX to IR transformer
