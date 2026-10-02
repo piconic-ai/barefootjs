@@ -445,7 +445,7 @@ function materializeComponent(
   // Only `isFragmentRoot` templates can emit more than one top-level node
   // (jsx-to-ir.ts's `transformFragment`), so every other shape keeps
   // exactly the single-node list it always had.
-  const parsedFragment = parseHTML(html.trim())
+  const parsedFragment = parseHTML(html.trim(), mountNamespaceParent(mountAt, rowMount))
   const roots: Node[] = isFragmentRoot
     ? Array.from(parsedFragment.childNodes)
     : parsedFragment.firstChild
@@ -1142,12 +1142,34 @@ export function escapeTextOrNode(value: unknown): string | Node {
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
 
-/** Synthetic wrap tag for a parent's namespace, or null when it's plain HTML. */
+/**
+ * Synthetic wrap tag for a parent's namespace, or null when its children are
+ * plain HTML — including an SVG `<foreignObject>`, whose content is HTML
+ * even though the element itself is in the SVG namespace.
+ */
 function namespaceWrapTagFor(parent: Element | null | undefined): 'svg' | 'math' | null {
   if (!parent) return null
-  if (parent.namespaceURI === SVG_NS) return 'svg'
+  if (parent.namespaceURI === SVG_NS) return parent.localName === 'foreignObject' ? null : 'svg'
   if (parent.namespaceURI === MATHML_NS) return 'math'
   return null
+}
+
+/**
+ * The element a component created by `createComponent` will be inserted
+ * into, for parsing its template in that element's namespace (#3265): the
+ * placeholder's parent for a `mountAt` mount, the loop container for a row
+ * `mapArray` creates. Without it a component whose root is an SVG element
+ * (`<g>`, `<circle>`, …) added to an `<svg>` after mount parses in the HTML
+ * namespace and draws nothing. Rows present at the first render never hit
+ * this: the parent's template bakes them into its own `<svg>` markup.
+ */
+function mountNamespaceParent(
+  mountAt: Element | null | undefined,
+  rowMount: RowMountPoint | null | undefined,
+): Element | null {
+  if (mountAt) return mountAt.parentElement
+  const container = rowMount?.container
+  return container && container.nodeType === Node.ELEMENT_NODE ? (container as Element) : null
 }
 
 /**
@@ -1241,7 +1263,7 @@ function createComponentFromDef(
   const html = evalTemplateFn(() => template(unwrappedProps))
 
   // Create DOM element
-  const element = parseHTML(html.trim()).firstChild as HTMLElement
+  const element = parseHTML(html.trim(), mountNamespaceParent(mountAt, rowMount)).firstChild as HTMLElement
 
   if (!element) {
     const el = document.createElement('div')
