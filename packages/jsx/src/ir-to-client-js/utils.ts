@@ -810,11 +810,14 @@ function rewriteIdentifierAsAccessor(expr: string, name: string): string {
  * reference and why; both callers answer that question here, so they cannot
  * drift apart (#3260).
  *
- * `skipCallee` leaves `name()` / `new name()` alone. It is the accessor
- * rewrite's no-double-wrap rule (#2592): there `name()` already IS the
- * accessor call. A destructured binding has no such shape — `handler()` with
- * `({ handler })` calls the item's field, so it must become
- * `__bfItem().handler()` — and its caller passes `false`.
+ * `skipCallee` leaves `name()` / `new name()` and a `function name()`
+ * declaration's own name alone. It is the accessor rewrite's no-double-wrap
+ * rule (#2592): there `name()` already IS the accessor call, and the old
+ * regex's "followed by (" lookahead skipped all three. A destructured
+ * binding has no such shape — `handler()` with `({ handler })` calls the
+ * item's field, so it must become `__bfItem().handler()` — and its caller
+ * passes `false`, which also leaves a shadowing function declaration to
+ * fail loudly, as it did under the old destructured regex.
  *
  * One pass over the AST, so a replacement is never re-scanned: a binding
  * `a` with path `.a` cannot cascade into `__bfItem().__bfItem().a`.
@@ -871,8 +874,14 @@ function rewriteIdentifierReferences(
       // old regex did NOT protect it either — wrapping it is a pre-existing
       // syntax break, not a regression, so it's left to the shadowing-decl
       // path below like any other declaration name.
-      if (ts.isFunctionDeclaration(p) && p.name === node) return
+      //
+      // Accessor mode only: the old destructured-binding regex had no such
+      // exemption, so there a shadowing `function color() {}` broke the
+      // declaration loudly. Skipping its name here would keep the local
+      // function while rewriting its calls to `__bfItem().color()` — valid
+      // JS that calls the wrong value (#3260 review).
       if (opts.skipCallee) {
+        if (ts.isFunctionDeclaration(p) && p.name === node) return
         if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
         if (ts.isNewExpression(p) && p.expression === node) return // `new name()` — same "followed by (" shape as a call
       }

@@ -480,4 +480,13 @@ describe('destructured loop-param path (rewriteLoopBindingRefs) shares the plain
     assertParses(js)
     expect(js).toContain('(function color() { return __bfItem().label })()')
   })
+
+  test('a nested function declaration shadowing a binding fails to parse instead of calling the item field', () => {
+    // Keeping `function color() {}` while rewriting its call to
+    // `__bfItem().color()` would compile and then call the wrong value at
+    // hydration. Rewriting the declaration name too breaks it loudly, as the
+    // old destructured regex did (#3260 review).
+    const js = compileRow("<b key={label}>{(() => { function color() { return 'blue' } return color() })()}</b>")
+    assertDoesNotParse(js)
+  })
 })
