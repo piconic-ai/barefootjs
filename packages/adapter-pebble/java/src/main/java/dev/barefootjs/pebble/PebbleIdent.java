@@ -1,5 +1,7 @@
 package dev.barefootjs.pebble;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -15,8 +17,13 @@ import java.util.Set;
  * …) resolves to nothing at render time. The reserved-word SET here is a
  * byte-for-byte copy of the TS file's `RESERVED_WORDS` — any change to one
  * side must be mirrored on the other.
+ *
+ * <p>Public so a host application building a ROOT context (e.g.
+ * `integrations/spring`'s `Render`) can match the template's names — though
+ * {@link DeriveStashFromDefaults#rootVars} already does it for the common
+ * case (#3250).
  */
-final class PebbleIdent {
+public final class PebbleIdent {
 
   private PebbleIdent() {}
 
@@ -38,7 +45,19 @@ final class PebbleIdent {
       "sealed", "permits");
 
   /** Mangle a JS identifier into a Pebble-safe context-map key: reserved words get a trailing `_`. */
-  static String mangle(String name) {
+  public static String mangle(String name) {
     return RESERVED_WORDS.contains(name) ? name + "_" : name;
+  }
+
+  /** A copy of {@code vars} with every key passed through {@link #mangle}, in order. */
+  public static Map<String, Object> mangleKeys(Map<String, ?> vars) {
+    Map<String, Object> out = new LinkedHashMap<>();
+    if (vars == null) {
+      return out;
+    }
+    for (Map.Entry<String, ?> e : vars.entrySet()) {
+      out.put(mangle(e.getKey()), e.getValue());
+    }
+    return out;
   }
 }

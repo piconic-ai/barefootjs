@@ -145,10 +145,11 @@ public final class Render {
   /**
    * Render one component as the root of a page. `props` becomes the source
    * for any `ssrDefaults` entry whose `propName` matches a key in `props`
-   * (via {@link DeriveStashFromDefaults#derive}); `stash` is layered on top
+   * (via {@link DeriveStashFromDefaults#rootVars}); `stash` is layered on top
    * afterwards and always wins — for SSR-only derived values no
    * `ssrDefaults` entry could ever hold (e.g. `ConditionalReturn`'s
-   * `variant`).
+   * `variant`). `props` and `stash` use source names (`filter`); `rootVars`
+   * keys the vars the way the compiled template reads them (`filter_`, #3250).
    */
   public static Rendered renderComponent(
       BfContext ctx, String componentName, Map<String, Object> props, Map<String, Object> stash) throws IOException {
@@ -160,8 +161,7 @@ public final class Render {
       BfContext ctx, String componentName, Map<String, Object> props, Map<String, Object> stash, Bf sharedRoot)
       throws IOException {
     Map<String, Object> defaults = ssrDefaultsFor(ctx.manifest, componentName);
-    Map<String, Object> vars = new LinkedHashMap<>(DeriveStashFromDefaults.derive(defaults, props));
-    vars.putAll(stash);
+    Map<String, Object> vars = DeriveStashFromDefaults.rootVars(defaults, props, stash);
     return renderRoot(ctx, componentName, props, vars, sharedRoot);
   }
 
@@ -178,8 +178,7 @@ public final class Render {
       BfContext ctx, String componentName, Map<String, Object> props, Map<String, Object> stash, String childrenHtml,
       Bf sharedRoot) throws IOException {
     Map<String, Object> defaults = ssrDefaultsFor(ctx.manifest, componentName);
-    Map<String, Object> vars = new LinkedHashMap<>(DeriveStashFromDefaults.derive(defaults, props));
-    vars.putAll(stash);
+    Map<String, Object> vars = DeriveStashFromDefaults.rootVars(defaults, props, stash);
     vars.put("children", new SafeString(childrenHtml));
     return renderRoot(ctx, componentName, props, vars, sharedRoot);
   }
@@ -200,9 +199,7 @@ public final class Render {
       BfContext ctx, Bf sharedRoot, String componentName, Map<String, Object> props, Map<String, Object> extra)
       throws IOException {
     Map<String, Object> defaults = ssrDefaultsFor(ctx.manifest, componentName);
-    Map<String, Object> vars = new LinkedHashMap<>(DeriveStashFromDefaults.derive(defaults, props));
-    vars.putAll(props);
-    vars.putAll(extra);
+    Map<String, Object> vars = DeriveStashFromDefaults.rootVars(defaults, props, props, extra);
     return renderRoot(ctx, componentName, props, vars, sharedRoot);
   }
 
