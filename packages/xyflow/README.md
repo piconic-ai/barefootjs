@@ -82,6 +82,7 @@ The default `<Flow>` loop renders `data.label ?? id` inside each
 | Geometry | `computeEdgePosition`, `getEdgePath` | Path math shared with `<SimpleEdge>` |
 | Subsystem attach | `attachFlowSubsystems` | `<Flow>`'s `ref` calls this — pan / zoom / keyboard / selection rectangle / pane click |
 | Subsystem attach | `attachConnectionHandler`, `attachReconnectionHandler` | `<Handle>` and reconnect overlay refs |
+| Subsystem attach | `measureNode` | `<NodeWrapper>`'s ResizeObserver — node size + handle bounds for edge endpoints |
 | Imperative-only | `setupKeyboardHandlers`, `setupNodeSelection`, `setupSelectionRectangle`, `initNodeResizer` | Pointer-paced primitives that JSX gives no leverage to |
 | Re-exports | `getBezierPath`, `getSmoothStepPath`, `getStraightPath`, `getConnectedEdges`, `getOutgoers`, `getIncomers`, `getNodesBounds`, `getNodesInside`, `getEdgeToolbarTransform`, `Position`, `MarkerType`, `ConnectionMode` | From `@xyflow/system` |
 | Types | `FlowProps`, `FlowStore`, `InternalFlowStore`, `NodeBase`, `EdgeBase`, `Viewport`, `NodeLookup`, `EdgeLookup`, `Connection`, `OnConnect`, `OnReconnect`, `IsValidConnection`, `HandleType`, … | (see `src/types.ts`) |
@@ -101,6 +102,7 @@ src/
 ├── flow-subsystems.ts  attachFlowSubsystems (panZoom + ResizeObserver + ...)
 ├── connection.ts       attachConnectionHandler / attachReconnectionHandler
 ├── selection.ts        setupKeyboardHandlers / setupSelectionRectangle / setupNodeSelection
+├── node-measure.ts     measureNode (node size + handle bounds)
 ├── node-resizer.ts     initNodeResizer (pointer-paced resize handles)
 ├── compat.ts           React Flow API shims
 └── __tests__/          store / compat / jsx-smoke unit tests

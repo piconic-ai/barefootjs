@@ -178,6 +178,45 @@ test.describe('xyflow Reference Page', () => {
       await expect(container.locator('[data-handleid="right"]')).toBeAttached()
       await expect(container.locator('[data-handleid="bottom"]')).toBeAttached()
     })
+
+    // #3268: handle bounds were never measured, so every edge naming a
+    // `sourceHandle` started at the node's bottom centre instead.
+    test('fan edges start at the source handle they name', async ({ page }) => {
+      const container = firstScope(page, '[bf-s^="XyflowCustomHandlesDemo_"][bf-r]:not([data-slot])')
+      await container.scrollIntoViewIfNeeded()
+      for (const [edgeId, handleId] of [
+        ['fan-a', 'top'],
+        ['fan-b', 'right'],
+        ['fan-c', 'bottom'],
+      ]) {
+        const path = container.locator(`path[data-id="${edgeId}"]`)
+        const handle = container.locator(`.bf-flow__node[data-id="fan"] [data-handleid="${handleId}"]`)
+        await expect(path).toBeAttached()
+        await expect
+          .poll(
+            async () => {
+              const start = await path.evaluate((el) => {
+                const p = el as SVGPathElement
+                const pt = p.getPointAtLength(0)
+                const m = p.getScreenCTM()
+                if (!m) return null
+                return { x: pt.x * m.a + pt.y * m.c + m.e, y: pt.x * m.b + pt.y * m.d + m.f }
+              })
+              const box = await handle.boundingBox()
+              if (!start || !box) return false
+              // The edge attaches to the handle's outer edge, so allow 1px.
+              return (
+                start.x >= box.x - 1 &&
+                start.x <= box.x + box.width + 1 &&
+                start.y >= box.y - 1 &&
+                start.y <= box.y + box.height + 1
+              )
+            },
+            { message: `${edgeId} should start on handle "${handleId}"`, timeout: 3000 },
+          )
+          .toBe(true)
+      }
+    })
   })
 
   // ------------------------------------------------------------

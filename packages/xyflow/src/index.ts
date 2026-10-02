@@ -46,6 +46,7 @@ export type {
   ResizeControlDirection,
 } from './node-resizer.ts'
 export { setupKeyboardHandlers, setupNodeSelection, setupSelectionRectangle } from './selection.ts'
+export { measureNode } from './node-measure.ts'
 export type { SelectionRectOptions } from './selection.ts'
 
 // Stable CSS class names for the registry-side JSX components.

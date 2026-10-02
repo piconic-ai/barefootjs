@@ -67,6 +67,7 @@ import {
   dispatchNodeType,
   FlowContext,
   getEdgePath,
+  measureNode,
   Position,
   XYFLOW_VIEWPORT,
 } from '@barefootjs/xyflow'
@@ -230,35 +231,19 @@ export function NodeWrapper(props: NodeWrapperProps) {
       `position: absolute; transform-origin: 0 0; pointer-events: all; transform: ${transform()}; z-index: ${zIndex()};`,
   )
 
-  // Per-node measurement. Without it, `internal.measured.width/height`
-  // stay empty and `computeEdgePosition`'s fallback (sourceNode.measured.
-  // width ?? 150) makes edges land on a 150×40 phantom — visibly off
-  // when the real node is, say, 87×46. Observe the rendered element and
-  // push offsetWidth/offsetHeight onto both the live internal node and
-  // the userNode so `nodesInitialized`'s measure-preservation path
-  // survives drag-induced setNodes calls.
+  // Per-node measurement: size and handle bounds (#3268). Without the
+  // size, `computeEdgePosition`'s fallback (sourceNode.measured.width ??
+  // 150) lands edges on a 150×40 phantom; without the handle bounds, an
+  // edge naming a `sourceHandle` / `targetHandle` ignores it. The
+  // ResizeObserver's first callback runs after layout, when the node's
+  // `<Handle>`s are in place, and again whenever the node resizes.
   function attachNodeMeasure(el: HTMLElement) {
     if (!store) {
       props.ref?.(el)
       return
     }
     const measure = () => {
-      const w = el.offsetWidth
-      const h = el.offsetHeight
-      if (!w || !h) return
-      const internal = store.nodeLookup().get(props.nodeId)
-      if (!internal) return
-      const prev = internal.measured ?? { width: 0, height: 0 }
-      if (prev.width === w && prev.height === h) return
-      internal.measured = { width: w, height: h }
-      const userNode = internal.internals?.userNode as
-        | (NodeBase & { measured?: { width: number; height: number } })
-        | undefined
-      if (userNode) userNode.measured = { width: w, height: h }
-      // Bump the position epoch so the global edge-recompute effect
-      // in `attachFlowSubsystems` walks the SVG and pushes the new
-      // `d` strings on every connected edge.
-      store.triggerPositionUpdate()
+      measureNode(el, props.nodeId, store)
     }
     measure()
     const ro = new ResizeObserver(measure)
