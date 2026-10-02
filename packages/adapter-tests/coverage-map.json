@@ -6374,6 +6374,17 @@
       "axes": [],
       "contexts": []
     },
+    "reserved-word-child-signal": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "rest-destructure-array-in-map": {
       "kinds": [
         "array-literal",
