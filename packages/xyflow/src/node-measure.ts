@@ -1,6 +1,6 @@
 import { untrack } from '@barefootjs/client'
 import { getHandleBounds } from '@xyflow/system'
-import type { Handle, NodeBase } from '@xyflow/system'
+import type { EdgeBase, Handle, NodeBase } from '@xyflow/system'
 import type { FlowStore } from './types.ts'
 
 type HandleBounds = { source: Handle[] | null; target: Handle[] | null }
@@ -36,10 +36,10 @@ function sameHandles(a: Handle[] | null | undefined, b: Handle[] | null | undefi
  * also sets). Returns whether anything changed; on a change it bumps
  * `positionEpoch` so edges recompute.
  */
-export function measureNode<NodeType extends NodeBase>(
+export function measureNode<NodeType extends NodeBase, EdgeType extends EdgeBase>(
   nodeElement: HTMLElement,
   nodeId: string,
-  store: FlowStore<NodeType>,
+  store: FlowStore<NodeType, EdgeType>,
 ): boolean {
   const width = nodeElement.offsetWidth
   const height = nodeElement.offsetHeight

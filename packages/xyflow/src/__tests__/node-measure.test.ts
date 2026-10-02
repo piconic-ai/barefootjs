@@ -12,6 +12,7 @@
 
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
+import { Position } from '@xyflow/system'
 
 beforeAll(() => {
   if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register()
@@ -61,6 +62,9 @@ async function setup(zoom = 1) {
     const lookup = store.nodeLookup()
     return computeEdgePosition(store.edges()[0], lookup.get('a')!, lookup.get('b')!)
   }
+  // `store`'s edge type is inferred as `{ …; sourceHandle: string }`, not
+  // `EdgeBase`: `measureNode` must accept it without a cast (Pullfrog on
+  // #3295).
   return { store, el, measure: () => measureNode(el, 'a', store), edgePosition }
 }
 
@@ -73,7 +77,7 @@ describe('measureNode (#3268)', () => {
       expect(a.measured).toEqual({ width: 100, height: 40 })
       expect(a.internals.handleBounds?.target).toBeNull()
       expect(a.internals.handleBounds?.source).toEqual([
-        { id: 'right', type: 'source', nodeId: 'a', position: 'right', x: 96, y: 16, width: 8, height: 8 },
+        { id: 'right', type: 'source', nodeId: 'a', position: Position.Right, x: 96, y: 16, width: 8, height: 8 },
       ])
     }
   })
@@ -85,12 +89,12 @@ describe('measureNode (#3268)', () => {
     b.measured = { width: 100, height: 40 }
     b.internals.handleBounds = {
       source: null,
-      target: [{ id: null, type: 'target', nodeId: 'b', position: 'left' as never, x: -4, y: 16, width: 8, height: 8 }],
+      target: [{ id: null, type: 'target', nodeId: 'b', position: Position.Left, x: -4, y: 16, width: 8, height: 8 }],
     }
-    expect(edgePosition()?.sourcePosition).toBe('bottom')
+    expect(edgePosition()?.sourcePosition).toBe(Position.Bottom)
 
     measure()
-    expect(edgePosition()).toMatchObject({ sourceX: 104, sourceY: 20, sourcePosition: 'right', targetX: 296, targetY: 20 })
+    expect(edgePosition()).toMatchObject({ sourceX: 104, sourceY: 20, sourcePosition: Position.Right, targetX: 296, targetY: 20 })
   })
 
   test('does nothing when the size and handles are unchanged', async () => {
