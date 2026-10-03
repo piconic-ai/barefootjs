@@ -146,6 +146,13 @@ export function typeInfoToGo(
       }
     case 'array':
       if (typeInfo.elementType) {
+        // A `number[]` element is `interface{}`, not `int` (#3310): a scalar
+        // `number` falls back to `int`, but an array's elements come from the
+        // caller with no default to say int vs fraction, and `[]int` rejects
+        // `1.5` outright. An integer element still arrives as a Go int, so
+        // integer data prints and compares exactly as before.
+        const element = collapseLiteralUnion(typeInfo.elementType)
+        if (element.kind === 'primitive' && element.primitive === 'number') return '[]interface{}'
         return `[]${typeInfoToGo(ctx, typeInfo.elementType)}`
       }
       return '[]interface{}'

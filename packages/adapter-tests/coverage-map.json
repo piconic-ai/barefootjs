@@ -3315,6 +3315,23 @@
         "text"
       ]
     },
+    "fractional-number-array-row-ops": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "fragment": {
       "kinds": [
         "call",
