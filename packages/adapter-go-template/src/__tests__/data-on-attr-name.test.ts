@@ -3,12 +3,13 @@
  * a literal `data-on…="{{…}}"` is escaped as an `on…` event-handler (script)
  * attribute and the value renders as a quoted JS string (#3309). Such names
  * are emitted through the `bf_attr_name` action, which html/template does not
- * classify; every other name stays literal text.
+ * classify; every other name stays literal text — including a real handler
+ * attribute (`onclick`), which must keep html/template's JS escaping.
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
-import { isScriptContextAttrName, goAttrNameToken } from '../adapter/lib/go-emit'
+import { isDataOnAttrName, goAttrNameToken } from '../adapter/lib/go-emit'
 
 function generate(src: string) {
   const adapter = new GoTemplateAdapter()
@@ -19,19 +20,20 @@ function generate(src: string) {
   return adapter.generate(ir)
 }
 
-describe('isScriptContextAttrName', () => {
-  test('matches html/template\'s script bucket after the data- / namespace strip', () => {
-    for (const n of ['data-on', 'data-onset', 'DATA-ONSET', 'xlink:onclick']) {
-      expect(isScriptContextAttrName(n)).toBe(true)
+describe('isDataOnAttrName', () => {
+  test('matches only data-on… names, never a real handler attribute', () => {
+    for (const n of ['data-on', 'data-onset', 'DATA-ONSET']) {
+      expect(isDataOnAttrName(n)).toBe(true)
     }
-    for (const n of ['data-state', 'data-key', 'title', 'data-data-on', 'data-n-on']) {
-      expect(isScriptContextAttrName(n)).toBe(false)
+    for (const n of ['onclick', 'ONCLICK', 'onerror', 'xlink:onclick', 'data-state', 'data-key', 'title', 'data-data-on', 'data-n-on']) {
+      expect(isDataOnAttrName(n)).toBe(false)
     }
   })
 
-  test('goAttrNameToken wraps only a script-classified name', () => {
+  test('goAttrNameToken wraps only a data-on… name', () => {
     expect(goAttrNameToken('data-on')).toBe('{{bf_attr_name "data-on"}}')
     expect(goAttrNameToken('data-state')).toBe('data-state')
+    expect(goAttrNameToken('onclick')).toBe('onclick')
   })
 })
 
@@ -74,5 +76,19 @@ export function C(props: { label: string; extra?: string }) {
     expect(template).toMatch(/\{\{if [^}]*\}\}\{\{bf_attr_name "data-ontoggle"\}\}="\{\{\.Label\}\}"\{\{end\}\}/)
     expect(template).toContain(`{{if ne .Extra nil}}${ON('data-onclear')}"{{.Extra}}"{{end}}`)
     expect(template).not.toMatch(/ data-on[a-z]*="/)
+  })
+
+  // A lowercase `onclick` is not extracted as a compiler event (only
+  // `on[A-Z]` is), so it reaches the attribute emitter. Its name must stay
+  // literal so html/template keeps escaping the value as JavaScript — see
+  // `TestAttrName_NativeHandlerKeepsJSEscaping` for the real execution.
+  test('a native handler attribute keeps its literal name', () => {
+    const { template } = generate(`
+export function C(props: { payload: string }) {
+  return <button onclick={props.payload}>click</button>
+}
+`)
+    expect(template).toContain('onclick="{{.Payload}}"')
+    expect(template).not.toContain('bf_attr_name')
   })
 })

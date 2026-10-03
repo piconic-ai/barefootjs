@@ -30,26 +30,25 @@ export function wrapIfMultiToken(rendered: string): string {
 }
 
 /**
- * Whether html/template escapes the value of a literal `name="{{…}}"` as
- * JavaScript. Its `attrType` strips ONE leading `data-` (or a `prefix:`
- * namespace) before classifying, so `data-on` / `data-onset` land in the same
- * `on…` event-handler bucket as `onclick`, and a string value renders as a
- * quoted JS string literal (`&#34;x&#34;`) instead of the plain text the
- * reference emits (#3309). Only this script rule is mirrored — one fixed
- * prefix test in the stdlib. It errs wide: an `on…` name the stdlib table
- * lists as plain (`data-open`) also matches, which is harmless because
- * `goAttrNameToken`'s form renders exactly what a plain attribute would.
+ * Whether `name` is an inert `data-on…` attribute that html/template would
+ * escape as JavaScript. Its `attrType` strips ONE leading `data-` before
+ * classifying, so `data-on` / `data-onset` land in the same `on…`
+ * event-handler bucket as `onclick`, and a string value renders as a quoted
+ * JS string literal (`&#34;x&#34;`) instead of the plain text the reference
+ * emits (#3309). Only the `data-` form qualifies: a real handler attribute
+ * (`onclick`, `xlink:onclick`) keeps html/template's JS-context escaping, so
+ * an untrusted value can never become executable handler code. It errs wide
+ * within `data-on…`: a name the stdlib table lists as plain (`data-open`) also
+ * matches, which is harmless because `goAttrNameToken`'s form renders exactly
+ * what a plain attribute would.
  */
-export function isScriptContextAttrName(name: string): boolean {
-  const lower = name.toLowerCase()
-  const colon = lower.indexOf(':')
-  const rest = lower.startsWith('data-') ? lower.slice(5) : colon >= 0 ? lower.slice(colon + 1) : lower
-  return rest.startsWith('on')
+export function isDataOnAttrName(name: string): boolean {
+  return name.toLowerCase().startsWith('data-on')
 }
 
 /**
  * The attribute-name text to emit before a `="…"` value holding actions. A
- * script-classified name (`isScriptContextAttrName`) is emitted through the
+ * `data-on…` name (`isDataOnAttrName`) is emitted through the
  * `bf_attr_name` action instead of as literal text: html/template does not
  * classify an action-supplied (`template.HTMLAttr`) name, so the value that
  * follows is escaped as plain attribute text whatever its shape — a bare
@@ -57,7 +56,7 @@ export function isScriptContextAttrName(name: string): boolean {
  * other name is returned unchanged.
  */
 export function goAttrNameToken(name: string): string {
-  return isScriptContextAttrName(name) ? `{{bf_attr_name ${JSON.stringify(name)}}}` : name
+  return isDataOnAttrName(name) ? `{{bf_attr_name ${JSON.stringify(name)}}}` : name
 }
 
 /**

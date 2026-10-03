@@ -2690,6 +2690,25 @@ func TestAttrName_ValueEscapedAsPlainText(t *testing.T) {
 	}
 }
 
+// TestAttrName_NativeHandlerKeepsJSEscaping pins the boundary of the #3309
+// bypass: the compiler emits a native handler attribute (`onclick`) with a
+// LITERAL name, so html/template still escapes its value as a JS string and an
+// untrusted value cannot become executable handler code. Only `data-on…`
+// names go through bf_attr_name.
+func TestAttrName_NativeHandlerKeepsJSEscaping(t *testing.T) {
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(
+		`<button onclick="{{.P}}" {{bf_attr_name "data-on"}}="{{.P}}">x</button>`,
+	))
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, struct{ P string }{P: "alert(document.domain)"}); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	want := `<button onclick="&#34;alert(document.domain)&#34;" data-on="alert(document.domain)">x</button>`
+	if got := buf.String(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
 // AsMap normalizes any string-keyed map kind held in an interface{} prop
 // field into map[string]interface{} for object-valued context bindings, and
 // returns nil for every "absent" shape so the generated `?? {}` fallback
