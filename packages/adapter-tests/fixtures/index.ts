@@ -876,10 +876,12 @@ import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-child
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
 import { fixture as constStringConditionalTest } from './const-string-conditional-test'
-// Static text starting with `:` / `%` right after a ternary (registry:
-// `line-statement-sigil-text-after-conditional`).
+// Static text starting with `:` / `%` right after a ternary, or as a
+// ternary branch — a template line the engine must not read as a line
+// statement (#3311).
 import { fixture as conditionalThenColonText } from './conditional-then-colon-text'
 import { fixture as conditionalThenPercentText } from './conditional-then-percent-text'
+import { fixture as conditionalBranchSigilText } from './conditional-branch-sigil-text'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1428,6 +1430,7 @@ export const jsxFixtures: JSXFixture[] = [
   constStringConditionalTest,
   conditionalThenColonText,
   conditionalThenPercentText,
+  conditionalBranchSigilText,
   nestedLoopStringAddition,
   nestedLoopAdditionShadowing,
   entriesLoopStringAddition,

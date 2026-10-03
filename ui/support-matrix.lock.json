@@ -5118,12 +5118,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
@@ -5697,12 +5691,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -6800,12 +6788,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
@@ -7259,12 +7241,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -8437,12 +8413,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -8860,12 +8830,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -13814,12 +13778,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
@@ -14077,12 +14035,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
             {
               "fixture": "conditional-then-text",
               "limitations": [
