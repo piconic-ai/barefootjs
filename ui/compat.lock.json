@@ -4463,62 +4463,6 @@
           ]
         }
       },
-      "nullish-signal-attr": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "nullish-dynamic-attr-rendered-empty"
-          ]
-        }
-      },
       "number-addition-text-formatting": {
         "go-template": {
           "kind": "render",
@@ -6097,10 +6041,6 @@
         "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
       },
-      "nullish-signal-attr": {
-        "description": "an attribute bound to an undefined-valued signal is omitted, for a zero-arg createSignal<T>() and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-signal-attr.ts"
-      },
       "number-addition-text-formatting": {
         "description": "A large fractional addition in text uses JavaScript number spelling",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-addition-text-formatting.ts"
@@ -6825,27 +6765,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "nullish-dynamic-attr-rendered-empty": {
-      "title": "An attribute bound to an undefined-valued signal renders empty instead of being omitted",
-      "kind": "silent",
-      "given": "a non-boolean element attribute (`title`, `data-*`) whose whole value is a signal read, where the signal starts as `undefined`",
-      "expected": "the attribute is omitted from the SSR output, the way Hono omits any `undefined`-valued attribute",
-      "actual": "renders the attribute with an empty value (`title=\"\"`)",
-      "fixtures": [
-        "nullish-signal-attr"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
       ]
     },
     "number-addition-text-formatting": {

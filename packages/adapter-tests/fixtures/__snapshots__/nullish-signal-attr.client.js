@@ -7,6 +7,7 @@ export function initNullishSignalAttr(__scope, _p = {}) {
 
   const [n, setN] = createSignal(undefined)
   const [s, setS] = createSignal(undefined)
+  const [label] = createSignal('go')
 
   const [_s1] = $(__scope, 's1')
 
@@ -29,6 +30,11 @@ export function initNullishSignalAttr(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('data-n', String(__v)); else _s1.removeAttribute('data-n') }
       }
       __l[1] = __x }
+      { const __x = label()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('aria-label', String(__v)); else _s1.removeAttribute('aria-label') }
+      }
+      __l[2] = __x }
     }
   }) }
 
@@ -38,5 +44,5 @@ export function initNullishSignalAttr(__scope, _p = {}) {
       })
 }
 
-hydrate('NullishSignalAttr', { init: initNullishSignalAttr, template: (_p) => `<button ${((undefined)) != null ? 'title="' + escapeAttr((undefined)) + '"' : ''} ${((undefined)) != null ? 'data-n="' + escapeAttr((undefined)) + '"' : ''} bf="s1"><!--bf:s0-->${escapeTextOrMarkup((undefined) ?? 'none')}<!--/--></button>` })
+hydrate('NullishSignalAttr', { init: initNullishSignalAttr, template: (_p) => `<button ${((undefined)) != null ? 'title="' + escapeAttr((undefined)) + '"' : ''} ${((undefined)) != null ? 'data-n="' + escapeAttr((undefined)) + '"' : ''} ${(('go')) != null ? 'aria-label="' + escapeAttr(('go')) + '"' : ''} bf="s1"><!--bf:s0-->${escapeTextOrMarkup((undefined) ?? 'none')}<!--/--></button>` })
 export function NullishSignalAttr(_p, __bfKey) { return createComponent('NullishSignalAttr', _p, __bfKey) }

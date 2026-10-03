@@ -238,6 +238,8 @@ export class CompileState {
    * whose value is a bare reference to such a prop when it's nil.
    */
   nillablePropNames: Set<string> = new Set()
+  /** Nullable signals with an `interface{}` field — see `collectNillableSignalGetters` (#3304). */
+  nillableSignalGetters: Set<string> = new Set()
 
   /**
    * OPTIONAL prop names consumed nullish-sensitively (`??` left operand in a

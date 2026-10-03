@@ -95,6 +95,8 @@ import {
   derivesScopeFromSlot,
   BindingScope,
   buildImportAliasMap,
+  collectNullableSignalGetters,
+  nullableSignalAttrGetter,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
@@ -274,6 +276,8 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * nullish-attribute omission.
    */
   private nullableOptionalProps: Set<string> = new Set()
+  /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
+  private nullableSignalGetters: Set<string> = new Set()
   /**
    * Local alias -> declared/exported name for imported components (#2822,
    * the SSR-side counterpart of #2777's client-JS registry-key fix). A
@@ -310,6 +314,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
+    this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1598,15 +1603,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
             ? bareId.slice(this.restPropsName.length + 1)
             : bareId
+      // The same guard for a bare read of a nullable signal (`title={s()}`
+      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
+      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
       if (
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
-        /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-        this.nullableOptionalProps.has(normalizedBareId) &&
-        // Inside a `.map()` callback, a param that shadows a nullable
-        // optional prop's name is the row binding, not the prop — skip the
-        // spurious `.nil?` guard (#2488).
-        !this.isLoopBoundName(normalizedBareId)
+        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
+          this.nullableOptionalProps.has(normalizedBareId) &&
+          // Inside a `.map()` callback, a param that shadows a nullable
+          // optional prop's name is the row binding, not the prop — skip the
+          // spurious `.nil?` guard (#2488).
+          !this.isLoopBoundName(normalizedBareId)) ||
+          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
       ) {
         const ruby = this.convertExpressionToRuby(value.expr)
         const body =

@@ -27,7 +27,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
-  'nullish-signal-attr': { limitation: 'nullish-dynamic-attr-rendered-empty' },
   'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own

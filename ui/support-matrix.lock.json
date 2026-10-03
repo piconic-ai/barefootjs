@@ -2402,12 +2402,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2553,12 +2547,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -2770,12 +2758,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2948,12 +2930,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3108,12 +3084,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3262,12 +3232,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3413,12 +3377,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -3576,12 +3534,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3733,12 +3685,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -4222,12 +4168,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4403,12 +4343,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -4704,12 +4638,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "number-addition-text-formatting",
               "limitations": [
                 "number-addition-text-formatting"
@@ -4930,12 +4858,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5126,12 +5048,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5319,12 +5235,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -5530,12 +5440,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5723,12 +5627,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -5925,12 +5823,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -6162,12 +6054,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6307,12 +6193,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -6536,12 +6416,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "number-addition-text-formatting",
               "limitations": [
                 "number-addition-text-formatting"
@@ -6714,12 +6588,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6865,12 +6733,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -7028,12 +6890,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7194,12 +7050,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7345,12 +7195,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -7508,12 +7352,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7600,12 +7438,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7621,12 +7453,6 @@
         },
         "erb": {
           "gaps": [
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7647,12 +7473,6 @@
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -7678,12 +7498,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7700,12 +7514,6 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7721,12 +7529,6 @@
         },
         "mojolicious": {
           "gaps": [
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
             {
               "fixture": "optional-chain-length-condition",
               "limitations": [
@@ -7750,12 +7552,6 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7772,12 +7568,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7793,12 +7583,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -13608,12 +13392,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13687,12 +13465,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -13838,12 +13610,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13932,12 +13698,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14017,12 +13777,6 @@
               "fixture": "loop-param-prop-member-collision",
               "limitations": [
                 "loop-param-prop-member-collision"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -14114,12 +13868,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-condition",
               "limitations": [
                 "mojo-optional-chain-length-unguarded-deref"
@@ -14214,12 +13962,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14299,12 +14041,6 @@
               "fixture": "loop-param-prop-member-collision",
               "limitations": [
                 "loop-param-prop-member-collision"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -14396,12 +14132,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14489,12 +14219,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14510,12 +14234,6 @@
         },
         "erb": {
           "gaps": [
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -14536,12 +14254,6 @@
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
               ]
             },
             {
@@ -14567,12 +14279,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14589,12 +14295,6 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14610,12 +14310,6 @@
         },
         "mojolicious": {
           "gaps": [
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
             {
               "fixture": "optional-chain-length-condition",
               "limitations": [
@@ -14639,12 +14333,6 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14661,12 +14349,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14682,12 +14364,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "nullish-signal-attr",
-              "limitations": [
-                "nullish-dynamic-attr-rendered-empty"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [

@@ -53,6 +53,8 @@ import {
   type AttrValueEmitter,
   type SupportResult,
   isBooleanAttr,
+  collectNullableSignalGetters,
+  nullableSignalAttrGetter,
   parseExpression,
   stringifyParsedExpr,
   parseStyleObjectEntries,
@@ -662,6 +664,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
+    this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
+  }
+
+  /**
+   * Nullable signals (`collectNullableSignalGetters`, #3304) whose Props
+   * field is `interface{}` and so can actually hold `nil`. A signal seeded
+   * from a prop or a prop member takes that field's Go type instead
+   * (`generateTypes`), which a `ne … nil` guard can't compare against —
+   * those stay unguarded.
+   */
+  private collectNillableSignalGetters(ir: ComponentIR): Set<string> {
+    const nullable = collectNullableSignalGetters(ir)
+    const propNames = new Set(ir.metadata.propsParams.map(p => p.name))
+    return new Set(
+      ir.metadata.signals
+        .filter(signal => nullable.has(signal.getter))
+        .filter(signal =>
+          !propNames.has(signal.initialValue) &&
+          !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
+          !propMemberSeedGoType(this.emitCtx, signal) &&
+          typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}')
+        .map(signal => signal.getter),
+    )
   }
 
   /** Generate template output for a component. */
@@ -9690,6 +9715,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (/^[A-Za-z_$][\w$]*$/.test(propName) && this.state.nillablePropNames.has(propName)) {
         const field = `.${capitalizeFieldName(propName)}`
         return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
+      }
+      // The same omission for a bare read of a nullable signal (`title={s()}`
+      // with `s()` undefined, #3304): its `interface{}` field holds `nil`.
+      if (nullableSignalAttrGetter(value.parsed, this.state.nillableSignalGetters) !== null) {
+        const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
+        return `{{if ne (${goExpr}) nil}}${name}="{{${goExpr}}}"{{end}}`
       }
       // A closed-type `{...rest}` key (#3057) reads off the rest bag's
       // `map[string]any` field via `bf_get` (see the `restPropsName` member-

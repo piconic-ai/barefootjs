@@ -66,6 +66,8 @@ import {
   derivesScopeFromSlot,
   BindingScope,
   buildImportAliasMap,
+  collectNullableSignalGetters,
+  nullableSignalAttrGetter,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -270,6 +272,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * excluded and always emit unconditionally.
    */
   private nullableOptionalProps: Set<string> = new Set()
+  /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
+  private nullableSignalGetters: Set<string> = new Set()
 
   /**
    * Local alias -> declared/exported name for imported components (#2822,
@@ -308,6 +312,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
+    this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1477,15 +1482,19 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
           : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
             ? bareId.slice(this.restPropsName.length + 1)
             : bareId
+      // The same guard for a bare read of a nullable signal (`title={s()}`
+      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
+      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
       if (
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
-        /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-        this.nullableOptionalProps.has(normalizedBareId) &&
-        // Inside a `.map()` callback, a param that shadows a nullable
-        // optional prop's name is the row binding, not the prop — skip the
-        // spurious `defined` guard (#2488).
-        !this.scope.isBound(normalizedBareId)
+        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
+          this.nullableOptionalProps.has(normalizedBareId) &&
+          // Inside a `.map()` callback, a param that shadows a nullable
+          // optional prop's name is the row binding, not the prop — skip the
+          // spurious `defined` guard (#2488).
+          !this.scope.isBound(normalizedBareId)) ||
+          (nullableSignal !== null && !this.scope.isBound(nullableSignal)))
       ) {
         const perl = this.convertExpressionToPerl(value.expr)
         const body =

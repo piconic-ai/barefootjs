@@ -172,6 +172,8 @@ import {
   derivesScopeFromSlot,
   BindingScope,
   buildImportAliasMap,
+  collectNullableSignalGetters,
+  nullableSignalAttrGetter,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -347,6 +349,8 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * concrete-primitive props.
    */
   private nullableOptionalProps: Set<string> = new Set()
+  /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
+  private nullableSignalGetters: Set<string> = new Set()
 
   /**
    * Local alias -> declared/exported name for imported components (#2822,
@@ -385,6 +389,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     this.localConstants = ir.metadata.localConstants ?? []
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
+    this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1504,15 +1509,19 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
           : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
             ? bareId.slice(this.restPropsName.length + 1)
             : bareId
+      // The same guard for a bare read of a nullable signal (`title={s()}`
+      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
+      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
       if (
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
-        /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-        this.nullableOptionalProps.has(normalizedBareId) &&
-        // Inside a `.map()` callback, a param that shadows a nullable
-        // optional prop's name is the row binding, not the prop — skip the
-        // spurious "is defined and is not none" guard (#2488).
-        !this.isLoopBoundName(normalizedBareId)
+        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
+          this.nullableOptionalProps.has(normalizedBareId) &&
+          // Inside a `.map()` callback, a param that shadows a nullable
+          // optional prop's name is the row binding, not the prop — skip the
+          // spurious "is defined and is not none" guard (#2488).
+          !this.isLoopBoundName(normalizedBareId)) ||
+          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
       ) {
         const jinja = this.convertExpressionToJinja(value.expr)
         const body = this.shouldBoolStr(value.expr, name)

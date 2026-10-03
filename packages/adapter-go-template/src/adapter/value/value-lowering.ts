@@ -9,6 +9,7 @@ import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 import {
   asCallbackMethodCall,
   freeVarsInBody,
+  isNullishLiteral,
   materializeGetterCalls,
   serializeParsedExpr,
 } from '@barefootjs/jsx'
@@ -97,13 +98,6 @@ function nillableAwarePropRef(
     }
   }
   return fieldRef
-}
-
-/** `undefined` / `null` as an already-parsed initial value. */
-function isNullishLiteral(expr: ParsedExpr | undefined): boolean {
-  if (!expr) return false
-  if (expr.kind === 'identifier') return expr.name === 'undefined'
-  return expr.kind === 'literal' && expr.literalType === 'null'
 }
 
 /**
