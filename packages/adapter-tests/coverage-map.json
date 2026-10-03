@@ -4043,6 +4043,17 @@
         "text"
       ]
     },
+    "loop-param-prop-member-collision-shapes": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "loop-param-shadows-bool-prop": {
       "kinds": [
         "call",

@@ -1699,12 +1699,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1915,12 +1909,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1979,12 +1967,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2034,12 +2016,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -2107,12 +2083,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2171,12 +2141,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2232,12 +2196,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -4120,12 +4078,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -4810,12 +4762,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5000,12 +4946,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5187,12 +5127,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -5392,12 +5326,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5579,12 +5507,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -5775,12 +5697,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -6021,12 +5937,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -6558,12 +6468,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6703,12 +6607,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -6857,12 +6755,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -7020,12 +6912,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7165,12 +7051,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -7319,12 +7199,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -7706,12 +7580,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -8225,12 +8093,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8361,12 +8223,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8494,12 +8350,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -8651,12 +8501,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8784,12 +8628,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -8926,12 +8764,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -11581,12 +11413,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11767,12 +11593,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11825,12 +11645,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11874,12 +11688,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -11935,12 +11743,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11993,12 +11795,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12048,12 +11844,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -12647,12 +12437,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12881,12 +12665,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12951,12 +12729,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -13018,12 +12790,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13109,12 +12875,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -13179,12 +12939,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -13246,12 +13000,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13383,12 +13131,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13692,12 +13434,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13771,12 +13507,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13859,12 +13589,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -13956,12 +13680,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14035,12 +13753,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {
@@ -14123,12 +13835,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-member-collision",
-              "limitations": [
-                "loop-param-prop-member-collision"
               ]
             },
             {

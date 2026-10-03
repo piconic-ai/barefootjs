@@ -79,6 +79,9 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  rootPropAliasName,
+  rootPropAliasesForLoop,
+  rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -1033,6 +1036,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // position relative to the pop is inert either way.
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
+    // Props this row's bindings newly shadow, aliased in a block around the
+    // loop so an explicit `props.X` inside still reads the root value
+    // (#3314). The block keeps a sibling loop's alias from redeclaring it.
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, new Set(this.propsParams.map(p => p.name)))
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1065,6 +1072,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`<: $bf.comment("loop:${loop.markerId}") | mark_raw :>`)
+    if (rootAliases.length > 0) {
+      lines.push(': if (1) {')
+      for (const name of rootAliases) lines.push(`: my $${rootPropAliasName(name)} = $${name};`)
+    }
     // `objectIteration` (#2168 object-entries-map): Kolon has no built-in
     // hash-destructure `for` target, so `'entries'` iterates `.kv()`
     // (yielding `{key, value}` pair objects, unpacked via the `: my`
@@ -1110,6 +1121,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     }
 
     lines.push(`: }`)
+    if (rootAliases.length > 0) lines.push(': }')
     lines.push(`<: $bf.comment("/loop:${loop.markerId}") | mark_raw :>`)
 
     return lines.join('\n')
@@ -1788,6 +1800,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      _rootPropReadName: (name) => rootPropReadName(name, this.scope),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),

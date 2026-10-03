@@ -3468,50 +3468,6 @@
           ]
         }
       },
-      "loop-param-prop-member-collision": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        }
-      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -5957,10 +5913,6 @@
         "description": "A component loop row whose callback destructures the row param renders every row with its own key…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-component-row-destructured-param.ts"
       },
-      "loop-param-prop-member-collision": {
-        "description": "An explicit prop member remains a root value when a loop binds the same name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-prop-member-collision.ts"
-      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
@@ -6524,25 +6476,6 @@
       ],
       "adapters": [
         "go-template"
-      ]
-    },
-    "loop-param-prop-member-collision": {
-      "title": "A loop variable collides with an explicit prop member",
-      "kind": "silent",
-      "given": "a map callback binding the same name as a numeric prop, with an explicit prop member read in a row conditional",
-      "expected": "the conditional reads the root prop independently of the row binding",
-      "actual": "renders the conditional using the loop-local value instead of the root prop",
-      "fixtures": [
-        "loop-param-prop-member-collision"
-      ],
-      "adapters": [
-        "blade",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
       ]
     },
     "loop-row-child-children-attrs-frozen": {

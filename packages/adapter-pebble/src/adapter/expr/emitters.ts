@@ -459,6 +459,9 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+    // `props.X` reads the root prop even where a loop binding shadows `X`
+    // (#3314) — through the alias the loop header assigned.
+    if (object.kind === 'identifier' && object.name === 'props') return pebbleIdent(this.ctx._rootPropReadName(property))
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const

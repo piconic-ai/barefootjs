@@ -295,6 +295,9 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  rootPropAliasName,
+  rootPropAliasesForLoop,
+  rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -1192,6 +1195,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // position relative to the pop is inert either way.
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
+    // Props this row's bindings newly shadow, aliased before the loop header
+    // so an explicit `props.X` inside still reads the root value (#3314).
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, new Set(this.propsParams.map(p => p.name)))
     const savedBindings = this.scope.shadowedNames().map((name, ordinal) => {
       let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
       while (this.scope.isBound(temporary) || this.propsParams.some(p => p.name === temporary) ||
@@ -1233,6 +1239,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     }
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
+    for (const name of rootAliases) lines.push(`@php(${bladeVar(rootPropAliasName(name))} = ${bladeVar(name)})`)
     lines.push(`{!! $bf->comment("loop:${loop.markerId}") !!}`)
     // See this file's header, divergence 2: raw PHP `foreach` over a
     // null/undefined array raises, unlike Twig's `strict_variables: false`
@@ -2010,6 +2017,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      _rootPropReadName: (name) => rootPropReadName(name, this.scope),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),

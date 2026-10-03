@@ -65,6 +65,9 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  rootPropAliasName,
+  rootPropAliasesForLoop,
+  rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -1058,6 +1061,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
     const renderedChildren = this.renderChildren(loop.children)
+    // Props this row's bindings newly shadow, aliased in a block around the
+    // loop so an explicit `props.X` inside still reads the root value
+    // (#3314). The block keeps a sibling loop's alias from redeclaring it.
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, new Set(this.propsParams.map(p => p.name)))
 
     // Whole-item conditional (#1665): prepend an always-present
     // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
@@ -1077,6 +1084,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range (#1087).
     lines.push(`<%== bf->comment("loop:${loop.markerId}") %>`)
+    if (rootAliases.length > 0) {
+      lines.push('% {')
+      for (const name of rootAliases) lines.push(`% my $${rootPropAliasName(name)} = $${name};`)
+    }
     if (sortedHoist && loop.sortComparator) {
       // Evaluator-first (#2018 P3): serialize the comparator + emit
       // `bf->sort_eval`; fall back to the structured `bf->sort` for a
@@ -1207,6 +1218,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.scope = prevScope
 
     lines.push(`% }`)
+    if (rootAliases.length > 0) lines.push('% }')
     lines.push(`<%== bf->comment("/loop:${loop.markerId}") %>`)
 
     return lines.join('\n')
@@ -1912,6 +1924,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       _loweringMatchers: this._loweringMatchers,
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
+      rootPropReadName: (name) => rootPropReadName(name, this.scope),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
