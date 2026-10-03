@@ -831,20 +831,23 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       markedFalse = whenFalse ? this.addCondMarkerToFirstElement(whenFalse, cond.slotId) : whenFalse
     }
 
+    // Inline, with no newline of our own around the tags (#3321): a newline
+    // before `{% if %}` or ending a branch rendered as whitespace between the
+    // conditional and adjacent text (`x: off` for `x:{c ? 'on' : 'off'}`).
     let result: string
     if (useCommentMarkers) {
       // Fragment branches: use comment markers
       const inner = whenFalse
-        ? `\n{% if ${condition} %}\n${whenTrue}\n{% else %}\n${whenFalse}\n{% endif %}\n`
-        : `\n{% if ${condition} %}\n${whenTrue}\n{% endif %}\n`
+        ? `{% if ${condition} %}${whenTrue}{% else %}${whenFalse}{% endif %}`
+        : `{% if ${condition} %}${whenTrue}{% endif %}`
       result = `{{ bf.comment("cond-start:${cond.slotId}") | safe }}${inner}{{ bf.comment("cond-end:${cond.slotId}") | safe }}`
     } else if (markedFalse) {
-      result = `\n{% if ${condition} %}\n${markedTrue}\n{% else %}\n${markedFalse}\n{% endif %}\n`
+      result = `{% if ${condition} %}${markedTrue}{% else %}${markedFalse}{% endif %}`
     } else if (cond.slotId) {
       // Conditional with no else: wrap with comment markers for client hydration
-      result = `{{ bf.comment("cond-start:${cond.slotId}") | safe }}\n{% if ${condition} %}\n${whenTrue}\n{% endif %}\n{{ bf.comment("cond-end:${cond.slotId}") | safe }}`
+      result = `{{ bf.comment("cond-start:${cond.slotId}") | safe }}{% if ${condition} %}${whenTrue}{% endif %}{{ bf.comment("cond-end:${cond.slotId}") | safe }}`
     } else {
-      result = `\n{% if ${condition} %}\n${whenTrue}\n{% endif %}\n`
+      result = `{% if ${condition} %}${whenTrue}{% endif %}`
     }
 
     return result

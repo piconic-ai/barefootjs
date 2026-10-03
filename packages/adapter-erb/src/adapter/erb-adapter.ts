@@ -943,20 +943,23 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       markedFalse = whenFalse ? this.addCondMarkerToFirstElement(whenFalse, cond.slotId) : whenFalse
     }
 
+    // Inline, with no newline of our own around the tags (#3321): a newline
+    // before `<%- if %>` or ending a branch rendered as whitespace between
+    // the conditional and adjacent text (`x: off` for `x:{c ? 'on' : 'off'}`).
     let result: string
     if (useCommentMarkers) {
       // Fragment branches: use comment markers
       const inner = whenFalse
-        ? `\n<%- if bf.truthy?(${condition}) -%>\n${whenTrue}\n<%- else -%>\n${whenFalse}\n<%- end -%>\n`
-        : `\n<%- if bf.truthy?(${condition}) -%>\n${whenTrue}\n<%- end -%>\n`
+        ? `<% if bf.truthy?(${condition}) %>${whenTrue}<% else %>${whenFalse}<% end %>`
+        : `<% if bf.truthy?(${condition}) %>${whenTrue}<% end %>`
       result = `<%= bf.comment("cond-start:${cond.slotId}") %>${inner}<%= bf.comment("cond-end:${cond.slotId}") %>`
     } else if (markedFalse) {
-      result = `\n<%- if bf.truthy?(${condition}) -%>\n${markedTrue}\n<%- else -%>\n${markedFalse}\n<%- end -%>\n`
+      result = `<% if bf.truthy?(${condition}) %>${markedTrue}<% else %>${markedFalse}<% end %>`
     } else if (cond.slotId) {
       // Conditional with no else: wrap with comment markers for client hydration
-      result = `<%= bf.comment("cond-start:${cond.slotId}") %>\n<%- if bf.truthy?(${condition}) -%>\n${whenTrue}\n<%- end -%>\n<%= bf.comment("cond-end:${cond.slotId}") %>`
+      result = `<%= bf.comment("cond-start:${cond.slotId}") %><% if bf.truthy?(${condition}) %>${whenTrue}<% end %><%= bf.comment("cond-end:${cond.slotId}") %>`
     } else {
-      result = `\n<%- if bf.truthy?(${condition}) -%>\n${whenTrue}\n<%- end -%>\n`
+      result = `<% if bf.truthy?(${condition}) %>${whenTrue}<% end %>`
     }
 
     return result

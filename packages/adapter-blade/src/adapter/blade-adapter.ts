@@ -935,20 +935,25 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       markedFalse = whenFalse ? this.addCondMarkerToFirstElement(whenFalse, cond.slotId) : whenFalse
     }
 
+    // Inline, with no newline of our own (#3321): a newline around the
+    // directives rendered as whitespace between the conditional and adjacent
+    // text (`x: off` for `x:{c ? 'on' : 'off'}`). Raw PHP tags rather than
+    // `@if`/`@else`/`@endif`, which Blade misreads when a word follows them
+    // directly (`@elseoff`).
     let result: string
     if (useCommentMarkers) {
       // Fragment branches: use comment markers
       const inner = whenFalse
-        ? `\n@if(${condition})\n${whenTrue}\n@else\n${whenFalse}\n@endif\n`
-        : `\n@if(${condition})\n${whenTrue}\n@endif\n`
+        ? `<?php if (${condition}): ?>${whenTrue}<?php else: ?>${whenFalse}<?php endif; ?>`
+        : `<?php if (${condition}): ?>${whenTrue}<?php endif; ?>`
       result = `{!! $bf->comment("cond-start:${cond.slotId}") !!}${inner}{!! $bf->comment("cond-end:${cond.slotId}") !!}`
     } else if (markedFalse) {
-      result = `\n@if(${condition})\n${markedTrue}\n@else\n${markedFalse}\n@endif\n`
+      result = `<?php if (${condition}): ?>${markedTrue}<?php else: ?>${markedFalse}<?php endif; ?>`
     } else if (cond.slotId) {
       // Conditional with no else: wrap with comment markers for client hydration
-      result = `{!! $bf->comment("cond-start:${cond.slotId}") !!}\n@if(${condition})\n${whenTrue}\n@endif\n{!! $bf->comment("cond-end:${cond.slotId}") !!}`
+      result = `{!! $bf->comment("cond-start:${cond.slotId}") !!}<?php if (${condition}): ?>${whenTrue}<?php endif; ?>{!! $bf->comment("cond-end:${cond.slotId}") !!}`
     } else {
-      result = `\n@if(${condition})\n${whenTrue}\n@endif\n`
+      result = `<?php if (${condition}): ?>${whenTrue}<?php endif; ?>`
     }
 
     return result
