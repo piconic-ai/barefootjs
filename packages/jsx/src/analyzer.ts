@@ -1484,19 +1484,10 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     : null
   if (getterElided && !setter) return
   const getter = getterElided ? `__bfGet_${setter}` : (elements[0] as ts.BindingElement & { name: ts.Identifier }).name.text
-  const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const initialValue = signalInitialValueText(callExpr, ctx)
   const typedInitialValue = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
 
-  // Try to infer type from initial value or type argument
-  let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
-
-  // Check for type argument: createSignal<number>(0)
-  if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
-    type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
-  } else {
-    // Infer from initial value
-    type = inferTypeFromValue(initialValue)
-  }
+  const type = signalTypeInfo(callExpr, initialValue, ctx)
 
   const envReader = resolveEnvSignalKey(callExpr, ctx) ?? undefined
   // The factory as written (identifier, alias, or `ns.factory`), so emit re-emits
@@ -1730,6 +1721,44 @@ function isSignalIndexAccess(
   return null
 }
 
+/**
+ * A `createSignal` call's initial value as JS text. A call with no argument
+ * starts the signal as `undefined` (what the runtime does with a missing
+ * argument), so it is recorded as `'undefined'` rather than `''` — every
+ * consumer that splices the initial value into an expression (the SSR
+ * getter, the CSR template, the client-JS call) would otherwise emit an
+ * empty operand (#3215). `createQuery`'s factory path records the same.
+ */
+function signalInitialValueText(callExpr: ts.CallExpression, ctx: AnalyzerContext): string {
+  return callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : 'undefined'
+}
+
+/**
+ * A `createSignal` call's value type: its type argument, else inferred from
+ * the initial value. A zero-arg call with a type argument is `T | undefined`
+ * (the zero-arg overload's return type), not `T` — a typed backend would
+ * otherwise seed the type's zero value (`0`, `""`) where the signal holds
+ * `undefined` (#3215).
+ */
+function signalTypeInfo(callExpr: ts.CallExpression, initialValue: string, ctx: AnalyzerContext): TypeInfo {
+  const typeArg = callExpr.typeArguments?.[0]
+  if (!typeArg) return inferTypeFromValue(initialValue)
+  const type = typeNodeToTypeInfo(typeArg, ctx.sourceFile) ?? { kind: 'unknown', raw: 'unknown' }
+  return callExpr.arguments[0] ? type : withUndefined(type)
+}
+
+/** `T | undefined`, flattening a union `T` and leaving one that already admits `undefined` as is. */
+function withUndefined(type: TypeInfo): TypeInfo {
+  const members = type.kind === 'union' && type.unionTypes ? type.unionTypes : [type]
+  if (members.some(t => t.kind === 'primitive' && t.primitive === 'undefined')) return type
+  if (type.kind === 'unknown') return type
+  return {
+    kind: 'union',
+    raw: `${type.raw} | undefined`,
+    unionTypes: [...members, { kind: 'primitive', raw: 'undefined', primitive: 'undefined' }],
+  }
+}
+
 function collectSignalTupleRef(
   node: ts.VariableDeclaration,
   ctx: AnalyzerContext
@@ -1737,17 +1766,12 @@ function collectSignalTupleRef(
   const name = (node.name as ts.Identifier).text
   const callExpr = node.initializer as ts.CallExpression
 
-  const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const initialValue = signalInitialValueText(callExpr, ctx)
   const typedInitialValue = callExpr.arguments[0]
     ? callExpr.arguments[0].getText(ctx.sourceFile)
     : undefined
 
-  let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
-  if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
-    type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
-  } else {
-    type = inferTypeFromValue(initialValue)
-  }
+  const type = signalTypeInfo(callExpr, initialValue, ctx)
 
   ctx.signalTupleRefs.set(name, {
     initialValue,
@@ -1773,17 +1797,12 @@ function collectSignalFromIndexAccess(
     // Pattern A — each declaration is a standalone signal. Pair [0] -> getter
     // or [1] -> setter; the missing half stays null.
     const callExpr = match.callExpr
-    const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+    const initialValue = signalInitialValueText(callExpr, ctx)
     const typedInitialValue = callExpr.arguments[0]
       ? callExpr.arguments[0].getText(ctx.sourceFile)
       : undefined
 
-    let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
-    if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
-      type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
-    } else {
-      type = inferTypeFromValue(initialValue)
-    }
+    const type = signalTypeInfo(callExpr, initialValue, ctx)
 
     const loc = getSourceLocation(node, ctx.sourceFile, ctx.filePath)
     const initialFreeIdentifiers = callExpr.arguments[0]

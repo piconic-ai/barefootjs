@@ -9,6 +9,7 @@ import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 import {
   asCallbackMethodCall,
   freeVarsInBody,
+  isNullishLiteral,
   materializeGetterCalls,
   serializeParsedExpr,
 } from '@barefootjs/jsx'
@@ -195,6 +196,13 @@ export function convertInitialValue(
   // `undefined` step of a toggling signal keeps its `nil` zero value on the
   // branches that don't match below.
   const literalTypeInfo = unwrapNullableUnion(typeInfo)
+  // ...but a nullish initial value of that union is the absent value
+  // itself, not a literal of the non-nullish branch: it stays the field's
+  // `nil`. Baking it as the branch's zero value (`""`, `0`) rendered an
+  // attribute Hono omits (`title=""`, `data-n="0"`) — `createSignal<string |
+  // undefined>(undefined)` and the equivalent zero-arg `createSignal<T>()`
+  // (#3215).
+  if (literalTypeInfo !== typeInfo && isNullishLiteral(preParsed)) return 'nil'
 
   if (literalTypeInfo.kind === 'primitive') {
     if (literalTypeInfo.primitive === 'boolean') {

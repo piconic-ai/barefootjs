@@ -249,6 +249,9 @@ const [count, setCount] = createSignal(0)
 count()              // 0
 setCount(5)          // Update to 5
 setCount(n => n + 1) // Update with function (becomes 6)
+
+const [user, setUser] = createSignal<User>()
+user()               // undefined — typed `User | undefined`
 ```
 
 ### `EffectFn`

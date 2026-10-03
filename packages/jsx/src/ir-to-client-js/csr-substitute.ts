@@ -657,10 +657,6 @@ function normalizeSignalInitial(signal: SignalInfo, propsObjectName: string | nu
   // otherwise throws `ReferenceError` at template-eval time. The `??`
   // fallback branch above only applies to object-props mode (a raw
   // `props.X` prefix match), so it's checked against the ORIGINAL value.
-  const value = signal.templateInitialValue ?? initialValue
-  // A source `createSignal()` has no initial value (`''`): substituted as is,
-  // `v()` would become `()`, a syntax error that stops the whole module from
-  // loading (#3217). The signal starts as `undefined`, so inline that.
-  return value.trim() === '' ? 'undefined' : value
+  return signal.templateInitialValue ?? initialValue
 }
 

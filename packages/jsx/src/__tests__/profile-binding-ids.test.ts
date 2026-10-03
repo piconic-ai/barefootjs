@@ -11,6 +11,7 @@ import ts from 'typescript'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { buildIdIndex } from '../profiler'
+import { analyzeComponent } from '../analyzer'
 import { buildComponentAnalysis } from '../debug'
 
 const adapter = new TestAdapter()
@@ -155,13 +156,70 @@ describe('a zero-arg createSignal() emits valid client JS (#3217)', () => {
     expect(parseErrors(on)).toEqual([])
   })
 
-  test('profile off: the call stays `createSignal()` and the template inlines `undefined`', () => {
+  test('profile off: the call and the template both carry an explicit `undefined`', () => {
     // The CSR template substitutes `v()` with the signal's initial value.
     // An empty one used to inline as `()`, so the module failed to parse
     // even without profiling.
     const off = emit(false)
-    expect(off).toContain('createSignal()')
+    expect(off).toContain('createSignal(undefined)')
     expect(off).toContain("escapeTextOrMarkup((undefined) ?? '-')")
     expect(parseErrors(off)).toEqual([])
+  })
+})
+
+describe('the analyzer records `undefined` for a zero-arg createSignal() (#3215)', () => {
+  // One decision at the source: every emitter (SSR getter, CSR template,
+  // client-JS call) splices `initialValue` into an expression, so an empty
+  // string there is an empty operand in each of them.
+  const shapes: Array<[string, string]> = [
+    ['array destructure', 'const [v, setV] = createSignal<string>()'],
+    ['tuple ref + index access', 'const s = createSignal<string>(); const v = s[0]; const setV = s[1]'],
+    ['direct index access', 'const v = createSignal<string>()[0]; const setV = createSignal<string>()[1]'],
+  ]
+  for (const [label, decl] of shapes) {
+    test(label, () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function Empty() {
+          ${decl}
+          return <button onClick={() => setV('x')}>{v() ?? '-'}</button>
+        }
+      `
+      const signals = analyzeComponent(source, 'Empty.tsx').signals
+      expect(signals.length).toBeGreaterThan(0)
+      for (const signal of signals) {
+        expect(signal.initialValue).toBe('undefined')
+        // The zero-arg overload's `T | undefined`, so a typed backend seeds
+        // nil rather than the type's zero value.
+        expect(signal.type.raw).toBe('string | undefined')
+      }
+    })
+  }
+
+  test('a type argument that already admits undefined is not widened again', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Empty() {
+        const [v] = createSignal<'a' | 'b' | undefined>()
+        return <p>{v() ?? '-'}</p>
+      }
+    `
+    const [signal] = analyzeComponent(source, 'Empty.tsx').signals
+    expect(signal.type.raw).toBe("'a' | 'b' | undefined")
+  })
+
+  test('an explicit initial value keeps the type argument as written', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Empty() {
+        const [v] = createSignal<string>('x')
+        return <p>{v()}</p>
+      }
+    `
+    const [signal] = analyzeComponent(source, 'Empty.tsx').signals
+    expect(signal.type.raw).toBe('string')
   })
 })

@@ -7,6 +7,15 @@ describe('createSignal', () => {
     expect(count()).toBe(0)
   })
 
+  test('starts as undefined when called with no argument', () => {
+    // The zero-arg overload types this as `string | undefined` (#3215).
+    const [name, setName] = createSignal<string>()
+    const initial: string | undefined = name()
+    expect(initial).toBeUndefined()
+    setName('x')
+    expect(name()).toBe('x')
+  })
+
   test('returns string initial value', () => {
     const [name] = createSignal('hello')
     expect(name()).toBe('hello')

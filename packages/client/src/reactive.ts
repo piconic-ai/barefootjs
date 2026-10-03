@@ -486,7 +486,8 @@ function newNode(fn: EffectFn, id: string, kind: SubscriberKind): EffectContext 
 /**
  * Create a reactive value
  *
- * @param initialValue - Initial value
+ * @param initialValue - Initial value. When omitted, the signal starts as
+ *   `undefined` and its type is widened to `T | undefined`.
  * @returns [getter, setter] tuple
  *
  * @example
@@ -495,11 +496,18 @@ function newNode(fn: EffectFn, id: string, kind: SubscriberKind): EffectContext 
  * setCount(5)          // Update to 5
  * setCount(n => n + 1) // Update with function (becomes 6)
  *
+ * const [user, setUser] = createSignal<User>()
+ * user()               // undefined — typed `User | undefined`
+ *
  * @since 0.1.0
  * @stability beta
  */
-export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
-  let value = initialValue
+export function createSignal<T>(): Signal<T | undefined>
+export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T>
+export function createSignal<T>(initialValue?: T, __bfId?: string): Signal<T> {
+  // Omitted, `initialValue` is `undefined`, which the zero-arg overload's
+  // `T | undefined` already accounts for.
+  let value = initialValue as T
   const subscribers: SubscriberSet = new Set<EffectContext>()
   // Tag the subscriber set so edge-removal events (which only see the set) can
   // name the signal. Resolved once per creation; '' when profiling is off.

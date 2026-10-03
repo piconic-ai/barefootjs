@@ -5542,6 +5542,22 @@
         "text"
       ]
     },
+    "nullish-signal-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "number-addition-text-formatting": {
       "kinds": [
         "binary",
@@ -8553,6 +8569,21 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "zero-arg-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
     }
   }
 }
