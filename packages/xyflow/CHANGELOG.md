@@ -1,5 +1,14 @@
 # @barefootjs/xyflow
 
+## 0.39.3
+
+### Patch Changes
+
+- cd546fd: `fitView()` called before the pane or the nodes are measured no longer sets a NaN viewport (or fits an empty box at max zoom). Unmeasured nodes use their declared `width`/`height` (or `initialWidth`/`initialHeight`); when the pane, or a node with no declared size, is not measured yet, the fit waits and runs once they are.
+- 9dc4b9d: Measure handle bounds so edges with a `sourceHandle` / `targetHandle` attach at those handles instead of falling back to a bottom-to-top path. New `measureNode(el, nodeId, store)` records a node's size and its handles' bounds; the registry `<NodeWrapper>` calls it once nodes are laid out and on every resize.
+- d3d2300: `setupNodeSelection` now removes its `mousedown` listener when its owner is cleaned up. The registry `<NodeWrapper>` calls it again, so clicking a node selects it (shift-click adds to the selection).
+- 37edd3a: Ship license notices for the code the build inlines. `dist/THIRD_PARTY_LICENSES.txt` now reproduces the license of `@xyflow/system` and each bundled d3 module (`d3-color`, `d3-dispatch`, `d3-drag`, `d3-ease`, `d3-interpolate`, `d3-selection`, `d3-timer`, `d3-transition`, `d3-zoom`). Both `dist/index.js` and `dist/xyflow.browser.min.js` carry a banner pointing to it, and the package now includes its own `LICENSE`.
+
 ## 0.39.2
 
 No changes in this release.

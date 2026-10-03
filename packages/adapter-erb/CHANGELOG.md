@@ -1,5 +1,12 @@
 # @barefootjs/erb
 
+## 0.39.3
+
+### Patch Changes
+
+- 1f41bc2: An attribute bound directly to a signal whose value is `undefined` or `null` at SSR (`title={s()}`) is now omitted on every template adapter, as Hono omits it. Before, the template adapters rendered it empty (`title=""`). A signal counts as nullable when its type admits `undefined`/`null` (including a zero-arg `createSignal<T>()`) or when it is untyped and its initial value is a literal `undefined`/`null`. The new shared helpers `collectNullableSignalGetters` and `nullableSignalAttrGetter` in `@barefootjs/jsx` make that decision for every adapter.
+- @barefootjs/shared@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes

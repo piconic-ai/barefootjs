@@ -1,5 +1,13 @@
 # @barefootjs/pebble
 
+## 0.39.3
+
+### Patch Changes
+
+- 1f41bc2: An attribute bound directly to a signal whose value is `undefined` or `null` at SSR (`title={s()}`) is now omitted on every template adapter, as Hono omits it. Before, the template adapters rendered it empty (`title=""`). A signal counts as nullable when its type admits `undefined`/`null` (including a zero-arg `createSignal<T>()`) or when it is untyped and its initial value is a literal `undefined`/`null`. The new shared helpers `collectNullableSignalGetters` and `nullableSignalAttrGetter` in `@barefootjs/jsx` make that decision for every adapter.
+- e7229a5: A root or child prop/signal whose name is a Pebble/Java reserved word (`filter`, `class`, …) now renders in SSR. The compiled template reads it as `filter_`, but the Java runtime's `DeriveStashFromDefaults.derive` keyed it as `filter`, so it rendered empty until hydration. `derive` now returns the template's (mangled) names. A new `DeriveStashFromDefaults.rootVars(defaults, props, overlays…)` builds a root render's context from source-named props and stash, and `PebbleIdent` is public. Host applications building a root context should use `rootVars` (as `integrations/spring`'s `Render` now does).
+- @barefootjs/shared@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes

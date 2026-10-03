@@ -1,5 +1,15 @@
 # @barefootjs/go-template
 
+## 0.39.3
+
+### Patch Changes
+
+- 1f41bc2: An attribute bound directly to a signal whose value is `undefined` or `null` at SSR (`title={s()}`) is now omitted on every template adapter, as Hono omits it. Before, the template adapters rendered it empty (`title=""`). A signal counts as nullable when its type admits `undefined`/`null` (including a zero-arg `createSignal<T>()`) or when it is untyped and its initial value is a literal `undefined`/`null`. The new shared helpers `collectNullableSignalGetters` and `nullableSignalAttrGetter` in `@barefootjs/jsx` make that decision for every adapter.
+- d1d079f: `createSignal()` with no argument now type-checks and compiles on every path. A new overload, `createSignal<T>(): Signal<T | undefined>`, makes the zero-argument call legal: the signal starts as `undefined`, and its type is widened to include it. Before, `createSignal<string | undefined>()` failed with TS2554. The compiler now records a missing initial value as `undefined` and widens the signal's type to `T | undefined`, so a zero-argument call compiles exactly like `createSignal<T | undefined>(undefined)`. Before, the Hono SSR module emitted `const v = () =>  as string | undefined`, which does not parse.
+  
+  The Go adapter now seeds a nullable signal whose initial value is `undefined` or `null` as `nil`. Before, it seeded the zero value of the non-nullish type (`""`, `0`), so a child's rest bag received `tag=""` where Hono omits the attribute.
+- @barefootjs/shared@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes
