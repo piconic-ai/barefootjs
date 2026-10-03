@@ -5675,6 +5675,18 @@
         "text"
       ]
     },
+    "optional-chain-length-bare-text": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-length-condition": {
       "kinds": [
         "binary",
@@ -5692,6 +5704,22 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "optional-chain-length-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
         "text"
       ]
     },

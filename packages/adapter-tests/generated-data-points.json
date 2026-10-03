@@ -2593,11 +2593,45 @@
       }
     }
   ],
+  "optional-chain-length-bare-text": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "optional-chain-length-condition": [
     {
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "optional-chain-length-text": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
       }
     }
   ],
