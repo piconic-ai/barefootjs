@@ -2279,6 +2279,22 @@
         "attribute"
       ]
     },
+    "data-on-attr-value-shapes": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "data-table": {
       "kinds": [
         "array-literal",

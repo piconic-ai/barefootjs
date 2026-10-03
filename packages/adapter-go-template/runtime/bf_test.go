@@ -2654,6 +2654,42 @@ func TestAttr_InsideIfOmitsAttribute(t *testing.T) {
 	}
 }
 
+// TestAttrName_ValueEscapedAsPlainText (#3309): a `data-on…` attribute whose
+// name is a literal in the template is escaped as an event handler (a JS
+// string literal); the same name supplied by `bf_attr_name` leaves the value
+// plain HTML-escaped text for every value shape the compiler emits — a bare
+// action, literal text interleaved with actions, an `{{if}}` whose branches
+// contain JS-significant text (`'`), and an omission wrapper.
+func TestAttrName_ValueEscapedAsPlainText(t *testing.T) {
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(
+		`<div {{bf_attr_name "data-on"}}="{{.X}}" {{bf_attr_name "data-onload"}}="v-{{.X}}"` +
+			` {{bf_attr_name "data-onset"}}="{{if .On}}it's{{else}}b{{end}}"` +
+			`{{if ne .Y nil}} {{bf_attr_name "data-onclear"}}="{{.Y}}"{{end}} data-state="{{.X}}">x</div>`,
+	))
+	type data struct {
+		X  string
+		On bool
+		Y  interface{}
+	}
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, data{X: `a"b&c`, On: true}); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	want := `<div data-on="a&#34;b&amp;c" data-onload="v-a&#34;b&amp;c" data-onset="it's" data-state="a&#34;b&amp;c">x</div>`
+	if got := buf.String(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+
+	var buf2 strings.Builder
+	if err := tmpl.Execute(&buf2, data{X: "x", Y: "z"}); err != nil {
+		t.Fatalf("Execute (Y set): %v", err)
+	}
+	want2 := `<div data-on="x" data-onload="v-x" data-onset="b" data-onclear="z" data-state="x">x</div>`
+	if got := buf2.String(); got != want2 {
+		t.Errorf("Y set: got %q, want %q", got, want2)
+	}
+}
+
 // AsMap normalizes any string-keyed map kind held in an interface{} prop
 // field into map[string]interface{} for object-valued context bindings, and
 // returns nil for every "absent" shape so the generated `?? {}` fallback

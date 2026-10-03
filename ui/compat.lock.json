@@ -2255,14 +2255,6 @@
           ]
         }
       },
-      "data-on-attr-dynamic-value": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "data-on-attr-value-script-escaped"
-          ]
-        }
-      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -5897,10 +5889,6 @@
         "description": "A memo over a createQuery value is seeded from `initial` at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-derived-memo.ts"
       },
-      "data-on-attr-dynamic-value": {
-        "description": "A dynamic value on a data-on* attribute renders as plain attribute text",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-on-attr-dynamic-value.ts"
-      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -6378,19 +6366,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "data-on-attr-value-script-escaped": {
-      "title": "A dynamic value on a `data-on…` attribute renders as a quoted script string",
-      "kind": "silent",
-      "given": "an element attribute named `data-` followed by a name starting with `on` (`data-on`, `data-onset`) whose value is dynamic (`<div data-on={mode()}>`)",
-      "expected": "the attribute carries the value as plain text (`data-on=\"x\"`), like any other `data-*` attribute",
-      "actual": "renders the value as a script string literal, so the attribute text carries escaped double quotes around it (`\"x\"` instead of `x`, `\"\"` for an empty value), because the template engine escapes a `data-on…` attribute as an event-handler attribute",
-      "fixtures": [
-        "data-on-attr-dynamic-value"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "derived-object-literal-signal": {
