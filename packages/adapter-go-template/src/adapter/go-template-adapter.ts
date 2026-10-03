@@ -231,6 +231,10 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
   return rows.every(row => keySet(row) === first)
 }
 
+/** Binary operators whose Go lowering yields a boxed number (`+` may also be
+ * a string concat, which `bf_string` passes through unchanged). */
+const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
+
 /**
  * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
@@ -5847,7 +5851,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const finalExpr =
       this.textNillablePropNameOf(classify.parsed) !== null
         ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : this.numericMemoTextExpression(goExpr, classify.parsed)
+        : this.numericTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -6724,13 +6728,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /** One text-sink decision for direct expressions and template interpolations.
-   * Numeric values remain boxed everywhere outside text rendering. */
-  private numericMemoTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
-    if (expr?.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return goExpr
+   * Numeric values remain boxed everywhere outside text rendering. A value
+   * that can be a `float64` here — a numeric memo read, or an arithmetic
+   * expression (`props.value + 0.5`, #3320) whose `bf_add`/`bf_div`/… result
+   * is boxed `any` — prints through `bf_string`, whose `numberString` spells
+   * it as JS does (`1234567890.5`); html/template's own `fmt.Sprint` would
+   * print `1.2345678905e+09`. `bf_string` leaves an int or a string (a
+   * string-concat `+`) unchanged. */
+  private numericTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
+    return this.isNumericTextValue(expr) ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+  }
+
+  private isNumericTextValue(expr: ParsedExpr | undefined): boolean {
+    if (!expr) return false
+    if (expr.kind === 'binary') return ARITHMETIC_OPS.has(expr.op)
+    if (expr.kind === 'unary') return expr.op === '-' || expr.op === '+'
+    if (expr.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return false
     const name = this.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
     const memo = this.state.currentMemos.find(m => m.name === name)
-    return memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams)
-      ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+    return !!memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams) !== null
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
@@ -6744,7 +6760,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // template parse error. Same `isTemplateFragment` guard as
         // `renderExpression`.
         const e = emit(part.expr)
-        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericMemoTextExpression(e, part.expr)}}}`
+        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericTextExpression(e, part.expr)}}}`
       }
     }
     return result

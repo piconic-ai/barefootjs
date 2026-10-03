@@ -93,7 +93,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  'number-addition-text-formatting': { limitation: 'number-addition-text-formatting' },
   'fractional-number-array-prop': { limitation: 'fractional-number-array-prop' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`

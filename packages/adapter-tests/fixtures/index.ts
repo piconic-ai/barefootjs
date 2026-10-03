@@ -7,6 +7,8 @@ import { fixture as entriesLoopStringAddition } from './entries-loop-string-addi
 import { fixture as fractionalNumberArrayProp } from './fractional-number-array-prop'
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
+import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
+import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
 import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
 import { fixture as counter } from './counter'
@@ -1434,6 +1436,8 @@ export const jsxFixtures: JSXFixture[] = [
   fractionalNumberArrayProp,
   loopParamPropMemberCollision,
   numberAdditionTextFormatting,
+  numberArithmeticTextFormatting,
+  numberDivisionText,
   conditionalNestedClient,
   conditionalNestedPrecomputed,
   conditionalNestedStatic,
