@@ -5,7 +5,8 @@ import { createFixture } from '../src/types'
  * stays the root prop wherever a loop binding named `X` shadows it — in a
  * nested loop that binds the same name again, in two sibling loops that each
  * bind it, and for a loop INDEX named like a prop. The row's own binding
- * still reads the row.
+ * still reads the row, and `props.value` after the loops is still the prop
+ * (PHP's `foreach` leaves the last row bound to the variable).
  */
 export const fixture = createFixture({
   id: 'loop-param-prop-member-collision-shapes',
@@ -21,6 +22,7 @@ export function PropMemberShapes(props: { values: string[]; value: string; index
       ))}</ul>
       <ol>{props.values.map(value => <li key={value} data-root={props.value} />)}</ol>
       <p>{props.values.map((v, index) => <b key={v} data-i={index} data-root={props.index} />)}</p>
+      <span data-after={props.value} />
     </div>
   )
 }
@@ -46,6 +48,7 @@ export function PropMemberShapes(props: { values: string[]; value: string; index
         <b bf="s5" data-i="0" data-key="a" data-root="idx"></b>
         <b bf="s5" data-i="1" data-key="b" data-root="idx"></b>
       </p>
+      <span bf="s7" data-after="root"></span>
     </div>
   `,
 })

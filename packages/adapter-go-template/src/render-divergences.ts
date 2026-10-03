@@ -217,6 +217,10 @@ export const renderDivergences: RenderDivergences = {
   // render time instead: the `…BadgeLl0Ctx` wrapper has no `Label` datum
   // field for the forwarded children template to read.
   'loop-row-child-children-prop-array': { limitation: 'loop-row-child-children-prop-array' },
+  // A prop named `__bf_root_value` is read as `$.__bf_root_value`; a
+  // lower-case/underscore-led name is an unexported Go field, so rendering
+  // fails ("is an unexported field of struct type").
+  'loop-param-prop-alias-name-collision': { limitation: 'underscore-prefixed-prop-name' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

@@ -247,7 +247,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
-  rootPropAliasName,
+  rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
   buildImportAliasMap,
@@ -372,6 +372,8 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
   private localConstants: IRMetadata['localConstants'] = []
+  /** Each prop's collision-free root alias (#3314), decided once per component. */
+  private rootPropAliases: ReadonlyMap<string, string> = new Map()
 
   /**
    * The one canonical, position-accurate "names bound by an enclosing loop
@@ -435,6 +437,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // `boolean-result.ts`'s file header).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
@@ -1131,7 +1134,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     this.scope = prevScope.enterLoopRow(loop)
     // Props this row's bindings newly shadow, aliased before the loop header
     // so an explicit `props.X` inside still reads the root value (#3314).
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, new Set(this.propsParams.map(p => p.name)))
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1161,7 +1164,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
-    for (const name of rootAliases) lines.push(`{% set ${pebbleIdent(rootPropAliasName(name))} = ${pebbleIdent(name)} %}`)
+    for (const { name, alias } of rootAliases) lines.push(`{% set ${pebbleIdent(alias)} = ${pebbleIdent(name)} %}`)
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | raw }}`)
     // `objectIteration` (#2168 object-entries-map): routed through the
     // runtime's `bf.entries`/`bf.keys`/`bf.values` rather than any native
@@ -1950,7 +1953,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
-      _rootPropReadName: (name) => rootPropReadName(name, this.scope),
+      _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),

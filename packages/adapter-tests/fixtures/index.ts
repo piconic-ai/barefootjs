@@ -7,6 +7,7 @@ import { fixture as entriesLoopStringAddition } from './entries-loop-string-addi
 import { fixture as fractionalNumberArrayProp } from './fractional-number-array-prop'
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
 import { fixture as loopParamPropMemberCollisionShapes } from './loop-param-prop-member-collision-shapes'
+import { fixture as loopParamPropAliasNameCollision } from './loop-param-prop-alias-name-collision'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
 import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
@@ -1435,6 +1436,7 @@ export const jsxFixtures: JSXFixture[] = [
   fractionalNumberArrayProp,
   loopParamPropMemberCollision,
   loopParamPropMemberCollisionShapes,
+  loopParamPropAliasNameCollision,
   numberAdditionTextFormatting,
   conditionalNestedClient,
   conditionalNestedPrecomputed,

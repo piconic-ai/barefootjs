@@ -79,7 +79,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
-  rootPropAliasName,
+  rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
   buildImportAliasMap,
@@ -248,6 +248,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
   private localConstants: IRMetadata['localConstants'] = []
+  /** Each prop's collision-free root alias (#3314), decided once per component. */
+  private rootPropAliases: ReadonlyMap<string, string> = new Map()
 
   /**
    * The one canonical, position-accurate "names bound by an enclosing loop
@@ -318,6 +320,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Per-compile prop classifications (see `props/prop-classes.ts`).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
@@ -1039,7 +1042,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Props this row's bindings newly shadow, aliased in a block around the
     // loop so an explicit `props.X` inside still reads the root value
     // (#3314). The block keeps a sibling loop's alias from redeclaring it.
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, new Set(this.propsParams.map(p => p.name)))
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1074,7 +1077,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     lines.push(`<: $bf.comment("loop:${loop.markerId}") | mark_raw :>`)
     if (rootAliases.length > 0) {
       lines.push(': if (1) {')
-      for (const name of rootAliases) lines.push(`: my $${rootPropAliasName(name)} = $${name};`)
+      for (const { name, alias } of rootAliases) lines.push(`: my $${alias} = $${name};`)
     }
     // `objectIteration` (#2168 object-entries-map): Kolon has no built-in
     // hash-destructure `for` target, so `'entries'` iterates `.kv()`
@@ -1800,7 +1803,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
-      _rootPropReadName: (name) => rootPropReadName(name, this.scope),
+      _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),

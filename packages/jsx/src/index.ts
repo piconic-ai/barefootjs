@@ -249,7 +249,7 @@ export { isLowerableLoopDestructure, isLowerableObjectRestDestructure } from './
 // Binding scope (#2482) — shared loop-bound-name resolution service
 export { BindingScope } from './scope/binding-scope.ts'
 export type { ScopeBindingSource, ScopeBinding, ScopeFrame, LoopBindingSource } from './scope/binding-scope.ts'
-export { rootPropAliasName, rootPropAliasesForLoop, rootPropReadName } from './scope/root-prop-alias.ts'
+export { rootPropAliasNames, rootPropAliasesForLoop, rootPropReadName } from './scope/root-prop-alias.ts'
 
 // Debug analysis
 export {

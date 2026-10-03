@@ -65,7 +65,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
-  rootPropAliasName,
+  rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
   buildImportAliasMap,
@@ -241,6 +241,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * at `generate()` entry alongside `moduleStringConsts`.
    */
   private localConstants: IRMetadata['localConstants'] = []
+  /** Each prop's collision-free root alias (#3314), decided once per component. */
+  private rootPropAliases: ReadonlyMap<string, string> = new Map()
   /**
    * The one canonical, position-accurate "names bound by an enclosing loop
    * callback" service (#2482 Stage 2) — replaces the ref-counted
@@ -321,6 +323,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.scope = BindingScope.EMPTY
     this.errors = []
@@ -1064,7 +1067,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // Props this row's bindings newly shadow, aliased in a block around the
     // loop so an explicit `props.X` inside still reads the root value
     // (#3314). The block keeps a sibling loop's alias from redeclaring it.
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, new Set(this.propsParams.map(p => p.name)))
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
 
     // Whole-item conditional (#1665): prepend an always-present
     // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
@@ -1086,7 +1089,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     lines.push(`<%== bf->comment("loop:${loop.markerId}") %>`)
     if (rootAliases.length > 0) {
       lines.push('% {')
-      for (const name of rootAliases) lines.push(`% my $${rootPropAliasName(name)} = $${name};`)
+      for (const { name, alias } of rootAliases) lines.push(`% my $${alias} = $${name};`)
     }
     if (sortedHoist && loop.sortComparator) {
       // Evaluator-first (#2018 P3): serialize the comparator + emit
@@ -1924,7 +1927,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       _loweringMatchers: this._loweringMatchers,
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
-      rootPropReadName: (name) => rootPropReadName(name, this.scope),
+      rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),

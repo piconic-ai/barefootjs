@@ -4024,6 +4024,17 @@
         "text"
       ]
     },
+    "loop-param-prop-alias-name-collision": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "loop-param-prop-member-collision": {
       "kinds": [
         "binary",
