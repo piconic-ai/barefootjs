@@ -6848,7 +6848,8 @@ export function Foo({ label }: { label: string }) {
   return <p>{label + suffix}</p>
 }
 `)
-    expect(template).toContain('bf_concat_str .Label .Suffix')
+    // The literal `const suffix = '!'` inlines as `"!"` (#3312); the operator choice is the pin.
+    expect(template).toContain('bf_concat_str .Label "!"')
   })
 
   test('local-const operand carries the concat classification when the prop operand is coarsely excluded (fixture shape)', () => {
@@ -6872,7 +6873,7 @@ export function Both({ label, values }: { label: string; values: number[] }) {
 }
 `)
     // Outside the loop: still string concat, carried by the const operand.
-    expect(template).toContain('bf_concat_str .Label .Suffix')
+    expect(template).toContain('bf_concat_str .Label "!"')
     // Inside the loop: the shadowed occurrence stays numeric.
     expect(template).toContain('{{bf_add 1 .}}')
   })

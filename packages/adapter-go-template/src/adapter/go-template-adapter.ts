@@ -72,6 +72,7 @@ import {
   isLowerableLoopDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
+  lookupLiteralConst,
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
@@ -5947,11 +5948,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
-    // Module scalar const (e.g. `const TRACK = 8` used in a width expression,
-    // or `const OPEN = true`): inline the literal value rather than emit
-    // `{{.TRACK}}` against a Props field that never exists. Mirrors the
-    // string-const inlining above.
-    const inlinedScalar = this.resolveModuleConstAsGo(name, { kind: 'template-action' })
+    // Literal-initialized const, module or function scope (`const TRACK = 8`,
+    // `const OPEN = true`, `const mode = 'on'`): inline the literal rather than
+    // emit `{{.TRACK}}` against a Props field that never exists (#3312).
+    const inlinedScalar = this.resolveLiteralConstAsGo(name)
     if (inlinedScalar !== null) return inlinedScalar
     if (this.isCurrentLoopItem(name)) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
@@ -6167,6 +6167,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const value = this.state.moduleStringConsts.get(name)
     if (value === undefined) return null
     return `"${escapeGoString(value)}"`
+  }
+
+  /**
+   * A bare identifier bound to a literal-initialized const — module or
+   * component-function scope — as a Go template literal (`true`, `8`,
+   * `"on"`), or null. The decision is the shared `lookupLiteralConst` every
+   * template-string adapter uses (#3312); a name a loop binds at this point
+   * resolves to the row instead.
+   */
+  private resolveLiteralConstAsGo(name: string): string | null {
+    const lit = lookupLiteralConst(
+      name,
+      this.state.localConstants,
+      n => this.isCurrentLoopItem(n) || this.loopVarRefCount.has(n) || this.isOuterLoopParam(n),
+    )
+    if (lit === null) return null
+    return lit.kind === 'string' ? `"${escapeGoString(lit.text)}"` : lit.text
   }
 
   /**
@@ -8406,7 +8423,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             const acc = this.loopBindingStack[i].get(expr.name)
             if (acc !== undefined) return plain(acc)
           }
-          const inlined = this.resolveModuleStringConst(expr.name)
+          const inlined = this.resolveModuleStringConst(expr.name) ?? this.resolveLiteralConstAsGo(expr.name)
           if (inlined !== null) return plain(inlined)
           if (this.isCurrentLoopItem(expr.name)) {
             return plain('.')

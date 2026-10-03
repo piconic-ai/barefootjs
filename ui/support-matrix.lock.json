@@ -5976,12 +5976,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6033,12 +6027,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6124,12 +6112,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6175,12 +6157,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6269,18 +6245,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
-              "fixture": "const-string-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6389,12 +6353,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6510,12 +6468,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6567,12 +6519,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6658,12 +6604,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6715,12 +6655,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6812,12 +6746,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6869,12 +6797,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6972,12 +6894,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7029,12 +6945,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7120,12 +7030,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7177,12 +7081,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7274,12 +7172,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7331,12 +7223,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12163,21 +12049,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12203,21 +12077,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12249,21 +12111,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12289,21 +12139,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12329,21 +12167,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12369,21 +12195,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12415,21 +12229,9 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12455,21 +12257,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12495,21 +12285,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -13511,12 +13289,6 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "const-string-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {

@@ -515,6 +515,52 @@ export function lookupStaticRecordLiteral(
 }
 
 /**
+ * Resolve a bare identifier bound to a literal-initialized `const` — module
+ * or component-function scope — to that literal, or `null` for any other
+ * shape so callers fall back to their generic lowering. The one decision
+ * every template-string adapter used to copy as its own `_resolveLiteralConst`
+ * (#3312): those copies matched numbers and strings by regex and missed
+ * booleans, so `const on = true` read as a ternary test lowered to an unbound
+ * template variable (the falsy branch, or a render-time error). Each adapter
+ * renders the returned literal in its own syntax.
+ *
+ * Reads the analyzer's structured `parsed` literal when present (a negated
+ * number arrives as unary `-`), falling back to the value text for the same
+ * three shapes. `isShadowed` is REQUIRED, as in `lookupStaticRecordLiteral`:
+ * a name the enclosing loop binds is the row's own value (#2221).
+ */
+export function lookupLiteralConst(
+  name: string,
+  constants: IRMetadata['localConstants'] | undefined,
+  isShadowed: (name: string) => boolean,
+): { kind: 'string' | 'number' | 'boolean'; text: string } | null {
+  if (isShadowed(name)) return null
+  const c = (constants ?? []).find(lc => lc.name === name)
+  if (c?.value === undefined) return null
+  const p = c.parsed
+  if (p?.kind === 'literal') {
+    if (p.literalType === 'string' && typeof p.value === 'string') return { kind: 'string', text: p.value }
+    if (p.literalType === 'boolean' && typeof p.value === 'boolean') return { kind: 'boolean', text: String(p.value) }
+    if (p.literalType === 'number' && typeof p.value === 'number' && Number.isFinite(p.value)) {
+      return { kind: 'number', text: String(p.value) }
+    }
+  }
+  if (
+    p?.kind === 'unary' && p.op === '-' &&
+    p.argument.kind === 'literal' && p.argument.literalType === 'number' &&
+    typeof p.argument.value === 'number' && Number.isFinite(p.argument.value)
+  ) {
+    return { kind: 'number', text: String(-p.argument.value) }
+  }
+  if (p) return null
+  const v = c.value.trim()
+  if (/^-?\d+(\.\d+)?$/.test(v)) return { kind: 'number', text: v }
+  if (v === 'true' || v === 'false') return { kind: 'boolean', text: v }
+  const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
+  return strLit ? { kind: 'string', text: strLit[1] } : null
+}
+
+/**
  * Statically evaluate `[<string literals>].join(<sep?>)` (e.g. a module-scope
  * `const stateClasses = ['…', …].join(' ')`) to its joined string, so SSR
  * adapters inline the flattened literal byte-for-byte like the Hono reference

@@ -84,6 +84,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
+  lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
   sortComparatorFromArrow,
@@ -465,14 +466,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * would read nil.
    */
   private resolveLiteralConst(name: string): string | null {
-    if (this.scope.isBound(name)) return null
-    const c = (this.localConstants ?? []).find(lc => lc.name === name)
-    if (c?.value === undefined) return null
-    const v = c.value.trim()
-    if (/^-?\d+(\.\d+)?$/.test(v)) return v
-    const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
-    if (strLit) return rubyStringLiteral(strLit[1])
-    return null
+    const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
+    if (lit === null) return null
+    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
+    return rubyStringLiteral(lit.text)
   }
 
   private resolveStaticRecordLiteral(objectName: string, key: string): string | null {
