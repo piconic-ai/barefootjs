@@ -5845,10 +5845,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
     // nil and uses JS-compatible notation for a present float; other
     // present values retain the existing default printing behavior.
+    // A bare `nil` (a `const x = null` read as text) is not a valid action on
+    // its own (`nil is not a command`); JS renders a null child as nothing.
     const finalExpr =
-      this.textNillablePropNameOf(classify.parsed) !== null
-        ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : this.numericMemoTextExpression(goExpr, classify.parsed)
+      goExpr === 'nil'
+        ? '""'
+        : this.textNillablePropNameOf(classify.parsed) !== null
+          ? `bf_string ${wrapIfMultiToken(goExpr)}`
+          : this.numericMemoTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -5950,8 +5954,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (inlined !== null) return inlined
     // Literal-initialized const, module or function scope (`const TRACK = 8`,
     // `const OPEN = true`, `const mode = 'on'`): inline the literal rather than
-    // emit `{{.TRACK}}` against a Props field that never exists (#3312).
-    const inlinedScalar = this.resolveLiteralConstAsGo(name)
+    // emit `{{.TRACK}}` against a Props field that never exists (#3312). Any
+    // other module literal the structural resolver bakes (`const val = null`
+    // → `nil`) still resolves through it.
+    const inlinedScalar =
+      this.resolveLiteralConstAsGo(name) ?? this.resolveModuleConstAsGo(name, { kind: 'template-action' })
     if (inlinedScalar !== null) return inlinedScalar
     if (this.isCurrentLoopItem(name)) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
@@ -6183,7 +6190,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       n => this.isCurrentLoopItem(n) || this.loopVarRefCount.has(n) || this.isOuterLoopParam(n),
     )
     if (lit === null) return null
-    return lit.kind === 'string' ? `"${escapeGoString(lit.text)}"` : lit.text
+    // A decoded string value can hold a newline or other control character,
+    // which a Go template string literal must carry escaped; JSON's escapes
+    // are a subset of Go's interpreted-string escapes.
+    if (lit.kind === 'null') return 'nil'
+    return lit.kind === 'string' ? JSON.stringify(lit.text) : lit.text
   }
 
   /**
@@ -6246,7 +6257,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `"${value}"`
+    // A decoded string value: JSON escaping is a subset of Go's interpreted-
+    // string escapes, so a quote or newline stays inside the literal.
+    if (literalType === 'string') return JSON.stringify(String(value))
     if (literalType === 'null') return 'nil'
     return String(value)
   }
@@ -8439,7 +8452,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return plain(this.rootFieldRef(expr.name))
 
       case 'literal':
-        if (expr.literalType === 'string') return plain(`"${expr.value}"`)
+        if (expr.literalType === 'string') return plain(JSON.stringify(String(expr.value)))
         if (expr.literalType === 'null') return plain('nil')
         return plain(String(expr.value))
 

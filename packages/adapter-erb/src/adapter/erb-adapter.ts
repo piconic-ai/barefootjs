@@ -470,6 +470,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
+    if (lit.kind === 'null') return 'nil'
     return rubyStringLiteral(lit.text)
   }
 

@@ -3853,13 +3853,15 @@
       "kinds": [
         "array-literal",
         "identifier",
-        "literal"
+        "literal",
+        "logical"
       ],
       "axes": [
         "literal:boolean",
         "literal:null",
         "literal:number",
-        "literal:string"
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "attribute",

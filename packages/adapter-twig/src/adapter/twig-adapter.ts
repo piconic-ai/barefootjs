@@ -2079,6 +2079,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
+    if (lit.kind === 'null') return 'null'
     return `'${escapeTwigSingleQuoted(lit.text)}'`
   }
 

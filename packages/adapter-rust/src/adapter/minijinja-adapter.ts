@@ -2077,6 +2077,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
+    if (lit.kind === 'null') return 'none'
     return `'${escapeMinijinjaSingleQuoted(lit.text)}'`
   }
 

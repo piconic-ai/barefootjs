@@ -464,6 +464,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? '1' : '0'
+    if (lit.kind === 'null') return 'undef'
     return `'${lit.text.replace(/[\\']/g, m => `\\${m}`)}'`
   }
 

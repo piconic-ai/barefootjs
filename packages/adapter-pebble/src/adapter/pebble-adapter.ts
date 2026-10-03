@@ -2170,6 +2170,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
+    if (lit.kind === 'null') return 'null'
     return `'${escapePebbleSingleQuoted(lit.text)}'`
   }
 

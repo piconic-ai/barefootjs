@@ -522,7 +522,8 @@ export function lookupStaticRecordLiteral(
  * (#3312): those copies matched numbers and strings by regex and missed
  * booleans, so `const on = true` read as a ternary test lowered to an unbound
  * template variable (the falsy branch, or a render-time error). Each adapter
- * renders the returned literal in its own syntax.
+ * renders the returned literal — boolean, number, string or `null` — in its
+ * own syntax.
  *
  * Reads the analyzer's structured `parsed` literal when present (a negated
  * number arrives as unary `-`), falling back to the value text for the same
@@ -533,7 +534,7 @@ export function lookupLiteralConst(
   name: string,
   constants: IRMetadata['localConstants'] | undefined,
   isShadowed: (name: string) => boolean,
-): { kind: 'string' | 'number' | 'boolean'; text: string } | null {
+): { kind: 'string' | 'number' | 'boolean' | 'null'; text: string } | null {
   if (isShadowed(name)) return null
   const c = (constants ?? []).find(lc => lc.name === name)
   if (c?.value === undefined) return null
@@ -541,6 +542,7 @@ export function lookupLiteralConst(
   if (p?.kind === 'literal') {
     if (p.literalType === 'string' && typeof p.value === 'string') return { kind: 'string', text: p.value }
     if (p.literalType === 'boolean' && typeof p.value === 'boolean') return { kind: 'boolean', text: String(p.value) }
+    if (p.literalType === 'null') return { kind: 'null', text: 'null' }
     if (p.literalType === 'number' && typeof p.value === 'number' && Number.isFinite(p.value)) {
       return { kind: 'number', text: String(p.value) }
     }
@@ -556,6 +558,7 @@ export function lookupLiteralConst(
   const v = c.value.trim()
   if (/^-?\d+(\.\d+)?$/.test(v)) return { kind: 'number', text: v }
   if (v === 'true' || v === 'false') return { kind: 'boolean', text: v }
+  if (v === 'null') return { kind: 'null', text: 'null' }
   const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
   return strLit ? { kind: 'string', text: strLit[1] } : null
 }
