@@ -1,5 +1,19 @@
 # @barefootjs/jsx
 
+## 0.39.3
+
+### Patch Changes
+
+- 908656f: In a `.map()` callback with a destructured parameter (`({ color, label }) => …`), an object-literal key or a member name that matches a binding name is no longer rewritten into an item accessor. `{ color: 1 }` used to compile to invalid JS (`{ __bfItem().color: 1 }`), and `obj.color` became `obj.__bfItem().color`. The destructured-binding rewrite now uses the same AST walk as the plain-parameter rewrite. A shorthand `{ color }` now compiles to `{ color: __bfItem().color }` instead of `{ "color": __bfItem().color }`, which is the same object.
+- 1f41bc2: An attribute bound directly to a signal whose value is `undefined` or `null` at SSR (`title={s()}`) is now omitted on every template adapter, as Hono omits it. Before, the template adapters rendered it empty (`title=""`). A signal counts as nullable when its type admits `undefined`/`null` (including a zero-arg `createSignal<T>()`) or when it is untyped and its initial value is a literal `undefined`/`null`. The new shared helpers `collectNullableSignalGetters` and `nullableSignalAttrGetter` in `@barefootjs/jsx` make that decision for every adapter.
+- da9c1da: Keep text in a conditional branch and attributes like `hidden` bound when they read state through a call the compiler can't see into. An example is `v()` reading a store held in a class instance or an untyped prop. Text inside a branch now gets the same `createEffect` fallback as text outside it, so it no longer keeps its first value until the condition flips. An element whose only dynamic part is such an attribute now gets a slot id, so the attribute is applied and updated on the client.
+- a1e19cb: Type the missing JSX event handlers: `onPointerCancel`, `onPointerOver`, `onPointerOut`, `onGotPointerCapture`, `onLostPointerCapture`, plus `onMouseOver`, `onMouseOut`, `onAuxClick`, `onFocusIn`, `onFocusOut`, `onBeforeInput`, `onAnimationCancel`, `onTransitionStart`, `onTransitionRun` and `onTransitionCancel`. The compiler already wired them to the right DOM events; only the types were missing.
+- d1d079f: `createSignal()` with no argument now type-checks and compiles on every path. A new overload, `createSignal<T>(): Signal<T | undefined>`, makes the zero-argument call legal: the signal starts as `undefined`, and its type is widened to include it. Before, `createSignal<string | undefined>()` failed with TS2554. The compiler now records a missing initial value as `undefined` and widens the signal's type to `T | undefined`, so a zero-argument call compiles exactly like `createSignal<T | undefined>(undefined)`. Before, the Hono SSR module emitted `const v = () =>  as string | undefined`, which does not parse.
+  
+  The Go adapter now seeds a nullable signal whose initial value is `undefined` or `null` as `nil`. Before, it seeded the zero value of the non-nullish type (`""`, `0`), so a child's rest bag received `tag=""` where Hono omits the attribute.
+- d8f1ad9: A `createSignal()` call with no initial value now compiles to valid client JS. In profile mode, the signal's id used to follow a bare comma (`createSignal(, "Comp#signal:v")`). It is now preceded by `undefined`. Reading such a signal in JSX made the CSR template inline `()` in place of its value, which broke the module even without profiling. The template now inlines `undefined`. `CLIENT_EXPORTS` is now exported, so a test can pin the compiler's list of recognised `@barefootjs/client` imports against the package's real exports.
+- @barefootjs/shared@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes
