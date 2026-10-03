@@ -2279,6 +2279,22 @@
         "attribute"
       ]
     },
+    "data-on-attr-value-shapes": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "data-table": {
       "kinds": [
         "array-literal",
@@ -2325,6 +2341,19 @@
         "condition",
         "loop",
         "text"
+      ]
+    },
+    "data-url-attr-dynamic-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "date-catalogued": {

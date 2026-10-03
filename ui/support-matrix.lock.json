@@ -2632,9 +2632,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -4434,9 +4434,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -6290,9 +6290,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -13520,9 +13520,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
