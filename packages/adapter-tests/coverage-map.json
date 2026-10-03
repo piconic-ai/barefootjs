@@ -2343,6 +2343,19 @@
         "text"
       ]
     },
+    "data-url-attr-dynamic-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "date-catalogued": {
       "kinds": [
         "call",

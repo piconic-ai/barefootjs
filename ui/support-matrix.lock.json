@@ -2632,6 +2632,12 @@
               ]
             },
             {
+              "fixture": "data-url-attr-dynamic-value",
+              "limitations": [
+                "data-url-attr-value-url-escaped"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4425,6 +4431,12 @@
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
+              ]
+            },
+            {
+              "fixture": "data-url-attr-dynamic-value",
+              "limitations": [
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -6275,6 +6287,12 @@
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
+              ]
+            },
+            {
+              "fixture": "data-url-attr-dynamic-value",
+              "limitations": [
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -13499,6 +13517,12 @@
               "fixture": "const-string-conditional-test",
               "limitations": [
                 "literal-const-conditional-test"
+              ]
+            },
+            {
+              "fixture": "data-url-attr-dynamic-value",
+              "limitations": [
+                "data-url-attr-value-url-escaped"
               ]
             },
             {

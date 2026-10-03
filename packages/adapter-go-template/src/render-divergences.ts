@@ -156,6 +156,12 @@ export const renderDivergences: RenderDivergences = {
   // reach).
   'loop-component-row-destructured-param': { limitation: 'loop-component-row-destructured-param' },
   'loop-row-child-children-nested-destructured-prop': { limitation: 'loop-component-row-destructured-param' },
+  // `html/template` strips a `data-` prefix before classifying an attribute,
+  // and treats a name containing `src`/`uri`/`url` as a URL: a dynamic value
+  // is percent-normalized (`a%20b`) and a `javascript:` value becomes
+  // `#ZgotmplZ`.
+  'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
+
   // A literal-initialized `const` read as a ternary test is lowered as a
   // Props field read (`.On`, `.Mode`) the struct doesn't have, so
   // `html/template` fails at render time: "can't evaluate field On in type
