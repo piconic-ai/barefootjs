@@ -5851,7 +5851,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const finalExpr =
       this.textNillablePropNameOf(classify.parsed) !== null
         ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : this.numericMemoTextExpression(goExpr, classify.parsed)
+        : this.numericTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -6735,7 +6735,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * it as JS does (`1234567890.5`); html/template's own `fmt.Sprint` would
    * print `1.2345678905e+09`. `bf_string` leaves an int or a string (a
    * string-concat `+`) unchanged. */
-  private numericMemoTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
+  private numericTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
     return this.isNumericTextValue(expr) ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
   }
 
@@ -6760,7 +6760,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // template parse error. Same `isTemplateFragment` guard as
         // `renderExpression`.
         const e = emit(part.expr)
-        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericMemoTextExpression(e, part.expr)}}}`
+        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericTextExpression(e, part.expr)}}}`
       }
     }
     return result
