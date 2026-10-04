@@ -93,6 +93,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   // `number[]` elements are `interface{}` so a caller can pass fractions,
   // but html/template's native `gt`/`lt`/`eq` refuse a float64 operand against
   // an int literal ("incompatible types for comparison").
@@ -156,15 +160,6 @@ export const renderDivergences: RenderDivergences = {
   // `#ZgotmplZ`.
   'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
 
-  // A literal-initialized `const` read as a ternary test is lowered as a
-  // Props field read (`.On`, `.Mode`) the struct doesn't have, so
-  // `html/template` fails at render time: "can't evaluate field On in type
-  // main.…Props". Boolean literals fail at module or function scope; a
-  // string literal only at function scope (a module-scope string const
-  // renders like Hono).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },
   // A memo reading `.length` of a prop-seeded array signal is baked into the
   // constructor as the memo type's zero value (`Count: 0`): the
   // constructor-time memo baker (`computeMemoInitialValueOrNull`,
