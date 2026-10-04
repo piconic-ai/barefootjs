@@ -296,6 +296,9 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  rootPropAliasNames,
+  rootPropAliasesForLoop,
+  rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -423,6 +426,8 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
   private localConstants: IRMetadata['localConstants'] = []
+  /** Each prop's collision-free root alias (#3314), decided once per component. */
+  private rootPropAliases: ReadonlyMap<string, string> = new Map()
 
   /**
    * The one canonical, position-accurate "names bound by an enclosing loop
@@ -491,6 +496,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // ("1"/"") (#1897, pagination's data-active).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
@@ -1198,6 +1204,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // position relative to the pop is inert either way.
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
+    // Props this row's bindings newly shadow, aliased before the loop header
+    // so an explicit `props.X` inside still reads the root value (#3314).
+    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
     const savedBindings = this.scope.shadowedNames().map((name, ordinal) => {
       let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
       while (this.scope.isBound(temporary) || this.propsParams.some(p => p.name === temporary) ||
@@ -1239,6 +1248,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     }
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
+    for (const { name, alias } of rootAliases) lines.push(`@php(${bladeVar(alias)} = ${bladeVar(name)})`)
     lines.push(`{!! $bf->comment("loop:${loop.markerId}") !!}`)
     // See this file's header, divergence 2: raw PHP `foreach` over a
     // null/undefined array raises, unlike Twig's `strict_variables: false`
@@ -1301,6 +1311,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     for (const { name, temporary } of savedBindings) {
       lines.push(`@php(${bladeVar(name)} = ${bladeVar(temporary)})`)
     }
+    // The same leak would leave a shadowed root prop holding the last row, so
+    // a sibling loop's alias (and any later bare read) captured that row.
+    for (const { name, alias } of rootAliases) lines.push(`@php(${bladeVar(name)} = ${bladeVar(alias)})`)
     lines.push(`{!! $bf->comment("/loop:${loop.markerId}") !!}`)
 
     return lines.join('\n')
@@ -2016,6 +2029,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),

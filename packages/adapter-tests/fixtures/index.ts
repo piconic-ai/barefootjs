@@ -7,6 +7,8 @@ import { fixture as entriesLoopStringAddition } from './entries-loop-string-addi
 import { fixture as fractionalNumberArrayProp } from './fractional-number-array-prop'
 import { fixture as fractionalNumberArrayRowOps } from './fractional-number-array-row-ops'
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
+import { fixture as loopParamPropMemberCollisionShapes } from './loop-param-prop-member-collision-shapes'
+import { fixture as loopParamPropAliasNameCollision } from './loop-param-prop-alias-name-collision'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
 import { fixture as numberDivisionText } from './number-division-text'
@@ -1458,6 +1460,8 @@ export const jsxFixtures: JSXFixture[] = [
   fractionalNumberArrayProp,
   fractionalNumberArrayRowOps,
   loopParamPropMemberCollision,
+  loopParamPropMemberCollisionShapes,
+  loopParamPropAliasNameCollision,
   numberAdditionTextFormatting,
   numberArithmeticTextFormatting,
   numberDivisionText,

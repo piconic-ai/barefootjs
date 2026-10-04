@@ -437,6 +437,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+    // `props.X` reads the root prop even where a loop binding shadows `X`
+    // (#3314) — through the alias the loop header assigned.
+    if (object.kind === 'identifier' && object.name === 'props') return `$${this.ctx.rootPropReadName(property)}`
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // Static property access on a module object-literal const

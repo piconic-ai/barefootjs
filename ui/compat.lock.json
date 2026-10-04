@@ -3336,47 +3336,11 @@
           ]
         }
       },
-      "loop-param-prop-member-collision": {
-        "blade": {
+      "loop-param-prop-alias-name-collision": {
+        "go-template": {
           "kind": "render",
           "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-prop-member-collision"
+            "underscore-prefixed-prop-name"
           ]
         }
       },
@@ -5679,9 +5643,9 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
-      "loop-param-prop-member-collision": {
-        "description": "An explicit prop member remains a root value when a loop binds the same name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-prop-member-collision.ts"
+      "loop-param-prop-alias-name-collision": {
+        "description": "A prop named like the generated root-prop alias keeps its own value next to a shadowing loop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-prop-alias-name-collision.ts"
       },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
@@ -6193,25 +6157,6 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
-    "loop-param-prop-member-collision": {
-      "title": "A loop variable collides with an explicit prop member",
-      "kind": "silent",
-      "given": "a map callback binding the same name as a numeric prop, with an explicit prop member read in a row conditional",
-      "expected": "the conditional reads the root prop independently of the row binding",
-      "actual": "renders the conditional using the loop-local value instead of the root prop",
-      "fixtures": [
-        "loop-param-prop-member-collision"
-      ],
-      "adapters": [
-        "blade",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
       "kind": "refusal",
@@ -6622,6 +6567,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "underscore-prefixed-prop-name": {
+      "title": "A prop name that starts with an underscore",
+      "kind": "silent",
+      "given": "a component prop whose name starts with `_` (for example `__bf_root_value`), read in the template",
+      "expected": "the prop value renders like any other prop",
+      "actual": "throws at render time: the prop becomes an unexported struct field the template cannot read",
+      "fixtures": [
+        "loop-param-prop-alias-name-collision"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "untyped-loop-array-no-row-struct": {

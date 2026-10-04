@@ -50,6 +50,12 @@ export interface JinjaEmitContext {
   _resolveLiteralConst(name: string): string | null
 
   /**
+   * The template variable an explicit `props.<name>` read resolves to here:
+   * its root alias while a loop binding shadows `name` (#3314), else `name`.
+   */
+  _rootPropReadName(name: string): string
+
+  /**
    * Resolve a static property access on a module object-literal const
    * (`variantClasses.ghost`) to its Jinja value at compile time, or null.
    */

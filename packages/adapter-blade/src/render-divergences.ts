@@ -45,7 +45,6 @@ export const renderDivergences: RenderDivergences = {
   // treats the missing array as empty and renders `0`, where JS reads
   // `undefined` and renders nothing.
   'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
-  'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
 
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through

@@ -4147,6 +4147,17 @@
         "text"
       ]
     },
+    "loop-param-prop-alias-name-collision": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "loop-param-prop-member-collision": {
       "kinds": [
         "binary",
@@ -4164,6 +4175,17 @@
         "condition",
         "loop",
         "text"
+      ]
+    },
+    "loop-param-prop-member-collision-shapes": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
       ]
     },
     "loop-param-shadows-bool-prop": {

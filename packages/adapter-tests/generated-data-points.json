@@ -2069,6 +2069,49 @@
       }
     }
   ],
+  "loop-param-prop-alias-name-collision": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": [],
+        "value": "root",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "<b>&\"'</b>",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "日本語",
+        "__bf_root_value": "other"
+      }
+    }
+  ],
   "loop-param-prop-member-collision": [
     {
       "name": "gen:values:empty",
@@ -2105,6 +2148,82 @@
           "b"
         ],
         "value": 1234567890
+      }
+    }
+  ],
+  "loop-param-prop-member-collision-shapes": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": [],
+        "value": "root",
+        "index": "idx"
+      }
+    },
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "",
+        "index": "idx"
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "<b>&\"'</b>",
+        "index": "idx"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "日本語",
+        "index": "idx"
+      }
+    },
+    {
+      "name": "gen:index:empty",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "root",
+        "index": ""
+      }
+    },
+    {
+      "name": "gen:index:markup",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "root",
+        "index": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:index:multibyte",
+      "props": {
+        "values": [
+          "a",
+          "b"
+        ],
+        "value": "root",
+        "index": "日本語"
       }
     }
   ],
