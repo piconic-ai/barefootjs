@@ -5082,6 +5082,27 @@
         "text"
       ]
     },
+    "memo-length-prop-seeded-signal-shapes": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-array-seed": {
       "kinds": [
         "array-literal",
