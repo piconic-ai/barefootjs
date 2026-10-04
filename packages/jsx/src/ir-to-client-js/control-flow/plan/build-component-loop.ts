@@ -62,7 +62,7 @@ function collectTextOnlySlotIds(nodes: readonly IRNode[], into: Set<string>): vo
 /** @internal — prefer `buildLoopPlan`. */
 export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?: string): ComponentLoopPlan {
   const { name } = elem.childComponent!
-  const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param, undefined, elem.index)
+  const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param, elem.paramBindings, elem.index)
   const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param, elem.paramBindings, elem.index)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
 
@@ -103,7 +103,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     return {
       componentName: comp.name,
       selector: buildCompSelector(comp),
-      propsExpr: buildComponentPropsExpr(comp, elem.param, undefined, elem.index),
+      propsExpr: buildComponentPropsExpr(comp, elem.param, elem.paramBindings, elem.index),
       // #3064: marker-scoped where possible — see `buildChildrenTextEffect`.
       childrenTextEffect: childrenRefsLoop
         ? buildChildrenTextEffect(comp.children!, rawChildrenExpr!, wrap)

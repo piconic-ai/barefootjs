@@ -108,9 +108,9 @@ import {
   capitalizeFieldName,
   goFieldNameForKey,
   slotIdToFieldSuffix,
-  loopKeyToGoFieldPath,
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
+import { loopKeyToGoFieldPath } from './lib/loop-row-path.ts'
 import {
   escapeGoString,
   wrapIfMultiToken,
@@ -1967,6 +1967,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         nested.loopParam,
         nested.loopKey,
       )) continue
+      // Rows built from the array prop itself (`propArrayLoopRowSource`):
+      // nothing for the caller to supply here either.
+      if (this.propArrayLoopRowSource(ir, nested)) continue
       // #2822 follow-up: field NAME stays alias-keyed (parent-private, this
       // Input struct's own field — read as `in.${nested.name}s` throughout
       // this file), but the element TYPE is the child's own cross-file
@@ -2121,7 +2124,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!typeName) return []
     for (const td of this.state.currentTypeDefinitions) {
       if (td.name === typeName) {
-        const fields = this.structFieldsFor(td).filter(f => GO_IDENTIFIER.test(f.tsName))
+        // Every field the datum struct has, quoted source keys included
+        // (`'data-priority'` → `DataPriority`): the wrapper copies each one
+        // by the same `structFieldNamePairs` name, and a destructured row
+        // binding (#3313) may read any of them.
+        const fields = this.structFieldsFor(td)
         if (fields.length > 0) return fields
         break
       }
@@ -2320,7 +2327,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${varName}[i] = New${declaredName}Props(item)`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -3466,6 +3473,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           nested.loopArrayParsed,
         )
       }
+      // An array prop: range over its own (caller-supplied) Input field.
+      if (!bakedValue) bakedValue = this.propArrayLoopRowSource(ir, nested)?.goExpr ?? null
       if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
 
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
@@ -3495,7 +3504,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t}`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -3552,7 +3561,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
       }
       lines.push(`\t\t}`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -3923,6 +3932,70 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
+  /**
+   * The constructor-side row source of a loop over an array PROP whose row
+   * is a child component with forwarded JSX children
+   * (`props.items.map(item => <Badge key={item.id}>{item.label}</Badge>)`),
+   * or null when this loop isn't one.
+   *
+   * Such a row renders through a wrapper struct (`generateLoopBodyWrapperStruct`)
+   * whose forwarded-children define reads the row's datum fields, so the
+   * caller can't fill it with plain `<Child>Input` rows the way it fills a
+   * bodyless child loop's `in.<Child>s`. The array prop IS the row data,
+   * though, and already reaches the constructor typed as its own Go struct
+   * slice (`in.Items []…ItemsItem`), so the constructor ranges over that
+   * field directly — the same field the Props struct and `bf-p` carry, so
+   * SSR rows and the client's own `mapArray` read one source.
+   *
+   * The one decision every site consults — the row's element type for the
+   * wrapper's datum fields (`resolveNestedLoopItemTypes`), the Input struct
+   * (no `<Child>s` field: rows come from the prop, `generateInputStruct`),
+   * and the constructor's rows (`emitStaticBodyWrappers`).
+   *
+   * Recognized: the prop itself (`props.items`, or a destructured `items` /
+   * `{ items: rows }`) whose declared type is an array of objects that
+   * resolves to a generated Go struct. A prop whose Go field any of the
+   * component's `<Child>s` fields shadows (`isNestedArrayShadowed`), a deeper path
+   * (`props.data.items`) or a local alias of the prop stay on the existing
+   * paths.
+   */
+  private propArrayLoopRowSource(
+    ir: ComponentIR,
+    nested: NestedComponentInfo,
+  ): { goExpr: string; itemType: TypeInfo } | null {
+    if (!nested.isPropDerived || !nested.bodyChildren?.length) return null
+    const arr = nested.loopArrayParsed
+    if (!arr) return null
+    const params = ir.metadata.propsParams
+    let param: (typeof params)[number] | undefined
+    if (arr.kind === 'identifier') {
+      // A destructured prop binding. With a whole `props` object, a bare
+      // identifier is a local alias (`const items = props.items`), not a
+      // prop binding — `propsParams` then lists the type's member names.
+      if (ir.metadata.propsObjectName) return null
+      param = params.find(p => p.name === arr.name)
+    } else if (
+      arr.kind === 'member' &&
+      !arr.computed &&
+      arr.object.kind === 'identifier' &&
+      arr.object.name === ir.metadata.propsObjectName
+    ) {
+      param = params.find(p => (p.sourceName ?? p.name) === arr.property)
+    }
+    if (!param) return null
+    // The same component-wide answer the Input/Props emitters use: a SIBLING
+    // loop's plural (`<Item>` → `Items`) can claim this prop's field too, and
+    // then `in.Items` holds that loop's `ItemInput` rows, not this datum.
+    if (this.isNestedArrayShadowed(param, this.propDerivedNestedArrayFields(findNestedComponents(ir.root)))) return null
+    const arrayType = param.type
+    if (arrayType?.kind !== 'array' || !arrayType.elementType) return null
+    const elementGoType = typeInfoToGo(this.emitCtx, arrayType.elementType)
+    if (!this.state.localStructFields.has(elementGoType)) return null
+    const itemType: TypeInfo = { kind: 'interface', raw: elementGoType }
+    if (this.resolveLoopDatumFields(itemType).length === 0) return null
+    return { goExpr: `in.${capitalizeFieldName(param.sourceName ?? param.name)}`, itemType }
+  }
+
   private resolveNestedLoopItemTypes(
     lines: string[],
     ir: ComponentIR,
@@ -3940,6 +4013,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     //      an element type to borrow — synthesize one from the literal itself.
     for (const nested of nestedComponents) {
       if (nested.loopItemType || !nested.loopArray) continue
+
+      // Case 0: an array prop's own element type (`propArrayLoopRowSource`).
+      const propRows = this.propArrayLoopRowSource(ir, nested)
+      if (propRows) {
+        nested.loopItemType = propRows.itemType
+        continue
+      }
 
       // Case 1: memo-derived loop array (`sortedData()`)
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
@@ -4528,6 +4608,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * under `inLoop` and never reaches the static call-site branch.
    */
   private renderingWrapperRowChildren = false
+  /**
+   * The innermost enclosing loop's synthetic range variable (`__bf_item0`)
+   * when that loop's param is a supported destructure, else null. A
+   * wrapper-row forwarded-children define reads destructured names through
+   * it (`$__bf_item0.Tone`), but runs as its own template with the row as
+   * its data, so it rebinds the variable to `.` (#3313).
+   */
+  private innermostDestructureRangeVar: string | null = null
 
   private extractScopedHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
@@ -7992,10 +8080,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.scope.isBound(name) || this.loopVarRefCount.has(name)
   }
 
-  /** Whether `name` is the innermost enclosing loop's own item param. */
-  private isInnermostRowItem(name: string): boolean {
+  /**
+   * Whether `name` reads the innermost enclosing loop's own row: its item
+   * param, or a name destructured from it (#3313). Either is a field of the
+   * row wrapper a forwarded-children define receives as its data.
+   */
+  private isInnermostRowBinding(name: string): boolean {
     const hit = this.scope.lookup(name)
-    return hit !== null && hit.depth === 0 && hit.binding.source === 'item'
+    return hit !== null && hit.depth === 0 && (hit.binding.source === 'item' || hit.binding.source === 'destructure')
   }
 
   /**
@@ -8091,12 +8183,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       let rebuild = false
       // `rowItemOnly` (a wrapper-slice row's forwarded-children define): the
       // define runs as its own template with the row wrapper as its data, so
-      // only the innermost row item's fields (`.Field`) are reachable there.
+      // only the innermost row's fields (`.Field`, or a name destructured
+      // from the row) are reachable there.
       // An index, a preamble local or an outer row's binding is a `{{range}}`
       // variable of the calling template the define can't see — such a prop
       // keeps the shared instance's value
       // (`loop-row-child-nested-prop-reads-unreachable-row-binding`).
-      if (rowItemOnly && [...free].some(name => this.isLoopShadowedName(name) && !this.isInnermostRowItem(name))) {
+      if (rowItemOnly && [...free].some(name => this.isLoopShadowedName(name) && !this.isInnermostRowBinding(name))) {
         continue
       }
       // #2448's derived-field staleness check only applies to a NAMED FIELD
@@ -9109,6 +9202,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       addedLoopVars.push(d.name)
     }
     let pushedBindingMap = false
+    const outerDestructureRangeVar = this.innermostDestructureRangeVar
+    this.innermostDestructureRangeVar = supportableDestructure ? rangeValue : null
     if (supportableDestructure) {
       // Bindings resolve against the synthetic `$__bf_item` range var.
       const built = this.buildDestructureBindingMap(loop, rangeValue)
@@ -9156,6 +9251,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       else this.loopVarRefCount.set(v, rc)
     }
     this.scope = prevScope
+    this.innermostDestructureRangeVar = outerDestructureRangeVar
     if (pushedBindingMap) {
       this.loopBindingStack.pop()
       this.loopRestExcludeStack.pop()
@@ -9423,7 +9519,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.inLoop = false
       this.renderingWrapperRowChildren = wrapperRow
       try {
-        const content = this.renderChildren(effectiveChildren)
+        let content = this.renderChildren(effectiveChildren)
+        // A destructured row name lowers to the calling `{{range}}`'s
+        // variable (`$__bf_item0.Tone`), which this separate template can't
+        // see; its data is that same row, so bind the variable to it.
+        const rangeVar = wrapperRow ? this.innermostDestructureRangeVar : null
+        if (rangeVar && content.includes(`$${rangeVar}`)) content = `{{$${rangeVar} := .}}${content}`
         this.state.pendingChildrenDefines.push({ name, content })
       } finally {
         this.inLoop = wasInLoop
@@ -9494,6 +9595,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // normal non-loop rendering path (`.TableCellSlotN` fields on the
       // wrapper struct), while the loop param stack stays intact so datum
       // references resolve.
+      //
+      // A prop of this component that reads the row (`tone={item.shade}`) is
+      // re-applied per row here (`loopRowChildPropOverrides`), the same
+      // delivery the non-wrapper branch below uses: the constructor builds
+      // each row's embedded `<Name>Props` without it (`lowerChildInputFields`
+      // skips a row read). The override patches that embedded Props value,
+      // never the wrapper, so a row datum field of the same name
+      // (`Tone` from `item.tone`) can't absorb it; the forwarded children
+      // still get the whole wrapper.
+      // Only a row with forwarded children has the wrapper (and its
+      // embedded `<Name>Props`); a bare child row is its own `<Name>Props`,
+      // built per row from its full Input (`loopRowChildInputFields`).
+      const overrides = comp.children.length > 0 ? this.loopRowChildPropOverrides(comp) : null
+      const base = overrides
+        ? this.wrapLoopRowPropOverrides(`.${declaredName}Props`, declaredName, overrides)
+        : '.'
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, true)
       if (loopBodyDefine) {
         // Scalar-item loop: feed the body define the wrapper's `.BfLoopItem` (the
@@ -9502,9 +9619,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const bodyData = this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
           ? '.BfLoopItem'
           : '.'
-        templateCall = `{{template "${declaredName}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
+        templateCall = `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
       } else {
-        templateCall = `{{template "${declaredName}" .}}`
+        templateCall = `{{template "${declaredName}" ${base}}}`
       }
     } else if (this.inLoop && comp.slotId) {
       // Non-wrapper loop (component nested inside an element item, #2130):

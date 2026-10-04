@@ -154,14 +154,6 @@ export const renderDivergences: RenderDivergences = {
   // the shared instance's zero value.
   'loop-row-child-children-nested-index-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
   'loop-row-child-children-nested-preamble-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
-  // A component loop row whose callback destructures the row param renders
-  // no rows (`({ id, tone }) => <Mark key={id} tone={tone} />`), or — with
-  // forwarded children — rows without their `data-key` and without a
-  // destructured field passed to a nested component (read as
-  // `$__bf_item0.Tone`, a `{{range}}` variable the children define can't
-  // reach).
-  'loop-component-row-destructured-param': { limitation: 'loop-component-row-destructured-param' },
-  'loop-row-child-children-nested-destructured-prop': { limitation: 'loop-component-row-destructured-param' },
   // `html/template` strips a `data-` prefix before classifying an attribute,
   // and treats a name containing `src`/`uri`/`url` as a URL: a dynamic value
   // is percent-normalized (`a%20b`) and a `javascript:` value becomes
@@ -208,13 +200,14 @@ export const renderDivergences: RenderDivergences = {
   'loop-row-child-scalar-row-key': { limitation: 'loop-row-child-scalar-row-key' },
 
   // A component loop row with forwarded children over an array prop
-  // (`<Badge key={item.id}>{item.label}</Badge>`): `emitStaticBodyWrappers`
-  // bakes rows only from a resolvable const array source, so the
-  // constructor builds no rows from `in.Items` (and ignores `in.Badges`);
-  // the `<ul>` renders empty. A handler-filled wrapper slice fails at
-  // render time instead: the `…BadgeLl0Ctx` wrapper has no `Label` datum
-  // field for the forwarded children template to read.
-  'loop-row-child-children-prop-array': { limitation: 'loop-row-child-children-prop-array' },
+  // (`props.items.map(row => <Badge …>…</Badge>)`) next to a sibling loop
+  // whose child's plural is the prop's field name (`<Item>` → `Items`):
+  // `isNestedArrayShadowed` gives `Items` to the sibling's `[]ItemInput`
+  // rows, so the prop has no Input field of its own and
+  // `propArrayLoopRowSource` declines. The `<Badge>` loop renders empty.
+  'loop-row-child-children-prop-array-sibling-plural': {
+    limitation: 'loop-row-child-children-prop-array-sibling-plural',
+  },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

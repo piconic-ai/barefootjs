@@ -820,6 +820,7 @@ import { fixture as loopRowChildChildrenNestedDestructuredProp } from './loop-ro
 import { fixture as loopRowChildChildrenNestedDeepRowProp } from './loop-row-child-children-nested-deep-row-prop'
 // A component loop row whose callback destructures the row param.
 import { fixture as loopComponentRowDestructuredParam } from './loop-component-row-destructured-param'
+import { fixture as loopComponentRowDestructuredParamShapes } from './loop-component-row-destructured-param-shapes'
 // A `/* @client */` prop on a component nested in a loop-row child's forwarded children.
 import { fixture as loopRowChildChildrenNestedClientProp } from './loop-row-child-children-nested-client-prop'
 import { fixture as loopRowChildChildrenNestedClientRowProp } from './loop-row-child-children-nested-client-row-prop'
@@ -876,9 +877,12 @@ import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-s
 // A component loop row over a string array prop keyed by the row value
 // itself (registry: `loop-row-child-scalar-row-key`).
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
-// A component loop row with forwarded children over an array prop
-// (registry: `loop-row-child-children-prop-array`).
+// A component loop row with forwarded children over an array prop, and its
+// sibling shapes (destructured prop, nested row field, row prop, empty /
+// absent array, a sibling loop whose plural is the prop's name).
 import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-children-prop-array'
+import { fixture as loopRowChildChildrenPropArrayShapes } from './loop-row-child-children-prop-array-shapes'
+import { fixture as loopRowChildChildrenPropArraySiblingPlural } from './loop-row-child-children-prop-array-sibling-plural'
 // A literal-initialized `const` read as a conditional's test (#3312).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
@@ -1414,6 +1418,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedDestructuredProp,
   loopRowChildChildrenNestedDeepRowProp,
   loopComponentRowDestructuredParam,
+  loopComponentRowDestructuredParamShapes,
   loopRowChildChildrenNestedClientProp,
   loopRowChildChildrenNestedClientRowProp,
   loopElementRowChildClientRowProp,
@@ -1438,6 +1443,8 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildKeyShadowedByProp,
   loopRowChildScalarRowKey,
   loopRowChildChildrenPropArray,
+  loopRowChildChildrenPropArrayShapes,
+  loopRowChildChildrenPropArraySiblingPlural,
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,

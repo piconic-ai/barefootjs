@@ -1,0 +1,5 @@
+---
+"@barefootjs/go-template": patch
+---
+
+A `.map()` over an array prop whose row is a child component with forwarded JSX children (`props.items.map(item => <Badge key={item.id}>{item.label}</Badge>)`) now renders every row on the Go adapter, as Hono does. Before, the loop rendered empty with no diagnostic. The generated `NewXxxProps` now builds the rows from the array prop's own `Input` field (`in.Items`), and each row wrapper carries the row's fields for the forwarded children to read (`item.meta.label` included). The `Input` struct no longer has the unused `<Child>s []<Child>Input` field for such a loop, so Go code that set it no longer compiles; pass the array prop instead. A row that also passes a row field as the component's own prop (`<Tag key={item.id} tone={item.shade}>…</Tag>`) now delivers that value per row. Before, the prop was dropped unless a row field happened to share its name. This applies to every component loop row with forwarded children, including rows over a const array.

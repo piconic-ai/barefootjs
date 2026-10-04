@@ -219,21 +219,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -1229,18 +1217,6 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1845,21 +1821,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -2674,21 +2638,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -3737,21 +3689,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -4410,21 +4350,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -4440,9 +4368,9 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
-                "loop-row-child-children-prop-array"
+                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {
@@ -6086,21 +6014,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -7525,18 +7441,6 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-nested-index-prop",
               "limitations": [
                 "loop-row-child-nested-prop-reads-unreachable-row-binding"
@@ -7549,9 +7453,9 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
-                "loop-row-child-children-prop-array"
+                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {
@@ -8585,18 +8489,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-nested-index-prop",
               "limitations": [
                 "loop-row-child-nested-prop-reads-unreachable-row-binding"
@@ -9005,18 +8897,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -11223,21 +11103,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -11887,18 +11755,6 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             }
           ]
@@ -12839,21 +12695,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -13999,18 +13843,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
