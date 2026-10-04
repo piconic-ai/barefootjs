@@ -2234,12 +2234,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -2370,12 +2364,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -2385,12 +2373,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -2517,12 +2499,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -2750,12 +2726,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -2885,12 +2855,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -2904,12 +2868,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -3040,12 +2998,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -3055,12 +3007,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -3187,12 +3133,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -3336,12 +3276,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -3351,12 +3285,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -3489,12 +3417,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -3508,12 +3430,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -3643,12 +3559,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -3946,12 +3856,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4112,18 +4016,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -4133,12 +4025,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -4301,18 +4187,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -4642,12 +4516,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4807,18 +4675,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -4832,12 +4688,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4998,18 +4848,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -5019,12 +4857,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5187,18 +5019,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -5372,18 +5192,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -5393,12 +5201,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5562,18 +5364,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -5583,12 +5373,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5764,18 +5548,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         }
@@ -5847,12 +5619,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -5956,18 +5722,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -5977,12 +5731,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6091,18 +5839,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -6330,12 +6066,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6435,18 +6165,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -6460,12 +6178,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6566,18 +6278,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -6587,12 +6287,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6707,18 +6401,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -6832,18 +6514,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -6853,12 +6523,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -6962,18 +6626,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -6983,12 +6635,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             },
             {
@@ -7103,18 +6749,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -7461,12 +7095,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -7596,12 +7224,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -7983,12 +7605,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -8118,12 +7734,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -8255,12 +7865,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -8391,12 +7995,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
@@ -8526,12 +8124,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -8674,12 +8266,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -11758,12 +11344,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11773,12 +11353,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -11786,12 +11360,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11801,12 +11369,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -11848,12 +11410,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11863,12 +11419,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -11876,12 +11426,6 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11892,23 +11436,11 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
         "mojolicious": {
           "gaps": [
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -11931,12 +11463,6 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -11954,23 +11480,11 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
         "twig": {
           "gaps": [
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -11982,23 +11496,11 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12021,12 +11523,6 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -12783,12 +12279,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12840,18 +12330,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -12859,12 +12337,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12916,18 +12388,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -13065,12 +12525,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13122,18 +12576,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -13141,12 +12583,6 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13199,29 +12635,11 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
         "mojolicious": {
           "gaps": [
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13286,18 +12704,6 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]
@@ -13357,29 +12763,11 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
         "twig": {
           "gaps": [
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13433,29 +12821,11 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
             }
           ]
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "conditional-then-text",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13520,18 +12890,6 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "text-then-conditional-static",
-              "limitations": [
-                "text-adjacent-conditional-whitespace"
               ]
             }
           ]

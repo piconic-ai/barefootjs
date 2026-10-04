@@ -858,11 +858,12 @@ import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
 // A `ref`-callback `createPortal` on a keyed loop-row element (registry:
 // `loop-row-ref-portal`, pinned in the e2e quarantine ledgers).
 import { fixture as rowPortalRef } from './row-portal-ref'
-// Static text directly adjacent to a conditional (registry:
-// `text-adjacent-conditional-whitespace`).
+// Static text directly adjacent to a conditional: no whitespace of the
+// template's own between them (#3321).
 import { fixture as textThenConditional } from './text-then-conditional'
 import { fixture as textThenConditionalStatic } from './text-then-conditional-static'
 import { fixture as conditionalThenText } from './conditional-then-text'
+import { fixture as conditionalTextAdjacencyShapes } from './conditional-text-adjacency-shapes'
 // A child component inside a row of a loop over a static literal array
 // (registry: `static-literal-loop-component-row`), plus its escape twins.
 import { fixture as staticLiteralLoopComponentInRow } from './static-literal-loop-component-in-row'
@@ -1436,6 +1437,7 @@ export const jsxFixtures: JSXFixture[] = [
   textThenConditional,
   textThenConditionalStatic,
   conditionalThenText,
+  conditionalTextAdjacencyShapes,
   staticLiteralLoopComponentInRow,
   staticLiteralLoopComponentInRowClient,
   staticLiteralLoopComponentInRowPrecomputed,

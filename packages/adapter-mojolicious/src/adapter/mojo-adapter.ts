@@ -880,20 +880,26 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       markedFalse = whenFalse ? this.addCondMarkerToFirstElement(whenFalse, cond.slotId) : whenFalse
     }
 
+    // Each newline that ends a TEXT line before a `%` line statement is
+    // escaped with a trailing backslash, which Mojo::Template drops together
+    // with the newline. Unescaped, it rendered as whitespace between the
+    // conditional and adjacent text (`x: off` for `x:{c ? 'on' : 'off'}`,
+    // #3321). A `%` line consumes its own newline, so the newline after one
+    // needs no escape.
     let result: string
     if (useCommentMarkers) {
       // Fragment branches: use comment markers
       const inner = whenFalse
-        ? `\n% if (${condition}) {\n${whenTrue}\n% } else {\n${whenFalse}\n% }\n`
-        : `\n% if (${condition}) {\n${whenTrue}\n% }\n`
+        ? `\\\n% if (${condition}) {\n${whenTrue}\\\n% } else {\n${whenFalse}\\\n% }\n`
+        : `\\\n% if (${condition}) {\n${whenTrue}\\\n% }\n`
       result = `<%== bf->comment("cond-start:${cond.slotId}") %>${inner}<%== bf->comment("cond-end:${cond.slotId}") %>`
     } else if (markedFalse) {
-      result = `\n% if (${condition}) {\n${markedTrue}\n% } else {\n${markedFalse}\n% }\n`
+      result = `\\\n% if (${condition}) {\n${markedTrue}\\\n% } else {\n${markedFalse}\\\n% }\n`
     } else if (cond.slotId) {
       // Conditional with no else: wrap with comment markers for client hydration
-      result = `<%== bf->comment("cond-start:${cond.slotId}") %>\n% if (${condition}) {\n${whenTrue}\n% }\n<%== bf->comment("cond-end:${cond.slotId}") %>`
+      result = `<%== bf->comment("cond-start:${cond.slotId}") %>\\\n% if (${condition}) {\n${whenTrue}\\\n% }\n<%== bf->comment("cond-end:${cond.slotId}") %>`
     } else {
-      result = `\n% if (${condition}) {\n${whenTrue}\n% }\n`
+      result = `\\\n% if (${condition}) {\n${whenTrue}\\\n% }\n`
     }
 
     return result
