@@ -769,20 +769,32 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       markedFalse = whenFalse ? this.addCondMarkerToFirstElement(whenFalse, cond.slotId) : whenFalse
     }
 
+    // Tag statements (`<: if … { :>`), inline, rather than `:` line
+    // statements (#3321): a line statement needs its own line, and the
+    // newline ending the text line before it rendered as whitespace between
+    // the conditional and adjacent text (`x: off` for `x:{c ? 'on' : 'off'}`).
+    // A branch that itself begins or ends with a `:` line keeps that line
+    // on its own.
+    const branch = (content: string | null): string => {
+      const text = content ?? ''
+      const lines = text.split('\n')
+      const isLine = (l: string | undefined) => l !== undefined && /^\s*:/.test(l)
+      return `${isLine(lines[0]) ? '\n' : ''}${text}${isLine(lines[lines.length - 1]) ? '\n' : ''}`
+    }
     let result: string
     if (useCommentMarkers) {
       // Fragment branches: use comment markers
       const inner = whenFalse
-        ? `\n: if (${condition}) {\n${whenTrue}\n: } else {\n${whenFalse}\n: }\n`
-        : `\n: if (${condition}) {\n${whenTrue}\n: }\n`
+        ? `<: if (${condition}) { :>${branch(whenTrue)}<: } else { :>${branch(whenFalse)}<: } :>`
+        : `<: if (${condition}) { :>${branch(whenTrue)}<: } :>`
       result = `<: $bf.comment("cond-start:${cond.slotId}") | mark_raw :>${inner}<: $bf.comment("cond-end:${cond.slotId}") | mark_raw :>`
     } else if (markedFalse) {
-      result = `\n: if (${condition}) {\n${markedTrue}\n: } else {\n${markedFalse}\n: }\n`
+      result = `<: if (${condition}) { :>${branch(markedTrue)}<: } else { :>${branch(markedFalse)}<: } :>`
     } else if (cond.slotId) {
       // Conditional with no else: wrap with comment markers for client hydration
-      result = `<: $bf.comment("cond-start:${cond.slotId}") | mark_raw :>\n: if (${condition}) {\n${whenTrue}\n: }\n<: $bf.comment("cond-end:${cond.slotId}") | mark_raw :>`
+      result = `<: $bf.comment("cond-start:${cond.slotId}") | mark_raw :><: if (${condition}) { :>${branch(whenTrue)}<: } :><: $bf.comment("cond-end:${cond.slotId}") | mark_raw :>`
     } else {
-      result = `\n: if (${condition}) {\n${whenTrue}\n: }\n`
+      result = `<: if (${condition}) { :>${branch(whenTrue)}<: } :>`
     }
 
     return result
