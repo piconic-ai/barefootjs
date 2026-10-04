@@ -4454,11 +4454,53 @@
           }
         }
       },
-      "optional-chain-length-condition": {
-        "mojolicious": {
+      "optional-chain-length-bare-text": {
+        "blade": {
           "kind": "render",
           "limitations": [
-            "mojo-optional-chain-length-unguarded-deref"
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
           ]
         }
       },
@@ -5893,9 +5935,9 @@
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
       },
-      "optional-chain-length-condition": {
-        "description": "`props.x?.length ?? 0` as a condition operand, with the array absent",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-condition.ts"
+      "optional-chain-length-bare-text": {
+        "description": "A bare optional-chained `.length` over an absent array renders empty",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-bare-text.ts"
       },
       "optional-object-prop-member-signal-seed": {
         "description": "a signal seeded from a member of an optional object prop renders its seed (or the fallback) at SSR",
@@ -6509,19 +6551,6 @@
         "BF102"
       ]
     },
-    "mojo-optional-chain-length-unguarded-deref": {
-      "title": "Optional-chained `.length` deref runs before its `??` fallback",
-      "kind": "silent",
-      "given": "an optional-chained `.length` read defaulted with `??`, used as a condition operand, over an absent array (`(props.items?.length ?? 0) > 0` with `items` undefined)",
-      "expected": "the missing array falls back to `0`, so the comparison is false and the second branch renders",
-      "actual": "throws at render time instead: the template dereferences the array unconditionally before the `// 0` fallback ever runs (\"Can't use an undefined value as an ARRAY reference\")",
-      "fixtures": [
-        "optional-chain-length-condition"
-      ],
-      "adapters": [
-        "mojolicious"
-      ]
-    },
     "namespace-import-primitive-without-program": {
       "title": "Reactive primitive called through a namespace import",
       "kind": "by-design",
@@ -6639,6 +6668,26 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "optional-chain-length-absent-renders-zero": {
+      "title": "A bare optional-chained `.length` over an absent array renders `0`",
+      "kind": "silent",
+      "given": "an optional-chained `.length` read rendered as text with no fallback, over an absent array (`{props.items?.length}` with `items` undefined)",
+      "expected": "the read is `undefined`, so nothing renders",
+      "actual": "renders `0`, the length of an empty array",
+      "fixtures": [
+        "optional-chain-length-bare-text"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "prop-member-chain-signal-seed": {

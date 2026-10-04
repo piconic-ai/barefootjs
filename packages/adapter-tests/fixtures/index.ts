@@ -232,6 +232,8 @@ import { fixture as signalLiteralPropScalarCollision } from './signal-literal-pr
 import { fixture as signalLiteralPropObjectCollision } from './signal-literal-prop-object-collision'
 import { fixture as signalLiteralPropFractionalCollision } from './signal-literal-prop-fractional-collision'
 import { fixture as optionalChainLengthCondition } from './optional-chain-length-condition'
+import { fixture as optionalChainLengthText } from './optional-chain-length-text'
+import { fixture as optionalChainLengthBareText } from './optional-chain-length-bare-text'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
 import { fixture as branchMap } from './branch-map'
@@ -1041,6 +1043,8 @@ export const jsxFixtures: JSXFixture[] = [
   signalLiteralPropObjectCollision,
   signalLiteralPropFractionalCollision,
   optionalChainLengthCondition,
+  optionalChainLengthText,
+  optionalChainLengthBareText,
   logicalOrJsx,
   branchSelfClosing,
   branchMap,
