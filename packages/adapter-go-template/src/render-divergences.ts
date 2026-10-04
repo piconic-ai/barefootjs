@@ -97,7 +97,10 @@ export const renderDivergences: RenderDivergences = {
   // treats the missing array as empty and renders `0`, where JS reads
   // `undefined` and renders nothing.
   'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
-  'fractional-number-array-prop': { limitation: 'fractional-number-array-prop' },
+  // `number[]` elements are `interface{}` so a caller can pass fractions,
+  // but html/template's native `gt`/`lt`/`eq` refuse a float64 operand against
+  // an int literal ("incompatible types for comparison").
+  'fractional-number-array-row-ops': { limitation: 'fractional-number-compare-int-literal' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback

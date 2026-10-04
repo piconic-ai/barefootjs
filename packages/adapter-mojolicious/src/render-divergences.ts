@@ -62,11 +62,6 @@ export const renderDivergences: RenderDivergences = {
   // package name'. A string literal is inlined and renders like Hono.
   'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  // Text after a ternary lands at the start of its own template line
-  // (after `% }`). Starting with `%` (after optional spaces), that line is
-  // read as Perl code and the template fails to compile ("Missing right
-  // curly or square bracket").
-  'conditional-then-percent-text': { limitation: 'line-statement-sigil-text-after-conditional' },
 }
 
 /**

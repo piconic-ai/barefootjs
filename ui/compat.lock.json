@@ -2123,22 +2123,6 @@
           ]
         }
       },
-      "conditional-then-colon-text": {
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "line-statement-sigil-text-after-conditional"
-          ]
-        }
-      },
-      "conditional-then-percent-text": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "line-statement-sigil-text-after-conditional"
-          ]
-        }
-      },
       "conditional-then-text": {
         "blade": {
           "kind": "render",
@@ -3268,11 +3252,11 @@
           ]
         }
       },
-      "fractional-number-array-prop": {
+      "fractional-number-array-row-ops": {
         "go-template": {
           "kind": "render",
           "limitations": [
-            "fractional-number-array-prop"
+            "fractional-number-compare-int-literal"
           ]
         }
       },
@@ -5915,14 +5899,6 @@
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
       },
-      "conditional-then-colon-text": {
-        "description": "Text starting with a colon right after a ternary renders verbatim",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-colon-text.ts"
-      },
-      "conditional-then-percent-text": {
-        "description": "Text starting with a percent sign right after a ternary renders verbatim",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-percent-text.ts"
-      },
       "conditional-then-text": {
         "description": "A signal-driven ternary directly followed by text renders with no whitespace between them",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-text.ts"
@@ -5983,9 +5959,9 @@
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
-      "fractional-number-array-prop": {
-        "description": "A number-array prop preserves fractional values in loop rows",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-prop.ts"
+      "fractional-number-array-row-ops": {
+        "description": "Fractional number-array elements work in row comparisons and arithmetic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-row-ops.ts"
       },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
@@ -6451,14 +6427,14 @@
         "BF101"
       ]
     },
-    "fractional-number-array-prop": {
-      "title": "Fractional values in a number-array prop",
+    "fractional-number-compare-int-literal": {
+      "title": "A fractional number compared against an integer literal fails at render time",
       "kind": "silent",
-      "given": "a number-array prop containing fractional values, rendered by a map callback",
-      "expected": "the fractional values render unchanged",
-      "actual": "emits a number-array initialization rejected by the native renderer with a fractional-to-integer error, without a compiler diagnostic",
+      "given": "a fractional element of a `number[]` prop compared against an integer literal inside the row (`value > 0` with `value` 1.5)",
+      "expected": "the comparison is numeric, as in JavaScript (`1.5 > 0` is true), so the row renders the chosen branch",
+      "actual": "throws at render time instead, because the template engine refuses to compare a floating-point value with an integer (\"incompatible types for comparison\")",
       "fixtures": [
-        "fractional-number-array-prop"
+        "fractional-number-array-row-ops"
       ],
       "adapters": [
         "go-template"
@@ -6528,21 +6504,6 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
-    },
-    "line-statement-sigil-text-after-conditional": {
-      "title": "Text starting with a colon or percent sign right after a ternary",
-      "kind": "silent",
-      "given": "static JSX text whose first non-space character is `:` or `%`, directly following a ternary conditional whose branches both render (`{c ? 'on' : 'off'} :y`, `{c ? 'on' : 'off'} %y`)",
-      "expected": "the text renders verbatim after the chosen branch (`off :y`)",
-      "actual": "throws a template parse error because the engine reads the text as a statement line, or drops the text when that line happens to parse",
-      "fixtures": [
-        "conditional-then-colon-text",
-        "conditional-then-percent-text"
-      ],
-      "adapters": [
-        "mojolicious",
-        "xslate"
-      ]
     },
     "literal-const-conditional-test": {
       "title": "Literal-initialized const read as a conditional test",
