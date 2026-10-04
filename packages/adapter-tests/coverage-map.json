@@ -1861,6 +1861,23 @@
         "text"
       ]
     },
+    "conditional-text-adjacency-shapes": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-then-colon-text": {
       "kinds": [
         "identifier",

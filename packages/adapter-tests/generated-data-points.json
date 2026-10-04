@@ -978,6 +978,20 @@
       }
     }
   ],
+  "conditional-text-adjacency-shapes": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
   "conditional-then-colon-text": [
     {
       "name": "gen:on:true",
