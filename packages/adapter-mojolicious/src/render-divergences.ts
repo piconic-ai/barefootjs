@@ -56,12 +56,6 @@ export const renderDivergences: RenderDivergences = {
   'text-then-conditional-static': { limitation: 'text-adjacent-conditional-whitespace' },
   'conditional-then-text': { limitation: 'text-adjacent-conditional-whitespace' },
 
-  // Text after a ternary lands at the start of its own template line
-  // (after `% }`). Starting with `%` (after optional spaces), that line is
-  // read as Perl code and the template fails to compile ("Missing right
-  // curly or square bracket").
-  'conditional-then-percent-text': { limitation: 'line-statement-sigil-text-after-conditional' },
-
   // `props.x?.length ?? 0` as a condition operand, over an absent array:
   // the `member` emitter's `.length` arm (`emitters.ts`) dereferences the
   // object unconditionally (`scalar(@{$items})`) before the ENCLOSING `??`

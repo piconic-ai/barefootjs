@@ -1660,6 +1660,20 @@
         "text"
       ]
     },
+    "conditional-branch-sigil-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-child-listener-cleanup": {
       "kinds": [
         "arrow",
@@ -3338,6 +3352,23 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "fractional-number-array-row-ops": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
       "contexts": [
         "attribute",
         "loop",

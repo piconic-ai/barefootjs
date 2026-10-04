@@ -68,11 +68,4 @@ export const renderDivergences: RenderDivergences = {
   // belongs to one registry entry, so it stays cited here, for the space
   // the sibling DSL adapters render and this one would once it parses.
   'conditional-then-text': { limitation: 'text-adjacent-conditional-whitespace' },
-
-  // Text after a ternary lands at the start of its own template line
-  // (after `: }`). Starting with `:` (after optional spaces), Kolon reads
-  // that line as line code, so ` :y</p>` fails to parse ("Expected a
-  // semicolon or block end"); a bare `:` line parses as an empty statement
-  // and the text silently vanishes.
-  'conditional-then-colon-text': { limitation: 'line-statement-sigil-text-after-conditional' },
 }

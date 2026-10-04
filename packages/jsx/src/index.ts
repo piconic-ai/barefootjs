@@ -153,6 +153,7 @@ export { emitIRNode } from './adapters/ir-node-emitter.ts'
 export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter.ts'
 export { emitAttrValue } from './adapters/attr-value-emitter.ts'
 export type { AttrValueEmitter } from './adapters/attr-value-emitter.ts'
+export { escapeLineStatementSigil } from './adapters/line-statement-text.ts'
 export {
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,

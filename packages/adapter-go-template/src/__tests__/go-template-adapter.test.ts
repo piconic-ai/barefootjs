@@ -1109,8 +1109,10 @@ export function Nums() {
   return <ul>{ns().map((n) => <li key={n}>{n}</li>)}</ul>
 }
 `)
+      // `number[]` elements are `interface{}` (#3310) so a fractional element
+      // is representable; integer elements stay Go ints.
       expect(adapter.generate(ir).types!).toContain(
-        'Ns: []int{1, 2, 1000, 16},',
+        'Ns: []interface{}{1, 2, 1000, 16},',
       )
     })
 
