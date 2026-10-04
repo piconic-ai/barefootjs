@@ -54,6 +54,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
+  lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
   sortComparatorFromArrow,
@@ -74,7 +75,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
+import { escapeLineStatementSigil, isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
@@ -465,14 +466,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * field is needed here.
    */
   private resolveLiteralConst(name: string): string | null {
-    if (this.scope.isBound(name)) return null
-    const c = (this.localConstants ?? []).find(lc => lc.name === name)
-    if (c?.value === undefined) return null
-    const v = c.value.trim()
-    if (/^-?\d+(\.\d+)?$/.test(v)) return v
-    const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
-    if (strLit) return `'${strLit[1].replace(/[\\']/g, m => `\\${m}`)}'`
-    return null
+    const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
+    if (lit === null) return null
+    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'boolean') return lit.text === 'true' ? '1' : '0'
+    if (lit.kind === 'null') return 'undef'
+    return `'${lit.text.replace(/[\\']/g, m => `\\${m}`)}'`
   }
 
   private resolveStaticRecordLiteral(objectName: string, key: string): string | null {
@@ -559,8 +558,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
-    // character references); re-escape for direct HTML emission.
-    return escapeHtml(node.value)
+    // character references); re-escape for direct HTML emission. A
+    // line-leading `%` would be read as a line statement (#3311).
+    return escapeLineStatementSigil(escapeHtml(node.value), '%', "<%= '%' %>")
   }
 
   emitExpression(node: IRExpression): string {

@@ -219,21 +219,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -1229,18 +1217,6 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1751,6 +1727,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1827,27 +1809,15 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "loop-component-row-destructured-param"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -2016,12 +1986,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -2590,9 +2554,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -2656,21 +2620,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -3785,21 +3737,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -4126,6 +4066,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4298,9 +4244,21 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -4386,9 +4344,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -4452,9 +4410,9 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-prop",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "fractional-number-array-prop"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -4470,12 +4428,6 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-param-prop-alias-name-collision",
               "limitations": [
                 "underscore-prefixed-prop-name"
@@ -4485,12 +4437,6 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -4506,9 +4452,9 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
-                "loop-row-child-children-prop-array"
+                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {
@@ -4596,15 +4542,15 @@
               ]
             },
             {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -4816,6 +4762,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5000,6 +4952,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5061,12 +5019,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -5181,12 +5133,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -5380,6 +5326,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5564,6 +5516,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5625,12 +5583,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -5751,6 +5703,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -5898,12 +5856,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5949,12 +5901,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6040,12 +5986,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6094,12 +6034,6 @@
               ]
             },
             {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -6109,6 +6043,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
               ]
             },
             {
@@ -6188,27 +6128,15 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
-              "fixture": "const-string-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -6254,27 +6182,21 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -6308,12 +6230,6 @@
               ]
             },
             {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -6329,12 +6245,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -6426,12 +6336,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6477,12 +6381,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6568,12 +6466,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6619,12 +6511,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6704,21 +6590,9 @@
               ]
             },
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6770,12 +6644,6 @@
               ]
             },
             {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -6791,12 +6659,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -6870,12 +6732,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6921,12 +6777,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7012,12 +6862,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7063,12 +6907,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7148,21 +6986,9 @@
               ]
             },
             {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
-              ]
-            },
-            {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7211,12 +7037,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7410,12 +7230,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7601,6 +7415,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7725,6 +7545,18 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7843,9 +7675,9 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-prop",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "fractional-number-array-prop"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -7861,21 +7693,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-param-prop-alias-name-collision",
               "limitations": [
                 "underscore-prefixed-prop-name"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -7891,9 +7711,9 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
-                "loop-row-child-children-prop-array"
+                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {
@@ -7951,9 +7771,9 @@
               ]
             },
             {
-              "fixture": "number-addition-text-formatting",
+              "fixture": "optional-chain-length-bare-text",
               "limitations": [
-                "number-addition-text-formatting"
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -8117,6 +7937,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8247,6 +8073,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8302,12 +8134,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -8374,12 +8200,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -8525,6 +8345,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8655,6 +8481,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8710,12 +8542,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -8788,6 +8614,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -8914,18 +8746,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
             {
               "fixture": "loop-row-child-children-nested-index-prop",
               "limitations": [
@@ -9335,18 +9155,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -11158,7 +10966,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -11172,10 +10989,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "memo",
-        "description": "Derived value with createMemo",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo.ts",
-        "code": "count() * 2"
+        "fixture": "fractional-number-array-row-ops",
+        "description": "Fractional number-array elements work in row comparisons and arithmetic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-row-ops.ts",
+        "code": "value * 2"
       }
     },
     "binary:+": {
@@ -11219,12 +11036,6 @@
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -11337,7 +11148,16 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            }
+          ]
+        },
         "go-template": {},
         "jinja": {},
         "minijinja": {},
@@ -11352,10 +11172,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "data-table",
-        "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts",
-        "code": "sortedData().length / pageSize"
+        "fixture": "number-division-text",
+        "description": "Integer operands divided in text keep the fractional result",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts",
+        "code": "props.value / 4"
       }
     },
     "binary:<": {
@@ -11535,21 +11355,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -11893,16 +11701,7 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            }
-          ]
-        },
+        "mojolicious": {},
         "pebble": {},
         "twig": {},
         "xslate": {}
@@ -11965,21 +11764,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12005,21 +11792,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12051,21 +11826,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12091,21 +11854,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12131,21 +11882,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12171,21 +11910,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12217,21 +11944,9 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12257,21 +11972,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12297,21 +12000,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12370,18 +12061,6 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             }
           ]
@@ -12531,6 +12210,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12589,6 +12274,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -12610,12 +12301,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -12826,12 +12511,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -13268,15 +12947,9 @@
               ]
             },
             {
-              "fixture": "const-string-conditional-test",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
-              "fixture": "data-on-attr-dynamic-value",
-              "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -13316,21 +12989,9 @@
               ]
             },
             {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {
@@ -13556,12 +13217,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
@@ -13601,12 +13256,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -13801,12 +13450,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
             {
               "fixture": "conditional-then-text",
               "limitations": [
@@ -14029,12 +13672,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14233,14 +13870,38 @@
     "member:optional": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -14251,21 +13912,57 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {
+        "jinja": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-condition",
+              "fixture": "optional-chain-length-bare-text",
               "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
+                "optional-chain-length-absent-renders-zero"
               ]
             }
           ]
         },
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -14273,10 +13970,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L168"
       },
       "example": {
-        "fixture": "optional-chaining-prop",
-        "description": "Optional chaining into an object prop with nullish fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chaining-prop.ts",
-        "code": "user?.name"
+        "fixture": "optional-chain-length-bare-text",
+        "description": "A bare optional-chained `.length` over an absent array renders empty",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-bare-text.ts",
+        "code": "props.items?.length"
       }
     },
     "sort-direction:asc": {
@@ -14506,18 +14203,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "loop-component-row-destructured-param",
-              "limitations": [
-                "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-destructured-prop",
-              "limitations": [
-                "loop-component-row-destructured-param"
               ]
             },
             {

@@ -40,6 +40,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`
@@ -66,10 +70,4 @@ export const renderDivergences: RenderDivergences = {
   'text-then-conditional': { limitation: 'text-adjacent-conditional-whitespace' },
   'text-then-conditional-static': { limitation: 'text-adjacent-conditional-whitespace' },
   'conditional-then-text': { limitation: 'text-adjacent-conditional-whitespace' },
-
-  // A boolean-literal `const` (module or function scope) read as a ternary
-  // test never reaches the template: it is read as an unset variable, so
-  // the falsy branch renders (`data-x="b"` for Hono's `data-x="a"`).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
 }

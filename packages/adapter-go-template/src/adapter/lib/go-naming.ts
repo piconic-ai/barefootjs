@@ -115,22 +115,3 @@ export function slotIdToFieldSuffix(slotId: string): string {
   // Fallback for non-standard IDs.
   return cleanId.replace('slot_', 'Slot')
 }
-
-/**
- * Lower a keyed-loop `key` expression to the Go field path on the loop's range
- * variable (always `item` in the generated `for i, item := range …`), e.g.
- * `item.label` → `item.Label`.
- *
- * @returns `null` for a non-simple key (computed expression, whole-element key,
- *   mismatched param) — caller then skips `data-key` rather than emit
- *   something that won't compile.
- */
-export function loopKeyToGoFieldPath(key: string | undefined, param: string | undefined): string | null {
-  if (!key || !param) return null
-  const segs = key.split('.')
-  if (segs[0] !== param) return null
-  const rest = segs.slice(1)
-  if (rest.length === 0) return null
-  if (!rest.every(s => /^[A-Za-z_]\w*$/.test(s))) return null
-  return 'item.' + rest.map(capitalize).join('.')
-}

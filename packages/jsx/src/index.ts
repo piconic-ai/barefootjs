@@ -153,6 +153,7 @@ export { emitIRNode } from './adapters/ir-node-emitter.ts'
 export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter.ts'
 export { emitAttrValue } from './adapters/attr-value-emitter.ts'
 export type { AttrValueEmitter } from './adapters/attr-value-emitter.ts'
+export { escapeLineStatementSigil } from './adapters/line-statement-text.ts'
 export {
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
@@ -364,7 +365,7 @@ export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 export { USE_CLIENT_DIRECTIVE, CLIENT_EXPRESSION_DIRECTIVE } from './directives.ts'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, collectContextConsumers } from './augment-inherited-props.ts'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, lookupLiteralConst, collectContextConsumers } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
 
 // HTML element attribute types

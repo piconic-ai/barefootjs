@@ -572,6 +572,33 @@ export function P() {
   })
 })
 
+describe('GoTemplateAdapter - arithmetic text uses JS number spelling (#3320)', () => {
+  // `bf_add`/`bf_div`/… box their result as `any`; a `float64` printed by
+  // html/template's own `fmt.Sprint` takes Go's `%v` exponent form, so a
+  // TEXT-position arithmetic value prints through `bf_string` instead.
+  test('a text-position arithmetic expression is wrapped in bf_string', () => {
+    const { template } = compileAndGenerate(`
+export function N(props: { value: number }) {
+  return <div><i>{props.value + 0.5}</i><b>{props.value / 4}</b><s>{-props.value}</s><u>{\`v=\${props.value * 2}\`}</u></div>
+}
+`)
+    expect(template).toContain('{{bf_string (bf_add .Value 0.5)}}')
+    expect(template).toContain('{{bf_string (bf_div .Value 4)}}')
+    expect(template).toContain('{{bf_string (bf_neg .Value)}}')
+    expect(template).toContain('v={{bf_string (bf_mul .Value 2)}}')
+  })
+
+  test('a plain prop read and a string concat are left alone or harmlessly wrapped', () => {
+    const { template } = compileAndGenerate(`
+export function N(props: { value: number; a: string; b: string }) {
+  return <div><i>{props.value}</i><b>{props.a + props.b}</b></div>
+}
+`)
+    expect(template).toContain('{{bfTextStart "s0"}}{{.Value}}{{bfTextEnd}}')
+    expect(template).toContain('{{bf_string (bf_concat_str .A .B)}}')
+  })
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {
@@ -1082,8 +1109,10 @@ export function Nums() {
   return <ul>{ns().map((n) => <li key={n}>{n}</li>)}</ul>
 }
 `)
+      // `number[]` elements are `interface{}` (#3310) so a fractional element
+      // is representable; integer elements stay Go ints.
       expect(adapter.generate(ir).types!).toContain(
-        'Ns: []int{1, 2, 1000, 16},',
+        'Ns: []interface{}{1, 2, 1000, 16},',
       )
     })
 
@@ -6779,7 +6808,7 @@ export function List() {
     // `data-key` attribute and the text position must resolve the shadowed
     // `count` through it.
     expect(template).toContain('{{range $_, $count := .Nums}}<li data-key="{{.}}">')
-    expect(template).toContain('{{bf_mul . 3}}')
+    expect(template).toContain('{{bf_string (bf_mul . 3)}}')
     // Never the outer `const count = 7` literal.
     expect(template).not.toContain('{{7}}')
   })
@@ -6826,7 +6855,7 @@ export function Labels({ label, values }: { label: string; values: number[] }) {
   return <ul>{values.map((label) => <li key={label}>{1 + label}</li>)}</ul>
 }
 `)
-    expect(template).toContain('{{bf_add 1 .}}')
+    expect(template).toContain('{{bf_string (bf_add 1 .)}}')
     expect(template).not.toContain('bf_concat_str')
   })
 
@@ -6848,7 +6877,8 @@ export function Foo({ label }: { label: string }) {
   return <p>{label + suffix}</p>
 }
 `)
-    expect(template).toContain('bf_concat_str .Label .Suffix')
+    // The literal `const suffix = '!'` inlines as `"!"` (#3312); the operator choice is the pin.
+    expect(template).toContain('bf_concat_str .Label "!"')
   })
 
   test('local-const operand carries the concat classification when the prop operand is coarsely excluded (fixture shape)', () => {
@@ -6872,9 +6902,9 @@ export function Both({ label, values }: { label: string; values: number[] }) {
 }
 `)
     // Outside the loop: still string concat, carried by the const operand.
-    expect(template).toContain('bf_concat_str .Label .Suffix')
+    expect(template).toContain('bf_concat_str .Label "!"')
     // Inside the loop: the shadowed occurrence stays numeric.
-    expect(template).toContain('{{bf_add 1 .}}')
+    expect(template).toContain('{{bf_string (bf_add 1 .)}}')
   })
 
   // Go's slice-A guard is scope-PRECISE: it consults the live

@@ -35,6 +35,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
+
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `$bf.register_portal_element`/`$bf.portals()`
@@ -66,16 +71,4 @@ export const renderDivergences: RenderDivergences = {
   // belongs to one registry entry, so it stays cited here, for the space
   // the sibling DSL adapters render and this one would once it parses.
   'conditional-then-text': { limitation: 'text-adjacent-conditional-whitespace' },
-
-  // A boolean-literal `const` (module or function scope) read as a ternary
-  // test never reaches the template: it is read as an unset variable, so
-  // the falsy branch renders (`data-x="b"` for Hono's `data-x="a"`).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  // Text after a ternary lands at the start of its own template line
-  // (after `: }`). Starting with `:` (after optional spaces), Kolon reads
-  // that line as line code, so ` :y</p>` fails to parse ("Expected a
-  // semicolon or block end"); a bare `:` line parses as an empty statement
-  // and the text silently vanishes.
-  'conditional-then-colon-text': { limitation: 'line-statement-sigil-text-after-conditional' },
 }

@@ -120,6 +120,18 @@ function emitLookupLiteralEquality(
   return op === '!==' ? `!(${equality})` : equality
 }
 
+/**
+ * `x?.length` (#3319): Perl dies dereferencing an absent array
+ * (`scalar(@{undef})` → "Can't use an undefined value as an ARRAY
+ * reference") before a following `// 0` fallback can run. An optional-chained
+ * read guards the dereference and yields `undef` when the receiver is absent —
+ * JS's `undefined` — so `(x?.length ?? 0)` falls back to `0` and a bare
+ * `x?.length` renders empty. A non-optional `.length` is emitted unchanged.
+ */
+function optionalLength(receiver: string, optional: boolean, read: (receiver: string) => string): string {
+  return optional ? `(defined(${receiver}) ? ${read(receiver)} : undef)` : read(receiver)
+}
+
 export class MojoFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -167,7 +179,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` on a higher-order result (e.g.
@@ -178,7 +190,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // gate refused this shape outright. Lowering `.length` to
     // `scalar(@{...})` makes the result a real Perl integer.
     if (property === 'length' && (asCallbackMethodCall(object) !== null || object.kind === 'array-literal')) {
-      return `scalar(@{${emit(object)}})`
+      return optionalLength(emit(object), optional, obj => `scalar(@{${obj}})`)
     }
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}->{${property}}`
@@ -424,7 +436,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
     if (object.kind === 'identifier' && object.name === 'props') return `$${this.ctx.rootPropReadName(property)}`
@@ -457,8 +469,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       // CODE UNITS, not Perl's codepoint-counting `length()` (#2255) — an
       // astral codepoint (a surrogate pair in UTF-16, e.g. '👍') counts as
       // 2, not 1.
-      if (isStringReceiver) return `bf->length(${obj})`
-      return `scalar(@{${obj}})`
+      return optionalLength(obj, optional, o => (isStringReceiver ? `bf->length(${o})` : `scalar(@{${o}})`))
     }
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}->{${property}}`

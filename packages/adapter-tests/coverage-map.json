@@ -1660,6 +1660,20 @@
         "text"
       ]
     },
+    "conditional-branch-sigil-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-child-listener-cleanup": {
       "kinds": [
         "arrow",
@@ -2279,6 +2293,22 @@
         "attribute"
       ]
     },
+    "data-on-attr-value-shapes": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "data-table": {
       "kinds": [
         "array-literal",
@@ -2325,6 +2355,19 @@
         "condition",
         "loop",
         "text"
+      ]
+    },
+    "data-url-attr-dynamic-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "date-catalogued": {
@@ -3315,6 +3358,23 @@
         "text"
       ]
     },
+    "fractional-number-array-row-ops": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "fragment": {
       "kinds": [
         "call",
@@ -3849,6 +3909,27 @@
         "text"
       ]
     },
+    "literal-const-conditional-shapes": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "local-record-union-index": {
       "kinds": [
         "literal",
@@ -3940,6 +4021,31 @@
       "contexts": [
         "attribute",
         "loop"
+      ]
+    },
+    "loop-component-row-destructured-param-shapes": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "loop-destructured-param-condition": {
@@ -4478,6 +4584,30 @@
       ]
     },
     "loop-row-child-children-prop-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-prop-array-shapes": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-prop-array-sibling-plural": {
       "kinds": [
         "identifier",
         "member"
@@ -5595,6 +5725,42 @@
         "text"
       ]
     },
+    "number-arithmetic-text-formatting": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-division-text": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "number-tofixed": {
       "kinds": [
         "array-method",
@@ -5697,6 +5863,18 @@
         "text"
       ]
     },
+    "optional-chain-length-bare-text": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-length-condition": {
       "kinds": [
         "binary",
@@ -5714,6 +5892,22 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "optional-chain-length-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
         "text"
       ]
     },

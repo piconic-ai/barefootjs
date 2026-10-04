@@ -93,8 +93,14 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  'number-addition-text-formatting': { limitation: 'number-addition-text-formatting' },
-  'fractional-number-array-prop': { limitation: 'fractional-number-array-prop' },
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
+  // `number[]` elements are `interface{}` so a caller can pass fractions,
+  // but html/template's native `gt`/`lt`/`eq` refuse a float64 operand against
+  // an int literal ("incompatible types for comparison").
+  'fractional-number-array-row-ops': { limitation: 'fractional-number-compare-int-literal' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback
@@ -148,28 +154,12 @@ export const renderDivergences: RenderDivergences = {
   // the shared instance's zero value.
   'loop-row-child-children-nested-index-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
   'loop-row-child-children-nested-preamble-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
-  // A component loop row whose callback destructures the row param renders
-  // no rows (`({ id, tone }) => <Mark key={id} tone={tone} />`), or — with
-  // forwarded children — rows without their `data-key` and without a
-  // destructured field passed to a nested component (read as
-  // `$__bf_item0.Tone`, a `{{range}}` variable the children define can't
-  // reach).
-  'loop-component-row-destructured-param': { limitation: 'loop-component-row-destructured-param' },
-  'loop-row-child-children-nested-destructured-prop': { limitation: 'loop-component-row-destructured-param' },
   // `html/template` strips a `data-` prefix before classifying an attribute,
-  // so `data-on…` escapes as an `on…` event-handler (JS) attribute: a dynamic
-  // value renders as a quoted script string (`&#34;x&#34;`).
-  'data-on-attr-dynamic-value': { limitation: 'data-on-attr-value-script-escaped' },
+  // and treats a name containing `src`/`uri`/`url` as a URL: a dynamic value
+  // is percent-normalized (`a%20b`) and a `javascript:` value becomes
+  // `#ZgotmplZ`.
+  'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
 
-  // A literal-initialized `const` read as a ternary test is lowered as a
-  // Props field read (`.On`, `.Mode`) the struct doesn't have, so
-  // `html/template` fails at render time: "can't evaluate field On in type
-  // main.…Props". Boolean literals fail at module or function scope; a
-  // string literal only at function scope (a module-scope string const
-  // renders like Hono).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },
   // A memo reading `.length` of a prop-seeded array signal is baked into the
   // constructor as the memo type's zero value (`Count: 0`): the
   // constructor-time memo baker (`computeMemoInitialValueOrNull`,
@@ -210,13 +200,14 @@ export const renderDivergences: RenderDivergences = {
   'loop-row-child-scalar-row-key': { limitation: 'loop-row-child-scalar-row-key' },
 
   // A component loop row with forwarded children over an array prop
-  // (`<Badge key={item.id}>{item.label}</Badge>`): `emitStaticBodyWrappers`
-  // bakes rows only from a resolvable const array source, so the
-  // constructor builds no rows from `in.Items` (and ignores `in.Badges`);
-  // the `<ul>` renders empty. A handler-filled wrapper slice fails at
-  // render time instead: the `…BadgeLl0Ctx` wrapper has no `Label` datum
-  // field for the forwarded children template to read.
-  'loop-row-child-children-prop-array': { limitation: 'loop-row-child-children-prop-array' },
+  // (`props.items.map(row => <Badge …>…</Badge>)`) next to a sibling loop
+  // whose child's plural is the prop's field name (`<Item>` → `Items`):
+  // `isNestedArrayShadowed` gives `Items` to the sibling's `[]ItemInput`
+  // rows, so the prop has no Input field of its own and
+  // `propArrayLoopRowSource` declines. The `<Badge>` loop renders empty.
+  'loop-row-child-children-prop-array-sibling-plural': {
+    limitation: 'loop-row-child-children-prop-array-sibling-plural',
+  },
   // A prop named `__bf_root_value` is read as `$.__bf_root_value`; a
   // lower-case/underscore-led name is an unexported Go field, so rendering
   // fails ("is an unexported field of struct type").

@@ -888,6 +888,20 @@
       }
     }
   ],
+  "conditional-branch-sigil-text": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
   "conditional-nested-loop-precomputed-reactivity": [
     {
       "name": "gen:groups:empty",
@@ -1226,6 +1240,47 @@
       "name": "gen:html:multibyte",
       "props": {
         "html": "日本語"
+      }
+    }
+  ],
+  "data-on-attr-value-shapes": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:extra:empty",
+      "props": {
+        "label": "a\"b&c",
+        "extra": ""
+      }
+    },
+    {
+      "name": "gen:extra:markup",
+      "props": {
+        "label": "a\"b&c",
+        "extra": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:extra:multibyte",
+      "props": {
+        "label": "a\"b&c",
+        "extra": "日本語"
       }
     }
   ],
@@ -1759,6 +1814,14 @@
     }
   ],
   "fractional-number-array-prop": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": []
+      }
+    }
+  ],
+  "fractional-number-array-row-ops": [
     {
       "name": "gen:values:empty",
       "props": {
@@ -2671,6 +2734,34 @@
       }
     }
   ],
+  "number-arithmetic-text-formatting": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
+  "number-division-text": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
   "number-tofixed": [
     {
       "name": "gen:price:negative",
@@ -2712,11 +2803,45 @@
       }
     }
   ],
+  "optional-chain-length-bare-text": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "optional-chain-length-condition": [
     {
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "optional-chain-length-text": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
       }
     }
   ],
