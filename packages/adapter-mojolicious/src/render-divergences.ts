@@ -49,21 +49,6 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
-
-  // A boolean-literal `const` (module or function scope) read as a ternary
-  // test is emitted as an undeclared `$on`, so the template fails to
-  // compile under `use strict`: 'Global symbol "$on" requires explicit
-  // package name'. A string literal is inlined and renders like Hono.
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-
-  // `props.x?.length ?? 0` as a condition operand, over an absent array:
-  // the `member` emitter's `.length` arm (`emitters.ts`) dereferences the
-  // object unconditionally (`scalar(@{$items})`) before the ENCLOSING `??`
-  // ever gets a chance to fall back, so an absent array dies at render time
-  // ("Can't use an undefined value as an ARRAY reference") instead of
-  // falling back to `0`.
-  'optional-chain-length-condition': { limitation: 'mojo-optional-chain-length-unguarded-deref' },
 }
 
 /**
@@ -75,12 +60,4 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // `nullish-coalescing-condition-operand`'s `(todos()?.length ?? 0) > 0`
-  // span is the SAME shape as `optional-chain-length-condition` (a signal
-  // getter instead of a bare prop read), hitting the identical unguarded
-  // `.length` deref whenever `todos`/`initialTodos` is absent. The
-  // fixture's other three `??`-in-condition spans (including its PRIMARY
-  // point, where `initialTodos` is present) render correctly.
-  'nullish-coalescing-condition-operand:empty-todos-no-count': { limitation: 'mojo-optional-chain-length-unguarded-deref' },
-  'nullish-coalescing-condition-operand:gen:initialTodos:absent': { limitation: 'mojo-optional-chain-length-unguarded-deref' },
 }

@@ -3926,6 +3926,27 @@
         "text"
       ]
     },
+    "literal-const-conditional-shapes": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "local-record-union-index": {
       "kinds": [
         "literal",
@@ -5788,6 +5809,18 @@
         "text"
       ]
     },
+    "optional-chain-length-bare-text": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-length-condition": {
       "kinds": [
         "binary",
@@ -5805,6 +5838,22 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "optional-chain-length-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
         "text"
       ]
     },

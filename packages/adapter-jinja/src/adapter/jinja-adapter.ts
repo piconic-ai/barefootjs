@@ -136,6 +136,7 @@ import {
   isLowerableLoopDestructure,
   type ContextConsumer,
   lookupStaticRecordLiteral,
+  lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
   sortComparatorFromArrow,
@@ -2036,14 +2037,12 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
    * shadows it, still inlines.
    */
   private _resolveLiteralConst(name: string): string | null {
-    if (this.scope.isBound(name)) return null
-    const c = (this.localConstants ?? []).find(lc => lc.name === name)
-    if (c?.value === undefined) return null
-    const v = c.value.trim()
-    if (/^-?\d+(\.\d+)?$/.test(v)) return v
-    const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
-    if (strLit) return `'${escapeJinjaSingleQuoted(strLit[1])}'`
-    return null
+    const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
+    if (lit === null) return null
+    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
+    if (lit.kind === 'null') return 'none'
+    return `'${escapeJinjaSingleQuoted(lit.text)}'`
   }
 
   /**

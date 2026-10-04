@@ -40,6 +40,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
@@ -61,10 +65,4 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
-
-  // A boolean-literal `const` (module or function scope) read as a ternary
-  // test never reaches the template: it is read as an unset variable, so
-  // the falsy branch renders (`data-x="b"` for Hono's `data-x="a"`).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
 }
