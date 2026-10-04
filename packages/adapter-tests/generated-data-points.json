@@ -1683,6 +1683,12 @@
       }
     }
   ],
+  "empty-array-condition": [
+    {
+      "name": "gen:tags:absent",
+      "props": {}
+    }
+  ],
   "entries-loop-string-addition": [
     {
       "name": "gen:values:empty",

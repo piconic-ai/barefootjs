@@ -2790,6 +2790,21 @@
         "text"
       ]
     },
+    "empty-array-condition": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "empty-list-branch": {
       "kinds": [
         "array-literal",

@@ -160,6 +160,11 @@ export const renderDivergences: RenderDivergences = {
   // `#ZgotmplZ`.
   'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
 
+  // A bare value as a `{{if}}` test uses Go's built-in truthiness, which
+  // treats an empty slice (and map) as false, where JS treats `[]` as true.
+  // (`!x` goes through `bf_truthy`; the un-negated test does not.)
+  'empty-array-condition': { limitation: 'empty-array-condition' },
+
   // A component loop row over an array prop, keyed by a row field the child
   // takes no prop for (`<Badge key={item.id} label={item.label} />`): the
   // constructor ranges over the child's own Input slice and reads the key

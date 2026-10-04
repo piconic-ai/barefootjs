@@ -2542,6 +2542,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4212,6 +4218,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5840,6 +5852,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7192,6 +7210,12 @@
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
               ]
             },
             {
@@ -12326,6 +12350,12 @@
               "fixture": "data-url-attr-dynamic-value",
               "limitations": [
                 "data-url-attr-value-url-escaped"
+              ]
+            },
+            {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
               ]
             },
             {
