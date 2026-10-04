@@ -2255,11 +2255,11 @@
           ]
         }
       },
-      "data-on-attr-dynamic-value": {
+      "data-url-attr-dynamic-value": {
         "go-template": {
           "kind": "render",
           "limitations": [
-            "data-on-attr-value-script-escaped"
+            "data-url-attr-value-url-escaped"
           ]
         }
       },
@@ -4463,11 +4463,11 @@
           ]
         }
       },
-      "number-addition-text-formatting": {
-        "go-template": {
+      "number-division-text": {
+        "erb": {
           "kind": "render",
           "limitations": [
-            "number-addition-text-formatting"
+            "integer-division-truncated"
           ]
         }
       },
@@ -5939,9 +5939,9 @@
         "description": "A memo over a createQuery value is seeded from `initial` at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-derived-memo.ts"
       },
-      "data-on-attr-dynamic-value": {
-        "description": "A dynamic value on a data-on* attribute renders as plain attribute text",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-on-attr-dynamic-value.ts"
+      "data-url-attr-dynamic-value": {
+        "description": "A dynamic value on a data-src / data-url attribute renders as plain attribute text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-url-attr-dynamic-value.ts"
       },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
@@ -6083,9 +6083,9 @@
         "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
       },
-      "number-addition-text-formatting": {
-        "description": "A large fractional addition in text uses JavaScript number spelling",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-addition-text-formatting.ts"
+      "number-division-text": {
+        "description": "Integer operands divided in text keep the fractional result",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -6422,14 +6422,14 @@
         "BF101"
       ]
     },
-    "data-on-attr-value-script-escaped": {
-      "title": "A dynamic value on a `data-on…` attribute renders as a quoted script string",
+    "data-url-attr-value-url-escaped": {
+      "title": "A dynamic value on a `data-…src/uri/url…` attribute is URL-normalized",
       "kind": "silent",
-      "given": "an element attribute named `data-` followed by a name starting with `on` (`data-on`, `data-onset`) whose value is dynamic (`<div data-on={mode()}>`)",
-      "expected": "the attribute carries the value as plain text (`data-on=\"x\"`), like any other `data-*` attribute",
-      "actual": "renders the value as a script string literal, so the attribute text carries escaped double quotes around it (`\"x\"` instead of `x`, `\"\"` for an empty value), because the template engine escapes a `data-on…` attribute as an event-handler attribute",
+      "given": "an element attribute named `data-` followed by a name containing `src`, `uri` or `url` (`data-src`, `data-url`) whose value is dynamic (`<div data-src={v()}>`)",
+      "expected": "the attribute carries the value as plain text (`data-src=\"a b\"`, `data-url=\"javascript:x\"`), like any other `data-*` attribute",
+      "actual": "renders the value URL-normalized (`a%20b`) and replaces a value with a non-web scheme with `#ZgotmplZ`, because the template engine escapes such an attribute as a URL",
       "fixtures": [
-        "data-on-attr-dynamic-value"
+        "data-url-attr-dynamic-value"
       ],
       "adapters": [
         "go-template"
@@ -6487,6 +6487,19 @@
       ],
       "diagnostics": [
         "BF029"
+      ]
+    },
+    "integer-division-truncated": {
+      "title": "Division of two integers truncates the fractional part",
+      "kind": "silent",
+      "given": "a division whose operands are both integers, rendered as text (`{props.value / 4}` with `value` 1234567890)",
+      "expected": "renders the JavaScript number quotient, fractional part included (`308641972.5`)",
+      "actual": "renders the truncated integer quotient (`308641972`)",
+      "fixtures": [
+        "number-division-text"
+      ],
+      "adapters": [
+        "erb"
       ]
     },
     "jsx-wrapped-in-non-children-prop": {
@@ -6794,19 +6807,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "number-addition-text-formatting": {
-      "title": "Large fractional addition in text",
-      "kind": "silent",
-      "given": "a large numeric prop plus a fractional literal rendered directly in text",
-      "expected": "renders the JavaScript decimal spelling of the result",
-      "actual": "renders the result in exponential notation instead of JavaScript decimal notation",
-      "fixtures": [
-        "number-addition-text-formatting"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "off-subset-callback-body": {

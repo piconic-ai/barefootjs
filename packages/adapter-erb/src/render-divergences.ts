@@ -44,6 +44,9 @@ export const renderDivergences: RenderDivergences = {
   // treats the missing array as empty and renders `0`, where JS reads
   // `undefined` and renders nothing.
   'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
+  // Ruby `/` on two Integers is integer division: `1234567890 / 4` renders
+  // `308641972`, where JS division keeps `.5`.
+  'number-division-text': { limitation: 'integer-division-truncated' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals`

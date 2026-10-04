@@ -1229,6 +1229,47 @@
       }
     }
   ],
+  "data-on-attr-value-shapes": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:extra:empty",
+      "props": {
+        "label": "a\"b&c",
+        "extra": ""
+      }
+    },
+    {
+      "name": "gen:extra:markup",
+      "props": {
+        "label": "a\"b&c",
+        "extra": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:extra:multibyte",
+      "props": {
+        "label": "a\"b&c",
+        "extra": "日本語"
+      }
+    }
+  ],
   "date-catalogued": [
     {
       "name": "gen:createdAt:epoch",
@@ -2539,6 +2580,34 @@
     }
   ],
   "number-addition-text-formatting": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
+  "number-arithmetic-text-formatting": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
+  "number-division-text": [
     {
       "name": "gen:value:zero",
       "props": {

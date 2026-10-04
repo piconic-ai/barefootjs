@@ -226,6 +226,10 @@ func FuncMap() template.FuncMap {
 		// auto-escaper (#2743): see Attr's docstring.
 		"bf_attr": Attr,
 
+		// An attribute NAME emitted as an action, so html/template does not
+		// classify the value by the name (#3309): see AttrName's docstring.
+		"bf_attr_name": AttrName,
+
 		// Reverse the loop-row field-access Go-casing before a whole-item
 		// spread reaches `bf_spread_attrs` (#2490): a row's dot context is
 		// necessarily keyed `ID`/`Title`/`DataKind` (the same casing that
@@ -334,6 +338,23 @@ func Query(base string, triples ...any) string {
 // through String (nil → "").
 func Attr(name string, value any) template.HTMLAttr {
 	return template.HTMLAttr(name + `="` + template.HTMLEscapeString(String(value)) + `"`)
+}
+
+// AttrName returns a compiler-emitted attribute name as a
+// template.HTMLAttr, for use in attribute-name position:
+// `{{bf_attr_name "data-on"}}="{{.Mode}}"`. html/template classifies a
+// literal attribute name to pick the value's escaper, and strips a leading
+// `data-` first, so `data-on…` is escaped as an `on…` event-handler: a
+// string value renders as a quoted JS string literal (`&#34;x&#34;`), where
+// the JS reference (Hono) renders plain text. A name supplied by an action
+// is not classified — html/template's name filter passes an HTMLAttr through
+// unchanged, and the value that follows is escaped as plain attribute text —
+// so the value keeps its ordinary `"{{…}}"` form, whatever its shape. The
+// compiler uses it ONLY for inert `data-on…` names: a real handler attribute
+// (`onclick`) keeps its literal name so its value stays JS-escaped. `name` is
+// a compiler-emitted constant, never data.
+func AttrName(name string) template.HTMLAttr {
+	return template.HTMLAttr(name)
 }
 
 // Date implements the `date` helper (spec/template-helpers.md, #2274) — the
