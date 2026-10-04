@@ -2593,6 +2593,34 @@
       }
     }
   ],
+  "number-arithmetic-text-formatting": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
+  "number-division-text": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
   "number-tofixed": [
     {
       "name": "gen:price:negative",

@@ -5602,6 +5602,42 @@
         "text"
       ]
     },
+    "number-arithmetic-text-formatting": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-division-text": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "number-tofixed": {
       "kinds": [
         "array-method",
