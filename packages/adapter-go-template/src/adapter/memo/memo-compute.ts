@@ -80,6 +80,88 @@ function propsMemberName(e: ParsedExpr): string | null {
 }
 
 /**
+ * A memo-body length read → its receiver, else null. Recognised shapes:
+ *
+ * - `<recv>.length` (non-optional access);
+ * - `<recv>.length ?? 0` / `<recv>?.length ?? 0` (and `|| 0`) — the
+ *   nullish-guarded form (`posts()?.length ?? 0`, a `createQuery` value).
+ *   A nullish receiver yields `0` in JS, which is exactly what the
+ *   constructor's `bf.Length` returns for a nil value, so the guard folds
+ *   away. Only a literal `0` fallback folds: any other fallback would need
+ *   "absent" told apart from "empty", which a Go nil slice can't carry.
+ *
+ * A bare `<recv>?.length` (no fallback) is NOT recognised: an absent
+ * receiver renders `undefined` (empty text) in JS, not `0`.
+ */
+function lengthReadReceiver(e: ParsedExpr): ParsedExpr | null {
+  if (
+    e.kind === 'logical' &&
+    (e.op === '??' || e.op === '||') &&
+    e.right.kind === 'literal' &&
+    e.right.literalType === 'number' &&
+    e.right.value === 0
+  ) {
+    const inner = e.left
+    return inner.kind === 'member' && !inner.computed && inner.property === 'length' ? inner.object : null
+  }
+  return e.kind === 'member' && !e.computed && !e.optional && e.property === 'length' ? e.object : null
+}
+
+/**
+ * Whether a length read's receiver is one the constructor can evaluate: a
+ * zero-arg getter call naming a signal or memo (`items()`, a `createQuery`
+ * value), or a prop reference (`props.items`, a destructured `items`). The
+ * structural half of {@link resolveLengthReadGo}, used where the decision
+ * must be made without emitting (the memo field's Go type classifier,
+ * {@link numericMemoOperands}).
+ */
+function isResolvableLengthRead(
+  ctx: GoEmitContext,
+  e: ParsedExpr,
+  signals: { getter: string }[],
+  propsParams: { name: string }[],
+): boolean {
+  const recv = lengthReadReceiver(e)
+  if (!recv) return false
+  const getter = getterCallName(recv)
+  if (getter) return signals.some(s => s.getter === getter) || (ctx.state.currentMemos ?? []).some(m => m.name === getter)
+  const propName = propNameForPropsBinding(ctx, recv)
+  return propName !== null && propsParams.some(p => p.name === propName)
+}
+
+/**
+ * A memo-body length read ({@link lengthReadReceiver}) → `bf.Length(<recv>)`,
+ * where `<recv>` is the receiver's constructor-time Go value: the seeded
+ * signal's value (`in.Items` for `createSignal(props.items)`, the `initial`
+ * of a `createQuery`), another memo's baked value, or the prop field. So the
+ * baked length is the length of the data the constructor actually received,
+ * not a compile-time constant. `bf.Length` is the runtime helper the
+ * template-position `.length` lowering (`bf_length`) also calls: elements
+ * for a slice/map, UTF-16 code units for a string, and `0` for nil (an
+ * absent prop), never a panic.
+ *
+ * @returns the Go expression, or null when the body is not a length read or
+ *   its receiver does not resolve
+ */
+function resolveLengthReadGo(
+  ctx: GoEmitContext,
+  e: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  propRef: (propName: string) => string,
+  resolving: ReadonlySet<string>,
+): string | null {
+  if (!isResolvableLengthRead(ctx, e, signals, propsParams)) return null
+  const recv = lengthReadReceiver(e)!
+  const getter = getterCallName(recv)
+  const recvGo = getter
+    ? resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
+    : propRef(propNameForPropsBinding(ctx, recv)!)
+  return recvGo === null ? null : `bf.Length(${recvGo})`
+}
+
+/**
  * A prop reference resolved against the component's ACTUAL props-object
  * binding (`ctx.state.propsObjectName` — may be a non-`props` name, or
  * `null` for a destructured signature), else null. Mirrors
@@ -220,6 +302,7 @@ export function numericMemoOperands(
 ): readonly [ParsedExpr, ParsedExpr] | null {
   if (!body || body.kind !== 'binary' || !['+', '-', '*'].includes(body.op)) return null
   const numericAtom = (expr: ParsedExpr): boolean => {
+    if (isResolvableLengthRead(ctx, expr, signals, propsParams)) return true
     const getter = getterCallName(expr)
     if (getter) {
       const type = signals.find(s => s.getter === getter)?.type
@@ -513,6 +596,15 @@ export function memoInitialFromParsedBody(
     const operator = body.op
     const operand = String(body.right.value)
 
+    // <length read> <*|+|-> N — `bf.Length(...)` is a Go `int` call
+    // expression, a single operand under any binary operator (no grouping
+    // needed). Not `/`: Go's integer division truncates where JS yields a
+    // fraction (`3 / 2` is `1.5`), so that body keeps falling through.
+    if (operator !== '/') {
+      const lengthGo = resolveLengthReadGo(ctx, body.left, signals, propsParams, propFallbackVars, propRef, resolving)
+      if (lengthGo !== null) return `${lengthGo} ${operator} ${operand}`
+    }
+
     // getter() * N — return the signal's (or, #2168 memo-chain, another
     // memo's) Go initial value times N. `resolveGetterValueAsGo` checks
     // `signals` first (unchanged behavior for a signal-derived memo like
@@ -582,6 +674,13 @@ export function memoInitialFromParsedBody(
     }
   }
 
+  // () => items().length / items()?.length ?? 0 / props.items.length — the
+  // length of the constructor-time value (`bf.Length(in.Items)`).
+  {
+    const lengthGo = resolveLengthReadGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving)
+    if (lengthGo !== null) return lengthGo
+  }
+
   // () => getter() — just return the signal's (or another memo's, #2168
   // memo-chain) Go initial value.
   const simpleDep = getterCallName(body)
@@ -599,6 +698,8 @@ export function memoInitialFromParsedBody(
   const numericOperands = numericMemoOperands(ctx, body, signals, propsParams)
   if (numericOperands && body.kind === 'binary') {
     const resolveAtom = (expr: ParsedExpr): string | null => {
+      const lengthGo = resolveLengthReadGo(ctx, expr, signals, propsParams, propFallbackVars, propRef, resolving)
+      if (lengthGo !== null) return lengthGo
       const getter = getterCallName(expr)
       if (getter) {
         return resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)

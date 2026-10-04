@@ -2524,12 +2524,6 @@
               ]
             },
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "data-url-attr-dynamic-value",
               "limitations": [
                 "data-url-attr-value-url-escaped"
@@ -2599,12 +2593,6 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "memo-length-prop-seeded-signal",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
               ]
             },
             {
@@ -4212,12 +4200,6 @@
               ]
             },
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "data-url-attr-dynamic-value",
               "limitations": [
                 "data-url-attr-value-url-escaped"
@@ -4371,12 +4353,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "memo-length-prop-seeded-signal",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
               ]
             },
             {
@@ -5864,12 +5840,6 @@
               ]
             },
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "data-url-attr-dynamic-value",
               "limitations": [
                 "data-url-attr-value-url-escaped"
@@ -6804,12 +6774,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -7237,12 +7201,6 @@
               ]
             },
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -7378,12 +7336,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "memo-length-prop-seeded-signal",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
               ]
             },
             {
@@ -11752,12 +11704,6 @@
               ]
             },
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -12970,12 +12916,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13250,12 +13190,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "create-query-derived-memo",
-              "limitations": [
-                "memo-length-of-prop-seeded-array"
-              ]
-            },
             {
               "fixture": "optional-chain-length-bare-text",
               "limitations": [

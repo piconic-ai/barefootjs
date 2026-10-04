@@ -2123,14 +2123,6 @@
           ]
         }
       },
-      "create-query-derived-memo": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "memo-length-of-prop-seeded-array"
-          ]
-        }
-      },
       "data-url-attr-dynamic-value": {
         "go-template": {
           "kind": "render",
@@ -3672,14 +3664,6 @@
             "state": "escapable",
             "twin": "map-array-builder-body-client"
           }
-        }
-      },
-      "memo-length-prop-seeded-signal": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "memo-length-of-prop-seeded-array"
-          ]
         }
       },
       "module-const-arrow-helper": {
@@ -5583,10 +5567,6 @@
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
       },
-      "create-query-derived-memo": {
-        "description": "A memo over a createQuery value is seeded from `initial` at SSR",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-derived-memo.ts"
-      },
       "data-url-attr-dynamic-value": {
         "description": "A dynamic value on a data-src / data-url attribute renders as plain attribute text",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-url-attr-dynamic-value.ts"
@@ -5690,10 +5670,6 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
-      },
-      "memo-length-prop-seeded-signal": {
-        "description": "A memo over the length of a prop-seeded array signal renders the length at SSR",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-length-prop-seeded-signal.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
@@ -6259,20 +6235,6 @@
         "pebble",
         "twig",
         "xslate"
-      ]
-    },
-    "memo-length-of-prop-seeded-array": {
-      "title": "A memo over the length of a prop-seeded array",
-      "kind": "silent",
-      "given": "a memo that reads `.length` of a signal seeded from an array prop (`const [items] = createSignal(props.items)`, `createMemo(() => items().length)`), rendered in text",
-      "expected": "the memo renders the array's length (`2` for a two-item array)",
-      "actual": "renders `0`, the zero value of the memo's type, whatever the array holds",
-      "fixtures": [
-        "create-query-derived-memo",
-        "memo-length-prop-seeded-signal"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "module-scope-helper-call": {
