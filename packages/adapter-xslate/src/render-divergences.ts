@@ -63,10 +63,4 @@ export const renderDivergences: RenderDivergences = {
   // the falsy branch renders (`data-x="b"` for Hono's `data-x="a"`).
   'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
   'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  // Text after a ternary lands at the start of its own template line
-  // (after `: }`). Starting with `:` (after optional spaces), Kolon reads
-  // that line as line code, so ` :y</p>` fails to parse ("Expected a
-  // semicolon or block end"); a bare `:` line parses as an empty statement
-  // and the text silently vanishes.
-  'conditional-then-colon-text': { limitation: 'line-statement-sigil-text-after-conditional' },
 }
