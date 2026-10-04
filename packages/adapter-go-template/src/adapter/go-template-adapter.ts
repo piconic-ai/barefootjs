@@ -2120,7 +2120,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!typeName) return []
     for (const td of this.state.currentTypeDefinitions) {
       if (td.name === typeName) {
-        const fields = this.structFieldsFor(td).filter(f => GO_IDENTIFIER.test(f.tsName))
+        // Every field the datum struct has, quoted source keys included
+        // (`'data-priority'` → `DataPriority`): the wrapper copies each one
+        // by the same `structFieldNamePairs` name, and a destructured row
+        // binding (#3313) may read any of them.
+        const fields = this.structFieldsFor(td)
         if (fields.length > 0) return fields
         break
       }
