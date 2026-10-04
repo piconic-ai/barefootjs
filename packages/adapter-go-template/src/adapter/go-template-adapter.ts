@@ -126,6 +126,7 @@ import {
   goPropDefault,
   applyGoFallback,
   goLiteral,
+  goAttrNameToken,
 } from "./lib/go-emit.ts"
 import type {
   GoRenderCtx,
@@ -230,6 +231,10 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
   const first = keySet(rows[0])
   return rows.every(row => keySet(row) === first)
 }
+
+/** Binary operators whose Go lowering yields a boxed number (`+` may also be
+ * a string concat, which `bf_string` passes through unchanged). */
+const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
 
 /**
  * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
@@ -5855,7 +5860,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const finalExpr =
       this.textNillablePropNameOf(classify.parsed) !== null
         ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : this.numericMemoTextExpression(goExpr, classify.parsed)
+        : this.numericTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -6732,13 +6737,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /** One text-sink decision for direct expressions and template interpolations.
-   * Numeric values remain boxed everywhere outside text rendering. */
-  private numericMemoTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
-    if (expr?.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return goExpr
+   * Numeric values remain boxed everywhere outside text rendering. A value
+   * that can be a `float64` here — a numeric memo read, or an arithmetic
+   * expression (`props.value + 0.5`, #3320) whose `bf_add`/`bf_div`/… result
+   * is boxed `any` — prints through `bf_string`, whose `numberString` spells
+   * it as JS does (`1234567890.5`); html/template's own `fmt.Sprint` would
+   * print `1.2345678905e+09`. `bf_string` leaves an int or a string (a
+   * string-concat `+`) unchanged. */
+  private numericTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
+    return this.isNumericTextValue(expr) ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+  }
+
+  private isNumericTextValue(expr: ParsedExpr | undefined): boolean {
+    if (!expr) return false
+    if (expr.kind === 'binary') return ARITHMETIC_OPS.has(expr.op)
+    if (expr.kind === 'unary') return expr.op === '-' || expr.op === '+'
+    if (expr.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return false
     const name = this.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
     const memo = this.state.currentMemos.find(m => m.name === name)
-    return memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams)
-      ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+    return !!memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams) !== null
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
@@ -6752,7 +6769,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // template parse error. Same `isTemplateFragment` guard as
         // `renderExpression`.
         const e = emit(part.expr)
-        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericMemoTextExpression(e, part.expr)}}}`
+        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericTextExpression(e, part.expr)}}}`
       }
     }
     return result
@@ -9662,6 +9679,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return `${preamble}{{if ${goCond}}}${body}{{end}}`
       }
       const parsed = value.parsed ?? parseExpression(value.expr.trim())
+      // #3309: a `data-on…` name is emitted as a `bf_attr_name` action so
+      // html/template escapes the value below as plain text, not as script.
+      const nameTok = goAttrNameToken(name)
       if (parsed.kind === 'conditional') {
         // A ternary whose falsy branch is `undefined` / `null` OMITS the
         // attribute entirely (`aria-current={props.isActive ? 'page' :
@@ -9693,7 +9713,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const attrConsequent = lowerRegisteredAttrCall(this.emitCtx, name, parsed.consequent)
           const body = attrConsequent !== null
             ? attrConsequent
-            : `${name}="{{${this.renderParsedExpr(parsed.consequent)}}}"`
+            : `${nameTok}="{{${this.renderParsedExpr(parsed.consequent)}}}"`
           return `${preamble}{{if ${goCond}}}${body}{{end}}`
         }
         // #2743 follow-up (pullfrog review on #2841): a `query` guard-list
@@ -9707,11 +9727,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // #2335: the ternary lowers to the pipeline-position `(bf_ternary …)`
         // value (no longer a `{{if}}…{{end}}` fragment), so wrap it in a single
         // `{{…}}` action inside the attribute string — `name="{{bf_ternary …}}"`.
-        return `${name}="{{${this.renderParsedExpr(parsed)}}}"`
+        return `${nameTok}="{{${this.renderParsedExpr(parsed)}}}"`
       }
       if (parsed.kind === 'template-literal') {
         // Inline Go template syntax with embedded `{{...}}` actions.
-        return `${name}="${this.renderParsedExpr(parsed)}"`
+        return `${nameTok}="${this.renderParsedExpr(parsed)}"`
       }
       // #2743: a `query` guard-list value (queryHref) emits the WHOLE
       // attribute via `bf_attr` (template.HTMLAttr) so html/template's
@@ -9735,13 +9755,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           : bareId
       if (/^[A-Za-z_$][\w$]*$/.test(propName) && this.state.nillablePropNames.has(propName)) {
         const field = `.${capitalizeFieldName(propName)}`
-        return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
+        return `{{if ne ${field} nil}}${nameTok}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
       }
       // The same omission for a bare read of a nullable signal (`title={s()}`
       // with `s()` undefined, #3304): its `interface{}` field holds `nil`.
       if (nullableSignalAttrGetter(value.parsed, this.state.nillableSignalGetters) !== null) {
         const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
-        return `{{if ne (${goExpr}) nil}}${name}="{{${goExpr}}}"{{end}}`
+        return `{{if ne (${goExpr}) nil}}${nameTok}="{{${goExpr}}}"{{end}}`
       }
       // A closed-type `{...rest}` key (#3057) reads off the rest bag's
       // `map[string]any` field via `bf_get` (see the `restPropsName` member-
@@ -9756,7 +9776,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         /^[A-Za-z_$][\w$]*$/.test(bareId.slice(this.state.restPropsName.length + 1))
       ) {
         const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
-        return `{{if ne (${goExpr}) nil}}${name}="{{${goExpr}}}"{{end}}`
+        return `{{if ne (${goExpr}) nil}}${nameTok}="{{${goExpr}}}"{{end}}`
       }
       // Lower once; if the result is already a self-contained action block (e.g.
       // an inlined `sortClass(k)` → `{{if …}}…{{end}}`), embed it as-is rather
@@ -9764,8 +9784,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const exprOut: { parsed?: ParsedExpr } = {}
       const go = this.convertExpressionToGo(value.expr, exprOut, value.parsed)
       return this.isTemplateFragment(go, exprOut.parsed?.kind)
-        ? `${name}="${go}"`
-        : `${name}="{{${go}}}"`
+        ? `${nameTok}="${go}"`
+        : `${nameTok}="{{${go}}}"`
     },
     emitBooleanAttr: (_value, name) => name,
     // Spread attributes (`<div {...attrs()} />`) lower through the
@@ -9851,7 +9871,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       return `{{bf_spread_attrs .${value.slotId}}}`
     },
-    emitTemplate: (value, name) => `${name}="${this.renderTemplateLiteralParts(value.parts)}"`,
+    emitTemplate: (value, name) => `${goAttrNameToken(name)}="${this.renderTemplateLiteralParts(value.parts)}"`,
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
