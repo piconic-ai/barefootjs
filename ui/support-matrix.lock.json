@@ -1815,6 +1815,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -4446,9 +4452,9 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-prop",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "fractional-number-array-prop"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -5046,12 +5052,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
@@ -5625,12 +5625,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -6272,6 +6266,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -6713,12 +6713,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -7175,12 +7169,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -7891,9 +7879,9 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-prop",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "fractional-number-array-prop"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -8341,12 +8329,6 @@
               ]
             },
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -8764,12 +8746,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
               ]
             },
             {
@@ -11194,7 +11170,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -11208,10 +11193,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "memo",
-        "description": "Derived value with createMemo",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo.ts",
-        "code": "count() * 2"
+        "fixture": "fractional-number-array-row-ops",
+        "description": "Fractional number-array elements work in row comparisons and arithmetic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-row-ops.ts",
+        "code": "value * 2"
       }
     },
     "binary:+": {
@@ -12658,6 +12643,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -13661,12 +13652,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "conditional-then-percent-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
-            {
               "fixture": "conditional-then-text",
               "limitations": [
                 "text-adjacent-conditional-whitespace"
@@ -13924,12 +13909,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "conditional-then-colon-text",
-              "limitations": [
-                "line-statement-sigil-text-after-conditional"
-              ]
-            },
             {
               "fixture": "conditional-then-text",
               "limitations": [
