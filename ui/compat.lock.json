@@ -4207,14 +4207,6 @@
           ]
         }
       },
-      "negated-empty-array-condition": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "negated-empty-array-condition"
-          ]
-        }
-      },
       "number-division-text": {
         "erb": {
           "kind": "render",
@@ -5691,10 +5683,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "negated-empty-array-condition": {
-        "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
-      },
       "number-division-text": {
         "description": "Integer operands divided in text keep the fractional result",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts"
@@ -6289,19 +6277,6 @@
         "BF013"
       ],
       "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
-    },
-    "negated-empty-array-condition": {
-      "title": "Negated empty array as a conditional test",
-      "kind": "silent",
-      "given": "a ternary whose test negates a value that is an empty array (`{!tags() ? 'no tags' : 'has tags'}` with `tags()` returning `[]`)",
-      "expected": "an empty array is truthy, so the test is false and the second branch renders (`has tags`)",
-      "actual": "renders the first branch, treating the empty array as falsy",
-      "fixtures": [
-        "negated-empty-array-condition"
-      ],
-      "adapters": [
-        "go-template"
-      ]
     },
     "nested-callback-in-filter-predicate": {
       "title": "Nested higher-order callback inside a filter predicate",

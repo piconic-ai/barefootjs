@@ -2626,12 +2626,6 @@
               ]
             },
             {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4386,12 +4380,6 @@
               ]
             },
             {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5948,12 +5936,6 @@
               ]
             },
             {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7339,12 +7321,6 @@
               ]
             },
             {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-bare-text",
               "limitations": [
                 "optional-chain-length-absent-renders-zero"
@@ -8693,12 +8669,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -12425,12 +12395,6 @@
               ]
             },
             {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13495,12 +13459,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {

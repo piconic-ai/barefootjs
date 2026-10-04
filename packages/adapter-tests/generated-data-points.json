@@ -2487,6 +2487,390 @@
       "props": {}
     }
   ],
+  "negated-empty-array-condition-shapes": [
+    {
+      "name": "gen:tags:absent",
+      "props": {
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:missing:empty",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ],
+        "missing": []
+      }
+    },
+    {
+      "name": "gen:full:absent",
+      "props": {
+        "tags": [],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:full:empty",
+      "props": {
+        "tags": [],
+        "full": [],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:meta:absent",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "label": "",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "<b>&\"'</b>",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "日本語",
+        "count": 0,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:absent",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": -7,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 1234567890,
+        "on": false,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": true,
+        "rows": [
+          {
+            "name": "empty",
+            "tags": []
+          },
+          {
+            "name": "absent"
+          },
+          {
+            "name": "one",
+            "tags": [
+              "x"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:absent",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "tags": [],
+        "full": [
+          "a"
+        ],
+        "meta": {},
+        "label": "",
+        "count": 0,
+        "on": false,
+        "rows": []
+      }
+    }
+  ],
   "nested-child-negated-prop": [
     {
       "name": "gen:v:empty",

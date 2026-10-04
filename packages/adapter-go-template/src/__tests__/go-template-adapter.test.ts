@@ -353,8 +353,19 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
     expect(render("n >= 10 ? 'big' : 'small'")).toBe('{{(bf_ternary (ge .N 10) "big" "small")}}')
   })
 
-  test('a negation test is already a bool — no bf_truthy wrap', () => {
-    expect(render("!open ? 'x' : 'y'")).toBe('{{(bf_ternary (not .Open) "x" "y")}}')
+  test('a negation test is already a bool — no outer bf_truthy wrap', () => {
+    expect(render("!open ? 'x' : 'y'")).toBe('{{(bf_ternary (not (bf_truthy .Open)) "x" "y")}}')
+  })
+
+  // JS `!x` is `!Boolean(x)`. Go's `not` reads an empty slice/map as false,
+  // so a non-bool operand is coerced through `bf_truthy` first (an empty
+  // `[]` stays truthy, an absent/nil value falsy); an operand that already
+  // lowers to a Go bool keeps the bare `not`.
+  test('`!x` coerces a non-bool operand through bf_truthy; a bool-shaped operand keeps bare not', () => {
+    expect(render('!tags')).toBe('{{not (bf_truthy .Tags)}}')
+    expect(render('!!tags')).toBe('{{not (not (bf_truthy .Tags))}}')
+    expect(render('!(n === 1)')).toBe('{{not (eq .N 1)}}')
+    expect(render('!(a && b)')).toBe('{{not (bf_truthy (and .A .B))}}')
   })
 
   test('a right-folded chain nests as (bf_ternary … (bf_ternary …))', () => {
@@ -2826,7 +2837,7 @@ export function TodoList() {
 }
 `)
       expect(result.template).toContain('{{range')
-      expect(result.template).toContain('not .Done')
+      expect(result.template).toContain('not (bf_truthy .Done)')
       expect(result.template).toContain('Item')
     })
 
@@ -3012,7 +3023,7 @@ export function TodoList() {
 }
 `, adapter)
       expect(result.template).toContain('gt (len (bf_filter_eval .Tags')
-      expect(result.template).toContain('{{if not .Done}}')
+      expect(result.template).toContain('{{if not (bf_truthy .Done)}}')
     })
 
     test('nested higher-order in filter predicate + /* @client */ suppresses BF101', () => {
@@ -6336,12 +6347,12 @@ export function TodoItem(props: Props) {
     // loop param verbatim (`todo={todo}` → `Todo`, `capitalizeFieldName('todo')`
     // — the SAME derivation `generatePropsStruct` uses for every other
     // prop-to-field mapping), not hardcoded.
-    expect(template).toContain('not .Todo.Done')
+    expect(template).toContain('not (bf_truthy .Todo.Done)')
     expect(template).toContain('(.Todo.Done)')
     // The bare (unqualified) form must not survive the fix — this is the
     // literal string `html/template` failed to resolve pre-fix
     // (`can't evaluate field Done in type TodoItemProps`).
-    expect(template).not.toContain('not .Done')
+    expect(template).not.toContain('bf_truthy .Done)')
     expect(template).not.toContain('(.Done)')
     // Still ranges the wrapper slice (#2130's retarget is untouched).
     expect(template).toContain(':= .TodoItems}}')

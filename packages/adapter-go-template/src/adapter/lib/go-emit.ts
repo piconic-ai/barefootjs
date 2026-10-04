@@ -29,6 +29,42 @@ export function wrapIfMultiToken(rendered: string): string {
   return rendered
 }
 
+/** JS comparison operators — each lowers to a Go builtin (`eq`, `lt`, …) that
+ *  already returns a real bool. */
+const BOOL_COMPARISON_OPS: ReadonlySet<string> = new Set([
+  '==', '===', '!=', '!==', '<', '>', '<=', '>=',
+])
+
+/**
+ * Whether `expr` lowers to a real Go bool on its own: a comparison, a `!x`
+ * (see `lowerJsNot`), or a bool literal. `&&` / `||` do NOT qualify: Go's
+ * `and` / `or` return one of their operands, not a bool.
+ */
+export function isGoBoolShaped(expr: ParsedExpr): boolean {
+  return (
+    (expr.kind === 'binary' && BOOL_COMPARISON_OPS.has(expr.op)) ||
+    (expr.kind === 'unary' && expr.op === '!') ||
+    (expr.kind === 'literal' && expr.literalType === 'boolean')
+  )
+}
+
+/**
+ * Lower JS `!x`, given the operand's ParsedExpr and its already-rendered Go
+ * form. The one decision every `!` emitter (value, condition, and filter-
+ * predicate positions) shares.
+ *
+ * Go's built-in `not` (like `{{if}}`) reads an EMPTY slice or map as false,
+ * where JS reads `[]` / `{}` as true — so `!tags()` on `[]` would take the
+ * wrong branch. A non-bool operand therefore goes through `bf_truthy` (the
+ * runtime's JS `Boolean(x)`, which keeps an absent/nil value falsy while a
+ * non-nil empty slice/map is truthy) before `not` flips it. An operand that
+ * is already a Go bool keeps the bare `not`.
+ */
+export function lowerJsNot(argument: ParsedExpr, rendered: string): string {
+  if (isGoBoolShaped(argument)) return `not ${wrapIfMultiToken(rendered)}`
+  return `not (bf_truthy ${wrapIfMultiToken(rendered)})`
+}
+
 /**
  * Whether `name` is an inert `data-on…` attribute that html/template would
  * escape as JavaScript. Its `attrType` strips ONE leading `data-` before

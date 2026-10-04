@@ -5388,6 +5388,30 @@
         "text"
       ]
     },
+    "negated-empty-array-condition-shapes": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "nested-child-negated-prop": {
       "kinds": [
         "call",
