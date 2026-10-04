@@ -3953,8 +3953,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *
    * Recognized: the prop itself (`props.items`, or a destructured `items` /
    * `{ items: rows }`) whose declared type is an array of objects that
-   * resolves to a generated Go struct. A prop whose Go field the loop's own
-   * `<Child>s` field shadows (`isNestedArrayShadowed`), a deeper path
+   * resolves to a generated Go struct. A prop whose Go field any of the
+   * component's `<Child>s` fields shadows (`isNestedArrayShadowed`), a deeper path
    * (`props.data.items`) or a local alias of the prop stay on the existing
    * paths.
    */
@@ -3982,7 +3982,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       param = params.find(p => (p.sourceName ?? p.name) === arr.property)
     }
     if (!param) return null
-    if (this.isNestedArrayShadowed(param, this.propDerivedNestedArrayFields([nested]))) return null
+    // The same component-wide answer the Input/Props emitters use: a SIBLING
+    // loop's plural (`<Item>` → `Items`) can claim this prop's field too, and
+    // then `in.Items` holds that loop's `ItemInput` rows, not this datum.
+    if (this.isNestedArrayShadowed(param, this.propDerivedNestedArrayFields(findNestedComponents(ir.root)))) return null
     const arrayType = param.type
     if (arrayType?.kind !== 'array' || !arrayType.elementType) return null
     const elementGoType = typeInfoToGo(this.emitCtx, arrayType.elementType)

@@ -879,6 +879,7 @@ import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row
 // row param, empty / absent array).
 import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-children-prop-array'
 import { fixture as loopRowChildChildrenPropArrayShapes } from './loop-row-child-children-prop-array-shapes'
+import { fixture as loopRowChildChildrenPropArraySiblingPlural } from './loop-row-child-children-prop-array-sibling-plural'
 // A literal-initialized `const` read as a conditional's test (registry:
 // `literal-const-conditional-test`).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
@@ -1437,6 +1438,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildScalarRowKey,
   loopRowChildChildrenPropArray,
   loopRowChildChildrenPropArrayShapes,
+  loopRowChildChildrenPropArraySiblingPlural,
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
