@@ -200,13 +200,14 @@ export const renderDivergences: RenderDivergences = {
   'loop-row-child-scalar-row-key': { limitation: 'loop-row-child-scalar-row-key' },
 
   // A component loop row with forwarded children over an array prop
-  // (`<Badge key={item.id}>{item.label}</Badge>`): `emitStaticBodyWrappers`
-  // bakes rows only from a resolvable const array source, so the
-  // constructor builds no rows from `in.Items` (and ignores `in.Badges`);
-  // the `<ul>` renders empty. A handler-filled wrapper slice fails at
-  // render time instead: the `…BadgeLl0Ctx` wrapper has no `Label` datum
-  // field for the forwarded children template to read.
-  'loop-row-child-children-prop-array': { limitation: 'loop-row-child-children-prop-array' },
+  // (`props.items.map(row => <Badge …>…</Badge>)`) next to a sibling loop
+  // whose child's plural is the prop's field name (`<Item>` → `Items`):
+  // `isNestedArrayShadowed` gives `Items` to the sibling's `[]ItemInput`
+  // rows, so the prop has no Input field of its own and
+  // `propArrayLoopRowSource` declines. The `<Badge>` loop renders empty.
+  'loop-row-child-children-prop-array-sibling-plural': {
+    limitation: 'loop-row-child-children-prop-array-sibling-plural',
+  },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

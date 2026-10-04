@@ -4494,9 +4494,9 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
-                "loop-row-child-children-prop-array"
+                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {
@@ -7831,9 +7831,9 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
-                "loop-row-child-children-prop-array"
+                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {
