@@ -161,7 +161,7 @@ import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, numericMemoOperands } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -5186,7 +5186,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // The shared arithmetic runtime returns an integer or float as needed;
     // keep its boxed result rather than truncating it to an int field.
-    if (numericMemoOperands(this.emitCtx, memo.parsed, signals, [...propsParamMap.values()])) return 'interface{}'
+    if (isBoxedNumericMemoBody(this.emitCtx, memo.parsed, signals, [...propsParamMap.values()])) return 'interface{}'
 
     // Arithmetic operators → likely a number.
     if (memo.computation.includes('*') || memo.computation.includes('/') ||
@@ -6865,7 +6865,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (expr.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return false
     const name = this.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
     const memo = this.state.currentMemos.find(m => m.name === name)
-    return !!memo && numericMemoOperands(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams) !== null
+    return !!memo && isBoxedNumericMemoBody(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams)
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {

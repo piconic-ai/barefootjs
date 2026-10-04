@@ -5095,6 +5095,7 @@
         "binary:*",
         "binary:+",
         "binary:-",
+        "binary:/",
         "literal:number",
         "logical:??",
         "member:optional"

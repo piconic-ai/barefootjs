@@ -316,6 +316,60 @@ export function numericMemoOperands(
   return numericAtom(body.left) && numericAtom(body.right) ? [body.left, body.right] : null
 }
 
+/** `+ - * /` → the shared arithmetic runtime helper that boxes its result. */
+const BOXED_ARITHMETIC_HELPER: Readonly<Record<string, string>> = { '+': 'Add', '-': 'Sub', '*': 'Mul', '/': 'Div' }
+
+/**
+ * The memo a `<getter()> <op> <int literal>` body chains onto, when that
+ * memo's constructor value is boxed ({@link isBoxedNumericMemoBody}), else
+ * null. Such a body can't splice the dep in bare (`bf.Add(…) * 2` is `any *
+ * int`), so it goes through the same runtime helper (`bf.Mul(bf.Add(…), 2)`).
+ */
+function boxedLiteralArithmeticDep(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  signals: { getter: string; type?: TypeInfo }[],
+  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
+  seen: ReadonlySet<string>,
+): string | null {
+  if (!body || body.kind !== 'binary' || !(body.op in BOXED_ARITHMETIC_HELPER)) return null
+  const right = body.right
+  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
+  if (!Number.isInteger(right.value) || right.value < 0) return null
+  // JS `x / 0` is `Infinity`; `bf.Div` returns 0. Not the same value.
+  if (body.op === '/' && right.value === 0) return null
+  const dep = getterCallName(body.left)
+  if (!dep || seen.has(dep) || signals.some(s => s.getter === dep)) return null
+  const memo = ctx.state.currentMemos?.find(m => m.name === dep)
+  if (!memo?.parsed) return null
+  return isBoxedNumericMemoBody(ctx, memo.parsed, signals, propsParams, new Set([...seen, dep])) ? dep : null
+}
+
+/**
+ * Whether a memo body's constructor value is the shared arithmetic runtime's
+ * boxed `any` (`bf.Add` / `bf.Sub` / `bf.Mul` / `bf.Div`) rather than a Go
+ * number. Two shapes:
+ *
+ * - two numeric operands ({@link numericMemoOperands}: `list().length +
+ *   count()` → `bf.Add(…)`);
+ * - literal arithmetic on a memo that is itself boxed (`total() * 2` →
+ *   `bf.Mul(<total>, 2)`), recursively along the memo chain.
+ *
+ * The one decision both the memo field's Go type (`interface{}`, so the
+ * boxed value assigns) and the constructor emission
+ * ({@link memoInitialFromParsedBody}) consult, so they can't disagree.
+ */
+export function isBoxedNumericMemoBody(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  signals: { getter: string; type?: TypeInfo }[],
+  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
+  seen: ReadonlySet<string> = new Set(),
+): boolean {
+  if (numericMemoOperands(ctx, body, signals, propsParams)) return true
+  return boxedLiteralArithmeticDep(ctx, body, signals, propsParams, seen) !== null
+}
+
 /**
  * Structural matcher for the common expression-bodied memo shapes, driven by
  * the analyzer-attached `MemoInfo.parsed` (the memo arrow's body): `getter() ===
@@ -613,6 +667,16 @@ export function memoInitialFromParsedBody(
     // ANOTHER memo (`label = createMemo(() => doubled() + 1)`), which this
     // branch previously couldn't recognize at all (a signals-only lookup),
     // silently folding to the Go zero value instead of "7".
+    // getter() <op> N over a BOXED memo (`total() * 2` where `total` is
+    // `bf.Add(…)`): Go has no `any * int`, so the shared runtime helper does
+    // the arithmetic (`bf.Mul(<total>, 2)`), matching the `interface{}`
+    // field type `isBoxedNumericMemoBody` gives this memo.
+    const boxedDep = boxedLiteralArithmeticDep(ctx, body, signals, propsParams, new Set())
+    if (boxedDep) {
+      const depInitial = resolveGetterValueAsGo(ctx, boxedDep, signals, propsParams, propFallbackVars, resolving)
+      return depInitial === null ? null : `bf.${BOXED_ARITHMETIC_HELPER[operator]}(${depInitial}, ${operand})`
+    }
+
     const depName = getterCallName(body.left)
     if (depName) {
       const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
