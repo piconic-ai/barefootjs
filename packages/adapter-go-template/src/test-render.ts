@@ -9,7 +9,8 @@ import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
-import { capitalizeFieldName, goFieldNameForKey, loopKeyToGoFieldPath } from './adapter/lib/go-naming.ts'
+import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
+import { goItemAccessor, loopKeyToGoFieldPath, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import type { NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
@@ -332,7 +333,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // contract: `inputLines` complete the caller's Input before the
     // constructor runs, `propsLines` fill a handler-populated Props slice
     // after it — see buildDynamicChildLoopSeeding's docstring.
-    const { inputLines, propsLines, needsFmt } = buildDynamicChildLoopSeeding(ir, template, props)
+    const { inputLines, propsLines, needsFmt } = buildDynamicChildLoopSeeding(ir, template, goTypes, props)
 
     // main.go — render program
     const mainGo = `package main
@@ -696,17 +697,10 @@ function resolveNestedPropDerivedArrayValue(
   return Array.isArray(value) ? value : null
 }
 
-/** JS property name a loop-body child prop's value reads off the loop row (`entry.id` → `'id'`), or null for anything else. TS-side counterpart of `goItemExprForLoopProp`, for baking a literal from an actual JS row instead of emitting a Go expression over a ranged `item`. */
-function loopItemPropertyName(parsed: ParsedExpr, loopParam: string): string | null {
-  if (
-    parsed.kind === 'member' &&
-    !parsed.computed &&
-    parsed.object.kind === 'identifier' &&
-    parsed.object.name === loopParam
-  ) {
-    return parsed.property
-  }
-  return null
+/** JS property name a loop-body child prop's value reads off the loop row (`entry.id` → `'id'`, or a name destructured from it), or null for anything else. TS-side counterpart of `goItemExprForLoopProp`, for baking a literal from an actual JS row instead of emitting a Go expression over a ranged `item`. */
+function loopItemPropertyName(parsed: ParsedExpr, row: LoopRowBinding): string | null {
+  const path = rowItemPath(parsed, row)
+  return path?.length === 1 && path[0].kind === 'field' ? path[0].key : null
 }
 
 /** Go scalar literal for a JS value, or null when `value` isn't a scalar this harness's baked rows need to express. */
@@ -723,19 +717,13 @@ function goScalarLiteral(value: unknown): string | null {
  * (`variant={entry.variant}` → `item.Variant`, #2630 — the
  * `static-array-from-props-with-component-precomputed` fixture's `<Tag
  * id={entry.id} variant={entry.variant} />`). `null` for anything else (a
- * prop that doesn't derive from the loop row at all).
+ * prop that doesn't derive from the loop row at all). A name destructured
+ * from the row (`({ tone }) => … tone={tone}`) resolves the same way, through
+ * the shared `rowItemPath` (#3313).
  */
-function goItemExprForLoopProp(parsed: ParsedExpr, loopParam: string): string | null {
-  if (parsed.kind === 'identifier' && parsed.name === loopParam) return 'item'
-  if (
-    parsed.kind === 'member' &&
-    !parsed.computed &&
-    parsed.object.kind === 'identifier' &&
-    parsed.object.name === loopParam
-  ) {
-    return `item.${capitalizeFieldName(parsed.property)}`
-  }
-  return null
+function goItemExprForLoopProp(parsed: ParsedExpr, row: LoopRowBinding): string | null {
+  const path = rowItemPath(parsed, row)
+  return path ? goItemAccessor(path) : null
 }
 
 /**
@@ -781,8 +769,8 @@ function goOuterSignalExprForLoopProp(parsed: ParsedExpr, signalGetters: Readonl
  *        `<Name>Input{...}` literal — the same rows a real handler would
  *        derive from `data.entries` itself, computed here in TS.
  *  - `propsLines` — statements run AFTER `NewXxxProps`, for a
- *    **signal-backed dynamic** loop (`isDynamic && !isPropDerived`, e.g.
- *    `todos().map(...)`). Here the constructor only seeds the loop's DATUM
+ *    **signal- or memo-backed dynamic** loop (`isDynamic && !isPropDerived`,
+ *    e.g. `todos().map(...)`, `shown().map(...)`). Here the constructor only seeds the loop's DATUM
  *    slice (`.Todos`); the child Props slice the template ranges over
  *    (`.TodoItems`) is documented as handler-populated and never touched by
  *    `NewXxxProps` at all (see `emitNewPropsDocComment`'s NOTE), so the
@@ -807,7 +795,8 @@ function goOuterSignalExprForLoopProp(parsed: ParsedExpr, signalGetters: Readonl
  *    same-named `TagInput` fields).
  *
  * Deliberately narrow otherwise: only fires for a loop whose (a) array
- * source resolves to a signal getter (dynamic) or a direct/one-more-hop prop
+ * source resolves to a signal getter, or a memo whose seeded Go field is a
+ * typed slice (dynamic), or a direct/one-more-hop prop
  * reference (prop-derived) — never a `call`/member chain beyond what each
  * shape's own resolver recognizes, (b) generated Go TEMPLATE text actually
  * ranges over `.<Name>s` (a plain substring check on GENERATED GO OUTPUT —
@@ -829,9 +818,18 @@ function goOuterSignalExprForLoopProp(parsed: ParsedExpr, signalGetters: Readonl
 function buildDynamicChildLoopSeeding(
   ir: ComponentIR,
   template: string,
+  goTypes: string,
   props?: Record<string, unknown>,
 ): { inputLines: string[]; propsLines: string[]; needsFmt: boolean } {
   const signalGetters = new Set(ir.metadata.signals.map(s => s.getter))
+  // A memo's seeded Go field is a datum source just like a signal's, when it
+  // is a typed slice (an untyped memo's `interface{}` field can't be ranged).
+  const datumGetters = new Set([
+    ...signalGetters,
+    ...ir.metadata.memos
+      .map(m => m.name)
+      .filter(name => new RegExp(`\\n\\t${capitalizeFieldName(name)} \\[\\]`).test(goTypes)),
+  ])
   const propsParams = ir.metadata.propsParams
   const inputLines: string[] = []
   const propsLines: string[] = []
@@ -839,6 +837,7 @@ function buildDynamicChildLoopSeeding(
   for (const nested of findNestedComponents(ir.root) as NestedComponentInfo[]) {
     if (nested.bodyChildren && nested.bodyChildren.length > 0) continue
     if (!nested.loopParam) continue
+    const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
     if (!template.includes(`:= .${nested.name}s}}`)) continue
 
     if (nested.isPropDerived) {
@@ -853,7 +852,7 @@ function buildDynamicChildLoopSeeding(
         // One hop (#2630): derive each child Input row from the driving
         // prop's own (already caller-populated) Go field.
         const inputFields = loopRowChildInputFields(nested, parsed =>
-          goItemExprForLoopProp(parsed, nested.loopParam!),
+          goItemExprForLoopProp(parsed, row),
         )
         if (!inputFields) continue
         const datum = `in.${capitalizeFieldName(datumField)}`
@@ -872,7 +871,7 @@ function buildDynamicChildLoopSeeding(
       for (const item of nestedArrayValue) {
         if (!item || typeof item !== 'object') break
         const fields = loopRowChildInputFields(nested, parsed => {
-          const propertyName = loopItemPropertyName(parsed, nested.loopParam!)
+          const propertyName = loopItemPropertyName(parsed, row)
           return propertyName === null ? null : goScalarLiteral((item as Record<string, unknown>)[propertyName])
         })
         if (!fields) break
@@ -884,10 +883,10 @@ function buildDynamicChildLoopSeeding(
     }
 
     if (!nested.isDynamic) continue
-    const datumField = findBaseSignalGetter(nested.loopArrayParsed, signalGetters)
+    const datumField = findBaseSignalGetter(nested.loopArrayParsed, datumGetters)
     if (!datumField) continue
     const inputFields = loopRowChildInputFields(nested, parsed =>
-      goItemExprForLoopProp(parsed, nested.loopParam!) ?? goOuterSignalExprForLoopProp(parsed, signalGetters),
+      goItemExprForLoopProp(parsed, row) ?? goOuterSignalExprForLoopProp(parsed, signalGetters),
     )
     if (!inputFields) continue
 
@@ -899,7 +898,7 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t\tprops.${nested.name}s[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
     propsLines.push(`\t\tprops.${nested.name}s[i].BfParent = props.ScopeID`)
     propsLines.push(`\t\tprops.${nested.name}s[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
-    const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+    const keyField = loopKeyToGoFieldPath(nested.loopKey, row)
     if (keyField) {
       propsLines.push(`\t\tprops.${nested.name}s[i].BfDataKey = fmt.Sprint(${keyField})`)
       needsFmt = true

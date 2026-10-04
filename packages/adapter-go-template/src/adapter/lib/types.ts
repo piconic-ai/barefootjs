@@ -10,6 +10,7 @@ import type {
   IRLoopChildComponent,
   IRNode,
   IRProp,
+  LoopParamBinding,
   ParsedExpr,
   TypeInfo,
 } from '@barefootjs/jsx'
@@ -50,6 +51,10 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
    *  name (`item`), so the loop-child init can stamp `data-key` per item. */
   loopKey?: string
   loopParam?: string
+  /** The loop param's destructured bindings (`({ id, tone }) => …`), when
+   *  it is a destructure: `loopParam` then holds the raw pattern text, and a
+   *  row read resolves through these (`lib/loop-row-path.ts`). */
+  loopParamBindings?: readonly LoopParamBinding[]
   /** The loop body component's JSX children. Non-empty when those children need
    *  a companion define rendered via `bf_with_children` + `bf_tmpl`. */
   bodyChildren?: IRNode[]
