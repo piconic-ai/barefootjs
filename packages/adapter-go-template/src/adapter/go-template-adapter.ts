@@ -107,9 +107,9 @@ import {
   capitalizeFieldName,
   goFieldNameForKey,
   slotIdToFieldSuffix,
-  loopKeyToGoFieldPath,
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
+import { loopKeyToGoFieldPath } from './lib/loop-row-path.ts'
 import {
   escapeGoString,
   wrapIfMultiToken,
@@ -2314,7 +2314,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${varName}[i] = New${declaredName}Props(item)`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -3489,7 +3489,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t}`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -3546,7 +3546,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
       }
       lines.push(`\t\t}`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -4522,6 +4522,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * under `inLoop` and never reaches the static call-site branch.
    */
   private renderingWrapperRowChildren = false
+  /**
+   * The innermost enclosing loop's synthetic range variable (`__bf_item0`)
+   * when that loop's param is a supported destructure, else null. A
+   * wrapper-row forwarded-children define reads destructured names through
+   * it (`$__bf_item0.Tone`), but runs as its own template with the row as
+   * its data, so it rebinds the variable to `.` (#3313).
+   */
+  private innermostDestructureRangeVar: string | null = null
 
   private extractScopedHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
@@ -7945,10 +7953,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.scope.isBound(name) || this.loopVarRefCount.has(name)
   }
 
-  /** Whether `name` is the innermost enclosing loop's own item param. */
-  private isInnermostRowItem(name: string): boolean {
+  /**
+   * Whether `name` reads the innermost enclosing loop's own row: its item
+   * param, or a name destructured from it (#3313). Either is a field of the
+   * row wrapper a forwarded-children define receives as its data.
+   */
+  private isInnermostRowBinding(name: string): boolean {
     const hit = this.scope.lookup(name)
-    return hit !== null && hit.depth === 0 && hit.binding.source === 'item'
+    return hit !== null && hit.depth === 0 && (hit.binding.source === 'item' || hit.binding.source === 'destructure')
   }
 
   /**
@@ -8044,12 +8056,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       let rebuild = false
       // `rowItemOnly` (a wrapper-slice row's forwarded-children define): the
       // define runs as its own template with the row wrapper as its data, so
-      // only the innermost row item's fields (`.Field`) are reachable there.
+      // only the innermost row's fields (`.Field`, or a name destructured
+      // from the row) are reachable there.
       // An index, a preamble local or an outer row's binding is a `{{range}}`
       // variable of the calling template the define can't see — such a prop
       // keeps the shared instance's value
       // (`loop-row-child-nested-prop-reads-unreachable-row-binding`).
-      if (rowItemOnly && [...free].some(name => this.isLoopShadowedName(name) && !this.isInnermostRowItem(name))) {
+      if (rowItemOnly && [...free].some(name => this.isLoopShadowedName(name) && !this.isInnermostRowBinding(name))) {
         continue
       }
       // #2448's derived-field staleness check only applies to a NAMED FIELD
@@ -9062,6 +9075,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       addedLoopVars.push(d.name)
     }
     let pushedBindingMap = false
+    const outerDestructureRangeVar = this.innermostDestructureRangeVar
+    this.innermostDestructureRangeVar = supportableDestructure ? rangeValue : null
     if (supportableDestructure) {
       // Bindings resolve against the synthetic `$__bf_item` range var.
       const built = this.buildDestructureBindingMap(loop, rangeValue)
@@ -9109,6 +9124,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       else this.loopVarRefCount.set(v, rc)
     }
     this.scope = prevScope
+    this.innermostDestructureRangeVar = outerDestructureRangeVar
     if (pushedBindingMap) {
       this.loopBindingStack.pop()
       this.loopRestExcludeStack.pop()
@@ -9376,7 +9392,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.inLoop = false
       this.renderingWrapperRowChildren = wrapperRow
       try {
-        const content = this.renderChildren(effectiveChildren)
+        let content = this.renderChildren(effectiveChildren)
+        // A destructured row name lowers to the calling `{{range}}`'s
+        // variable (`$__bf_item0.Tone`), which this separate template can't
+        // see; its data is that same row, so bind the variable to it.
+        const rangeVar = wrapperRow ? this.innermostDestructureRangeVar : null
+        if (rangeVar && content.includes(`$${rangeVar}`)) content = `{{$${rangeVar} := .}}${content}`
         this.state.pendingChildrenDefines.push({ name, content })
       } finally {
         this.inLoop = wasInLoop

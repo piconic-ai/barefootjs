@@ -3460,14 +3460,6 @@
           ]
         }
       },
-      "loop-component-row-destructured-param": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-component-row-destructured-param"
-          ]
-        }
-      },
       "loop-param-prop-member-collision": {
         "blade": {
           "kind": "render",
@@ -3524,14 +3516,6 @@
           "escape": {
             "state": "debt"
           }
-        }
-      },
-      "loop-row-child-children-nested-destructured-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-component-row-destructured-param"
-          ]
         }
       },
       "loop-row-child-children-nested-index-prop": {
@@ -5953,10 +5937,6 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
-      "loop-component-row-destructured-param": {
-        "description": "A component loop row whose callback destructures the row param renders every row with its own key…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-component-row-destructured-param.ts"
-      },
       "loop-param-prop-member-collision": {
         "description": "An explicit prop member remains a root value when a loop binds the same name",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-prop-member-collision.ts"
@@ -5964,10 +5944,6 @@
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
-      },
-      "loop-row-child-children-nested-destructured-prop": {
-        "description": "A nested component inside a loop-row child's forwarded children receives a destructured row field…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-destructured-prop.ts"
       },
       "loop-row-child-children-nested-index-prop": {
         "description": "A nested component inside a loop-row child's forwarded children receives the row index as a prop at…",
@@ -6510,20 +6486,6 @@
         "pebble",
         "twig",
         "xslate"
-      ]
-    },
-    "loop-component-row-destructured-param": {
-      "title": "A component loop row loses its row values when the callback destructures the row param",
-      "kind": "silent",
-      "given": "a `.map()` loop over a memo whose callback destructures its row param and whose row body is a component keyed by a destructured field, receiving a destructured field as a prop on itself or on a component in its forwarded children (`shown().map(({ id, tone }) => <Mark key={id} tone={tone} />)`, `shown().map(({ id, tone }) => <Chip key={id}><Mark tone={tone} /></Chip>)`)",
-      "expected": "one component per row, each with its own key and prop (`data-key=\"a\" data-tone=\"warm\"`, `data-key=\"b\" data-tone=\"cool\"`), hydrated with the same values",
-      "actual": "renders no rows at all, or rows without their `data-key` and without the destructured prop; and the emitted client JS reads the destructured name where it is not bound (`get tone() { return tone }`), so hydrating or creating a row throws a `ReferenceError`",
-      "fixtures": [
-        "loop-component-row-destructured-param",
-        "loop-row-child-children-nested-destructured-prop"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "loop-param-prop-member-collision": {

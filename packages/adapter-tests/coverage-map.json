@@ -3942,6 +3942,31 @@
         "loop"
       ]
     },
+    "loop-component-row-destructured-param-shapes": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-destructured-param-condition": {
       "kinds": [
         "call",

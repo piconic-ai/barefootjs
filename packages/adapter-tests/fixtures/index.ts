@@ -813,6 +813,7 @@ import { fixture as loopRowChildChildrenNestedDestructuredProp } from './loop-ro
 import { fixture as loopRowChildChildrenNestedDeepRowProp } from './loop-row-child-children-nested-deep-row-prop'
 // A component loop row whose callback destructures the row param.
 import { fixture as loopComponentRowDestructuredParam } from './loop-component-row-destructured-param'
+import { fixture as loopComponentRowDestructuredParamShapes } from './loop-component-row-destructured-param-shapes'
 // A `/* @client */` prop on a component nested in a loop-row child's forwarded children.
 import { fixture as loopRowChildChildrenNestedClientProp } from './loop-row-child-children-nested-client-prop'
 import { fixture as loopRowChildChildrenNestedClientRowProp } from './loop-row-child-children-nested-client-row-prop'
@@ -1400,6 +1401,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedDestructuredProp,
   loopRowChildChildrenNestedDeepRowProp,
   loopComponentRowDestructuredParam,
+  loopComponentRowDestructuredParamShapes,
   loopRowChildChildrenNestedClientProp,
   loopRowChildChildrenNestedClientRowProp,
   loopElementRowChildClientRowProp,

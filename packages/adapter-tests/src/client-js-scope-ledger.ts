@@ -42,19 +42,9 @@ export const KNOWN_UNDECLARED: Record<string, KnownHole> = {
   // its value (`(() => (5))`) instead of leaving the source-level `count`
   // untouched in the module-scope `template` lambda's `renderChild(...)`
   // props literal.
-
-  // A component loop row whose callback destructures its row param
-  // (`({ id, tone }) => <Mark key={id} tone={tone} />`): the row factory's
-  // props getters read the destructured name bare (`get tone() { return
-  // tone }`) instead of through the row accessor, so hydrating or creating
-  // a row throws. Both fixtures reach it through a different prop position
-  // (the row component's own prop; a component in its forwarded children).
-  'loop-component-row-destructured-param': {
-    names: ['tone'],
-    limitation: 'loop-component-row-destructured-param',
-  },
-  'loop-row-child-children-nested-destructured-prop': {
-    names: ['tone'],
-    limitation: 'loop-component-row-destructured-param',
-  },
+  // #3313 (a component loop row whose callback destructures its row param,
+  // `({ id, tone }) => <Mark key={id} tone={tone} />`) is FIXED — the
+  // component-loop plan now passes the loop's `paramBindings` to
+  // `buildComponentPropsExpr`, so the row's props getters read
+  // `__bfItem().tone` instead of the unbound `tone`.
 }
