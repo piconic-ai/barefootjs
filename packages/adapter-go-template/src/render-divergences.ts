@@ -93,6 +93,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   // `number[]` elements are `interface{}` so a caller can pass fractions,
   // but html/template's native `gt`/`lt`/`eq` refuse a float64 operand against
   // an int literal ("incompatible types for comparison").

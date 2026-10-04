@@ -35,6 +35,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `{props.items?.length}` over an absent array: the `.length` lowering
+  // treats the missing array as empty and renders `0`, where JS reads
+  // `undefined` and renders nothing.
+  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   'loop-param-prop-member-collision': { limitation: 'loop-param-prop-member-collision' },
 
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
