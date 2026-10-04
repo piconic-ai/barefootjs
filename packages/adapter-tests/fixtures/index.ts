@@ -5,6 +5,7 @@ import { fixture as nestedLoopStringAddition } from './nested-loop-string-additi
 import { fixture as nestedLoopAdditionShadowing } from './nested-loop-addition-shadowing'
 import { fixture as entriesLoopStringAddition } from './entries-loop-string-addition'
 import { fixture as fractionalNumberArrayProp } from './fractional-number-array-prop'
+import { fixture as fractionalNumberArrayRowOps } from './fractional-number-array-row-ops'
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
@@ -1438,6 +1439,7 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopAdditionShadowing,
   entriesLoopStringAddition,
   fractionalNumberArrayProp,
+  fractionalNumberArrayRowOps,
   loopParamPropMemberCollision,
   numberAdditionTextFormatting,
   numberArithmeticTextFormatting,

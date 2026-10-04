@@ -1839,6 +1839,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "loop-component-row-destructured-param",
               "limitations": [
                 "loop-component-row-destructured-param"
@@ -4506,9 +4512,9 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-prop",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "fractional-number-array-prop"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -6344,6 +6350,12 @@
               ]
             },
             {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -7975,9 +7987,9 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-prop",
+              "fixture": "fractional-number-array-row-ops",
               "limitations": [
-                "fractional-number-array-prop"
+                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -11314,7 +11326,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -11328,10 +11349,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "memo",
-        "description": "Derived value with createMemo",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo.ts",
-        "code": "count() * 2"
+        "fixture": "fractional-number-array-row-ops",
+        "description": "Fractional number-array elements work in row comparisons and arithmetic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-row-ops.ts",
+        "code": "value * 2"
       }
     },
     "binary:+": {
@@ -12799,6 +12820,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "fractional-number-array-row-ops",
+              "limitations": [
+                "fractional-number-compare-int-literal"
               ]
             },
             {
