@@ -888,6 +888,20 @@
       }
     }
   ],
+  "conditional-branch-sigil-text": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
   "conditional-nested-loop-precomputed-reactivity": [
     {
       "name": "gen:groups:empty",

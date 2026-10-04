@@ -1660,6 +1660,20 @@
         "text"
       ]
     },
+    "conditional-branch-sigil-text": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-child-listener-cleanup": {
       "kinds": [
         "arrow",

@@ -86,7 +86,7 @@ import {
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
+import { escapeLineStatementSigil, isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
@@ -460,8 +460,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
-    // character references); re-escape for direct HTML emission.
-    return escapeHtml(node.value)
+    // character references); re-escape for direct HTML emission. A
+    // line-leading `:` would be read as a line statement (#3311).
+    return escapeLineStatementSigil(escapeHtml(node.value), ':', "<: ':' :>")
   }
 
   emitExpression(node: IRExpression): string {
