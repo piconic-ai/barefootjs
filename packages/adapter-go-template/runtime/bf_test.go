@@ -715,6 +715,62 @@ func TestJoin_AcceptsFixedArray(t *testing.T) {
 	}
 }
 
+// Truthy is JS `Boolean(x)`: a nil of any kind is null/undefined (falsy) —
+// an absent optional prop decodes to a typed nil slice/map/pointer — while a
+// non-nil EMPTY slice or map is a JS `[]` / `{}` and is truthy. Go's own
+// `not` / `{{if}}` read both empties as false, which is why `!x` lowers to
+// `not (bf_truthy x)`.
+func TestTruthy_NilVersusEmpty(t *testing.T) {
+	type named string
+	zero, one := 0, 1
+	var nilAny any
+	cases := []struct {
+		name string
+		v    any
+		want bool
+	}{
+		{"untyped nil", nil, false},
+		{"typed nil slice", []string(nil), false},
+		{"typed nil map", map[string]any(nil), false},
+		{"typed nil pointer", (*string)(nil), false},
+		{"pointer to nil interface", &nilAny, false},
+		{"empty slice", []string{}, true},
+		{"empty any slice", []any{}, true},
+		{"empty map", map[string]any{}, true},
+		{"empty struct", struct{}{}, true},
+		{"non-empty slice", []string{"a"}, true},
+		{"false", false, false},
+		{"true", true, true},
+		{"empty string", "", false},
+		{"string", "0", true},
+		{"named empty string", named(""), false},
+		{"named string", named("x"), true},
+		{"int zero", 0, false},
+		{"int64 zero", int64(0), false},
+		{"uint8 one", uint8(1), true},
+		{"float zero", 0.0, false},
+		{"float NaN", math.NaN(), false},
+		{"float32 NaN", float32(math.NaN()), false},
+		{"float", 0.5, true},
+		{"pointer to zero", &zero, false},
+		{"pointer to one", &one, true},
+	}
+	for _, c := range cases {
+		if got := Truthy(c.v); got != c.want {
+			t.Errorf("Truthy(%s) = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// Filter's no-match result is a JS `[]`, so it must not be the nil slice
+// Truthy reads as null/undefined.
+func TestFilter_NoMatchIsEmptyNotNil(t *testing.T) {
+	got := Filter([]map[string]any{{"done": true}}, "done", false)
+	if got == nil || len(got) != 0 || !Truthy(got) {
+		t.Errorf("Filter(no match) = %#v, want non-nil []any{}", got)
+	}
+}
+
 func TestFilterTruthy_NilSliceReturnsNil(t *testing.T) {
 	if got := FilterTruthy(nil); got != nil {
 		t.Errorf("FilterTruthy(nil) = %v, want nil", got)
