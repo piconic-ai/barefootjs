@@ -2279,6 +2279,22 @@
         "attribute"
       ]
     },
+    "data-on-attr-value-shapes": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "data-table": {
       "kinds": [
         "array-literal",
@@ -2325,6 +2341,19 @@
         "condition",
         "loop",
         "text"
+      ]
+    },
+    "data-url-attr-dynamic-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "date-catalogued": {
@@ -5584,6 +5613,42 @@
       ],
       "axes": [
         "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-arithmetic-text-formatting": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-division-text": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:/",
         "literal:number"
       ],
       "contexts": [

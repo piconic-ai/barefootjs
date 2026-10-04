@@ -8,6 +8,8 @@ import { fixture as fractionalNumberArrayProp } from './fractional-number-array-
 import { fixture as fractionalNumberArrayRowOps } from './fractional-number-array-row-ops'
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
+import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
+import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
 import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
 import { fixture as counter } from './counter'
@@ -194,6 +196,8 @@ import { fixture as fragmentLoopChildren } from './fragment-loop-children'
 import { fixture as voidElements } from './void-elements'
 import { fixture as dynamicAttributes } from './dynamic-attributes'
 import { fixture as dataOnAttrDynamicValue } from './data-on-attr-dynamic-value'
+import { fixture as dataOnAttrValueShapes } from './data-on-attr-value-shapes'
+import { fixture as dataUrlAttrDynamicValue } from './data-url-attr-dynamic-value'
 import { fixture as classVsClassname } from './class-vs-classname'
 import { fixture as styleAttribute } from './style-attribute'
 import { fixture as styleObjectStatic } from './style-object-static'
@@ -999,6 +1003,8 @@ export const jsxFixtures: JSXFixture[] = [
   voidElements,
   dynamicAttributes,
   dataOnAttrDynamicValue,
+  dataOnAttrValueShapes,
+  dataUrlAttrDynamicValue,
   classVsClassname,
   styleAttribute,
   styleObjectStatic,
@@ -1436,6 +1442,8 @@ export const jsxFixtures: JSXFixture[] = [
   fractionalNumberArrayRowOps,
   loopParamPropMemberCollision,
   numberAdditionTextFormatting,
+  numberArithmeticTextFormatting,
+  numberDivisionText,
   conditionalNestedClient,
   conditionalNestedPrecomputed,
   conditionalNestedStatic,
