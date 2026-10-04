@@ -2013,12 +2013,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4120,6 +4114,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4301,6 +4301,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -4488,6 +4494,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
+              "limitations": [
+                "loop-row-child-children-prop-array-sibling-plural"
+              ]
+            },
+            {
               "fixture": "loop-row-child-key-not-a-prop",
               "limitations": [
                 "loop-row-child-key-not-a-prop"
@@ -4575,6 +4587,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -4792,6 +4810,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4982,6 +5006,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5163,12 +5193,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -5368,6 +5392,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5558,6 +5588,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5745,6 +5781,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -5892,12 +5934,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5949,12 +5985,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6040,12 +6070,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6091,12 +6115,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6191,18 +6209,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
-              "fixture": "const-string-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6305,12 +6311,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6420,12 +6420,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6477,12 +6471,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6568,12 +6556,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6625,12 +6607,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -6716,12 +6692,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6776,12 +6746,6 @@
               ]
             },
             {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -6797,12 +6761,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -6876,12 +6834,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6933,12 +6885,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7024,12 +6970,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7081,12 +7021,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7172,12 +7106,6 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7229,12 +7157,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -7428,12 +7350,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7625,6 +7541,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7752,6 +7674,12 @@
               "fixture": "number-division-text",
               "limitations": [
                 "integer-division-truncated"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -7903,6 +7831,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-prop-array-sibling-plural",
+              "limitations": [
+                "loop-row-child-children-prop-array-sibling-plural"
+              ]
+            },
+            {
               "fixture": "loop-row-child-key-not-a-prop",
               "limitations": [
                 "loop-row-child-key-not-a-prop"
@@ -7954,6 +7888,12 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -8123,6 +8063,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8259,6 +8205,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8386,12 +8338,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -8543,6 +8489,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8679,6 +8631,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8812,6 +8770,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -11935,16 +11899,7 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            }
-          ]
-        },
+        "mojolicious": {},
         "pebble": {},
         "twig": {},
         "xslate": {}
@@ -12007,21 +11962,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12047,21 +11990,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12093,21 +12024,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12133,21 +12052,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12173,21 +12080,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12213,21 +12108,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12259,21 +12142,9 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12299,21 +12170,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12339,21 +12198,9 @@
               ]
             },
             {
-              "fixture": "const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-boolean-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
               ]
             },
             {
@@ -12889,12 +12736,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13352,12 +13193,6 @@
               ]
             },
             {
-              "fixture": "const-string-conditional-test",
-              "limitations": [
-                "literal-const-conditional-test"
-              ]
-            },
-            {
               "fixture": "data-url-attr-dynamic-value",
               "limitations": [
                 "data-url-attr-value-url-escaped"
@@ -13685,12 +13520,6 @@
               "fixture": "loop-param-prop-member-collision",
               "limitations": [
                 "loop-param-prop-member-collision"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
               ]
             },
             {
@@ -14125,12 +13954,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-condition",
-              "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14329,14 +14152,38 @@
     "member:optional": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
               "fixture": "create-query-derived-memo",
               "limitations": [
                 "memo-length-of-prop-seeded-array"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -14347,21 +14194,57 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {
+        "jinja": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-condition",
+              "fixture": "optional-chain-length-bare-text",
               "limitations": [
-                "mojo-optional-chain-length-unguarded-deref"
+                "optional-chain-length-absent-renders-zero"
               ]
             }
           ]
         },
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "optional-chain-length-bare-text",
+              "limitations": [
+                "optional-chain-length-absent-renders-zero"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -14369,10 +14252,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L168"
       },
       "example": {
-        "fixture": "optional-chaining-prop",
-        "description": "Optional chaining into an object prop with nullish fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chaining-prop.ts",
-        "code": "user?.name"
+        "fixture": "optional-chain-length-bare-text",
+        "description": "A bare optional-chained `.length` over an absent array renders empty",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-bare-text.ts",
+        "code": "props.items?.length"
       }
     },
     "sort-direction:asc": {

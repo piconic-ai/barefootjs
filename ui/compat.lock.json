@@ -2167,70 +2167,6 @@
           ]
         }
       },
-      "const-boolean-conditional-test": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        }
-      },
-      "const-string-conditional-test": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        }
-      },
       "create-query-derived-memo": {
         "go-template": {
           "kind": "render",
@@ -3518,6 +3454,14 @@
           ]
         }
       },
+      "loop-row-child-children-prop-array-sibling-plural": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-children-prop-array-sibling-plural"
+          ]
+        }
+      },
       "loop-row-child-key-not-a-prop": {
         "go-template": {
           "kind": "render",
@@ -3926,62 +3870,6 @@
           "escape": {
             "state": "debt"
           }
-        }
-      },
-      "module-const-boolean-conditional-test": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
         }
       },
       "module-const-loop-source-computed": {
@@ -4550,11 +4438,53 @@
           }
         }
       },
-      "optional-chain-length-condition": {
-        "mojolicious": {
+      "optional-chain-length-bare-text": {
+        "blade": {
           "kind": "render",
           "limitations": [
-            "mojo-optional-chain-length-unguarded-deref"
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "optional-chain-length-absent-renders-zero"
           ]
         }
       },
@@ -5837,14 +5767,6 @@
         "description": "A signal-driven ternary directly followed by text renders with no whitespace between them",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-text.ts"
       },
-      "const-boolean-conditional-test": {
-        "description": "A function-scope boolean-literal const read as a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-boolean-conditional-test.ts"
-      },
-      "const-string-conditional-test": {
-        "description": "A function-scope string-literal const compared in a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-string-conditional-test.ts"
-      },
       "create-query-derived-memo": {
         "description": "A memo over a createQuery value is seeded from `initial` at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-derived-memo.ts"
@@ -5921,6 +5843,10 @@
         "description": "A nested component inside a loop-row child's forwarded children receives a callback-local derived…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-preamble-prop.ts"
       },
+      "loop-row-child-children-prop-array-sibling-plural": {
+        "description": "A component loop with forwarded children over an array prop renders every row when a sibling loop's…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-prop-array-sibling-plural.ts"
+      },
       "loop-row-child-key-not-a-prop": {
         "description": "A component loop row keyed by a row field the component takes no prop for renders every row with…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-key-not-a-prop.ts"
@@ -5957,10 +5883,6 @@
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
       },
-      "module-const-boolean-conditional-test": {
-        "description": "A module-scope boolean-literal const read as a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-boolean-conditional-test.ts"
-      },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
@@ -5989,9 +5911,9 @@
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
       },
-      "optional-chain-length-condition": {
-        "description": "`props.x?.length ?? 0` as a condition operand, with the array absent",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-condition.ts"
+      "optional-chain-length-bare-text": {
+        "description": "A bare optional-chained `.length` over an absent array renders empty",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-bare-text.ts"
       },
       "optional-object-prop-member-signal-seed": {
         "description": "a signal seeded from a member of an optional object prop renders its seed (or the fallback) at SSR",
@@ -6427,29 +6349,6 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
-    "literal-const-conditional-test": {
-      "title": "Literal-initialized const read as a conditional test",
-      "kind": "silent",
-      "given": "a `const` initialized with a boolean literal at module or function scope (`const on = true`), or with a string literal inside the component function (`const mode = 'on'`), read as the test of a ternary (`data-x={on ? 'a' : 'b'}`, `data-x={mode === 'on' ? 'a' : 'b'}`)",
-      "expected": "the branch the const's value selects renders in the server HTML (`data-x=\"a\"`)",
-      "actual": "renders the falsy branch as if the const were unset, or throws at render time on an unbound template variable",
-      "fixtures": [
-        "const-boolean-conditional-test",
-        "const-string-conditional-test",
-        "module-const-boolean-conditional-test"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "loop-param-prop-member-collision": {
       "title": "A loop variable collides with an explicit prop member",
       "kind": "silent",
@@ -6483,6 +6382,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "loop-row-child-children-prop-array-sibling-plural": {
+      "title": "Component loop row with forwarded children over an array prop that a sibling loop's plural shadows",
+      "kind": "silent",
+      "given": "a `.map()` over an array prop whose row is a child component with forwarded children (`props.items.map(row => <Badge key={row.id}>{row.meta.label}</Badge>)`), next to another component loop whose child's plural is that prop's Go field name (`props.other.map(row => <Item … />)` → `Items`)",
+      "expected": "one component per row in both loops (`data-key=\"a\"` … `A`, `data-key=\"b\"` … `B`, and the `<Item>` rows)",
+      "actual": "renders the forwarded-children loop empty with no diagnostic: the sibling loop's `Items []ItemInput` Input field takes the prop's own `Items` field, so the constructor has no datum slice to build the `<Badge>` rows from",
+      "fixtures": [
+        "loop-row-child-children-prop-array-sibling-plural"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "loop-row-child-key-not-a-prop": {
@@ -6599,19 +6511,6 @@
       "diagnostics": [
         "BF101",
         "BF102"
-      ]
-    },
-    "mojo-optional-chain-length-unguarded-deref": {
-      "title": "Optional-chained `.length` deref runs before its `??` fallback",
-      "kind": "silent",
-      "given": "an optional-chained `.length` read defaulted with `??`, used as a condition operand, over an absent array (`(props.items?.length ?? 0) > 0` with `items` undefined)",
-      "expected": "the missing array falls back to `0`, so the comparison is false and the second branch renders",
-      "actual": "throws at render time instead: the template dereferences the array unconditionally before the `// 0` fallback ever runs (\"Can't use an undefined value as an ARRAY reference\")",
-      "fixtures": [
-        "optional-chain-length-condition"
-      ],
-      "adapters": [
-        "mojolicious"
       ]
     },
     "namespace-import-primitive-without-program": {
@@ -6731,6 +6630,26 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "optional-chain-length-absent-renders-zero": {
+      "title": "A bare optional-chained `.length` over an absent array renders `0`",
+      "kind": "silent",
+      "given": "an optional-chained `.length` read rendered as text with no fallback, over an absent array (`{props.items?.length}` with `items` undefined)",
+      "expected": "the read is `undefined`, so nothing renders",
+      "actual": "renders `0`, the length of an empty array",
+      "fixtures": [
+        "optional-chain-length-bare-text"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "prop-member-chain-signal-seed": {
