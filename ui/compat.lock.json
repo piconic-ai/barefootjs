@@ -3518,14 +3518,6 @@
           ]
         }
       },
-      "loop-row-child-children-prop-array": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-children-prop-array"
-          ]
-        }
-      },
       "loop-row-child-key-not-a-prop": {
         "go-template": {
           "kind": "render",
@@ -5929,10 +5921,6 @@
         "description": "A nested component inside a loop-row child's forwarded children receives a callback-local derived…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-preamble-prop.ts"
       },
-      "loop-row-child-children-prop-array": {
-        "description": "A component loop row over an array prop renders every row's forwarded children",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-prop-array.ts"
-      },
       "loop-row-child-key-not-a-prop": {
         "description": "A component loop row keyed by a row field the component takes no prop for renders every row with…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-key-not-a-prop.ts"
@@ -6495,19 +6483,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "loop-row-child-children-prop-array": {
-      "title": "Component loop row with forwarded children over an array prop",
-      "kind": "silent",
-      "given": "a `.map()` over an array prop of objects whose row is a child component receiving forwarded JSX children that read the row (`props.items.map(item => <Badge key={item.id}>{item.label}</Badge>)`)",
-      "expected": "one component per row, each with its own key and forwarded children (`data-key=\"a\"` … `A`, `data-key=\"b\"` … `B`)",
-      "actual": "renders the loop empty with no diagnostic: the props constructor builds no rows from the array prop (nor from the child's own input rows), and a row slice filled in after construction fails at render time because the row wrapper has no field for the row data the forwarded children read (`can't evaluate field Label`)",
-      "fixtures": [
-        "loop-row-child-children-prop-array"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "loop-row-child-key-not-a-prop": {

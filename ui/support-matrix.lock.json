@@ -4488,12 +4488,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array",
-              "limitations": [
-                "loop-row-child-children-prop-array"
-              ]
-            },
-            {
               "fixture": "loop-row-child-key-not-a-prop",
               "limitations": [
                 "loop-row-child-key-not-a-prop"
@@ -7906,12 +7900,6 @@
               "fixture": "loop-row-child-children-nested-preamble-prop",
               "limitations": [
                 "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-prop-array",
-              "limitations": [
-                "loop-row-child-children-prop-array"
               ]
             },
             {

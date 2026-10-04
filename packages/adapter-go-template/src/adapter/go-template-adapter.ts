@@ -1966,6 +1966,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         nested.loopParam,
         nested.loopKey,
       )) continue
+      // Rows built from the array prop itself (`propArrayLoopRowSource`):
+      // nothing for the caller to supply here either.
+      if (this.propArrayLoopRowSource(ir, nested)) continue
       // #2822 follow-up: field NAME stays alias-keyed (parent-private, this
       // Input struct's own field — read as `in.${nested.name}s` throughout
       // this file), but the element TYPE is the child's own cross-file
@@ -3469,6 +3472,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           nested.loopArrayParsed,
         )
       }
+      // An array prop: range over its own (caller-supplied) Input field.
+      if (!bakedValue) bakedValue = this.propArrayLoopRowSource(ir, nested)?.goExpr ?? null
       if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
 
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
@@ -3926,6 +3931,67 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
+  /**
+   * The constructor-side row source of a loop over an array PROP whose row
+   * is a child component with forwarded JSX children
+   * (`props.items.map(item => <Badge key={item.id}>{item.label}</Badge>)`),
+   * or null when this loop isn't one.
+   *
+   * Such a row renders through a wrapper struct (`generateLoopBodyWrapperStruct`)
+   * whose forwarded-children define reads the row's datum fields, so the
+   * caller can't fill it with plain `<Child>Input` rows the way it fills a
+   * bodyless child loop's `in.<Child>s`. The array prop IS the row data,
+   * though, and already reaches the constructor typed as its own Go struct
+   * slice (`in.Items []…ItemsItem`), so the constructor ranges over that
+   * field directly — the same field the Props struct and `bf-p` carry, so
+   * SSR rows and the client's own `mapArray` read one source.
+   *
+   * The one decision every site consults — the row's element type for the
+   * wrapper's datum fields (`resolveNestedLoopItemTypes`), the Input struct
+   * (no `<Child>s` field: rows come from the prop, `generateInputStruct`),
+   * and the constructor's rows (`emitStaticBodyWrappers`).
+   *
+   * Recognized: the prop itself (`props.items`, or a destructured `items` /
+   * `{ items: rows }`) whose declared type is an array of objects that
+   * resolves to a generated Go struct. A prop whose Go field the loop's own
+   * `<Child>s` field shadows (`isNestedArrayShadowed`), a deeper path
+   * (`props.data.items`) or a local alias of the prop stay on the existing
+   * paths.
+   */
+  private propArrayLoopRowSource(
+    ir: ComponentIR,
+    nested: NestedComponentInfo,
+  ): { goExpr: string; itemType: TypeInfo } | null {
+    if (!nested.isPropDerived || !nested.bodyChildren?.length) return null
+    const arr = nested.loopArrayParsed
+    if (!arr) return null
+    const params = ir.metadata.propsParams
+    let param: (typeof params)[number] | undefined
+    if (arr.kind === 'identifier') {
+      // A destructured prop binding. With a whole `props` object, a bare
+      // identifier is a local alias (`const items = props.items`), not a
+      // prop binding — `propsParams` then lists the type's member names.
+      if (ir.metadata.propsObjectName) return null
+      param = params.find(p => p.name === arr.name)
+    } else if (
+      arr.kind === 'member' &&
+      !arr.computed &&
+      arr.object.kind === 'identifier' &&
+      arr.object.name === ir.metadata.propsObjectName
+    ) {
+      param = params.find(p => (p.sourceName ?? p.name) === arr.property)
+    }
+    if (!param) return null
+    if (this.isNestedArrayShadowed(param, this.propDerivedNestedArrayFields([nested]))) return null
+    const arrayType = param.type
+    if (arrayType?.kind !== 'array' || !arrayType.elementType) return null
+    const elementGoType = typeInfoToGo(this.emitCtx, arrayType.elementType)
+    if (!this.state.localStructFields.has(elementGoType)) return null
+    const itemType: TypeInfo = { kind: 'interface', raw: elementGoType }
+    if (this.resolveLoopDatumFields(itemType).length === 0) return null
+    return { goExpr: `in.${capitalizeFieldName(param.sourceName ?? param.name)}`, itemType }
+  }
+
   private resolveNestedLoopItemTypes(
     lines: string[],
     ir: ComponentIR,
@@ -3943,6 +4009,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     //      an element type to borrow — synthesize one from the literal itself.
     for (const nested of nestedComponents) {
       if (nested.loopItemType || !nested.loopArray) continue
+
+      // Case 0: an array prop's own element type (`propArrayLoopRowSource`).
+      const propRows = this.propArrayLoopRowSource(ir, nested)
+      if (propRows) {
+        nested.loopItemType = propRows.itemType
+        continue
+      }
 
       // Case 1: memo-derived loop array (`sortedData()`)
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
@@ -9489,6 +9562,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // normal non-loop rendering path (`.TableCellSlotN` fields on the
       // wrapper struct), while the loop param stack stays intact so datum
       // references resolve.
+      //
+      // A prop of this component that reads the row (`tone={item.shade}`) is
+      // re-applied per row here (`loopRowChildPropOverrides`), the same
+      // delivery the non-wrapper branch below uses: the constructor builds
+      // each row's embedded `<Name>Props` without it (`lowerChildInputFields`
+      // skips a row read). The override patches that embedded Props value,
+      // never the wrapper, so a row datum field of the same name
+      // (`Tone` from `item.tone`) can't absorb it; the forwarded children
+      // still get the whole wrapper.
+      // Only a row with forwarded children has the wrapper (and its
+      // embedded `<Name>Props`); a bare child row is its own `<Name>Props`,
+      // built per row from its full Input (`loopRowChildInputFields`).
+      const overrides = comp.children.length > 0 ? this.loopRowChildPropOverrides(comp) : null
+      const base = overrides
+        ? this.wrapLoopRowPropOverrides(`.${declaredName}Props`, declaredName, overrides)
+        : '.'
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, true)
       if (loopBodyDefine) {
         // Scalar-item loop: feed the body define the wrapper's `.BfLoopItem` (the
@@ -9497,9 +9586,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const bodyData = this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
           ? '.BfLoopItem'
           : '.'
-        templateCall = `{{template "${declaredName}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
+        templateCall = `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
       } else {
-        templateCall = `{{template "${declaredName}" .}}`
+        templateCall = `{{template "${declaredName}" ${base}}}`
       }
     } else if (this.inLoop && comp.slotId) {
       // Non-wrapper loop (component nested inside an element item, #2130):

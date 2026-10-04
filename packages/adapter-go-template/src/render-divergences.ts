@@ -203,15 +203,6 @@ export const renderDivergences: RenderDivergences = {
   // renders without its `data-key` — also when a caller builds the props
   // through `NewXxxProps` with `Badges` populated directly.
   'loop-row-child-scalar-row-key': { limitation: 'loop-row-child-scalar-row-key' },
-
-  // A component loop row with forwarded children over an array prop
-  // (`<Badge key={item.id}>{item.label}</Badge>`): `emitStaticBodyWrappers`
-  // bakes rows only from a resolvable const array source, so the
-  // constructor builds no rows from `in.Items` (and ignores `in.Badges`);
-  // the `<ul>` renders empty. A handler-filled wrapper slice fails at
-  // render time instead: the `…BadgeLl0Ctx` wrapper has no `Label` datum
-  // field for the forwarded children template to read.
-  'loop-row-child-children-prop-array': { limitation: 'loop-row-child-children-prop-array' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

@@ -874,9 +874,11 @@ import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-s
 // A component loop row over a string array prop keyed by the row value
 // itself (registry: `loop-row-child-scalar-row-key`).
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
-// A component loop row with forwarded children over an array prop
-// (registry: `loop-row-child-children-prop-array`).
+// A component loop row with forwarded children over an array prop, and its
+// sibling shapes (destructured prop, nested row field, row prop, destructured
+// row param, empty / absent array).
 import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-children-prop-array'
+import { fixture as loopRowChildChildrenPropArrayShapes } from './loop-row-child-children-prop-array-shapes'
 // A literal-initialized `const` read as a conditional's test (registry:
 // `literal-const-conditional-test`).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
@@ -1434,6 +1436,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildKeyShadowedByProp,
   loopRowChildScalarRowKey,
   loopRowChildChildrenPropArray,
+  loopRowChildChildrenPropArrayShapes,
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
