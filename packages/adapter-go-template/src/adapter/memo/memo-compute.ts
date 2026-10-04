@@ -80,6 +80,88 @@ function propsMemberName(e: ParsedExpr): string | null {
 }
 
 /**
+ * A memo-body length read → its receiver, else null. Recognised shapes:
+ *
+ * - `<recv>.length` (non-optional access);
+ * - `<recv>.length ?? 0` / `<recv>?.length ?? 0` (and `|| 0`) — the
+ *   nullish-guarded form (`posts()?.length ?? 0`, a `createQuery` value).
+ *   A nullish receiver yields `0` in JS, which is exactly what the
+ *   constructor's `bf.Length` returns for a nil value, so the guard folds
+ *   away. Only a literal `0` fallback folds: any other fallback would need
+ *   "absent" told apart from "empty", which a Go nil slice can't carry.
+ *
+ * A bare `<recv>?.length` (no fallback) is NOT recognised: an absent
+ * receiver renders `undefined` (empty text) in JS, not `0`.
+ */
+function lengthReadReceiver(e: ParsedExpr): ParsedExpr | null {
+  if (
+    e.kind === 'logical' &&
+    (e.op === '??' || e.op === '||') &&
+    e.right.kind === 'literal' &&
+    e.right.literalType === 'number' &&
+    e.right.value === 0
+  ) {
+    const inner = e.left
+    return inner.kind === 'member' && !inner.computed && inner.property === 'length' ? inner.object : null
+  }
+  return e.kind === 'member' && !e.computed && !e.optional && e.property === 'length' ? e.object : null
+}
+
+/**
+ * Whether a length read's receiver is one the constructor can evaluate: a
+ * zero-arg getter call naming a signal or memo (`items()`, a `createQuery`
+ * value), or a prop reference (`props.items`, a destructured `items`). The
+ * structural half of {@link resolveLengthReadGo}, used where the decision
+ * must be made without emitting (the memo field's Go type classifier,
+ * {@link numericMemoOperands}).
+ */
+function isResolvableLengthRead(
+  ctx: GoEmitContext,
+  e: ParsedExpr,
+  signals: { getter: string }[],
+  propsParams: { name: string }[],
+): boolean {
+  const recv = lengthReadReceiver(e)
+  if (!recv) return false
+  const getter = getterCallName(recv)
+  if (getter) return signals.some(s => s.getter === getter) || (ctx.state.currentMemos ?? []).some(m => m.name === getter)
+  const propName = propNameForPropsBinding(ctx, recv)
+  return propName !== null && propsParams.some(p => p.name === propName)
+}
+
+/**
+ * A memo-body length read ({@link lengthReadReceiver}) → `bf.Length(<recv>)`,
+ * where `<recv>` is the receiver's constructor-time Go value: the seeded
+ * signal's value (`in.Items` for `createSignal(props.items)`, the `initial`
+ * of a `createQuery`), another memo's baked value, or the prop field. So the
+ * baked length is the length of the data the constructor actually received,
+ * not a compile-time constant. `bf.Length` is the runtime helper the
+ * template-position `.length` lowering (`bf_length`) also calls: elements
+ * for a slice/map, UTF-16 code units for a string, and `0` for nil (an
+ * absent prop), never a panic.
+ *
+ * @returns the Go expression, or null when the body is not a length read or
+ *   its receiver does not resolve
+ */
+function resolveLengthReadGo(
+  ctx: GoEmitContext,
+  e: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  propRef: (propName: string) => string,
+  resolving: ReadonlySet<string>,
+): string | null {
+  if (!isResolvableLengthRead(ctx, e, signals, propsParams)) return null
+  const recv = lengthReadReceiver(e)!
+  const getter = getterCallName(recv)
+  const recvGo = getter
+    ? resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
+    : propRef(propNameForPropsBinding(ctx, recv)!)
+  return recvGo === null ? null : `bf.Length(${recvGo})`
+}
+
+/**
  * A prop reference resolved against the component's ACTUAL props-object
  * binding (`ctx.state.propsObjectName` — may be a non-`props` name, or
  * `null` for a destructured signature), else null. Mirrors
@@ -220,6 +302,7 @@ export function numericMemoOperands(
 ): readonly [ParsedExpr, ParsedExpr] | null {
   if (!body || body.kind !== 'binary' || !['+', '-', '*'].includes(body.op)) return null
   const numericAtom = (expr: ParsedExpr): boolean => {
+    if (isResolvableLengthRead(ctx, expr, signals, propsParams)) return true
     const getter = getterCallName(expr)
     if (getter) {
       const type = signals.find(s => s.getter === getter)?.type
@@ -231,6 +314,60 @@ export function numericMemoOperands(
     return prop?.type?.kind === 'primitive' && prop.type.primitive === 'number' && !prop.optional
   }
   return numericAtom(body.left) && numericAtom(body.right) ? [body.left, body.right] : null
+}
+
+/** `+ - * /` → the shared arithmetic runtime helper that boxes its result. */
+const BOXED_ARITHMETIC_HELPER: Readonly<Record<string, string>> = { '+': 'Add', '-': 'Sub', '*': 'Mul', '/': 'Div' }
+
+/**
+ * The memo a `<getter()> <op> <int literal>` body chains onto, when that
+ * memo's constructor value is boxed ({@link isBoxedNumericMemoBody}), else
+ * null. Such a body can't splice the dep in bare (`bf.Add(…) * 2` is `any *
+ * int`), so it goes through the same runtime helper (`bf.Mul(bf.Add(…), 2)`).
+ */
+function boxedLiteralArithmeticDep(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  signals: { getter: string; type?: TypeInfo }[],
+  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
+  seen: ReadonlySet<string>,
+): string | null {
+  if (!body || body.kind !== 'binary' || !(body.op in BOXED_ARITHMETIC_HELPER)) return null
+  const right = body.right
+  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
+  if (!Number.isInteger(right.value) || right.value < 0) return null
+  // JS `x / 0` is `Infinity`; `bf.Div` returns 0. Not the same value.
+  if (body.op === '/' && right.value === 0) return null
+  const dep = getterCallName(body.left)
+  if (!dep || seen.has(dep) || signals.some(s => s.getter === dep)) return null
+  const memo = ctx.state.currentMemos?.find(m => m.name === dep)
+  if (!memo?.parsed) return null
+  return isBoxedNumericMemoBody(ctx, memo.parsed, signals, propsParams, new Set([...seen, dep])) ? dep : null
+}
+
+/**
+ * Whether a memo body's constructor value is the shared arithmetic runtime's
+ * boxed `any` (`bf.Add` / `bf.Sub` / `bf.Mul` / `bf.Div`) rather than a Go
+ * number. Two shapes:
+ *
+ * - two numeric operands ({@link numericMemoOperands}: `list().length +
+ *   count()` → `bf.Add(…)`);
+ * - literal arithmetic on a memo that is itself boxed (`total() * 2` →
+ *   `bf.Mul(<total>, 2)`), recursively along the memo chain.
+ *
+ * The one decision both the memo field's Go type (`interface{}`, so the
+ * boxed value assigns) and the constructor emission
+ * ({@link memoInitialFromParsedBody}) consult, so they can't disagree.
+ */
+export function isBoxedNumericMemoBody(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  signals: { getter: string; type?: TypeInfo }[],
+  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
+  seen: ReadonlySet<string> = new Set(),
+): boolean {
+  if (numericMemoOperands(ctx, body, signals, propsParams)) return true
+  return boxedLiteralArithmeticDep(ctx, body, signals, propsParams, seen) !== null
 }
 
 /**
@@ -513,6 +650,15 @@ export function memoInitialFromParsedBody(
     const operator = body.op
     const operand = String(body.right.value)
 
+    // <length read> <*|+|-> N — `bf.Length(...)` is a Go `int` call
+    // expression, a single operand under any binary operator (no grouping
+    // needed). Not `/`: Go's integer division truncates where JS yields a
+    // fraction (`3 / 2` is `1.5`), so that body keeps falling through.
+    if (operator !== '/') {
+      const lengthGo = resolveLengthReadGo(ctx, body.left, signals, propsParams, propFallbackVars, propRef, resolving)
+      if (lengthGo !== null) return `${lengthGo} ${operator} ${operand}`
+    }
+
     // getter() * N — return the signal's (or, #2168 memo-chain, another
     // memo's) Go initial value times N. `resolveGetterValueAsGo` checks
     // `signals` first (unchanged behavior for a signal-derived memo like
@@ -521,6 +667,16 @@ export function memoInitialFromParsedBody(
     // ANOTHER memo (`label = createMemo(() => doubled() + 1)`), which this
     // branch previously couldn't recognize at all (a signals-only lookup),
     // silently folding to the Go zero value instead of "7".
+    // getter() <op> N over a BOXED memo (`total() * 2` where `total` is
+    // `bf.Add(…)`): Go has no `any * int`, so the shared runtime helper does
+    // the arithmetic (`bf.Mul(<total>, 2)`), matching the `interface{}`
+    // field type `isBoxedNumericMemoBody` gives this memo.
+    const boxedDep = boxedLiteralArithmeticDep(ctx, body, signals, propsParams, new Set())
+    if (boxedDep) {
+      const depInitial = resolveGetterValueAsGo(ctx, boxedDep, signals, propsParams, propFallbackVars, resolving)
+      return depInitial === null ? null : `bf.${BOXED_ARITHMETIC_HELPER[operator]}(${depInitial}, ${operand})`
+    }
+
     const depName = getterCallName(body.left)
     if (depName) {
       const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
@@ -582,6 +738,13 @@ export function memoInitialFromParsedBody(
     }
   }
 
+  // () => items().length / items()?.length ?? 0 / props.items.length — the
+  // length of the constructor-time value (`bf.Length(in.Items)`).
+  {
+    const lengthGo = resolveLengthReadGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving)
+    if (lengthGo !== null) return lengthGo
+  }
+
   // () => getter() — just return the signal's (or another memo's, #2168
   // memo-chain) Go initial value.
   const simpleDep = getterCallName(body)
@@ -599,6 +762,8 @@ export function memoInitialFromParsedBody(
   const numericOperands = numericMemoOperands(ctx, body, signals, propsParams)
   if (numericOperands && body.kind === 'binary') {
     const resolveAtom = (expr: ParsedExpr): string | null => {
+      const lengthGo = resolveLengthReadGo(ctx, expr, signals, propsParams, propFallbackVars, propRef, resolving)
+      if (lengthGo !== null) return lengthGo
       const getter = getterCallName(expr)
       if (getter) {
         return resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)

@@ -2394,6 +2394,25 @@
       }
     }
   ],
+  "memo-length-prop-seeded-signal-shapes": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "tags": []
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",
