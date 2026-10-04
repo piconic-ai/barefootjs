@@ -30,6 +30,36 @@ export function wrapIfMultiToken(rendered: string): string {
 }
 
 /**
+ * Whether `name` is an inert `data-on…` attribute that html/template would
+ * escape as JavaScript. Its `attrType` strips ONE leading `data-` before
+ * classifying, so `data-on` / `data-onset` land in the same `on…`
+ * event-handler bucket as `onclick`, and a string value renders as a quoted
+ * JS string literal (`&#34;x&#34;`) instead of the plain text the reference
+ * emits (#3309). Only the `data-` form qualifies: a real handler attribute
+ * (`onclick`, `xlink:onclick`) keeps html/template's JS-context escaping, so
+ * an untrusted value can never become executable handler code. It errs wide
+ * within `data-on…`: a name the stdlib table lists as plain (`data-open`) also
+ * matches, which is harmless because `goAttrNameToken`'s form renders exactly
+ * what a plain attribute would.
+ */
+export function isDataOnAttrName(name: string): boolean {
+  return name.toLowerCase().startsWith('data-on')
+}
+
+/**
+ * The attribute-name text to emit before a `="…"` value holding actions. A
+ * `data-on…` name (`isDataOnAttrName`) is emitted through the
+ * `bf_attr_name` action instead of as literal text: html/template does not
+ * classify an action-supplied (`template.HTMLAttr`) name, so the value that
+ * follows is escaped as plain attribute text whatever its shape — a bare
+ * action, a template literal's text-plus-actions, an `{{if}}` chain. Every
+ * other name is returned unchanged.
+ */
+export function goAttrNameToken(name: string): string {
+  return isDataOnAttrName(name) ? `{{bf_attr_name ${JSON.stringify(name)}}}` : name
+}
+
+/**
  * Parenthesize a compound Go template argument (`or .Checked false`) so a
  * primitive call reads it as ONE argument — unwrapped, the parser splits it
  * into three and `bf_string` fails with "want 1 got 3".

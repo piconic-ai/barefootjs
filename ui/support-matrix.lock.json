@@ -1757,6 +1757,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1848,12 +1854,6 @@
               "fixture": "loop-row-child-children-nested-destructured-prop",
               "limitations": [
                 "loop-component-row-destructured-param"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -2632,9 +2632,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -4346,6 +4346,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4434,9 +4440,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -4635,12 +4641,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -6172,6 +6172,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6254,9 +6260,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -6371,12 +6377,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -7737,6 +7737,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7954,12 +7960,6 @@
               "fixture": "negated-empty-array-condition",
               "limitations": [
                 "negated-empty-array-condition"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -11264,12 +11264,6 @@
               ]
             },
             {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
-              ]
-            },
-            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -11379,7 +11373,16 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            }
+          ]
+        },
         "go-template": {},
         "jinja": {},
         "minijinja": {},
@@ -11394,10 +11397,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "data-table",
-        "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts",
-        "code": "sortedData().length / pageSize"
+        "fixture": "number-division-text",
+        "description": "Integer operands divided in text keep the fractional result",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts",
+        "code": "props.value / 4"
       }
     },
     "binary:<": {
@@ -12513,6 +12516,12 @@
               ]
             },
             {
+              "fixture": "number-division-text",
+              "limitations": [
+                "integer-division-truncated"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12592,12 +12601,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "number-addition-text-formatting",
-              "limitations": [
-                "number-addition-text-formatting"
               ]
             },
             {
@@ -13292,9 +13295,9 @@
               ]
             },
             {
-              "fixture": "data-on-attr-dynamic-value",
+              "fixture": "data-url-attr-dynamic-value",
               "limitations": [
-                "data-on-attr-value-script-escaped"
+                "data-url-attr-value-url-escaped"
               ]
             },
             {

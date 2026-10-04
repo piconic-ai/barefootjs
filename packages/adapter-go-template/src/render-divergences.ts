@@ -93,7 +93,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  'number-addition-text-formatting': { limitation: 'number-addition-text-formatting' },
   'fractional-number-array-prop': { limitation: 'fractional-number-array-prop' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
@@ -157,9 +156,10 @@ export const renderDivergences: RenderDivergences = {
   'loop-component-row-destructured-param': { limitation: 'loop-component-row-destructured-param' },
   'loop-row-child-children-nested-destructured-prop': { limitation: 'loop-component-row-destructured-param' },
   // `html/template` strips a `data-` prefix before classifying an attribute,
-  // so `data-on…` escapes as an `on…` event-handler (JS) attribute: a dynamic
-  // value renders as a quoted script string (`&#34;x&#34;`).
-  'data-on-attr-dynamic-value': { limitation: 'data-on-attr-value-script-escaped' },
+  // and treats a name containing `src`/`uri`/`url` as a URL: a dynamic value
+  // is percent-normalized (`a%20b`) and a `javascript:` value becomes
+  // `#ZgotmplZ`.
+  'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
 
   // A memo reading `.length` of a prop-seeded array signal is baked into the
   // constructor as the memo type's zero value (`Count: 0`): the
