@@ -168,15 +168,6 @@ export const renderDivergences: RenderDivergences = {
   // `#ZgotmplZ`.
   'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
 
-  // A literal-initialized `const` read as a ternary test is lowered as a
-  // Props field read (`.On`, `.Mode`) the struct doesn't have, so
-  // `html/template` fails at render time: "can't evaluate field On in type
-  // main.…Props". Boolean literals fail at module or function scope; a
-  // string literal only at function scope (a module-scope string const
-  // renders like Hono).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'const-string-conditional-test': { limitation: 'literal-const-conditional-test' },
   // A memo reading `.length` of a prop-seeded array signal is baked into the
   // constructor as the memo type's zero value (`Count: 0`): the
   // constructor-time memo baker (`computeMemoInitialValueOrNull`,

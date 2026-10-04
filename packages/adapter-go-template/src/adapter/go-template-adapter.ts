@@ -72,6 +72,7 @@ import {
   isLowerableLoopDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
+  lookupLiteralConst,
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
@@ -5849,10 +5850,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
     // nil and uses JS-compatible notation for a present float; other
     // present values retain the existing default printing behavior.
+    // A bare `nil` (a `const x = null` read as text) is not a valid action on
+    // its own (`nil is not a command`); JS renders a null child as nothing.
     const finalExpr =
-      this.textNillablePropNameOf(classify.parsed) !== null
-        ? `bf_string ${wrapIfMultiToken(goExpr)}`
-        : this.numericTextExpression(goExpr, classify.parsed)
+      goExpr === 'nil'
+        ? '""'
+        : this.textNillablePropNameOf(classify.parsed) !== null
+          ? `bf_string ${wrapIfMultiToken(goExpr)}`
+          : this.numericTextExpression(goExpr, classify.parsed)
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
@@ -5952,11 +5957,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
-    // Module scalar const (e.g. `const TRACK = 8` used in a width expression,
-    // or `const OPEN = true`): inline the literal value rather than emit
-    // `{{.TRACK}}` against a Props field that never exists. Mirrors the
-    // string-const inlining above.
-    const inlinedScalar = this.resolveModuleConstAsGo(name, { kind: 'template-action' })
+    // Literal-initialized const, module or function scope (`const TRACK = 8`,
+    // `const OPEN = true`, `const mode = 'on'`): inline the literal rather than
+    // emit `{{.TRACK}}` against a Props field that never exists (#3312). Any
+    // other module literal the structural resolver bakes (`const val = null`
+    // → `nil`) still resolves through it.
+    const inlinedScalar =
+      this.resolveLiteralConstAsGo(name) ?? this.resolveModuleConstAsGo(name, { kind: 'template-action' })
     if (inlinedScalar !== null) return inlinedScalar
     if (this.isCurrentLoopItem(name)) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
@@ -6175,6 +6182,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * A bare identifier bound to a literal-initialized const — module or
+   * component-function scope — as a Go template literal (`true`, `8`,
+   * `"on"`), or null. The decision is the shared `lookupLiteralConst` every
+   * template-string adapter uses (#3312); a name a loop binds at this point
+   * resolves to the row instead.
+   */
+  private resolveLiteralConstAsGo(name: string): string | null {
+    const lit = lookupLiteralConst(
+      name,
+      this.state.localConstants,
+      n => this.isCurrentLoopItem(n) || this.loopVarRefCount.has(n) || this.isOuterLoopParam(n),
+    )
+    if (lit === null) return null
+    // A decoded string value can hold a newline or other control character,
+    // which a Go template string literal must carry escaped; JSON's escapes
+    // are a subset of Go's interpreted-string escapes.
+    if (lit.kind === 'null') return 'nil'
+    return lit.kind === 'string' ? JSON.stringify(lit.text) : lit.text
+  }
+
+  /**
    * The single module-const lookup shared by `resolveModuleConstAsGo` —
    * kept as its own method (rather than inlined) so a second `.find(` isn't
    * added elsewhere, growing `binding-scope-ratchet.test.ts`'s shrink-only
@@ -6234,7 +6262,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `"${value}"`
+    // A decoded string value: JSON escaping is a subset of Go's interpreted-
+    // string escapes, so a quote or newline stays inside the literal.
+    if (literalType === 'string') return JSON.stringify(String(value))
     if (literalType === 'null') return 'nil'
     return String(value)
   }
@@ -8423,7 +8453,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             const acc = this.loopBindingStack[i].get(expr.name)
             if (acc !== undefined) return plain(acc)
           }
-          const inlined = this.resolveModuleStringConst(expr.name)
+          const inlined = this.resolveModuleStringConst(expr.name) ?? this.resolveLiteralConstAsGo(expr.name)
           if (inlined !== null) return plain(inlined)
           if (this.isCurrentLoopItem(expr.name)) {
             return plain('.')
@@ -8439,7 +8469,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return plain(this.rootFieldRef(expr.name))
 
       case 'literal':
-        if (expr.literalType === 'string') return plain(`"${expr.value}"`)
+        if (expr.literalType === 'string') return plain(JSON.stringify(String(expr.value)))
         if (expr.literalType === 'null') return plain('nil')
         return plain(String(expr.value))
 

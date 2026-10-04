@@ -878,11 +878,11 @@ import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row
 // A component loop row with forwarded children over an array prop
 // (registry: `loop-row-child-children-prop-array`).
 import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-children-prop-array'
-// A literal-initialized `const` read as a conditional's test (registry:
-// `literal-const-conditional-test`).
+// A literal-initialized `const` read as a conditional's test (#3312).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
 import { fixture as constStringConditionalTest } from './const-string-conditional-test'
+import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
 // Static text starting with `:` / `%` right after a ternary, or as a
 // ternary branch — a template line the engine must not read as a line
 // statement (#3311).
@@ -1439,6 +1439,7 @@ export const jsxFixtures: JSXFixture[] = [
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
+  literalConstConditionalShapes,
   conditionalThenColonText,
   conditionalThenPercentText,
   conditionalBranchSigilText,

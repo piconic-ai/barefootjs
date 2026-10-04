@@ -2167,70 +2167,6 @@
           ]
         }
       },
-      "const-boolean-conditional-test": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        }
-      },
-      "const-string-conditional-test": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        }
-      },
       "create-query-derived-memo": {
         "go-template": {
           "kind": "render",
@@ -3950,62 +3886,6 @@
           "escape": {
             "state": "debt"
           }
-        }
-      },
-      "module-const-boolean-conditional-test": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "literal-const-conditional-test"
-          ]
         }
       },
       "module-const-loop-source-computed": {
@@ -5903,14 +5783,6 @@
         "description": "A signal-driven ternary directly followed by text renders with no whitespace between them",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-then-text.ts"
       },
-      "const-boolean-conditional-test": {
-        "description": "A function-scope boolean-literal const read as a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-boolean-conditional-test.ts"
-      },
-      "const-string-conditional-test": {
-        "description": "A function-scope string-literal const compared in a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-string-conditional-test.ts"
-      },
       "create-query-derived-memo": {
         "description": "A memo over a createQuery value is seeded from `initial` at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-derived-memo.ts"
@@ -6034,10 +5906,6 @@
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
-      },
-      "module-const-boolean-conditional-test": {
-        "description": "A module-scope boolean-literal const read as a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-boolean-conditional-test.ts"
       },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
@@ -6504,29 +6372,6 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
-    },
-    "literal-const-conditional-test": {
-      "title": "Literal-initialized const read as a conditional test",
-      "kind": "silent",
-      "given": "a `const` initialized with a boolean literal at module or function scope (`const on = true`), or with a string literal inside the component function (`const mode = 'on'`), read as the test of a ternary (`data-x={on ? 'a' : 'b'}`, `data-x={mode === 'on' ? 'a' : 'b'}`)",
-      "expected": "the branch the const's value selects renders in the server HTML (`data-x=\"a\"`)",
-      "actual": "renders the falsy branch as if the const were unset, or throws at render time on an unbound template variable",
-      "fixtures": [
-        "const-boolean-conditional-test",
-        "const-string-conditional-test",
-        "module-const-boolean-conditional-test"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
     },
     "loop-component-row-destructured-param": {
       "title": "A component loop row loses its row values when the callback destructures the row param",

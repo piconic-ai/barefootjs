@@ -3909,6 +3909,27 @@
         "text"
       ]
     },
+    "literal-const-conditional-shapes": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "local-record-union-index": {
       "kinds": [
         "literal",

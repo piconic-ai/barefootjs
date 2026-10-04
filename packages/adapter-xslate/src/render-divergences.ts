@@ -72,10 +72,4 @@ export const renderDivergences: RenderDivergences = {
   // belongs to one registry entry, so it stays cited here, for the space
   // the sibling DSL adapters render and this one would once it parses.
   'conditional-then-text': { limitation: 'text-adjacent-conditional-whitespace' },
-
-  // A boolean-literal `const` (module or function scope) read as a ternary
-  // test never reaches the template: it is read as an unset variable, so
-  // the falsy branch renders (`data-x="b"` for Hono's `data-x="a"`).
-  'const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
-  'module-const-boolean-conditional-test': { limitation: 'literal-const-conditional-test' },
 }
