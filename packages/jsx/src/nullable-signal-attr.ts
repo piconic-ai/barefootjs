@@ -108,7 +108,8 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
  * Like the bare-signal guard it is presence-only: a non-nil value renders
  * exactly as unguarded, so over-including a value never changes output for
  * a present value (`''`, `0` and `false` still render). `isShadowed` names
- * a getter a loop binding hides, which is then not the signal / memo.
+ * a getter a loop binding hides at the attribute site, which is then not
+ * the signal / memo; a memo's own body is read in its declaration scope.
  */
 export function attrValueMayBeNullish(
   parsed: ParsedExpr | undefined,
@@ -116,7 +117,10 @@ export function attrValueMayBeNullish(
   isShadowed: (name: string) => boolean = () => false,
 ): boolean {
   const visiting = new Set<string>()
-  const walk = (expr: ParsedExpr): boolean => {
+  // `shadowed` is the scope the expression is read in: the attribute site's
+  // loop bindings at the top level, none inside a memo body — its getters
+  // resolve where the memo is declared, not where it is read.
+  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
     switch (expr.kind) {
       case 'identifier':
         return expr.name === 'undefined'
@@ -124,27 +128,29 @@ export function attrValueMayBeNullish(
         return expr.literalType === 'null'
       case 'call': {
         const getter = bareGetterCallName(expr)
-        if (getter === null || isShadowed(getter)) return false
+        if (getter === null || shadowed(getter)) return false
         if (ctx.nullableSignals.has(getter)) return true
         const memo = ctx.memos.get(getter)
         if (!memo || visiting.has(getter)) return false
         if (admitsNullish(memo.type)) return true
         visiting.add(getter)
-        const result = memo.parsed !== undefined && walk(memo.parsed)
+        const result = memo.parsed !== undefined && walk(memo.parsed, () => false)
         visiting.delete(getter)
         return result
       }
       case 'member':
-        return expr.optional || walk(expr.object)
+        return expr.optional || walk(expr.object, shadowed)
       case 'index-access':
-        return walk(expr.object)
+        return walk(expr.object, shadowed)
       case 'conditional':
-        return walk(expr.consequent) || walk(expr.alternate)
+        return walk(expr.consequent, shadowed) || walk(expr.alternate, shadowed)
       case 'logical':
-        return expr.op === '&&' ? walk(expr.left) || walk(expr.right) : walk(expr.right)
+        return expr.op === '&&'
+          ? walk(expr.left, shadowed) || walk(expr.right, shadowed)
+          : walk(expr.right, shadowed)
       default:
         return false
     }
   }
-  return parsed !== undefined && walk(parsed)
+  return parsed !== undefined && walk(parsed, isShadowed)
 }

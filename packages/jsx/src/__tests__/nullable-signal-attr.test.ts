@@ -116,4 +116,9 @@ describe('attrValueMayBeNullish (#3322)', () => {
   test('a getter a loop binding shadows is not the signal or memo', () => {
     expect(mayBe('label()', ['label'])).toBe(false)
   })
+
+  test("a memo's body reads its getters where the memo is declared, not where it is read", () => {
+    expect(mayBe('label()', ['s'])).toBe(true)
+    expect(mayBe('nested()', ['s', 'label'])).toBe(true)
+  })
 })

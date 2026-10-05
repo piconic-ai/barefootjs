@@ -44,6 +44,9 @@ export const renderDivergences: RenderDivergences = {
   // treats the missing array as empty and renders `0`, where JS reads
   // `undefined` and renders nothing.
   'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
+  // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
+  // operand at render, where JS coerces `null` to `0` (#3322).
+  'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
   // Ruby `/` on two Integers is integer division: `1234567890 / 4` renders
   // `308641972`, where JS division keeps `.5`.
   'number-division-text': { limitation: 'integer-division-truncated' },

@@ -697,6 +697,7 @@ import { fixture as nullishOptionalMemberAttr } from './nullish-optional-member-
 import { fixture as nullishOptionalMemberMissingFieldAttr } from './nullish-optional-member-missing-field-attr'
 import { fixture as nullishTernaryAttr } from './nullish-ternary-attr'
 import { fixture as nullishTernaryFalseBranchAttr } from './nullish-ternary-false-branch-attr'
+import { fixture as nullishSignalArithmeticMemo } from './nullish-signal-arithmetic-memo'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -1382,6 +1383,7 @@ export const jsxFixtures: JSXFixture[] = [
   nullishOptionalMemberMissingFieldAttr,
   nullishTernaryAttr,
   nullishTernaryFalseBranchAttr,
+  nullishSignalArithmeticMemo,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,

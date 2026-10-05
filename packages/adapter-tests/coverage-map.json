@@ -5903,6 +5903,22 @@
         "attribute"
       ]
     },
+    "nullish-signal-arithmetic-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "nullish-signal-attr": {
       "kinds": [
         "call",
