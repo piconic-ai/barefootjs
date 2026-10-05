@@ -872,16 +872,15 @@ import { fixture as conditionalTextAdjacencyShapes } from './conditional-text-ad
 import { fixture as staticLiteralLoopComponentInRow } from './static-literal-loop-component-in-row'
 import { fixture as staticLiteralLoopComponentInRowClient } from './static-literal-loop-component-in-row-client'
 import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-literal-loop-component-in-row-precomputed'
-// A component loop row keyed by a row field the component takes no prop
-// for (registry: `loop-row-child-key-not-a-prop`).
+// Component loop rows over an array prop keyed by the source row, not a
+// child prop: a key field the child takes no prop for, a same-named child
+// prop passed a different field, the row value of a string array, and their
+// sibling shapes (same name and value, nested / numeric / destructured key,
+// empty array).
 import { fixture as loopRowChildKeyNotAProp } from './loop-row-child-key-not-a-prop'
-// A component loop row keyed by a row field the component also takes a
-// same-named prop for, passed a different row field (registry:
-// `loop-row-child-key-shadowed-by-prop`).
 import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-shadowed-by-prop'
-// A component loop row over a string array prop keyed by the row value
-// itself (registry: `loop-row-child-scalar-row-key`).
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
+import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 // A component loop row with forwarded children over an array prop, and its
 // sibling shapes (destructured prop, nested row field, row prop, empty /
 // absent array, a sibling loop whose plural is the prop's name).
@@ -1450,6 +1449,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildKeyNotAProp,
   loopRowChildKeyShadowedByProp,
   loopRowChildScalarRowKey,
+  loopRowChildKeyShapes,
   loopRowChildChildrenPropArray,
   loopRowChildChildrenPropArrayShapes,
   loopRowChildChildrenPropArraySiblingPlural,

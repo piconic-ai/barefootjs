@@ -4320,24 +4320,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-key-not-a-prop",
-              "limitations": [
-                "loop-row-child-key-not-a-prop"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-key-shadowed-by-prop",
-              "limitations": [
-                "loop-row-child-key-shadowed-by-prop"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-scalar-row-key",
-              "limitations": [
-                "loop-row-child-scalar-row-key"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -7300,24 +7282,6 @@
               "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
                 "loop-row-child-children-prop-array-sibling-plural"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-key-not-a-prop",
-              "limitations": [
-                "loop-row-child-key-not-a-prop"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-key-shadowed-by-prop",
-              "limitations": [
-                "loop-row-child-key-shadowed-by-prop"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-scalar-row-key",
-              "limitations": [
-                "loop-row-child-scalar-row-key"
               ]
             },
             {
