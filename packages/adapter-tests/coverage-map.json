@@ -2805,6 +2805,26 @@
         "text"
       ]
     },
+    "empty-array-condition-shapes": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "empty-list-branch": {
       "kinds": [
         "array-literal",
