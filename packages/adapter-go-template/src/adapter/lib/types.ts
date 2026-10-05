@@ -191,6 +191,13 @@ export interface ChildComponentShape {
    * assignability against.
    */
   paramGoTypes: ReadonlyMap<string, string>
+  /**
+   * Caller-facing names of the params whose Input field is the nillable
+   * `interface{}` after the child's own usage-driven flips
+   * (`resolvePropGoType` via `collectNillablePropNames`). A parent forwarding
+   * a value that may be nil keeps it whole only into these (#3323).
+   */
+  nillableParamNames: ReadonlySet<string>
 }
 
 /**
