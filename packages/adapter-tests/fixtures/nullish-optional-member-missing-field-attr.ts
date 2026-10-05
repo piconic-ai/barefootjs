@@ -24,8 +24,6 @@ export function NullishOptionalMemberMissingFieldAttr() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test">
-      <p bf="s0" class="missing">a</p>
-    </div>
+    <div bf-s="test"><p bf="s0" class="missing">a</p></div>
   `,
 })

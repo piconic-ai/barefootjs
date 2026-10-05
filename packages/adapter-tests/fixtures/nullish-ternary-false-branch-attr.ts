@@ -23,8 +23,6 @@ export function NullishTernaryFalseBranchAttr() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test">
-      <p bf="s0" class="false" data-choice="false">a</p>
-    </div>
+    <div bf-s="test"><p bf="s0" class="false" data-choice="false">a</p></div>
   `,
 })
