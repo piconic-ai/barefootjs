@@ -382,14 +382,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Innermost last.
    */
   private loopWrapperStack: boolean[] = []
-  /**
-   * Per-loop: the `{{range}}`/preamble variables that loop binds besides its
-   * row value — the index (`$i`) and each callback-body local (`$t`).
-   * Innermost last. A wrapper-row forwarded-children define can't see them,
-   * so it gets them through the row wrapper's `BfRowVars` instead (see
-   * `wrapperRowVars`).
-   */
-  private loopRowVarsStack: string[][] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
    *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`, an
@@ -4869,7 +4861,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private innermostDestructureRangeVar: string | null = null
   /**
    * While a wrapper-row forwarded-children define renders: the calling
-   * loop's index and callback-local variables (`loopRowVarsStack`), which
+   * loop's index and callback-local variables (`innermostRowVarNames`), which
    * that separate template can't see as `$i`/`$t`. The call site hands them
    * over in the row wrapper's `BfRowVars` map, and every define executed
    * with that wrapper as its data rebinds the ones it reads
@@ -9482,7 +9474,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null,
     )
     this.loopWrapperStack.push(!!loop.childComponent)
-    this.loopRowVarsStack.push([...addedLoopVars])
     // Rendered inside the pushed loop scope so each initializer resolves
     // against the range item (`.Done`), in source order so a later
     // initializer sees an earlier `$` variable — same as the source block.
@@ -9490,7 +9481,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       .map(d => `{{$${d.name} := ${this.renderParsedExpr(d.valueParsed)}}}`)
       .join('')
     const children = this.renderChildren(loop.children)
-    this.loopRowVarsStack.pop()
     this.loopWrapperStack.pop()
     this.loopScalarItemStack.pop()
     // Build the per-item anchor marker while the row scope is still active,
@@ -9774,7 +9764,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.inLoop = false
       this.renderingWrapperRowChildren = wrapperRow
       const scalarRow = this.loopScalarItemStack[this.loopScalarItemStack.length - 1] ?? false
-      const rowVarNames = wrapperRow && !scalarRow ? (this.loopRowVarsStack[this.loopRowVarsStack.length - 1] ?? []) : []
+      const rowVarNames = wrapperRow && !scalarRow ? this.innermostRowVarNames() : []
       this.wrapperRowVars = rowVarNames.length > 0 ? { names: new Set(rowVarNames), used: new Set() } : null
       this.wrapperRowDestructureVar = wrapperRow ? this.innermostDestructureRangeVar : null
       try {
@@ -9791,6 +9781,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
     return name
+  }
+
+  /**
+   * The innermost loop's own `{{range}}`/preamble variables besides its row
+   * value — its index (`$i`) and each callback-body local (`$t`) — as the
+   * shared `scope` records them. A `.keys()` loop's key param isn't bound
+   * in `scope` (see `enterLoopRow`'s caller), so it isn't delivered.
+   */
+  private innermostRowVarNames(): string[] {
+    return [...this.scope.boundNames()].filter(name => {
+      const hit = this.scope.lookup(name)
+      return hit !== null && hit.depth === 0 && (hit.binding.source === 'index' || hit.binding.source === 'preamble')
+    })
   }
 
   /**
