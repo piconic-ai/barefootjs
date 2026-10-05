@@ -1,5 +1,0 @@
----
-"@barefootjs/go-template": patch
----
-
-A `.map()` loop whose row is a child component with forwarded children now delivers the row's index and callback-body locals to what those children render, as Hono does. Before, the forwarded children rendered as a separate template that couldn't see the calling `{{range}}`'s variables: a nested component's prop reading the index or a local (`opts.map((o, i) => <Chip><Mark pos={i}>…</Mark></Chip>)`, `const t = o.tone` → `<Mark tone={t}>`) rendered every row with the prop's zero value, and reading either as text inside a nested component's children (`<Mark>{i}</Mark>`), or a destructured row name there (`({ label }) => <Box><Mark>{label}</Mark></Box>`), failed the whole template. The generated row wrapper struct (`<Parent><Child>L<n>Ctx`) gains a `BfRowVars map[string]interface{}` field; the call site fills it per row with the variables the forwarded children read, and each define they render through rebinds them. A nested prop that reads the index together with the parent's own state (`checked={selected()[index]}`) still keeps the shared instance's value, since the row wrapper carries no field for that state.
