@@ -2614,6 +2614,12 @@
               ]
             },
             {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3058,6 +3064,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3481,6 +3493,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -3689,6 +3707,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3752,6 +3776,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -4332,6 +4362,12 @@
               ]
             },
             {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4878,6 +4914,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5397,6 +5439,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -6242,6 +6290,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6587,6 +6641,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -7222,6 +7282,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -8174,6 +8240,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -11262,6 +11334,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11319,6 +11397,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -13034,6 +13118,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
             {
               "fixture": "optional-chain-length-bare-text",
               "limitations": [

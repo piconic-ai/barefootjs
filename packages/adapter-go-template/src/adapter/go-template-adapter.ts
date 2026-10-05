@@ -55,6 +55,8 @@ import {
   isBooleanAttr,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  attrValueMayBeNullish,
+  collectNullishAttrContext,
   parseExpression,
   stringifyParsedExpr,
   parseStyleObjectEntries,
@@ -682,6 +684,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
+    this.state.nullishAttrCtx = collectNullishAttrContext(ir)
   }
 
   /**
@@ -10156,7 +10159,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // #2335: the ternary lowers to the pipeline-position `(bf_ternary …)`
         // value (no longer a `{{if}}…{{end}}` fragment), so wrap it in a single
         // `{{…}}` action inside the attribute string — `name="{{bf_ternary …}}"`.
-        return `${nameTok}="{{${this.renderParsedExpr(parsed)}}}"`
+        const ternary = this.renderParsedExpr(parsed)
+        // A branch that can be nullish (#3322, `attrValueMayBeNullish`) omits
+        // the attribute when the taken branch is nil.
+        if (attrValueMayBeNullish(parsed, this.state.nullishAttrCtx, n => this.scope.isBound(n))) {
+          return `{{if ne ${ternary} nil}}${nameTok}="{{${ternary}}}"{{end}}`
+        }
+        return `${nameTok}="{{${ternary}}}"`
       }
       if (parsed.kind === 'template-literal') {
         // Inline Go template syntax with embedded `{{...}}` actions.
@@ -10212,9 +10221,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // than double-wrapping it in another `{{…}}`.
       const exprOut: { parsed?: ParsedExpr } = {}
       const go = this.convertExpressionToGo(value.expr, exprOut, value.parsed)
-      return this.isTemplateFragment(go, exprOut.parsed?.kind)
-        ? `${nameTok}="${go}"`
-        : `${nameTok}="{{${go}}}"`
+      if (this.isTemplateFragment(go, exprOut.parsed?.kind)) return `${nameTok}="${go}"`
+      // A value that reaches `undefined`/`null` through a memo, an optional
+      // member read or a ternary branch (#3322, `attrValueMayBeNullish`)
+      // omits the attribute on a nil value, as Hono does. `ne x nil` is
+      // false only for an untyped nil, so a typed field always renders.
+      if (attrValueMayBeNullish(value.parsed, this.state.nullishAttrCtx, n => this.scope.isBound(n))) {
+        return `{{if ne (${go}) nil}}${nameTok}="{{${go}}}"{{end}}`
+      }
+      return `${nameTok}="{{${go}}}"`
     },
     emitBooleanAttr: (_value, name) => name,
     // Spread attributes (`<div {...attrs()} />`) lower through the

@@ -469,6 +469,10 @@ export function getSignalInitialValueAsGo(
       (initialValue.startsWith('"') && initialValue.endsWith('"'))) {
     return initialValue.replace(/'/g, '"')
   }
+  // An `undefined` / `null` initial value is Go's `nil` — the signal's own
+  // field holds `nil` too — so a memo reading it stays nil-checkable
+  // (`attrValueMayBeNullish`, #3322) instead of seeding the int `0`.
+  if (isNullishLiteral(parsed)) return 'nil'
 
   return '0'
 }

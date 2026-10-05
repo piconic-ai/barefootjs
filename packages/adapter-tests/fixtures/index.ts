@@ -692,6 +692,11 @@ import { fixture as childPropRestForward } from './child-prop-rest-forward'
 import { fixture as childPropRestForwardUndefinedStart } from './child-prop-rest-forward-undefined-start'
 import { fixture as zeroArgSignal } from './zero-arg-signal'
 import { fixture as nullishSignalAttr } from './nullish-signal-attr'
+import { fixture as nullishMemoAttr } from './nullish-memo-attr'
+import { fixture as nullishOptionalMemberAttr } from './nullish-optional-member-attr'
+import { fixture as nullishOptionalMemberMissingFieldAttr } from './nullish-optional-member-missing-field-attr'
+import { fixture as nullishTernaryAttr } from './nullish-ternary-attr'
+import { fixture as nullishTernaryFalseBranchAttr } from './nullish-ternary-false-branch-attr'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -1372,6 +1377,11 @@ export const jsxFixtures: JSXFixture[] = [
   childPropRestForwardUndefinedStart,
   zeroArgSignal,
   nullishSignalAttr,
+  nullishMemoAttr,
+  nullishOptionalMemberAttr,
+  nullishOptionalMemberMissingFieldAttr,
+  nullishTernaryAttr,
+  nullishTernaryFalseBranchAttr,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,

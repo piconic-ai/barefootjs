@@ -254,6 +254,9 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  attrValueMayBeNullish,
+  collectNullishAttrContext,
+  type NullishAttrContext,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -401,6 +404,8 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
   private nullableOptionalProps: Set<string> = new Set()
   /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
   private nullableSignalGetters: Set<string> = new Set()
+  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
+  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
 
   /**
    * Local alias -> declared/exported name for imported components (#2822,
@@ -442,6 +447,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
+    this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1646,6 +1652,17 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
           const val = this.convertExpressionToPebble(m.consequent, m.consequentParsed)
           return `\n{% if ${cond} %}\n${name}="{{ bf.string(${val}) }}"\n{% endif %}\n`
         }
+      }
+      // A value that reaches `undefined`/`null` through a memo, an optional
+      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
+      // bind it once and omit the attribute on a nil value, as Hono does.
+      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
+        const v = this.convertExpressionToPebble(value.expr, value.parsed)
+        const tmp = `bf_pu${this.presenceVarCounter++}`
+        const body = this.shouldBoolStr(value.expr, name)
+            ? `${name}="{{ bf.bool_str(${tmp}) }}"`
+            : `${name}="{{ bf.string(${tmp}) }}"`
+        return `\n{% set ${tmp} = ${v} %}\n{% if ${tmp} != null %}\n${body}\n{% endif %}\n`
       }
       // Boolean-result handling: route boolean-shaped values through
       // `bf.bool_str` so the wire bytes match JS `String(boolean)`. Every

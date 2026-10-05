@@ -21,6 +21,7 @@ import type {
   IRMetadata,
   LoweringMatcher,
   MemoInfo,
+  NullishAttrContext,
   ParsedExpr,
   SsrSeedPlan,
   TypeDefinition,
@@ -243,6 +244,9 @@ export class CompileState {
   nillablePropNames: Set<string> = new Set()
   /** Nullable signals with an `interface{}` field — see `collectNillableSignalGetters` (#3304). */
   nillableSignalGetters: Set<string> = new Set()
+
+  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
+  nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
 
   /**
    * OPTIONAL prop names consumed nullish-sensitively (`??` left operand in a

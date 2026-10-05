@@ -16,7 +16,7 @@
  */
 
 import type { ParsedExpr } from './expression-parser.ts'
-import type { ComponentIR, SignalInfo, TypeInfo } from './types.ts'
+import type { ComponentIR, MemoInfo, SignalInfo, TypeInfo } from './types.ts'
 
 function isNullishType(type: TypeInfo): boolean {
   return type.kind === 'primitive' && (type.primitive === 'undefined' || type.primitive === 'null')
@@ -73,4 +73,78 @@ export function nullableSignalAttrGetter(
 ): string | null {
   const getter = bareGetterCallName(parsed)
   return getter !== null && nullable.has(getter) ? getter : null
+}
+
+/**
+ * What `attrValueMayBeNullish` needs to know about the component: its
+ * nullable signal getters and its memos by name.
+ */
+export interface NullishAttrContext {
+  readonly nullableSignals: ReadonlySet<string>
+  readonly memos: ReadonlyMap<string, MemoInfo>
+}
+
+export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
+  return {
+    nullableSignals: collectNullableSignalGetters(ir),
+    memos: new Map((ir.metadata.memos ?? []).map(m => [m.name, m])),
+  }
+}
+
+/**
+ * Whether an attribute value's SSR value can be `undefined` / `null`, so a
+ * DSL adapter must guard the attribute on a nil check to omit it the way
+ * Hono does (#3322) — the derived-value half of the bare-signal guard
+ * (`nullableSignalAttrGetter`, #3304). Matches a value that reaches a
+ * nullish value through:
+ *
+ * - a read of a nullable signal or of a memo whose type or body can be
+ *   nullish (`label()` with `label = createMemo(() => s())`);
+ * - an optional member read (`user()?.name`), or a member read of a value
+ *   that can itself be nullish;
+ * - a ternary branch, or an `??` / `||` / `&&` operand the result can be;
+ * - a literal `undefined` / `null`.
+ *
+ * Like the bare-signal guard it is presence-only: a non-nil value renders
+ * exactly as unguarded, so over-including a value never changes output for
+ * a present value (`''`, `0` and `false` still render). `isShadowed` names
+ * a getter a loop binding hides, which is then not the signal / memo.
+ */
+export function attrValueMayBeNullish(
+  parsed: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean = () => false,
+): boolean {
+  const visiting = new Set<string>()
+  const walk = (expr: ParsedExpr): boolean => {
+    switch (expr.kind) {
+      case 'identifier':
+        return expr.name === 'undefined'
+      case 'literal':
+        return expr.literalType === 'null'
+      case 'call': {
+        const getter = bareGetterCallName(expr)
+        if (getter === null || isShadowed(getter)) return false
+        if (ctx.nullableSignals.has(getter)) return true
+        const memo = ctx.memos.get(getter)
+        if (!memo || visiting.has(getter)) return false
+        if (admitsNullish(memo.type)) return true
+        visiting.add(getter)
+        const result = memo.parsed !== undefined && walk(memo.parsed)
+        visiting.delete(getter)
+        return result
+      }
+      case 'member':
+        return expr.optional || walk(expr.object)
+      case 'index-access':
+        return walk(expr.object)
+      case 'conditional':
+        return walk(expr.consequent) || walk(expr.alternate)
+      case 'logical':
+        return expr.op === '&&' ? walk(expr.left) || walk(expr.right) : walk(expr.right)
+      default:
+        return false
+    }
+  }
+  return parsed !== undefined && walk(parsed)
 }
