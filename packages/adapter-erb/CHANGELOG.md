@@ -1,5 +1,15 @@
 # @barefootjs/erb
 
+## 0.39.3
+
+### Patch Changes
+
+- 0645ba9: A `const` initialized with a boolean literal (`const on = true`), at module or component-function scope, now selects the right branch when read as a conditional's test on every template adapter, as Hono renders it. Each adapter used to carry its own copy of the literal-const lookup, matching numbers and strings by regex but not booleans, so the const read as an unset template variable: the falsy branch rendered, or the template failed at render time. Go also missed a function-scope string const. The lookup is now one shared helper, `lookupLiteralConst` in `@barefootjs/jsx`, reading the analyzer's structured literal (boolean, number, string or `null`); each adapter only renders the result in its own syntax. A module `null` const no longer fails Mojolicious's `strict` compile, and on Go a bare `null` const in text renders empty instead of failing with `nil is not a command`.
+- eda0c33: An attribute whose value is `undefined` / `null` through a memo (`title={label()}`), an optional member read (`data-name={user()?.name}`) or a ternary branch (`data-choice={on() ? s() : 'x'}`) is now omitted on the template adapters, as on Hono, instead of rendering `attr=""`. Present values, including `''` and `0`, still render. The shared `attrValueMayBeNullish` (`@barefootjs/jsx`) decides which values are guarded. On Go, a memo over an `undefined`-initialized signal is now seeded `nil` in the Props constructor instead of `0`.
+- 1f41bc2: An attribute bound directly to a signal whose value is `undefined` or `null` at SSR (`title={s()}`) is now omitted on every template adapter, as Hono omits it. Before, the template adapters rendered it empty (`title=""`). A signal counts as nullable when its type admits `undefined`/`null` (including a zero-arg `createSignal<T>()`) or when it is untyped and its initial value is a literal `undefined`/`null`. The new shared helpers `collectNullableSignalGetters` and `nullableSignalAttrGetter` in `@barefootjs/jsx` make that decision for every adapter.
+- 1ef6ae2: A conditional that directly abuts text (`x:{c ? 'on' : 'off'}`, `{c ? 'on' : 'off'}:y`) no longer renders whitespace between the text and the chosen branch on the template adapters. Before, the conditional's control tags were emitted on their own lines, and those newlines surfaced as a space (`x: off`, `off :y`), which differed from Hono's `x:off` / `off:y`. Jinja, MiniJinja, Twig, Pebble, ERB and Blade now emit the control tags inline. Mojolicious keeps line statements but escapes the newline before each one. Xslate uses the inline `<: … :>` tag form.
+- @barefootjs/shared@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes
