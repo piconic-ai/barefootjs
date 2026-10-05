@@ -4704,6 +4704,18 @@
         "text"
       ]
     },
+    "loop-row-child-prop-destinations": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-scalar-row-key": {
       "kinds": [
         "identifier",

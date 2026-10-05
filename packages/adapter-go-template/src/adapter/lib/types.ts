@@ -180,6 +180,17 @@ export interface ChildComponentShape {
    * is left out: absence means "can't tell", never "a function".
    */
   dataTypedParamNames: ReadonlySet<string>
+  /**
+   * Each caller-facing param name's `<Child>Input` field Go type as the
+   * parent can resolve it: exact for a scalar param (the child's own
+   * usage-driven nillable flip, `resolvePropGoType`, can still widen an
+   * optional one to `interface{}`, which only accepts more), but NOT for an
+   * object-shaped one, whose struct the child synthesizes later
+   * (`structTypedObjectParams`). What a parent assigning a scalar Go value
+   * it already typed (a loop row's field, `emitPropArrayChildRows`) checks
+   * assignability against.
+   */
+  paramGoTypes: ReadonlyMap<string, string>
 }
 
 /**

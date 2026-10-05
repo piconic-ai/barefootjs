@@ -58,11 +58,15 @@ export function goItemAccessor(segments: readonly LoopBindingPathSegment[], base
  * `item` IS the value) or a struct row. `hasFieldPath`, when given, says
  * whether a field path exists on the struct row's Go type, so a read
  * through a field the struct doesn't carry (`item.label.length`) declines
- * instead of emitting Go that won't compile.
+ * instead of emitting Go that won't compile. `readGoType`, when given,
+ * answers the Go type of a row read at `segments` (`[]` is the whole row),
+ * or null when it can't tell — what a caller assigning the read into
+ * another struct's field checks assignability against.
  */
 export interface LoopRowShape {
   scalar?: boolean
   hasFieldPath?: (segments: readonly LoopBindingPathSegment[]) => boolean
+  readGoType?: (segments: readonly LoopBindingPathSegment[]) => string | null
 }
 
 /**

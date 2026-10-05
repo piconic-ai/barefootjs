@@ -881,6 +881,7 @@ import { fixture as loopRowChildKeyNotAProp } from './loop-row-child-key-not-a-p
 import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-shadowed-by-prop'
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
+import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
 // A component loop row with forwarded children over an array prop, and its
 // sibling shapes (destructured prop, nested row field, row prop, empty /
 // absent array, a sibling loop whose plural is the prop's name).
@@ -1450,6 +1451,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildKeyShadowedByProp,
   loopRowChildScalarRowKey,
   loopRowChildKeyShapes,
+  loopRowChildPropDestinations,
   loopRowChildChildrenPropArray,
   loopRowChildChildrenPropArrayShapes,
   loopRowChildChildrenPropArraySiblingPlural,

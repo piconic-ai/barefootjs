@@ -1157,6 +1157,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(p => !p.isRest && isCertainlyDataType(p.type))
         .map(p => p.sourceName ?? p.name),
     )
+    const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir as ComponentIR)
+    const paramGoTypes = new Map(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => !p.isRest)
+        .map(p => [
+          p.sourceName ?? p.name,
+          propTypeOverrides.get(p.name) ?? typeInfoToGo(this.emitCtx, p.type, p.defaultValue, p.parsed),
+        ]),
+    )
     this.childComponentShapes.set(name, {
       paramNames,
       restBagField,
@@ -1164,6 +1173,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       mapTypedParamNames,
       structTypedObjectParams,
       dataTypedParamNames,
+      paramGoTypes,
     })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
@@ -4036,10 +4046,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       source = {
         goExpr,
         itemType,
-        shape: { hasFieldPath: segments => this.rowStructHasFieldPath(itemType, segments) },
+        shape: {
+          hasFieldPath: segments => this.rowFieldPathGoType(itemType, segments) !== null,
+          readGoType: segments => (segments.length === 0 ? elementGoType : this.rowFieldPathGoType(itemType, segments)),
+        },
       }
     } else if (!withBody && SCALAR_ROW_GO_TYPES.has(elementGoType)) {
-      source = { goExpr, itemType: arrayType.elementType, shape: { scalar: true } }
+      source = {
+        goExpr,
+        itemType: arrayType.elementType,
+        shape: { scalar: true, readGoType: segments => (segments.length === 0 ? elementGoType : null) },
+      }
     } else {
       return null
     }
@@ -4050,20 +4067,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Whether `segments` is a field path of the struct row type `itemType`
-   * (`meta.id` on `{ id; meta: { id } }`): each segment must name a field of
-   * the struct reached so far, so a read the Go type can't spell
-   * (`label.length`) is declined rather than emitted.
+   * The Go type of the field path `segments` on the struct row type
+   * `itemType` (`meta.id` on `{ id; meta: { id } }` → `string`), or null
+   * when it isn't one: each segment must name a field of the struct reached
+   * so far, so a read the Go type can't spell (`label.length`) is declined
+   * rather than emitted.
    */
-  private rowStructHasFieldPath(itemType: TypeInfo, segments: readonly LoopBindingPathSegment[]): boolean {
+  private rowFieldPathGoType(itemType: TypeInfo, segments: readonly LoopBindingPathSegment[]): string | null {
     let current: TypeInfo = itemType
+    let goType: string | null = null
     for (const segment of segments) {
-      if (segment.kind !== 'field' || !segment.isIdent) return false
+      if (segment.kind !== 'field' || !segment.isIdent) return null
       const field = this.resolveLoopDatumFields(current).find(f => f.tsName === segment.key)
-      if (!field) return false
+      if (!field) return null
+      goType = field.goType
       current = { kind: 'interface', raw: field.goType }
     }
-    return true
+    return goType
   }
 
   /**
@@ -4104,6 +4124,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (ssrData) return null
         continue
       }
+      // The row's Go value must be assignable to the child's Input field as
+      // is: a struct row (`value={item}`) or an object field
+      // (`meta={item.meta}`) is the PARENT's generated struct, never the
+      // child's (`ListItemsItem` vs `BadgeValue`), and a scalar read can
+      // still differ (`int` row field, `float64` `.toFixed()` prop). Anything
+      // else keeps the caller-supplied rows.
+      if (!this.rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)) return null
       rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: accessor })
     }
     const errorCount = this.state.errors.length
@@ -4124,6 +4151,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Whether the row read `expr` (already accepted by `rowReadGoAccessor`)
+   * can be assigned to the child's `jsxName` Input field without
+   * conversion: a scalar read whose Go type is the field's own. Unknown on
+   * either side answers false — including an `interface{}` answer, which is
+   * what an object-shaped param resolves to before the child synthesizes
+   * its own struct for it (`BadgeValue`).
+   */
+  private rowReadAssignsToChildField(
+    expr: ParsedExpr,
+    row: LoopRowBinding,
+    shape: LoopRowShape,
+    childShape: ChildComponentShape | undefined,
+    jsxName: string,
+  ): boolean {
+    const path = rowItemPath(expr, row)
+    const readGoType = path && shape.readGoType ? shape.readGoType(path) : null
+    const fieldGoType = childShape?.paramGoTypes.get(jsxName)
+    if (!readGoType || !fieldGoType) return false
+    return SCALAR_ROW_GO_TYPES.has(readGoType) && readGoType === fieldGoType
+  }
+
+  /**
    * The `data-key` of a row on the caller-supplied `in.<Child>s` path,
    * whose `item` is the child's own `<Child>Input` rather than the source
    * row. The key is an expression of the source row, so the Input can only
@@ -4140,8 +4189,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!keyPath) return null
     const same = (a: readonly LoopBindingPathSegment[], b: readonly LoopBindingPathSegment[]): boolean =>
       a.length === b.length && a.every((seg, i) => JSON.stringify(seg) === JSON.stringify(b[i]))
+    // Only a prop landing on its own declared Input field can carry the key:
+    // a rest-bag attribute (`token={item.id}` on a `...rest` child) or an
+    // undeclared one has no `item.Token` to read.
+    const childShape = this.childComponentShapes.get(this.resolveChildName(nested.name))
     const carrier = nested.rowProps.find(prop => {
       if (prop.name === 'key' || prop.name.includes('-') || prop.value.kind !== 'expression' || !prop.value.parsed) return false
+      if (childShape && !childShape.paramNames.has(prop.name)) return false
       const path = rowItemPath(prop.value.parsed, row)
       return path !== null && same(path, keyPath)
     })
