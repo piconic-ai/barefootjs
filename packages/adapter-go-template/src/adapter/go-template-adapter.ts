@@ -110,7 +110,10 @@ import {
   slotIdToFieldSuffix,
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
-import { loopKeyToGoFieldPath } from './lib/loop-row-path.ts'
+import { loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor, type LoopRowBinding, type LoopRowShape } from './lib/loop-row-path.ts'
+
+/** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
+const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
 import {
   escapeGoString,
   wrapIfMultiToken,
@@ -1154,6 +1157,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(p => !p.isRest && isCertainlyDataType(p.type))
         .map(p => p.sourceName ?? p.name),
     )
+    const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir as ComponentIR)
+    const paramGoTypes = new Map(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => !p.isRest)
+        .map(p => [
+          p.sourceName ?? p.name,
+          propTypeOverrides.get(p.name) ?? typeInfoToGo(this.emitCtx, p.type, p.defaultValue, p.parsed),
+        ]),
+    )
     this.childComponentShapes.set(name, {
       paramNames,
       restBagField,
@@ -1161,6 +1173,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       mapTypedParamNames,
       structTypedObjectParams,
       dataTypedParamNames,
+      paramGoTypes,
     })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
@@ -2323,15 +2336,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push('')
         continue
       }
+      // Rows built from the array prop itself (`propArrayLoopRowSource`),
+      // emitted below once the prop-fallback locals their props may read
+      // are declared (`emitPropArrayChildRows`).
+      if (this.propArrayLoopRowSource(ir, nested)) continue
       lines.push(`\t${varName} := make([]${declaredName}Props, len(in.${nested.name}s))`)
       lines.push(`\tfor i, item := range in.${nested.name}s {`)
       lines.push(`\t\t${varName}[i] = New${declaredName}Props(item)`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam })
+      const keyField = this.childInputRowKeyField(nested)
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
+      } else if (nested.loopKey && rowItemPath(parseExpression(nested.loopKey), { param: nested.loopParam, paramBindings: nested.loopParamBindings })) {
+        // A row-read key with no carrier on the child's Input: rendering the
+        // rows without their `data-key` would silently diverge.
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop key '${nested.loopKey}' on <${nested.name}> rows can't be read on the Go template adapter: the rows are built from caller-supplied '${declaredName}Input' values (a child prop can't be read off the source row), and no prop of <${nested.name}> carries the key's value.`,
+          loc: this.makeLoc(),
+          suggestion: {
+            message: 'Pass each child prop as a plain read of the row (`label={item.label}`), so the rows are built from the array prop itself, or mark the loop /* @client */.',
+            escape: [{ kind: 'client-directive' }],
+          },
+        })
       }
       lines.push('\t}')
       lines.push('')
@@ -2372,6 +2402,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // component's hoisted locals here — a memo read by the wrappers must
     // never resolve to a local this function doesn't declare.
     this.state.hoistedMemoLocals = new Map()
+    for (const nested of staticWithoutBody) {
+      const source = this.propArrayLoopRowSource(ir, nested)
+      if (source) this.emitPropArrayChildRows(lines, ir, nested, source, propFallbackVars)
+    }
     this.emitStaticBodyWrappers(lines, ir, componentName, staticWithBody, propFallbackVars, emittedWrapperVars)
     this.emitDynamicBodyWrappers(lines, ir, componentName, dynamicWithBody, propFallbackVars, emittedWrapperVars)
 
@@ -3505,13 +3539,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t}`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
+      // The rows are the source data itself, so the key reads the row
+      // (`key={n}` on a scalar row is the range value).
+      const keyField = loopKeyToGoRowExpr(
+        nested.loopKey,
+        { param: nested.loopParam, paramBindings: nested.loopParamBindings },
+        { scalar: !!scalarLoopType && datumFields.length === 0 },
+      )
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-        this.state.usesFmt = true
-      } else if (scalarLoopType && nested.loopKey && nested.loopKey === nested.loopParam) {
-        // `key={n}` where `n` is the scalar item — the key is the range value.
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(item)`)
         this.state.usesFmt = true
       }
       lines.push('\t}')
@@ -3562,7 +3598,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
       }
       lines.push(`\t\t}`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
+      const keyField = loopKeyToGoRowExpr(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
@@ -3935,36 +3971,47 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * The constructor-side row source of a loop over an array PROP whose row
-   * is a child component with forwarded JSX children
-   * (`props.items.map(item => <Badge key={item.id}>{item.label}</Badge>)`),
-   * or null when this loop isn't one.
+   * is a child component (`props.items.map(item => <Badge key={item.id}
+   * label={item.label} />)`, with or without forwarded JSX children), or
+   * null when this loop isn't one.
    *
-   * Such a row renders through a wrapper struct (`generateLoopBodyWrapperStruct`)
-   * whose forwarded-children define reads the row's datum fields, so the
-   * caller can't fill it with plain `<Child>Input` rows the way it fills a
-   * bodyless child loop's `in.<Child>s`. The array prop IS the row data,
-   * though, and already reaches the constructor typed as its own Go struct
-   * slice (`in.Items []…ItemsItem`), so the constructor ranges over that
-   * field directly — the same field the Props struct and `bf-p` carry, so
-   * SSR rows and the client's own `mapArray` read one source.
+   * The array prop IS the row data, and already reaches the constructor
+   * typed as its own Go slice (`in.Items []…ItemsItem`, or `[]string` for a
+   * scalar row), so the constructor ranges over that field directly — the
+   * same field the Props struct and `bf-p` carry, so SSR rows and the
+   * client's own `mapArray` read one source. Every per-row read — the
+   * child's props AND its `key` — is then evaluated against the source row
+   * (`loopKeyToGoRowExpr` / `rowReadGoAccessor`), never against a child
+   * `Input` built from it: the key is not one of the child's props, and a
+   * same-named prop may carry a different value.
+   *
+   * - A row WITH forwarded children renders through a wrapper struct
+   *   (`generateLoopBodyWrapperStruct`) whose forwarded-children define
+   *   reads the row's datum fields; a struct row only.
+   * - A bodyless row builds each child's `<Child>Input` from the row
+   *   (`sourceRowChildInputFields`); a struct or scalar row, as long as
+   *   every SSR prop of the child lowers against the row. Otherwise the loop
+   *   stays on the caller-supplied `in.<Child>s` rows.
    *
    * The one decision every site consults — the row's element type for the
    * wrapper's datum fields (`resolveNestedLoopItemTypes`), the Input struct
    * (no `<Child>s` field: rows come from the prop, `generateInputStruct`),
-   * and the constructor's rows (`emitStaticBodyWrappers`).
+   * and the constructor's rows (`emitStaticBodyWrappers`,
+   * `emitPropArrayChildRows`).
    *
    * Recognized: the prop itself (`props.items`, or a destructured `items` /
    * `{ items: rows }`) whose declared type is an array of objects that
-   * resolves to a generated Go struct. A prop whose Go field any of the
-   * component's `<Child>s` fields shadows (`isNestedArrayShadowed`), a deeper path
-   * (`props.data.items`) or a local alias of the prop stay on the existing
-   * paths.
+   * resolves to a generated Go struct, or of strings/numbers/booleans. A
+   * prop whose Go field any of the component's `<Child>s` fields shadows
+   * (`isNestedArrayShadowed`), a deeper path (`props.data.items`) or a local
+   * alias of the prop stay on the existing paths.
    */
   private propArrayLoopRowSource(
     ir: ComponentIR,
     nested: NestedComponentInfo,
-  ): { goExpr: string; itemType: TypeInfo } | null {
-    if (!nested.isPropDerived || !nested.bodyChildren?.length) return null
+  ): { goExpr: string; itemType: TypeInfo; shape: LoopRowShape } | null {
+    if (!nested.isPropDerived) return null
+    const withBody = !!nested.bodyChildren?.length
     const arr = nested.loopArrayParsed
     if (!arr) return null
     const params = ir.metadata.propsParams
@@ -3991,10 +4038,201 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const arrayType = param.type
     if (arrayType?.kind !== 'array' || !arrayType.elementType) return null
     const elementGoType = typeInfoToGo(this.emitCtx, arrayType.elementType)
-    if (!this.state.localStructFields.has(elementGoType)) return null
-    const itemType: TypeInfo = { kind: 'interface', raw: elementGoType }
-    if (this.resolveLoopDatumFields(itemType).length === 0) return null
-    return { goExpr: `in.${capitalizeFieldName(param.sourceName ?? param.name)}`, itemType }
+    const goExpr = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+    let source: { goExpr: string; itemType: TypeInfo; shape: LoopRowShape }
+    if (this.state.localStructFields.has(elementGoType)) {
+      const itemType: TypeInfo = { kind: 'interface', raw: elementGoType }
+      if (this.resolveLoopDatumFields(itemType).length === 0) return null
+      source = {
+        goExpr,
+        itemType,
+        shape: {
+          hasFieldPath: segments => this.rowFieldPathGoType(itemType, segments) !== null,
+          readGoType: segments => (segments.length === 0 ? elementGoType : this.rowFieldPathGoType(itemType, segments)),
+        },
+      }
+    } else if (!withBody && SCALAR_ROW_GO_TYPES.has(elementGoType)) {
+      source = {
+        goExpr,
+        itemType: arrayType.elementType,
+        shape: { scalar: true, readGoType: segments => (segments.length === 0 ? elementGoType : null) },
+      }
+    } else {
+      return null
+    }
+    if (!withBody && this.sourceRowChildInputFields(ir, nested, source.shape, this.collectPropFallbackVars(ir), false) === null) {
+      return null
+    }
+    return source
+  }
+
+  /**
+   * The Go type of the field path `segments` on the struct row type
+   * `itemType` (`meta.id` on `{ id; meta: { id } }` → `string`), or null
+   * when it isn't one: each segment must name a field of the struct reached
+   * so far, so a read the Go type can't spell (`label.length`) is declined
+   * rather than emitted.
+   */
+  private rowFieldPathGoType(itemType: TypeInfo, segments: readonly LoopBindingPathSegment[]): string | null {
+    let current: TypeInfo = itemType
+    let goType: string | null = null
+    for (const segment of segments) {
+      if (segment.kind !== 'field' || !segment.isIdent) return null
+      const field = this.resolveLoopDatumFields(current).find(f => f.tsName === segment.key)
+      if (!field) return null
+      goType = field.goType
+      current = { kind: 'interface', raw: field.goType }
+    }
+    return goType
+  }
+
+  /**
+   * The `<Child>Input` fields of a bodyless prop-array loop's row
+   * (`propArrayLoopRowSource`), each evaluated against the source row
+   * `item`: a prop reading the row lowers to its row accessor
+   * (`label={item.label}` → `Label: item.Label`, a scalar row's `label={i}`
+   * → `Label: item`); any other prop goes through the same constructor-time
+   * lowering as a non-loop call site (`lowerChildInputFields`). `key` is the
+   * row's reconciliation key, not a prop. Null — and nothing recorded —
+   * when an SSR prop (`isUndeliveredSsrData`) can't be lowered that way;
+   * the loop then keeps its caller-supplied `in.<Child>s` rows.
+   *
+   * `emit` false is the decision-only probe: diagnostics and import flags
+   * the lowering raises are rolled back.
+   */
+  private sourceRowChildInputFields(
+    ir: ComponentIR,
+    nested: NestedComponentInfo,
+    shape: LoopRowShape,
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    emit: boolean,
+  ): Array<{ goField: string; goValue: string }> | null {
+    const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
+    const childShape = this.childComponentShapes.get(this.resolveChildName(nested.name))
+    const rowFields: Array<{ goField: string; goValue: string }> = []
+    const rowIndependent: IRProp[] = []
+    for (const prop of nested.rowProps) {
+      if (prop.name === 'key') continue
+      const ssrData = this.isUndeliveredSsrData(prop, nested.name, ir)
+      if (!this.propReadsRow(prop, nested.rowScope)) {
+        rowIndependent.push(prop)
+        continue
+      }
+      const parsed = prop.value.kind === 'expression' ? prop.value.parsed : undefined
+      const accessor = parsed ? rowReadGoAccessor(parsed, row, shape) : null
+      if (accessor === null || prop.name.includes('-') || routesToRestBag(childShape, prop.name)) {
+        if (ssrData) return null
+        continue
+      }
+      // The row's Go value must be assignable to the child's Input field as
+      // is: a struct row (`value={item}`) or an object field
+      // (`meta={item.meta}`) is the PARENT's generated struct, never the
+      // child's (`ListItemsItem` vs `BadgeValue`), and a scalar read can
+      // still differ (`int` row field, `float64` `.toFixed()` prop). Anything
+      // else keeps the caller-supplied rows.
+      if (!this.rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)) return null
+      rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: accessor })
+    }
+    const errorCount = this.state.errors.length
+    const { usesFmt, usesHtmlTemplate } = this.state
+    const { fields, unlowered } = this.lowerChildInputFields(
+      { name: nested.name, props: rowIndependent },
+      ir,
+      propFallbackVars,
+    )
+    const declined =
+      this.state.errors.length > errorCount || unlowered.some(p => this.isUndeliveredSsrData(p, nested.name, ir))
+    if (declined || !emit) {
+      this.state.errors.length = errorCount
+      this.state.usesFmt = usesFmt
+      this.state.usesHtmlTemplate = usesHtmlTemplate
+    }
+    return declined ? null : [...rowFields, ...fields]
+  }
+
+  /**
+   * Whether the row read `expr` (already accepted by `rowReadGoAccessor`)
+   * can be assigned to the child's `jsxName` Input field without
+   * conversion: a scalar read whose Go type is the field's own. Unknown on
+   * either side answers false — including an `interface{}` answer, which is
+   * what an object-shaped param resolves to before the child synthesizes
+   * its own struct for it (`BadgeValue`).
+   */
+  private rowReadAssignsToChildField(
+    expr: ParsedExpr,
+    row: LoopRowBinding,
+    shape: LoopRowShape,
+    childShape: ChildComponentShape | undefined,
+    jsxName: string,
+  ): boolean {
+    const path = rowItemPath(expr, row)
+    const readGoType = path && shape.readGoType ? shape.readGoType(path) : null
+    const fieldGoType = childShape?.paramGoTypes.get(jsxName)
+    if (!readGoType || !fieldGoType) return false
+    return SCALAR_ROW_GO_TYPES.has(readGoType) && readGoType === fieldGoType
+  }
+
+  /**
+   * The `data-key` of a row on the caller-supplied `in.<Child>s` path,
+   * whose `item` is the child's own `<Child>Input` rather than the source
+   * row. The key is an expression of the source row, so the Input can only
+   * answer it through a prop the child received with that very value
+   * (`key={item.id} id={item.id}` → `item.ID`). A key read through no such
+   * prop (`key={item.id} label={item.label}`), or through a same-named prop
+   * holding a different value (`key={item.id} id={item.slug}`), has nothing
+   * on the Input to read, so it is null.
+   */
+  private childInputRowKeyField(nested: NestedComponentInfo): string | null {
+    if (!nested.loopKey) return null
+    const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
+    const keyPath = rowItemPath(parseExpression(nested.loopKey), row)
+    if (!keyPath) return null
+    const same = (a: readonly LoopBindingPathSegment[], b: readonly LoopBindingPathSegment[]): boolean =>
+      a.length === b.length && a.every((seg, i) => JSON.stringify(seg) === JSON.stringify(b[i]))
+    // Only a prop landing on its own declared Input field can carry the key:
+    // a rest-bag attribute (`token={item.id}` on a `...rest` child) or an
+    // undeclared one has no `item.Token` to read.
+    const childShape = this.childComponentShapes.get(this.resolveChildName(nested.name))
+    const carrier = nested.rowProps.find(prop => {
+      if (prop.name === 'key' || prop.name.includes('-') || prop.value.kind !== 'expression' || !prop.value.parsed) return false
+      if (childShape && !childShape.paramNames.has(prop.name)) return false
+      const path = rowItemPath(prop.value.parsed, row)
+      return path !== null && same(path, keyPath)
+    })
+    return carrier ? `item.${capitalizeFieldName(carrier.name)}` : null
+  }
+
+  /**
+   * A bodyless child-component loop over an array prop
+   * (`propArrayLoopRowSource`): one `New<Child>Props` per source row, its
+   * Input fields and its `data-key` both read off that row.
+   */
+  private emitPropArrayChildRows(
+    lines: string[],
+    ir: ComponentIR,
+    nested: NestedComponentInfo,
+    source: { goExpr: string; shape: LoopRowShape },
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): void {
+    const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+    const declaredName = this.resolveChildName(nested.name)
+    const fields = this.sourceRowChildInputFields(ir, nested, source.shape, propFallbackVars, true) ?? []
+    const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
+    const keyExpr = loopKeyToGoRowExpr(nested.loopKey, row, source.shape)
+    const usesItem = keyExpr !== null || fields.some(f => /\bitem\b/.test(f.goValue))
+    lines.push(`\t${varName} := make([]${declaredName}Props, len(${source.goExpr}))`)
+    lines.push(`\tfor i, ${usesItem ? 'item' : '_'} := range ${source.goExpr} {`)
+    lines.push(`\t\t${varName}[i] = New${declaredName}Props(${declaredName}Input{`)
+    lines.push(`\t\t\tBfParent: scopeID,`)
+    lines.push(`\t\t\tBfMount: "${nested.slotId}",`)
+    for (const f of fields) lines.push(`\t\t\t${f.goField}: ${f.goValue},`)
+    lines.push(`\t\t})`)
+    if (keyExpr) {
+      lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyExpr})`)
+      this.state.usesFmt = true
+    }
+    lines.push('\t}')
+    lines.push('')
   }
 
   private resolveNestedLoopItemTypes(
@@ -4016,7 +4254,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (nested.loopItemType || !nested.loopArray) continue
 
       // Case 0: an array prop's own element type (`propArrayLoopRowSource`).
-      const propRows = this.propArrayLoopRowSource(ir, nested)
+      // A bodyless row has no wrapper to carry datum fields.
+      const propRows = nested.bodyChildren?.length ? this.propArrayLoopRowSource(ir, nested) : null
       if (propRows) {
         nested.loopItemType = propRows.itemType
         continue

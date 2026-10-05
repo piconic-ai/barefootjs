@@ -165,31 +165,6 @@ export const renderDivergences: RenderDivergences = {
   // (`!x` goes through `bf_truthy`; the un-negated test does not.)
   'empty-array-condition': { limitation: 'empty-array-condition' },
 
-  // A component loop row over an array prop, keyed by a row field the child
-  // takes no prop for (`<Badge key={item.id} label={item.label} />`): the
-  // constructor ranges over the child's own Input slice and reads the key
-  // off it (`badges[i].BfDataKey = fmt.Sprint(item.ID)`), so the generated
-  // Go fails to build with no diagnostic: "item.ID undefined (type
-  // BadgeInput has no field or method ID)".
-  'loop-row-child-key-not-a-prop': { limitation: 'loop-row-child-key-not-a-prop' },
-
-  // The same constructor read with a same-named child prop passed a
-  // DIFFERENT row field (`<Badge key={item.id} id={item.slug} … />`): the
-  // key read off the child's own Input row (`fmt.Sprint(item.ID)`) compiles,
-  // but yields the child's `id` prop (`item.slug`), so every row renders
-  // `data-key="x"`/`"y"` instead of the row's own `"a"`/`"b"`. Observable
-  // only since the harness supplies `in.Badges` and lets the constructor
-  // build the rows (it used to rebuild them itself, keyed off the JS row).
-  'loop-row-child-key-shadowed-by-prop': { limitation: 'loop-row-child-key-shadowed-by-prop' },
-
-  // A component loop row over a string array prop, keyed by the row value
-  // itself (`<Badge key={i} label={i} />`): the constructor only derives
-  // `BfDataKey` from a field path off the ranged child Input row
-  // (`loopKeyToGoFieldPath`), and a bare `i` has no field, so every row
-  // renders without its `data-key` — also when a caller builds the props
-  // through `NewXxxProps` with `Badges` populated directly.
-  'loop-row-child-scalar-row-key': { limitation: 'loop-row-child-scalar-row-key' },
-
   // A component loop row with forwarded children over an array prop
   // (`props.items.map(row => <Badge …>…</Badge>)`) next to a sibling loop
   // whose child's plural is the prop's field name (`<Item>` → `Items`):

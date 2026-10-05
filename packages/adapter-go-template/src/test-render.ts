@@ -10,7 +10,7 @@ import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
-import { goItemAccessor, loopKeyToGoFieldPath, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
+import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import type { NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
@@ -841,6 +841,10 @@ function buildDynamicChildLoopSeeding(
     if (!template.includes(`:= .${nested.name}s}}`)) continue
 
     if (nested.isPropDerived) {
+      // The constructor builds these rows from the array prop itself
+      // (`propArrayLoopRowSource`): the Input has no `<Name>s` field for a
+      // route handler to fill.
+      if (!inputStructHasField(goTypes, ir.metadata.componentName, `${nested.name}s`)) continue
       const localName = findLoopPropField(nested.loopArrayParsed)
       const param = localName ? propsParams.find(p => p.name === localName) : undefined
       const datumField = param ? (param.sourceName ?? param.name) : null
@@ -851,8 +855,10 @@ function buildDynamicChildLoopSeeding(
       if (datumField) {
         // One hop (#2630): derive each child Input row from the driving
         // prop's own (already caller-populated) Go field.
-        const inputFields = loopRowChildInputFields(nested, parsed =>
-          goItemExprForLoopProp(parsed, row),
+        const inputFields = loopRowChildInputFields(
+          nested,
+          parsed => goItemExprForLoopProp(parsed, row),
+          goTypes,
         )
         if (!inputFields) continue
         const datum = `in.${capitalizeFieldName(datumField)}`
@@ -885,8 +891,10 @@ function buildDynamicChildLoopSeeding(
     if (!nested.isDynamic) continue
     const datumField = findBaseSignalGetter(nested.loopArrayParsed, datumGetters)
     if (!datumField) continue
-    const inputFields = loopRowChildInputFields(nested, parsed =>
-      goItemExprForLoopProp(parsed, row) ?? goOuterSignalExprForLoopProp(parsed, signalGetters),
+    const inputFields = loopRowChildInputFields(
+      nested,
+      parsed => goItemExprForLoopProp(parsed, row) ?? goOuterSignalExprForLoopProp(parsed, signalGetters),
+      goTypes,
     )
     if (!inputFields) continue
 
@@ -898,7 +906,7 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t\tprops.${nested.name}s[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
     propsLines.push(`\t\tprops.${nested.name}s[i].BfParent = props.ScopeID`)
     propsLines.push(`\t\tprops.${nested.name}s[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
-    const keyField = loopKeyToGoFieldPath(nested.loopKey, row)
+    const keyField = loopKeyToGoRowExpr(nested.loopKey, row)
     if (keyField) {
       propsLines.push(`\t\tprops.${nested.name}s[i].BfDataKey = fmt.Sprint(${keyField})`)
       needsFmt = true
@@ -906,6 +914,14 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t}`)
   }
   return { inputLines, propsLines, needsFmt }
+}
+
+/** Whether the generated `<Component>Input` struct declares `field`. */
+function inputStructHasField(goTypes: string, componentName: string, field: string): boolean {
+  const start = goTypes.indexOf(`type ${componentName}Input struct {`)
+  if (start < 0) return false
+  const body = goTypes.slice(start, goTypes.indexOf('\n}', start))
+  return body.includes(`\n\t${field} `)
 }
 
 /**
@@ -921,16 +937,70 @@ function buildDynamicChildLoopSeeding(
 function loopRowChildInputFields(
   nested: NestedComponentInfo,
   resolve: (parsed: ParsedExpr) => string | null,
+  goTypes?: string,
 ): string[] | null {
   const fields: string[] = []
+  const restBagEntries: string[] = []
+  // With the generated types at hand, deliver each value the way a route
+  // handler must: a prop the child's Input doesn't declare goes into its
+  // rest bag, and a value for a field the child typed as its OWN struct
+  // (`Value BadgeValue`) is rebuilt as that struct from the row's
+  // same-named fields — the parent's row struct (`Entry`) isn't assignable.
+  const childInput = goTypes ? goStructFieldTypes(goTypes, `${nested.name}Input`) : null
+  const restBagField = childInput ? soleRestBagField(childInput) : null
   for (const prop of nested.props) {
     if (prop.isEventHandler) continue
     if (prop.name === 'key' || prop.name.includes('-')) continue
     const value = prop.value.kind === 'expression' && prop.value.parsed ? resolve(prop.value.parsed) : null
     if (value === null) return null
-    fields.push(`${capitalizeFieldName(prop.name)}: ${value}`)
+    const field = capitalizeFieldName(prop.name)
+    const fieldType = childInput?.get(field)
+    if (childInput && fieldType === undefined) {
+      if (!restBagField) return null
+      restBagEntries.push(`${JSON.stringify(prop.name)}: ${value}`)
+      continue
+    }
+    fields.push(`${field}: ${goTypes && fieldType ? goValueAsStruct(goTypes, fieldType, value) : value}`)
   }
+  if (restBagEntries.length > 0) fields.push(`${restBagField}: map[string]any{${restBagEntries.join(', ')}}`)
   return fields.length > 0 ? fields : null
+}
+
+/**
+ * Field name → Go type of the struct `typeName` declared in `goTypes`, or
+ * null when no such struct is declared.
+ */
+function goStructFieldTypes(goTypes: string, typeName: string): Map<string, string> | null {
+  const start = goTypes.indexOf(`type ${typeName} struct {`)
+  if (start < 0) return null
+  const body = goTypes.slice(start, goTypes.indexOf('\n}', start))
+  const fields = new Map<string, string>()
+  for (const line of body.split('\n').slice(1)) {
+    const match = /^\t(\w+)\s+(\S+)/.exec(line)
+    if (match) fields.set(match[1]!, match[2]!)
+  }
+  return fields
+}
+
+/**
+ * The child Input's open-ended rest bag field (`Rest map[string]any`),
+ * when it has exactly one map-typed field to be it; null otherwise.
+ */
+function soleRestBagField(childInput: ReadonlyMap<string, string>): string | null {
+  const maps = [...childInput].filter(([, type]) => type === 'map[string]any' || type === 'map[string]interface{}')
+  return maps.length === 1 ? maps[0]![0] : null
+}
+
+/**
+ * `expr` as a value of Go type `goType`: rebuilt field by field when
+ * `goType` is a struct declared in `goTypes` (`BadgeValue{Label: item.Label}`),
+ * otherwise `expr` itself.
+ */
+function goValueAsStruct(goTypes: string, goType: string, expr: string, depth = 0): string {
+  const fields = depth < 4 ? goStructFieldTypes(goTypes, goType) : null
+  if (!fields || fields.size === 0) return expr
+  const inits = [...fields].map(([name, type]) => `${name}: ${goValueAsStruct(goTypes, type, `${expr}.${name}`, depth + 1)}`)
+  return `${goType}{${inits.join(', ')}}`
 }
 
 /**

@@ -56,6 +56,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // limitation on the `{...rest}`-delivered `title`; the declaration-order
   // contract it exists for is pinned by per-adapter render conformance.
   'composite-row-child-rest-bag-prop-hoisted',
+  // Same `applyRestAttrs`-not-modeled harness class: the `rest-carrier`
+  // rows' `token` reaches `Tag`'s root only through its `{...rest}` spread,
+  // which the harness stubs. The fixture exists for the go-template row
+  // construction and key carrier, pinned by per-adapter render conformance.
+  'loop-row-child-prop-destinations',
   // #2754: the stateless sibling of `rest-spread-child-attrs`, and the same
   // harness limitation — the CSR path here evaluates only the `template`
   // lambda, and `data-probe` arrives through `applyRestAttrs` in `init`,

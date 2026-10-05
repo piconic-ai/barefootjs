@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { parseExpression, type LoopParamBinding } from '@barefootjs/jsx'
-import { goItemAccessor, loopKeyToGoFieldPath, rowItemPath } from '../adapter/lib/loop-row-path'
+import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor } from '../adapter/lib/loop-row-path'
 
 const field = (key: string) => ({ kind: 'field' as const, key, isIdent: true })
 
@@ -32,11 +32,25 @@ describe('loop-row path resolution (#3313)', () => {
     expect(goItemAccessor([{ kind: 'field', key: 'data-x', isIdent: false }])).toBeNull()
   })
 
-  test('loop keys lower to the row field, never the whole row', () => {
-    expect(loopKeyToGoFieldPath('o.label', { param: 'o' })).toBe('item.Label')
-    expect(loopKeyToGoFieldPath('o', { param: 'o' })).toBeNull()
-    expect(loopKeyToGoFieldPath('o.id + 1', { param: 'o' })).toBeNull()
-    expect(loopKeyToGoFieldPath('key', { param: '{ id: key }', paramBindings: destructured })).toBe('item.ID')
-    expect(loopKeyToGoFieldPath(undefined, { param: 'o' })).toBeNull()
+  test('loop keys lower to the source row field, never a struct row as a whole', () => {
+    expect(loopKeyToGoRowExpr('o.label', { param: 'o' })).toBe('item.Label')
+    expect(loopKeyToGoRowExpr('o', { param: 'o' })).toBeNull()
+    expect(loopKeyToGoRowExpr('o.id + 1', { param: 'o' })).toBeNull()
+    expect(loopKeyToGoRowExpr('key', { param: '{ id: key }', paramBindings: destructured })).toBe('item.ID')
+    expect(loopKeyToGoRowExpr(undefined, { param: 'o' })).toBeNull()
+  })
+
+  test('a scalar row is its own key, and has no fields', () => {
+    expect(loopKeyToGoRowExpr('i', { param: 'i' }, { scalar: true })).toBe('item')
+    expect(loopKeyToGoRowExpr('i.length', { param: 'i' }, { scalar: true })).toBeNull()
+    expect(rowReadGoAccessor(parseExpression('i'), { param: 'i' }, { scalar: true })).toBe('item')
+  })
+
+  test('a field path the struct row lacks declines', () => {
+    const shape = { hasFieldPath: (segments: readonly unknown[]) => segments.length === 1 }
+    expect(loopKeyToGoRowExpr('o.id', { param: 'o' }, shape)).toBe('item.ID')
+    expect(loopKeyToGoRowExpr('o.label.length', { param: 'o' }, shape)).toBeNull()
+    // A struct row passed whole to a child prop is a row read; only the key declines it.
+    expect(rowReadGoAccessor(parseExpression('o'), { param: 'o' }, shape)).toBe('item')
   })
 })

@@ -3382,30 +3382,6 @@
           ]
         }
       },
-      "loop-row-child-key-not-a-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-key-not-a-prop"
-          ]
-        }
-      },
-      "loop-row-child-key-shadowed-by-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-key-shadowed-by-prop"
-          ]
-        }
-      },
-      "loop-row-child-scalar-row-key": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-scalar-row-key"
-          ]
-        }
-      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "go-template": {
           "kind": "refusal",
@@ -5647,18 +5623,6 @@
         "description": "A component loop with forwarded children over an array prop renders every row when a sibling loop's…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-prop-array-sibling-plural.ts"
       },
-      "loop-row-child-key-not-a-prop": {
-        "description": "A component loop row keyed by a row field the component takes no prop for renders every row with…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-key-not-a-prop.ts"
-      },
-      "loop-row-child-key-shadowed-by-prop": {
-        "description": "A component loop row keyed by a row field whose name the component also takes as a prop keys each…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-key-shadowed-by-prop.ts"
-      },
-      "loop-row-child-scalar-row-key": {
-        "description": "A component loop row over a string array prop, keyed by the row value itself, renders every row…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-scalar-row-key.ts"
-      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows have…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-mismatched-keys.ts"
@@ -6175,32 +6139,6 @@
         "go-template"
       ]
     },
-    "loop-row-child-key-not-a-prop": {
-      "title": "Component loop row keyed by a row field the component takes no prop for",
-      "kind": "silent",
-      "given": "a `.map()` over an array prop of objects whose row is a child component with no children, keyed by a field of the row object the component has no same-named prop for (`props.items.map(item => <Badge key={item.id} label={item.label} />)`, where `Badge` takes only `label`)",
-      "expected": "one component per row, each with its own key and prop (`data-key=\"a\"` … `A`, `data-key=\"b\"` … `B`)",
-      "actual": "emits code that fails to build: it reads the key field off the child component's input struct, which has no such field (`BadgeInput has no field or method ID`)",
-      "fixtures": [
-        "loop-row-child-key-not-a-prop"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
-    "loop-row-child-key-shadowed-by-prop": {
-      "title": "Component loop row keyed by a row field the component also takes a same-named prop for",
-      "kind": "silent",
-      "given": "a `.map()` over an array prop of objects whose row is a child component with no children, keyed by a field of the row object whose name the component also takes as a prop, passed a different row field (`props.items.map(item => <Badge key={item.id} id={item.slug} label={item.label} />)`)",
-      "expected": "one component per row, each keyed by the row field and given the prop (`data-id=\"x\" data-key=\"a\"` … `A`, `data-id=\"y\" data-key=\"b\"` … `B`)",
-      "actual": "renders each row's `data-key` from the child's same-named prop instead of the row field (`data-key=\"x\"`, `data-key=\"y\"`): the props constructor reads the key off each row's child-component input",
-      "fixtures": [
-        "loop-row-child-key-shadowed-by-prop"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
     "loop-row-child-nested-prop-reads-unreachable-row-binding": {
       "title": "A component in a loop-row child's forwarded children loses a prop read from the row index or a callback-body local",
       "kind": "silent",
@@ -6210,19 +6148,6 @@
       "fixtures": [
         "loop-row-child-children-nested-index-prop",
         "loop-row-child-children-nested-preamble-prop"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
-    "loop-row-child-scalar-row-key": {
-      "title": "Component loop row keyed by the row value of a scalar array prop",
-      "kind": "silent",
-      "given": "a `.map()` over an array prop of strings whose row is a child component with no children, keyed by the row value itself rather than a field of it (`props.items.map(i => <Badge key={i} label={i} />)`)",
-      "expected": "one component per row, each with its own key and prop (`data-key=\"a\"` … `a`, `data-key=\"b\"` … `b`)",
-      "actual": "renders every row without its `data-key`: the props constructor only takes a row key from a field of each row's child-component input, and the row value itself is not one",
-      "fixtures": [
-        "loop-row-child-scalar-row-key"
       ],
       "adapters": [
         "go-template"
