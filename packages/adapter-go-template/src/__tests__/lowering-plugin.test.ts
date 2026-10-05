@@ -183,7 +183,7 @@ export function P(props: { on: boolean; config: object }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('{{if .On}}data-config="{{bf_custom_serialize .Config}}"{{end}}')
+    expect(template).toContain('{{if (bf_truthy .On)}}data-config="{{bf_custom_serialize .Config}}"{{end}}')
     expect(template).not.toContain('bf_attr')
   })
 

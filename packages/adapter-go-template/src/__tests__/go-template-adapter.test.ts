@@ -2938,11 +2938,11 @@ export function TodoApp() {
       // The range form is unchanged — still `{{range $_, $todo := .Todos}}`.
       expect(result.template).toContain('{{range $_, $todo := .Todos}}')
       // Boolean attribute condition: `.Done`, NOT `.Todo.Done`.
-      expect(result.template).toContain('{{if .Done}}checked{{end}}')
+      expect(result.template).toContain('{{if (bf_truthy .Done)}}checked{{end}}')
       expect(result.template).not.toContain('.Todo.Done')
       // Ternary inside `style="..."` uses the same condition path —
       // also `.Done`.
-      expect(result.template).toContain('{{if .Done}}text-decoration: line-through')
+      expect(result.template).toContain('{{if (bf_truthy .Done)}}text-decoration: line-through')
     })
   })
 

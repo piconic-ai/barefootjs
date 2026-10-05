@@ -270,7 +270,7 @@ export function P(props: { ok: boolean; base: string; tag: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('{{if .Ok}}{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}{{end}}')
+    expect(template).toContain('{{if (bf_truthy .Ok)}}{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}{{end}}')
     expect(template).not.toContain('.QueryHref')
     expect(template).not.toContain('bf_map')
     expect(template).not.toContain('href="{{')
@@ -306,7 +306,7 @@ export function P(props: { a: boolean; b: boolean; base: string; tag: string }) 
 `
     const { template } = generate(src)
     expect(template).toContain(
-      '{{if .A}}{{bf_attr "href" (bf_ternary (bf_truthy .B) (bf_query .Base (true) "tag" .Tag) "/x")}}{{end}}',
+      '{{if (bf_truthy .A)}}{{bf_attr "href" (bf_ternary (bf_truthy .B) (bf_query .Base (true) "tag" .Tag) "/x")}}{{end}}',
     )
   })
 })
