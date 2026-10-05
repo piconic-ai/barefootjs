@@ -154,6 +154,9 @@ export class CompileState {
    */
   currentPropsParams: IRMetadata['propsParams'] = []
 
+  /** Generated field names a renamed loop-rows field avoids (`reservedRowsFieldNames`). */
+  rowsFieldReserved: ReadonlySet<string> = new Set()
+
   /**
    * `buildPropTypeOverrides`'s result for the component being compiled,
    * read through `resolvePropGoType` by `resolvePropMemberSeed` and

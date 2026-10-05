@@ -40,10 +40,27 @@ function propFieldNames(p: PropsParamLike): string[] {
 }
 
 /**
+ * The component's other generated Props fields a renamed rows field must
+ * not land on: every child-component loop's plain plural (`<ItemRow>` →
+ * `ItemRows`) and every signal / memo field. Computed once per component
+ * from the same IR by the adapter and the conformance harness.
+ */
+export function reservedRowsFieldNames(
+  loopChildNames: Iterable<string>,
+  stateFieldNames: Iterable<string>,
+): Set<string> {
+  return new Set([
+    ...[...loopChildNames].map(name => `${name}s`),
+    ...[...stateFieldNames].map(name => capitalizeFieldName(name)),
+  ])
+}
+
+/**
  * The rows field of a loop over `<childName>` reading `loopArray`: the
  * plural (`Items` for `<Item>`), unless a props param already claims that
- * Go field name for different data — then `<childName>Rows` (numbered if
- * that is taken too). A loop that ranges over the very prop owning the
+ * Go field name for different data — then `<childName>Rows`, numbered when
+ * a prop or another generated field (`reserved`, `reservedRowsFieldNames`)
+ * already has that name. A loop that ranges over the very prop owning the
  * plural (`tags.map(t => <Tag …/>)`, #2627) keeps the plural: there the
  * field IS that prop's data, re-shaped into rows.
  */
@@ -52,11 +69,12 @@ export function nestedRowsFieldName(
   loopArray: ParsedExpr | undefined,
   propsParams: readonly PropsParamLike[],
   propsObjectName: string | null | undefined,
+  reserved: ReadonlySet<string> = new Set(),
 ): string {
   const plural = `${childName}s`
   const owner = propsParams.find(p => propFieldNames(p).includes(plural))
   if (!owner || loopDrivingProp(loopArray, propsParams, propsObjectName) === owner) return plural
-  const taken = new Set(propsParams.flatMap(propFieldNames))
+  const taken = new Set([...propsParams.flatMap(propFieldNames), ...reserved])
   let name = `${childName}Rows`
   for (let n = 2; taken.has(name); n++) name = `${childName}Rows${n}`
   return name

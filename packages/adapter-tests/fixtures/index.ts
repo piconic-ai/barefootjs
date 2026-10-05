@@ -891,6 +891,7 @@ import { fixture as loopRowChildChildrenPropArray } from './loop-row-child-child
 import { fixture as loopRowChildChildrenPropArrayShapes } from './loop-row-child-children-prop-array-shapes'
 import { fixture as loopRowChildChildrenPropArraySiblingPlural } from './loop-row-child-children-prop-array-sibling-plural'
 import { fixture as loopRowChildChildrenPropArraySiblingPluralShapes } from './loop-row-child-children-prop-array-sibling-plural-shapes'
+import { fixture as loopRowChildRenamedRowsSiblingPlural } from './loop-row-child-renamed-rows-sibling-plural'
 // A literal-initialized `const` read as a conditional's test (#3312).
 import { fixture as constBooleanConditionalTest } from './const-boolean-conditional-test'
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
@@ -1461,6 +1462,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenPropArrayShapes,
   loopRowChildChildrenPropArraySiblingPlural,
   loopRowChildChildrenPropArraySiblingPluralShapes,
+  loopRowChildRenamedRowsSiblingPlural,
   constBooleanConditionalTest,
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,

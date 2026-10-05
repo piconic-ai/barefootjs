@@ -111,7 +111,7 @@ import {
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
 import { loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor, type LoopRowBinding, type LoopRowShape } from './lib/loop-row-path.ts'
-import { loopDrivingProp, nestedRowsFieldName } from './lib/nested-rows-field.ts'
+import { loopDrivingProp, nestedRowsFieldName, reservedRowsFieldNames } from './lib/nested-rows-field.ts'
 
 /** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
 const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
@@ -637,6 +637,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentSignals = ir.metadata.signals ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.currentPropsParams = ir.metadata.propsParams ?? []
+    this.state.rowsFieldReserved = reservedRowsFieldNames(
+      findNestedComponents(ir.root).map(n => n.name),
+      [...(ir.metadata.signals ?? []).map(s => s.getter), ...(ir.metadata.memos ?? []).map(m => m.name)],
+    )
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     // Single authority (Package G): the plan already decided which signals are
     // per-request env readers, in declaration order. `ir.metadata.ssrSeedPlan`
@@ -1348,7 +1352,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   /** The Input/Props field holding `<childName>` loop rows (`nestedRowsFieldName`). */
   private nestedRowsField(childName: string, loopArray: ParsedExpr | undefined): string {
-    return nestedRowsFieldName(childName, loopArray, this.state.currentPropsParams, this.state.propsObjectName)
+    return nestedRowsFieldName(
+      childName,
+      loopArray,
+      this.state.currentPropsParams,
+      this.state.propsObjectName,
+      this.state.rowsFieldReserved,
+    )
   }
 
   private propDerivedNestedArrayFields(nestedComponents: readonly NestedComponentInfo[]): Set<string> {

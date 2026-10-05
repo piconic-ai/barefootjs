@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { parseExpression } from '@barefootjs/jsx'
-import { loopDrivingProp, nestedRowsFieldName } from '../adapter/lib/nested-rows-field'
+import { loopDrivingProp, nestedRowsFieldName, reservedRowsFieldNames } from '../adapter/lib/nested-rows-field'
 
 const params = [{ name: 'items' }, { name: 'other' }, { name: 'tags' }]
 
@@ -22,6 +22,14 @@ describe('nestedRowsFieldName', () => {
   test('the renamed field skips a name another prop already claims', () => {
     const taken = [...params, { name: 'itemRows' }]
     expect(nestedRowsFieldName('Item', parseExpression('props.other'), taken, 'props')).toBe('ItemRows2')
+  })
+
+  test("the renamed field skips a sibling loop's plural and state fields", () => {
+    const reserved = reservedRowsFieldNames(['Item', 'ItemRow'], ['count'])
+    expect(reserved.has('ItemRows')).toBe(true)
+    expect(reserved.has('Count')).toBe(true)
+    expect(nestedRowsFieldName('Item', parseExpression('props.other'), params, 'props', reserved)).toBe('ItemRows2')
+    expect(nestedRowsFieldName('ItemRow', parseExpression('props.rows'), params, 'props', reserved)).toBe('ItemRows')
   })
 })
 

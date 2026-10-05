@@ -4767,6 +4767,17 @@
         "text"
       ]
     },
+    "loop-row-child-renamed-rows-sibling-plural": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-scalar-row-key": {
       "kinds": [
         "identifier",
