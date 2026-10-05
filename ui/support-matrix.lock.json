@@ -4278,12 +4278,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-prop-array-sibling-plural",
-              "limitations": [
-                "loop-row-child-children-prop-array-sibling-plural"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -7204,12 +7198,6 @@
               "fixture": "loop-param-prop-alias-name-collision",
               "limitations": [
                 "underscore-prefixed-prop-name"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-prop-array-sibling-plural",
-              "limitations": [
-                "loop-row-child-children-prop-array-sibling-plural"
               ]
             },
             {

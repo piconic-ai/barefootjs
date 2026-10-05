@@ -4690,6 +4690,17 @@
         "text"
       ]
     },
+    "loop-row-child-children-prop-array-sibling-plural-shapes": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-untyped-array": {
       "kinds": [
         "array-literal",

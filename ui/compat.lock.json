@@ -3350,14 +3350,6 @@
           }
         }
       },
-      "loop-row-child-children-prop-array-sibling-plural": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-children-prop-array-sibling-plural"
-          ]
-        }
-      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "go-template": {
           "kind": "refusal",
@@ -5583,10 +5575,6 @@
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
-      "loop-row-child-children-prop-array-sibling-plural": {
-        "description": "A component loop with forwarded children over an array prop renders every row when a sibling loop's…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-prop-array-sibling-plural.ts"
-      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows have…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-mismatched-keys.ts"
@@ -6075,19 +6063,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "loop-row-child-children-prop-array-sibling-plural": {
-      "title": "Component loop row with forwarded children over an array prop that a sibling loop's plural shadows",
-      "kind": "silent",
-      "given": "a `.map()` over an array prop whose row is a child component with forwarded children (`props.items.map(row => <Badge key={row.id}>{row.meta.label}</Badge>)`), next to another component loop whose child's plural is that prop's Go field name (`props.other.map(row => <Item … />)` → `Items`)",
-      "expected": "one component per row in both loops (`data-key=\"a\"` … `A`, `data-key=\"b\"` … `B`, and the `<Item>` rows)",
-      "actual": "renders the forwarded-children loop empty with no diagnostic: the sibling loop's `Items []ItemInput` Input field takes the prop's own `Items` field, so the constructor has no datum slice to build the `<Badge>` rows from",
-      "fixtures": [
-        "loop-row-child-children-prop-array-sibling-plural"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "loop-row-ref-portal": {

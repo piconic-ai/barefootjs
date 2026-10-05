@@ -164,15 +164,11 @@ export const renderDivergences: RenderDivergences = {
   // test used Go's built-in truthiness, which reads an empty slice as false.
   // It now goes through `bf_truthy` like `!x` (`lowerJsTruthyTest`).
 
-  // A component loop row with forwarded children over an array prop
-  // (`props.items.map(row => <Badge …>…</Badge>)`) next to a sibling loop
-  // whose child's plural is the prop's field name (`<Item>` → `Items`):
-  // `isNestedArrayShadowed` gives `Items` to the sibling's `[]ItemInput`
-  // rows, so the prop has no Input field of its own and
-  // `propArrayLoopRowSource` declines. The `<Badge>` loop renders empty.
-  'loop-row-child-children-prop-array-sibling-plural': {
-    limitation: 'loop-row-child-children-prop-array-sibling-plural',
-  },
+  // `loop-row-child-children-prop-array-sibling-plural` used to sit here: a
+  // sibling loop whose child's plural was another prop's field name
+  // (`<Item>` → `Items` next to an `items` prop) took that field for its own
+  // rows, so the `items` loop rendered empty. A loop's rows field is now
+  // renamed when a different prop owns the plural (`nestedRowsFieldName`).
   // A prop named `__bf_root_value` is read as `$.__bf_root_value`; a
   // lower-case/underscore-led name is an unexported Go field, so rendering
   // fails ("is an unexported field of struct type").
