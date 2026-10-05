@@ -70,7 +70,7 @@ export function C(props: { label: string; extra?: string }) {
   )
 }
 `)
-    expect(template).toContain(`${ON('data-on')}"{{if .On}}yes{{else}}no{{end}}"`)
+    expect(template).toContain(`${ON('data-on')}"{{if (bf_truthy .On)}}yes{{else}}no{{end}}"`)
     expect(template).toContain(`${ON('data-onset')}"{{(bf_ternary (bf_truthy .On) .Label \"no\")}}"`)
     expect(template).toContain(`${ON('data-onload')}"v-{{.Label}}"`)
     expect(template).toMatch(/\{\{if [^}]*\}\}\{\{bf_attr_name "data-ontoggle"\}\}="\{\{\.Label\}\}"\{\{end\}\}/)

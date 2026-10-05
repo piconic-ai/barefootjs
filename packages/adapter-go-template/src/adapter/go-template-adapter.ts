@@ -118,6 +118,8 @@ import {
   escapeGoString,
   wrapIfMultiToken,
   lowerJsNot,
+  lowerJsTruthyTest,
+  isBareValueRead,
   wrapGoArg,
   emitBfSort,
   emitSortEval,
@@ -8770,7 +8772,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     const { preamble, expr: condition } = this.renderConditionExpr(parsed)
-    return { condition, preamble }
+    // A bare value read as the whole test (`{tags() ? … : …}`) gets JS
+    // truthiness: `{{if}}` alone reads an empty slice or map as false, where
+    // JS reads `[]` / `{}` as true. Operator tests (`&&`, comparisons) keep
+    // their own lowering.
+    return { condition: isBareValueRead(parsed) ? lowerJsTruthyTest(parsed, condition) : condition, preamble }
   }
 
   private renderConditionExpr(expr: ParsedExpr): { preamble: string; expr: string } {
