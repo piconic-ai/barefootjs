@@ -86,6 +86,9 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  attrValueMayBeNullish,
+  collectNullishAttrContext,
+  type NullishAttrContext,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -282,6 +285,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private nullableOptionalProps: Set<string> = new Set()
   /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
   private nullableSignalGetters: Set<string> = new Set()
+  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
+  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
 
   /**
    * Local alias -> declared/exported name for imported components (#2822,
@@ -325,6 +330,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
+    this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1533,6 +1539,18 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           const val = this.convertExpressionToKolon('', m.consequentParsed)
           return `\n: if (${cond}) {\n${name}="<: ${val} :>"\n: }\n`
         }
+      }
+      // A value that reaches `undefined`/`null` through a memo, an optional
+      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
+      // bind it once and omit the attribute on a nil value, as Hono does.
+      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
+        const perl = this.convertExpressionToKolon(value.expr, value.parsed)
+        const tmp = `$bf_pu${this.presenceVarCounter++}`
+        const body =
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+            ? `${name}="<: $bf.bool_str(${tmp}) :>"`
+            : `${name}="<: ${tmp} :>"`
+        return `\n: my ${tmp} = ${perl};\n: if (defined ${tmp}) {\n${body}\n: }\n`
       }
       // Boolean-result handling: route boolean-shaped values through
       // `$bf.bool_str` so the wire bytes match JS `String(boolean)`.

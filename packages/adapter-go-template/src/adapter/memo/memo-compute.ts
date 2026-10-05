@@ -13,6 +13,7 @@ import {
   asCallbackMethodCall,
   freeVarsInBody,
   materializeGetterCalls,
+  isNullishLiteral,
   serializeParsedExpr,
 } from '@barefootjs/jsx'
 
@@ -269,26 +270,50 @@ export function computeMemoInitialValue(
   // Seed the resolution stack with this memo's own name — every external call
   // is a fresh top-level computation, so self-reference must be caught on the
   // very first recursion, not only on the second visit.
-  const resolved = computeMemoInitialValueOrNull(
-    ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
-  )
-  if (resolved !== null) return resolved
-  // Zero value for the memo's Go type: `false` for bool, `""` for string,
-  // `nil` for reference types (map / slice / interface / pointer — `0` is not
-  // assignable to them), else the int `0`.
-  if (goType === 'bool') return 'false'
-  if (goType === 'string') return '""'
-  if (
+  // Reference types (map / slice / interface / pointer) hold `nil`; `0` is
+  // not assignable to them.
+  const nillable =
     goType !== undefined &&
     (goType.startsWith('map[') ||
       goType.startsWith('[]') ||
       goType.startsWith('*') ||
       goType.includes('interface{}') ||
       goType === 'any')
-  ) {
-    return 'nil'
-  }
+  // An identity memo over an `undefined` / `null`-initialized signal is
+  // that signal's `nil`, so an attribute bound to it stays nil-checkable
+  // (`attrValueMayBeNullish`, #3322). Only this field: another memo
+  // computing over it keeps resolving the dependency's usual seed, since
+  // `nil` can't be a native Go arithmetic operand.
+  if (nillable && isNullishIdentityMemo(ctx, memo, signals, new Set([memo.name]))) return 'nil'
+  const resolved = computeMemoInitialValueOrNull(
+    ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
+  )
+  if (resolved !== null) return resolved
+  // Zero value for the memo's Go type: `false` for bool, `""` for string,
+  // `nil` for reference types, else the int `0`.
+  if (goType === 'bool') return 'false'
+  if (goType === 'string') return '""'
+  if (nillable) return 'nil'
   return '0'
+}
+
+/**
+ * Whether `memo` is an identity chain (`() => s()`, `() => other()`) that
+ * ends at a signal whose initial value is a literal `undefined` / `null`.
+ */
+function isNullishIdentityMemo(
+  ctx: GoEmitContext,
+  memo: { parsed?: ParsedExpr },
+  signals: { getter: string; parsed?: ParsedExpr }[],
+  resolving: ReadonlySet<string>,
+): boolean {
+  const dep = memo.parsed ? getterCallName(memo.parsed) : null
+  if (dep === null) return false
+  const signal = signals.find(s => s.getter === dep)
+  if (signal) return isNullishLiteral(signal.parsed)
+  const inner = (ctx.state.currentMemos ?? []).find(m => m.name === dep)
+  if (!inner || resolving.has(inner.name)) return false
+  return isNullishIdentityMemo(ctx, inner, signals, new Set([...resolving, inner.name]))
 }
 
 /** Numeric atoms supported by the shared-runtime memo path. Its result is

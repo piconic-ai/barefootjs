@@ -1715,6 +1715,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "number-division-text",
               "limitations": [
                 "integer-division-truncated"
@@ -1867,6 +1873,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1922,6 +1934,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -2032,6 +2050,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -2442,6 +2466,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2614,6 +2644,12 @@
               ]
             },
             {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2780,6 +2816,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2922,6 +2964,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3055,6 +3103,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -3197,6 +3251,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -3481,6 +3541,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -3689,6 +3755,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3752,6 +3824,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -4100,6 +4178,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "number-division-text",
               "limitations": [
                 "integer-division-truncated"
@@ -4332,6 +4416,12 @@
               ]
             },
             {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4540,6 +4630,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4712,6 +4808,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4875,6 +4977,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -5053,6 +5161,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -5397,6 +5511,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -5710,6 +5830,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "number-division-text",
               "limitations": [
                 "integer-division-truncated"
@@ -6018,6 +6144,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6130,6 +6262,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6239,6 +6377,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -6363,6 +6507,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -6587,6 +6737,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -7222,6 +7378,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -8174,6 +8336,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -10365,7 +10533,16 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -10376,10 +10553,37 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
         "mojolicious": {},
-        "pebble": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
         "twig": {},
         "xslate": {}
       },
@@ -11262,6 +11466,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11322,6 +11532,12 @@
               ]
             },
             {
+              "fixture": "nullish-ternary-false-branch-attr",
+              "limitations": [
+                "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11358,7 +11574,16 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -11375,8 +11600,26 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
         "mojolicious": {
           "gaps": [
             {
@@ -11387,7 +11630,16 @@
             }
           ]
         },
-        "pebble": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            }
+          ]
+        },
         "twig": {},
         "xslate": {
           "gaps": [
@@ -11517,6 +11769,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -11684,6 +11942,12 @@
               ]
             },
             {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11745,6 +12009,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -11885,6 +12155,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-signal-arithmetic-memo",
+              "limitations": [
+                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -13034,6 +13310,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "nullish-optional-member-missing-field-attr",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
             {
               "fixture": "optional-chain-length-bare-text",
               "limitations": [

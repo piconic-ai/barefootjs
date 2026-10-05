@@ -98,6 +98,9 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  attrValueMayBeNullish,
+  collectNullishAttrContext,
+  type NullishAttrContext,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
@@ -279,6 +282,8 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   private nullableOptionalProps: Set<string> = new Set()
   /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
   private nullableSignalGetters: Set<string> = new Set()
+  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
+  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
   /**
    * Local alias -> declared/exported name for imported components (#2822,
    * the SSR-side counterpart of #2777's client-JS registry-key fix). A
@@ -316,6 +321,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
+    this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1664,6 +1670,18 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           const val = this.convertExpressionToRuby('', m.consequentParsed)
           return `<% if bf.truthy?(${cond}) %>${name}="<%= bf.h(${val}) %>"<% end %>`
         }
+      }
+      // A value that reaches `undefined`/`null` through a memo, an optional
+      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
+      // bind it once and omit the attribute on a nil value, as Hono does.
+      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
+        const ruby = this.convertExpressionToRuby(value.expr, value.parsed)
+        const tmp = `__bf_pu${this.presenceVarCounter++}`
+        const body =
+          this.shouldWrapBoolStr(value.expr, name)
+            ? `${name}="<%= bf.h(bf.bool_str(${tmp})) %>"`
+            : `${name}="<%= bf.h(${tmp}) %>"`
+        return `<% ${tmp} = ${ruby}; if !${tmp}.nil? %>${body}<% end %>`
       }
       // #3166: thread the IR-carried `.parsed` tree through (same reason as
       // `renderExpression`'s `expr.parsed` above) — a recognised

@@ -5858,6 +5858,67 @@
         "text"
       ]
     },
+    "nullish-memo-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "nullish-optional-member-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "nullish-optional-member-missing-field-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "nullish-signal-arithmetic-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "nullish-signal-attr": {
       "kinds": [
         "call",
@@ -5872,6 +5933,36 @@
       "contexts": [
         "attribute",
         "text"
+      ]
+    },
+    "nullish-ternary-attr": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "nullish-ternary-false-branch-attr": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "number-addition-text-formatting": {

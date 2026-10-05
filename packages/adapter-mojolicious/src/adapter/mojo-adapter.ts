@@ -72,6 +72,9 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  attrValueMayBeNullish,
+  collectNullishAttrContext,
+  type NullishAttrContext,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -280,6 +283,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private nullableOptionalProps: Set<string> = new Set()
   /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
   private nullableSignalGetters: Set<string> = new Set()
+  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
+  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
 
   /**
    * Local alias -> declared/exported name for imported components (#2822,
@@ -319,6 +324,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
+    this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -1579,6 +1585,18 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
           const val = this.convertExpressionToPerl('', m.consequentParsed)
           return `<% if (${cond}) { %>${name}="<%= ${val} %>"<% } %>`
         }
+      }
+      // A value that reaches `undefined`/`null` through a memo, an optional
+      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
+      // bind it once and omit the attribute on a nil value, as Hono does.
+      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.scope.isBound(n))) {
+        const perl = this.convertExpressionToPerl(value.expr, value.parsed)
+        const tmp = `$bf_pu${this.presenceVarCounter++}`
+        const body =
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
+            : `${name}="<%= ${tmp} %>"`
+        return `<% my ${tmp} = ${perl}; if (defined ${tmp}) { %>${body}<% } %>`
       }
       // #3166: thread `value.parsed` through — same reason as
       // `renderConditional`'s matching comment.

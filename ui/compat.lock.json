@@ -4159,6 +4159,54 @@
           ]
         }
       },
+      "nullish-optional-member-missing-field-attr": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "optional-struct-field-absent-renders-zero"
+          ]
+        }
+      },
+      "nullish-signal-arithmetic-memo": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "null-signal-arithmetic-raises"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "null-signal-arithmetic-raises"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "null-signal-arithmetic-raises"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "null-signal-arithmetic-raises"
+          ]
+        }
+      },
+      "nullish-ternary-false-branch-attr": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ternary-false-branch-attr-renders-perl-false"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ternary-false-branch-attr-renders-perl-false"
+          ]
+        }
+      },
       "number-division-text": {
         "erb": {
           "kind": "render",
@@ -5611,6 +5659,18 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "nullish-optional-member-missing-field-attr": {
+        "description": "An attribute bound to a present object's missing optional field is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-member-missing-field-attr.ts"
+      },
+      "nullish-signal-arithmetic-memo": {
+        "description": "A memo computing arithmetic over a null-initialized signal renders JS coercion, alongside an…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-signal-arithmetic-memo.ts"
+      },
+      "nullish-ternary-false-branch-attr": {
+        "description": "A ternary attribute with a nullable branch renders a taken false branch as \"false\"",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-ternary-false-branch-attr.ts"
+      },
       "number-division-text": {
         "description": "Integer operands divided in text keep the fractional result",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts"
@@ -6165,6 +6225,22 @@
         "BF101"
       ]
     },
+    "null-signal-arithmetic-raises": {
+      "title": "Arithmetic over a `null`-valued signal raises at render",
+      "kind": "silent",
+      "given": "a memo or expression computing arithmetic over a signal whose SSR value is `null` (`createSignal<any>(null)`, `createMemo(() => s() * 2)`)",
+      "expected": "JS coerces `null` to `0`, so the value renders `0`",
+      "actual": "throws at render: the template's native `*` rejects the nil operand (Jinja `None * 2`, ERB `nil * 2`, Pebble and MiniJinja reject the null multiplication), with no compile-time diagnostic",
+      "fixtures": [
+        "nullish-signal-arithmetic-memo"
+      ],
+      "adapters": [
+        "erb",
+        "jinja",
+        "minijinja",
+        "pebble"
+      ]
+    },
     "off-subset-callback-body": {
       "title": "Off-subset expression in a collection-method callback",
       "kind": "refusal",
@@ -6238,6 +6314,19 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "optional-struct-field-absent-renders-zero": {
+      "title": "A missing optional field of a typed object signal reads as its type's zero value",
+      "kind": "silent",
+      "given": "an attribute bound to an optional field of an object signal typed with a named object type (`createSignal<User>({})` with `type User = { name?: string }`, `data-name={blank()?.name}`)",
+      "expected": "the read is `undefined`, so the attribute is omitted",
+      "actual": "renders `data-name=\"\"`: the signal's `User` struct has a non-pointer `Name string` field, so the missing field reads as the zero value `\"\"` instead of nil",
+      "fixtures": [
+        "nullish-optional-member-missing-field-attr"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "prop-member-chain-signal-seed": {
@@ -6366,6 +6455,20 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "ternary-false-branch-attr-renders-perl-false": {
+      "title": "A taken `false` ternary branch in a non-boolean attribute renders as Perl false",
+      "kind": "silent",
+      "given": "a non-boolean attribute bound to a ternary whose taken branch is the literal `false` and whose other branch is not boolean (`data-choice={yes() ? false : s()}`)",
+      "expected": "renders `data-choice=\"false\"`, as JS `String(false)`",
+      "actual": "renders `data-choice=\"0\"`: the `false` literal lowers to Perl `0` inside the ternary, and the attribute routes through `bool_str` only when the whole value is boolean-shaped",
+      "fixtures": [
+        "nullish-ternary-false-branch-attr"
+      ],
+      "adapters": [
+        "mojolicious",
+        "xslate"
       ]
     },
     "underscore-prefixed-prop-name": {

@@ -39,6 +39,9 @@ export const renderDivergences: RenderDivergences = {
   // treats the missing array as empty and renders `0`, where JS reads
   // `undefined` and renders nothing.
   'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
+  // `yes() ? false : s()`: the `false` literal lowers to Perl `0` inside the
+  // ternary, so `data-choice="0"` where JS renders `"false"`.
+  'nullish-ternary-false-branch-attr': { limitation: 'ternary-false-branch-attr-renders-perl-false' },
 
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
