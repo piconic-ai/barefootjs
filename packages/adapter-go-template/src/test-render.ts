@@ -10,7 +10,7 @@ import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
-import { goItemAccessor, loopKeyToGoFieldPath, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
+import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import type { NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
@@ -841,6 +841,10 @@ function buildDynamicChildLoopSeeding(
     if (!template.includes(`:= .${nested.name}s}}`)) continue
 
     if (nested.isPropDerived) {
+      // The constructor builds these rows from the array prop itself
+      // (`propArrayLoopRowSource`): the Input has no `<Name>s` field for a
+      // route handler to fill.
+      if (!inputStructHasField(goTypes, ir.metadata.componentName, `${nested.name}s`)) continue
       const localName = findLoopPropField(nested.loopArrayParsed)
       const param = localName ? propsParams.find(p => p.name === localName) : undefined
       const datumField = param ? (param.sourceName ?? param.name) : null
@@ -898,7 +902,7 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t\tprops.${nested.name}s[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
     propsLines.push(`\t\tprops.${nested.name}s[i].BfParent = props.ScopeID`)
     propsLines.push(`\t\tprops.${nested.name}s[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
-    const keyField = loopKeyToGoFieldPath(nested.loopKey, row)
+    const keyField = loopKeyToGoRowExpr(nested.loopKey, row)
     if (keyField) {
       propsLines.push(`\t\tprops.${nested.name}s[i].BfDataKey = fmt.Sprint(${keyField})`)
       needsFmt = true
@@ -906,6 +910,14 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t}`)
   }
   return { inputLines, propsLines, needsFmt }
+}
+
+/** Whether the generated `<Component>Input` struct declares `field`. */
+function inputStructHasField(goTypes: string, componentName: string, field: string): boolean {
+  const start = goTypes.indexOf(`type ${componentName}Input struct {`)
+  if (start < 0) return false
+  const body = goTypes.slice(start, goTypes.indexOf('\n}', start))
+  return body.includes(`\n\t${field} `)
 }
 
 /**

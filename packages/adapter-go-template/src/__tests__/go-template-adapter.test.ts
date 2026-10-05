@@ -5971,7 +5971,7 @@ function Row(props: { label: string }) {
   return <li>{props.label}</li>
 }
 export function List({ rows: items }: { rows: { id: number; label: string }[] }) {
-  return <ul>{items.map(item => <Row key={item.id} label={item.label} />)}</ul>
+  return <ul>{items.map(item => <Row key={item.label} label={item.label} />)}</ul>
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
@@ -6000,7 +6000,7 @@ function Row(props: { label: string }) {
   return <li>{props.label}</li>
 }
 export function List({ items: rows }: { items: { id: number; label: string }[] }) {
-  return <ul>{rows.map(item => <Row key={item.id} label={item.label} />)}</ul>
+  return <ul>{rows.map(item => <Row key={item.label} label={item.label} />)}</ul>
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)

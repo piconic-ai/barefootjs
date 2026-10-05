@@ -290,3 +290,39 @@ export function Row() {
     ])
   })
 })
+
+// A bodyless component loop over an array prop builds its rows from the
+// prop and keys them by the source row; when a child prop can't be read
+// off the row, the rows stay caller-supplied `<Child>Input` values, and a
+// key no child prop carries is refused instead of silently dropped.
+describe('GoTemplateAdapter - prop-array component loop keys come from the source row', () => {
+  const source = (badgeProps: string) => `
+'use client'
+function Badge(props: { id?: string; label: string }) {
+  return <em data-id={props.id}>{props.label}</em>
+}
+export function List(props: { items: { id: string; label: string }[] }) {
+  return <ul>{props.items.map(item => <Badge key={item.id} ${badgeProps} />)}</ul>
+}
+`
+
+  test('row-read props: rows from the array prop, keyed off the row', () => {
+    const { types, bf101 } = compile(source('label={item.label}'))
+    expect(bf101).toEqual([])
+    expect(types).toContain('for i, item := range in.Items {')
+    expect(types).toContain('badges[i].BfDataKey = fmt.Sprint(item.ID)')
+    expect(types).not.toContain('Badges []BadgeInput')
+  })
+
+  test('a computed prop keeps caller rows, keyed through a prop carrying the key', () => {
+    const { types, bf101 } = compile(source('id={item.id} label={item.label.toUpperCase()}'))
+    expect(bf101).toEqual([])
+    expect(types).toContain('Badges []BadgeInput')
+    expect(types).toContain('badges[i].BfDataKey = fmt.Sprint(item.ID)')
+  })
+
+  test('a computed prop and no prop carrying the key is refused', () => {
+    const { bf101 } = compile(source('label={item.label.toUpperCase()}'))
+    expect(bf101.map(e => e.message).join('\n')).toContain("Loop key 'item.id' on <Badge> rows")
+  })
+})

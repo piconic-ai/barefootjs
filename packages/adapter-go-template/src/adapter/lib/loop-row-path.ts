@@ -54,15 +54,46 @@ export function goItemAccessor(segments: readonly LoopBindingPathSegment[], base
 }
 
 /**
- * Lower a keyed loop's `key` to the Go field path on the row variable
- * `item` (`item.label` → `item.Label`, `({ id }) => … key={id}` →
- * `item.ID`). Null for a key that is not a field of the row: a computed
- * expression, or the whole row (`key={item}`) — the caller then skips
+ * What the row variable `item` holds: a scalar row (`string[]`, whose
+ * `item` IS the value) or a struct row. `hasFieldPath`, when given, says
+ * whether a field path exists on the struct row's Go type, so a read
+ * through a field the struct doesn't carry (`item.label.length`) declines
+ * instead of emitting Go that won't compile.
+ */
+export interface LoopRowShape {
+  scalar?: boolean
+  hasFieldPath?: (segments: readonly LoopBindingPathSegment[]) => boolean
+}
+
+/**
+ * Go expression reading `expr` off the source row variable `item`: the
+ * whole row (`i` → `item`), or a field path off a struct row
+ * (`item.meta.id` → `item.Meta.ID`). Null when `expr` isn't a plain row
+ * read, reads a field off a scalar row, or names a field path the row's Go
+ * type doesn't have.
+ */
+export function rowReadGoAccessor(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowShape = {}): string | null {
+  const path = rowItemPath(expr, row)
+  if (!path) return null
+  if (path.length === 0) return 'item'
+  if (shape.scalar) return null
+  if (shape.hasFieldPath && !shape.hasFieldPath(path)) return null
+  return goItemAccessor(path)
+}
+
+/**
+ * The one answer to "what Go expression is this keyed loop's `key`,
+ * evaluated against the SOURCE row `item`?" — the datum the `.map()`
+ * callback receives, never a child component's `Input` built from it
+ * (`item.id` → `item.ID`, `({ id }) => … key={id}` → `item.ID`, a scalar
+ * row's `key={i}` → `item`). Null for a key that is not a row read: a
+ * computed expression, or the whole row of a struct row (`key={item}`,
+ * which JS stringifies as `[object Object]`) — the caller then skips
  * `data-key` rather than emit something that won't compile.
  */
-export function loopKeyToGoFieldPath(key: string | undefined, row: LoopRowBinding): string | null {
+export function loopKeyToGoRowExpr(key: string | undefined, row: LoopRowBinding, shape: LoopRowShape = {}): string | null {
   if (!key) return null
-  const path = rowItemPath(parseExpression(key), row)
-  if (!path || path.length === 0) return null
-  return goItemAccessor(path)
+  const accessor = rowReadGoAccessor(parseExpression(key), row, shape)
+  if (accessor === 'item' && !shape.scalar) return null
+  return accessor
 }
