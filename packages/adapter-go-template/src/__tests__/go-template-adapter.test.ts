@@ -7840,12 +7840,11 @@ export function Row() {
   })
 
   // The forwarded children render as their own define whose data is the row
-  // wrapper, so only the row item's fields (`.Tone`) are reachable there — a
-  // `{{range}}` variable of the calling template (`$index`) is not, and
-  // referencing it fails the whole template at parse time (the data-table
-  // selection demo's `checked={selected()[index]}`). Such a prop is not
-  // re-applied (`loop-row-child-nested-prop-reads-unreachable-row-binding`).
-  test('a prop reading the row index is not re-applied inside the forwarded-children define', () => {
+  // wrapper, so a `{{range}}` variable of the calling template (`$i`) is not
+  // in scope there. The call site hands it over in the wrapper's
+  // `BfRowVars`, and the define rebinds it before the re-applied prop reads
+  // it.
+  test('a prop reading the row index is re-applied through the row wrapper\'s BfRowVars', () => {
     const result = compileJSX(`
 'use client'
 function Chip({ children }: { children?: any }) {
@@ -7861,9 +7860,35 @@ export function Row() {
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
-    expect(template).toContain('{{template "Mark" (bf_with_children .MarkSlot1 ')
-    expect(template).not.toContain('bf_with_props .MarkSlot1')
+    expect(template).toContain('(bf_with_props . "BfRowVars" (bf_map "i" $i))')
+    expect(template).toContain('{{$i := index .BfRowVars "i"}}{{template "Mark" (bf_with_children (bf_with_props .MarkSlot1 "Pos" $i) ')
     expect(result.errors.filter(e => e.code === 'BF101')).toEqual([])
+  })
+
+  // The row wrapper carries no field for the parent's own state, so a prop
+  // that reads the index AND an outer signal (the data-table selection
+  // demo's `checked={selected()[index]}`) can't be evaluated inside the
+  // define; it keeps the shared instance's value, and nothing is handed over.
+  test('a prop reading the row index and outer state is not re-applied', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+function Chip({ children }: { children?: any }) {
+  return <span class="chip">{children}</span>
+}
+function Mark({ on, children }: { on?: boolean; children?: any }) {
+  return <em data-on={on}>{children}</em>
+}
+type Opt = { id: string; label: string }
+const opts: Opt[] = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
+export function Row() {
+  const [selected] = createSignal([true, false])
+  return <div>{opts.map((o, i) => (<Chip key={o.id}><Mark on={selected()[i]}>{o.label}</Mark></Chip>))}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).not.toContain('BfRowVars')
+    expect(template).not.toContain('bf_with_props .MarkSlot1')
   })
 })
 
