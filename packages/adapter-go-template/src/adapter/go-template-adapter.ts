@@ -2103,6 +2103,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (scalarLoopType && datumFields.length === 0) {
       lines.push(`\tBfLoopItem ${scalarLoopType} \`json:"-"\``)
     }
+    // The row's index and callback locals, set per row at the template call
+    // site for a forwarded-children define that reads them (`wrapperRowVars`).
+    lines.push(`\tBfRowVars map[string]interface{} \`json:"-"\``)
     for (const child of bodyChildInstances) {
       // #2822: field NAME stays alias-keyed (parent-private); the TYPE must
       // name the child's own declared Go type — see `importAliases`.
@@ -4856,6 +4859,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * its data, so it rebinds the variable to `.` (#3313).
    */
   private innermostDestructureRangeVar: string | null = null
+  /**
+   * While a wrapper-row forwarded-children define renders: the calling
+   * loop's index and callback-local variables (`innermostRowVarNames`), which
+   * that separate template can't see as `$i`/`$t`. The call site hands them
+   * over in the row wrapper's `BfRowVars` map, and every define executed
+   * with that wrapper as its data rebinds the ones it reads
+   * (`bindWrapperRowVars`), so a nested prop or text reading them lowers
+   * exactly as it does in the calling template. Null otherwise — including
+   * a scalar row, whose define gets the bare value (`.BfLoopItem`), not the
+   * wrapper.
+   */
+  private wrapperRowVars: { names: ReadonlySet<string>; used: Set<string> } | null = null
+  /**
+   * While a wrapper-row forwarded-children define renders: the calling
+   * loop's synthetic destructure range variable (`__bf_item0`), which every
+   * define executed with the row wrapper as its data rebinds to `.`
+   * (`bindWrapperRowVars`). Null when the row isn't destructured.
+   */
+  private wrapperRowDestructureVar: string | null = null
+  /** Per wrapper-row forwarded-children define: the row variables it (or a define it calls) reads. */
+  private wrapperRowVarsByDefine = new Map<string, readonly string[]>()
 
   private extractScopedHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
@@ -8397,12 +8421,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // define runs as its own template with the row wrapper as its data, so
       // only the innermost row's fields (`.Field`, or a name destructured
       // from the row) are reachable there.
-      // An index, a preamble local or an outer row's binding is a `{{range}}`
-      // variable of the calling template the define can't see — such a prop
-      // keeps the shared instance's value
-      // (`loop-row-child-nested-prop-reads-unreachable-row-binding`).
-      if (rowItemOnly && [...free].some(name => this.isLoopShadowedName(name) && !this.isInnermostRowBinding(name))) {
-        continue
+      // An outer row's binding is a `{{range}}` variable of the calling
+      // template the define can't see — such a prop keeps the shared
+      // instance's value.
+      // The calling loop's index and callback locals ARE reachable when the
+      // define rebinds them from the wrapper's `BfRowVars` (`wrapperRowVars`;
+      // a scalar row's define has no wrapper to carry them) — but only for a
+      // prop that reads nothing else: the row wrapper has no field for the
+      // parent's state, so `checked={selected()[index]}` (the data-table
+      // selection demo) would read a field the define's data lacks.
+      if (rowItemOnly) {
+        const rowVars = this.wrapperRowVars?.names
+        const reachable = (name: string): boolean => this.isInnermostRowBinding(name) || !!rowVars?.has(name)
+        const unreachable = [...free].some(name => this.isLoopShadowedName(name) && !reachable(name))
+        const readsRowVar = [...free].some(name => !this.isInnermostRowBinding(name) && !!rowVars?.has(name))
+        if (unreachable || (readsRowVar && ![...free].every(reachable))) continue
       }
       // #2448's derived-field staleness check only applies to a NAMED FIELD
       // override — `bf_with_props` patches struct fields the constructor may
@@ -9621,7 +9654,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
       this.state.pendingChildrenDefines.push({
         name,
-        content: this.renderChildren(effectiveChildren),
+        content: this.bindWrapperRowVars(this.renderChildren(effectiveChildren)),
       })
     }
     return name
@@ -9665,7 +9698,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
         this.state.pendingChildrenDefines.push({
           name,
-          content: this.renderChildren(children),
+          content: this.bindWrapperRowVars(this.renderChildren(children)),
         })
       }
       // A prop routed into the child's rest bag (no declared param —
@@ -9726,22 +9759,65 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
       const wasInLoop = this.inLoop
       const wasWrapperRow = this.renderingWrapperRowChildren
+      const wasRowVars = this.wrapperRowVars
+      const wasDestructureVar = this.wrapperRowDestructureVar
       this.inLoop = false
       this.renderingWrapperRowChildren = wrapperRow
+      const scalarRow = this.loopScalarItemStack[this.loopScalarItemStack.length - 1] ?? false
+      const rowVarNames = wrapperRow && !scalarRow ? this.innermostRowVarNames() : []
+      this.wrapperRowVars = rowVarNames.length > 0 ? { names: new Set(rowVarNames), used: new Set() } : null
+      this.wrapperRowDestructureVar = wrapperRow ? this.innermostDestructureRangeVar : null
       try {
-        let content = this.renderChildren(effectiveChildren)
-        // A destructured row name lowers to the calling `{{range}}`'s
-        // variable (`$__bf_item0.Tone`), which this separate template can't
-        // see; its data is that same row, so bind the variable to it.
-        const rangeVar = wrapperRow ? this.innermostDestructureRangeVar : null
-        if (rangeVar && content.includes(`$${rangeVar}`)) content = `{{$${rangeVar} := .}}${content}`
+        const content = this.bindWrapperRowVars(this.renderChildren(effectiveChildren))
         this.state.pendingChildrenDefines.push({ name, content })
+        const used = this.wrapperRowVars ? rowVarNames.filter(v => this.wrapperRowVars!.used.has(v)) : []
+        if (used.length > 0) this.wrapperRowVarsByDefine.set(name, used)
+        else this.wrapperRowVarsByDefine.delete(name)
       } finally {
         this.inLoop = wasInLoop
         this.renderingWrapperRowChildren = wasWrapperRow
+        this.wrapperRowVars = wasRowVars
+        this.wrapperRowDestructureVar = wasDestructureVar
       }
     }
     return name
+  }
+
+  /**
+   * The innermost loop's own `{{range}}`/preamble variables besides its row
+   * value — its index (`$i`) and each callback-body local (`$t`) — as the
+   * shared `scope` records them. A `.keys()` loop's key param isn't bound
+   * in `scope` (see `enterLoopRow`'s caller), so it isn't delivered.
+   */
+  private innermostRowVarNames(): string[] {
+    return [...this.scope.boundNames()].filter(name => {
+      const hit = this.scope.lookup(name)
+      return hit !== null && hit.depth === 0 && (hit.binding.source === 'index' || hit.binding.source === 'preamble')
+    })
+  }
+
+  /**
+   * Rebind, at the top of a define rendered for a wrapper row's forwarded
+   * children, the calling `{{range}}`'s variables it reads — the define is
+   * a separate template that can't see them. Its data is the row wrapper
+   * (the loop's own define, or a companion define it executes with that
+   * same `.`), so a destructured row's range variable (`$__bf_item0.Tone`)
+   * is `.` itself (#3313), and the loop's index or a callback local is one
+   * `{{$v := index .BfRowVars "v"}}`, recorded so the call site hands it
+   * over (`wrapperRowVars`).
+   */
+  private bindWrapperRowVars(content: string): string {
+    if (!this.renderingWrapperRowChildren) return content
+    const reads = (v: string): boolean => new RegExp(`\\$${v}(?![\\w])`).test(content)
+    let prefix = ''
+    const rangeVar = this.wrapperRowDestructureVar
+    if (rangeVar && reads(rangeVar)) prefix += `{{$${rangeVar} := .}}`
+    const rowVars = this.wrapperRowVars
+    for (const v of rowVars ? [...rowVars.names].filter(reads) : []) {
+      rowVars!.used.add(v)
+      prefix += `{{$${v} := index .BfRowVars ${JSON.stringify(v)}}}`
+    }
+    return prefix + content
   }
 
   /**
@@ -9826,9 +9902,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Scalar-item loop: feed the body define the wrapper's `.BfLoopItem` (the
         // bare range value) so `{n}` → `{{.}}` renders it; object loops keep `.`
         // (the wrapper, whose embedded fields the body reads as `.Field`).
+        // A define reading the loop's index or a callback local gets them in
+        // the wrapper's `BfRowVars` (`bindWrapperRowVars`).
+        const rowVars = this.wrapperRowVarsByDefine.get(loopBodyDefine) ?? []
         const bodyData = this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
           ? '.BfLoopItem'
-          : '.'
+          : rowVars.length > 0
+            ? `(bf_with_props . "BfRowVars" (bf_map ${rowVars.map(v => `${JSON.stringify(v)} $${v}`).join(' ')}))`
+            : '.'
         templateCall = `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
       } else {
         templateCall = `{{template "${declaredName}" ${base}}}`

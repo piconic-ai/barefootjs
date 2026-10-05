@@ -3358,22 +3358,6 @@
           }
         }
       },
-      "loop-row-child-children-nested-index-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-nested-prop-reads-unreachable-row-binding"
-          ]
-        }
-      },
-      "loop-row-child-children-nested-preamble-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-child-nested-prop-reads-unreachable-row-binding"
-          ]
-        }
-      },
       "loop-row-child-children-prop-array-sibling-plural": {
         "go-template": {
           "kind": "render",
@@ -5611,14 +5595,6 @@
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
-      "loop-row-child-children-nested-index-prop": {
-        "description": "A nested component inside a loop-row child's forwarded children receives the row index as a prop at…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-index-prop.ts"
-      },
-      "loop-row-child-children-nested-preamble-prop": {
-        "description": "A nested component inside a loop-row child's forwarded children receives a callback-local derived…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-nested-preamble-prop.ts"
-      },
       "loop-row-child-children-prop-array-sibling-plural": {
         "description": "A component loop with forwarded children over an array prop renders every row when a sibling loop's…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-prop-array-sibling-plural.ts"
@@ -6134,20 +6110,6 @@
       "actual": "renders the forwarded-children loop empty with no diagnostic: the sibling loop's `Items []ItemInput` Input field takes the prop's own `Items` field, so the constructor has no datum slice to build the `<Badge>` rows from",
       "fixtures": [
         "loop-row-child-children-prop-array-sibling-plural"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
-    "loop-row-child-nested-prop-reads-unreachable-row-binding": {
-      "title": "A component in a loop-row child's forwarded children loses a prop read from the row index or a callback-body local",
-      "kind": "silent",
-      "given": "a `.map()` loop whose row is a single child component with forwarded JSX `children`, where those children nest another component whose prop reads a callback binding other than the row item itself: the index parameter (`opts.map((o, i) => <Chip><Mark pos={i}>…</Mark></Chip>)`) or a local the callback body declares (`const t = o.tone` → `<Mark tone={t}>`)",
-      "expected": "each row renders the nested component with its own value (`data-pos=\"0\"`, `data-pos=\"1\"`; `data-tone=\"warm\"`, `data-tone=\"cool\"`)",
-      "actual": "renders every row's nested component with the prop's zero value instead (the attribute is missing), because the forwarded children render as a separate template that receives the row item but not the row's other bindings",
-      "fixtures": [
-        "loop-row-child-children-nested-index-prop",
-        "loop-row-child-children-nested-preamble-prop"
       ],
       "adapters": [
         "go-template"
