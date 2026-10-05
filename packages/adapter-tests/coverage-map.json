@@ -4570,6 +4570,26 @@
         "text"
       ]
     },
+    "loop-row-child-children-nested-row-var-shapes": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-nested-shapes": {
       "kinds": [
         "array-literal",

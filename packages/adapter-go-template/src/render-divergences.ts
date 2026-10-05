@@ -148,12 +148,12 @@ export const renderDivergences: RenderDivergences = {
   // `lowerChildInputFields` with the non-loop path; it renders like Hono.
   // A prop there that reads the ROW ITEM is re-applied per row inside the
   // row's forwarded-children define (`loop-row-child-children-nested-row-prop`
-  // passes), but that define is a separate `ExecuteTemplate` whose data is
-  // the row wrapper: the index (`{{range $index, …}}`) and a callback-body
-  // local (`{{$t := …}}`) are out of reach, so a prop reading either keeps
-  // the shared instance's zero value.
-  'loop-row-child-children-nested-index-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
-  'loop-row-child-children-nested-preamble-prop': { limitation: 'loop-row-child-nested-prop-reads-unreachable-row-binding' },
+  // passes). `loop-row-child-children-nested-index-prop` and
+  // `-preamble-prop` used to sit here: that define is a separate
+  // `ExecuteTemplate` whose data is the row wrapper, so the index
+  // (`{{range $index, …}}`) and a callback-body local (`{{$t := …}}`) were
+  // out of reach. The call site now hands them over in the wrapper's
+  // `BfRowVars` and the define rebinds them; both render like Hono.
   // `html/template` strips a `data-` prefix before classifying an attribute,
   // and treats a name containing `src`/`uri`/`url` as a URL: a dynamic value
   // is percent-normalized (`a%20b`) and a `javascript:` value becomes

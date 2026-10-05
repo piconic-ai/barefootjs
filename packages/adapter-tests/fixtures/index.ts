@@ -815,6 +815,7 @@ import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-c
 import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
 import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
+import { fixture as loopRowChildChildrenNestedRowVarShapes } from './loop-row-child-children-nested-row-var-shapes'
 // The nested component's signal is seeded from a prop fallback
 // (`createSignal(props.hl ?? true)`), and the row binds its fields by
 // destructuring (`({ id, tone }) => …`).
@@ -1422,6 +1423,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenOwnReactiveProp,
   loopRowChildChildrenNestedIndexProp,
   loopRowChildChildrenNestedPreambleProp,
+  loopRowChildChildrenNestedRowVarShapes,
   loopRowChildChildrenNestedPropFallback,
   loopRowChildChildrenNestedDestructuredProp,
   loopRowChildChildrenNestedDeepRowProp,

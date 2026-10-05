@@ -225,18 +225,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-nested-index-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-preamble-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -4302,18 +4290,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-nested-index-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-preamble-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
                 "loop-row-child-children-prop-array-sibling-plural"
@@ -5894,18 +5870,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-nested-index-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-preamble-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -7267,18 +7231,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-nested-index-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-preamble-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-prop-array-sibling-plural",
               "limitations": [
                 "loop-row-child-children-prop-array-sibling-plural"
@@ -8248,18 +8200,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "loop-row-child-children-nested-index-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-preamble-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
@@ -12362,18 +12302,6 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-index-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-nested-preamble-prop",
-              "limitations": [
-                "loop-row-child-nested-prop-reads-unreachable-row-binding"
               ]
             },
             {
