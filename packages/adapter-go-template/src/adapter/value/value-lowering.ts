@@ -87,9 +87,6 @@ function nillableAwarePropRef(
 ): string {
   const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   const scalar = unwrapNullableUnion(expectedType)
-  // A nullable signal seeded from a prop flipped for it keeps the prop's
-  // `interface{}` field — and its nil — whole (#3323).
-  if (scalar !== expectedType && ctx.state.nullableSignalSeedPropNames.has(param.name)) return fieldRef
   if (ctx.state.nillablePropNames.has(param.name) && scalar.kind === 'primitive') {
     const goType =
       scalar.primitive === 'boolean' ? 'bool' :
@@ -119,7 +116,13 @@ export function convertInitialValue(
   // `string` field gets a `nil` seed (#2477's `go run` failure).
   const typeInfo = collapseLiteralUnion(_typeInfo)
   const propRef = (param: { name: string; sourceName?: string }): string =>
-    nillableAwarePropRef(ctx, param, typeInfo)
+    // A nullable seed of a prop flipped for it (#3323) bakes into the
+    // signal's own `interface{}` field whole, keeping the prop's nil; a
+    // memo reading the signal still takes `nillableAwarePropRef`'s
+    // concrete form (`getSignalInitialValueAsGo`).
+    unwrapNullableUnion(typeInfo) !== typeInfo && ctx.state.nullableSignalSeedPropNames.has(param.name)
+      ? `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+      : nillableAwarePropRef(ctx, param, typeInfo)
 
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
     const param = propsParams?.find(p => p.name === value)
