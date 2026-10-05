@@ -11,6 +11,7 @@ import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
 import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
+import { nestedRowsFieldName, reservedRowsFieldNames } from './adapter/lib/nested-rows-field.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import type { NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
@@ -834,23 +835,28 @@ function buildDynamicChildLoopSeeding(
   const inputLines: string[] = []
   const propsLines: string[] = []
   let needsFmt = false
+  const rowsReserved = reservedRowsFieldNames(
+    findNestedComponents(ir.root).map(n => n.name),
+    [...ir.metadata.signals.map(s => s.getter), ...ir.metadata.memos.map(m => m.name)],
+  )
   for (const nested of findNestedComponents(ir.root) as NestedComponentInfo[]) {
     if (nested.bodyChildren && nested.bodyChildren.length > 0) continue
     if (!nested.loopParam) continue
     const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
-    if (!template.includes(`:= .${nested.name}s}}`)) continue
+    const rowsField = nestedRowsFieldName(nested.name, nested.loopArrayParsed, propsParams, ir.metadata.propsObjectName, rowsReserved)
+    if (!template.includes(`:= .${rowsField}}}`)) continue
 
     if (nested.isPropDerived) {
       // The constructor builds these rows from the array prop itself
       // (`propArrayLoopRowSource`): the Input has no `<Name>s` field for a
       // route handler to fill.
-      if (!inputStructHasField(goTypes, ir.metadata.componentName, `${nested.name}s`)) continue
+      if (!inputStructHasField(goTypes, ir.metadata.componentName, rowsField)) continue
       const localName = findLoopPropField(nested.loopArrayParsed)
       const param = localName ? propsParams.find(p => p.name === localName) : undefined
       const datumField = param ? (param.sourceName ?? param.name) : null
       // (#2627/#2628 shadowing) `in.<Name>s` IS the driving prop's field and
       // already carries the caller's rows — see the docstring.
-      if (datumField && capitalizeFieldName(datumField) === capitalizeFieldName(`${nested.name}s`)) continue
+      if (datumField && capitalizeFieldName(datumField) === rowsField) continue
 
       if (datumField) {
         // One hop (#2630): derive each child Input row from the driving
@@ -862,9 +868,9 @@ function buildDynamicChildLoopSeeding(
         )
         if (!inputFields) continue
         const datum = `in.${capitalizeFieldName(datumField)}`
-        inputLines.push(`\tin.${nested.name}s = make([]${nested.name}Input, len(${datum}))`)
+        inputLines.push(`\tin.${rowsField} = make([]${nested.name}Input, len(${datum}))`)
         inputLines.push(`\tfor i, item := range ${datum} {`)
-        inputLines.push(`\t\tin.${nested.name}s[i] = ${nested.name}Input{${inputFields.join(', ')}}`)
+        inputLines.push(`\t\tin.${rowsField}[i] = ${nested.name}Input{${inputFields.join(', ')}}`)
         inputLines.push(`\t}`)
         continue
       }
@@ -884,7 +890,7 @@ function buildDynamicChildLoopSeeding(
         rows.push(`${nested.name}Input{${fields.join(', ')}}`)
       }
       if (rows.length !== nestedArrayValue.length) continue
-      inputLines.push(`\tin.${nested.name}s = []${nested.name}Input{${rows.join(', ')}}`)
+      inputLines.push(`\tin.${rowsField} = []${nested.name}Input{${rows.join(', ')}}`)
       continue
     }
 
@@ -901,14 +907,14 @@ function buildDynamicChildLoopSeeding(
     // Signal-backed dynamic: the handler builds the whole Props slice after
     // construction (the constructor never touches it).
     const datum = `props.${capitalizeFieldName(datumField)}`
-    propsLines.push(`\tprops.${nested.name}s = make([]${nested.name}Props, len(${datum}))`)
+    propsLines.push(`\tprops.${rowsField} = make([]${nested.name}Props, len(${datum}))`)
     propsLines.push(`\tfor i, item := range ${datum} {`)
-    propsLines.push(`\t\tprops.${nested.name}s[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
-    propsLines.push(`\t\tprops.${nested.name}s[i].BfParent = props.ScopeID`)
-    propsLines.push(`\t\tprops.${nested.name}s[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
+    propsLines.push(`\t\tprops.${rowsField}[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
+    propsLines.push(`\t\tprops.${rowsField}[i].BfParent = props.ScopeID`)
+    propsLines.push(`\t\tprops.${rowsField}[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
     const keyField = loopKeyToGoRowExpr(nested.loopKey, row)
     if (keyField) {
-      propsLines.push(`\t\tprops.${nested.name}s[i].BfDataKey = fmt.Sprint(${keyField})`)
+      propsLines.push(`\t\tprops.${rowsField}[i].BfDataKey = fmt.Sprint(${keyField})`)
       needsFmt = true
     }
     propsLines.push(`\t}`)
