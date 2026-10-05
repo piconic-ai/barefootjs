@@ -5,8 +5,8 @@ import { createFixture } from '../src/types'
  * `negated-empty-array-condition-shapes`): a bare value as a ternary test
  * takes JS truthiness — an absent value is falsy, an empty or non-empty
  * array and an empty object are truthy, and a scalar keeps its own
- * truthiness — read through a signal, a memo, a prop, and a loop row's
- * member.
+ * truthiness — read through a signal, a memo, a prop, an array's
+ * `.length`, and a loop row's member.
  */
 export const fixture = createFixture({
   id: 'empty-array-condition-shapes',
@@ -35,6 +35,7 @@ export function ConditionShapes(props: {
   const [count] = createSignal(props.count)
   const [on] = createSignal(props.on)
   const [rows] = createSignal(props.rows ?? [])
+  const [none] = createSignal<string[]>([])
   const tagList = createMemo(() => tags())
   return (
     <div>
@@ -47,6 +48,8 @@ export function ConditionShapes(props: {
       <p>{on() ? 'false: truthy' : 'false: falsy'}</p>
       <p>{tagList() ? 'memo: truthy' : 'memo: falsy'}</p>
       <p>{props.tags ? 'prop: truthy' : 'prop: falsy'}</p>
+      <p>{none().length ? 'empty length: truthy' : 'empty length: falsy'}</p>
+      <p>{rows().length ? 'length: truthy' : 'length: falsy'}</p>
       <ul>
         {rows().map(r => (
           <li key={r.name}>{r.name}: {r.tags ? 'has tags' : 'no tags'}</li>
@@ -76,10 +79,12 @@ export function ConditionShapes(props: {
       <p bf="s13"><!--bf-cond-start:s12-->false: falsy<!--bf-cond-end:s12--></p>
       <p bf="s15"><!--bf-cond-start:s14-->memo: truthy<!--bf-cond-end:s14--></p>
       <p bf="s17"><!--bf-cond-start:s16-->prop: truthy<!--bf-cond-end:s16--></p>
-      <ul bf="s23">
-        <li bf="s22" data-key="empty"><!--bf:s18-->empty<!--/-->: <!--bf-cond-start:s19--><!--bf:s20-->has tags<!--/--><!--bf-cond-end:s19--></li>
-        <li bf="s22" data-key="absent"><!--bf:s18-->absent<!--/-->: <!--bf-cond-start:s19--><!--bf:s21-->no tags<!--/--><!--bf-cond-end:s19--></li>
-        <li bf="s22" data-key="full"><!--bf:s18-->full<!--/-->: <!--bf-cond-start:s19--><!--bf:s20-->has tags<!--/--><!--bf-cond-end:s19--></li>
+      <p bf="s19"><!--bf-cond-start:s18-->empty length: falsy<!--bf-cond-end:s18--></p>
+      <p bf="s21"><!--bf-cond-start:s20-->length: truthy<!--bf-cond-end:s20--></p>
+      <ul bf="s27">
+        <li bf="s26" data-key="empty"><!--bf:s22-->empty<!--/-->: <!--bf-cond-start:s23--><!--bf:s24-->has tags<!--/--><!--bf-cond-end:s23--></li>
+        <li bf="s26" data-key="absent"><!--bf:s22-->absent<!--/-->: <!--bf-cond-start:s23--><!--bf:s25-->no tags<!--/--><!--bf-cond-end:s23--></li>
+        <li bf="s26" data-key="full"><!--bf:s22-->full<!--/-->: <!--bf-cond-start:s23--><!--bf:s24-->has tags<!--/--><!--bf-cond-end:s23--></li>
       </ul>
     </div>
   `,

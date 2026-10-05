@@ -79,7 +79,7 @@ export function isBareValueRead(expr: ParsedExpr): boolean {
  * that is already a Go bool is returned unchanged.
  */
 export function lowerJsTruthyTest(test: ParsedExpr, rendered: string): string {
-  return isGoBoolShaped(test) ? rendered : `(bf_truthy ${rendered})`
+  return isGoBoolShaped(test) ? rendered : `(bf_truthy ${wrapIfMultiToken(rendered)})`
 }
 
 export function lowerJsNot(argument: ParsedExpr, rendered: string): string {
