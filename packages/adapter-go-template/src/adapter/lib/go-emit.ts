@@ -60,6 +60,28 @@ export function isGoBoolShaped(expr: ParsedExpr): boolean {
  * non-nil empty slice/map is truthy) before `not` flips it. An operand that
  * is already a Go bool keeps the bare `not`.
  */
+/**
+ * Whether `expr` is a bare value read — an identifier, a member read, or a
+ * zero-argument accessor call (`tags()`) — as opposed to an operator
+ * expression or a helper call whose result is already a test.
+ */
+export function isBareValueRead(expr: ParsedExpr): boolean {
+  if (expr.kind === 'identifier' || expr.kind === 'member') return true
+  return expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0
+}
+
+/**
+ * Lower a JS truthiness test of `test`, given its already-rendered Go form —
+ * the un-negated twin of `lowerJsNot`, shared by every position that tests a
+ * value (a `{{if}}` condition, a `bf_ternary` test). Go's built-in
+ * truthiness reads an EMPTY slice or map as false, where JS reads `[]` /
+ * `{}` as true, so a non-bool operand goes through `bf_truthy`; an operand
+ * that is already a Go bool is returned unchanged.
+ */
+export function lowerJsTruthyTest(test: ParsedExpr, rendered: string): string {
+  return isGoBoolShaped(test) ? rendered : `(bf_truthy ${rendered})`
+}
+
 export function lowerJsNot(argument: ParsedExpr, rendered: string): string {
   if (isGoBoolShaped(argument)) return `not ${wrapIfMultiToken(rendered)}`
   return `not (bf_truthy ${wrapIfMultiToken(rendered)})`

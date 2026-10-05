@@ -17,7 +17,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { escapeGoString, isGoBoolShaped, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { escapeGoString, isGoBoolShaped, lowerJsTruthyTest, wrapIfMultiToken } from '../lib/go-emit.ts'
 
 /**
  * Logical helper id → Go template helper name. `bf_<helper>` is a formula,
@@ -155,8 +155,7 @@ export function lowerValueOperand(ctx: GoEmitContext, n: ParsedExpr): string {
  * counterpart of `lowerUrlGuard`'s string-only `ne <value> ""`.
  */
 function lowerTernaryTest(ctx: GoEmitContext, test: ParsedExpr): string {
-  const go = lowerValueOperand(ctx, test)
-  return isGoBoolShaped(test) ? go : `(bf_truthy ${go})`
+  return lowerJsTruthyTest(test, lowerValueOperand(ctx, test))
 }
 
 /**
