@@ -2332,23 +2332,34 @@ func FilterTruthy(items any) []any {
 }
 
 // Truthy is the exported form of isTruthy — JavaScript's `Boolean(x)`
-// semantics. Two callers:
+// semantics. Callers:
 //   - generated `NewXxxProps` code lowering a conditional inline-object
 //     spread condition on an `interface{}` prop (whose runtime value may be
 //     a string, number, bool, …), keeping the spread bag's inclusion test
-//     faithful to JS rather than string-biased (#1752); and
+//     faithful to JS rather than string-biased (#1752);
 //   - the `bf_truthy` template FuncMap entry (#2335), which coerces a
 //     `bf_ternary` test to a real bool when it isn't already a comparison /
 //     negation (`Ternary`'s `cond` parameter is typed `bool`, unlike
 //     `{{if}}`'s built-in truthiness). Uniform across string/number/bool/nil,
 //     so a `bf_ternary` test on any prop type can't hit a `bool`-vs-`string`
-//     comparison error the way a string-only `ne <value> ""` would.
+//     comparison error the way a string-only `ne <value> ""` would; and
+//   - every JS `!x` the adapter lowers, as `not (bf_truthy x)`: Go's
+//     built-in `not` (and `{{if}}`) treat an EMPTY slice/map as false, where
+//     JS treats `[]` / `{}` as true.
 func Truthy(v any) bool { return isTruthy(v) }
 
-// isTruthy mirrors JavaScript's `Boolean(x)` for the value shapes the
-// template path actually receives — nil / false / 0 / "" are falsy.
-// Other shapes (non-empty maps, slices, structs, true) are truthy, in
-// line with JS's "objects are truthy" rule.
+// isTruthy mirrors JavaScript's `Boolean(x)` — false / 0 / NaN / "" and
+// null/undefined are falsy, everything else (including an EMPTY array or
+// object) is truthy.
+//
+// JS has no typed nil, so the Go side reads every nil — an untyped nil, or
+// a typed nil pointer / slice / map / interface / func / chan inside an
+// `any` — as null/undefined: an optional prop the caller left out decodes
+// to a nil slice, and must stay falsy. A non-nil EMPTY slice or map (`[]`,
+// `{}` from the JSON props) is a real JS object and is truthy. The runtime
+// helpers that build arrays keep that split by never returning a nil slice
+// for a JS array result (see Filter). A non-nil pointer is the Go spelling
+// of an optional value, so it reads through to its pointee.
 func isTruthy(v any) bool {
 	if v == nil {
 		return false
@@ -2360,19 +2371,31 @@ func isTruthy(v any) bool {
 		return x != ""
 	case int:
 		return x != 0
-	case int8, int16, int32, int64:
-		return reflect.ValueOf(v).Int() != 0
-	case uint, uint8, uint16, uint32, uint64:
-		return reflect.ValueOf(v).Uint() != 0
-	case float32:
-		// JS `Boolean(NaN)` is false regardless of float width — the
-		// float64 arm below was the only one checking IsNaN, which
-		// diverged from JS for `float32` NaN inputs (Copilot review on
-		// #1445). Widening to float64 for the IsNaN check keeps the
-		// two branches in lock-step.
-		return x != 0 && !math.IsNaN(float64(x))
 	case float64:
 		return x != 0 && !math.IsNaN(x)
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if rv.IsNil() {
+			return false
+		}
+		return isTruthy(rv.Elem().Interface())
+	case reflect.Slice, reflect.Map, reflect.Func, reflect.Chan:
+		return !rv.IsNil()
+	case reflect.Bool:
+		return rv.Bool()
+	case reflect.String:
+		return rv.Len() > 0
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int() != 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return rv.Uint() != 0
+	case reflect.Float32, reflect.Float64:
+		// JS `Boolean(NaN)` is false regardless of float width (Copilot
+		// review on #1445: the float32 arm once skipped the IsNaN check).
+		f := rv.Float()
+		return f != 0 && !math.IsNaN(f)
 	}
 	return true
 }
@@ -2432,7 +2455,9 @@ func Filter(items any, field string, value any) []any {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
 	}
-	var result []any
+	// Non-nil even when nothing matches: JS `filter` always returns an
+	// array, and isTruthy reads a nil slice as null/undefined.
+	result := []any{}
 	for i := 0; i < v.Len(); i++ {
 		item := v.Index(i).Interface()
 		if reflect.DeepEqual(fieldValue(item, field), value) {

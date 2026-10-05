@@ -2542,6 +2542,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2623,12 +2629,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -4218,6 +4218,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4383,12 +4389,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -5852,6 +5852,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5945,12 +5951,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -7213,6 +7213,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7336,12 +7342,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -8693,12 +8693,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -12359,6 +12353,12 @@
               ]
             },
             {
+              "fixture": "empty-array-condition",
+              "limitations": [
+                "empty-array-condition"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12422,12 +12422,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {
@@ -13495,12 +13489,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "negated-empty-array-condition",
-              "limitations": [
-                "negated-empty-array-condition"
               ]
             },
             {

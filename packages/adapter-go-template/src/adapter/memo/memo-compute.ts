@@ -493,6 +493,18 @@ export function memoInitialFromParsedBody(
     }
   }
 
+  // () => !<operand> — a negation memo (`() => !open()`, `() => !tags()`,
+  // `() => !props.label`). JS `!` is `!Boolean(x)`: `bf.Truthy` is the
+  // runtime's `Boolean(x)` (nil/absent falsy, a non-nil EMPTY slice/map
+  // truthy) — the same decision the template-position `!` makes through
+  // `lowerJsNot`'s `not (bf_truthy x)`.
+  if (body.kind === 'unary' && body.op === '!') {
+    const operand = resolveComparisonOperandGo(
+      ctx, body.argument, signals, propsParams, propFallbackVars, new Set([...resolving, currentMemoName]),
+    )
+    if (operand !== null) return `!bf.Truthy(${operand})`
+  }
+
   // () => getter() === 'lit' / !== 'lit' — a selection memo. Resolves to a Go
   // bool when the signal's initial value is itself a string literal.
   if (

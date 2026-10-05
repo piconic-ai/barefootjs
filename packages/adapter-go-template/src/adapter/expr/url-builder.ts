@@ -17,7 +17,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { escapeGoString, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { escapeGoString, isGoBoolShaped, wrapIfMultiToken } from '../lib/go-emit.ts'
 
 /**
  * Logical helper id → Go template helper name. `bf_<helper>` is a formula,
@@ -31,10 +31,6 @@ import { escapeGoString, wrapIfMultiToken } from '../lib/go-emit.ts'
 function goHelperName(helper: string): string | null {
   return isValidHelperId(helper) ? `bf_${helper}` : null
 }
-
-const BOOL_COMPARISON_OPS: ReadonlySet<string> = new Set([
-  '==', '===', '!=', '!==', '<', '>', '<=', '>=',
-])
 
 /**
  * Lower an expression to a Go *bool* for `bf_query`'s `include` argument. A
@@ -55,11 +51,7 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
   // operands (a string for a truthiness guard like `tag && other`), not a
   // bool — so they take the truthiness-wrap path below, yielding
   // `ne (and …) ""`, an actual bool.
-  const isBoolShape =
-    (g.kind === 'binary' && BOOL_COMPARISON_OPS.has(g.op)) ||
-    (g.kind === 'unary' && g.op === '!') ||
-    (g.kind === 'literal' && g.literalType === 'boolean')
-  if (isBoolShape) {
+  if (isGoBoolShaped(g)) {
     return ctx.convertConditionToGo(stringifyParsedExpr(g), g).condition
   }
   const valueGo = lowerValueOperand(ctx, g)
@@ -164,11 +156,7 @@ export function lowerValueOperand(ctx: GoEmitContext, n: ParsedExpr): string {
  */
 function lowerTernaryTest(ctx: GoEmitContext, test: ParsedExpr): string {
   const go = lowerValueOperand(ctx, test)
-  const isBoolShape =
-    (test.kind === 'binary' && BOOL_COMPARISON_OPS.has(test.op)) ||
-    (test.kind === 'unary' && test.op === '!') ||
-    (test.kind === 'literal' && test.literalType === 'boolean')
-  return isBoolShape ? go : `(bf_truthy ${go})`
+  return isGoBoolShaped(test) ? go : `(bf_truthy ${go})`
 }
 
 /**

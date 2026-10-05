@@ -114,6 +114,7 @@ import { loopKeyToGoFieldPath } from './lib/loop-row-path.ts'
 import {
   escapeGoString,
   wrapIfMultiToken,
+  lowerJsNot,
   wrapGoArg,
   emitBfSort,
   emitSortEval,
@@ -6734,11 +6735,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const arg = this.emitOperand(argument, emit)
-    // `not` is a Go template prefix builtin like `and`/`or` (see `logical()`
-    // below) — a multi-token argument (e.g. `or a b`) must be parenthesised
-    // or it degrades into extra sibling args of `not` itself (#2758: `not
-    // or a b` parses as `not` applied to 3 args, not 1).
-    if (op === '!') return `not ${wrapIfMultiToken(arg)}`
+    // `lowerJsNot` parenthesises a multi-token argument (#2758: `not or a b`
+    // parses as `not` applied to 3 args, not 1) and routes a non-bool operand
+    // through `bf_truthy`, since Go's `not` reads an empty slice as false.
+    if (op === '!') return lowerJsNot(argument, arg)
     if (op === '-') return `bf_neg ${arg}`
     return arg
   }
@@ -7794,11 +7794,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case 'unary': {
         const arg = this.renderFilterExpr(expr.argument, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
-        if (expr.op === '!') {
-          // Wrap in parens if arg is a function call (eq, ne, gt, …).
-          const needsParens = this.isGoFunctionCall(expr.argument)
-          return needsParens ? `not (${arg})` : `not ${arg}`
-        }
+        if (expr.op === '!') return lowerJsNot(expr.argument, arg)
         if (expr.op === '-') {
           return `bf_neg ${arg}`
         }
@@ -7899,29 +7895,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       },
     })
     return 'false'
-  }
-
-  /**
-   * Whether a ParsedExpr renders as a Go template function call (so it needs
-   * parentheses around it).
-   */
-  private isGoFunctionCall(expr: ParsedExpr): boolean {
-    switch (expr.kind) {
-      case 'binary':
-        // Comparison operators → eq, ne, gt, lt, …
-        return ['===', '==', '!==', '!=', '>', '<', '>=', '<='].includes(expr.op)
-      case 'logical':
-        // → and, or
-        return true
-      case 'unary':
-        // → not, bf_neg
-        return true
-      case 'member':
-        // .length → len
-        return expr.property === 'length'
-      default:
-        return false
-    }
   }
 
   /** Convert a JS expression to Go template syntax. */
@@ -8756,11 +8729,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'unary': {
         const arg = this.renderConditionExpr(expr.argument)
-        // Same prefix-builtin wrapping rule as the `logical` case just below
-        // (and the main `unary()` emitter above): `not` needs its multi-token
-        // argument parenthesised, or e.g. `not or a b` parses as `not`
-        // applied to 3 sibling args instead of 1 (#2758).
-        if (expr.op === '!') return { preamble: arg.preamble, expr: `not ${wrapIfMultiToken(arg.expr)}` }
+        // The same `lowerJsNot` as the main `unary()` emitter above: JS
+        // truthiness via `bf_truthy`, multi-token argument parenthesised.
+        if (expr.op === '!') return { preamble: arg.preamble, expr: lowerJsNot(expr.argument, arg.expr) }
         // Same rule as `!` just above: `bf_neg` is a prefix builtin too, so a
         // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
         // parenthesised or Go reads it as extra sibling args (#3249).

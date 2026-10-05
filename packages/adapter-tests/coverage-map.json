@@ -2790,6 +2790,21 @@
         "text"
       ]
     },
+    "empty-array-condition": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "empty-list-branch": {
       "kinds": [
         "array-literal",
@@ -5385,6 +5400,30 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "negated-empty-array-condition-shapes": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

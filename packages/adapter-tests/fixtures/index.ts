@@ -622,7 +622,9 @@ import { fixture as createMutationForm } from './create-mutation-form'
 import { fixture as createMutationRequestClientOnly } from './create-mutation-request-client-only'
 import { fixture as memoLengthPropSeededSignal } from './memo-length-prop-seeded-signal'
 import { fixture as memoLengthPropSeededSignalShapes } from './memo-length-prop-seeded-signal-shapes'
+import { fixture as emptyArrayCondition } from './empty-array-condition'
 import { fixture as negatedEmptyArrayCondition } from './negated-empty-array-condition'
+import { fixture as negatedEmptyArrayConditionShapes } from './negated-empty-array-condition-shapes'
 import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
@@ -1337,7 +1339,9 @@ export const jsxFixtures: JSXFixture[] = [
   createMutationRequestClientOnly,
   memoLengthPropSeededSignal,
   memoLengthPropSeededSignalShapes,
+  emptyArrayCondition,
   negatedEmptyArrayCondition,
+  negatedEmptyArrayConditionShapes,
   queryHref,
   queryHrefSrc,
   queryHrefTernary,

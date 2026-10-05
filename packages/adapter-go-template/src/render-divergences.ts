@@ -160,10 +160,10 @@ export const renderDivergences: RenderDivergences = {
   // `#ZgotmplZ`.
   'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
 
-  // `!x` lowers to Go's built-in `not`, whose truthiness treats an empty
-  // slice as false, where JS treats `[]` as true. (`bf_truthy` is not a
-  // drop-in: it reports a typed nil slice — the absent-prop case — as true.)
-  'negated-empty-array-condition': { limitation: 'negated-empty-array-condition' },
+  // A bare value as a `{{if}}` test uses Go's built-in truthiness, which
+  // treats an empty slice (and map) as false, where JS treats `[]` as true.
+  // (`!x` goes through `bf_truthy`; the un-negated test does not.)
+  'empty-array-condition': { limitation: 'empty-array-condition' },
 
   // A component loop row over an array prop, keyed by a row field the child
   // takes no prop for (`<Badge key={item.id} label={item.label} />`): the
@@ -224,8 +224,4 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // `createQuery` mode B with an empty result list renders the skeleton
-  // instead of the empty list: `!posts()` on `[]` is Go's `not` on an empty
-  // slice. The fixture's primary point (prop absent) renders like Hono.
-  'create-query-optional-initial:gen:posts:empty': { limitation: 'negated-empty-array-condition' },
 }

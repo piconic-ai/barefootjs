@@ -2237,6 +2237,14 @@
           }
         }
       },
+      "empty-array-condition": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "empty-array-condition"
+          ]
+        }
+      },
       "every-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -4207,14 +4215,6 @@
           ]
         }
       },
-      "negated-empty-array-condition": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "negated-empty-array-condition"
-          ]
-        }
-      },
       "number-division-text": {
         "erb": {
           "kind": "render",
@@ -5579,6 +5579,10 @@
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/embedded-prop-member-signal-seed.ts"
       },
+      "empty-array-condition": {
+        "description": "An empty-array signal is true in a ternary test, so the first branch renders",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/empty-array-condition.ts"
+      },
       "every-typeof-predicate": {
         "description": "Off-subset `.every()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate.ts"
@@ -5690,10 +5694,6 @@
       "namespace-import-primitive": {
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
-      },
-      "negated-empty-array-condition": {
-        "description": "A negated empty-array signal is false in a ternary test, so the second branch renders",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/negated-empty-array-condition.ts"
       },
       "number-division-text": {
         "description": "Integer operands divided in text keep the fractional result",
@@ -6055,6 +6055,19 @@
         "BF101"
       ]
     },
+    "empty-array-condition": {
+      "title": "Empty array as a conditional test",
+      "kind": "silent",
+      "given": "a ternary whose test is a value that is an empty array (`{tags() ? 'has tags' : 'no tags'}` with `tags()` returning `[]`)",
+      "expected": "an empty array is truthy, so the test is true and the first branch renders (`has tags`)",
+      "actual": "renders the second branch, treating the empty array as falsy",
+      "fixtures": [
+        "empty-array-condition"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "fractional-number-compare-int-literal": {
       "title": "A fractional number compared against an integer literal fails at render time",
       "kind": "silent",
@@ -6289,19 +6302,6 @@
         "BF013"
       ],
       "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
-    },
-    "negated-empty-array-condition": {
-      "title": "Negated empty array as a conditional test",
-      "kind": "silent",
-      "given": "a ternary whose test negates a value that is an empty array (`{!tags() ? 'no tags' : 'has tags'}` with `tags()` returning `[]`)",
-      "expected": "an empty array is truthy, so the test is false and the second branch renders (`has tags`)",
-      "actual": "renders the first branch, treating the empty array as falsy",
-      "fixtures": [
-        "negated-empty-array-condition"
-      ],
-      "adapters": [
-        "go-template"
-      ]
     },
     "nested-callback-in-filter-predicate": {
       "title": "Nested higher-order callback inside a filter predicate",
