@@ -6499,6 +6499,20 @@
         "attribute"
       ]
     },
+    "prop-seeded-nullable-signal-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "props-reactive": {
       "kinds": [
         "call",

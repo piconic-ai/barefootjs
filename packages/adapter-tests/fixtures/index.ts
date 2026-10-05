@@ -700,6 +700,7 @@ import { fixture as nullishTernaryFalseBranchAttr } from './nullish-ternary-fals
 import { fixture as nullishSignalArithmeticMemo } from './nullish-signal-arithmetic-memo'
 import { fixture as propSeededNullableSignalAttr } from './prop-seeded-nullable-signal-attr'
 import { fixture as memberSeededNullableSignalAttr } from './member-seeded-nullable-signal-attr'
+import { fixture as propSeededNullableSignalChildProp } from './prop-seeded-nullable-signal-child-prop'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -1388,6 +1389,7 @@ export const jsxFixtures: JSXFixture[] = [
   nullishSignalArithmeticMemo,
   propSeededNullableSignalAttr,
   memberSeededNullableSignalAttr,
+  propSeededNullableSignalChildProp,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,

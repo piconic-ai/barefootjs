@@ -110,6 +110,8 @@ export function convertInitialValue(
   _typeInfo: TypeInfo,
   propsParams?: { name: string; sourceName?: string }[],
   preParsed?: ParsedExpr,
+  /** The destination is the signal's own `interface{}` field (#3323). */
+  ownNillableField = false,
 ): string {
   // Literal unions collapse to their backing primitive the same way
   // `typeInfoToGo` collapses the field's type — the two MUST agree, or a
@@ -117,10 +119,11 @@ export function convertInitialValue(
   const typeInfo = collapseLiteralUnion(_typeInfo)
   const propRef = (param: { name: string; sourceName?: string }): string =>
     // A nullable seed of a prop flipped for it (#3323) bakes into the
-    // signal's own `interface{}` field whole, keeping the prop's nil; a
-    // memo reading the signal still takes `nillableAwarePropRef`'s
-    // concrete form (`getSignalInitialValueAsGo`).
-    unwrapNullableUnion(typeInfo) !== typeInfo && ctx.state.nullableSignalSeedPropNames.has(param.name)
+    // signal's own `interface{}` field whole, keeping the prop's nil. Any
+    // other destination — a memo reading the signal
+    // (`getSignalInitialValueAsGo`), a child Input the signal is passed to
+    // — keeps `nillableAwarePropRef`'s concrete form.
+    ownNillableField && ctx.state.nullableSignalSeedPropNames.has(param.name)
       ? `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
       : nillableAwarePropRef(ctx, param, typeInfo)
 

@@ -2585,7 +2585,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Bake against the synthesised struct type if one was inferred for this
       // untyped object-array signal, else the signal's own type.
       const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-      const initialValue = this.signalSeedGo(signal, ir.metadata.propsParams, propFallbackVars, bakeType)
+      const initialValue = this.signalSeedGo(signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
       lines.push(`\t\t${fieldName}: ${initialValue},`)
       const resolvedParsed = this.resolvedSignalParsed(signal)
       if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
@@ -5666,13 +5666,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     bakeType: TypeInfo = signal.type,
+    ownField = false,
   ): string {
     // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
     // one value.
     const fallbackMatch = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
     const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
     if (hoisted) return hoisted.varName
-    return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed)
+    // Only the signal's own field is `interface{}` for a nillable seed
+    // (#3323); a child Input it is forwarded to keeps its concrete type.
+    const ownNillableField = ownField && this.isNillableSeedSignal(signal)
+    return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField)
   }
 
   /**
