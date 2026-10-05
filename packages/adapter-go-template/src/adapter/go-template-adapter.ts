@@ -172,7 +172,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -682,6 +682,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
+    this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
@@ -692,7 +693,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * field is `interface{}` and so can actually hold `nil`. A signal seeded
    * from a prop or a prop member takes that field's Go type instead
    * (`generateTypes`), which a `ne … nil` guard can't compare against —
-   * those stay unguarded.
+   * those stay unguarded, except a seed prop already flipped to
+   * `interface{}` for it (`collectNullableSignalSeedPropNames`, #3323).
    */
   private collectNillableSignalGetters(ir: ComponentIR): Set<string> {
     const nullable = collectNullableSignalGetters(ir)
@@ -700,13 +702,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return new Set(
       ir.metadata.signals
         .filter(signal => nullable.has(signal.getter))
-        .filter(signal =>
+        .filter(signal => this.isNillableSeedSignal(signal) || (
           !propNames.has(signal.initialValue) &&
           !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
           !propMemberSeedGoType(this.emitCtx, signal) &&
-          typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}')
+          typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}'))
         .map(signal => signal.getter),
     )
+  }
+
+  /** A nullable signal seeded whole from a prop flipped to `interface{}` for it (#3323). */
+  private isNillableSeedSignal(signal: { parsed?: ParsedExpr }): boolean {
+    const name = bareSeedPropName(this.emitCtx, signal.parsed)
+    return name !== null && this.state.nullableSignalSeedPropNames.has(name)
   }
 
   /** Generate template output for a component. */
@@ -1176,6 +1184,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           propTypeOverrides.get(p.name) ?? typeInfoToGo(this.emitCtx, p.type, p.defaultValue, p.parsed),
         ]),
     )
+    // The child's own nillable decision, primed on a separate instance so
+    // this compile's state is untouched (#3323).
+    const probe = new GoTemplateAdapter(this.options)
+    probe.primeCompileState(ir as ComponentIR)
+    const nillableParamNames = new Set(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => probe.state.nillablePropNames.has(p.name))
+        .map(p => p.sourceName ?? p.name),
+    )
     this.childComponentShapes.set(name, {
       paramNames,
       restBagField,
@@ -1184,6 +1201,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       structTypedObjectParams,
       dataTypedParamNames,
       paramGoTypes,
+      nillableParamNames,
     })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
@@ -2577,7 +2595,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Bake against the synthesised struct type if one was inferred for this
       // untyped object-array signal, else the signal's own type.
       const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-      const initialValue = this.signalSeedGo(signal, ir.metadata.propsParams, propFallbackVars, bakeType)
+      const initialValue = this.signalSeedGo(signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
       lines.push(`\t\t${fieldName}: ${initialValue},`)
       const resolvedParsed = this.resolvedSignalParsed(signal)
       if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
@@ -3079,6 +3097,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             ir.metadata.memos,
             ir.metadata.propsParams,
             propFallbackVars,
+            childShape?.nillableParamNames.has(prop.name) ?? false,
           )
           if (resolvedValue !== null) {
             emitChildField(prop.name, resolvedValue)
@@ -4585,7 +4604,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const propName = this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
         if (propName) referencedProp = propsParamMap.get(propName)
       }
-      if (referencedProp) {
+      if (this.isNillableSeedSignal(signal)) {
+        // Seeded whole from an optional prop flipped to `interface{}` so the
+        // signal stays nil when the caller omits it (#3323).
+        goType = 'interface{}'
+      } else if (referencedProp) {
         const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue, referencedProp.parsed)
         const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
         // The "prop type wins" heuristic helps when the signal infer is less
@@ -5254,6 +5277,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     memos: { name: string; computation: string; deps: string[] }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    /** The destination child Input field is nillable `interface{}` (#3323). */
+    nillableDest = false,
   ): string | null {
     // A unary-not wrapping any shape this function otherwise resolves
     // (`!value()`, `!open()`, `!props.v`, `!label` — #3174) — recurse on the
@@ -5309,7 +5334,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Signal/memo getter calls (`count()`, `doubled()`).
     const getterMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\(\)$/)
     if (getterMatch) {
-      const resolved = this.resolveLocalGetterAsGo(getterMatch[1], signals, memos, propsParams, propFallbackVars)
+      const resolved = this.resolveLocalGetterAsGo(getterMatch[1], signals, memos, propsParams, propFallbackVars, nillableDest)
       if (resolved !== null) return resolved
       // Neither a signal nor a memo (some other zero-arg call) — fall
       // through to the passthrough checks below, same as before.
@@ -5350,7 +5375,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // name, falls through unresolved, and stays omitted exactly as before
     // this fix.
     if (bareIdentifier !== null) {
-      const resolved = this.resolveLocalGetterAsGo(bareIdentifier, signals, memos, propsParams, propFallbackVars)
+      const resolved = this.resolveLocalGetterAsGo(bareIdentifier, signals, memos, propsParams, propFallbackVars, nillableDest)
       if (resolved !== null) return resolved
     }
     // Plain prefix/suffix check rather than an `expr`-interpolated `RegExp`:
@@ -5654,13 +5679,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     bakeType: TypeInfo = signal.type,
+    nillableDest = false,
   ): string {
     // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
     // one value.
     const fallbackMatch = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
     const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
     if (hoisted) return hoisted.varName
-    return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed)
+    // A nillable seed (#3323) stays whole only into an `interface{}`
+    // destination: the signal's own field, or a child Input the child itself
+    // made nillable (`ChildComponentShape.nillableParamNames`). A concrete
+    // child Input keeps the asserted form.
+    const ownNillableField = nillableDest && this.isNillableSeedSignal(signal)
+    return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField)
   }
 
   /**
@@ -5684,9 +5715,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    nillableDest = false,
   ): string | null {
     const signal = signals.find(s => s.getter === name)
-    if (signal) return this.signalSeedGo(signal, propsParams, propFallbackVars)
+    if (signal) return this.signalSeedGo(signal, propsParams, propFallbackVars, signal.type, nillableDest)
 
     const memo = memos.find(m => m.name === name)
     if (memo) {
