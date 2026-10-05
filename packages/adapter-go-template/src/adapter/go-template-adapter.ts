@@ -172,7 +172,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -682,6 +682,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
+    this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
@@ -692,7 +693,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * field is `interface{}` and so can actually hold `nil`. A signal seeded
    * from a prop or a prop member takes that field's Go type instead
    * (`generateTypes`), which a `ne … nil` guard can't compare against —
-   * those stay unguarded.
+   * those stay unguarded, except a seed prop already flipped to
+   * `interface{}` for it (`collectNullableSignalSeedPropNames`, #3323).
    */
   private collectNillableSignalGetters(ir: ComponentIR): Set<string> {
     const nullable = collectNullableSignalGetters(ir)
@@ -700,13 +702,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return new Set(
       ir.metadata.signals
         .filter(signal => nullable.has(signal.getter))
-        .filter(signal =>
+        .filter(signal => this.isNillableSeedSignal(signal) || (
           !propNames.has(signal.initialValue) &&
           !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
           !propMemberSeedGoType(this.emitCtx, signal) &&
-          typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}')
+          typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}'))
         .map(signal => signal.getter),
     )
+  }
+
+  /** A nullable signal seeded whole from a prop flipped to `interface{}` for it (#3323). */
+  private isNillableSeedSignal(signal: { parsed?: ParsedExpr }): boolean {
+    const name = bareSeedPropName(this.emitCtx, signal.parsed)
+    return name !== null && this.state.nullableSignalSeedPropNames.has(name)
   }
 
   /** Generate template output for a component. */
@@ -4585,7 +4593,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const propName = this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
         if (propName) referencedProp = propsParamMap.get(propName)
       }
-      if (referencedProp) {
+      if (this.isNillableSeedSignal(signal)) {
+        // Seeded whole from an optional prop flipped to `interface{}` so the
+        // signal stays nil when the caller omits it (#3323).
+        goType = 'interface{}'
+      } else if (referencedProp) {
         const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue, referencedProp.parsed)
         const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
         // The "prop type wins" heuristic helps when the signal infer is less

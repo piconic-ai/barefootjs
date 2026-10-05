@@ -3731,6 +3731,96 @@
       }
     }
   ],
+  "prop-seeded-nullable-signal-attr": [
+    {
+      "name": "gen:absent:empty",
+      "props": {
+        "empty": "",
+        "zero": 0,
+        "absent": ""
+      }
+    },
+    {
+      "name": "gen:absent:markup",
+      "props": {
+        "empty": "",
+        "zero": 0,
+        "absent": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:absent:multibyte",
+      "props": {
+        "empty": "",
+        "zero": 0,
+        "absent": "日本語"
+      }
+    },
+    {
+      "name": "gen:empty:absent",
+      "props": {
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:empty:markup",
+      "props": {
+        "empty": "<b>&\"'</b>",
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:empty:multibyte",
+      "props": {
+        "empty": "日本語",
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:none:zero",
+      "props": {
+        "empty": "",
+        "zero": 0,
+        "none": 0
+      }
+    },
+    {
+      "name": "gen:none:negative",
+      "props": {
+        "empty": "",
+        "zero": 0,
+        "none": -7
+      }
+    },
+    {
+      "name": "gen:none:large",
+      "props": {
+        "empty": "",
+        "zero": 0,
+        "none": 1234567890
+      }
+    },
+    {
+      "name": "gen:zero:absent",
+      "props": {
+        "empty": ""
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "empty": "",
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "empty": "",
+        "zero": 1234567890
+      }
+    }
+  ],
   "props-reactive": [
     {
       "name": "gen:label:empty",

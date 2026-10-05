@@ -87,6 +87,9 @@ function nillableAwarePropRef(
 ): string {
   const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   const scalar = unwrapNullableUnion(expectedType)
+  // A nullable signal seeded from a prop flipped for it keeps the prop's
+  // `interface{}` field — and its nil — whole (#3323).
+  if (scalar !== expectedType && ctx.state.nullableSignalSeedPropNames.has(param.name)) return fieldRef
   if (ctx.state.nillablePropNames.has(param.name) && scalar.kind === 'primitive') {
     const goType =
       scalar.primitive === 'boolean' ? 'bool' :

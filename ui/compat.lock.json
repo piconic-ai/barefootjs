@@ -3618,6 +3618,14 @@
           }
         }
       },
+      "member-seeded-nullable-signal-attr": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "optional-struct-field-absent-renders-zero"
+          ]
+        }
+      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -5639,6 +5647,10 @@
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
       },
+      "member-seeded-nullable-signal-attr": {
+        "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
+      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -6317,12 +6329,13 @@
       ]
     },
     "optional-struct-field-absent-renders-zero": {
-      "title": "A missing optional field of a typed object signal reads as its type's zero value",
+      "title": "A missing optional field of a named object type reads as its type's zero value",
       "kind": "silent",
-      "given": "an attribute bound to an optional field of an object signal typed with a named object type (`createSignal<User>({})` with `type User = { name?: string }`, `data-name={blank()?.name}`)",
+      "given": "a read of an optional scalar field of a named object type — off an object signal (`createSignal<User>({})`, `data-name={blank()?.name}`) or seeding a nullable signal off a required object prop (`createSignal<string | undefined>(initial.label)` with `initial` = `{}`) — bound to an attribute",
       "expected": "the read is `undefined`, so the attribute is omitted",
-      "actual": "renders `data-name=\"\"`: the signal's `User` struct has a non-pointer `Name string` field, so the missing field reads as the zero value `\"\"` instead of nil",
+      "actual": "renders the zero value (`data-name=\"\"`, `data-n=\"0\"`): the generated struct's optional field is a non-pointer `string` / `float64`, so a missing field is indistinguishable from a supplied `''` / `0`",
       "fixtures": [
+        "member-seeded-nullable-signal-attr",
         "nullish-optional-member-missing-field-attr"
       ],
       "adapters": [

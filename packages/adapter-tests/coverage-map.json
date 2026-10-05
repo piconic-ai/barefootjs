@@ -5141,6 +5141,17 @@
       "axes": [],
       "contexts": []
     },
+    "member-seeded-nullable-signal-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "memo": {
       "kinds": [
         "binary",
@@ -6475,6 +6486,17 @@
       "axes": [],
       "contexts": [
         "text"
+      ]
+    },
+    "prop-seeded-nullable-signal-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
       ]
     },
     "props-reactive": {

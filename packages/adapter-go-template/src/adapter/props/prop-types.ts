@@ -6,7 +6,7 @@
  */
 
 import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
-import { isBooleanAttr } from '@barefootjs/jsx'
+import { isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -259,6 +259,48 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
 }
 
 /**
+ * Names of OPTIONAL no-default props that directly seed a nullable signal
+ * (`createSignal<string | undefined>(props.initial)`) — #3323.
+ *
+ * The signal's SSR value is the prop's: `undefined` when the caller omits
+ * it. A concrete scalar field reads that absence as its zero value (`""`,
+ * `0`), so the signal could never be nil and an attribute bound to it
+ * (`title={label()}`) would render `title=""` where Hono omits it. These
+ * props take the same `interface{}` flip as `??` consumption
+ * (`resolvePropGoType`); the signal's own field follows the prop's type
+ * and joins the nil-guarded getters (`collectNillableSignalGetters`).
+ */
+export function collectNullableSignalSeedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const optionalParams = new Set(
+    ir.metadata.propsParams.filter(p => p.optional && p.defaultValue == null).map(p => p.name),
+  )
+  const names = new Set<string>()
+  if (optionalParams.size === 0) return names
+  for (const signal of ir.metadata.signals) {
+    if (!isNullableSignal(signal)) continue
+    const name = bareSeedPropName(ctx, signal.parsed)
+    if (name !== null && optionalParams.has(name)) names.add(name)
+  }
+  return names
+}
+
+/** The prop a signal seed reads whole (`initial` / `props.initial`), else null. */
+export function bareSeedPropName(ctx: GoEmitContext, parsed: ParsedExpr | undefined): string | null {
+  if (!parsed) return null
+  const propsObject = ctx.state.propsObjectName
+  if (parsed.kind === 'identifier') return propsObject ? null : parsed.name
+  if (
+    parsed.kind === 'member' &&
+    !parsed.computed &&
+    parsed.object.kind === 'identifier' &&
+    parsed.object.name === propsObject
+  ) {
+    return parsed.property
+  }
+  return null
+}
+
+/**
  * Names of OPTIONAL no-default props consumed as the BARE value of an
  * omittable attribute (`rows={rows}` / `rows={props.rows}`) anywhere in the
  * component's element tree.
@@ -483,13 +525,16 @@ export function resolvePropGoType(
   // `collectTextConsumedPropNames`. A presence check (`props.X !==
   // undefined`, the "controlled component" idiom's `isControlled` memo)
   // takes the same flip too (#2260) — see `collectPresenceCheckedPropNames`.
+  // A prop seeding a nullable signal takes it too (#3323) — see
+  // `collectNullableSignalSeedPropNames`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
     (ctx.state.nullishConsumedPropNames.has(param.name) ||
       ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
       ctx.state.textConsumedPropNames.has(param.name) ||
-      ctx.state.presenceCheckedPropNames.has(param.name)) &&
+      ctx.state.presenceCheckedPropNames.has(param.name) ||
+      ctx.state.nullableSignalSeedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'

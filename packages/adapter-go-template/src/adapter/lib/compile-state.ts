@@ -267,6 +267,14 @@ export class CompileState {
   omittableAttrConsumedPropNames: Set<string> = new Set()
 
   /**
+   * OPTIONAL no-default prop names that directly seed a nullable signal —
+   * #3323. Same `resolvePropGoType` flip and same populate-before-first-
+   * resolve ordering as `nullishConsumedPropNames`: the signal must stay
+   * nil when the caller omits the prop.
+   */
+  nullableSignalSeedPropNames: Set<string> = new Set()
+
+  /**
    * OPTIONAL no-default prop names consumed as a BARE TEXT-position
    * expression value (`{size}`) — #2267. Same `resolvePropGoType` flip and
    * same populate-before-first-resolve ordering as
