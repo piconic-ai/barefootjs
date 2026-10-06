@@ -664,6 +664,28 @@ export function U(props: { x_a: string; _a: string }) {
     const error = adapter.errors.find(e => e.code === 'BF101')
     expect(error?.message).toContain("Props 'x_a' and '_a' of <U> both map to the Go struct field 'X_a'")
   })
+
+  test('refuses colliding caller keys renamed to distinct local bindings', () => {
+    const adapter = new GoTemplateAdapter()
+    adapter.generate(compileToIR(`
+export function U({ _a: first, x_a: second }: { _a: string; x_a: string }) {
+  return <p>{first}:{second}</p>
+}
+`))
+    const errors = adapter.errors.filter(e => e.code === 'BF101')
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toContain("Props '_a' and 'x_a' of <U> both map to the Go struct field 'X_a' of the Input type")
+  })
+
+  test('distinct caller keys with their own fields are not a collision', () => {
+    const adapter = new GoTemplateAdapter()
+    adapter.generate(compileToIR(`
+export function U({ _a: first, b: second }: { _a: string; b: string }) {
+  return <p>{first}:{second}</p>
+}
+`))
+    expect(adapter.errors.filter(e => e.code === 'BF101')).toEqual([])
+  })
 })
 
 describe('GoTemplateAdapter - optional-chained .length (#3332)', () => {
