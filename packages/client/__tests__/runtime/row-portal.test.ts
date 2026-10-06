@@ -161,6 +161,29 @@ describe('relayRowPortalEvents with nested adopted elements', () => {
     button.dispatchEvent(event)
     expect([bubbled, captured, native]).toEqual([4, 4, 2])
   })
+
+  test('delivery survives a handler that removes the target mid-dispatch', () => {
+    const ul = document.createElement('ul')
+    const outer = document.createElement('div')
+    const button = document.createElement('button')
+    const span = document.createElement('span')
+    button.appendChild(span)
+    outer.appendChild(button)
+    document.body.append(ul, outer)
+    const row = document.createElement('li')
+    let relayed = 0
+    let native = 0
+    createRoot(() => {
+      adoptRowPortal(row, outer, ul)
+      adoptRowPortal(row, button, ul)
+    })
+    relayRowPortalEvents(ul, 'click', () => relayed++)
+    button.addEventListener('click', () => native++)
+    span.addEventListener('click', () => span.remove())
+
+    span.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect([relayed, native]).toEqual([1, 1])
+  })
 })
 
 describe('claimRowPortals (hydration)', () => {

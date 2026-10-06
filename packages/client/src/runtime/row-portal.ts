@@ -139,34 +139,45 @@ export function relayRowPortalEvents(
   listener: EventListener,
   capture = false,
 ): void {
-  // Run only at one adopted element per dispatch: the innermost adopted
-  // element on the event's path for a bubbling listener, the outermost for
-  // a capture listener (the first each phase reaches). Decided from the
-  // path alone, so a re-dispatched event object is delivered again.
-  const attached: EventListener = event => {
-    const path = adoptedPathOf(event.target, container)
-    const deliverAt = capture ? path[path.length - 1] : path[0]
-    if (event.currentTarget === deliverAt) listener(event)
+  // Run at the first adopted element the dispatch reaches and skip the
+  // rest. What was delivered is cleared when the next dispatch of the same
+  // event object starts (`resetDeliveryOnDispatch`), so a re-dispatched
+  // event is delivered again. Nothing is derived from DOM ancestry, which a
+  // handler earlier in the dispatch may have changed.
+  const delegate: Delegate = { type, attached: () => {}, capture }
+  delegate.attached = event => {
+    let delivered = deliveredInDispatch.get(event)
+    if (!delivered) {
+      delivered = new Set()
+      deliveredInDispatch.set(event, delivered)
+    }
+    if (delivered.has(delegate)) return
+    delivered.add(delegate)
+    listener(event)
   }
-  const delegate: Delegate = { type, attached, capture }
+  resetDeliveryOnDispatch(type)
   const list = delegatesByContainer.get(container)
   if (list) list.push(delegate)
   else delegatesByContainer.set(container, [delegate])
   for (const el of adoptedByContainer.get(container) ?? []) {
-    el.addEventListener(type, attached, capture)
+    el.addEventListener(type, delegate.attached, capture)
   }
 }
 
-/** The elements adopted into `container` on `target`'s ancestor chain, innermost first. */
-function adoptedPathOf(target: EventTarget | null, container: Element): Element[] {
-  const adopted = adoptedByContainer.get(container)
-  const path: Element[] = []
-  if (!adopted) return path
-  const start = target instanceof Element ? target : target instanceof Node ? target.parentElement : null
-  for (let el = start; el; el = el.parentElement) {
-    if (adopted.has(el)) path.push(el)
-  }
-  return path
+/** event → the relays that already ran for it in its current dispatch */
+const deliveredInDispatch = new WeakMap<Event, Set<Delegate>>()
+/** event types whose dispatch start clears `deliveredInDispatch` */
+const resetTypes = new Set<string>()
+
+/**
+ * Clear an event's delivery record when a dispatch of it starts: a capture
+ * listener on `window` runs before any listener on an element in the
+ * document, so a relayed listener sees each dispatch afresh.
+ */
+function resetDeliveryOnDispatch(type: string): void {
+  if (resetTypes.has(type) || typeof window === 'undefined') return
+  resetTypes.add(type)
+  window.addEventListener(type, event => deliveredInDispatch.delete(event), true)
 }
 
 /**
