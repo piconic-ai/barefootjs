@@ -6045,6 +6045,23 @@
         "text"
       ]
     },
+    "number-division-matrix": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "number-division-text": {
       "kinds": [
         "binary",

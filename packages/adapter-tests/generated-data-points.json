@@ -3599,6 +3599,64 @@
       }
     }
   ],
+  "number-division-matrix": [
+    {
+      "name": "gen:neg:zero",
+      "props": {
+        "neg": 0,
+        "even": 8,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:neg:large",
+      "props": {
+        "neg": 1234567890,
+        "even": 8,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:even:zero",
+      "props": {
+        "neg": -7,
+        "even": 0,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:even:negative",
+      "props": {
+        "neg": -7,
+        "even": -7,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:even:large",
+      "props": {
+        "neg": -7,
+        "even": 1234567890,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "neg": -7,
+        "even": 8,
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "neg": -7,
+        "even": 8,
+        "zero": 1234567890
+      }
+    }
+  ],
   "number-division-text": [
     {
       "name": "gen:value:zero",

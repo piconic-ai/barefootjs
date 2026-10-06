@@ -2,11 +2,12 @@ import { createFixture } from '../src/types'
 
 /**
  * Sibling of `number-division-text`: JavaScript `/` on integer and
- * fractional operands, rendered as text and in an attribute. A negative
+ * fractional operands, rendered as text. A negative
  * non-integral quotient (`-7 / 4` → `-1.75`), an exactly divisible pair
  * that keeps JS's integer spelling (`8 / 4` → `2`), a zero numerator
- * (`0 / 4` → `0`), fractional operands (`1.5 / 0.5` → `3`,
- * `7 / 2.5` → `2.8`), and a signal operand.
+ * (`0 / 4` → `0`), fractional divisors (`8 / 0.5` → `16`,
+ * `7 / 2.5` → `2.8`), and a signal operand. (Props stay integral: Go types a
+ * `number` prop as `int`.)
  */
 export const fixture = createFixture({
   id: 'number-division-matrix',
@@ -14,27 +15,27 @@ export const fixture = createFixture({
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'
-export function NumberDivisionMatrix(props: { neg: number; even: number; zero: number; half: number }) {
+export function NumberDivisionMatrix(props: { neg: number; even: number; zero: number }) {
   const [count] = createSignal(7)
   return (
-    <ul data-ratio={props.neg / 4}>
+    <ul>
       <li>{props.neg / 4}</li>
       <li>{props.even / 4}</li>
       <li>{props.zero / 4}</li>
-      <li>{props.half / 0.5}</li>
+      <li>{props.even / 0.5}</li>
       <li>{count() / 2.5}</li>
       <li>{count() / 2}</li>
     </ul>
   )
 }
 `,
-  props: { neg: -7, even: 8, zero: 0, half: 1.5 },
+  props: { neg: -7, even: 8, zero: 0 },
   expectedHtml: `
-    <ul bf-s="test" bf="s12" data-ratio="-1.75">
+    <ul bf-s="test" bf="s12">
       <li bf="s1"><!--bf:s0-->-1.75<!--/--></li>
       <li bf="s3"><!--bf:s2-->2<!--/--></li>
       <li bf="s5"><!--bf:s4-->0<!--/--></li>
-      <li bf="s7"><!--bf:s6-->3<!--/--></li>
+      <li bf="s7"><!--bf:s6-->16<!--/--></li>
       <li bf="s9"><!--bf:s8-->2.8<!--/--></li>
       <li bf="s11"><!--bf:s10-->3.5<!--/--></li>
     </ul>

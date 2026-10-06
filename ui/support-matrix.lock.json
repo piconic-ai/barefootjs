@@ -1721,12 +1721,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4184,12 +4178,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5836,12 +5824,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7206,12 +7188,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
               ]
             },
             {
@@ -10752,16 +10728,7 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
-          "gaps": [
-            {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            }
-          ]
-        },
+        "erb": {},
         "go-template": {},
         "jinja": {},
         "minijinja": {},
@@ -11775,12 +11742,6 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
-              ]
-            },
-            {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
               ]
             },
             {

@@ -4207,14 +4207,6 @@
           ]
         }
       },
-      "number-division-text": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "integer-division-truncated"
-          ]
-        }
-      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -5671,10 +5663,6 @@
         "description": "A ternary attribute with a nullable branch renders a taken false branch as \"false\"",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-ternary-false-branch-attr.ts"
       },
-      "number-division-text": {
-        "description": "Integer operands divided in text keep the fractional result",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts"
-      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6054,19 +6042,6 @@
       ],
       "diagnostics": [
         "BF029"
-      ]
-    },
-    "integer-division-truncated": {
-      "title": "Division of two integers truncates the fractional part",
-      "kind": "silent",
-      "given": "a division whose operands are both integers, rendered as text (`{props.value / 4}` with `value` 1234567890)",
-      "expected": "renders the JavaScript number quotient, fractional part included (`308641972.5`)",
-      "actual": "renders the truncated integer quotient (`308641972`)",
-      "fixtures": [
-        "number-division-text"
-      ],
-      "adapters": [
-        "erb"
       ]
     },
     "jsx-wrapped-in-non-children-prop": {
