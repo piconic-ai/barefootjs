@@ -748,6 +748,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!options?.siblingTemplatesRegistered) {
       this.checkImportedLoopChildComponents(ir)
     }
+    this.checkPropFieldNameCollisions(ir)
 
     const hasInteractivity = hasClientInteractivity(ir)
     const isRootComponent = ir.root.type === 'component'
@@ -810,6 +811,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       sections,
       types: types || undefined,
       extension: this.extension,
+    }
+  }
+
+  /**
+   * Refuse two props whose names lower to the same exported Go field
+   * (`x_a` and `_a` both → `X_a`, #3336): the Input / Props structs would
+   * declare the field twice and the generated Go would not compile.
+   */
+  private checkPropFieldNameCollisions(ir: ComponentIR): void {
+    const owners = new Map<string, string>()
+    for (const param of ir.metadata.propsParams ?? []) {
+      const field = capitalizeFieldName(param.name)
+      const other = owners.get(field)
+      if (other === undefined) {
+        owners.set(field, param.name)
+        continue
+      }
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Props '${other}' and '${param.name}' of <${ir.metadata.componentName}> both map to the Go struct field '${field}' on the Go template adapter, so the generated Input / Props types would not compile.`,
+        loc: this.makeLoc(),
+        suggestion: { message: `Rename one of the props so their exported Go field names differ.` },
+      })
     }
   }
 

@@ -36,7 +36,21 @@ export function capitalize(s: string): string {
   if (GO_INITIALISMS.has(s.toLowerCase())) {
     return s.toUpperCase()
   }
-  return s[0].toUpperCase() + s.slice(1)
+  return exportedHead(s)
+}
+
+/**
+ * Upper-case a name's first character so the Go identifier is exported. A
+ * leading `_` has no upper case, and `_x` / `__bf_x` would stay unexported
+ * (html/template cannot read an unexported field), so such a name gets an
+ * `X` prefix instead (`__bf_root_value` → `X__bf_root_value`), the
+ * protobuf-go convention for the same problem (#3336). The rest of the name
+ * is kept verbatim, so it cannot collide with an ordinary prop's field
+ * (`value` → `Value`) and stays distinct per spelling (`_a` vs `__a`).
+ */
+function exportedHead(name: string): string {
+  if (name.startsWith('_')) return `X${name}`
+  return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
 /** Capitalise a JSX prop / field name to its exported Go struct field name. */
@@ -46,7 +60,7 @@ export function capitalizeFieldName(name: string): string {
   if (GO_INITIALISMS.has(name.toLowerCase())) {
     return name.toUpperCase()
   }
-  return name.charAt(0).toUpperCase() + name.slice(1)
+  return exportedHead(name)
 }
 
 /**

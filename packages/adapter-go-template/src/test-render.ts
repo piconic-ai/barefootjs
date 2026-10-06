@@ -1045,7 +1045,9 @@ function buildGoPropsInit(
     // separate `ScopeID` struct field for `__instanceId` and never
     // appear on the user-facing input struct). Including them produces
     // `unknown field __instanceId in struct literal of type XxxInput`.
-    if (key.startsWith('__')) continue
+    // A DECLARED prop spelled with a leading `__` (`__bf_root_value`,
+    // #3336) is user data and does reach the input struct.
+    if (key.startsWith('__') && !declaredParams.has(key)) continue
     // A prop that isn't a declared named param on a rest-spread component
     // belongs in the rest bag, not a top-level field. A key that literally
     // matches `restPropsName` already carries a pre-formed bag object and
