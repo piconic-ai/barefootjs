@@ -154,6 +154,7 @@ export function buildChildRefBindings(
   return refs.map(r => ({
     childSlotId: r.childSlotId,
     callback: wrapLoopParamAsAccessor(r.callback, loopParam, loopParamBindings, loopIndex),
+    ...(r.ssrPortalOwner && { ssrPortalOwner: true }),
   }))
 }
 
@@ -173,6 +174,7 @@ export function buildStaticChildRefBindings(
   return refs.map(r => ({
     childSlotId: r.childSlotId,
     callback: r.callback,
+    ...(r.ssrPortalOwner && { ssrPortalOwner: true }),
   }))
 }
 

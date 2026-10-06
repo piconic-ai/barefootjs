@@ -88,6 +88,11 @@ export interface BuildInnerLoopsArgs {
   outerLoopParamBindings?: readonly LoopParamBinding[]
   /** Outer loop's index param name, when present (#2861). */
   outerLoopIndex?: string | null
+  /**
+   * The outer row portals an element out of itself (#3318), so a container
+   * inside it is looked up through the row's registered roots (`qsaItem`).
+   */
+  rowHasPortal?: boolean
 }
 
 /**
@@ -96,7 +101,7 @@ export interface BuildInnerLoopsArgs {
  * conditional branch are skipped (they're emitted by `stringifyBranchInnerLoops`).
  */
 export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
-  const { levels, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex } = args
+  const { levels, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex, rowHasPortal } = args
   const wrapOuter = outerLoopParam
     ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex)
     : (expr: string) => expr
@@ -119,7 +124,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
 
     const uidSuffix = `${inner.depth}_${i}`
     const containerExpr = inner.containerSlotId
-      ? `qsa(${parentElVar}, '[bf="${inner.containerSlotId}"]')`
+      ? `${rowHasPortal ? 'qsaItem' : 'qsa'}(${parentElVar}, '[bf="${inner.containerSlotId}"]')`
       : parentElVar
 
     // #2865: every nested loop gets the full reactive `mapArray` emission,

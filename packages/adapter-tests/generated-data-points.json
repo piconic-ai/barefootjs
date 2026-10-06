@@ -4586,6 +4586,33 @@
       }
     }
   ],
+  "row-portal-ref-branch": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "__instanceId": "RowPortalRefBranch_test"
+      }
+    }
+  ],
+  "row-portal-ref-composite": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "__instanceId": "RowPortalRefComposite_test"
+      }
+    }
+  ],
+  "row-portal-ref-remove": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "__instanceId": "RowPortalRefRemove_test"
+      }
+    }
+  ],
   "search-params-derived-filter": [
     {
       "name": "gen:items:empty",

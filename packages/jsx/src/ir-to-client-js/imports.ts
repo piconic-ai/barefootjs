@@ -45,7 +45,9 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // Nullish guard for a bare `{children}` passthrough splice (#2775) — the
   // value is already-stringified markup, never escaped, just nullish-safe.
   'markupOrEmpty',
-  'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
+  'qsa', 'qsaItem',
+  // Loop-row elements a `ref` callback portals out of their row (#3318).
+  'adoptRowPortal', 'claimRowPortals', 'relayRowPortalEvents', 'isRowPortalOf', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
   // — the "one claim mechanism" that replaced `patchSlotRange` and
   // `updateClientMarker` (both deleted) as the content-slot update door.

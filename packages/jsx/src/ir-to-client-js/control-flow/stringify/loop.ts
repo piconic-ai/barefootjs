@@ -55,20 +55,58 @@ import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } fro
 export function emitLoopChildRefs(
   lines: string[],
   refs: readonly LoopChildRefBinding[],
-  opts: { indent: string; elVar: string; bodyIsMultiRoot: boolean; elementIndexBySlot?: ReadonlyMap<string, number> },
+  opts: {
+    indent: string
+    elVar: string
+    bodyIsMultiRoot: boolean
+    elementIndexBySlot?: ReadonlyMap<string, number>
+    /** The loop container; required when a ref portals its element out of the row (#3318). */
+    containerVar?: string
+  },
 ): void {
   if (refs.length === 0) return
-  const { indent, elVar, bodyIsMultiRoot, elementIndexBySlot } = opts
-  const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
+  const { indent, elVar, bodyIsMultiRoot, elementIndexBySlot, containerVar } = opts
   for (const ref of refs) {
+    // A portaled element sits outside the row once hydrated or adopted, so
+    // its lookup goes through the row's registered roots (`qsaItem`).
+    const lookup = bodyIsMultiRoot || ref.ssrPortalOwner ? 'qsaItem' : 'qsa'
     const varName = `__rf_${varSlotId(ref.childSlotId)}`
     const pIdx = elementIndexBySlot?.get(ref.childSlotId)
     const lookupExpr = pIdx !== undefined
       ? `__p ? __p[${pIdx}] : ${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`
       : `${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`
     lines.push(`${indent}{ const ${varName} = ${lookupExpr}`)
-    lines.push(`${indent}if (${varName}) ${emitRefCall(ref.callback, varName)} }`)
+    if (ref.ssrPortalOwner && containerVar) {
+      // Stamp `bf-po` like a top-level portal ref, then register the element
+      // with its row: relayed listeners, row lookups, removal on disposal.
+      lines.push(`${indent}if (${varName}) { ${emitRefCall(ref.callback, varName, true)}; adoptRowPortal(${elVar}, ${varName}, ${containerVar}) } }`)
+    } else {
+      lines.push(`${indent}if (${varName}) ${emitRefCall(ref.callback, varName)} }`)
+    }
   }
+}
+
+/** Slot ids of the row elements a `ref` callback portals out of the row (#3318). */
+export function rowPortalSlotIds(refs: readonly LoopChildRefBinding[]): string[] {
+  return refs.filter(r => r.ssrPortalOwner).map(r => r.childSlotId)
+}
+
+/**
+ * Hydration: pair the row with the elements SSR placed at their portal
+ * outlet (#3318), before any lookup in the row body needs them. Emitted
+ * right after the row element (`__el`) is bound.
+ */
+export function emitRowPortalClaim(
+  lines: string[],
+  refs: readonly LoopChildRefBinding[],
+  opts: { indent: string; containerVar: string; rowVar?: string },
+): void {
+  const slots = rowPortalSlotIds(refs)
+  if (slots.length === 0) return
+  // A mapArray row claims only when hydrating (`__existing`); a static row
+  // is always the SSR one, or a fresh clone the claim finds nothing for.
+  const claim = `claimRowPortals(${opts.rowVar ?? '__existing'}, __scopeId, ${JSON.stringify(slots)}, ${opts.containerVar})`
+  lines.push(opts.rowVar ? `${opts.indent}${claim}` : `${opts.indent}if (__existing) ${claim}`)
 }
 
 /**
@@ -255,6 +293,11 @@ export function stringifyPlainLoop(
       singleRootLayout: 'inline',
     })
   }
+  // A row whose ref portals an element out of it (#3318) claims the
+  // element first and resolves every lookup through the row's registered
+  // roots (`qsaItem`), so bindings on the portaled element still find it.
+  emitRowPortalClaim(lines, childRefs, { indent: bodyIndent, containerVar })
+  const itemLookup = bodyIsMultiRoot || rowPortalSlotIds(childRefs).length > 0
   // Direct child-index paths (perf, #2143): only reachable when hoistedTpl
   // is set, which itself requires a single-root, conditional-free body — so
   // `reactiveEffects.conditionals` is always empty here and needs no path
@@ -295,14 +338,14 @@ export function stringifyPlainLoop(
     stringifyReactiveEffects(lines, reactiveEffects, {
       indent: bodyIndent,
       elVar: '__el',
-      bodyIsMultiRoot,
+      bodyIsMultiRoot: itemLookup,
       elementIndexBySlot: pathPlan?.elementIndexBySlot,
       textClaimPathExprs,
       preambleRegions,
       mapPreambleWrapped,
     })
   }
-  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot, elementIndexBySlot: pathPlan?.elementIndexBySlot })
+  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot: itemLookup, elementIndexBySlot: pathPlan?.elementIndexBySlot, containerVar })
   lines.push(`${bodyIndent}return __el`)
   lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }
@@ -452,11 +495,15 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     lines.push(`      }`)
   }
   lines.push(`      if (__iterEl) {`)
+  // See `stringifyPlainLoop` (#3318). A static row is never disposed on its
+  // own, so its portaled elements live as long as the component.
+  emitRowPortalClaim(lines, childRefs, { indent: '        ', containerVar, rowVar: '__iterEl' })
+  const rowHasPortal = rowPortalSlotIds(childRefs).length > 0
   if (attrsBySlot.length > 0) lines.push(`        ${DEDUP_STORE_DECL}`)
   let ordinal = 0
   for (const [slotId, attrs] of attrsBySlot) {
     const varName = `__t_${varSlotId(slotId)}`
-    lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
+    lines.push(`        const ${varName} = ${rowHasPortal ? 'qsaItem' : 'qsa'}(__iterEl, '[bf="${slotId}"]')`)
     lines.push(`        if (${varName}) {`)
     for (const attr of attrs) {
       lines.push(`          createEffect(() => {`)
@@ -478,7 +525,7 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
   // Ref callbacks fire on every forEach iteration — initial mount and any
   // future array-change-driven re-iteration (#1244). For static arrays the
   // array is non-reactive, so refs effectively fire once per item.
-  emitLoopChildRefs(lines, childRefs, { indent: '        ', elVar: '__iterEl', bodyIsMultiRoot: false })
+  emitLoopChildRefs(lines, childRefs, { indent: '        ', elVar: '__iterEl', bodyIsMultiRoot: rowHasPortal, containerVar })
   lines.push(`      }`)
   lines.push(`    })`)
   lines.push(`  }`)

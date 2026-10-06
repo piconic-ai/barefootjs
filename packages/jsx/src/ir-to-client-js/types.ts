@@ -402,6 +402,12 @@ export interface LoopChildRef {
   childSlotId: string
   /** Ref callback expression. May reference the loop param. */
   callback: string
+  /**
+   * The callback is the recognized SSR-portal pattern
+   * (`IRElement.ssrPortalOwnerScope`): it portals the element out of the
+   * row, so the row adopts it (`adoptRowPortal`, #3318).
+   */
+  ssrPortalOwner?: boolean
 }
 
 /** Loop info extracted from a conditional branch for reactive reconciliation. */

@@ -14,7 +14,7 @@ import { stringifyCompositeLoop } from './composite-loop.ts'
 import { stringifyEventDelegation } from './event-delegation.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
-import { emitLoopChildRefs } from './loop.ts'
+import { emitLoopChildRefs, emitRowPortalClaim, rowPortalSlotIds } from './loop.ts'
 import { stringifyLazyRowLoop } from './lazy-row.ts'
 import type {
   BranchLoopPlan,
@@ -137,6 +137,9 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
       indent: '          ',
       singleRootLayout: 'inline',
     })
+    // See `stringifyPlainLoop` (#3318).
+    emitRowPortalClaim(lines, childRefs, { indent: '          ', containerVar })
+    const itemLookup = bodyIsMultiRoot || rowPortalSlotIds(childRefs).length > 0
     if (reactiveEffects !== null || preambleRegions.length > 0) {
       // Row-granularity effects (§3(c)): mirrors `stringifyPlainLoop`'s
       // top-level call — attrs, outer texts, and preamble regions merge
@@ -144,12 +147,12 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
       stringifyReactiveEffects(lines, reactiveEffects, {
         indent: '          ',
         elVar: '__el',
-        bodyIsMultiRoot,
+        bodyIsMultiRoot: itemLookup,
         preambleRegions,
         mapPreambleWrapped,
       })
     }
-    emitLoopChildRefs(lines, childRefs, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
+    emitLoopChildRefs(lines, childRefs, { indent: '          ', elVar: '__el', bodyIsMultiRoot: itemLookup, containerVar })
     lines.push(`          return __el`)
     lines.push(`        }, '${markerId}'${loopBfId})`)
   }

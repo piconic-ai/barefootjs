@@ -529,6 +529,7 @@ export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
       refs.push({
         childSlotId: el.slotId,
         callback: el.ref,
+        ...(el.ssrPortalOwnerScope && { ssrPortalOwner: true }),
       })
     }
   }, true)

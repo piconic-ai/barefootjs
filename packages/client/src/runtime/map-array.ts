@@ -573,6 +573,9 @@ export function mapArray<T>(
             range.startMarker,
             range.scopeComments,
           )
+          // The row's portaled elements were adopted by its render; a
+          // template clone gives them the same empty key placeholder.
+          if (getKey) backfillRowPortalKeys(range.primaryEl, keyAttrName, key)
           scopes.set(key, scope)
           hydratedScopes.add(range.primaryEl)
         }

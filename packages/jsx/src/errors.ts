@@ -165,6 +165,14 @@ export const ErrorCodes = {
   // `/* @client */` before the ref expression. See
   // `packages/adapter-tests/limitations/ref-effect-attr-state-ssr.ts`.
   REF_ATTR_ABSENT_AT_SSR: 'BF063',
+  // A `ref` callback portals an element out of a `.map()` row
+  // (`createPortal(el, document.body, { ownerScope })`), but the row cannot
+  // be paired with the portaled element at hydration: the loop is nested or
+  // unkeyed, or the element is forwarded as a child component's children.
+  // SSR would place the element at its portal outlet with nothing linking it
+  // back to its row, so its delegated event handlers would stop running
+  // after hydration (#3318). A keyed top-level row is supported.
+  ROW_PORTAL_UNPAIRABLE: 'BF064',
 
   // Inline JSX-callback synthesis errors (BF080-BF089) — raised by the
   // preprocess-inline-jsx-callbacks pass (#1211) when an inline JSX-
@@ -297,6 +305,9 @@ const errorMessages: Record<ErrorCode, string> = {
     'AwaitExpression in template scope. The generated template and init functions are synchronous — a bare `await` produces a SyntaxError at parse time. Move the await into the component body (before the return) or into an onMount/effect callback, and pass the resolved value to JSX.',
   [ErrorCodes.REF_ATTR_ABSENT_AT_SSR]:
     'A ref callback writes an attribute on mount that the element\'s JSX never renders. A ref callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it — the DOM visibly changes at the hydrate boundary.',
+
+  [ErrorCodes.ROW_PORTAL_UNPAIRABLE]:
+    'A ref callback portals an element out of a .map() row that hydration cannot pair with the element (a nested or unkeyed loop, or an element inside a child component\'s children), so its event handlers would stop running after hydration.',
 
   [ErrorCodes.INLINE_JSX_CALLBACK_CAPTURE]:
     "Inline JSX-returning arrow function captures a non-module identifier. Extract the callback into a top-level 'use client' component (e.g. `function MyNode(n) { return <div/> }` then `renderNode={MyNode}`) or pass captured values via component props.",

@@ -255,6 +255,12 @@
               ]
             },
             {
+              "fixture": "row-portal-ref-static",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2686,6 +2692,36 @@
               ]
             },
             {
+              "fixture": "row-portal-ref",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-composite",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-remove",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-static",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -4446,6 +4482,36 @@
               ]
             },
             {
+              "fixture": "row-portal-ref",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-composite",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-remove",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-static",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -5978,6 +6044,30 @@
               ]
             },
             {
+              "fixture": "row-portal-ref",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-composite",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-static",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -7366,6 +7456,30 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-composite",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-remove",
+              "limitations": [
+                "loop-row-portal-renders-inline"
               ]
             },
             {
@@ -8958,6 +9072,36 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-composite",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-remove",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-static",
+              "limitations": [
+                "loop-row-portal-renders-inline"
               ]
             },
             {
@@ -11346,6 +11490,12 @@
               ]
             },
             {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -11524,6 +11674,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
               ]
             }
           ]
@@ -11815,6 +11971,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref",
+              "limitations": [
+                "loop-row-portal-renders-inline"
               ]
             },
             {
@@ -12482,6 +12644,24 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-branch",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-composite",
+              "limitations": [
+                "loop-row-portal-renders-inline"
+              ]
+            },
+            {
+              "fixture": "row-portal-ref-static",
+              "limitations": [
+                "loop-row-portal-renders-inline"
               ]
             },
             {

@@ -30,6 +30,7 @@ export function buildDynamicLoopDelegationPlan(
     events: elem.bindings.events,
     profileComponentName,
     ownHandlers,
+    ...(hasRowPortalRef(elem) && { relayRowPortals: true }),
     itemLookup: buildKeyedOrIndexLookup({
       // Chain `.filter()` / `.toSorted()` so the index-based lookup walks
       // the same array shape mapArray reconciled into the DOM (#1434).
@@ -69,6 +70,7 @@ export function buildBranchLoopDelegationPlan(
     containerVar: `__loop_${cv}`,
     events: loop.bindings.events,
     profileComponentName,
+    ...(hasRowPortalRef(loop) && { relayRowPortals: true }),
     itemLookup: buildKeyedOrIndexLookup({
       // See note on `buildDynamicLoopDelegationPlan` above (#1434).
       array: buildChainedArrayExpr(loop),
@@ -98,6 +100,12 @@ export function buildStaticArrayDelegationPlan(
   profileComponentName?: string,
   ownHandlers?: Map<string, ContainerOwnHandler>,
 ): EventDelegationPlan {
+  // A row-portaled element is not under its row, so the positional lookup
+  // cannot reach the row from it; the row key it carries can (#3318).
+  // BF064 guarantees a portaling loop is keyed.
+  if (hasRowPortalRef(elem) && elem.key !== null) {
+    return buildDynamicLoopDelegationPlan(elem, profileComponentName, ownHandlers)
+  }
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
@@ -123,6 +131,11 @@ export function buildStaticArrayDelegationPlan(
       indexParam: elem.index ?? null,
     },
   }
+}
+
+/** A row `ref` callback of the loop portals its element out of the row (#3318). */
+function hasRowPortalRef(loop: TopLevelLoop | BranchLoop): boolean {
+  return loop.bindings.refs.some(r => r.ssrPortalOwner)
 }
 
 /**

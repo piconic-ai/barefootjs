@@ -230,7 +230,7 @@ Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: 
 
 ---
 
-## Component Errors (BF044–BF063)
+## Component Errors (BF044–BF064)
 
 <a id="bf044"></a>
 
@@ -355,6 +355,28 @@ export function Panel(props: { delay?: number }) {
 
 Or mark the ref `/* @client */` to accept the attribute appearing only after hydration: `<div ref={/* @client */ handleMount}>`.
 
+<a id="bf064"></a>
+
+### BF064 — Portaled Row Element Cannot Be Paired with Its Row
+
+A `ref` callback portals an element out of a `.map()` row (`createPortal(el, document.body, { ownerScope })`), and hydration has no way to pair the portaled element with its row. SSR places the element at its portal outlet, outside the row, so it must carry the row's key. Only a keyed top-level row can provide one. A nested or unkeyed loop, or an element forwarded as a child component's `children`, is refused: otherwise its event handlers would stop running after hydration. Fires on every adapter, including Hono.
+
+```tsx
+// ❌ BF064
+'use client'
+import { createPortal } from '@barefootjs/client'
+export function List(props: { rows: string[] }) {
+  const mountContent = (el: HTMLElement) => {
+    createPortal(el, document.body, { ownerScope: el.closest('[bf-s]') ?? undefined })
+  }
+  return <ul>{props.rows.map(r => <li><button ref={mountContent}>{r}</button></li>)}</ul>
+}
+```
+
+#### Fix
+
+Key the top-level row (`<li key={r}>`), render the element directly in the row rather than in a child component's `children`, or move the portal outside the loop.
+
 ---
 
 ## Quick Reference
@@ -373,5 +395,6 @@ Or mark the ref `/* @client */` to accept the attribute appearing only after hyd
 | BF054 | Built-in `<Async>` / `<Region>` used without import |
 | BF056 | Authored call to `formatDate` |
 | BF063 | Ref callback writes an attribute the JSX never renders |
+| BF064 | Portaled `.map()` row element cannot be paired with its row |
 | BF101 | No template-language lowering for the expression |
 | BF102 | Adapter-specific condition not supported |

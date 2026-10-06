@@ -112,6 +112,8 @@ export interface LoopChildRefBinding {
    * `reactiveAttrs` are already handled on the static path.
    */
   callback: string
+  /** The callback portals the element out of the row (#3318); see `LoopChildRef.ssrPortalOwner`. */
+  ssrPortalOwner?: boolean
 }
 
 /**
