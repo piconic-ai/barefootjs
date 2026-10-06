@@ -307,7 +307,7 @@ const errorMessages: Record<ErrorCode, string> = {
     'A ref callback writes an attribute on mount that the element\'s JSX never renders. A ref callback never runs at SSR, so the server HTML lacks the attribute and hydration adds it — the DOM visibly changes at the hydrate boundary.',
 
   [ErrorCodes.ROW_PORTAL_UNPAIRABLE]:
-    'A ref callback portals an element out of a .map() row that hydration cannot pair with the element (a nested or unkeyed loop, or an element inside a child component\'s children), so its event handlers would stop running after hydration.',
+    'A ref callback portals an element out of a .map() row that hydration cannot pair with the element (the row root itself, a nested or unkeyed loop, an element inside a reactive conditional in the row, or an element inside a child component\'s children), so its event handlers would stop running after hydration.',
 
   [ErrorCodes.INLINE_JSX_CALLBACK_CAPTURE]:
     "Inline JSX-returning arrow function captures a non-module identifier. Extract the callback into a top-level 'use client' component (e.g. `function MyNode(n) { return <div/> }` then `renderNode={MyNode}`) or pass captured values via component props.",

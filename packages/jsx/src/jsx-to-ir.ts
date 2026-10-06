@@ -4578,8 +4578,12 @@ function applyLoopKeyAttr(node: IRNode, name: string, value: string): void {
  * portal element there is refused (BF064) rather than rendered at an
  * outlet nothing can pair. So is one forwarded as a child component's
  * `children` (or inside a provider / `<Async>`), where the row's key is not
- * this element's to render. Nested loops are skipped: their own
- * construction applies this to their rows.
+ * this element's to render; one inside a reactive conditional in the row,
+ * whose `ref` the conditional's branch runs rather than the row; and the
+ * row root itself, whose move leaves no inline row for hydration to find.
+ * Nested loops are skipped: their own construction applies this to their
+ * rows (a nested loop's portaled row root is refused here, as it already
+ * carries its `keyAttr`).
  */
 function applyRowPortalKeyAttrs(
   children: IRNode[],
@@ -4595,18 +4599,24 @@ function applyRowPortalKeyAttrs(
           'portaled element with its row and its event handlers would stop running after hydration.',
         suggestion: {
           message:
-            'Portal the element from a keyed top-level .map() row (`key={…}` on the row root), render it directly ' +
-            "in the row rather than in a child component's children, or move the portal outside the loop.",
+            'Portal an element inside the root of a keyed top-level .map() row (`key={…}` on the row root), ' +
+            "outside reactive conditionals and child components' children, or move the portal outside the loop.",
           escape: [{ kind: 'rewrite' }],
         },
       }),
     )
   }
-  const visit = (node: IRNode, keyable: boolean): void => {
+  // `blocked` names why an element at this position cannot be paired with
+  // its row; `null` means it can.
+  const visit = (node: IRNode, blocked: string | null): void => {
     switch (node.type) {
       case 'element':
-        if (node.ssrPortalOwnerScope && !node.keyAttr) {
-          if (!keyable) refuse(node, "it is rendered inside another component's children")
+        if (node.ssrPortalOwnerScope) {
+          // `applyLoopKeyAttr` stamps the row root (of this loop, or of a
+          // nested loop already built) before this pass: a portaled row root
+          // leaves no inline row for hydration to find.
+          if (node.keyAttr) refuse(node, 'it is the root element of the row')
+          else if (blocked) refuse(node, blocked)
           else if (key === null) refuse(node, 'the loop has no `key`')
           else if (depth > 0) refuse(node, 'the loop is nested inside another loop')
           else {
@@ -4619,32 +4629,36 @@ function applyRowPortalKeyAttrs(
             }
           }
         }
-        for (const c of node.children) visit(c, keyable)
+        for (const c of node.children) visit(c, blocked)
         return
       case 'fragment':
-        for (const c of node.children) visit(c, keyable)
+        for (const c of node.children) visit(c, blocked)
         return
-      case 'conditional':
-        visit(node.whenTrue, keyable)
-        visit(node.whenFalse, keyable)
+      case 'conditional': {
+        // A reactive conditional (`slotId`) owns its branch's refs, which
+        // the row's ref collection skips, so the row cannot adopt them.
+        const inner = blocked ?? (node.slotId ? 'it is rendered inside a reactive conditional in the row' : null)
+        visit(node.whenTrue, inner)
+        visit(node.whenFalse, inner)
         return
+      }
       case 'if-statement':
-        visit(node.consequent, keyable)
-        if (node.alternate) visit(node.alternate, keyable)
+        visit(node.consequent, blocked)
+        if (node.alternate) visit(node.alternate, blocked)
         return
       case 'component':
       case 'provider':
-        for (const c of node.children) visit(c, false)
+        for (const c of node.children) visit(c, blocked ?? "it is rendered inside another component's children")
         return
       case 'async':
-        visit(node.fallback, false)
-        for (const c of node.children) visit(c, false)
+        visit(node.fallback, blocked ?? "it is rendered inside another component's children")
+        for (const c of node.children) visit(c, blocked ?? "it is rendered inside another component's children")
         return
       default:
         return
     }
   }
-  for (const c of children) visit(c, true)
+  for (const c of children) visit(c, null)
 }
 
 /** The `key` attribute the row's key was read from (`extractLoopKey`), when it is on an element. */

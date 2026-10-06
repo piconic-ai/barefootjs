@@ -359,7 +359,7 @@ Or mark the ref `/* @client */` to accept the attribute appearing only after hyd
 
 ### BF064 — Portaled Row Element Cannot Be Paired with Its Row
 
-A `ref` callback portals an element out of a `.map()` row (`createPortal(el, document.body, { ownerScope })`), and hydration has no way to pair the portaled element with its row. SSR places the element at its portal outlet, outside the row, so it must carry the row's key. Only a keyed top-level row can provide one. A nested or unkeyed loop, or an element forwarded as a child component's `children`, is refused: otherwise its event handlers would stop running after hydration. Fires on every adapter, including Hono.
+A `ref` callback portals an element out of a `.map()` row (`createPortal(el, document.body, { ownerScope })`), and hydration has no way to pair the portaled element with its row. SSR places the element at its portal outlet, outside the row, so it must carry the row's key. Only an element inside the root of a keyed top-level row can provide one. The row root itself (moving it leaves no inline row to hydrate), a nested or unkeyed loop, an element inside a reactive conditional in the row (whose `ref` the conditional, not the row, runs), or an element forwarded as a child component's `children`, is refused: otherwise its event handlers would stop running after hydration. Fires on every adapter, including Hono.
 
 ```tsx
 // ❌ BF064
@@ -375,7 +375,7 @@ export function List(props: { rows: string[] }) {
 
 #### Fix
 
-Key the top-level row (`<li key={r}>`), render the element directly in the row rather than in a child component's `children`, or move the portal outside the loop.
+Key the top-level row (`<li key={r}>`) and portal an element inside it rather than the row root, render the element directly in the row rather than inside a reactive conditional or a child component's `children`, or move the portal outside the loop.
 
 ---
 

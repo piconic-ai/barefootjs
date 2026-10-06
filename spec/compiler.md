@@ -955,7 +955,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF061 | Init-scope local referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF062 | AwaitExpression in template scope (staged-IR; reserved for Phase 1 dispatcher) |
 | BF063 | A `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` / `el.dataset.<key> = …`) that the element's JSX never renders — a ref never runs at SSR, so the attribute is always absent from the server HTML and added at hydration. See "Ref-Written Attribute Absent at SSR (BF063)" below. |
-| BF064 | A `ref` callback portals an element out of a `.map()` row that hydration cannot pair with the element: the loop is nested or unkeyed, or the element is forwarded as a child component's `children`. A keyed top-level row's portaled element carries the row key (`IRElement.keyAttr`) so hydration pairs it with its row (#3318). |
+| BF064 | A `ref` callback portals an element out of a `.map()` row that hydration cannot pair with the element: the element is the row root, the loop is nested or unkeyed, or the element sits inside a reactive conditional in the row or is forwarded as a child component's `children`. A keyed top-level row's portaled element carries the row key (`IRElement.keyAttr`) so hydration pairs it with its row (#3318). |
 
 ### Error Format
 
@@ -1337,8 +1337,9 @@ certain, decided structurally (TS AST, `recordRefAttrsAbsentAtSsr` in
   helper, a prop) is opaque and never fires. The SSR-portal recognition
   (`ssrPortalOwnerScope`) shares this resolution, so a `.map()` row ref naming
   a component-body portal callback is recognized too; such an element inside
-  a keyed top-level row carries the row key, and a nested or unkeyed row
-  refuses with BF064 (#3318).
+  a keyed top-level row carries the row key; a portaled row root, a nested or
+  unkeyed row, and a portal inside a reactive conditional in the row refuse
+  with BF064 (#3318).
 - **The write targets the callback's own element parameter** —
   `el.setAttribute('<string literal>', …)`, `el.dataset.<key> = …` or
   `el.dataset['<key>'] = …` (the key maps to `data-<kebab-case>`). Writes to

@@ -234,8 +234,9 @@ export function List(props: { rows: string[] }) {
   describe('row portals (#3318)', () => {
     const portalRow = (loop: string) => `
 'use client'
-import { createPortal } from '@barefootjs/client'
+import { createPortal, createSignal } from '@barefootjs/client'
 export function List(props: { rows: string[]; groups: string[][] }) {
+  const [open] = createSignal(true)
   const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
   return <ul>{${loop}}</ul>
 }
@@ -253,6 +254,26 @@ export function List(props: { rows: string[]; groups: string[][] }) {
       expect(
         errorCodes(portalRow(
           `props.groups.map((g, i) => <li key={i}><ol>{g.map(r => <li key={r}><button ref={mountContent}>{r}</button></li>)}</ol></li>)`,
+        )),
+      ).toContain('BF064')
+    })
+
+    test('refuses a portaled row root (BF064)', () => {
+      expect(errorCodes(portalRow(`props.rows.map(r => <button key={r} ref={mountContent}>{r}</button>)`))).toContain('BF064')
+    })
+
+    test('refuses a portaled row root of a nested loop (BF064)', () => {
+      expect(
+        errorCodes(portalRow(
+          `props.groups.map((g, i) => <li key={i}>{g.map(r => <button key={r} ref={mountContent}>{r}</button>)}</li>)`,
+        )),
+      ).toContain('BF064')
+    })
+
+    test('refuses a portal inside a reactive conditional in the row (BF064)', () => {
+      expect(
+        errorCodes(portalRow(
+          `props.rows.map(r => <li key={r}>{open() ? <button ref={mountContent}>{r}</button> : null}</li>)`,
         )),
       ).toContain('BF064')
     })
