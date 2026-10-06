@@ -93,10 +93,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  // `{props.items?.length}` over an absent array: the `.length` lowering
-  // treats the missing array as empty and renders `0`, where JS reads
-  // `undefined` and renders nothing.
-  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   // `blank()?.name` with `blank()` = `{}` typed `User`: the struct's
   // `Name string` field reads as `""`, not nil, so the nil guard keeps
   // `data-name=""` where JS reads `undefined` and omits it (#3322).
@@ -105,6 +101,10 @@ export const renderDivergences: RenderDivergences = {
   // `Init.Label` is a plain `string`, so the absent member seeds `""` and
   // the nil guard keeps `title=""` (#3323's member half).
   'member-seeded-nullable-signal-attr': { limitation: 'optional-struct-field-absent-renders-zero' },
+  // `{props.noText?.length}` with `noText` absent: the props struct's
+  // `NoText string` reads as `""`, so the nil guard on `?.length` sees a
+  // present empty string and renders `0` where JS renders nothing (#3332).
+  'optional-chain-length-string-receiver': { limitation: 'optional-struct-field-absent-renders-zero' },
   // `fractional-number-array-row-ops` used to sit here: html/template's
   // native `gt`/`lt`/`eq` refused a float64 against an int literal.
   // Comparisons now go through `bf_eq`/`bf_gt`/… (`goComparisonCall`).

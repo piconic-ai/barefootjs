@@ -91,6 +91,18 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
  * scalar lowering here. Such predicates surface BF101 via `onUnsupported`
  * (#2038) instead of silently degrading to the callback's receiver.
  */
+/**
+ * `x.length` through `$bf.length`. An optional-chained `x?.length` yields
+ * `nil` — JS's `undefined` — for an absent receiver instead of
+ * `$bf.length`'s `0`, so a bare read renders empty and a `//` fallback
+ * takes over (#3332). Kolon's `== nil` compares definedness, so `0`, `''`
+ * and `[]` receivers still read their length.
+ */
+function optionalLength(receiver: string, optional: boolean): string {
+  const read = `$bf.length(${receiver})`
+  return optional ? `(${receiver} == nil ? nil : ${read})` : read
+}
+
 export class XslateFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -134,15 +146,13 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `$bf.length` (handles both array element
     // count and string char count, JS-compatibly). Kolon's builtin `.size()`
     // is array-only and faults on a string.
-    if (property === 'length') {
-      return `$bf.length(${emit(object)})`
-    }
+    if (property === 'length') return optionalLength(emit(object), optional)
     // Hash field access — Kolon dot works on hash refs.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}.${property}`
@@ -340,7 +350,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
     if (object.kind === 'identifier' && object.name === 'props') return `$${this.ctx._rootPropReadName(property)}`
@@ -357,7 +367,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const obj = emit(object)
     // `.length` → `$bf.length` (array count or string char count, JS-compat);
     // Kolon's builtin `.size()` is array-only and faults on a string.
-    if (property === 'length') return `$bf.length(${obj})`
+    if (property === 'length') return optionalLength(obj, optional)
     // Kolon dot access works for hash refs.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}.${property}`

@@ -636,6 +636,20 @@ export function F(props: { values: number[] }) {
   })
 })
 
+describe('GoTemplateAdapter - optional-chained .length (#3332)', () => {
+  // `x?.length` is `undefined` for an absent receiver, so it must not
+  // collapse to `bf_length nil`'s 0; a plain `.length` stays unguarded.
+  test('guards an optional read and leaves a plain read alone', () => {
+    const { template } = compileAndGenerate(`
+export function F(props: { items?: number[]; all: number[] }) {
+  return <p>{props.items?.length}|{props.all.length}</p>
+}
+`)
+    expect(template).toContain('bf_ternary (bf_eq .Items nil) nil (bf_length .Items)')
+    expect(template).toContain('{{bf_length .All}}')
+  })
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {

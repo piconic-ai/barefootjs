@@ -150,6 +150,29 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
  * surfacing as the Jinja port (#2038) instead of silently degrading to the
  * callback's receiver.
  */
+/**
+ * `x.length` through `bf.length`. An optional-chained `x?.length` yields
+ * `null` — JS's `undefined` — for an absent receiver instead of
+ * `bf.length`'s `0`, so a bare read renders empty and a `??` fallback takes
+ * over (#3332). `(x ?? null) is null` tests the receiver the way the `??`
+ * lowering does, covering both an unset variable and a bound `null`.
+ */
+function optionalLength(receiver: string, optional: boolean): string {
+  const read = `bf.length(${receiver})`
+  return optional ? `((${receiver} ?? null) is null ? null : ${read})` : read
+}
+
+/**
+ * JS `l ?? r`. Twig's native `??` wraps its left operand in a `defined`
+ * test, which only accepts a variable, attribute or call — an
+ * optional-chained `.length` guard is a conditional, so it is tested with
+ * `is null` instead (it is never an undefined variable).
+ */
+function nullishCoalesce(left: ParsedExpr, l: string, r: string): string {
+  if (left.kind === 'member' && left.optional && left.property === 'length') return `(${l} is null ? ${r} : ${l})`
+  return `(${l} ?? ${r})`
+}
+
 export class TwigFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -193,16 +216,14 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
     // count and string char count, JS-compatibly). Twig's builtin
     // `|length` filter also faults trying to match JS semantics for every
     // input shape, so route through the runtime uniformly.
-    if (property === 'length') {
-      return `bf.length(${emit(object)})`
-    }
+    if (property === 'length') return optionalLength(emit(object), optional)
     // Attribute / hash-key access — Twig `.` resolves array keys, object
     // properties, and getter methods transparently.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
@@ -276,7 +297,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
     // See the file header, divergence 3: Twig's `??` is native and covers
     // both undefined and null in one operator.
-    return `(${l} ?? ${r})`
+    return nullishCoalesce(left, l, r)
   }
 
   callbackMethod(
@@ -415,7 +436,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
     if (object.kind === 'identifier' && object.name === 'props') return twigIdent(this.ctx._rootPropReadName(property))
@@ -431,7 +452,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     }
     const obj = emit(object)
     // `.length` → `bf.length` (array count or string char count, JS-compat).
-    if (property === 'length') return `bf.length(${obj})`
+    if (property === 'length') return optionalLength(obj, optional)
     // Twig `.` access works for arrays, objects, and getter methods.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}.${property}`
@@ -558,7 +579,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
     if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
     // See the file header, divergence 3: Twig's `??` is native.
-    return `(${l} ?? ${r})`
+    return nullishCoalesce(left, l, r)
   }
 
   callbackMethod(

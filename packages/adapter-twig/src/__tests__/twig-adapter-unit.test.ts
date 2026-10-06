@@ -49,6 +49,23 @@ function compileAndGenerate(source: string) {
 // Twig-Specific Tests
 // =============================================================================
 
+describe('TwigAdapter - optional-chained .length (#3332)', () => {
+  // `x?.length` yields `null` for an absent receiver. Twig's native `??`
+  // wraps its left side in a `defined` test that rejects a conditional, so
+  // a `??` over the guard tests it with `is null` instead.
+  test('guards the read and coalesces with `is null`', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { items?: number[] }) {
+  return <p>{props.items?.length}|{props.items?.length ?? 0}</p>
+}
+`)
+    const guard = '((items ?? null) is null ? null : bf.length(items))'
+    expect(template).toContain(`bf.string(${guard})`)
+    expect(template).toContain(`bf.string((${guard} is null ? 0 : ${guard}))`)
+    expect(template).not.toContain(`${guard} ??`)
+  })
+})
+
 describe('TwigAdapter - SSR context propagation (#1297)', () => {
   // `<Ctx.Provider value>` brackets its children with inline provide/revoke
   // calls (both return '' so the `{{ … }}` interpolation discards them);

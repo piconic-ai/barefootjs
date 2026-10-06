@@ -35,10 +35,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // `{props.items?.length}` over an absent array: the `.length` lowering
-  // treats the missing array as empty and renders `0`, where JS reads
-  // `undefined` and renders nothing.
-  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   // `yes() ? false : s()`: the `false` literal lowers to Perl `0` inside the
   // ternary, so `data-choice="0"` where JS renders `"false"`.
   'nullish-ternary-false-branch-attr': { limitation: 'ternary-false-branch-attr-renders-perl-false' },

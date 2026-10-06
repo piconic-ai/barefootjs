@@ -141,6 +141,18 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
  * surfacing as Kolon (#2038) instead of silently degrading to the
  * callback's receiver.
  */
+/**
+ * `x.length` through `bf.length`. An optional-chained `x?.length` yields
+ * `none` — JS's `undefined` — for an absent receiver instead of
+ * `bf.length`'s `0`, so a bare read renders empty and a `??` fallback takes
+ * over (#3332). The receiver test matches the `??` lowering's (`is defined
+ * and is not none`), as an Undefined is not `none`.
+ */
+function optionalLength(receiver: string, optional: boolean): string {
+  const read = `bf.length(${receiver})`
+  return optional ? `(${read} if (${receiver} is defined and ${receiver} is not none) else none)` : read
+}
+
 export class JinjaFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -184,16 +196,14 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
     // count and string char count, JS-compatibly). Jinja's builtin
     // `|length` filter also faults trying to match JS semantics for every
     // input shape, so route through the runtime uniformly.
-    if (property === 'length') {
-      return `bf.length(${emit(object)})`
-    }
+    if (property === 'length') return optionalLength(emit(object), optional)
     // Bracket/item access, NOT `.` attribute access: Jinja's default
     // `getattr` semantics try a Python ATTRIBUTE first, falling back to a
     // dict key only if no such attribute exists — so `group.items` (a
@@ -412,7 +422,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
     if (object.kind === 'identifier' && object.name === 'props') return jinjaIdent(this.ctx._rootPropReadName(property))
@@ -428,7 +438,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     }
     const obj = emit(object)
     // `.length` → `bf.length` (array count or string char count, JS-compat).
-    if (property === 'length') return `bf.length(${obj})`
+    if (property === 'length') return optionalLength(obj, optional)
     // Bracket/item access, NOT `.` attribute access — see the sibling
     // `JinjaFilterEmitter.member()` for why: Jinja's `.` tries a Python
     // ATTRIBUTE first, so a dict key that happens to share a name with a
