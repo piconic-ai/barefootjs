@@ -52,7 +52,7 @@ export function P(props: { base: string; sort: string; tag: string }) {
 `
     const { template } = generate(src)
     expect(template).toContain(
-      'bf_query .Base (ne (bf_string .Sort) "date") "sort" .Sort (true) "tag" .Tag',
+      'bf_query .Base (bf_ne (bf_string .Sort) "date") "sort" .Sort (true) "tag" .Tag',
     )
     // The `ne consequent ""` non-empty check is no longer folded into the
     // include — bf_query owns it (so it can also append array values).
@@ -88,8 +88,8 @@ export function P(props: { base: string; mode: string; a: string; b: string }) {
 `
     const { template } = generate(src)
     // Both '' and null alternates fold to the same conditional-include form.
-    expect(template).toContain('(ne (bf_string .Mode) "off") "a" .A')
-    expect(template).toContain('(ne (bf_string .Mode) "off") "b" .B')
+    expect(template).toContain('(bf_ne (bf_string .Mode) "off") "a" .A')
+    expect(template).toContain('(bf_ne (bf_string .Mode) "off") "b" .B')
   })
 
   test('an array value lowers the slice expression; bf_query appends its members', () => {
@@ -116,7 +116,7 @@ export function P(props: { base: string; on: string; tags: string[] }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('bf_query .Base (ne (bf_string .On) "") "tag" .Tags')
+    expect(template).toContain('bf_query .Base (bf_ne (bf_string .On) "") "tag" .Tags')
   })
 
   test('an aliased import is still recognised', () => {

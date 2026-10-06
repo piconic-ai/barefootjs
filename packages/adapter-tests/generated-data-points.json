@@ -2277,6 +2277,14 @@
       }
     }
   ],
+  "fractional-number-compare-matrix": [
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "values": []
+      }
+    }
+  ],
   "fragment-body-keyed-loop-row": [
     {
       "name": "gen:items:empty",
@@ -3817,6 +3825,16 @@
       "props": {
         "meta": {
           "count": 0
+        }
+      }
+    }
+  ],
+  "optional-object-nullish-compare": [
+    {
+      "name": "gen:user:object:minimal",
+      "props": {
+        "user": {
+          "name": ""
         }
       }
     }

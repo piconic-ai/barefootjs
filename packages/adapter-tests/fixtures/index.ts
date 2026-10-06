@@ -6,6 +6,8 @@ import { fixture as nestedLoopAdditionShadowing } from './nested-loop-addition-s
 import { fixture as entriesLoopStringAddition } from './entries-loop-string-addition'
 import { fixture as fractionalNumberArrayProp } from './fractional-number-array-prop'
 import { fixture as fractionalNumberArrayRowOps } from './fractional-number-array-row-ops'
+import { fixture as fractionalNumberCompareMatrix } from './fractional-number-compare-matrix'
+import { fixture as optionalObjectNullishCompare } from './optional-object-nullish-compare'
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
 import { fixture as loopParamPropMemberCollisionShapes } from './loop-param-prop-member-collision-shapes'
 import { fixture as loopParamPropAliasNameCollision } from './loop-param-prop-alias-name-collision'
@@ -1499,6 +1501,8 @@ export const jsxFixtures: JSXFixture[] = [
   entriesLoopStringAddition,
   fractionalNumberArrayProp,
   fractionalNumberArrayRowOps,
+  fractionalNumberCompareMatrix,
+  optionalObjectNullishCompare,
   loopParamPropMemberCollision,
   loopParamPropMemberCollisionShapes,
   loopParamPropAliasNameCollision,

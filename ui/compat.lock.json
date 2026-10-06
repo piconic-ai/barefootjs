@@ -3128,14 +3128,6 @@
           ]
         }
       },
-      "fractional-number-array-row-ops": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "fractional-number-compare-int-literal"
-          ]
-        }
-      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -5599,10 +5591,6 @@
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
-      "fractional-number-array-row-ops": {
-        "description": "Fractional number-array elements work in row comparisons and arithmetic",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-row-ops.ts"
-      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -6016,19 +6004,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "fractional-number-compare-int-literal": {
-      "title": "A fractional number compared against an integer literal fails at render time",
-      "kind": "silent",
-      "given": "a fractional element of a `number[]` prop compared against an integer literal inside the row (`value > 0` with `value` 1.5)",
-      "expected": "the comparison is numeric, as in JavaScript (`1.5 > 0` is true), so the row renders the chosen branch",
-      "actual": "throws at render time instead, because the template engine refuses to compare a floating-point value with an integer (\"incompatible types for comparison\")",
-      "fixtures": [
-        "fractional-number-array-row-ops"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

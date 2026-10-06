@@ -350,7 +350,7 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   })
 
   test('a comparison test is already a bool — no bf_truthy wrap', () => {
-    expect(render("n >= 10 ? 'big' : 'small'")).toBe('{{(bf_ternary (ge .N 10) "big" "small")}}')
+    expect(render("n >= 10 ? 'big' : 'small'")).toBe('{{(bf_ternary (bf_ge .N 10) "big" "small")}}')
   })
 
   test('a negation test is already a bool — no outer bf_truthy wrap', () => {
@@ -364,7 +364,7 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   test('`!x` coerces a non-bool operand through bf_truthy; a bool-shaped operand keeps bare not', () => {
     expect(render('!tags')).toBe('{{not (bf_truthy .Tags)}}')
     expect(render('!!tags')).toBe('{{not (not (bf_truthy .Tags))}}')
-    expect(render('!(n === 1)')).toBe('{{not (eq .N 1)}}')
+    expect(render('!(n === 1)')).toBe('{{not (bf_eq .N 1)}}')
     expect(render('!(a && b)')).toBe('{{not (bf_truthy (and .A .B))}}')
   })
 
@@ -506,7 +506,7 @@ export function T() {
   return <span>{(x() === \`\${y()}-\${z()}\`) ? 'a' : 'b'}</span>
 }
 `)
-    expect(template).toContain('{{if eq .X (bf_concat_str (bf_concat_str .Y "-") .Z)}}')
+    expect(template).toContain('{{if bf_eq .X (bf_concat_str (bf_concat_str .Y "-") .Z)}}')
   })
 
   // `arrayMethod()`'s per-method cases (`join`, `includes`, `indexOf`, …) all
@@ -559,7 +559,7 @@ export function P() {
   return <div>{(mode() === 'a' ? show() : hide()) ? <span>Y</span> : <span>N</span>}</div>
 }
 `)
-    expect(template).toContain('{{if (bf_ternary (eq (bf_string .Mode) "a") .Show .Hide)}}')
+    expect(template).toContain('{{if (bf_ternary (bf_eq (bf_string .Mode) "a") .Show .Hide)}}')
     // The old bug collapsed the condition to just the test — assert we no
     // longer emit the branch-discarding `{{if (eq (bf_string .Mode) "a")}}`.
     expect(template).not.toContain('{{if (eq (bf_string .Mode) "a")}}')
@@ -607,6 +607,32 @@ export function N(props: { value: number; a: string; b: string }) {
 `)
     expect(template).toContain('{{bfTextStart "s0"}}{{.Value}}{{bfTextEnd}}')
     expect(template).toContain('{{bf_string (bf_concat_str .A .B)}}')
+  })
+})
+
+describe('GoTemplateAdapter - comparisons go through the JS helpers (#3330)', () => {
+  // html/template's `eq`/`gt`/… refuse a float64 operand against an int
+  // literal, so every JS comparison lowers to `bf_eq`/`bf_gt`/….
+  test('attribute ternary and conditional rendering, both operand orders', () => {
+    const { template } = compileAndGenerate(`
+export function F(props: { values: number[] }) {
+  return (
+    <div>
+      {props.values.map(value => (
+        <li key={value} data-gt={value > 0 ? 'y' : 'n'} data-eq={value === 3 ? 'y' : 'n'} data-ne={value !== 0 ? 'y' : 'n'} data-ge={1.5 >= value ? 'y' : 'n'}>
+          {value <= 1 ? <b>s</b> : <i>b</i>}
+        </li>
+      ))}
+    </div>
+  )
+}
+`)
+    expect(template).toContain('bf_gt . 0')
+    expect(template).toContain('bf_eq . 3')
+    expect(template).toContain('bf_ne . 0')
+    expect(template).toContain('bf_le . 1')
+    expect(template).toContain('bf_ge 1.5 .')
+    expect(template).not.toMatch(/\{\{if (eq|ne|gt|lt|ge|le) /)
   })
 })
 

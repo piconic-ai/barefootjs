@@ -105,10 +105,9 @@ export const renderDivergences: RenderDivergences = {
   // `Init.Label` is a plain `string`, so the absent member seeds `""` and
   // the nil guard keeps `title=""` (#3323's member half).
   'member-seeded-nullable-signal-attr': { limitation: 'optional-struct-field-absent-renders-zero' },
-  // `number[]` elements are `interface{}` so a caller can pass fractions,
-  // but html/template's native `gt`/`lt`/`eq` refuse a float64 operand against
-  // an int literal ("incompatible types for comparison").
-  'fractional-number-array-row-ops': { limitation: 'fractional-number-compare-int-literal' },
+  // `fractional-number-array-row-ops` used to sit here: html/template's
+  // native `gt`/`lt`/`eq` refused a float64 against an int literal.
+  // Comparisons now go through `bf_eq`/`bf_gt`/… (`goComparisonCall`).
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback

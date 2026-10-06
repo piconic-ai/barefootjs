@@ -43,6 +43,15 @@ func FuncMap() template.FuncMap {
 		"bf_min":        Min,
 		"bf_max":        Max,
 
+		// JS comparison operators (#3330): html/template's `eq`/`lt`/… refuse
+		// a float64 against an int ("incompatible types for comparison").
+		"bf_eq": Eq,
+		"bf_ne": Ne,
+		"bf_lt": Lt,
+		"bf_le": Le,
+		"bf_gt": Gt,
+		"bf_ge": Ge,
+
 		// String
 		"bf_lower":       Lower,
 		"bf_upper":       Upper,
@@ -4071,6 +4080,123 @@ func Nullish(v, fallback any) any {
 // float64-shaped — a direct type assertion would panic where JS accepts the
 // number. Non-numeric values coerce to 0, matching the helpers' behaviour.
 func ToInt(v any) int { return toInt(v) }
+
+// numericKindValue reports a value's float64 when its dynamic kind is a Go
+// integer or float (named types included) — the operands html/template's
+// own comparisons reject when their kinds differ.
+func numericKindValue(v any) (float64, bool) {
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(rv.Int()), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return float64(rv.Uint()), true
+	case reflect.Float32, reflect.Float64:
+		return rv.Float(), true
+	}
+	return 0, false
+}
+
+// Eq implements JS `===` for the compiler's `bf_eq` (#3330). Two numbers
+// compare by value whatever their Go kinds (`1` and `1.0` are equal; NaN
+// equals nothing). Otherwise two nils (typed or not, see isNilish) are
+// equal, values of the same comparable type compare with Go `==`, and
+// anything else — different types, or a non-comparable kind — is unequal,
+// as JS strict equality never coerces (`"1" === 1` is false).
+func Eq(a, b any) bool {
+	if x, ok := numericKindValue(a); ok {
+		if y, ok := numericKindValue(b); ok {
+			return x == y
+		}
+		return false
+	}
+	if na, nb := isNilish(a), isNilish(b); na || nb {
+		return na && nb
+	}
+	ta, tb := reflect.TypeOf(a), reflect.TypeOf(b)
+	if ta != tb || !ta.Comparable() {
+		return false
+	}
+	return a == b
+}
+
+// isNilish reports an absent value: a nil interface, or a nil pointer, map,
+// slice, func or channel boxed in one. A typed nil stops being `== nil` once
+// it is boxed into `any`, but html/template's builtin `eq` treated it as nil,
+// and an absent optional nested object (a nil struct pointer) must still
+// compare equal to `null` / `undefined`.
+func isNilish(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func, reflect.Chan:
+		return rv.IsNil()
+	}
+	return false
+}
+
+// Ne is Eq's negation (JS `!==`).
+func Ne(a, b any) bool { return !Eq(a, b) }
+
+// compareJS orders two values like JS's relational operators: two strings
+// compare by code unit, anything else as numbers — Go numeric kinds mixed
+// freely (`1.5 > 0`), numeric strings, booleans, and nil as 0. ok is false
+// when an operand is not a number (JS NaN), which makes every relational
+// operator false.
+func compareJS(a, b any) (int, bool) {
+	if sa, ok := a.(string); ok {
+		if sb, ok := b.(string); ok {
+			return strings.Compare(sa, sb), true
+		}
+	}
+	x, ok := relationalNumber(a)
+	if !ok {
+		return 0, false
+	}
+	y, ok := relationalNumber(b)
+	if !ok {
+		return 0, false
+	}
+	switch {
+	case x < y:
+		return -1, true
+	case x > y:
+		return 1, true
+	case x == y:
+		return 0, true
+	}
+	return 0, false
+}
+
+func relationalNumber(v any) (float64, bool) {
+	if f, ok := numericKindValue(v); ok {
+		return f, !math.IsNaN(f)
+	}
+	switch t := v.(type) {
+	case nil:
+		return 0, true
+	case bool:
+		if t {
+			return 1, true
+		}
+		return 0, true
+	case string:
+		// The evaluator's JS StringToNumber: decimal grammar only (no "1_0",
+		// "0x1p2" or "inf"), the exact Infinity spellings, and an overflowing
+		// literal as ±Infinity ("1e1000").
+		f := evalToNumber(t)
+		return f, !math.IsNaN(f)
+	}
+	return 0, false
+}
+
+// Lt, Le, Gt and Ge implement JS `<`, `<=`, `>` and `>=` (see compareJS).
+func Lt(a, b any) bool { c, ok := compareJS(a, b); return ok && c < 0 }
+func Le(a, b any) bool { c, ok := compareJS(a, b); return ok && c <= 0 }
+func Gt(a, b any) bool { c, ok := compareJS(a, b); return ok && c > 0 }
+func Ge(a, b any) bool { c, ok := compareJS(a, b); return ok && c >= 0 }
 
 // ToFloat64 is ToInt's float64 counterpart — see ToInt.
 func ToFloat64(v any) float64 { return toFloat64(v) }

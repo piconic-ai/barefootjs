@@ -3460,6 +3460,26 @@
         "text"
       ]
     },
+    "fractional-number-compare-matrix": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "fragment": {
       "kinds": [
         "call",
@@ -6385,6 +6405,23 @@
         "literal:string",
         "member:computed",
         "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "optional-object-nullish-compare": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!=",
+        "literal:null",
+        "literal:string"
       ],
       "contexts": [
         "condition",

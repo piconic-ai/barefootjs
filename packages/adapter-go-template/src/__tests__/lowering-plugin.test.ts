@@ -224,7 +224,7 @@ export { P }
 `
     const { template } = generate(src)
     expect(template).toContain(
-      'bf_format_date .CreatedAt (bf_ternary (eq (bf_string .Locale) "en-US") "M/D/YYYY" "YYYY/M/D") "UTC"',
+      'bf_format_date .CreatedAt (bf_ternary (bf_eq (bf_string .Locale) "en-US") "M/D/YYYY" "YYYY/M/D") "UTC"',
     )
     expect(template).not.toContain('({{if')
   })
