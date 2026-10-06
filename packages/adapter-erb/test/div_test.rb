@@ -43,7 +43,32 @@ class BfDivTest < Minitest::Test
     assert_equal 'NaN', text(0, 0)
   end
 
-  def test_numeric_string_operand_converts_like_js_number
+  def test_operands_coerce_like_js_number
     assert_equal '1.5', text('6', 4)
+    assert_equal '1.25', text('5.', 4)
+    assert_equal '4', text('0x10', 4)
+    assert_equal '0', text('', 4)
+    assert_equal '0', text(nil, 4)
+    assert_equal 'NaN', text('abc', 4)
+  end
+
+  # Template-emitted `/` (`bf.div`) and callback-body `/` (the evaluator)
+  # share one implementation, so moving a division between the two never
+  # changes its result.
+  def test_template_and_callback_division_agree
+    operands = [
+      [1_234_567_890, 4], [-7, 4], [8, 4], [0, 4], [1.5, 0.5],
+      [1, 0], [-1, 0], [1, -0.0], [0, 0],
+      [nil, 4], ['', 4], ['0x10', 4], ['5.', 4], ['abc', 4],
+    ]
+    operands.each do |left, right|
+      node = {
+        kind: 'binary', op: '/',
+        left: { kind: 'identifier', name: 'l' },
+        right: { kind: 'identifier', name: 'r' },
+      }
+      callback = BarefootJS::Evaluator.evaluate(node, { l: left, r: right })
+      assert_equal @bf.string(callback), text(left, right), "#{left.inspect} / #{right.inspect}"
+    end
   end
 end
