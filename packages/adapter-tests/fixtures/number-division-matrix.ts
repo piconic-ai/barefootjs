@@ -30,6 +30,13 @@ export function NumberDivisionMatrix(props: { neg: number; even: number; zero: n
 `,
   props: { neg: -7, even: 8, zero: 0, half: 1.5 },
   expectedHtml: `
-    <ul bf-s="test" bf="s6" data-ratio="-1.75"><li><!--bf:s0-->-1.75<!--/--></li><li><!--bf:s1-->2<!--/--></li><li><!--bf:s2-->0<!--/--></li><li><!--bf:s3-->3<!--/--></li><li><!--bf:s4-->2.8<!--/--></li><li><!--bf:s5-->3.5<!--/--></li></ul>
+    <ul bf-s="test" bf="s12" data-ratio="-1.75">
+      <li bf="s1"><!--bf:s0-->-1.75<!--/--></li>
+      <li bf="s3"><!--bf:s2-->2<!--/--></li>
+      <li bf="s5"><!--bf:s4-->0<!--/--></li>
+      <li bf="s7"><!--bf:s6-->3<!--/--></li>
+      <li bf="s9"><!--bf:s8-->2.8<!--/--></li>
+      <li bf="s11"><!--bf:s10-->3.5<!--/--></li>
+    </ul>
   `,
 })
