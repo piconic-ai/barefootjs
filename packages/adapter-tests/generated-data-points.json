@@ -3405,6 +3405,24 @@
       }
     }
   ],
+  "nullish-coalesce-empty-array": [
+    {
+      "name": "gen:c:absent",
+      "props": {
+        "a": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "c": [],
+        "a": []
+      }
+    }
+  ],
   "nullish-coalescing-condition-operand": [
     {
       "name": "gen:initialTodos:absent",

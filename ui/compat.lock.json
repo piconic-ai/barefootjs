@@ -4151,6 +4151,14 @@
           ]
         }
       },
+      "nullish-coalesce-empty-array": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nullish-coalesce-empty-array-falls-back"
+          ]
+        }
+      },
       "nullish-optional-member-missing-field-attr": {
         "go-template": {
           "kind": "render",
@@ -5605,6 +5613,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "nullish-coalesce-empty-array": {
+        "description": "`??` keeps a present empty array instead of taking the fallback",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts"
+      },
       "nullish-optional-member-missing-field-attr": {
         "description": "An attribute bound to a present object's missing optional field is omitted",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-member-missing-field-attr.ts"
@@ -6151,13 +6163,15 @@
     "nullish-coalesce-empty-array-falls-back": {
       "title": "`??` falls back over a present empty array",
       "kind": "silent",
-      "given": "a `??` whose left operand is an optional array prop that is present but empty (`(props.c ?? props.a)?.length` with `c` = `[]`)",
+      "given": "a `??` whose left operand is an optional array prop that is present but empty (`(props.c ?? props.a).length` with `c` = `[]`)",
       "expected": "the empty array is not nullish, so `??` keeps it and `.length` reads `0`",
       "actual": "renders the fallback's length (`2` for `a` = `[1, 2]`): the `??` lowers to html/template's truthiness-based `or`, and an empty slice is falsy; `bf_nullish` is used only for a nillable scalar prop",
       "fixtures": [
-        "optional-chain-length-composed-receiver"
+        "nullish-coalesce-empty-array"
       ],
-      "adapters": []
+      "adapters": [
+        "go-template"
+      ]
     },
     "number-arithmetic-attr-exponent-form": {
       "title": "An arithmetic result in an attribute value prints in exponent form",

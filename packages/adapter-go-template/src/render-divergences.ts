@@ -105,6 +105,10 @@ export const renderDivergences: RenderDivergences = {
   // `NoText string` reads as `""`, so the nil guard on `?.length` sees a
   // present empty string and renders `0` where JS renders nothing (#3332).
   'optional-chain-length-string-receiver': { limitation: 'optional-struct-field-absent-renders-zero' },
+  // `(props.c ?? props.a).length` with `c` = `[]`: `??` lowers to
+  // `or .C .A`, and `or` treats the empty slice as falsy, so it reads `a`'s
+  // length (`2`) where JS keeps `c` and reads `0`.
+  'nullish-coalesce-empty-array': { limitation: 'nullish-coalesce-empty-array-falls-back' },
   // `fractional-number-array-row-ops` used to sit here: html/template's
   // native `gt`/`lt`/`eq` refused a float64 against an int literal.
   // Comparisons now go through `bf_eq`/`bf_gt`/… (`goComparisonCall`).
@@ -204,8 +208,8 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // `(props.c ?? props.a)?.length` with `c` = `[]`: the `??` lowers to
-  // `or .C .A`, and `or` treats the empty slice as falsy, so it reads `a`'s
-  // length (`2`) where JS keeps `c` and reads `0`.
+  // The same `??`-over-`[]` fallback as `nullish-coalesce-empty-array`,
+  // reached through the generated `c` = `[]` point of
+  // `(props.c ?? props.a)?.length`.
   'optional-chain-length-composed-receiver:gen:c:empty': { limitation: 'nullish-coalesce-empty-array-falls-back' },
 }

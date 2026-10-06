@@ -5849,6 +5849,19 @@
         "condition"
       ]
     },
+    "nullish-coalesce-empty-array": {
+      "kinds": [
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "nullish-coalescing-condition-operand": {
       "kinds": [
         "array-literal",

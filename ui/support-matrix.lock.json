@@ -4392,6 +4392,12 @@
               ]
             },
             {
+              "fixture": "nullish-coalesce-empty-array",
+              "limitations": [
+                "nullish-coalesce-empty-array-falls-back"
+              ]
+            },
+            {
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
@@ -6798,6 +6804,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "nullish-coalesce-empty-array",
+              "limitations": [
+                "nullish-coalesce-empty-array-falls-back"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-string-receiver",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
@@ -6926,10 +6938,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
       },
       "example": {
-        "fixture": "loop-preamble-conditional-reactive",
-        "description": "Loop row preamble computes a conditional-condition value from item + prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-conditional-reactive.ts",
-        "code": "row.done || props.highlight"
+        "fixture": "nullish-coalesce-empty-array",
+        "description": "`??` keeps a present empty array instead of taking the fallback",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
+        "code": "props.c ?? props.a"
       }
     },
     "member": {
@@ -7312,6 +7324,12 @@
               "fixture": "member-seeded-nullable-signal-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
+              "fixture": "nullish-coalesce-empty-array",
+              "limitations": [
+                "nullish-coalesce-empty-array-falls-back"
               ]
             },
             {
@@ -12952,6 +12970,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "nullish-coalesce-empty-array",
+              "limitations": [
+                "nullish-coalesce-empty-array-falls-back"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-string-receiver",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
@@ -13080,9 +13104,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "body-destructured-prop-default-renamed",
-        "description": "A renamed body-destructured prop default renders the default on SSR (#2943)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructured-prop-default-renamed.ts"
+        "fixture": "nullish-coalesce-empty-array",
+        "description": "`??` keeps a present empty array instead of taking the fallback",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
+        "code": "props.c ?? props.a"
       }
     },
     "logical:||": {
