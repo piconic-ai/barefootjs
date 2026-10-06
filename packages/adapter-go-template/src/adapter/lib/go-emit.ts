@@ -88,33 +88,58 @@ export function lowerJsNot(argument: ParsedExpr, rendered: string): string {
 }
 
 /**
- * Whether `name` is an inert `data-on…` attribute that html/template would
- * escape as JavaScript. Its `attrType` strips ONE leading `data-` before
- * classifying, so `data-on` / `data-onset` land in the same `on…`
- * event-handler bucket as `onclick`, and a string value renders as a quoted
- * JS string literal (`&#34;x&#34;`) instead of the plain text the reference
- * emits (#3309). Only the `data-` form qualifies: a real handler attribute
- * (`onclick`, `xlink:onclick`) keeps html/template's JS-context escaping, so
- * an untrusted value can never become executable handler code. It errs wide
- * within `data-on…`: a name the stdlib table lists as plain (`data-open`) also
- * matches, which is harmless because `goAttrNameToken`'s form renders exactly
- * what a plain attribute would.
+ * `html/template`'s `attrTypeMap` entries whose content type is NOT escaped
+ * as plain attribute text — URL, CSS, JS and srcset. (Its "unsafe" and HTML
+ * entries — `value`, `type`, `srcdoc`, … — escape exactly like plain text.)
  */
-export function isDataOnAttrName(name: string): boolean {
-  return name.toLowerCase().startsWith('data-on')
+const GO_NON_PLAIN_ATTR_TYPES: ReadonlySet<string> = new Set([
+  'action', 'archive', 'background', 'cite', 'classid', 'codebase', 'data',
+  'formaction', 'href', 'icon', 'longdesc', 'manifest', 'poster', 'profile',
+  'src', 'srcset', 'style', 'usemap', 'xmlns',
+])
+
+/** `attrTypeMap` entries escaped as plain text that would otherwise hit the
+ *  `src` / `uri` / `url` heuristic below. */
+const GO_PLAIN_ATTR_TYPES_WITH_URL_HEURISTIC_NAME: ReadonlySet<string> = new Set(['srcdoc'])
+
+/**
+ * Whether `name` is an inert `data-…` attribute whose dynamic value
+ * html/template would NOT escape as plain attribute text. Its `attrType`
+ * lowercases the name and strips ONE leading `data-` before classifying, so
+ * `data-on…` lands in the `on…` event-handler bucket (a string value renders
+ * as a quoted JS string literal, #3309), `data-href` / `data-style` /
+ * `data-srcset` take their namesake's URL / CSS / srcset escaping, and a
+ * remaining name containing `src`, `uri` or `url` (`data-src`,
+ * `data-image-url`) is escaped as a URL — percent-normalized (`a%20b`), and
+ * replaced with `#ZgotmplZ` for a non-web scheme (#3326). The reference
+ * renders all of them as plain text. This mirrors that classification
+ * exactly, so a `data-*` name html/template already treats as plain
+ * (`data-state`, `data-key`, `data-value`) keeps its literal form. Only the
+ * `data-` form qualifies: a real `href` / `src` / `style` / handler
+ * attribute keeps html/template's contextual escaping, so an untrusted value
+ * can never become an executable URL, style or handler.
+ */
+export function isGoNonPlainDataAttrName(name: string): boolean {
+  const lower = name.toLowerCase()
+  if (!lower.startsWith('data-')) return false
+  const rest = lower.slice(5)
+  if (GO_NON_PLAIN_ATTR_TYPES.has(rest)) return true
+  if (GO_PLAIN_ATTR_TYPES_WITH_URL_HEURISTIC_NAME.has(rest)) return false
+  return rest.startsWith('on') || rest.includes('src') || rest.includes('uri') || rest.includes('url')
 }
 
 /**
  * The attribute-name text to emit before a `="…"` value holding actions. A
- * `data-on…` name (`isDataOnAttrName`) is emitted through the
- * `bf_attr_name` action instead of as literal text: html/template does not
- * classify an action-supplied (`template.HTMLAttr`) name, so the value that
- * follows is escaped as plain attribute text whatever its shape — a bare
- * action, a template literal's text-plus-actions, an `{{if}}` chain. Every
- * other name is returned unchanged.
+ * `data-…` name html/template would escape as non-plain
+ * (`isGoNonPlainDataAttrName`) is emitted through the `bf_attr_name` action
+ * instead of as literal text: html/template does not classify an
+ * action-supplied (`template.HTMLAttr`) name, so the value that follows is
+ * escaped as plain attribute text whatever its shape — a bare action, a
+ * template literal's text-plus-actions, an `{{if}}` chain. Every other name
+ * is returned unchanged.
  */
 export function goAttrNameToken(name: string): string {
-  return isDataOnAttrName(name) ? `{{bf_attr_name ${JSON.stringify(name)}}}` : name
+  return isGoNonPlainDataAttrName(name) ? `{{bf_attr_name ${JSON.stringify(name)}}}` : name
 }
 
 /**

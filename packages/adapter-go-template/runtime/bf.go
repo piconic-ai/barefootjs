@@ -350,9 +350,11 @@ func Attr(name string, value any) template.HTMLAttr {
 // is not classified — html/template's name filter passes an HTMLAttr through
 // unchanged, and the value that follows is escaped as plain attribute text —
 // so the value keeps its ordinary `"{{…}}"` form, whatever its shape. The
-// compiler uses it ONLY for inert `data-on…` names: a real handler attribute
-// (`onclick`) keeps its literal name so its value stays JS-escaped. `name` is
-// a compiler-emitted constant, never data.
+// compiler uses it ONLY for inert `data-…` names html/template would escape
+// as non-plain — `data-on…` (script), `data-src` / `data-url` / `data-href`
+// (URL), `data-style` (CSS), `data-srcset` — never for a real handler, URL
+// or style attribute (`onclick`, `href`), whose value stays contextually
+// escaped. `name` is a compiler-emitted constant, never data.
 func AttrName(name string) template.HTMLAttr {
 	return template.HTMLAttr(name)
 }

@@ -10143,8 +10143,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return `${preamble}{{if ${goCond}}}${body}{{end}}`
       }
       const parsed = value.parsed ?? parseExpression(value.expr.trim())
-      // #3309: a `data-on…` name is emitted as a `bf_attr_name` action so
-      // html/template escapes the value below as plain text, not as script.
+      // #3309 / #3326: a `data-…` name html/template would classify as
+      // script / URL / CSS (`data-on…`, `data-src`, `data-style`) is emitted
+      // as a `bf_attr_name` action so the value below is escaped as plain text.
       const nameTok = goAttrNameToken(name)
       if (parsed.kind === 'conditional') {
         // A ternary whose falsy branch is `undefined` / `null` OMITS the

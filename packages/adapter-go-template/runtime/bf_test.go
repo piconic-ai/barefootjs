@@ -2765,6 +2765,26 @@ func TestAttrName_NativeHandlerKeepsJSEscaping(t *testing.T) {
 	}
 }
 
+// TestAttrName_URLClassifiedDataAttrPlainText (#3326): a literal
+// `data-src` / `data-url` / `data-style` name is escaped as a URL / CSS
+// attribute (percent-normalized, `#ZgotmplZ` for a non-web scheme); the same
+// name supplied by bf_attr_name keeps the value plain HTML-escaped text,
+// while a real `href` keeps its URL escaping.
+func TestAttrName_URLClassifiedDataAttrPlainText(t *testing.T) {
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(
+		`<a href="{{.U}}" {{bf_attr_name "data-src"}}="{{.V}}" {{bf_attr_name "data-url"}}="{{.U}}"` +
+			` {{bf_attr_name "data-style"}}="{{.Q}}" {{bf_attr_name "data-image-url"}}="/p/{{.V}}">x</a>`,
+	))
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, struct{ U, V, Q string }{U: "javascript:x", V: "a b", Q: `q"&'<`}); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	want := `<a href="#ZgotmplZ" data-src="a b" data-url="javascript:x" data-style="q&#34;&amp;&#39;&lt;" data-image-url="/p/a b">x</a>`
+	if got := buf.String(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
 // AsMap normalizes any string-keyed map kind held in an interface{} prop
 // field into map[string]interface{} for object-valued context bindings, and
 // returns nil for every "absent" shape so the generated `?? {}` fallback

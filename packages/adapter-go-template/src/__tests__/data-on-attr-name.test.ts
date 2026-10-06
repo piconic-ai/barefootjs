@@ -1,15 +1,17 @@
 /**
  * html/template strips a leading `data-` before classifying an attribute, so
  * a literal `data-on…="{{…}}"` is escaped as an `on…` event-handler (script)
- * attribute and the value renders as a quoted JS string (#3309). Such names
- * are emitted through the `bf_attr_name` action, which html/template does not
- * classify; every other name stays literal text — including a real handler
- * attribute (`onclick`), which must keep html/template's JS escaping.
+ * attribute and the value renders as a quoted JS string (#3309), and
+ * `data-src` / `data-url` / `data-href` are escaped as URLs (#3326). Such
+ * names are emitted through the `bf_attr_name` action, which html/template
+ * does not classify; every other name stays literal text — including a real
+ * handler / URL attribute (`onclick`, `href`), which must keep html/template's
+ * contextual escaping.
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
-import { isDataOnAttrName, goAttrNameToken } from '../adapter/lib/go-emit'
+import { isGoNonPlainDataAttrName, goAttrNameToken } from '../adapter/lib/go-emit'
 
 function generate(src: string) {
   const adapter = new GoTemplateAdapter()
@@ -20,20 +22,37 @@ function generate(src: string) {
   return adapter.generate(ir)
 }
 
-describe('isDataOnAttrName', () => {
-  test('matches only data-on… names, never a real handler attribute', () => {
-    for (const n of ['data-on', 'data-onset', 'DATA-ONSET']) {
-      expect(isDataOnAttrName(n)).toBe(true)
-    }
-    for (const n of ['onclick', 'ONCLICK', 'onerror', 'xlink:onclick', 'data-state', 'data-key', 'title', 'data-data-on', 'data-n-on']) {
-      expect(isDataOnAttrName(n)).toBe(false)
+describe('isGoNonPlainDataAttrName', () => {
+  test('matches data-… names html/template escapes as script, URL, CSS or srcset', () => {
+    for (const n of [
+      // script (#3309)
+      'data-on', 'data-onset', 'DATA-ONSET',
+      // URL: attrTypeMap entries and the src / uri / url heuristic (#3326)
+      'data-src', 'data-url', 'data-uri', 'data-image-url', 'data-urls', 'data-thumbsrc', 'DATA-SRC',
+      'data-href', 'data-action', 'data-data', 'data-icon', 'data-poster', 'data-cite', 'data-xmlns',
+      // CSS / srcset
+      'data-style', 'data-srcset',
+    ]) {
+      expect(isGoNonPlainDataAttrName(n)).toBe(true)
     }
   })
 
-  test('goAttrNameToken wraps only a data-on… name', () => {
+  test('never a real attribute, and not a data-… name html/template already treats as plain', () => {
+    for (const n of [
+      'onclick', 'ONCLICK', 'onerror', 'xlink:onclick', 'href', 'src', 'style', 'srcset', 'title',
+      'data-state', 'data-key', 'data-value', 'data-type', 'data-content', 'data-rel', 'data-srcdoc',
+      'data-n-on', 'data-label',
+    ]) {
+      expect(isGoNonPlainDataAttrName(n)).toBe(false)
+    }
+  })
+
+  test('goAttrNameToken wraps only such a data-… name', () => {
     expect(goAttrNameToken('data-on')).toBe('{{bf_attr_name "data-on"}}')
+    expect(goAttrNameToken('data-src')).toBe('{{bf_attr_name "data-src"}}')
     expect(goAttrNameToken('data-state')).toBe('data-state')
     expect(goAttrNameToken('onclick')).toBe('onclick')
+    expect(goAttrNameToken('href')).toBe('href')
   })
 })
 
@@ -90,5 +109,38 @@ export function C(props: { payload: string }) {
 `)
     expect(template).toContain('onclick="{{.Payload}}"')
     expect(template).not.toContain('bf_attr_name')
+  })
+})
+
+describe('URL / CSS-classified data-… attribute names route through bf_attr_name (#3326)', () => {
+  test('signal, prop, ternary and template-literal values', () => {
+    const { template } = generate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { url: string }) {
+  const [v] = createSignal('a b')
+  const [on] = createSignal(true)
+  return (
+    <a
+      href={props.url}
+      data-src={v()}
+      data-url={props.url}
+      data-image-url={on() ? v() : 'none'}
+      data-href={\`/p/\${props.url}\`}
+      data-style={v()}
+      data-state={v()}
+    >x</a>
+  )
+}
+`)
+    const AN = (n: string) => `{{bf_attr_name "${n}"}}=`
+    expect(template).toContain(`${AN('data-src')}"{{.V}}"`)
+    expect(template).toContain(`${AN('data-url')}"{{.URL}}"`)
+    expect(template).toContain(`${AN('data-href')}"/p/{{.URL}}"`)
+    expect(template).toContain(`${AN('data-style')}"{{.V}}"`)
+    expect(template).toContain(AN('data-image-url'))
+    expect(template).toContain('data-state="{{.V}}"')
+    // A real URL attribute keeps its literal name, so its value stays URL-escaped.
+    expect(template).toContain('href="{{.URL}}"')
   })
 })

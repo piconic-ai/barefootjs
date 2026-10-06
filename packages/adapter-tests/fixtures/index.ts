@@ -200,6 +200,7 @@ import { fixture as dynamicAttributes } from './dynamic-attributes'
 import { fixture as dataOnAttrDynamicValue } from './data-on-attr-dynamic-value'
 import { fixture as dataOnAttrValueShapes } from './data-on-attr-value-shapes'
 import { fixture as dataUrlAttrDynamicValue } from './data-url-attr-dynamic-value'
+import { fixture as dataUrlAttrValueShapes } from './data-url-attr-value-shapes'
 import { fixture as classVsClassname } from './class-vs-classname'
 import { fixture as styleAttribute } from './style-attribute'
 import { fixture as styleObjectStatic } from './style-object-static'
@@ -1033,6 +1034,7 @@ export const jsxFixtures: JSXFixture[] = [
   dataOnAttrDynamicValue,
   dataOnAttrValueShapes,
   dataUrlAttrDynamicValue,
+  dataUrlAttrValueShapes,
   classVsClassname,
   styleAttribute,
   styleObjectStatic,
