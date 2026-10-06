@@ -6249,6 +6249,38 @@
         "text"
       ]
     },
+    "optional-chain-length-presence-matrix": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "optional-chain-length-string-receiver": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-length-text": {
       "kinds": [
         "identifier",

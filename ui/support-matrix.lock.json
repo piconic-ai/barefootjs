@@ -4018,12 +4018,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4187,12 +4181,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -4422,9 +4410,9 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
+              "fixture": "optional-chain-length-string-receiver",
               "limitations": [
-                "optional-chain-length-absent-renders-zero"
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -4636,12 +4624,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4811,12 +4793,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -5170,12 +5146,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5339,12 +5309,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -5517,12 +5481,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -5987,6 +5945,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "optional-chain-length-string-receiver",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -6834,6 +6798,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "optional-chain-length-string-receiver",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -7073,12 +7043,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7194,12 +7158,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -7369,9 +7327,9 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
+              "fixture": "optional-chain-length-string-receiver",
               "limitations": [
-                "optional-chain-length-absent-renders-zero"
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -7535,12 +7493,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7662,12 +7614,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -7925,12 +7871,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8055,12 +7995,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8182,12 +8116,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
               ]
             },
             {
@@ -11860,6 +11788,12 @@
               ]
             },
             {
+              "fixture": "optional-chain-length-string-receiver",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13018,6 +12952,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "optional-chain-length-string-receiver",
+              "limitations": [
+                "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13270,26 +13210,8 @@
     "member:optional": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        },
-        "erb": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        },
+        "blade": {},
+        "erb": {},
         "go-template": {
           "gaps": [
             {
@@ -13299,9 +13221,9 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-bare-text",
+              "fixture": "optional-chain-length-string-receiver",
               "limitations": [
-                "optional-chain-length-absent-renders-zero"
+                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -13312,57 +13234,12 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
+        "minijinja": {},
         "mojolicious": {},
-        "pebble": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        },
-        "xslate": {
-          "gaps": [
-            {
-              "fixture": "optional-chain-length-bare-text",
-              "limitations": [
-                "optional-chain-length-absent-renders-zero"
-              ]
-            }
-          ]
-        }
+        "pebble": {},
+        "twig": {},
+        "xslate": {}
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

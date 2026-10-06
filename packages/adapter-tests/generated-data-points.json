@@ -3750,6 +3750,128 @@
       }
     }
   ],
+  "optional-chain-length-presence-matrix": [
+    {
+      "name": "gen:absent:empty",
+      "props": {
+        "nothing": null,
+        "empty": [],
+        "full": [
+          1,
+          2
+        ],
+        "absent": []
+      }
+    },
+    {
+      "name": "gen:nothing:absent",
+      "props": {
+        "empty": [],
+        "full": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:empty:absent",
+      "props": {
+        "nothing": null,
+        "full": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:full:absent",
+      "props": {
+        "nothing": null,
+        "empty": []
+      }
+    },
+    {
+      "name": "gen:full:empty",
+      "props": {
+        "nothing": null,
+        "empty": [],
+        "full": []
+      }
+    }
+  ],
+  "optional-chain-length-string-receiver": [
+    {
+      "name": "gen:noText:empty",
+      "props": {
+        "blank": "",
+        "text": "ab",
+        "noText": ""
+      }
+    },
+    {
+      "name": "gen:noText:markup",
+      "props": {
+        "blank": "",
+        "text": "ab",
+        "noText": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:noText:multibyte",
+      "props": {
+        "blank": "",
+        "text": "ab",
+        "noText": "日本語"
+      }
+    },
+    {
+      "name": "gen:blank:absent",
+      "props": {
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:blank:markup",
+      "props": {
+        "blank": "<b>&\"'</b>",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:blank:multibyte",
+      "props": {
+        "blank": "日本語",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:text:absent",
+      "props": {
+        "blank": ""
+      }
+    },
+    {
+      "name": "gen:text:empty",
+      "props": {
+        "blank": "",
+        "text": ""
+      }
+    },
+    {
+      "name": "gen:text:markup",
+      "props": {
+        "blank": "",
+        "text": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:text:multibyte",
+      "props": {
+        "blank": "",
+        "text": "日本語"
+      }
+    }
+  ],
   "optional-chain-length-text": [
     {
       "name": "gen:items:empty",
