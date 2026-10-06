@@ -3166,3 +3166,19 @@ func TestCompareJS(t *testing.T) {
 		}
 	})
 }
+
+func TestCapitalizeUnderscorePrefix(t *testing.T) {
+	for in, want := range map[string]string{
+		"value":           "Value",
+		"_value":          "X_value",
+		"__bf_root_value": "X__bf_root_value",
+	} {
+		if got := capitalize(in); got != want {
+			t.Errorf("capitalize(%q) = %q, want %q", in, got, want)
+		}
+	}
+	type row struct{ X_value string }
+	if got := getFieldValue(row{X_value: "one"}, capitalize("_value")); got != "one" {
+		t.Errorf("getFieldValue(_value) = %v, want one", got)
+	}
+}

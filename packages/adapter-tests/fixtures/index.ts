@@ -11,6 +11,7 @@ import { fixture as optionalObjectNullishCompare } from './optional-object-nulli
 import { fixture as loopParamPropMemberCollision } from './loop-param-prop-member-collision'
 import { fixture as loopParamPropMemberCollisionShapes } from './loop-param-prop-member-collision-shapes'
 import { fixture as loopParamPropAliasNameCollision } from './loop-param-prop-alias-name-collision'
+import { fixture as underscorePrefixedProp } from './underscore-prefixed-prop'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
 import { fixture as numberArithmeticAttrFormatting } from './number-arithmetic-attr-formatting'
@@ -1514,6 +1515,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamPropMemberCollision,
   loopParamPropMemberCollisionShapes,
   loopParamPropAliasNameCollision,
+  underscorePrefixedProp,
   numberAdditionTextFormatting,
   numberArithmeticTextFormatting,
   numberArithmeticAttrFormatting,

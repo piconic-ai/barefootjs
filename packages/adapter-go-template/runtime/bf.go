@@ -2898,10 +2898,16 @@ func AsMap(v any) map[string]interface{} {
 	return out
 }
 
-// capitalize uppercases the first character of a string.
+// capitalize uppercases the first character of a string. A leading `_` has
+// no upper case, so such a name gets an `X` prefix instead (`_x` → `X_x`),
+// matching the TS-side `capitalizeFieldName` so a struct lookup finds the
+// exported field the adapter generated (#3336).
 func capitalize(s string) string {
 	if s == "" {
 		return s
+	}
+	if s[0] == '_' {
+		return "X" + s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
 }

@@ -5691,6 +5691,56 @@
       }
     }
   ],
+  "underscore-prefixed-prop": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": "",
+        "_value": "one",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>",
+        "_value": "one",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語",
+        "_value": "one",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:_value:empty",
+      "props": {
+        "value": "plain",
+        "_value": "",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:_value:markup",
+      "props": {
+        "value": "plain",
+        "_value": "<b>&\"'</b>",
+        "__bf_root_value": "other"
+      }
+    },
+    {
+      "name": "gen:_value:multibyte",
+      "props": {
+        "value": "plain",
+        "_value": "日本語",
+        "__bf_root_value": "other"
+      }
+    }
+  ],
   "union-catalogued": [
     {
       "name": "gen:placement:union:right",

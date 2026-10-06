@@ -636,6 +636,58 @@ export function F(props: { values: number[] }) {
   })
 })
 
+describe('GoTemplateAdapter - underscore-prefixed props (#3336)', () => {
+  // A leading `_` has no upper case: such a prop gets an `X`-prefixed
+  // exported field on Input, Props, the constructor and every template read,
+  // while the JSON / caller-props key keeps the original spelling.
+  test('exports the field and keeps the original key', () => {
+    const { template, types } = compileAndGenerate(`
+export function U(props: { value: string; _value: string; __bf_root_value: string }) {
+  return <p data-plain={props.value} data-single={props._value} data-other={props.__bf_root_value} />
+}
+`)
+    expect(template).toContain('data-single="{{.X_value}}"')
+    expect(template).toContain('data-other="{{.X__bf_root_value}}"')
+    expect(template).toContain('data-plain="{{.Value}}"')
+    expect(types).toContain('X__bf_root_value string `json:"__bf_root_value"`')
+    expect(types).toContain('bfCallerProps["_value"] = in.X_value')
+    expect(types).toContain('X__bf_root_value: in.X__bf_root_value,')
+  })
+
+  test('refuses two props that map to the same Go field', () => {
+    const adapter = new GoTemplateAdapter()
+    adapter.generate(compileToIR(`
+export function U(props: { x_a: string; _a: string }) {
+  return <p data-a={props._a} data-b={props.x_a} />
+}
+`))
+    const error = adapter.errors.find(e => e.code === 'BF101')
+    expect(error?.message).toContain("Props 'x_a' and '_a' of <U> both map to the Go struct field 'X_a'")
+  })
+
+  test('refuses colliding caller keys renamed to distinct local bindings', () => {
+    const adapter = new GoTemplateAdapter()
+    adapter.generate(compileToIR(`
+export function U({ _a: first, x_a: second }: { _a: string; x_a: string }) {
+  return <p>{first}:{second}</p>
+}
+`))
+    const errors = adapter.errors.filter(e => e.code === 'BF101')
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toContain("Props '_a' and 'x_a' of <U> both map to the Go struct field 'X_a' of the Input type")
+  })
+
+  test('distinct caller keys with their own fields are not a collision', () => {
+    const adapter = new GoTemplateAdapter()
+    adapter.generate(compileToIR(`
+export function U({ _a: first, b: second }: { _a: string; b: string }) {
+  return <p>{first}:{second}</p>
+}
+`))
+    expect(adapter.errors.filter(e => e.code === 'BF101')).toEqual([])
+  })
+})
+
 describe('GoTemplateAdapter - optional-chained .length (#3332)', () => {
   // `x?.length` is `undefined` for an absent receiver, so it must not
   // collapse to `bf_length nil`'s 0; a plain `.length` stays unguarded.

@@ -9195,6 +9195,17 @@
         "text"
       ]
     },
+    "underscore-prefixed-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "unicode-text": {
       "kinds": [
         "call",

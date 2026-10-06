@@ -748,6 +748,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!options?.siblingTemplatesRegistered) {
       this.checkImportedLoopChildComponents(ir)
     }
+    this.checkPropFieldNameCollisions(ir)
 
     const hasInteractivity = hasClientInteractivity(ir)
     const isRootComponent = ir.root.type === 'component'
@@ -811,6 +812,44 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       types: types || undefined,
       extension: this.extension,
     }
+  }
+
+  /**
+   * Refuse two props whose names lower to the same exported Go field
+   * (`x_a` and `_a` both → `X_a`, #3336). Checked in both namespaces: the
+   * template-facing Props struct is keyed by the local binding name, and the
+   * caller-facing Input struct by the caller's key (`sourceName`), so
+   * `{ _a: first, x_a: second }` has distinct Props fields but would merge
+   * both caller keys into one Input field. Repeated entries for the same
+   * name are not a collision.
+   */
+  private checkPropFieldNameCollisions(ir: ComponentIR): void {
+    const params = ir.metadata.propsParams ?? []
+    const reported = new Set<string>()
+    const check = (names: string[], structName: string): void => {
+      const owners = new Map<string, string>()
+      for (const name of names) {
+        const field = capitalizeFieldName(name)
+        const other = owners.get(field)
+        if (other === undefined) {
+          owners.set(field, name)
+          continue
+        }
+        if (other === name) continue
+        const pair = [other, name].sort().join('\u0000')
+        if (reported.has(pair)) continue
+        reported.add(pair)
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Props '${other}' and '${name}' of <${ir.metadata.componentName}> both map to the Go struct field '${field}' of the ${structName} type on the Go template adapter, so their values cannot be told apart.`,
+          loc: this.makeLoc(),
+          suggestion: { message: `Rename one of the props so their exported Go field names differ.` },
+        })
+      }
+    }
+    check(params.map(p => p.sourceName ?? p.name), 'Input')
+    check(params.map(p => p.name), 'Props')
   }
 
   /**

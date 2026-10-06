@@ -183,10 +183,6 @@ export const renderDivergences: RenderDivergences = {
   // (`<Item>` → `Items` next to an `items` prop) took that field for its own
   // rows, so the `items` loop rendered empty. A loop's rows field is now
   // renamed when a different prop owns the plural (`nestedRowsFieldName`).
-  // A prop named `__bf_root_value` is read as `$.__bf_root_value`; a
-  // lower-case/underscore-led name is an unexported Go field, so rendering
-  // fails ("is an unexported field of struct type").
-  'loop-param-prop-alias-name-collision': { limitation: 'underscore-prefixed-prop-name' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
