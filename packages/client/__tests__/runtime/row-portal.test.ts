@@ -198,6 +198,31 @@ describe('relayRowPortalEvents with nested adopted elements', () => {
     ).toEqual([2, 2, 2])
   })
 
+  test('a re-dispatched event is delivered again after its target moves between outlets', () => {
+    const ul = document.createElement('ul')
+    const first = document.createElement('button')
+    const second = document.createElement('div')
+    const span = document.createElement('span')
+    first.appendChild(span)
+    document.body.append(ul, first, second)
+    const row = document.createElement('li')
+    let relayed = 0
+    let native = 0
+    createRoot(() => {
+      adoptRowPortal(row, first, ul)
+      adoptRowPortal(row, second, ul)
+    })
+    relayRowPortalEvents(ul, 'click', () => relayed++)
+    first.addEventListener('click', () => native++)
+    second.addEventListener('click', () => native++)
+
+    const event = new MouseEvent('click', { bubbles: true })
+    span.dispatchEvent(event)
+    second.appendChild(span)
+    span.dispatchEvent(event)
+    expect([relayed, native]).toEqual([2, 2])
+  })
+
   test('delivery survives a handler that removes the target mid-dispatch', () => {
     const ul = document.createElement('ul')
     const outer = document.createElement('div')

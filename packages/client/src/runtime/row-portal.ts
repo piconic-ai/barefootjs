@@ -80,7 +80,10 @@ export function adoptRowPortal(rowEl: Element, el: Element, container: Element):
   }
   adopted.add(el)
 
-  for (const d of delegatesByContainer.get(container) ?? []) el.addEventListener(d.type, d.attached, d.capture)
+  for (const d of delegatesByContainer.get(container) ?? []) {
+    el.addEventListener(d.type, d.attached, d.capture)
+    resetDeliveryAtRootOf(el, d.type)
+  }
 
   onCleanup(() => {
     for (const d of delegatesByContainer.get(container) ?? []) {
@@ -140,13 +143,14 @@ export function relayRowPortalEvents(
   capture = false,
 ): void {
   // Run at the first adopted element a dispatch reaches and skip the rest.
-  // Within one dispatch this listener visits each adopted element at most
-  // once, so reaching an element it already visited for this event (or a
-  // different target) means a new dispatch of the same event object, and
-  // the record starts over. Nothing reads DOM ancestry, which a handler
-  // earlier in the dispatch may have changed, and nothing depends on the
-  // dispatch path reaching `window` (a detached outlet, a non-composed event
-  // in a shadow root).
+  // The record of what was delivered is cleared when a dispatch starts: a
+  // capture listener on `window`, and on the shadow root an adopted element
+  // lives in, runs before any listener on an element below it. A path that
+  // reaches neither (a detached outlet) falls back to the record itself:
+  // within one dispatch this listener visits each adopted element at most
+  // once, so reaching an element it already visited for this event, or a
+  // different target, means a new dispatch. Nothing reads DOM ancestry,
+  // which a handler earlier in the dispatch may have changed.
   const delegate: Delegate = { type, attached: () => {}, capture }
   delegate.attached = event => {
     let records = deliveryRecords.get(event)
@@ -166,8 +170,10 @@ export function relayRowPortalEvents(
   const list = delegatesByContainer.get(container)
   if (list) list.push(delegate)
   else delegatesByContainer.set(container, [delegate])
+  if (typeof window !== 'undefined') resetDeliveryAt(window, type)
   for (const el of adoptedByContainer.get(container) ?? []) {
     el.addEventListener(type, delegate.attached, capture)
+    resetDeliveryAtRootOf(el, type)
   }
 }
 
@@ -176,6 +182,26 @@ export function relayRowPortalEvents(
  * and the adopted elements the relay has visited since.
  */
 const deliveryRecords = new WeakMap<Event, Map<Delegate, { target: EventTarget | null; visited: Set<EventTarget> }>>()
+/** event-path root → the event types whose dispatch start it already clears */
+const resetInstalled = new WeakMap<EventTarget, Set<string>>()
+
+/** Clear an event's delivery records when a dispatch through `root` starts. */
+function resetDeliveryAt(root: EventTarget, type: string): void {
+  let types = resetInstalled.get(root)
+  if (!types) {
+    types = new Set()
+    resetInstalled.set(root, types)
+  }
+  if (types.has(type)) return
+  types.add(type)
+  root.addEventListener(type, event => deliveryRecords.delete(event), true)
+}
+
+/** `resetDeliveryAt` for the shadow root `el` lives in, if any (a non-composed event stops there). */
+function resetDeliveryAtRootOf(el: Element, type: string): void {
+  const root = el.getRootNode()
+  if (typeof ShadowRoot !== 'undefined' && root instanceof ShadowRoot) resetDeliveryAt(root, type)
+}
 
 /**
  * Whether `node` is, or sits inside, an element portaled out of a row of
