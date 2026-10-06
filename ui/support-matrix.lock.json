@@ -2542,12 +2542,6 @@
               ]
             },
             {
-              "fixture": "data-url-attr-dynamic-value",
-              "limitations": [
-                "data-url-attr-value-url-escaped"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4272,12 +4266,6 @@
               ]
             },
             {
-              "fixture": "data-url-attr-dynamic-value",
-              "limitations": [
-                "data-url-attr-value-url-escaped"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -5915,12 +5903,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "data-url-attr-dynamic-value",
-              "limitations": [
-                "data-url-attr-value-url-escaped"
               ]
             },
             {
@@ -12506,12 +12488,6 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "data-url-attr-dynamic-value",
-              "limitations": [
-                "data-url-attr-value-url-escaped"
               ]
             },
             {

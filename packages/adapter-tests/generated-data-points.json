@@ -1298,6 +1298,50 @@
       }
     }
   ],
+  "data-url-attr-value-shapes": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "path": "/p/q"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "path": "/p/q"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "path": "/p/q"
+      }
+    },
+    {
+      "name": "gen:path:empty",
+      "props": {
+        "label": "a \"b\" & c",
+        "path": ""
+      }
+    },
+    {
+      "name": "gen:path:markup",
+      "props": {
+        "label": "a \"b\" & c",
+        "path": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:path:multibyte",
+      "props": {
+        "label": "a \"b\" & c",
+        "path": "日本語"
+      }
+    }
+  ],
   "date-catalogued": [
     {
       "name": "gen:createdAt:epoch",
