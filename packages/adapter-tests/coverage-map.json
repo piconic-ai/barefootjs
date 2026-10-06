@@ -5849,6 +5849,19 @@
         "condition"
       ]
     },
+    "nullish-coalesce-empty-array": {
+      "kinds": [
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "nullish-coalescing-condition-operand": {
       "kinds": [
         "array-literal",
@@ -6229,6 +6242,23 @@
         "text"
       ]
     },
+    "optional-chain-length-composed-receiver": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-length-condition": {
       "kinds": [
         "binary",
@@ -6246,6 +6276,38 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "optional-chain-length-presence-matrix": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "optional-chain-length-string-receiver": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
         "text"
       ]
     },

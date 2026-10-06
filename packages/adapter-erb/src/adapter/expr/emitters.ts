@@ -108,6 +108,17 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
   return null
 }
 
+/**
+ * `x.length` through `bf.length` (#2255, UTF-16 code units). An
+ * optional-chained `x?.length` yields `nil` — JS's `undefined` — for an
+ * absent receiver instead of `bf.length(nil)`'s `0`, so a bare read renders
+ * empty and a `??` fallback takes over (#3332).
+ */
+function optionalLength(receiver: string, optional: boolean): string {
+  const read = `bf.length(${receiver})`
+  return optional ? `((${receiver}).nil? ? nil : ${read})` : read
+}
+
 export class ErbFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -189,7 +200,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // Ruby's `String#length` counts Unicode codepoints, not JS's UTF-16
     // code units (#2255) — array `.length` is unaffected either way, so
     // this stays one call site for both receiver shapes.
-    if (property === 'length') return `bf.length(${emit(object)})`
+    if (property === 'length') return optionalLength(emit(object), optional)
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
     // Ruby's own `nil[:key]` raises `NoMethodError` (unlike Hash#[] on a
     // present Hash) — `&.` is Ruby's native safe-navigation operator, and
@@ -447,7 +458,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // Routed through `bf.length`, not native `.length` — see
     // `ErbFilterEmitter.member()`'s comment above (#2255, UTF-16 code
     // units vs. Ruby's codepoint-counting `String#length`).
-    if (property === 'length') return `bf.length(${obj})`
+    if (property === 'length') return optionalLength(obj, optional)
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
     // see `ErbFilterEmitter.member()`'s comment above for why `&.[](...)`
     // (not a dotted `&.name`) is the right safe-nav form for a Hash-keyed

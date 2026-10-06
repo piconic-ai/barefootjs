@@ -6878,7 +6878,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // shape to match. The specialized array-only `.length` shapes above
     // (filter-result count, memo-backed loop slice count) stay on `len`,
     // since arrays never hit the UTF-16 divergence.
-    if (property === 'length') return `bf_length ${wrapIfMultiToken(obj)}`
+    if (property === 'length') {
+      const read = `bf_length ${wrapIfMultiToken(obj)}`
+      // `x?.length` (#3332) is `undefined` for an absent receiver, not
+      // `bf_length nil`'s 0: a bare read renders empty (html/template prints
+      // a nil value as nothing) and a `??` fallback takes over. `bf_eq`
+      // treats a typed nil (an absent slice) as nil.
+      return optional ? `bf_ternary (bf_eq ${wrapIfMultiToken(obj)} nil) nil (${read})` : read
+    }
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
     // a plain `.Field` dot-chain panics evaluating a field on a nil
     // interface/pointer (`nil pointer evaluating interface {}.Name`), so

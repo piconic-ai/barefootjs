@@ -41,11 +41,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // `{props.items?.length}` over an absent array: the `.length` lowering
-  // treats the missing array as empty and renders `0`, where JS reads
-  // `undefined` and renders nothing.
-  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
-
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through
   // `BarefootJS::register_portal_element` / `bf.portals()` (an

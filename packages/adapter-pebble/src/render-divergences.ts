@@ -27,10 +27,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
-  // `{props.items?.length}` over an absent array: the `.length` lowering
-  // treats the missing array as empty and renders `0`, where JS reads
-  // `undefined` and renders nothing.
-  'optional-chain-length-bare-text': { limitation: 'optional-chain-length-absent-renders-zero' },
   // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
   // operand at render, where JS coerces `null` to `0` (#3322).
   'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },

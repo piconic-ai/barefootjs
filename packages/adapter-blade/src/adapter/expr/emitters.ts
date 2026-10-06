@@ -171,6 +171,18 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
  * BF101 surfacing as the Twig/Jinja ports (#2038) instead of silently
  * degrading to the callback's receiver.
  */
+/**
+ * `x.length` through `$bf->length`. An optional-chained `x?.length` yields
+ * `null` — JS's `undefined` — for an absent receiver instead of
+ * `$bf->length`'s `0`, so a bare read renders empty and a `??` fallback
+ * takes over (#3332). `(x ?? null) === null` tests the receiver the way the
+ * `??` lowering does, without an undefined-variable warning.
+ */
+function optionalLength(receiver: string, optional: boolean): string {
+  const read = `$bf->length(${receiver})`
+  return optional ? `((${receiver} ?? null) === null ? null : ${read})` : read
+}
+
 export class BladeFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -214,14 +226,12 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `$bf->length` (handles both array element
     // count and string char count, JS-compatibly).
-    if (property === 'length') {
-      return `$bf->length(${emit(object)})`
-    }
+    if (property === 'length') return optionalLength(emit(object), optional)
     // Attribute / hash-key access — `data_get` resolves array keys and
     // object properties transparently, null-safe. See the file header,
     // divergence 2.
@@ -421,7 +431,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
     if (object.kind === 'identifier' && object.name === 'props') return bladeVar(this.ctx._rootPropReadName(property))
@@ -437,7 +447,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     }
     const obj = emit(object)
     // `.length` → `$bf->length` (array count or string char count, JS-compat).
-    if (property === 'length') return `$bf->length(${obj})`
+    if (property === 'length') return optionalLength(obj, optional)
     // See the file header, divergence 2: uniform `data_get`, null-safe over
     // stdClass/array/null.
     return bladeMemberAccess(obj, property)

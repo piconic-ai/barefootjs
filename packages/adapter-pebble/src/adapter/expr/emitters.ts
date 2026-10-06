@@ -188,6 +188,17 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
  * surfacing as the Jinja/Twig ports instead of silently degrading to the
  * callback's receiver.
  */
+/**
+ * `x.length` through `bf.length`. An optional-chained `x?.length` yields
+ * `null` — JS's `undefined` — for an absent receiver instead of
+ * `bf.length`'s `0`, so a bare read renders empty and a `bf.coalesce`
+ * fallback takes over (#3332).
+ */
+function optionalLength(receiver: string, optional: boolean): string {
+  const read = `bf.length(${receiver})`
+  return optional ? `(${receiver} is null ? null : ${read})` : read
+}
+
 export class PebbleFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -230,16 +241,14 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
     // count and string char count, JS-compatibly) rather than any
     // Pebble-native length access, so a non-array/string operand still gets
     // JS-compatible coercion first.
-    if (property === 'length') {
-      return `bf.length(${emit(object)})`
-    }
+    if (property === 'length') return optionalLength(emit(object), optional)
     // Computed keys use the runtime getter; only plain property names
     // can be appended safely to Pebble's dot accessor.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
@@ -458,7 +467,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
     if (object.kind === 'identifier' && object.name === 'props') return pebbleIdent(this.ctx._rootPropReadName(property))
@@ -474,7 +483,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     }
     const obj = emit(object)
     // `.length` → `bf.length` (array count or string char count, JS-compat).
-    if (property === 'length') return `bf.length(${obj})`
+    if (property === 'length') return optionalLength(obj, optional)
     // Dot access — see the file header, divergence 6.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}.${property}`
