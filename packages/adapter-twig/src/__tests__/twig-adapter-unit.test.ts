@@ -64,6 +64,16 @@ export function C(props: { items?: number[] }) {
     expect(template).toContain(`bf.string((${guard} is null ? 0 : ${guard}))`)
     expect(template).not.toContain(`${guard} ??`)
   })
+
+  test('a composed receiver is tested with `is null`, never `??`', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { flag: boolean; a?: number[]; b: number[] }) {
+  return <p>{(props.flag ? props.a : props.b)?.length}</p>
+}
+`)
+    expect(template).toContain('((bf.truthy(flag) ? a : b) is null ? null : bf.length((bf.truthy(flag) ? a : b)))')
+    expect(template).not.toContain('b) ?? null')
+  })
 })
 
 describe('TwigAdapter - SSR context propagation (#1297)', () => {

@@ -6229,6 +6229,23 @@
         "text"
       ]
     },
+    "optional-chain-length-composed-receiver": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-length-condition": {
       "kinds": [
         "binary",

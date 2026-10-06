@@ -3742,6 +3742,79 @@
       }
     }
   ],
+  "optional-chain-length-composed-receiver": [
+    {
+      "name": "gen:flag:false",
+      "props": {
+        "flag": false,
+        "a": [
+          1,
+          2
+        ],
+        "b": [
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:a:absent",
+      "props": {
+        "flag": true,
+        "b": [
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "flag": true,
+        "a": [],
+        "b": [
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "flag": true,
+        "a": [
+          1,
+          2
+        ],
+        "b": []
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "flag": true,
+        "a": [
+          1,
+          2
+        ],
+        "b": [
+          3
+        ],
+        "c": []
+      }
+    },
+    {
+      "name": "gen:d:empty",
+      "props": {
+        "flag": true,
+        "a": [
+          1,
+          2
+        ],
+        "b": [
+          3
+        ],
+        "d": []
+      }
+    }
+  ],
   "optional-chain-length-condition": [
     {
       "name": "gen:items:empty",

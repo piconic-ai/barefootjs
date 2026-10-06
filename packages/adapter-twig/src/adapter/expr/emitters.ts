@@ -154,13 +154,21 @@ function flattenPropsMember(object: ParsedExpr, property: string): string | null
  * `x.length` through `bf.length`. An optional-chained `x?.length` yields
  * `null` — JS's `undefined` — for an absent receiver instead of
  * `bf.length`'s `0`, so a bare read renders empty and a `??` fallback takes
- * over (#3332). `(x ?? null) is null` tests the receiver the way the `??`
- * lowering does, covering both an unset variable and a bound `null`.
+ * over (#3332). A variable path is tested with `(x ?? null) is null`, the
+ * way the `??` lowering does, so an unset variable is safe even under
+ * `strict_variables`. Any other receiver (`(c ? a : b)`, `(a ?? b)`) is
+ * tested with `is null` directly: Twig's `??` wraps its left side in a
+ * `defined` test, which rejects such an expression at compile time.
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `bf.length(${receiver})`
-  return optional ? `((${receiver} ?? null) is null ? null : ${read})` : read
+  if (!optional) return read
+  const test = TWIG_VARIABLE_PATH.test(receiver) ? `(${receiver} ?? null)` : receiver
+  return `(${test} is null ? null : ${read})`
 }
+
+/** A bare Twig variable path (`items`, `user.tags`, `rows[0]`), which `??` accepts. */
+const TWIG_VARIABLE_PATH = /^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]]*\])*$/
 
 /**
  * JS `l ?? r`. Twig's native `??` wraps its left operand in a `defined`
