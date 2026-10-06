@@ -868,18 +868,40 @@ describe('qsa', () => {
     expect(qsa(scope, '[bf="s1"]', ['s2'])).toBeNull()
   })
 
-  test('#3324: a receiver nested inside the receiver still resolves', () => {
+  test('#3324: receivers nested in the parent\'s own template resolve', () => {
+    // `<Wrapper><Inner><strong/></Inner></Wrapper>` in Parent's template:
+    // both receivers are Parent's (hosted by it, at slots s2 and s5).
     document.body.innerHTML = `
       <div bf-s="Parent_abc">
         <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
-          <div bf-s="Inner_q" bf-h="Parent_abc_s2" bf-m="s0">
+          <aside bf-s="Parent_abc_s5" bf-h="Parent_abc" bf-m="s5">
             <strong bf="^s1">value</strong>
-          </div>
+          </aside>
         </section>
       </div>
     `
     const scope = document.querySelector('[bf-s="Parent_abc"]')!
-    expect(qsa(scope, '[bf="^s1"]', ['s2'])?.textContent).toBe('value')
+    expect(qsa(scope, '[bf="^s1"]', ['s2', 's5'])?.textContent).toBe('value')
+  })
+
+  test("#3324: never resolves a slot inside a receiver's own internal component", () => {
+    // The receiver (slot s2) renders a component of its own (hosted by the
+    // receiver) holding an independently authored `^s1`, before the
+    // parent's forwarded `^s1`.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+          <aside bf-s="Parent_abc_s2_s1" bf-h="Parent_abc_s2" bf-m="s1">
+            <em bf="^s1">receiver's</em>
+          </aside>
+          <strong bf="^s1">parent's</strong>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])?.textContent).toBe("parent's")
+    document.querySelector('strong')!.remove()
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])).toBeNull()
   })
 
   test('#3324: a parent-owned slot outside nested scopes wins over a nested one', () => {

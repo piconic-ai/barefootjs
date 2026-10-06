@@ -153,3 +153,105 @@ describe('#3324 — forwarded parent-owned slot ownership with fragment-rooted r
     exerciseUpdatesAndRecreation()
   })
 })
+
+// Pullfrog's third shape: the nominated receiver renders a component of its
+// own holding an independently authored `^s1` BEFORE the caller's
+// `children`; and a receiver nested in the parent's own template.
+const RECEIVER_INTERNAL_SOURCE = `'use client'
+import { createSignal } from '@barefootjs/client'
+
+function Inner({ children }: { children?: unknown }) {
+  return <aside>{children}</aside>
+}
+
+function Receiver({ children }: { children?: unknown }) {
+  const [value] = createSignal('other')
+  return (
+    <section>
+      <i data-a={value()} />
+      <Inner><em className="foreign" data-label={value()}>x</em></Inner>
+      {children}
+    </section>
+  )
+}
+
+export function InternalParent() {
+  const [show, setShow] = createSignal(true)
+  const [label, setLabel] = createSignal('alpha')
+  return (
+    <div>
+      {show() && <Receiver><strong className="own" data-label={label()}>x</strong></Receiver>}
+      {show() && <Inner><Inner><mark className="nested" data-label={label()}>x</mark></Inner></Inner>}
+      <button className="update" onClick={() => setLabel(label() === 'alpha' ? 'beta' : 'alpha')}>update</button>
+      <button className="toggle" onClick={() => setShow(!show())}>toggle</button>
+    </div>
+  )
+}`
+
+let internalLoaded = false
+async function loadInternalClientJs(): Promise<void> {
+  if (internalLoaded) return
+  const result = compileJSX(RECEIVER_INTERNAL_SOURCE, 'InternalParent.tsx', { adapter: new TestAdapter() })
+  const errors = result.errors.filter(e => e.severity === 'error')
+  if (errors.length > 0) throw new Error(errors.map(e => `${e.code}: ${e.message}`).join('\n'))
+  const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    .replace(/from\s+['"]@barefootjs\/client\/runtime['"]/g, `from '${runtimePath}'`)
+    .replace(/^import '\/\* @bf-child:\w+ \*\/'\n/gm, '')
+  const file = join(mkdtempSync(join(tmpdir(), 'bf-3324-internal-')), 'InternalParent.mjs')
+  writeFileSync(file, clientJs)
+  await import(file)
+  internalLoaded = true
+}
+
+function expectInternalLabels(own: string) {
+  expect(labelOf('.own')).toBe(own)
+  expect(labelOf('.nested')).toBe(own)
+  expect(labelOf('.foreign')).toBe('other')
+}
+
+function exerciseInternal() {
+  expectInternalLabels('alpha')
+  click('.update')
+  expectInternalLabels('beta')
+  click('.toggle')
+  expect(document.querySelector('.own')).toBeNull()
+  click('.toggle')
+  expectInternalLabels('beta')
+  click('.update')
+  expectInternalLabels('alpha')
+}
+
+describe("#3324 — a receiver's own internal component holding a same-numbered slot", () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('the receiver-internal and the caller-forwarded elements share ^s1', () => {
+    const result = compileJSX(RECEIVER_INTERNAL_SOURCE, 'InternalParent.tsx', { adapter: new TestAdapter() })
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    expect(clientJs).toMatch(/class="foreign"[^`]*?bf="\^s1"/)
+    expect(clientJs).toMatch(/class="own"[^`]*?bf="\^s1"/)
+  })
+
+  test('SSR + hydration', async () => {
+    await loadInternalClientJs()
+    document.body.innerHTML = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: RECEIVER_INTERNAL_SOURCE,
+      props: { __instanceId: 'InternalParent_test' },
+    })
+    const { rehydrateAll, flushHydration } = await import(runtimePath)
+    rehydrateAll()
+    flushHydration()
+    exerciseInternal()
+  })
+
+  test('CSR render()', async () => {
+    await loadInternalClientJs()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const { render } = await import(runtimePath)
+    render(container, 'InternalParent')
+    exerciseInternal()
+  })
+})

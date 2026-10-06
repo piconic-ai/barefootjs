@@ -528,31 +528,42 @@ export function qsa(el: Element | null, selector: string, receiverSlotIds?: read
   // A parent-owned slot (`[bf="^sN"]`) is content `el` itself authored and
   // forwarded as a child component's `children`, so it legitimately renders
   // inside that child's scope (#3324). The compiler passes the slot ids of
-  // the components it is forwarded into (`receiverSlotIds`); a candidate is
-  // accepted only when the `el`-hosted scope enclosing it (the candidate
-  // itself included — a fragment-rooted receiver stamps its scope onto the
-  // forwarded element) is one of those receivers. Another component nested
-  // in `el` can forward its own, same-numbered `^sN`; its `el`-hosted scope
-  // is that component, never one of `el`'s receivers.
+  // the components `el`'s template forwards it into (`receiverSlotIds`).
+  // A candidate is accepted only when EVERY scope between it and `el` is
+  // one of those receivers: hosted by `el` and at a nominated slot. A scope
+  // with any other host — a receiver's own internal component, another
+  // component nested in `el` — may hold its own, independently authored
+  // `^sN`, and the DOM cannot tell that from forwarded content, so such a
+  // candidate is never taken.
   if (receiverSlotIds && receiverSlotIds.length > 0 && PARENT_OWNED_SLOT_SELECTOR.test(selector)) {
     const scopeId = el.getAttribute(BF_SCOPE)
     if (!scopeId) return null
     for (const candidate of el.querySelectorAll(selector)) {
-      const receiver = hostedScopeOf(candidate, el, scopeId)
-      if (receiver && receiverSlotIds.includes(receiver.getAttribute(BF_AT) ?? '')) return candidate
+      if (isForwardedThroughReceivers(candidate, el, scopeId, receiverSlotIds)) return candidate
     }
   }
   return null
 }
 
-/** The nearest scope element at or above `element`, below `root`, whose
- *  host (`bf-h`) is `root`'s scope id — the child of `root` the element
- *  renders in. */
-function hostedScopeOf(element: Element, root: Element, rootScopeId: string): Element | null {
+/** True when every scope from `element` (itself included — a
+ *  fragment-rooted receiver stamps its scope onto the forwarded element)
+ *  up to `root` is a receiver `root` hosts at one of `receiverSlotIds`. A
+ *  comment-delimited (fragment-rooted) scope carries no host, so it is
+ *  never one. */
+function isForwardedThroughReceivers(
+  element: Element,
+  root: Element,
+  rootScopeId: string,
+  receiverSlotIds: readonly string[],
+): boolean {
   for (let cur: Element | null = element; cur && cur !== root; cur = cur.parentElement) {
-    if (cur.getAttribute(BF_HOST) === rootScopeId) return cur
+    if (cur.hasAttribute(BF_SCOPE)) {
+      if (cur.getAttribute(BF_HOST) !== rootScopeId) return false
+      if (!receiverSlotIds.includes(cur.getAttribute(BF_AT) ?? '')) return false
+    }
+    if (isTopLevelCommentScopeNode(cur)) return false
   }
-  return null
+  return true
 }
 
 /** Selector form `[bf="^sN"]` — a compiler slot lookup for a parent-owned
