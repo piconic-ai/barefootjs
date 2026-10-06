@@ -131,6 +131,30 @@ describe('relayRowPortalEvents / isRowPortalOf', () => {
   })
 })
 
+describe('relayRowPortalEvents with nested adopted elements', () => {
+  test('one event reaches the listener once, bubbling or capturing', () => {
+    const ul = document.createElement('ul')
+    const outer = document.createElement('div')
+    const button = document.createElement('button')
+    outer.appendChild(button)
+    document.body.append(ul, outer)
+    const row = document.createElement('li')
+    let bubbled = 0
+    let captured = 0
+    createRoot(() => {
+      adoptRowPortal(row, outer, ul)
+      adoptRowPortal(row, button, ul)
+    })
+    relayRowPortalEvents(ul, 'click', () => bubbled++)
+    relayRowPortalEvents(ul, 'click', () => captured++, true)
+
+    button.click()
+    expect([bubbled, captured]).toEqual([1, 1])
+    button.click()
+    expect([bubbled, captured]).toEqual([2, 2])
+  })
+})
+
 describe('claimRowPortals (hydration)', () => {
   test('pairs each row with the outlet element carrying its key', () => {
     document.body.innerHTML =
@@ -149,7 +173,16 @@ describe('claimRowPortals (hydration)', () => {
     expect(relocatedRowElements(rowB).map(el => el.textContent)).toEqual(['B'])
   })
 
-  test('adopts nothing for a row without a key', () => {
+  test('pairs a row whose key is the empty string', () => {
+    document.body.innerHTML =
+      '<ul id="list"><li data-key=""></li></ul><button bf="s3" bf-po="List_1" data-key="">B</button>'
+    const ul = document.getElementById('list')!
+    const row = ul.querySelector('li')!
+    createRoot(() => claimRowPortals(row, 'List_1', ['s3'], ul))
+    expect(relocatedRowElements(row).map(el => el.textContent)).toEqual(['B'])
+  })
+
+  test('adopts nothing for a row without a key attribute', () => {
     document.body.innerHTML =
       '<ul id="list"><li></li></ul><button bf="s3" bf-po="List_1" data-key="">B</button>'
     const ul = document.getElementById('list')!

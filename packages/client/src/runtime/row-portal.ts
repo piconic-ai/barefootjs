@@ -32,7 +32,14 @@ import { BF_PORTAL_OWNER, BF_SLOT } from '@barefootjs/shared'
 
 interface Delegate {
   type: string
-  listener: EventListener
+  /**
+   * The listener as attached to adopted elements: runs the container's
+   * listener at most once per event. Adopted elements can nest (an adopted
+   * `<div>` around an adopted `<button>`), and one click bubbling through
+   * both must still reach the container's listener once, as it would on
+   * the container itself.
+   */
+  attached: EventListener
   capture: boolean
 }
 
@@ -73,12 +80,11 @@ export function adoptRowPortal(rowEl: Element, el: Element, container: Element):
   }
   adopted.add(el)
 
-  const attached = [...(delegatesByContainer.get(container) ?? [])]
-  for (const d of attached) el.addEventListener(d.type, d.listener, d.capture)
+  for (const d of delegatesByContainer.get(container) ?? []) el.addEventListener(d.type, d.attached, d.capture)
 
   onCleanup(() => {
     for (const d of delegatesByContainer.get(container) ?? []) {
-      el.removeEventListener(d.type, d.listener, d.capture)
+      el.removeEventListener(d.type, d.attached, d.capture)
     }
     adoptedByContainer.get(container)?.delete(el)
     const list = relocatedByRow.get(rowEl)
@@ -106,8 +112,10 @@ export function claimRowPortals(
   container: Element,
   keyAttr = 'data-key',
 ): void {
+  // `''` is a valid row key (`mapArray` accepts it); only an absent
+  // attribute means the row has no key to pair by.
   const key = rowEl.getAttribute(keyAttr)
-  if (!key) return
+  if (key === null) return
   for (const slotId of slotIds) {
     const selector =
       `[${BF_SLOT}="${cssString(slotId)}"][${BF_PORTAL_OWNER}="${cssString(scopeId)}"][${keyAttr}="${cssString(key)}"]`
@@ -121,8 +129,9 @@ export function claimRowPortals(
 /**
  * Relay the delegated listener registered on `container` to the elements
  * adopted into it: attaches it to every element adopted so far and to every
- * element adopted later. The caller still registers the listener on
- * `container` itself for the rows that stay inline.
+ * element adopted later, once per event even where adopted elements nest.
+ * The caller still registers the listener on `container` itself for the
+ * rows that stay inline.
  */
 export function relayRowPortalEvents(
   container: Element,
@@ -130,12 +139,18 @@ export function relayRowPortalEvents(
   listener: EventListener,
   capture = false,
 ): void {
-  const delegate: Delegate = { type, listener, capture }
+  const delivered = new WeakSet<Event>()
+  const attached: EventListener = event => {
+    if (delivered.has(event)) return
+    delivered.add(event)
+    listener(event)
+  }
+  const delegate: Delegate = { type, attached, capture }
   const list = delegatesByContainer.get(container)
   if (list) list.push(delegate)
   else delegatesByContainer.set(container, [delegate])
   for (const el of adoptedByContainer.get(container) ?? []) {
-    el.addEventListener(type, listener, capture)
+    el.addEventListener(type, attached, capture)
   }
 }
 
