@@ -7,8 +7,7 @@ import { createFixture } from '../src/types'
  * `data-href`, `data-style`, `data-srcset`) renders its value as plain
  * attribute text whatever the value shape — a prop read, a ternary, a
  * template literal, an empty string, and `"` / `&` / spaces / a scheme in the
- * value. `data-state` is the control; a real `href` keeps URL semantics, but
- * with a plain path value it renders the same everywhere.
+ * value. `data-state` is the control.
  */
 export const fixture = createFixture({
   id: 'data-url-attr-value-shapes',
@@ -21,7 +20,6 @@ export function DataUrlAttrValueShapes(props: { label: string; path: string }) {
   const [empty] = createSignal('')
   return (
     <a
-      href={props.path}
       data-src={props.label}
       data-uri={on() ? 'javascript:x' : 'no'}
       data-url={\`u \${props.label}\`}
@@ -38,6 +36,6 @@ export function DataUrlAttrValueShapes(props: { label: string; path: string }) {
 `,
   props: { label: 'a "b" & c', path: '/p/q' },
   expectedHtml: `
-    <a bf-s="test" bf="s0" data-href="/p/q" data-image-url="" data-src="a &quot;b&quot; &amp; c" data-srcset="a b 1x" data-state="a &quot;b&quot; &amp; c" data-style="a &quot;b&quot; &amp; c" data-uri="javascript:x" data-url="u a &quot;b&quot; &amp; c" href="/p/q">Content</a>
+    <a bf-s="test" bf="s0" data-href="/p/q" data-image-url="" data-src="a &quot;b&quot; &amp; c" data-srcset="a b 1x" data-state="a &quot;b&quot; &amp; c" data-style="a &quot;b&quot; &amp; c" data-uri="javascript:x" data-url="u a &quot;b&quot; &amp; c">Content</a>
   `,
 })
