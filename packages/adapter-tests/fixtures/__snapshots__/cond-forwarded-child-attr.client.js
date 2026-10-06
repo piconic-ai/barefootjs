@@ -70,7 +70,7 @@ export function initCondForwardedChildAttr(__scope, _p = {}) {
       const [__c1] = $c(__branchScope, 's3')
       if (__c1) initChild('Wrapper__4d0b2e9a', __c1, {})
       const __disposers = []
-      { const __ra_s2 = qsa(__branchScope, '[bf="^s2"]')
+      { const __ra_s2 = qsa(__branchScope, '[bf="^s2"]', ["s3"])
       const __l = []
       if (__ra_s2) {
         __disposers.push(createDisposableEffect(() => {

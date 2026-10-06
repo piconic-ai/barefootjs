@@ -8,7 +8,7 @@
 
 import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange, type CommentScopeInfo } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
-import { BF_SCOPE, BF_SLOT, BF_HOST, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SLOT, BF_HOST, BF_AT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
 /** CSS attribute-value escape with a fallback for environments lacking CSS.escape. */
 export const cssEscape: (s: string) => string =
@@ -488,7 +488,7 @@ function findInPortals(scope: Element, selector: string, ignoreScope?: boolean):
  * Used by compiler-generated code for event binding and attribute updates
  * on loop items where the target may be the loop item's root element itself.
  */
-export function qsa(el: Element | null, selector: string): Element | null {
+export function qsa(el: Element | null, selector: string, receiverSlotIds?: readonly string[]): Element | null {
   if (!el) return null
 
   // Comma-separated selectors are tried in priority order (left-to-right)
@@ -500,7 +500,7 @@ export function qsa(el: Element | null, selector: string): Element | null {
     for (const clause of splitTopLevelCommas(selector)) {
       const c = clause.trim()
       if (!c) continue
-      const hit = qsa(el, c)
+      const hit = qsa(el, c, receiverSlotIds)
       if (hit) return hit
     }
     return null
@@ -527,17 +527,30 @@ export function qsa(el: Element | null, selector: string): Element | null {
   }
   // A parent-owned slot (`[bf="^sN"]`) is content `el` itself authored and
   // forwarded as a child component's `children`, so it legitimately renders
-  // inside that child's scope (#3324). Checked only after the own-scope
-  // candidates, and only for a candidate whose nearest scope `el` hosts:
-  // another component nested in `el` can forward its own, same-numbered
-  // `^sN` into a child of its own, and that one is not `el`'s.
-  if (PARENT_OWNED_SLOT_SELECTOR.test(selector)) {
+  // inside that child's scope (#3324). The compiler passes the slot ids of
+  // the components it is forwarded into (`receiverSlotIds`); a candidate is
+  // accepted only when the `el`-hosted scope enclosing it (the candidate
+  // itself included — a fragment-rooted receiver stamps its scope onto the
+  // forwarded element) is one of those receivers. Another component nested
+  // in `el` can forward its own, same-numbered `^sN`; its `el`-hosted scope
+  // is that component, never one of `el`'s receivers.
+  if (receiverSlotIds && receiverSlotIds.length > 0 && PARENT_OWNED_SLOT_SELECTOR.test(selector)) {
     const scopeId = el.getAttribute(BF_SCOPE)
     if (!scopeId) return null
     for (const candidate of el.querySelectorAll(selector)) {
-      const owner = candidate.parentElement?.closest(`[${BF_SCOPE}]`)
-      if (owner && owner !== el && owner.getAttribute(BF_HOST) === scopeId) return candidate
+      const receiver = hostedScopeOf(candidate, el, scopeId)
+      if (receiver && receiverSlotIds.includes(receiver.getAttribute(BF_AT) ?? '')) return candidate
     }
+  }
+  return null
+}
+
+/** The nearest scope element at or above `element`, below `root`, whose
+ *  host (`bf-h`) is `root`'s scope id — the child of `root` the element
+ *  renders in. */
+function hostedScopeOf(element: Element, root: Element, rootScopeId: string): Element | null {
+  for (let cur: Element | null = element; cur && cur !== root; cur = cur.parentElement) {
+    if (cur.getAttribute(BF_HOST) === rootScopeId) return cur
   }
   return null
 }

@@ -228,6 +228,12 @@ export interface ConditionalBranchTextEffect {
  */
 export interface ConditionalBranchReactiveAttr extends AttrMeta {
   slotId: string
+  /**
+   * For a parent-owned (`^sN`) slot: the slot ids of the components whose
+   * `children` enclose it, outermost first. The runtime lookup resolves the
+   * element only inside one of these receivers (#3324).
+   */
+  receiverSlotIds?: readonly string[]
   attrName: string
   expression: string
 }
