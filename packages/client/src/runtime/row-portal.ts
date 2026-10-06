@@ -209,13 +209,17 @@ function resetDeliveryAt(root: EventTarget, type: string, isStart: (event: Event
  * starts the path only of a non-composed event targeted inside it (that
  * event never reaches `window`); any other event through it, such as a
  * click on a slotted light-DOM element, started at `window` and must keep
- * its record.
+ * its record. Decided from the dispatch's own path (`composedPath()`, built
+ * before any listener runs), not from the target's current place in the
+ * DOM, which an earlier listener may have changed.
  */
 function resetDeliveryAtRootOf(el: Element, type: string): void {
   const root = el.getRootNode()
   if (typeof ShadowRoot === 'undefined' || !(root instanceof ShadowRoot)) return
-  resetDeliveryAt(root, type, event =>
-    !event.composed && event.target instanceof Node && event.target.getRootNode() === root)
+  resetDeliveryAt(root, type, event => {
+    const path = event.composedPath()
+    return path[path.length - 1] === root
+  })
 }
 
 /**
