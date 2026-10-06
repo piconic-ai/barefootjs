@@ -6024,6 +6024,25 @@
         "text"
       ]
     },
+    "number-arithmetic-attr-formatting": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "number-arithmetic-text-formatting": {
       "kinds": [
         "binary",
@@ -6058,7 +6077,6 @@
         "literal:number"
       ],
       "contexts": [
-        "attribute",
         "text"
       ]
     },

@@ -4207,6 +4207,14 @@
           ]
         }
       },
+      "number-arithmetic-attr-formatting": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "number-arithmetic-attr-exponent-form"
+          ]
+        }
+      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -5663,6 +5671,10 @@
         "description": "A ternary attribute with a nullable branch renders a taken false branch as \"false\"",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-ternary-false-branch-attr.ts"
       },
+      "number-arithmetic-attr-formatting": {
+        "description": "Arithmetic results in attribute values use JavaScript number spelling",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-formatting.ts"
+      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6201,6 +6213,19 @@
         "jinja",
         "minijinja",
         "pebble"
+      ]
+    },
+    "number-arithmetic-attr-exponent-form": {
+      "title": "An arithmetic result in an attribute value prints in exponent form",
+      "kind": "silent",
+      "given": "an attribute whose value is an arithmetic expression with a non-integral result of ten or more digits (`data-sum={props.value + 0.5}` with `value` 1234567890)",
+      "expected": "the attribute carries the JavaScript number spelling (`1234567890.5`), as in text position",
+      "actual": "renders the value in exponent form (`1.2345678905e+09`)",
+      "fixtures": [
+        "number-arithmetic-attr-formatting"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "off-subset-callback-body": {

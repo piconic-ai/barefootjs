@@ -31,7 +31,7 @@ export function NumberDivisionMatrix(props: { neg: number; even: number; zero: n
 `,
   props: { neg: -7, even: 8, zero: 0 },
   expectedHtml: `
-    <ul bf-s="test" bf="s12">
+    <ul bf-s="test">
       <li bf="s1"><!--bf:s0-->-1.75<!--/--></li>
       <li bf="s3"><!--bf:s2-->2<!--/--></li>
       <li bf="s5"><!--bf:s4-->0<!--/--></li>

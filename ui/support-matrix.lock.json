@@ -1809,6 +1809,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2641,6 +2647,12 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -4410,6 +4422,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5978,6 +5996,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7363,6 +7387,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
+            },
+            {
               "fixture": "optional-chain-length-bare-text",
               "limitations": [
                 "optional-chain-length-absent-renders-zero"
@@ -8587,6 +8617,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -10526,6 +10562,12 @@
               "limitations": [
                 "fractional-number-compare-int-literal"
               ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
             }
           ]
         },
@@ -10616,6 +10658,12 @@
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -10729,7 +10777,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -11824,6 +11881,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
