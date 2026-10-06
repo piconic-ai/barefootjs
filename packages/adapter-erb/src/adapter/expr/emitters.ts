@@ -230,9 +230,12 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // never coerces between mismatched types — `"b" == "a"` and
     // `"b" == 0` are both correctly `false` with no operator selection
     // needed. JS `===`/`!==` map straight onto Ruby `==`/`!=`.
+    // Ruby `/` on two Integers is integer division; JS `/` keeps the
+    // fractional quotient (#3328).
+    if (op === '/') return `bf.div(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*', '/': '/',
+      '+': '+', '-': '-', '*': '*',
     }
     return `(${l} ${opMap[op] ?? op} ${r})`
   }
@@ -552,6 +555,9 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
+    // Ruby `/` on two Integers is integer division; JS `/` keeps the
+    // fractional quotient (#3328).
+    if (op === '/') return `bf.div(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

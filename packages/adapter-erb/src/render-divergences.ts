@@ -47,9 +47,8 @@ export const renderDivergences: RenderDivergences = {
   // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
   // operand at render, where JS coerces `null` to `0` (#3322).
   'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
-  // Ruby `/` on two Integers is integer division: `1234567890 / 4` renders
-  // `308641972`, where JS division keeps `.5`.
-  'number-division-text': { limitation: 'integer-division-truncated' },
+  // `number-division-text` used to sit here: Ruby `/` on two Integers is
+  // integer division. Division now goes through `bf.div` (JS semantics).
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals`
