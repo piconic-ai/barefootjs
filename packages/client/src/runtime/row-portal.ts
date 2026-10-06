@@ -34,7 +34,7 @@ interface Delegate {
   type: string
   /**
    * The listener as attached to adopted elements: runs the container's
-   * listener at most once per event. Adopted elements can nest (an adopted
+   * listener once per dispatch. Adopted elements can nest (an adopted
    * `<div>` around an adopted `<button>`), and one click bubbling through
    * both must still reach the container's listener once, as it would on
    * the container itself.
@@ -129,7 +129,7 @@ export function claimRowPortals(
 /**
  * Relay the delegated listener registered on `container` to the elements
  * adopted into it: attaches it to every element adopted so far and to every
- * element adopted later, once per event even where adopted elements nest.
+ * element adopted later, once per dispatch even where adopted elements nest.
  * The caller still registers the listener on `container` itself for the
  * rows that stay inline.
  */
@@ -139,11 +139,14 @@ export function relayRowPortalEvents(
   listener: EventListener,
   capture = false,
 ): void {
-  const delivered = new WeakSet<Event>()
+  // Run only at one adopted element per dispatch: the innermost adopted
+  // element on the event's path for a bubbling listener, the outermost for
+  // a capture listener (the first each phase reaches). Decided from the
+  // path alone, so a re-dispatched event object is delivered again.
   const attached: EventListener = event => {
-    if (delivered.has(event)) return
-    delivered.add(event)
-    listener(event)
+    const path = adoptedPathOf(event.target, container)
+    const deliverAt = capture ? path[path.length - 1] : path[0]
+    if (event.currentTarget === deliverAt) listener(event)
   }
   const delegate: Delegate = { type, attached, capture }
   const list = delegatesByContainer.get(container)
@@ -152,6 +155,18 @@ export function relayRowPortalEvents(
   for (const el of adoptedByContainer.get(container) ?? []) {
     el.addEventListener(type, attached, capture)
   }
+}
+
+/** The elements adopted into `container` on `target`'s ancestor chain, innermost first. */
+function adoptedPathOf(target: EventTarget | null, container: Element): Element[] {
+  const adopted = adoptedByContainer.get(container)
+  const path: Element[] = []
+  if (!adopted) return path
+  const start = target instanceof Element ? target : target instanceof Node ? target.parentElement : null
+  for (let el = start; el; el = el.parentElement) {
+    if (adopted.has(el)) path.push(el)
+  }
+  return path
 }
 
 /**

@@ -132,7 +132,7 @@ describe('relayRowPortalEvents / isRowPortalOf', () => {
 })
 
 describe('relayRowPortalEvents with nested adopted elements', () => {
-  test('one event reaches the listener once, bubbling or capturing', () => {
+  test('each dispatch reaches the listener once, bubbling or capturing', () => {
     const ul = document.createElement('ul')
     const outer = document.createElement('div')
     const button = document.createElement('button')
@@ -152,6 +152,14 @@ describe('relayRowPortalEvents with nested adopted elements', () => {
     expect([bubbled, captured]).toEqual([1, 1])
     button.click()
     expect([bubbled, captured]).toEqual([2, 2])
+
+    // A re-dispatched event object is delivered again, once per dispatch.
+    let native = 0
+    outer.addEventListener('click', () => native++)
+    const event = new MouseEvent('click', { bubbles: true })
+    button.dispatchEvent(event)
+    button.dispatchEvent(event)
+    expect([bubbled, captured, native]).toEqual([4, 4, 2])
   })
 })
 
