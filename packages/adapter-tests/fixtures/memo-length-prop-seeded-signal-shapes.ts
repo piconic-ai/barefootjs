@@ -6,8 +6,8 @@ import { createFixture } from '../src/types'
  * Covers a bare `.length`, arithmetic over it (a literal operand, and a
  * number-typed memo through the shared arithmetic runtime, then literal
  * arithmetic on that boxed sum, `* 2` and `/ 2` through `bf.Div`'s float
- * result; an exact quotient, since ERB's integer `/` is its own registry
- * entry, `integer-division-truncated`), and the
+ * result; an exact quotient — fractional quotients are
+ * `number-division-matrix`'s), and the
  * nullish-guarded `?.length ?? 0` form over an optional prop the caller
  * omits (renders `0`, the JS value of `undefined?.length ?? 0`).
  */

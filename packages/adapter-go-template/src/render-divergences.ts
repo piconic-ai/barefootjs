@@ -162,6 +162,10 @@ export const renderDivergences: RenderDivergences = {
   // (`{{range $index, …}}`) and a callback-body local (`{{$t := …}}`) were
   // out of reach. The call site now hands them over in the wrapper's
   // `BfRowVars` and the define rebinds them; both render like Hono.
+  // An arithmetic result in an ATTRIBUTE value is boxed as `any` by
+  // `bf_add`/`bf_div`/… and printed by html/template's `fmt.Sprint`, i.e.
+  // Go's `%v` exponent form; only text position goes through `bf_string`.
+  'number-arithmetic-attr-formatting': { limitation: 'number-arithmetic-attr-exponent-form' },
   // `data-url-attr-dynamic-value` used to sit here: `html/template` strips a
   // `data-` prefix before classifying an attribute, and escaped `data-src` /
   // `data-url` as URLs (`a%20b`, `#ZgotmplZ`). Such a name is now emitted

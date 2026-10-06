@@ -257,6 +257,15 @@ module BarefootJS
     # Operators
     # ---------------------------------------------------------------------
 
+    # JS `/`: both operands through `to_number` (JS `Number()`), then IEEE
+    # Float division, which already gives JS's division-by-zero results
+    # (`1 / 0` -> Infinity, `1 / -0` -> -Infinity, `0 / 0` -> NaN). Shared by
+    # callback-body evaluation (`binary`) and template-emitted division
+    # (`Context#div`), so both coerce and divide identically (#3328).
+    def divide(l, r)
+      to_number(l).to_f / to_number(r).to_f
+    end
+
     def binary(op, l, r)
       case op
       when '+'
@@ -267,19 +276,7 @@ module BarefootJS
         to_number(l) + to_number(r)
       when '-' then to_number(l) - to_number(r)
       when '*' then to_number(l) * to_number(r)
-      when '/'
-        ln = to_number(l).to_f
-        rn = to_number(r).to_f
-        if rn.zero?
-          # JS division by zero is finite-valued, not an error.
-          if ln.zero? || ln.nan?
-            Float::NAN
-          else
-            ln.positive? ? Float::INFINITY : -Float::INFINITY
-          end
-        else
-          ln / rn
-        end
+      when '/' then divide(l, r)
       when '%'
         rn = to_number(r).to_f
         rn.zero? ? Float::NAN : to_number(l).to_f.remainder(rn)

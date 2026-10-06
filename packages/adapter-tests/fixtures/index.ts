@@ -11,7 +11,9 @@ import { fixture as loopParamPropMemberCollisionShapes } from './loop-param-prop
 import { fixture as loopParamPropAliasNameCollision } from './loop-param-prop-alias-name-collision'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
+import { fixture as numberArithmeticAttrFormatting } from './number-arithmetic-attr-formatting'
 import { fixture as numberDivisionText } from './number-division-text'
+import { fixture as numberDivisionMatrix } from './number-division-matrix'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
 import { fixture as conditionalNestedSignal } from './conditional-nested-loop-signal-reactivity'
 import { fixture as counter } from './counter'
@@ -1502,7 +1504,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamPropAliasNameCollision,
   numberAdditionTextFormatting,
   numberArithmeticTextFormatting,
+  numberArithmeticAttrFormatting,
   numberDivisionText,
+  numberDivisionMatrix,
   conditionalNestedClient,
   conditionalNestedPrecomputed,
   conditionalNestedStatic,

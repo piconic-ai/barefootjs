@@ -1721,12 +1721,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1812,6 +1806,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -2647,6 +2647,12 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -4184,12 +4190,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4419,6 +4419,12 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -5836,12 +5842,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5993,6 +5993,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -7209,12 +7215,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-bare-text",
               "limitations": [
                 "optional-chain-length-absent-renders-zero"
@@ -7384,6 +7384,12 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -8611,6 +8617,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -10550,6 +10562,12 @@
               "limitations": [
                 "fractional-number-compare-int-literal"
               ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
+              ]
             }
           ]
         },
@@ -10640,6 +10658,12 @@
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -10752,17 +10776,17 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
+        "erb": {},
+        "go-template": {
           "gaps": [
             {
-              "fixture": "number-division-text",
+              "fixture": "number-arithmetic-attr-formatting",
               "limitations": [
-                "integer-division-truncated"
+                "number-arithmetic-attr-exponent-form"
               ]
             }
           ]
         },
-        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -11778,12 +11802,6 @@
               ]
             },
             {
-              "fixture": "number-division-text",
-              "limitations": [
-                "integer-division-truncated"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11863,6 +11881,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-formatting",
+              "limitations": [
+                "number-arithmetic-attr-exponent-form"
               ]
             },
             {

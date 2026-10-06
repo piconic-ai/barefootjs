@@ -521,6 +521,15 @@ module BarefootJS
       html_escape(string(value))
     end
 
+    # JS `/`: always a Number quotient. Ruby's `/` on two Integers is
+    # integer division (`1234567890 / 4` -> `308641972`, `-7 / 4` -> `-2`),
+    # so template-emitted division goes through the shared evaluator's JS
+    # division instead -- JS operand coercion, fractional quotient kept,
+    # division by zero yielding Infinity / -Infinity / NaN (#3328).
+    def div(left, right)
+      Evaluator.divide(left, right)
+    end
+
     # JS truthiness (falsy: false, nil, 0, NaN, ""). Delegates to the
     # shared evaluator so template-emitted conditionals
     # (`if bf.truthy?(x)`) and callback-body evaluation agree byte-for-byte.

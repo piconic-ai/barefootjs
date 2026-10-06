@@ -6024,6 +6024,25 @@
         "text"
       ]
     },
+    "number-arithmetic-attr-formatting": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "number-arithmetic-text-formatting": {
       "kinds": [
         "binary",
@@ -6040,6 +6059,22 @@
         "binary:-",
         "literal:number",
         "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-division-matrix": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number"
       ],
       "contexts": [
         "text"

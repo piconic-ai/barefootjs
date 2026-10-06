@@ -4207,11 +4207,11 @@
           ]
         }
       },
-      "number-division-text": {
-        "erb": {
+      "number-arithmetic-attr-formatting": {
+        "go-template": {
           "kind": "render",
           "limitations": [
-            "integer-division-truncated"
+            "number-arithmetic-attr-exponent-form"
           ]
         }
       },
@@ -5671,9 +5671,9 @@
         "description": "A ternary attribute with a nullable branch renders a taken false branch as \"false\"",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-ternary-false-branch-attr.ts"
       },
-      "number-division-text": {
-        "description": "Integer operands divided in text keep the fractional result",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts"
+      "number-arithmetic-attr-formatting": {
+        "description": "Arithmetic results in attribute values use JavaScript number spelling",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-formatting.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -6056,19 +6056,6 @@
         "BF029"
       ]
     },
-    "integer-division-truncated": {
-      "title": "Division of two integers truncates the fractional part",
-      "kind": "silent",
-      "given": "a division whose operands are both integers, rendered as text (`{props.value / 4}` with `value` 1234567890)",
-      "expected": "renders the JavaScript number quotient, fractional part included (`308641972.5`)",
-      "actual": "renders the truncated integer quotient (`308641972`)",
-      "fixtures": [
-        "number-division-text"
-      ],
-      "adapters": [
-        "erb"
-      ]
-    },
     "jsx-wrapped-in-non-children-prop": {
       "title": "JSX wrapped in a ternary or array at a non-children prop",
       "kind": "by-design",
@@ -6226,6 +6213,19 @@
         "jinja",
         "minijinja",
         "pebble"
+      ]
+    },
+    "number-arithmetic-attr-exponent-form": {
+      "title": "An arithmetic result in an attribute value prints in exponent form",
+      "kind": "silent",
+      "given": "an attribute whose value is an arithmetic expression with a non-integral result of ten or more digits (`data-sum={props.value + 0.5}` with `value` 1234567890)",
+      "expected": "the attribute carries the JavaScript number spelling (`1234567890.5`), as in text position",
+      "actual": "renders the value in exponent form (`1.2345678905e+09`)",
+      "fixtures": [
+        "number-arithmetic-attr-formatting"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "off-subset-callback-body": {
