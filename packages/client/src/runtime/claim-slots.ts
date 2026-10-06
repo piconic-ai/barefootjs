@@ -112,6 +112,7 @@
 import { BF_SCOPE, BF_PARENT_OWNED_PREFIX } from '@barefootjs/shared'
 import { commentsInScope } from './query.ts'
 import { commentScopeRegistry } from './scope.ts'
+import { relocatedRowElements } from './row-portal.ts'
 
 /**
  * A slot's compile-time descriptor. `path` is the list of child indices
@@ -311,6 +312,33 @@ function findOwnedMarker(root: Element, id: string): Comment | null {
       }
     }
     if (owned) return comment
+  }
+  return findRelocatedRowMarker(root, marker, parentOwned)
+}
+
+/**
+ * The marker scan's last resort for a loop row: the elements a `ref`
+ * callback portaled out of the row (`row-portal.ts`, #3318). They sit
+ * outside the row's subtree, so the scan above cannot reach a slot inside
+ * them. Ownership is checked up to the relocated element, which is the
+ * row's root for its own subtree.
+ */
+function findRelocatedRowMarker(root: Element, marker: string, parentOwned: boolean): Comment | null {
+  for (const relocated of relocatedRowElements(root)) {
+    const walker = document.createTreeWalker(relocated, NodeFilter.SHOW_COMMENT)
+    while (walker.nextNode()) {
+      const comment = walker.currentNode as Comment
+      if (comment.nodeValue !== marker) continue
+      if (parentOwned) return comment
+      let owned = true
+      for (let el = comment.parentElement; el && el !== relocated; el = el.parentElement) {
+        if (el.hasAttribute(BF_SCOPE)) {
+          owned = false
+          break
+        }
+      }
+      if (owned) return comment
+    }
   }
   return null
 }

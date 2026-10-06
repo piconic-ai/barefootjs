@@ -20,6 +20,7 @@
 
 import { createSignal, createEffect, createRoot, batch } from '@barefootjs/client/reactive'
 import { hydratedScopes } from './hydration-state.ts'
+import { backfillRowPortalKeys } from './row-portal.ts'
 import { sameLoopItem } from './loop-item.ts'
 import { setRowMountPoint, type RowMountPoint } from './component.ts'
 import {
@@ -584,6 +585,7 @@ export function mapArray<T>(
           // anchor), so the row can be mounted at it before its init runs.
           const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, undefined, { container, anchor })
           if (getKey && !scope.primaryEl.getAttribute(keyAttrName)) scope.primaryEl.setAttribute(keyAttrName, key)
+          if (getKey) backfillRowPortalKeys(scope.primaryEl, keyAttrName, key)
           scopes.set(key, scope)
           insertScope(scope, container, anchor)
         }
@@ -712,6 +714,7 @@ export function mapArray<T>(
         // attached scope, so the resulting order is unchanged).
         const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, undefined, { container, anchor })
         if (getKey && !scope.primaryEl.getAttribute(keyAttrName)) scope.primaryEl.setAttribute(keyAttrName, key)
+        if (getKey) backfillRowPortalKeys(scope.primaryEl, keyAttrName, key)
         scopes.set(key, scope)
         desiredOrder.push(scope)
       }
