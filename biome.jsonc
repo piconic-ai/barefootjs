@@ -72,6 +72,7 @@
         "packages/client/src/runtime/template.ts",
         "packages/client/src/runtime/apply-rest-attrs.ts",
         "packages/client/src/runtime/dynamic-text.ts",
+        "packages/client/src/runtime/row-portal.ts",
         "packages/client/src/create-query.ts",
         "packages/client/src/create-mutation.ts"
       ],

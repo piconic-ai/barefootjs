@@ -97,6 +97,7 @@ export {
 // and compiler-generated clearing code — see ./loop-markers.ts docstring)
 export { getLoopChildren, getLoopNodes } from './loop-markers.ts'
 export { qsaItem, upsertChildItem } from './qsa-item.ts'
+export { adoptRowPortal, claimRowPortals, relayRowPortalEvents, isRowPortalOf } from './row-portal.ts'
 export { mapArray, mapArrayAnchored } from './map-array.ts'
 // Lazy row graph (slot unification §9, L2) — keyed list rendering with no
 // per-row reactive resources; compiler targets it for eligible plain loops

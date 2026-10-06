@@ -23,6 +23,8 @@
  *      (between the template clone and the function's return), the extras
  *      are not siblings yet. Reading `__bfExtras` lets lookups reach them
  *      before `mapArray` inserts them into the DOM.
+ *   4. Elements a `ref` callback portaled out of the row (`row-portal.ts`,
+ *      #3318). They belong to the row wherever they sit in the document.
  *
  * Step 3 must stay reachable whether or not the primary is attached, which
  * is why step 2 ends its walk with `break` rather than `return`. Only the
@@ -42,8 +44,9 @@ import { BF_LOOP_ITEM, BF_LOOP_START, BF_LOOP_END } from '@barefootjs/shared'
 import { initChild } from './registry.ts'
 import { createComponent } from './component.ts'
 import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver.ts'
+import { relocatedRowElements } from './row-portal.ts'
 
-/** Iterate the elements that belong to an item — primary, in-tree siblings within bounds, then any pre-insertion extras stash. */
+/** Iterate the elements that belong to an item — primary, in-tree siblings within bounds, any pre-insertion extras stash, then any portaled-out elements. */
 function* itemRootElements(primaryEl: Element): Iterable<Element> {
   yield primaryEl
   const startPrefix = `${BF_LOOP_START}:`
@@ -78,6 +81,8 @@ function* itemRootElements(primaryEl: Element): Iterable<Element> {
   if (stashed) {
     for (const ex of stashed) yield ex
   }
+  // Elements portaled out of the row (#3318): registered, not positional.
+  yield* relocatedRowElements(primaryEl)
 }
 
 /**

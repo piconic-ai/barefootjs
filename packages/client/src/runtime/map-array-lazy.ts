@@ -131,6 +131,7 @@ import { createEffect, createSignal, untrack } from '@barefootjs/client/reactive
 import { BF_KEY } from '@barefootjs/shared'
 import { findLoopMarkers, longestIncreasingSubsequenceIndices } from './map-array.ts'
 import { sameLoopItem } from './loop-item.ts'
+import { backfillRowPortalKeys } from './row-portal.ts'
 
 /**
  * One row of a lazy loop: plain data, no reactive resources.
@@ -305,6 +306,7 @@ export function mapArrayLazy<T>(
     }
     entry.primaryEl = untrack(() => plan.createRow(entry, index))
     if (getKey && !entry.primaryEl.getAttribute(keyAttrName)) entry.primaryEl.setAttribute(keyAttrName, key)
+    if (getKey) backfillRowPortalKeys(entry.primaryEl, keyAttrName, key)
     markStranded()
     return entry
   }
