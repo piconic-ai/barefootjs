@@ -853,7 +853,7 @@ describe('qsa', () => {
     // but renders inside the child's own bf-s scope.
     document.body.innerHTML = `
       <div bf-s="Parent_abc">
-        <section bf-s="Parent_abc_s2">
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
           <strong bf="^s1" data-label="alpha">value</strong>
         </section>
       </div>
@@ -868,14 +868,37 @@ describe('qsa', () => {
   test('#3324: a parent-owned slot outside nested scopes wins over a nested one', () => {
     document.body.innerHTML = `
       <div bf-s="Parent_abc">
-        <section bf-s="Child_xyz">
-          <em bf="^s1">child's forwarded</em>
+        <section bf-s="Parent_abc_s0" bf-h="Parent_abc" bf-m="s0">
+          <em bf="^s1">forwarded</em>
         </section>
         <strong bf="^s1">own</strong>
       </div>
     `
     const scope = document.querySelector('[bf-s="Parent_abc"]')!
     expect(qsa(scope, '[bf="^s1"]')?.textContent).toBe('own')
+  })
+
+  test("#3324: never resolves another component's same-numbered forwarded slot", () => {
+    // `Other`, nested in `Parent`, forwards its own `^s1` into a child of
+    // its own; `Parent` forwards its `^s1` into a child it hosts. Only the
+    // latter is Parent's, whatever the DOM order.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <article bf-s="Other_xyz" bf-h="Parent_abc" bf-m="s0">
+          <section bf-s="Other_xyz_s3" bf-h="Other_xyz" bf-m="s3">
+            <em bf="^s1">other's</em>
+          </section>
+        </article>
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+          <strong bf="^s1">parent's</strong>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]')?.textContent).toBe("parent's")
+    // With only the other component's forwarded slot present, nothing.
+    document.querySelector('[bf-s="Parent_abc_s2"]')!.remove()
+    expect(qsa(scope, '[bf="^s1"]')).toBeNull()
   })
 
   // qsa() doubles as the child-scope-resolution lookup for compiled

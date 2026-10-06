@@ -8,7 +8,7 @@
 
 import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange, type CommentScopeInfo } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
-import { BF_SCOPE, BF_SLOT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SLOT, BF_HOST, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
 /** CSS attribute-value escape with a fallback for environments lacking CSS.escape. */
 export const cssEscape: (s: string) => string =
@@ -527,10 +527,18 @@ export function qsa(el: Element | null, selector: string): Element | null {
   }
   // A parent-owned slot (`[bf="^sN"]`) is content `el` itself authored and
   // forwarded as a child component's `children`, so it legitimately renders
-  // inside that child's scope — the same exemption `$()` grants (#3324).
-  // Checked only after the own-scope candidates, so a nested child's own
-  // colliding id never shadows one `el` renders directly.
-  if (PARENT_OWNED_SLOT_SELECTOR.test(selector)) return first
+  // inside that child's scope (#3324). Checked only after the own-scope
+  // candidates, and only for a candidate whose nearest scope `el` hosts:
+  // another component nested in `el` can forward its own, same-numbered
+  // `^sN` into a child of its own, and that one is not `el`'s.
+  if (PARENT_OWNED_SLOT_SELECTOR.test(selector)) {
+    const scopeId = el.getAttribute(BF_SCOPE)
+    if (!scopeId) return null
+    for (const candidate of el.querySelectorAll(selector)) {
+      const owner = candidate.parentElement?.closest(`[${BF_SCOPE}]`)
+      if (owner && owner !== el && owner.getAttribute(BF_HOST) === scopeId) return candidate
+    }
+  }
   return null
 }
 
