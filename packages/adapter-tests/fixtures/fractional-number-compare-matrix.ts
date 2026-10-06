@@ -38,6 +38,14 @@ export function FractionCompareMatrix(props: { values: number[] }) {
 `,
   props: { values: [1.5, -2.5, 0, 3] },
   expectedHtml: `
-    <div bf-s="test"></div>
+    <div bf-s="test">
+      <ul bf="s2">
+        <li bf="s1" data-eq="n" data-ge="y" data-gt="y" data-key="1.5" data-le="n" data-lt="y" data-ne="y" data-twice="y"><b bf-c="s0">big</b></li>
+        <li bf="s1" data-eq="n" data-ge="n" data-gt="n" data-key="-2.5" data-le="y" data-lt="n" data-ne="y" data-twice="n"><i bf-c="s0">small</i></li>
+        <li bf="s1" data-eq="n" data-ge="n" data-gt="n" data-key="0" data-le="n" data-lt="n" data-ne="n" data-twice="n"><i bf-c="s0">small</i></li>
+        <li bf="s1" data-eq="y" data-ge="y" data-gt="y" data-key="3" data-le="n" data-lt="y" data-ne="y" data-twice="n"><b bf-c="s0">big</b></li>
+      </ul>
+      <p bf="s4"><!--bf:s3-->2<!--/--></p>
+    </div>
   `,
 })
