@@ -5236,6 +5236,22 @@
         "text"
       ]
     },
+    "memo-dependency-loop-shadow": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "memo-length-prop-seeded-signal": {
       "kinds": [
         "call",

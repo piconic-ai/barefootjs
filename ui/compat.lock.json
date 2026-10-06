@@ -3602,6 +3602,14 @@
           ]
         }
       },
+      "memo-dependency-loop-shadow": {
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-like-memo"
+          ]
+        }
+      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -5621,6 +5629,10 @@
         "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
       },
+      "memo-dependency-loop-shadow": {
+        "description": "A memo read in a loop row resolves its dependencies in its declaration scope, not against a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-dependency-loop-shadow.ts"
+      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -6075,6 +6087,19 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-param-named-like-memo": {
+      "title": "A `.map()` row param named like a memo",
+      "kind": "silent",
+      "given": "a `.map()` callback whose row param has the same name as a memo of the component (`props.rows.map(label => …)` beside `const label = createMemo(…)`)",
+      "expected": "the row param shadows the memo inside the row, as in JavaScript",
+      "actual": "the template fails to compile at render time: the memo is a template-level `my $label`, and Kolon refuses a `for … -> $label` loop variable that redeclares it (`Expected '{', but got '$label'`)",
+      "fixtures": [
+        "memo-dependency-loop-shadow"
+      ],
+      "adapters": [
+        "xslate"
+      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",

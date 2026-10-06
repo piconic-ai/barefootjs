@@ -3550,6 +3550,12 @@
               ]
             },
             {
+              "fixture": "memo-dependency-loop-shadow",
+              "limitations": [
+                "loop-param-named-like-memo"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5508,6 +5514,12 @@
               ]
             },
             {
+              "fixture": "memo-dependency-loop-shadow",
+              "limitations": [
+                "loop-param-named-like-memo"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6755,6 +6767,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "memo-dependency-loop-shadow",
+              "limitations": [
+                "loop-param-named-like-memo"
               ]
             },
             {
@@ -8236,6 +8254,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "memo-dependency-loop-shadow",
+              "limitations": [
+                "loop-param-named-like-memo"
               ]
             },
             {
@@ -13028,6 +13052,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "memo-dependency-loop-shadow",
+              "limitations": [
+                "loop-param-named-like-memo"
               ]
             },
             {
