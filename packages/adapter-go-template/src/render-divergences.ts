@@ -204,4 +204,8 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // `(props.c ?? props.a)?.length` with `c` = `[]`: the `??` lowers to
+  // `or .C .A`, and `or` treats the empty slice as falsy, so it reads `a`'s
+  // length (`2`) where JS keeps `c` and reads `0`.
+  'optional-chain-length-composed-receiver:gen:c:empty': { limitation: 'nullish-coalesce-empty-array-falls-back' },
 }
