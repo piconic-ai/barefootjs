@@ -2123,14 +2123,6 @@
           ]
         }
       },
-      "data-url-attr-dynamic-value": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "data-url-attr-value-url-escaped"
-          ]
-        }
-      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -5567,10 +5559,6 @@
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
       },
-      "data-url-attr-dynamic-value": {
-        "description": "A dynamic value on a data-src / data-url attribute renders as plain attribute text",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-url-attr-dynamic-value.ts"
-      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -6012,19 +6000,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "data-url-attr-value-url-escaped": {
-      "title": "A dynamic value on a `data-…src/uri/url…` attribute is URL-normalized",
-      "kind": "silent",
-      "given": "an element attribute named `data-` followed by a name containing `src`, `uri` or `url` (`data-src`, `data-url`) whose value is dynamic (`<div data-src={v()}>`)",
-      "expected": "the attribute carries the value as plain text (`data-src=\"a b\"`, `data-url=\"javascript:x\"`), like any other `data-*` attribute",
-      "actual": "renders the value URL-normalized (`a%20b`) and replaces a value with a non-web scheme with `#ZgotmplZ`, because the template engine escapes such an attribute as a URL",
-      "fixtures": [
-        "data-url-attr-dynamic-value"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "derived-object-literal-signal": {

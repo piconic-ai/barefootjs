@@ -162,11 +162,10 @@ export const renderDivergences: RenderDivergences = {
   // (`{{range $index, …}}`) and a callback-body local (`{{$t := …}}`) were
   // out of reach. The call site now hands them over in the wrapper's
   // `BfRowVars` and the define rebinds them; both render like Hono.
-  // `html/template` strips a `data-` prefix before classifying an attribute,
-  // and treats a name containing `src`/`uri`/`url` as a URL: a dynamic value
-  // is percent-normalized (`a%20b`) and a `javascript:` value becomes
-  // `#ZgotmplZ`.
-  'data-url-attr-dynamic-value': { limitation: 'data-url-attr-value-url-escaped' },
+  // `data-url-attr-dynamic-value` used to sit here: `html/template` strips a
+  // `data-` prefix before classifying an attribute, and escaped `data-src` /
+  // `data-url` as URLs (`a%20b`, `#ZgotmplZ`). Such a name is now emitted
+  // through `bf_attr_name` (`isGoNonPlainDataAttrName`); it renders like Hono.
 
   // `empty-array-condition` used to sit here: a bare value as a `{{if}}`
   // test used Go's built-in truthiness, which reads an empty slice as false.

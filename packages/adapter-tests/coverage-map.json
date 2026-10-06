@@ -2404,6 +2404,22 @@
         "attribute"
       ]
     },
+    "data-url-attr-value-shapes": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "date-catalogued": {
       "kinds": [
         "call",
