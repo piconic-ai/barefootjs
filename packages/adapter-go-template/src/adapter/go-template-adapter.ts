@@ -130,7 +130,7 @@ import {
   emitPredicateEval,
   emitFlatMapEval,
   emitMapEval,
-  stringTolerantEqOperands,
+  goComparisonCall,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
@@ -6966,25 +6966,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // and quoted literals.
     const wl = wrapIfMultiToken(l)
     const wr = wrapIfMultiToken(r)
+    const comparison = goComparisonCall(op, wl, wr)
+    if (comparison !== null) return comparison
     switch (op) {
-      case '===':
-      case '==': {
-        const [el, er] = stringTolerantEqOperands(l, r)
-        return `eq ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
-      }
-      case '!==':
-      case '!=': {
-        const [el, er] = stringTolerantEqOperands(l, r)
-        return `ne ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
-      }
-      case '>':
-        return `gt ${wl} ${wr}`
-      case '<':
-        return `lt ${wl} ${wr}`
-      case '>=':
-        return `ge ${wl} ${wr}`
-      case '<=':
-        return `le ${wl} ${wr}`
       case '+':
         return this._emitPlus(left, right, wl, wr)
       case '-':
@@ -8126,21 +8110,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const wl = wrapIfMultiToken(left)
         const wr = wrapIfMultiToken(right)
 
+        const comparison = goComparisonCall(expr.op, wl, wr)
+        if (comparison !== null) return comparison
         switch (expr.op) {
-          case '===':
-          case '==':
-            return `eq ${wl} ${wr}`
-          case '!==':
-          case '!=':
-            return `ne ${wl} ${wr}`
-          case '>':
-            return `gt ${wl} ${wr}`
-          case '<':
-            return `lt ${wl} ${wr}`
-          case '>=':
-            return `ge ${wl} ${wr}`
-          case '<=':
-            return `le ${wl} ${wr}`
           case '+':
             return this._emitPlus(expr.left, expr.right, wl, wr)
           case '-':
@@ -9006,25 +8978,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const preamble = leftResult.preamble + rightResult.preamble
 
         let result: string
-        switch (expr.op) {
-          case '===':
-          case '==': {
-            const [el, er] = stringTolerantEqOperands(left, right)
-            result = `eq ${el} ${er}`; break
-          }
-          case '!==':
-          case '!=': {
-            const [el, er] = stringTolerantEqOperands(left, right)
-            result = `ne ${el} ${er}`; break
-          }
-          case '>':
-            result = `gt ${left} ${right}`; break
-          case '<':
-            result = `lt ${left} ${right}`; break
-          case '>=':
-            result = `ge ${left} ${right}`; break
-          case '<=':
-            result = `le ${left} ${right}`; break
+        const comparison = goComparisonCall(expr.op, left, right)
+        if (comparison !== null) {
+          result = comparison
+        } else switch (expr.op) {
           case '+':
             result = this._emitPlus(expr.left, expr.right, left, right); break
           case '-':

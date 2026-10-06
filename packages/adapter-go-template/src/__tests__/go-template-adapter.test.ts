@@ -610,6 +610,32 @@ export function N(props: { value: number; a: string; b: string }) {
   })
 })
 
+describe('GoTemplateAdapter - comparisons go through the JS helpers (#3330)', () => {
+  // html/template's `eq`/`gt`/… refuse a float64 operand against an int
+  // literal, so every JS comparison lowers to `bf_eq`/`bf_gt`/….
+  test('attribute ternary and conditional rendering, both operand orders', () => {
+    const { template } = compileAndGenerate(`
+export function F(props: { values: number[] }) {
+  return (
+    <div>
+      {props.values.map(value => (
+        <li key={value} data-gt={value > 0 ? 'y' : 'n'} data-eq={value === 3 ? 'y' : 'n'} data-ne={value !== 0 ? 'y' : 'n'} data-ge={1.5 >= value ? 'y' : 'n'}>
+          {value <= 1 ? <b>s</b> : <i>b</i>}
+        </li>
+      ))}
+    </div>
+  )
+}
+`)
+    expect(template).toContain('bf_gt . 0')
+    expect(template).toContain('bf_eq . 3')
+    expect(template).toContain('bf_ne . 0')
+    expect(template).toContain('bf_le . 1')
+    expect(template).toContain('bf_ge 1.5 .')
+    expect(template).not.toMatch(/\{\{if (eq|ne|gt|lt|ge|le) /)
+  })
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {

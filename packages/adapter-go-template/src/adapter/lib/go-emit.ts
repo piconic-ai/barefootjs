@@ -342,6 +342,34 @@ export function stringTolerantEqOperands(l: string, r: string): [string, string]
   return [wrap(l), wrap(r)]
 }
 
+const GO_COMPARISON_HELPERS: Readonly<Record<string, string>> = {
+  '===': 'bf_eq', '==': 'bf_eq', '!==': 'bf_ne', '!=': 'bf_ne',
+  '<': 'bf_lt', '<=': 'bf_le', '>': 'bf_gt', '>=': 'bf_ge',
+}
+
+/**
+ * The Go call for a JS equality / relational operator, or `null` for any
+ * other operator. Every comparison goes through the runtime's `bf_eq` /
+ * `bf_lt` / … rather than html/template's built-in `eq` / `lt` / …: those
+ * refuse operands of different numeric kinds ("incompatible types for
+ * comparison"), so a fractional `number[]` element compared against an
+ * integer literal (`value > 0`) aborted the render (#3330). The helpers
+ * compare numbers by value across Go kinds and otherwise follow JS (strict
+ * equality never coerces; relational operators compare two strings by code
+ * unit and anything else as numbers). Equality keeps
+ * `stringTolerantEqOperands`' string-literal side handling. Operands must
+ * already be `wrapIfMultiToken`-wrapped.
+ */
+export function goComparisonCall(op: string, l: string, r: string): string | null {
+  const helper = GO_COMPARISON_HELPERS[op]
+  if (!helper) return null
+  if (helper === 'bf_eq' || helper === 'bf_ne') {
+    const [el, er] = stringTolerantEqOperands(l, r)
+    return `${helper} ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
+  }
+  return `${helper} ${l} ${r}`
+}
+
 // Generic remediation appended to BF101 / BF102 diagnostics whose reason
 // doesn't already carry actionable next steps.
 export const GO_REMEDIATION_OPTIONS =
