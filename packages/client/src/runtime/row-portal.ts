@@ -143,10 +143,10 @@ export function relayRowPortalEvents(
   capture = false,
 ): void {
   // Run at the first adopted element a dispatch reaches and skip the rest.
-  // The record of what was delivered is cleared when a dispatch starts: a
-  // capture listener on `window`, and on the shadow root an adopted element
-  // lives in, runs before any listener on an element below it. A path that
-  // reaches neither (a detached outlet) falls back to the record itself:
+  // The record of what was delivered is cleared where a dispatch starts: a
+  // capture listener on `window`, or, for a non-composed event targeted
+  // inside a shadow root, on that shadow root. A path that starts at neither
+  // (a detached outlet) falls back to the record itself:
   // within one dispatch this listener visits each adopted element at most
   // once, so reaching an element it already visited for this event, or a
   // different target, means a new dispatch. Nothing reads DOM ancestry,
@@ -170,7 +170,7 @@ export function relayRowPortalEvents(
   const list = delegatesByContainer.get(container)
   if (list) list.push(delegate)
   else delegatesByContainer.set(container, [delegate])
-  if (typeof window !== 'undefined') resetDeliveryAt(window, type)
+  if (typeof window !== 'undefined') resetDeliveryAt(window, type, () => true)
   for (const el of adoptedByContainer.get(container) ?? []) {
     el.addEventListener(type, delegate.attached, capture)
     resetDeliveryAtRootOf(el, type)
@@ -185,8 +185,13 @@ const deliveryRecords = new WeakMap<Event, Map<Delegate, { target: EventTarget |
 /** event-path root → the event types whose dispatch start it already clears */
 const resetInstalled = new WeakMap<EventTarget, Set<string>>()
 
-/** Clear an event's delivery records when a dispatch through `root` starts. */
-function resetDeliveryAt(root: EventTarget, type: string): void {
+/**
+ * Clear an event's delivery records when a dispatch starts at `root`:
+ * `isStart` tells whether `root` is where this event's path begins, so a
+ * root the dispatch merely passes through never clears a delivery already
+ * made earlier in the same dispatch.
+ */
+function resetDeliveryAt(root: EventTarget, type: string, isStart: (event: Event) => boolean): void {
   let types = resetInstalled.get(root)
   if (!types) {
     types = new Set()
@@ -194,13 +199,23 @@ function resetDeliveryAt(root: EventTarget, type: string): void {
   }
   if (types.has(type)) return
   types.add(type)
-  root.addEventListener(type, event => deliveryRecords.delete(event), true)
+  root.addEventListener(type, event => {
+    if (isStart(event)) deliveryRecords.delete(event)
+  }, true)
 }
 
-/** `resetDeliveryAt` for the shadow root `el` lives in, if any (a non-composed event stops there). */
+/**
+ * `resetDeliveryAt` for the shadow root `el` lives in, if any. A shadow root
+ * starts the path only of a non-composed event targeted inside it (that
+ * event never reaches `window`); any other event through it, such as a
+ * click on a slotted light-DOM element, started at `window` and must keep
+ * its record.
+ */
 function resetDeliveryAtRootOf(el: Element, type: string): void {
   const root = el.getRootNode()
-  if (typeof ShadowRoot !== 'undefined' && root instanceof ShadowRoot) resetDeliveryAt(root, type)
+  if (typeof ShadowRoot === 'undefined' || !(root instanceof ShadowRoot)) return
+  resetDeliveryAt(root, type, event =>
+    !event.composed && event.target instanceof Node && event.target.getRootNode() === root)
 }
 
 /**

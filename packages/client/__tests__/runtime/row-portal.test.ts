@@ -223,6 +223,29 @@ describe('relayRowPortalEvents with nested adopted elements', () => {
     expect([relayed, native]).toEqual([2, 2])
   })
 
+  test('a composed event through an adopted host and its slot is delivered once', () => {
+    const ul = document.createElement('ul')
+    const host = document.createElement('div')
+    const button = document.createElement('button')
+    host.appendChild(button)
+    const shadowOutlet = document.createElement('div')
+    shadowOutlet.appendChild(document.createElement('slot'))
+    host.attachShadow({ mode: 'open' }).appendChild(shadowOutlet)
+    document.body.append(ul, host)
+    const row = document.createElement('li')
+    let relayed = 0
+    let native = 0
+    createRoot(() => {
+      adoptRowPortal(row, host, ul)
+      adoptRowPortal(row, shadowOutlet, ul)
+    })
+    relayRowPortalEvents(ul, 'click', () => relayed++, true)
+    host.addEventListener('click', () => native++, true)
+
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect([relayed, native]).toEqual([1, 1])
+  })
+
   test('delivery survives a handler that removes the target mid-dispatch', () => {
     const ul = document.createElement('ul')
     const outer = document.createElement('div')
