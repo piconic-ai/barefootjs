@@ -3829,6 +3829,16 @@
       }
     }
   ],
+  "optional-object-nullish-compare": [
+    {
+      "name": "gen:user:object:minimal",
+      "props": {
+        "user": {
+          "name": ""
+        }
+      }
+    }
+  ],
   "optional-object-prop-member-signal-seed": [
     {
       "name": "gen:initial:absent",

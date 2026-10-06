@@ -6411,6 +6411,23 @@
         "text"
       ]
     },
+    "optional-object-nullish-compare": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!=",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "optional-object-prop-member-signal-seed": {
       "kinds": [
         "call",

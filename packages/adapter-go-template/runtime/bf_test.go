@@ -3076,6 +3076,13 @@ func TestCompareJS(t *testing.T) {
 		{"bool relational as number", true, 0, false, false, false, true},
 		{"nil equals nil", nil, nil, true, false, true, false},
 		{"non-numeric string is NaN", "abc", 1, false, false, false, false},
+		// JS StringToNumber, shared with the evaluator: Go-only spellings are
+		// NaN, an overflowing decimal literal is Infinity.
+		{"underscore separator is NaN", "1_0", 1, false, false, false, false},
+		{"hex float is NaN", "0x1p2", 1, false, false, false, false},
+		{"inf spelling is NaN", "inf", 1, false, false, false, false},
+		{"Infinity string", "Infinity", 1, false, false, false, true},
+		{"overflowing decimal is Infinity", "1e1000", 1, false, false, false, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -3100,6 +3107,44 @@ func TestCompareJS(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("typed nil equals nil", func(t *testing.T) {
+		type user struct{ Name string }
+		var u *user
+		var m map[string]any
+		var sl []any
+		for _, v := range []any{u, m, sl} {
+			if !Eq(v, nil) || !Eq(nil, v) || Ne(v, nil) || Ne(nil, v) {
+				t.Errorf("%T nil must equal nil in both operand orders", v)
+			}
+		}
+		if Eq(&user{}, nil) || !Ne(&user{}, nil) {
+			t.Error("a non-nil pointer must not equal nil")
+		}
+	})
+
+	t.Run("typed nil in a template matches the builtin eq", func(t *testing.T) {
+		type user struct{ Name string }
+		tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(
+			`{{eq .U nil}}/{{bf_eq .U nil}}/{{bf_ne .U nil}}/{{bf_eq nil .U}}|` +
+				`{{if bf_ne .U nil}}{{.U.Name}}{{else}}anon{{end}}`,
+		))
+		for _, c := range []struct {
+			u    *user
+			want string
+		}{
+			{nil, "true/true/false/true|anon"},
+			{&user{Name: "ann"}, "false/false/true/false|ann"},
+		} {
+			var buf strings.Builder
+			if err := tmpl.Execute(&buf, map[string]any{"U": c.u}); err != nil {
+				t.Fatalf("Execute: %v", err)
+			}
+			if got := buf.String(); got != c.want {
+				t.Errorf("got %q, want %q", got, c.want)
+			}
+		}
+	})
 
 	t.Run("NaN compares false and unequal", func(t *testing.T) {
 		nan := math.NaN()

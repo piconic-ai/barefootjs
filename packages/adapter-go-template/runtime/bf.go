@@ -4099,10 +4099,10 @@ func numericKindValue(v any) (float64, bool) {
 
 // Eq implements JS `===` for the compiler's `bf_eq` (#3330). Two numbers
 // compare by value whatever their Go kinds (`1` and `1.0` are equal; NaN
-// equals nothing). Otherwise values of the same comparable type compare
-// with Go `==`, two nils are equal, and anything else — different types,
-// or a non-comparable kind — is unequal, as JS strict equality never
-// coerces (`"1" === 1` is false).
+// equals nothing). Otherwise two nils (typed or not, see isNilish) are
+// equal, values of the same comparable type compare with Go `==`, and
+// anything else — different types, or a non-comparable kind — is unequal,
+// as JS strict equality never coerces (`"1" === 1` is false).
 func Eq(a, b any) bool {
 	if x, ok := numericKindValue(a); ok {
 		if y, ok := numericKindValue(b); ok {
@@ -4110,14 +4110,31 @@ func Eq(a, b any) bool {
 		}
 		return false
 	}
-	if a == nil || b == nil {
-		return a == nil && b == nil
+	if na, nb := isNilish(a), isNilish(b); na || nb {
+		return na && nb
 	}
 	ta, tb := reflect.TypeOf(a), reflect.TypeOf(b)
 	if ta != tb || !ta.Comparable() {
 		return false
 	}
 	return a == b
+}
+
+// isNilish reports an absent value: a nil interface, or a nil pointer, map,
+// slice, func or channel boxed in one. A typed nil stops being `== nil` once
+// it is boxed into `any`, but html/template's builtin `eq` treated it as nil,
+// and an absent optional nested object (a nil struct pointer) must still
+// compare equal to `null` / `undefined`.
+func isNilish(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func, reflect.Chan:
+		return rv.IsNil()
+	}
+	return false
 }
 
 // Ne is Eq's negation (JS `!==`).
@@ -4166,12 +4183,11 @@ func relationalNumber(v any) (float64, bool) {
 		}
 		return 0, true
 	case string:
-		s := strings.TrimSpace(t)
-		if s == "" {
-			return 0, true
-		}
-		f, err := strconv.ParseFloat(s, 64)
-		return f, err == nil && !math.IsNaN(f)
+		// The evaluator's JS StringToNumber: decimal grammar only (no "1_0",
+		// "0x1p2" or "inf"), the exact Infinity spellings, and an overflowing
+		// literal as ±Infinity ("1e1000").
+		f := evalToNumber(t)
+		return f, !math.IsNaN(f)
 	}
 	return 0, false
 }
