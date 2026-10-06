@@ -162,6 +162,16 @@ export function mappedRowsMarkup(arrayExpr: string, method: string, params: stri
   return safeHtml(`${arrayExpr}.${method}(${params} => ${body}).join('')`)
 }
 
+/**
+ * `((p1, p2) => markup)(v1, v2)` — bind values computed outside `markup` to
+ * parameters it reads (#3352). `markup` is returned unchanged when there is
+ * nothing to bind.
+ */
+export function withOuterBindings(params: readonly string[], values: readonly string[], markup: SafeHtml): SafeHtml {
+  if (params.length === 0) return markup
+  return safeHtml(`((${params.join(', ')}) => ${markup})(${values.join(', ')})`)
+}
+
 /** The empty string literal — a deferred placeholder the init effect fills (#1128). */
 export const EMPTY_MARKUP: SafeHtml = safeHtml("''")
 

@@ -8,14 +8,14 @@ import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_
 import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
-import { buildSignalMemoEnv, csrSubstitute, type CsrEnv } from './csr-substitute.ts'
+import { buildSignalMemoEnv, csrSubstitute, extractFreeIdentifiersFromText, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import type { ClientJsContext } from './types.ts'
 import { BF_KEY, BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { renderChildScopeArgs } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
+import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, withOuterBindings, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
 
@@ -2328,6 +2328,41 @@ function mergeCsrNullUnsafe(ctx: ClientJsContext, unsafeLocalNames: Set<string> 
 }
 
 /**
+ * The substitutions visible inside a loop row whose bindings are
+ * `boundHere`. A name the row binds is dropped: it means the row binding
+ * there, not the outer signal / memo / const. An entry the row keeps is
+ * spliced INTO the row, so its replacement must not mention a name the row
+ * binds either: a memo `label = () => s()` read as `label()` under a row
+ * param `s` would otherwise splice `s()` where `s` is the row item (#3352).
+ * Such a replacement is first resolved against the outer `env`, the scope
+ * the memo / const was declared in, so its own references are already
+ * substituted before it reaches the row.
+ *
+ * A resolved replacement can still name a row binding when the name is not
+ * a substitution at all (a module-level helper the row param shadows). Those
+ * entries are returned in `hoisted`: the caller evaluates them once outside
+ * the row, where the names still mean what they meant at the declaration.
+ */
+function closeOverLoopBindings(
+  env: CsrEnv,
+  boundHere: ReadonlySet<string>,
+): { substitutions: Map<string, CsrSubstitution>; hoisted: string[] } {
+  const substitutions = new Map<string, CsrSubstitution>()
+  const hoisted: string[] = []
+  for (const [name, sub] of env.substitutions) {
+    if (boundHere.has(name)) continue
+    if (!setIntersects(extractFreeIdentifiersFromText(sub.replacement), boundHere)) {
+      substitutions.set(name, sub)
+      continue
+    }
+    const closed = csrSubstitute(sub.replacement, env)
+    if (setIntersects(closed.freeIdentifiers, boundHere)) hoisted.push(name)
+    substitutions.set(name, { ...sub, replacement: closed.rewritten, freeIdentifiers: closed.freeIdentifiers })
+  }
+  return { substitutions, hoisted }
+}
+
+/**
  * Build the per-component CSR substitution env (signals + memos + inlinable
  * constants), matching what `generateCsrTemplate` builds. Shared so the
  * deferred-child analysis and the template emit agree on substitution
@@ -2763,10 +2798,20 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // hide an outer same-named const), not a reactivity classifier.
       const childScope = (opts.scope ?? BindingScope.EMPTY).enterLoopRow(node)
       const boundHere = childScope.boundNames()
-      const childEnv: CsrEnv = {
-        ...env,
-        substitutions: new Map([...env.substitutions].filter(([name]) => !boundHere.has(name))),
+      const { substitutions: childSubstitutions, hoisted } = closeOverLoopBindings(env, boundHere)
+      // Each hoisted entry is read once, outside the row, into a parameter
+      // the row's substitution points at (#3352). Its value cannot depend on
+      // the row: it was declared outside the loop.
+      const hoistParams: string[] = []
+      const hoistValues: string[] = []
+      for (const name of hoisted) {
+        const sub = env.substitutions.get(name)!
+        const param = `__bf_outer_${name}`
+        hoistParams.push(param)
+        hoistValues.push(transformExpr(sub.kind === 'call' ? `${name}()` : name))
+        childSubstitutions.set(name, { kind: sub.kind, replacement: param, freeIdentifiers: new Set([param]) })
       }
+      const childEnv: CsrEnv = { ...env, substitutions: childSubstitutions }
       const recurseInLoopBody = (n: IRNode): string => generateCsrTemplateWithOpts(n, {
         ...opts,
         loopDepth: loopDepth + 1,
@@ -2816,14 +2861,14 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           // Leaf `key` → `data-key` — see the irToHtmlTemplate site above.
           renderLeaf: (ir) => recurseInLoopBody(leafKeyAsDataKeyAttr(ir)),
         })
-        mapExpr = interp(mappedRowsMarkup(iterArrayExpr, 'flatMap', node.flatMapCallback.params, body))
+        mapExpr = interp(withOuterBindings(hoistParams, hoistValues, mappedRowsMarkup(iterArrayExpr, 'flatMap', node.flatMapCallback.params, body)))
       } else if (node.preamble) {
         // Stage 3 / D4 — template-variant js text with the props rewrite
         // applied per segment; JSX leaves render via the loop-body recursion.
         const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: childScope }), renderLeaf: (ir) => recurseInLoopBody(ir) })
-        mapExpr = interp(mappedRowsMarkup(iterArrayExpr, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`))
+        mapExpr = interp(withOuterBindings(hoistParams, hoistValues, mappedRowsMarkup(iterArrayExpr, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`)))
       } else {
-        mapExpr = interp(mappedRowsMarkup(iterArrayExpr, iterMethod, callbackParam, `\`${childTemplate}\``))
+        mapExpr = interp(withOuterBindings(hoistParams, hoistValues, mappedRowsMarkup(iterArrayExpr, iterMethod, callbackParam, `\`${childTemplate}\``)))
       }
       return `<!--${loopStartMarker(node.markerId)}-->${mapExpr}<!--${loopEndMarker(node.markerId)}-->`
     }
