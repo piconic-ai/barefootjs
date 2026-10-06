@@ -139,23 +139,30 @@ export function relayRowPortalEvents(
   listener: EventListener,
   capture = false,
 ): void {
-  // Run at the first adopted element the dispatch reaches and skip the
-  // rest. What was delivered is cleared when the next dispatch of the same
-  // event object starts (`resetDeliveryOnDispatch`), so a re-dispatched
-  // event is delivered again. Nothing is derived from DOM ancestry, which a
-  // handler earlier in the dispatch may have changed.
+  // Run at the first adopted element a dispatch reaches and skip the rest.
+  // Within one dispatch this listener visits each adopted element at most
+  // once, so reaching an element it already visited for this event (or a
+  // different target) means a new dispatch of the same event object, and
+  // the record starts over. Nothing reads DOM ancestry, which a handler
+  // earlier in the dispatch may have changed, and nothing depends on the
+  // dispatch path reaching `window` (a detached outlet, a non-composed event
+  // in a shadow root).
   const delegate: Delegate = { type, attached: () => {}, capture }
   delegate.attached = event => {
-    let delivered = deliveredInDispatch.get(event)
-    if (!delivered) {
-      delivered = new Set()
-      deliveredInDispatch.set(event, delivered)
+    let records = deliveryRecords.get(event)
+    if (!records) {
+      records = new Map()
+      deliveryRecords.set(event, records)
     }
-    if (delivered.has(delegate)) return
-    delivered.add(delegate)
+    const at = event.currentTarget
+    const record = records.get(delegate)
+    if (record && record.target === event.target && at && !record.visited.has(at)) {
+      record.visited.add(at)
+      return
+    }
+    records.set(delegate, { target: event.target, visited: new Set(at ? [at] : []) })
     listener(event)
   }
-  resetDeliveryOnDispatch(type)
   const list = delegatesByContainer.get(container)
   if (list) list.push(delegate)
   else delegatesByContainer.set(container, [delegate])
@@ -164,21 +171,11 @@ export function relayRowPortalEvents(
   }
 }
 
-/** event → the relays that already ran for it in its current dispatch */
-const deliveredInDispatch = new WeakMap<Event, Set<Delegate>>()
-/** event types whose dispatch start clears `deliveredInDispatch` */
-const resetTypes = new Set<string>()
-
 /**
- * Clear an event's delivery record when a dispatch of it starts: a capture
- * listener on `window` runs before any listener on an element in the
- * document, so a relayed listener sees each dispatch afresh.
+ * event → per relay, the dispatch it last delivered in: the event's target
+ * and the adopted elements the relay has visited since.
  */
-function resetDeliveryOnDispatch(type: string): void {
-  if (resetTypes.has(type) || typeof window === 'undefined') return
-  resetTypes.add(type)
-  window.addEventListener(type, event => deliveredInDispatch.delete(event), true)
-}
+const deliveryRecords = new WeakMap<Event, Map<Delegate, { target: EventTarget | null; visited: Set<EventTarget> }>>()
 
 /**
  * Whether `node` is, or sits inside, an element portaled out of a row of

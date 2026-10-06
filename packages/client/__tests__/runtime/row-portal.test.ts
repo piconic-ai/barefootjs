@@ -162,6 +162,42 @@ describe('relayRowPortalEvents with nested adopted elements', () => {
     expect([bubbled, captured, native]).toEqual([4, 4, 2])
   })
 
+  test('a re-dispatched event is delivered again off the window path', () => {
+    const count = (mount: (outer: Element) => void) => {
+      const ul = document.createElement('ul')
+      const outer = document.createElement('div')
+      const button = document.createElement('button')
+      outer.appendChild(button)
+      mount(outer)
+      const row = document.createElement('li')
+      let bubbled = 0
+      let captured = 0
+      let native = 0
+      createRoot(() => {
+        adoptRowPortal(row, outer, ul)
+        adoptRowPortal(row, button, ul)
+      })
+      relayRowPortalEvents(ul, 'click', () => bubbled++)
+      relayRowPortalEvents(ul, 'click', () => captured++, true)
+      outer.addEventListener('click', () => native++)
+      const event = new MouseEvent('click', { bubbles: true })
+      button.dispatchEvent(event)
+      button.dispatchEvent(event)
+      return [bubbled, captured, native]
+    }
+
+    // Detached outlet.
+    expect(count(() => {})).toEqual([2, 2, 2])
+    // Inside a shadow root; the event is not composed, so it never reaches window.
+    expect(
+      count(outer => {
+        const host = document.createElement('div')
+        document.body.appendChild(host)
+        host.attachShadow({ mode: 'open' }).appendChild(outer)
+      }),
+    ).toEqual([2, 2, 2])
+  })
+
   test('delivery survives a handler that removes the target mid-dispatch', () => {
     const ul = document.createElement('ul')
     const outer = document.createElement('div')
