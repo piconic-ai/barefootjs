@@ -20,6 +20,7 @@ import { childEffectDisposal } from './child-effect-disposal'
 import { nestedLoop } from './nested-loop'
 import { grandchildPropChain } from './grandchild-prop-chain'
 import { loopRowHandlers } from './loop-row-handlers'
+import { conditionalForwardedAttribute } from './conditional-forwarded-attribute'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const SCENARIOS: ReadonlyArray<Scenario<any, string>> = [
@@ -37,4 +38,5 @@ export const SCENARIOS: ReadonlyArray<Scenario<any, string>> = [
   nestedLoop,
   grandchildPropChain,
   loopRowHandlers,
+  conditionalForwardedAttribute,
 ]

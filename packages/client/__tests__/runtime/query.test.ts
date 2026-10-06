@@ -847,6 +847,37 @@ describe('qsa', () => {
     expect(qsa(scope, '[bf="s2"]')).toBe(own)
   })
 
+  test('#3324: finds a parent-owned slot forwarded into a nested child scope', () => {
+    // A conditional branch forwards `<strong data-label={label()}>` as a
+    // child component's `children`: the element is parent-owned (`^s1`)
+    // but renders inside the child's own bf-s scope.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Parent_abc_s2">
+          <strong bf="^s1" data-label="alpha">value</strong>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    const forwarded = document.querySelector('strong')
+    expect(qsa(scope, '[bf="^s1"]')).toBe(forwarded)
+    // A plain (child-owned) id inside the nested scope stays isolated.
+    expect(qsa(scope, '[bf="s1"]')).toBeNull()
+  })
+
+  test('#3324: a parent-owned slot outside nested scopes wins over a nested one', () => {
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Child_xyz">
+          <em bf="^s1">child's forwarded</em>
+        </section>
+        <strong bf="^s1">own</strong>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]')?.textContent).toBe('own')
+  })
+
   // qsa() doubles as the child-scope-resolution lookup for compiled
   // component-loop / branch-nested-child code (feeding initChild()) — its
   // target legitimately carries bf-s itself. The nested-child-scope skip

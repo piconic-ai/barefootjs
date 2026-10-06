@@ -525,8 +525,18 @@ export function qsa(el: Element | null, selector: string): Element | null {
   for (const candidate of el.querySelectorAll(selector)) {
     if (candidate !== first && !isInsideNestedChildScope(candidate, el)) return candidate
   }
+  // A parent-owned slot (`[bf="^sN"]`) is content `el` itself authored and
+  // forwarded as a child component's `children`, so it legitimately renders
+  // inside that child's scope — the same exemption `$()` grants (#3324).
+  // Checked only after the own-scope candidates, so a nested child's own
+  // colliding id never shadows one `el` renders directly.
+  if (PARENT_OWNED_SLOT_SELECTOR.test(selector)) return first
   return null
 }
+
+/** Selector form `[bf="^sN"]` — a compiler slot lookup for a parent-owned
+ *  element (see `$()`). */
+const PARENT_OWNED_SLOT_SELECTOR = new RegExp(`^\\[${BF_SLOT}="\\${BF_PARENT_OWNED_PREFIX}[^"]+"\\]$`)
 
 /** Split a CSS selector list on top-level commas, ignoring commas inside
  *  `[…]` attribute selectors or `(…)` pseudo-class arguments. */
