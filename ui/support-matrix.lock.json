@@ -1797,12 +1797,6 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-row-ops",
-              "limitations": [
-                "fractional-number-compare-int-literal"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -4326,12 +4320,6 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-row-ops",
-              "limitations": [
-                "fractional-number-compare-int-literal"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -5948,12 +5936,6 @@
               ]
             },
             {
-              "fixture": "fractional-number-array-row-ops",
-              "limitations": [
-                "fractional-number-compare-int-literal"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -7324,12 +7306,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fractional-number-array-row-ops",
-              "limitations": [
-                "fractional-number-compare-int-literal"
               ]
             },
             {
@@ -10558,12 +10534,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "fractional-number-array-row-ops",
-              "limitations": [
-                "fractional-number-compare-int-literal"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-formatting",
               "limitations": [
                 "number-arithmetic-attr-exponent-form"
@@ -11851,12 +11821,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "fractional-number-array-row-ops",
-              "limitations": [
-                "fractional-number-compare-int-literal"
               ]
             },
             {
