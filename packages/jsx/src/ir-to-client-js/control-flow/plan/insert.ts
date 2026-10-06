@@ -117,6 +117,8 @@ export interface ArmTextEffect {
  */
 export interface ArmReactiveAttr extends AttrMeta {
   slotId: string
+  /** See `ConditionalBranchReactiveAttr.receiverSlotIds` (#3324). */
+  receiverSlotIds?: readonly string[]
   attrName: string
   expression: string
 }

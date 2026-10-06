@@ -847,6 +847,112 @@ describe('qsa', () => {
     expect(qsa(scope, '[bf="s2"]')).toBe(own)
   })
 
+  test('#3324: finds a parent-owned slot forwarded into one of its receivers', () => {
+    // A conditional branch forwards `<strong data-label={label()}>` as the
+    // `children` of the component at slot s2: the element is parent-owned
+    // (`^s1`) but renders inside that child's own bf-s scope.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+          <strong bf="^s1" data-label="alpha">value</strong>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    const forwarded = document.querySelector('strong')
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])).toBe(forwarded)
+    // Not a receiver the compiler named, or none named: nothing.
+    expect(qsa(scope, '[bf="^s1"]', ['s5'])).toBeNull()
+    expect(qsa(scope, '[bf="^s1"]')).toBeNull()
+    // A plain (child-owned) id inside the nested scope stays isolated.
+    expect(qsa(scope, '[bf="s1"]', ['s2'])).toBeNull()
+  })
+
+  test('#3324: receivers nested in the parent\'s own template resolve', () => {
+    // `<Wrapper><Inner><strong/></Inner></Wrapper>` in Parent's template:
+    // both receivers are Parent's (hosted by it, at slots s2 and s5).
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+          <aside bf-s="Parent_abc_s5" bf-h="Parent_abc" bf-m="s5">
+            <strong bf="^s1">value</strong>
+          </aside>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]', ['s2', 's5'])?.textContent).toBe('value')
+  })
+
+  test("#3324: never resolves a slot inside a receiver's own internal component", () => {
+    // The receiver (slot s2) renders a component of its own (hosted by the
+    // receiver) holding an independently authored `^s1`, before the
+    // parent's forwarded `^s1`.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+          <aside bf-s="Parent_abc_s2_s1" bf-h="Parent_abc_s2" bf-m="s1">
+            <em bf="^s1">receiver's</em>
+          </aside>
+          <strong bf="^s1">parent's</strong>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])?.textContent).toBe("parent's")
+    document.querySelector('strong')!.remove()
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])).toBeNull()
+  })
+
+  test('#3324: a parent-owned slot outside nested scopes wins over a nested one', () => {
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <section bf-s="Parent_abc_s0" bf-h="Parent_abc" bf-m="s0">
+          <em bf="^s1">forwarded</em>
+        </section>
+        <strong bf="^s1">own</strong>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]', ['s0'])?.textContent).toBe('own')
+  })
+
+  test("#3324: never resolves another component's same-numbered forwarded slot", () => {
+    // `Other` (slot s0 of Parent) forwards its own `^s1` into a child of its
+    // own, and a fragment-rooted receiver of Other's stamps its scope onto
+    // another `^s1` (CSR shape); Parent forwards its `^s1` into the
+    // component at slot s2. Only the latter is Parent's, whatever the order.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <article bf-s="Parent_abc_s0" bf-h="Parent_abc" bf-m="s0">
+          <section bf-s="Parent_abc_s0_s3" bf-h="Parent_abc_s0" bf-m="s3">
+            <em bf="^s1">other's</em>
+          </section>
+          <u bf="^s1" bf-s="Parent_abc_s0_s4" bf-h="Parent_abc_s0" bf-m="s4">other's</u>
+          <i bf="^s1">other's, SSR passthrough</i>
+        </article>
+        <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+          <strong bf="^s1">parent's</strong>
+        </section>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])?.textContent).toBe("parent's")
+    // With only the other component's forwarded slots present, nothing.
+    document.querySelector('[bf-s="Parent_abc_s2"]')!.remove()
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])).toBeNull()
+  })
+
+  test('#3324: a fragment-rooted receiver stamped on the forwarded element itself', () => {
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <mark bf="^s1" bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">own</mark>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    expect(qsa(scope, '[bf="^s1"]', ['s2'])?.textContent).toBe('own')
+  })
+
   // qsa() doubles as the child-scope-resolution lookup for compiled
   // component-loop / branch-nested-child code (feeding initChild()) — its
   // target legitimately carries bf-s itself. The nested-child-scope skip

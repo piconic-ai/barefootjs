@@ -1644,6 +1644,23 @@
         "text"
       ]
     },
+    "cond-forwarded-child-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "condition-position-ternary": {
       "kinds": [
         "call",

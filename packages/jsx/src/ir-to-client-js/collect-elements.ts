@@ -1253,9 +1253,16 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
  */
 function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): ConditionalBranchReactiveAttr[] {
   const attrs: ConditionalBranchReactiveAttr[] = []
-  walkIR(node, null, {
-    ...stopAt<null>('conditional', 'ifStatement', 'loop'),
-    element: ({ node: el, descend }) => {
+  // Scope: the slot ids of the components whose `children` enclose the
+  // current node — a parent-owned (`^sN`) element renders inside one of
+  // them, which is how the runtime tells it from another component's
+  // same-numbered forwarded element (#3324).
+  walkIR<readonly string[]>(node, [], {
+    ...stopAt<readonly string[]>('conditional', 'ifStatement', 'loop'),
+    component: ({ node: c, scope, descend }) => {
+      descend(c.slotId ? [...scope, c.slotId] : scope)
+    },
+    element: ({ node: el, scope, descend }) => {
       if (!el.slotId) {
         descend()
         return
@@ -1276,6 +1283,7 @@ function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): Conditi
         if (!attr.clientOnly && !decideWrapForAttr(expanded.expr, ctx, attr).wrap) continue
         attrs.push({
           slotId: el.slotId,
+          ...(el.slotId.startsWith('^') && { receiverSlotIds: scope }),
           attrName: attr.name,
           expression: expanded.expr,
           ...pickAttrMetaFromIR(attr),

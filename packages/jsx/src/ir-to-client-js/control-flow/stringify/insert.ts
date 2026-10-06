@@ -162,7 +162,12 @@ function emitArmBody(
   for (const [slotId, attrs] of attrsBySlot) {
     const v = varSlotId(slotId)
     const elVar = `__ra_${v}`
-    lines.push(`${indent}{ const ${elVar} = qsa(__branchScope, '[bf="${slotId}"]')`)
+    // A parent-owned slot passes the components it is forwarded into, so
+    // the lookup can cross into their scopes without resolving another
+    // component's same-numbered forwarded element (#3324).
+    const receivers = attrs[0].receiverSlotIds
+    const receiverArg = receivers && receivers.length > 0 ? `, ${JSON.stringify(receivers)}` : ''
+    lines.push(`${indent}{ const ${elVar} = qsa(__branchScope, '[bf="${slotId}"]'${receiverArg})`)
     lines.push(`${indent}${DEDUP_STORE_DECL}`)
     lines.push(`${indent}if (${elVar}) {`)
     let ordinal = 0
