@@ -4320,12 +4320,6 @@
               ]
             },
             {
-              "fixture": "loop-param-prop-alias-name-collision",
-              "limitations": [
-                "underscore-prefixed-prop-name"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -7288,12 +7282,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "loop-param-prop-alias-name-collision",
-              "limitations": [
-                "underscore-prefixed-prop-name"
               ]
             },
             {

@@ -3312,14 +3312,6 @@
           ]
         }
       },
-      "loop-param-prop-alias-name-collision": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "underscore-prefixed-prop-name"
-          ]
-        }
-      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -5565,10 +5557,6 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
-      "loop-param-prop-alias-name-collision": {
-        "description": "A prop named like the generated root-prop alias keeps its own value next to a shadowing loop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-prop-alias-name-collision.ts"
-      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
@@ -6396,19 +6384,6 @@
       "adapters": [
         "mojolicious",
         "xslate"
-      ]
-    },
-    "underscore-prefixed-prop-name": {
-      "title": "A prop name that starts with an underscore",
-      "kind": "silent",
-      "given": "a component prop whose name starts with `_` (for example `__bf_root_value`), read in the template",
-      "expected": "the prop value renders like any other prop",
-      "actual": "throws at render time: the prop becomes an unexported struct field the template cannot read",
-      "fixtures": [
-        "loop-param-prop-alias-name-collision"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "untyped-loop-array-no-row-struct": {
