@@ -350,7 +350,7 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   })
 
   test('a comparison test is already a bool — no bf_truthy wrap', () => {
-    expect(render("n >= 10 ? 'big' : 'small'")).toBe('{{(bf_ternary (ge .N 10) "big" "small")}}')
+    expect(render("n >= 10 ? 'big' : 'small'")).toBe('{{(bf_ternary (bf_ge .N 10) "big" "small")}}')
   })
 
   test('a negation test is already a bool — no outer bf_truthy wrap', () => {
@@ -364,7 +364,7 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   test('`!x` coerces a non-bool operand through bf_truthy; a bool-shaped operand keeps bare not', () => {
     expect(render('!tags')).toBe('{{not (bf_truthy .Tags)}}')
     expect(render('!!tags')).toBe('{{not (not (bf_truthy .Tags))}}')
-    expect(render('!(n === 1)')).toBe('{{not (eq .N 1)}}')
+    expect(render('!(n === 1)')).toBe('{{not (bf_eq .N 1)}}')
     expect(render('!(a && b)')).toBe('{{not (bf_truthy (and .A .B))}}')
   })
 
@@ -506,7 +506,7 @@ export function T() {
   return <span>{(x() === \`\${y()}-\${z()}\`) ? 'a' : 'b'}</span>
 }
 `)
-    expect(template).toContain('{{if eq .X (bf_concat_str (bf_concat_str .Y "-") .Z)}}')
+    expect(template).toContain('{{if bf_eq .X (bf_concat_str (bf_concat_str .Y "-") .Z)}}')
   })
 
   // `arrayMethod()`'s per-method cases (`join`, `includes`, `indexOf`, …) all
@@ -559,7 +559,7 @@ export function P() {
   return <div>{(mode() === 'a' ? show() : hide()) ? <span>Y</span> : <span>N</span>}</div>
 }
 `)
-    expect(template).toContain('{{if (bf_ternary (eq (bf_string .Mode) "a") .Show .Hide)}}')
+    expect(template).toContain('{{if (bf_ternary (bf_eq (bf_string .Mode) "a") .Show .Hide)}}')
     // The old bug collapsed the condition to just the test — assert we no
     // longer emit the branch-discarding `{{if (eq (bf_string .Mode) "a")}}`.
     expect(template).not.toContain('{{if (eq (bf_string .Mode) "a")}}')

@@ -137,7 +137,7 @@ export function P() {
     // `{{if}}…{{end}}` fragment. `.Params.Sort` is interface{} (a map value),
     // so `eq` coerces it via `bf_string` before comparing to the string literal.
     expect(template).toContain(
-      'class="{{(bf_ternary (eq (bf_string .Params.Sort) "date") "sort on" "sort")}}"',
+      'class="{{(bf_ternary (bf_eq (bf_string .Params.Sort) "date") "sort on" "sort")}}"',
     )
   })
 
@@ -159,7 +159,7 @@ export function P(props: { tags: string[] }) {
     expect(template).not.toContain('.TagClass')
     // params() is a root memo (→ $.Params) and t is the loop var (→ .); the
     // inlined ternary lowers to the pipeline `bf_ternary` (#2335).
-    expect(template).toContain('{{(bf_ternary (eq $.Params.Tag .) "tag on" "tag")}}')
+    expect(template).toContain('{{(bf_ternary (bf_eq $.Params.Tag .) "tag on" "tag")}}')
   })
 
   test('a helper that delegates to a non-URL-builder local helper is not inlined', () => {
@@ -203,11 +203,11 @@ export function P(props: { a?: string; b?: string }) {
     expect(template).not.toContain('.Cls')
     // The inlined ternary lowers to the pipeline `bf_ternary` (#2335), so the
     // test sits in `bf_ternary`'s first argument. `===` must stay the outer
-    // operation there (`eq .Sig …`). Without parenthesizing the arg,
+    // operation there (`bf_eq .Sig …`). Without parenthesizing the arg,
     // `sig() === props.a ?? props.b` would bind as
     // `(sig() === props.a) ?? props.b` → a `bf_nullish`/`or`-rooted test. This
     // matches what a direct `sig() === (props.a ?? props.b)` lowers to.
-    expect(template).toContain('(bf_ternary (eq .Sig')
+    expect(template).toContain('(bf_ternary (bf_eq .Sig')
     expect(template).not.toContain('(bf_ternary (bf_nullish')
     expect(template).not.toContain('(bf_ternary (or')
   })
