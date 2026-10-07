@@ -341,6 +341,29 @@ export function numericMemoOperands(
   return numericAtom(body.left) && numericAtom(body.right) ? [body.left, body.right] : null
 }
 
+/**
+ * The dividend of a `<getter()> / N`, `props.X / N` or `<destructured prop> / N`
+ * memo body (`N` a positive integer literal), else null. Go's `/` on an int
+ * operand truncates where JS yields a fraction (`1234567890 / 8` is
+ * `154320986.25`), so such a body computes through the boxed `bf.Div`
+ * (#3379). The field classifier ({@link isBoxedNumericMemoBody}) and the
+ * constructor ({@link memoInitialFromParsedBody}) share this decision.
+ */
+function literalDivisionDividend(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  propsParams: { name: string }[],
+): ParsedExpr | null {
+  if (!body || body.kind !== 'binary' || body.op !== '/') return null
+  const right = body.right
+  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
+  if (!Number.isInteger(right.value) || right.value <= 0) return null
+  const left = body.left
+  if (getterCallName(left)) return left
+  const propName = propsMemberName(left) ?? (left.kind === 'identifier' ? left.name : null)
+  return propName && propsParams.some(p => p.name === propName) ? left : null
+}
+
 /** `+ - * /` → the shared arithmetic runtime helper that boxes its result. */
 const BOXED_ARITHMETIC_HELPER: Readonly<Record<string, string>> = { '+': 'Add', '-': 'Sub', '*': 'Mul', '/': 'Div' }
 
@@ -373,12 +396,15 @@ function boxedLiteralArithmeticDep(
 /**
  * Whether a memo body's constructor value is the shared arithmetic runtime's
  * boxed `any` (`bf.Add` / `bf.Sub` / `bf.Mul` / `bf.Div`) rather than a Go
- * number. Two shapes:
+ * number. Four shapes:
  *
  * - two numeric operands ({@link numericMemoOperands}: `list().length +
  *   count()` → `bf.Add(…)`);
  * - literal arithmetic on a memo that is itself boxed (`total() * 2` →
- *   `bf.Mul(<total>, 2)`), recursively along the memo chain.
+ *   `bf.Mul(<total>, 2)`), recursively along the memo chain;
+ * - division of a number read by a positive integer literal
+ *   ({@link literalDivisionDividend}: `props.value / 8` → `bf.Div(…)`);
+ * - an identity read of a boxed memo (`() => eighth()`), recursively.
  *
  * The one decision both the memo field's Go type (`interface{}`, so the
  * boxed value assigns) and the constructor emission
@@ -392,6 +418,16 @@ export function isBoxedNumericMemoBody(
   seen: ReadonlySet<string> = new Set(),
 ): boolean {
   if (numericMemoOperands(ctx, body, signals, propsParams)) return true
+  if (literalDivisionDividend(ctx, body, propsParams)) return true
+  // An identity memo (`() => eighth()`) passes its dependency's boxed value
+  // through unchanged, so it is boxed exactly when that memo is.
+  const identityDep = body ? getterCallName(body) : null
+  if (identityDep && !seen.has(identityDep) && !signals.some(s => s.getter === identityDep)) {
+    const dep = ctx.state.currentMemos?.find(m => m.name === identityDep)
+    if (dep?.parsed && isBoxedNumericMemoBody(ctx, dep.parsed, signals, propsParams, new Set([...seen, identityDep]))) {
+      return true
+    }
+  }
   return boxedLiteralArithmeticDep(ctx, body, signals, propsParams, seen) !== null
 }
 
@@ -724,6 +760,9 @@ export function memoInitialFromParsedBody(
       // bare would emit invalid Go (Copilot review, #2200: e.g. `operator
       // is not defined on interface{}`/`string`). Bail (fall through to the
       // caller's zero-value default) rather than emit broken arithmetic.
+      // A `/` body computes through `bf.Div`, whose `any` operands accept
+      // any of those forms (#3379, `literalDivisionDividend`).
+      if (depInitial !== null && operator === '/') return `bf.Div(${depInitial}, ${operand})`
       const isArithmeticSafe = depInitial !== null && !depInitial.startsWith('func(')
       if (isArithmeticSafe) {
         // A signal's own initial value is always a simple atom (a literal,
@@ -750,6 +789,7 @@ export function memoInitialFromParsedBody(
       const param = propsParams.find(p => p.name === propName)
       if (param) {
         const hoisted = propFallbackVars.get(propName)
+        if (operator === '/') return `bf.Div(${hoisted ? hoisted.varName : `in.${capitalizeFieldName(propName)}`}, ${operand})`
         if (hoisted) return `${hoisted.varName} ${operator} ${operand}`
         const fieldName = capitalizeFieldName(propName)
         if (param.type) {
@@ -766,6 +806,7 @@ export function memoInitialFromParsedBody(
       const param = propsParams.find(p => p.name === varName)
       if (param) {
         const fieldName = capitalizeFieldName(param.sourceName ?? varName)
+        if (operator === '/') return `bf.Div(in.${fieldName}, ${operand})`
         if (param.type) {
           const goType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
           if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`

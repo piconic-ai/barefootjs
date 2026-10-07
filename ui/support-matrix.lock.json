@@ -11058,10 +11058,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "number-division-text",
-        "description": "Integer operands divided in text keep the fractional result",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-text.ts",
-        "code": "props.value / 4"
+        "fixture": "memo-literal-division-destructured",
+        "description": "A memo dividing a destructured number prop by an integer literal renders the JavaScript quotient",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-literal-division-destructured.ts",
+        "code": "value / 8"
       }
     },
     "binary:<": {

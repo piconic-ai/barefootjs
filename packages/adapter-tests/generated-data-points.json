@@ -2863,6 +2863,57 @@
       }
     }
   ],
+  "memo-literal-division": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0,
+        "even": 2469135780
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7,
+        "even": 2469135780
+      }
+    },
+    {
+      "name": "gen:even:zero",
+      "props": {
+        "value": 1234567890,
+        "even": 0
+      }
+    },
+    {
+      "name": "gen:even:negative",
+      "props": {
+        "value": 1234567890,
+        "even": -7
+      }
+    },
+    {
+      "name": "gen:even:large",
+      "props": {
+        "value": 1234567890,
+        "even": 1234567890
+      }
+    }
+  ],
+  "memo-literal-division-destructured": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",
