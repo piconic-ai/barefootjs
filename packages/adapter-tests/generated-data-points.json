@@ -3619,7 +3619,35 @@
       }
     }
   ],
+  "number-arithmetic-attr-exponent-boundaries": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
   "number-arithmetic-attr-formatting": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    }
+  ],
+  "number-arithmetic-attr-forms": [
     {
       "name": "gen:value:zero",
       "props": {

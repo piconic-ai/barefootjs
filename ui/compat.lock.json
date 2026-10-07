@@ -4207,11 +4207,41 @@
           ]
         }
       },
-      "number-arithmetic-attr-formatting": {
-        "go-template": {
+      "number-arithmetic-attr-exponent-boundaries": {
+        "blade": {
           "kind": "render",
           "limitations": [
-            "number-arithmetic-attr-exponent-form"
+            "number-exponent-boundary-spelling"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "number-exponent-boundary-spelling"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "number-exponent-boundary-spelling"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "number-exponent-boundary-spelling"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "number-exponent-boundary-spelling"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "number-exponent-boundary-spelling"
           ]
         }
       },
@@ -5669,9 +5699,9 @@
         "description": "A ternary attribute with a nullable branch renders a taken false branch as \"false\"",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-ternary-false-branch-attr.ts"
       },
-      "number-arithmetic-attr-formatting": {
-        "description": "Arithmetic results in attribute values use JavaScript number spelling",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-formatting.ts"
+      "number-arithmetic-attr-exponent-boundaries": {
+        "description": "Attribute arithmetic spells numbers as JavaScript does at the 1e-6 and 1e21 boundaries",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-exponent-boundaries.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -6241,17 +6271,22 @@
         "go-template"
       ]
     },
-    "number-arithmetic-attr-exponent-form": {
-      "title": "An arithmetic result in an attribute value prints in exponent form",
+    "number-exponent-boundary-spelling": {
+      "title": "A number at the decimal/exponent notation boundary keeps the host language spelling",
       "kind": "silent",
-      "given": "an attribute whose value is an arithmetic expression with a non-integral result of ten or more digits (`data-sum={props.value + 0.5}` with `value` 1234567890)",
-      "expected": "the attribute carries the JavaScript number spelling (`1234567890.5`), as in text position",
-      "actual": "renders the value in exponent form (`1.2345678905e+09`)",
+      "given": "an attribute arithmetic result at 1e-6 or below, or at 1e21 or above (`data-small={props.value / 1e15}` with `value` 1234567890)",
+      "expected": "the JavaScript spelling: decimal within [1e-6, 1e21), otherwise an unpadded lower-case exponent (`0.00000123456789`, `1.23456789e-7`, `1.23456789e+21`)",
+      "actual": "renders the host language spelling: an exponent at 1e-6 (`1.23456789e-6`), a padded (`e-07`) or upper-case (`E+21`) exponent, or the full digits at 1e21",
       "fixtures": [
-        "number-arithmetic-attr-formatting"
+        "number-arithmetic-attr-exponent-boundaries"
       ],
       "adapters": [
-        "go-template"
+        "blade",
+        "erb",
+        "jinja",
+        "mojolicious",
+        "twig",
+        "xslate"
       ]
     },
     "off-subset-callback-body": {

@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // An attribute number at the 1e-6 / 1e21 notation boundary prints with
+  // Python's `repr` pads a negative exponent (`1.23456789e-06`) and prints 1e21 as its full digits.
+  'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
   // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
   // operand at render, where JS coerces `null` to `0` (#3322).
   'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
