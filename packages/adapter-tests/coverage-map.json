@@ -6122,6 +6122,7 @@
         "binary:*",
         "binary:+",
         "binary:-",
+        "binary:<",
         "binary:>",
         "literal:number",
         "literal:string",

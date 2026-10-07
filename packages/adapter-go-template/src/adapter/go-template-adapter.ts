@@ -10223,7 +10223,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const attrConsequent = lowerRegisteredAttrCall(this.emitCtx, name, parsed.consequent)
           const body = attrConsequent !== null
             ? attrConsequent
-            : `${nameTok}="{{${this.renderParsedExpr(parsed.consequent)}}}"`
+            : `${nameTok}="{{${this.numericTextExpression(this.renderParsedExpr(parsed.consequent), parsed.consequent)}}}"`
           return `${preamble}{{if ${goCond}}}${body}{{end}}`
         }
         // #2743 follow-up (pullfrog review on #2841): a `query` guard-list

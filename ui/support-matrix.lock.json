@@ -11083,10 +11083,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "data-table",
-        "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts",
-        "code": "aStr < bStr"
+        "fixture": "number-arithmetic-attr-forms",
+        "description": "Attribute arithmetic keeps JavaScript number spelling for negative, integral, ternary and memo values",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-forms.ts",
+        "code": "props.value < 0"
       }
     },
     "binary:===": {
