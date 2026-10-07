@@ -954,6 +954,11 @@ function resolveStringConcatChainGo(
     const signal = signals.find(sig => sig.getter === getter)
     if (signal) {
       if (!isPlainStringSignal(signal, propsParams)) return null
+      // A string-literal seed lowers from its parsed value, whatever the
+      // source quote style (`'can\'t'`, a backtick literal) — the raw-text
+      // seed lowering is not quote-safe here.
+      const seed = signal.parsed
+      if (seed?.kind === 'literal' && seed.literalType === 'string') return JSON.stringify(seed.value)
       const value = resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, inner)
       return value === null ? null : `bf.String(${value})`
     }
