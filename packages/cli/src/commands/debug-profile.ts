@@ -70,8 +70,11 @@ READING A DYNAMIC RUN
                     a batch() wrap is statically proven behavior-preserving;
                     'safety unverified' means a wrap would help but couldn't be
                     proven safe. The fix: wrap the handler body in batch().
-  coverage          Handlers exercised vs the IR total, plus any ids that
-                    couldn't be mapped to source — the honest scope caveat.
+  coverage          DOM handlers exercised vs the DOM handlers in the run (each
+                    on* listener on an element; a callback prop passed to a
+                    child runs inside the child's handler and is not counted
+                    on its own), plus any ids that couldn't be mapped to
+                    source — the honest scope caveat.
 
 FLAGS
   --diff <ref>        Compile-diff against a git ref (mode selector).

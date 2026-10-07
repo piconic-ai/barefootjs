@@ -5,7 +5,7 @@
  * Used when spread props cannot be statically expanded (open types).
  */
 
-import { createEffect } from '@barefootjs/client/reactive'
+import { beginTurn, createEffect, endTurn } from '@barefootjs/client/reactive'
 import { classifyDOMProp, type DOMPropClassification } from '@barefootjs/shared'
 import { styleToCss } from './style.ts'
 
@@ -27,11 +27,18 @@ function toEventName(jsxPropName: string): string {
  * @param el - The target DOM element
  * @param source - The props/rest object to read attributes from
  * @param excludeKeys - Keys already handled statically (don't apply twice)
+ * @param turnSite - Profile mode only (#3376): the compiler passes this spread
+ *   site's handler id prefix (`<Component>#handler:<slotId>`), and every event
+ *   handler wired here is bracketed with `beginTurn("<turnSite>:<event>")` /
+ *   `endTurn()`, exactly like an explicit JSX `on*` handler, so the work a
+ *   rest-forwarded callback triggers is attributed to an interaction turn.
+ *   Production builds never pass it, so their listeners are the bare handlers.
  */
 export function applyRestAttrs(
   el: Element,
   source: Record<string, unknown>,
-  excludeKeys: string[]
+  excludeKeys: string[],
+  turnSite?: string,
 ): void {
   const exclude = new Set(excludeKeys)
 
@@ -50,7 +57,21 @@ export function applyRestAttrs(
     } else if (c.kind === 'event') {
       const handler = source[key]
       if (typeof handler === 'function') {
-        el.addEventListener(toEventName(key), handler as EventListener)
+        const eventName = toEventName(key)
+        const handlerId = turnSite === undefined ? undefined : `${turnSite}:${eventName}`
+        el.addEventListener(
+          eventName,
+          handlerId === undefined
+            ? (handler as EventListener)
+            : (...args: unknown[]) => {
+                beginTurn(handlerId)
+                try {
+                  return (handler as (...a: unknown[]) => unknown)(...args)
+                } finally {
+                  endTurn()
+                }
+              },
+        )
       }
     }
   }
