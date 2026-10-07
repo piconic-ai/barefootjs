@@ -3,10 +3,9 @@
 // Test fixture: a keyed `.map()` row whose `<button>` carries a `ref`
 // callback that moves the element to `document.body` with `createPortal`
 // (the `ref`-callback portal pattern the overlay primitives use, applied to
-// a row element). The callback is declared in the component body, so the
-// SSR-portal recognition (`ssrPortalOwnerScope`) does not flag it and every
-// adapter renders the button inline in its `<li>`. The button's click
-// handler bumps a counter outside the loop.
+// a row element). Every adapter renders the button at the portal outlet
+// with its row key, and the row adopts it at hydration (#3318). The
+// button's click handler bumps a counter outside the loop.
 
 import { createSignal, createPortal } from '@barefootjs/client'
 

@@ -101,7 +101,7 @@ function preambleLineForHandler(
 }
 
 export function stringifyEventDelegation(lines: string[], plan: EventDelegationPlan): void {
-  const { containerVar, events, itemLookup, profileComponentName, ownHandlers } = plan
+  const { containerVar, events, itemLookup, profileComponentName, ownHandlers, relayRowPortals } = plan
   const eventsByName = new Map<string, LoopChildEvent[]>()
   for (const ev of events) {
     if (!eventsByName.has(ev.eventName)) eventsByName.set(ev.eventName, [])
@@ -121,10 +121,14 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
     const ownHandlerCall = ownHandler
       ? withTurn(`(${ownHandler.handler.trim()})(__bfEvt)`, profileComponentName, ownHandler.slotId, ownHandler.eventName)
       : null
-    if (useCapture) {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (__bfEvt) => {`)
+    const listenedName = useCapture ? eventName : domEventName
+    if (relayRowPortals) {
+      // Named so the same listener can also be relayed to the elements rows
+      // portal out of the container (#3318).
+      lines.push(`  if (${containerVar}) {`)
+      lines.push(`  const __bfDl = (__bfEvt) => {`)
     } else {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${domEventName}', (__bfEvt) => {`)
+      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${listenedName}', (__bfEvt) => {`)
     }
     lines.push(`    const target = __bfEvt.target`)
     for (const ev of evs) {
@@ -137,7 +141,12 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
       // the `container.contains(...)` guard rejects the foreign match and the
       // handler falls through to the correct branch.
       lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
-      lines.push(`    if (${childVar}El && ${containerVar}.contains(${childVar}El)) {`)
+      // A row-portaled element sits outside the container; the registry
+      // vouches for it instead (#3318).
+      const inContainer = relayRowPortals
+        ? `(${containerVar}.contains(${childVar}El) || isRowPortalOf(${childVar}El, ${containerVar}))`
+        : `${containerVar}.contains(${childVar}El)`
+      lines.push(`    if (${childVar}El && ${inContainer}) {`)
       const handlerCall = withTurn(`(${ev.handler.trim()})(__bfEvt)`, profileComponentName, ev.childSlotId, ev.eventName)
       switch (itemLookup.kind) {
         case 'keyed':
@@ -179,7 +188,13 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
       // own handler still fires — same as today's separate listener.
       lines.push(`    if (!__bfEvt.cancelBubble) { ${ownHandlerCall} }`)
     }
-    if (useCapture) {
+    if (relayRowPortals) {
+      const captureArg = useCapture ? ', true' : ''
+      lines.push(`  }`)
+      lines.push(`  ${containerVar}.addEventListener('${listenedName}', __bfDl${captureArg})`)
+      lines.push(`  relayRowPortalEvents(${containerVar}, '${listenedName}', __bfDl${captureArg})`)
+      lines.push(`  }`)
+    } else if (useCapture) {
       lines.push(`  }, true)`)
     } else {
       lines.push(`  })`)

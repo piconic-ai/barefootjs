@@ -46,6 +46,13 @@ export interface EventDelegationPlan {
    * (the common case: no collision) keeps the emitted listener unchanged.
    */
   ownHandlers?: Map<string, ContainerOwnHandler>
+  /**
+   * A row of this loop portals an element out of the container (#3318).
+   * The stringifier then also relays each listener to the adopted elements
+   * (`relayRowPortalEvents`) and accepts slot matches inside them
+   * (`isRowPortalOf`). `undefined` keeps the emitted listener unchanged.
+   */
+  relayRowPortals?: boolean
 }
 
 /**

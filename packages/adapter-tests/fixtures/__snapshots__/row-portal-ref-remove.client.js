@@ -1,11 +1,15 @@
 import { $, adoptRowPortal, claimRowPortals, createComponent, createEffect, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, isRowPortalOf, lazySlots, mapArray, qsaItem, relayRowPortalEvents } from '@barefootjs/client/runtime'
 
 
-export function initRowPortalRef(__scope, _p = {}) {
+export function initRowPortalRefRemove(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [count, setCount] = createSignal(0)
+  const [rows, setRows] = createSignal(_p.rows ?? undefined)
+  createEffect(() => {
+    const __val = _p.rows
+    if (__val !== undefined) setRows(__val)
+  })
   const mountContent = (el) => {
     if (el.parentNode !== document.body) {
       const ownerScope = el.closest('[bf-s]') ?? undefined
@@ -17,13 +21,13 @@ export function initRowPortalRef(__scope, _p = {}) {
 
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = count()
+    const __val = rows().length
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = `<li data-key=""><button type="button" class="row" data-key="" bf="s3"><!--bf:s2--><!--/--></button></li>`
-  mapArray(() => _p.rows, _s4, (r) => String(r), (r, __idx, __existing) => {
+  mapArray(() => rows(), _s4, (r) => String(r), (r, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     if (__existing) claimRowPortals(__existing, __scopeId, ["s3"], _s4)
     const __p = __existing ? null : [__el.firstChild]
@@ -42,9 +46,9 @@ export function initRowPortalRef(__scope, _p = {}) {
       const li = s3El.closest('[data-key]')
       if (li) {
         const key = li.getAttribute('data-key')
-        const r = _p.rows.find(item => String(item) === key)
+        const r = rows().find(item => String(item) === key)
         if (r) {
-          ;(() => setCount(c => c + 1))(__bfEvt)
+          ;(() => setRows(rs => rs.filter(x => x !== r)))(__bfEvt)
         }
       }
       return
@@ -56,5 +60,5 @@ export function initRowPortalRef(__scope, _p = {}) {
 
 }
 
-hydrate('RowPortalRef', { init: initRowPortalRef, template: (_p) => `<div><p class="count" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></p><ul bf="s4"><!--bf-loop:l0-->${_p.rows.map((r) => `<li data-key="${escapeAttr(r)}"><button type="button" class="row" data-key="${escapeAttr(r)}" bf="s3"><!--bf:s2-->${escapeText(r)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
-export function RowPortalRef(_p, __bfKey) { return createComponent('RowPortalRef', _p, __bfKey) }
+hydrate('RowPortalRefRemove', { init: initRowPortalRefRemove, template: (_p) => `<div><p class="count" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((_p.rows ?? undefined).length)}<!--/--></p><ul bf="s4"><!--bf-loop:l0-->${(_p.rows ?? undefined).map((r) => `<li data-key="${escapeAttr(r)}"><button type="button" class="row" data-key="${escapeAttr(r)}" bf="s3"><!--bf:s2-->${escapeText(r)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+export function RowPortalRefRemove(_p, __bfKey) { return createComponent('RowPortalRefRemove', _p, __bfKey) }

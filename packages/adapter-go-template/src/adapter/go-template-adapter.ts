@@ -6125,7 +6125,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `</body>` — see `wrapSsrPortalElement`'s docstring for why this
     // needs its own runtime path distinct from the explicit `<Portal>`
     // component's `.Portals.Add`.
-    if (element.ssrPortalOwnerScope) {
+    //
+    // Inside a `{{range}}` (a loop row, #3318), `.` is the row item and the
+    // collected string would be re-executed against it without the loop's
+    // variables, so the element renders inline in its row instead; the
+    // client's `ref` callback portals it at hydration and the row adopts it
+    // (limitation `go-loop-row-portal-inline`).
+    const portalOut = element.ssrPortalOwnerScope && !this.inLoop
+    if (portalOut) {
       hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{bfScopeAttr .}}"`
     }
 
@@ -6138,7 +6145,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ? `<${tag}${attrs}${hydrationAttrs}>`
       : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    if (element.ssrPortalOwnerScope) {
+    if (portalOut) {
       return this.wrapSsrPortalElement(rendered)
     }
     return rendered

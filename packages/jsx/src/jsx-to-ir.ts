@@ -4561,6 +4561,128 @@ function applyLoopKeyAttr(node: IRNode, name: string, value: string): void {
   }
 }
 
+/**
+ * Give every SSR-portal element (`ssrPortalOwnerScope`) in a `.map()` row
+ * the row's key attribute (#3318). SSR places such an element at its portal
+ * outlet, outside the row, so its slot and owner scope alone cannot say
+ * which row it belongs to; the row key on the element itself lets
+ * hydration pair it with its row (`claimRowPortals`) and lets the loop's
+ * delegated listener resolve the row from the element
+ * (`closest('[data-key]')`). Every SSR adapter renders `IRElement.keyAttr`,
+ * and the client templates render it from a `key` attribute, so the element
+ * also gets a copy of the row root's `key` attribute; no adapter changes
+ * are needed.
+ *
+ * Only a keyed top-level loop (`depth === 0`) is supported. A nested loop's
+ * row key is not unique on its own and an unkeyed row has none, so a
+ * portal element there is refused (BF064) rather than rendered at an
+ * outlet nothing can pair. So is one forwarded as a child component's
+ * `children` (or inside a provider / `<Async>`), where the row's key is not
+ * this element's to render; one inside a reactive conditional in the row,
+ * whose `ref` the conditional's branch runs rather than the row; and the
+ * row root itself, whose move leaves no inline row for hydration to find.
+ * Nested loops are skipped: their own construction applies this to their
+ * rows (a nested loop's portaled row root is refused here, as it already
+ * carries its `keyAttr`).
+ */
+function applyRowPortalKeyAttrs(
+  children: IRNode[],
+  key: string | null,
+  depth: number,
+  ctx: TransformContext,
+): void {
+  const refuse = (el: IRElement, reason: string): void => {
+    ctx.analyzer.errors.push(
+      createError(ErrorCodes.ROW_PORTAL_UNPAIRABLE, el.loc, {
+        message:
+          `A ref callback portals <${el.tag}> out of a .map() row, but ${reason}, so hydration cannot pair the ` +
+          'portaled element with its row and its event handlers would stop running after hydration.',
+        suggestion: {
+          message:
+            'Portal an element inside the root of a keyed top-level .map() row (`key={…}` on the row root), ' +
+            "outside reactive conditionals and child components' children, or move the portal outside the loop.",
+          escape: [{ kind: 'rewrite' }],
+        },
+      }),
+    )
+  }
+  // `blocked` names why an element at this position cannot be paired with
+  // its row; `null` means it can.
+  const visit = (node: IRNode, blocked: string | null): void => {
+    switch (node.type) {
+      case 'element':
+        if (node.ssrPortalOwnerScope) {
+          // `applyLoopKeyAttr` stamps the row root (of this loop, or of a
+          // nested loop already built) before this pass: a portaled row root
+          // leaves no inline row for hydration to find.
+          if (node.keyAttr) refuse(node, 'it is the root element of the row')
+          else if (blocked) refuse(node, blocked)
+          else if (key === null) refuse(node, 'the loop has no `key`')
+          else if (depth > 0) refuse(node, 'the loop is nested inside another loop')
+          else {
+            node.keyAttr = { name: keyAttrName(depth), value: key }
+            // The client templates render the row key from a `key` attribute
+            // gated on `keyAttr`, as they do for the row root, so the element
+            // carries a copy of the row root's.
+            if (!node.attrs.some((a) => a.name === 'key')) {
+              node.attrs.push(rowKeyAttribute(children) ?? { name: 'key', value: { kind: 'expression', expr: key }, loc: node.loc })
+            }
+          }
+        }
+        for (const c of node.children) visit(c, blocked)
+        return
+      case 'fragment':
+        for (const c of node.children) visit(c, blocked)
+        return
+      case 'conditional': {
+        // A reactive conditional (`slotId`) owns its branch's refs, which
+        // the row's ref collection skips, so the row cannot adopt them.
+        const inner = blocked ?? (node.slotId ? 'it is rendered inside a reactive conditional in the row' : null)
+        visit(node.whenTrue, inner)
+        visit(node.whenFalse, inner)
+        return
+      }
+      case 'if-statement':
+        visit(node.consequent, blocked)
+        if (node.alternate) visit(node.alternate, blocked)
+        return
+      case 'component':
+      case 'provider':
+        for (const c of node.children) visit(c, blocked ?? "it is rendered inside another component's children")
+        return
+      case 'async':
+        visit(node.fallback, blocked ?? "it is rendered inside another component's children")
+        for (const c of node.children) visit(c, blocked ?? "it is rendered inside another component's children")
+        return
+      default:
+        return
+    }
+  }
+  for (const c of children) visit(c, null)
+}
+
+/** The `key` attribute the row's key was read from (`extractLoopKey`), when it is on an element. */
+function rowKeyAttribute(children: IRNode[]): IRAttribute | null {
+  const find = (node: IRNode): IRAttribute | null => {
+    switch (node.type) {
+      case 'element':
+        return node.attrs.find((a) => a.name === 'key') ?? null
+      case 'conditional':
+        return find(node.whenTrue)
+      case 'fragment': {
+        const first = node.children.find(
+          (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
+        )
+        return first ? find(first) : null
+      }
+      default:
+        return null
+    }
+  }
+  const first = children.find((c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim()))
+  return first ? find(first) : null
+}
+
 function loopBodyItemConditional(children: IRNode[]): IRConditional | null {
   const real = children.filter(
     (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
@@ -5419,6 +5541,7 @@ function transformMapCall(
       applyLoopKeyAttr(children[0], resolvedKeyAttrName, key)
     }
   }
+  applyRowPortalKeyAttrs(children, key, depth, ctx)
 
   // Stage 3 / D5 (spec/callback-fidelity.md) — the keyFn is hoisted: `mapArray`
   // computes it from the raw item BEFORE the callback body runs, so the key must
@@ -7092,14 +7215,6 @@ interface LocalCallback {
 interface RefCallback extends LocalCallback {
   /** Bound by name (`ref={handleMount}`) rather than written inline. */
   named: boolean
-  /**
-   * True only for a named callback declared in the `ref`'s innermost
-   * enclosing function scope; false for an inline callback and for one
-   * `findNamedCallback`'s outward walk found further out (e.g. a `ref` in a
-   * `.map()` row naming a component-body handler). BF063 ignores this;
-   * `isSsrPortalRefCallback` requires it.
-   */
-  innermostScope: boolean
 }
 
 /**
@@ -7111,11 +7226,11 @@ interface RefCallback extends LocalCallback {
 function resolveRefCallback(refExpr: ts.Expression): RefCallback | undefined {
   const expr = unwrapTransparentTsWrappers(refExpr)
   if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
-    return { param: firstSimpleParamName(expr), body: expr.body, named: false, innermostScope: false }
+    return { param: firstSimpleParamName(expr), body: expr.body, named: false }
   }
   if (!ts.isIdentifier(expr)) return undefined
-  const resolved = findNamedCallback(expr)
-  return resolved && { ...resolved.callback, named: true, innermostScope: resolved.innermostScope }
+  const callback = findNamedCallback(expr)
+  return callback && { ...callback, named: true }
 }
 
 type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration
@@ -7147,20 +7262,13 @@ function findEnclosingFunctionLike(node: ts.Node): FunctionLike | undefined {
  * Never searches a nested function's own body: two sibling components in the
  * same file can each declare their own, unrelated `handleMount`, and reaching
  * into the wrong one's closure would misattribute its behavior to this `ref`.
- * `innermostScope` reports whether the deciding scope was the `ref`'s own
- * innermost one: BF063 accepts any scope, the SSR-portal recognition only
- * that one (see `isSsrPortalRefCallback`).
  */
-function findNamedCallback(
-  ident: ts.Identifier,
-): { callback: LocalCallback; innermostScope: boolean } | undefined {
-  const innermost = findEnclosingFunctionLike(ident)
-  for (let fn = innermost; fn; fn = findEnclosingFunctionLike(fn)) {
+function findNamedCallback(ident: ts.Identifier): LocalCallback | undefined {
+  for (let fn = findEnclosingFunctionLike(ident); fn; fn = findEnclosingFunctionLike(fn)) {
     if (fn.parameters.some(p => bindingDeclares(p.name, ident.text))) return undefined
     const decl = fn.body && findScopeDeclaration(ident.text, fn.body)
     if (!decl) continue
-    const callback = localCallbackOf(decl)
-    return callback && { callback, innermostScope: fn === innermost }
+    return localCallbackOf(decl)
   }
   return undefined
 }
@@ -7238,24 +7346,22 @@ function bindingDeclares(binding: ts.BindingName, name: string): boolean {
  * (the "worth the scope-walk?" open question from #3059) is therefore
  * left for when a real caller needs it.
  *
- * The callback must be declared in the `ref`'s INNERMOST enclosing
- * function scope (`RefCallback.innermostScope`) — BF063 shares the
- * resolution but may walk further out; this recognition may not. The gate
- * only restores the scope limit recognition had before BF063 widened the
- * lookup, so sharing the resolution does not widen what is recognized. It
- * is not a `.map()`-row guard: a portal element inside a row is broken
- * either way (a row-declared callback is still recognized, and still
- * breaks) — the known limitation `loop-row-ref-portal`
- * (`packages/adapter-tests/limitations/loop-row-ref-portal.ts`).
+ * The callback may be declared in any enclosing function scope
+ * (`findNamedCallback`, shared with BF063): a `ref` in a `.map()` row
+ * naming a handler declared in the component body is recognized too. The
+ * resolution never crosses into a sibling function's body and stops at a
+ * shadowing parameter or non-function binding, so the callback found is
+ * the one that runs.
  *
  * A match makes `element.ssrPortalOwnerScope` true, which every adapter
  * (#3119) uses to place the element's SSR markup at its own portal
- * outlet instead of inline.
+ * outlet instead of inline. Inside a keyed top-level `.map()` row the
+ * element also carries the row key (`applyRowPortalKeyAttrs`, #3318), so
+ * hydration pairs it with its row; a nested or unkeyed row refuses (BF064).
  */
 function isSsrPortalRefCallback(callback: RefCallback | undefined): boolean {
   return (
     !!callback?.named &&
-    callback.innermostScope &&
     !!callback.param &&
     containsSsrPortalPlacementCall(callback.body, callback.param)
   )

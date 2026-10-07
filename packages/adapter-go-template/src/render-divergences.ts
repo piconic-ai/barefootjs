@@ -109,6 +109,14 @@ export const renderDivergences: RenderDivergences = {
   // `or .C .A`, and `or` treats the empty slice as falsy, so it reads `a`'s
   // length (`2`) where JS keeps `c` and reads `0`.
   'nullish-coalesce-empty-array': { limitation: 'nullish-coalesce-empty-array-falls-back' },
+  // A `ref`-callback portal element in a loop row renders inline in its row
+  // (`{{range}}` rebinds `.` to the row item), not at the portal outlet
+  // (#3318).
+  'row-portal-ref': { limitation: 'loop-row-portal-renders-inline' },
+  'row-portal-ref-remove': { limitation: 'loop-row-portal-renders-inline' },
+  'row-portal-ref-static': { limitation: 'loop-row-portal-renders-inline' },
+  'row-portal-ref-branch': { limitation: 'loop-row-portal-renders-inline' },
+  'row-portal-ref-composite': { limitation: 'loop-row-portal-renders-inline' },
   // `fractional-number-array-row-ops` used to sit here: html/template's
   // native `gt`/`lt`/`eq` refused a float64 against an int literal.
   // Comparisons now go through `bf_eq`/`bf_gt`/… (`goComparisonCall`).

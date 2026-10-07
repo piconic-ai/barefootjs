@@ -34,7 +34,7 @@ import { emitComponentAndEventSetup } from '../shared.ts'
 import { stringifyInnerLoops } from './inner-loop.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitLoopItemElementSetup } from './template-parse.ts'
-import { emitLoopChildRefs } from './loop.ts'
+import { emitLoopChildRefs, emitRowPortalClaim, rowPortalSlotIds } from './loop.ts'
 import type { CompositeLoopPlan } from '../plan/types.ts'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {
@@ -125,16 +125,19 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     // variant whose tail needs the row already connected.
     mountRow: true,
   })
-  emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, bodyIsMultiRoot, loopIndex)
+  // See `stringifyPlainLoop` (#3318).
+  emitRowPortalClaim(lines, childRefs, { indent: bodyIndent, containerVar })
+  const itemLookup = bodyIsMultiRoot || rowPortalSlotIds(childRefs).length > 0
+  emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, itemLookup, loopIndex)
   if (innerLoops.length > 0) {
     stringifyInnerLoops(lines, innerLoops, bodyIndent, pc)
   }
 
   if (reactiveEffects) {
-    stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
+    stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot: itemLookup })
   }
 
-  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
+  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot: itemLookup, containerVar })
 
   lines.push(`${bodyIndent}return __el`)
   const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''

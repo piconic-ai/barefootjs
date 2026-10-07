@@ -28,6 +28,25 @@ function rootFor(src: string, componentName: string): IRNode {
   return node
 }
 
+/** `keyAttr` of every flagged element, in document order. */
+function portalKeyAttrs(node: IRNode): Array<IRElement['keyAttr']> {
+  const out: Array<IRElement['keyAttr']> = []
+  const visit = (n: IRNode): void => {
+    if (n.type === 'element' && (n as IRElement).ssrPortalOwnerScope) out.push((n as IRElement).keyAttr)
+    if ('children' in n && Array.isArray((n as { children?: IRNode[] }).children)) {
+      for (const c of (n as { children: IRNode[] }).children) visit(c)
+    }
+  }
+  visit(node)
+  return out
+}
+
+/** Error codes `compileJSX` reports for `src`. */
+function errorCodes(src: string): string[] {
+  const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+  return result.errors.map(e => e.code)
+}
+
 function flaggedRefs(node: IRNode): string[] {
   const out: string[] = []
   const visit = (n: IRNode): void => {
@@ -176,18 +195,12 @@ export function Overlay() {
     expect(flaggedRefs(rootFor(src, 'Overlay'))).toEqual(['handleMount'])
   })
 
-  // BF063 resolves a `ref` name outward through every enclosing function
-  // scope; the portal recognition keeps the pre-BF063 limit (the callback
-  // must be declared in the ref's innermost function scope) so sharing the
-  // resolution does not widen what is recognized. These two tests pin that
-  // scope limit only. A portal element inside a `.map()` row is broken
-  // either way — the second test's row-declared callback is still
-  // recognized and still breaks the row's hydration — which is the
-  // registered known limitation `loop-row-ref-portal`
-  // (`packages/adapter-tests/limitations/loop-row-ref-portal.ts`, fixture
-  // `row-portal-ref`): the control pins today's behaviour as a known gap,
-  // not as intended behaviour.
-  test('does not flag a .map() row ref naming a portal callback declared in the component body', () => {
+  // The portal recognition shares BF063's resolution, which walks outward
+  // through every enclosing function scope (#3318): a `.map()` row ref
+  // naming a component-body portal callback is recognized like a
+  // row-declared one, and the flagged element carries the row key so
+  // hydration can pair it with its row.
+  test('flags a .map() row ref naming a portal callback declared in the component body', () => {
     const ir = root(`
 'use client'
 import { createPortal } from '@barefootjs/client'
@@ -196,7 +209,8 @@ export function List(props: { rows: string[] }) {
   return <ul>{props.rows.map(r => (<li key={r}><div ref={mountContent}>{r}</div></li>))}</ul>
 }
 `)
-    expect(flaggedRefs(ir)).toEqual([])
+    expect(flaggedRefs(ir)).toEqual(['mountContent'])
+    expect(portalKeyAttrs(ir)).toEqual([{ name: 'data-key', value: 'r' }])
   })
 
   test('still flags a .map() row ref naming a portal callback declared in the row callback itself', () => {
@@ -215,5 +229,66 @@ export function List(props: { rows: string[] }) {
 }
 `)
     expect(flaggedRefs(ir)).toEqual(['mountContent'])
+  })
+
+  describe('row portals (#3318)', () => {
+    const portalRow = (loop: string) => `
+'use client'
+import { createPortal, createSignal } from '@barefootjs/client'
+export function List(props: { rows: string[]; groups: string[][] }) {
+  const [open] = createSignal(true)
+  const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
+  return <ul>{${loop}}</ul>
+}
+`
+
+    test('keys the portaled element of a keyed top-level row without an error', () => {
+      expect(errorCodes(portalRow(`props.rows.map(r => <li key={r}><button ref={mountContent}>{r}</button></li>)`))).toEqual([])
+    })
+
+    test('refuses an unkeyed row (BF064)', () => {
+      expect(errorCodes(portalRow(`props.rows.map(r => <li><button ref={mountContent}>{r}</button></li>)`))).toContain('BF064')
+    })
+
+    test('refuses a nested row (BF064)', () => {
+      expect(
+        errorCodes(portalRow(
+          `props.groups.map((g, i) => <li key={i}><ol>{g.map(r => <li key={r}><button ref={mountContent}>{r}</button></li>)}</ol></li>)`,
+        )),
+      ).toContain('BF064')
+    })
+
+    test('refuses a portaled row root (BF064)', () => {
+      expect(errorCodes(portalRow(`props.rows.map(r => <button key={r} ref={mountContent}>{r}</button>)`))).toContain('BF064')
+    })
+
+    test('refuses a portaled row root of a nested loop (BF064)', () => {
+      expect(
+        errorCodes(portalRow(
+          `props.groups.map((g, i) => <li key={i}>{g.map(r => <button key={r} ref={mountContent}>{r}</button>)}</li>)`,
+        )),
+      ).toContain('BF064')
+    })
+
+    test('refuses a portal inside a reactive conditional in the row (BF064)', () => {
+      expect(
+        errorCodes(portalRow(
+          `props.rows.map(r => <li key={r}>{open() ? <button ref={mountContent}>{r}</button> : null}</li>)`,
+        )),
+      ).toContain('BF064')
+    })
+
+    test('does not touch a portal element outside any loop', () => {
+      const ir = root(`
+'use client'
+import { createPortal } from '@barefootjs/client'
+export function P() {
+  const mountContent = (el: HTMLElement) => { createPortal(el, document.body, { ownerScope: 'x' }) }
+  return <div><div ref={mountContent} /></div>
+}
+`)
+      expect(flaggedRefs(ir)).toEqual(['mountContent'])
+      expect(portalKeyAttrs(ir)).toEqual([undefined])
+    })
   })
 })

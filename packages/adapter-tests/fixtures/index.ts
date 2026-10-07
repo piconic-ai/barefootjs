@@ -880,9 +880,14 @@ import { fixture as diamondPropagation } from './diamond-propagation'
 // A child-component prop named like a handler but not one (`once`: `on` +
 // lowercase) is reactive data at top level and in loop rows.
 import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
-// A `ref`-callback `createPortal` on a keyed loop-row element (registry:
-// `loop-row-ref-portal`, pinned in the e2e quarantine ledgers).
+// A `ref`-callback `createPortal` on a keyed loop-row element (#3318): the
+// row adopts the portaled element. Top-level, removal, static-array,
+// branch-scoped and composite loop paths.
 import { fixture as rowPortalRef } from './row-portal-ref'
+import { fixture as rowPortalRefRemove } from './row-portal-ref-remove'
+import { fixture as rowPortalRefStatic } from './row-portal-ref-static'
+import { fixture as rowPortalRefBranch } from './row-portal-ref-branch'
+import { fixture as rowPortalRefComposite } from './row-portal-ref-composite'
 // Static text directly adjacent to a conditional: no whitespace of the
 // template's own between them (#3321).
 import { fixture as textThenConditional } from './text-then-conditional'
@@ -1481,6 +1486,10 @@ export const jsxFixtures: JSXFixture[] = [
   diamondPropagation,
   onPrefixedDataProp,
   rowPortalRef,
+  rowPortalRefRemove,
+  rowPortalRefStatic,
+  rowPortalRefBranch,
+  rowPortalRefComposite,
   textThenConditional,
   textThenConditionalStatic,
   conditionalThenText,
