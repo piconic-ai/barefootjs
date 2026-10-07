@@ -39,6 +39,10 @@ export const renderDivergences: RenderDivergences = {
   // ternary, so `data-choice="0"` where JS renders `"false"`.
   'nullish-ternary-false-branch-attr': { limitation: 'ternary-false-branch-attr-renders-perl-false' },
 
+  // The second loop's row param `label` redeclares the template-level
+  // `my $label` the memo compiles to, which Kolon refuses to parse.
+  'memo-dependency-loop-shadow': { limitation: 'loop-param-named-like-memo' },
+
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `$bf.register_portal_element`/`$bf.portals()`

@@ -2828,6 +2828,14 @@
       }
     }
   ],
+  "memo-dependency-loop-shadow": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "memo-length-prop-seeded-signal": [
     {
       "name": "gen:items:empty",
