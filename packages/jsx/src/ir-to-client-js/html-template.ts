@@ -2806,9 +2806,15 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const hoistValues: string[] = []
       for (const name of hoisted) {
         const sub = env.substitutions.get(name)!
+        const value = transformExpr(sub.kind === 'call' ? `${name}()` : name)
+        // An init-only value stays on the resolved substitution, whose free
+        // identifiers still name the init-only local, so a row expression
+        // reading it is deferred like any other unsafe read rather than
+        // handed a bound `undefined` to dereference.
+        if (value === UNSAFE_TEMPLATE_EXPR) continue
         const param = `__bf_outer_${name}`
         hoistParams.push(param)
-        hoistValues.push(transformExpr(sub.kind === 'call' ? `${name}()` : name))
+        hoistValues.push(value)
         childSubstitutions.set(name, { kind: sub.kind, replacement: param, freeIdentifiers: new Set([param]) })
       }
       const childEnv: CsrEnv = { ...env, substitutions: childSubstitutions }

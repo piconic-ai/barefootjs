@@ -52,6 +52,21 @@ export function C(props: { rows: string[] }) {
     expect(html).toContain('title="[outer]"')
   })
 
+  test('defers a row read of an init-only memo instead of hoisting `undefined`', () => {
+    const html = renderTemplate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+function fmt(v: string) { return '[' + v + ']' }
+export function C(props: { rows: string[] }) {
+  const local = () => 'outer'
+  const label = createMemo(() => fmt(local()))
+  return <ul>{props.rows.map(fmt => <li key={fmt}>{label().length}</li>)}</ul>
+}
+`, 'C', { rows: ['x'] })
+    expect(html).not.toContain('__bf_outer_')
+    expect(html).toContain('<li')
+  })
+
   test('a row param shadowing the memo itself reads the row item', () => {
     const html = renderTemplate(`
 'use client'
