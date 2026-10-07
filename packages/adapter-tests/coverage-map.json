@@ -6190,10 +6190,12 @@
       "axes": [
         "literal:number",
         "literal:string",
+        "member:computed",
         "member:optional"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "on-prefixed-data-prop": {
