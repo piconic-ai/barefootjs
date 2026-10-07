@@ -49,7 +49,7 @@ jobs:
         # Pullfrog's own template floats this at `@v0`. Pinned here instead, which means
         # the action no longer rolls forward on its own — bump this SHA when Pullfrog
         # ships a fix or its server expects a newer client.
-        uses: pullfrog/pullfrog@bdfbbb10174fce866562fb079c196728dfe026c6 # v0.1.85
+        uses: pullfrog/pullfrog@ed800018463e1b84e8e3377f662173aed1da98b0 # v0.1.95
         with:
           prompt: ${{ inputs.prompt }}
           model: openai/gpt-6.1-sol
