@@ -69,6 +69,9 @@ export interface JinjaEmitContext {
    * `isOpaqueLocalAccessorName` (`@barefootjs/jsx`).
    */
   _isOpaqueLocalAccessorCall(name: string): boolean
+  /** Whether an arithmetic operand can be `null`/`undefined` at SSR
+   * (`attrValueMayBeNullish`), so the emitter coerces it to `0` (#3350). */
+  _mayBeNullishOperand(expr: ParsedExpr): boolean
 
   _recordExprBF101(message: string, reason?: string): void
 

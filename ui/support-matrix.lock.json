@@ -1727,12 +1727,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -1879,12 +1873,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -1946,12 +1934,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -2068,12 +2050,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -2496,12 +2472,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2876,12 +2846,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3021,12 +2985,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -3305,12 +3263,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -4214,12 +4166,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -4684,12 +4630,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -4859,12 +4799,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -5209,12 +5143,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -5872,12 +5800,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -6204,12 +6126,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -6325,12 +6241,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -6573,12 +6483,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -10671,12 +10575,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -10688,12 +10586,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -10701,16 +10593,7 @@
             }
           ]
         },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "minijinja": {},
         "mojolicious": {
           "gaps": [
             {
@@ -10721,16 +10604,7 @@
             }
           ]
         },
-        "pebble": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "pebble": {},
         "twig": {
           "gaps": [
             {
@@ -11778,16 +11652,7 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "erb": {},
         "go-template": {
           "gaps": [
             {
@@ -11810,26 +11675,8 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
+        "minijinja": {},
         "mojolicious": {
           "gaps": [
             {
@@ -11840,16 +11687,7 @@
             }
           ]
         },
-        "pebble": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "pebble": {},
         "twig": {},
         "xslate": {
           "gaps": [
@@ -11985,12 +11823,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -12164,12 +11996,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -12237,12 +12063,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -12389,12 +12209,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {

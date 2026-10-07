@@ -129,6 +129,7 @@ export {
   collectNullishAttrContext,
   isNullableSignal,
   isNullishLiteral,
+  NULL_COERCING_ARITHMETIC_OPS,
   nullableSignalAttrGetter,
   type NullishAttrContext,
 } from './nullable-signal-attr.ts'

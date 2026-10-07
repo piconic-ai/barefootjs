@@ -154,3 +154,12 @@ export function attrValueMayBeNullish(
   }
   return parsed !== undefined && walk(parsed, isShadowed)
 }
+
+/**
+ * Arithmetic operators JS applies `ToNumber` to, so a `null` operand reads
+ * as `0` (`null * 2` is `0`). A template engine's native operator rejects a
+ * nil operand instead and the render throws (#3350), so adapters coerce an
+ * operand that `attrValueMayBeNullish` flags. `+` is excluded: it
+ * concatenates when either side is a string.
+ */
+export const NULL_COERCING_ARITHMETIC_OPS: ReadonlySet<string> = new Set(['-', '*', '/', '%', '**'])

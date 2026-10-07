@@ -43,9 +43,9 @@ export const renderDivergences: RenderDivergences = {
   // An attribute number at the 1e-6 / 1e21 notation boundary prints with
   // Ruby's `Float#to_s` switches to an exponent below 1e-4 (`1.23456789e-6`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
-  // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
-  // operand at render, where JS coerces `null` to `0` (#3322).
-  'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
+  // `nullish-signal-arithmetic-memo` used to sit here: `s() * 2` with
+  // `s()` = `null` raised on the nil operand. A possibly-nullish arithmetic
+  // operand now reads as `0` (`coerceNullishOperand`); it renders like Hono.
   // `number-division-text` used to sit here: Ruby `/` on two Integers is
   // integer division. Division now goes through `bf.div` (JS semantics).
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an

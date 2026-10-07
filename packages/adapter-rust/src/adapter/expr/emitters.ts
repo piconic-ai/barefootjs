@@ -65,6 +65,7 @@ import { groupBinaryOperand,
   type LoweringNode,
   queryHrefArgs,
   isValidHelperId,
+  NULL_COERCING_ARITHMETIC_OPS,
 } from '@barefootjs/jsx'
 
 import type { JinjaEmitContext } from '../emit-context.ts'
@@ -507,12 +508,18 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return emit(argument)
   }
 
+  /** A possibly-nullish arithmetic operand reads as `0`, as JS `ToNumber(null)`
+   * does (#3350, `NULL_COERCING_ARITHMETIC_OPS`). */
+  private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
+    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._mayBeNullishOperand(expr) ? `(${operand} or 0)` : operand
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = groupBinaryOperand(left, emit(left))
-    const r = groupBinaryOperand(right, emit(right))
+    const l = this.coerceNullishOperand(op, left, groupBinaryOperand(left, emit(left)))
+    const r = this.coerceNullishOperand(op, right, groupBinaryOperand(right, emit(right)))
     // Jinja's `==` / `!=` handle both strings and numbers (unlike Perl's
     // numeric `==`), so all equality comparisons stay on `==` / `!=`.
     const opMap: Record<string, string> = {

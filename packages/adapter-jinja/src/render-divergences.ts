@@ -43,9 +43,9 @@ export const renderDivergences: RenderDivergences = {
   // An attribute number at the 1e-6 / 1e21 notation boundary prints with
   // Python's `repr` pads a negative exponent (`1.23456789e-06`) and prints 1e21 as its full digits.
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
-  // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
-  // operand at render, where JS coerces `null` to `0` (#3322).
-  'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
+  // `nullish-signal-arithmetic-memo` used to sit here: `s() * 2` with
+  // `s()` = `null` raised on the nil operand. A possibly-nullish arithmetic
+  // operand now reads as `0` (`coerceNullishOperand`); it renders like Hono.
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`
