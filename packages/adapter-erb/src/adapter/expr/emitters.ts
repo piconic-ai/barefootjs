@@ -564,10 +564,11 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return arg
   }
 
-  /** A possibly-nullish arithmetic operand reads as `0`, as JS `ToNumber(null)`
-   * does (#3350, `NULL_COERCING_ARITHMETIC_OPS`). */
+  /** A `null` arithmetic operand reads as `0`, as JS `ToNumber(null)` does
+   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one is left
+   * alone: JS gives `NaN`, not `0`. */
   private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
-    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._mayBeNullishOperand(expr) ? `(${operand} || 0)` : operand
+    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isNullOperand(expr) ? `(${operand} || 0)` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {

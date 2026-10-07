@@ -81,12 +81,19 @@ export function nullableSignalAttrGetter(
  */
 export interface NullishAttrContext {
   readonly nullableSignals: ReadonlySet<string>
+  /** Signals seeded with a literal `null`: their SSR value is `null`, not
+   * `undefined` (`arithmeticOperandIsNull`). */
+  readonly nullSeededSignals?: ReadonlySet<string>
   readonly memos: ReadonlyMap<string, MemoInfo>
 }
 
 export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
+  const signals = ir.metadata.signals ?? []
   return {
     nullableSignals: collectNullableSignalGetters(ir),
+    nullSeededSignals: new Set(
+      signals.filter(s => s.parsed?.kind === 'literal' && s.parsed.literalType === 'null').map(s => s.getter),
+    ),
     memos: new Map((ir.metadata.memos ?? []).map(m => [m.name, m])),
   }
 }
@@ -156,10 +163,40 @@ export function attrValueMayBeNullish(
 }
 
 /**
+ * Whether an arithmetic operand's SSR value is certainly `null` — a literal
+ * `null`, a read of a signal seeded with `null`, or a memo whose body is
+ * such a read (`same = () => s()`). JS `ToNumber(null)` is `0` but
+ * `ToNumber(undefined)` is `NaN`, and a template engine holds both as one
+ * nil, so only a value known to be `null` may be coerced to `0` (#3350).
+ * A bare identifier is read as the getter call: a memo seed lowers `s()` to
+ * `s` before the adapter sees it.
+ */
+export function arithmeticOperandIsNull(
+  parsed: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean = () => false,
+): boolean {
+  const visiting = new Set<string>()
+  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
+    if (expr.kind === 'literal') return expr.literalType === 'null'
+    const getter = expr.kind === 'identifier' ? expr.name : bareGetterCallName(expr)
+    if (getter === null || shadowed(getter)) return false
+    if (ctx.nullSeededSignals?.has(getter)) return true
+    const memo = ctx.memos.get(getter)
+    if (!memo?.parsed || visiting.has(getter)) return false
+    visiting.add(getter)
+    const result = walk(memo.parsed, () => false)
+    visiting.delete(getter)
+    return result
+  }
+  return parsed !== undefined && walk(parsed, isShadowed)
+}
+
+/**
  * Arithmetic operators JS applies `ToNumber` to, so a `null` operand reads
  * as `0` (`null * 2` is `0`). A template engine's native operator rejects a
  * nil operand instead and the render throws (#3350), so adapters coerce an
- * operand that `attrValueMayBeNullish` flags. `+` is excluded: it
+ * operand that `arithmeticOperandIsNull` matches. `+` is excluded: it
  * concatenates when either side is a string.
  */
 export const NULL_COERCING_ARITHMETIC_OPS: ReadonlySet<string> = new Set(['-', '*', '/', '%', '**'])

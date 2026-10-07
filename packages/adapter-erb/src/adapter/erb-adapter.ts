@@ -98,6 +98,7 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  arithmeticOperandIsNull,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -2036,14 +2037,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       isLoopBoundName: (name) => this.isLoopBoundName(name),
       _isStringValueName: (name) => this._isStringValueName(name),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      // A memo seed materializes getter calls into bare identifiers (`s()` →
-      // `s`) before lowering, so a bare name is read as the getter call.
-      _mayBeNullishOperand: (expr) =>
-        attrValueMayBeNullish(
-          expr.kind === 'identifier' ? { kind: 'call', callee: expr, args: [] } : expr,
-          this.nullishAttrCtx,
-          n => this.isLoopBoundName(n),
-        ),
+      _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
     }

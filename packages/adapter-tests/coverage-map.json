@@ -9450,6 +9450,21 @@
         "text"
       ]
     },
+    "undefined-signal-arithmetic-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "underscore-prefixed-prop": {
       "kinds": [
         "identifier",

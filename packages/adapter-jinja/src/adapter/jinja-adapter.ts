@@ -153,6 +153,7 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  arithmeticOperandIsNull,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -1844,14 +1845,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      // A memo seed materializes getter calls into bare identifiers (`s()` →
-      // `s`) before lowering, so a bare name is read as the getter call.
-      _mayBeNullishOperand: (expr) =>
-        attrValueMayBeNullish(
-          expr.kind === 'identifier' ? { kind: 'call', callee: expr, args: [] } : expr,
-          this.nullishAttrCtx,
-          n => this.isLoopBoundName(n),
-        ),
+      _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }
