@@ -119,6 +119,7 @@ import {
 import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
+  collectMemoKolonRenames,
 } from './memo/seed.ts'
 import {
   collectBooleanTypedProps,
@@ -343,6 +344,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
     this.childrenCaptureCounter = 0
+    // Before any body rendering: memo reads in the body must use the same
+    // local the memo seed declares (#3369).
+    this.memoKolonNames = collectMemoKolonRenames(ir)
 
     // Mirror of the Mojo adapter's BF103 check: a child component referenced
     // inside a loop body that is imported from a sibling .tsx emits a
@@ -1353,6 +1357,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   private childrenCaptureCounter = 0
+  /** Memos declared under a renamed Kolon local (`collectMemoKolonRenames`, #3369). */
+  private memoKolonNames: Map<string, string> = new Map()
 
   /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
@@ -1753,6 +1759,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
         (message, reason) => this._recordExprBF101(message, reason),
+        name => this.memoKolonNames.get(name) ?? name,
       ),
     )
   }
@@ -1856,6 +1863,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
+      _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
     }
@@ -1879,7 +1887,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): XslateMemoContext {
-    return { convertExpressionToKolon: (e, preParsed, pos) => this.convertExpressionToKolon(e, preParsed, pos) }
+    return {
+      convertExpressionToKolon: (e, preParsed, pos) => this.convertExpressionToKolon(e, preParsed, pos),
+      memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
+    }
   }
 
   private convertExpressionToKolon(

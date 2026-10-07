@@ -43,9 +43,10 @@ export const renderDivergences: RenderDivergences = {
   // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
   // it renders like Hono.
 
-  // The second loop's row param `label` redeclares the template-level
-  // `my $label` the memo compiles to, which Kolon refuses to parse.
-  'memo-dependency-loop-shadow': { limitation: 'loop-param-named-like-memo' },
+  // `memo-dependency-loop-shadow` used to sit here: a row param `label`
+  // redeclared the template-level `my $label` the memo compiles to, which
+  // Kolon refuses to parse. Such a memo is now declared and read as
+  // `$__bf_memo_label` (`collectMemoKolonRenames`); it renders like Hono.
 
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own

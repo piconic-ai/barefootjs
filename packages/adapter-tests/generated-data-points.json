@@ -2914,6 +2914,32 @@
       }
     }
   ],
+  "memo-loop-param-collision": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "groups": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "none": []
+      }
+    },
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "rows": [
+          "x",
+          "y"
+        ],
+        "groups": [],
+        "none": []
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",

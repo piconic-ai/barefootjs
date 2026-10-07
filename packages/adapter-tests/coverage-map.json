@@ -5320,6 +5320,27 @@
         "text"
       ]
     },
+    "memo-loop-param-collision": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:*",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-array-seed": {
       "kinds": [
         "array-literal",
