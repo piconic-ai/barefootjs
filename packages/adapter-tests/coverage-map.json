@@ -6073,6 +6073,22 @@
         "text"
       ]
     },
+    "number-arithmetic-attr-exponent-boundaries": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "number-arithmetic-attr-formatting": {
       "kinds": [
         "binary",
@@ -6087,6 +6103,29 @@
         "binary:+",
         "binary:/",
         "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "number-arithmetic-attr-forms": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "unary:-"
       ],
       "contexts": [
         "attribute"

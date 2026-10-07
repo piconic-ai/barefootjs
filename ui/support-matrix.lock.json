@@ -1669,6 +1669,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1724,6 +1730,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -1809,12 +1821,6 @@
               ]
             },
             {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1876,6 +1882,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -1992,6 +2004,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -2117,6 +2135,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2172,6 +2196,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -2647,12 +2677,6 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -4054,6 +4078,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4217,6 +4247,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -4437,12 +4473,6 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -4690,6 +4720,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5025,6 +5061,12 @@
               "fixture": "nullish-ternary-false-branch-attr",
               "limitations": [
                 "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -5378,6 +5420,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5553,6 +5601,12 @@
               "fixture": "nullish-ternary-false-branch-attr",
               "limitations": [
                 "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -5748,6 +5802,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5863,6 +5923,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -6011,12 +6077,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -6195,6 +6255,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -6431,6 +6497,12 @@
               "fixture": "nullish-ternary-false-branch-attr",
               "limitations": [
                 "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -6676,6 +6748,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6797,6 +6875,12 @@
               "fixture": "nullish-ternary-false-branch-attr",
               "limitations": [
                 "ternary-false-branch-attr-renders-perl-false"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -7157,6 +7241,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7272,6 +7362,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -7432,12 +7528,6 @@
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -7628,6 +7718,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -7870,6 +7966,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -8133,6 +8235,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8260,6 +8368,12 @@
               "fixture": "memo-dependency-loop-shadow",
               "limitations": [
                 "loop-param-named-like-memo"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -8665,12 +8779,6 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -10622,7 +10730,16 @@
     "binary:*": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
         "erb": {
           "gaps": [
             {
@@ -10630,25 +10747,28 @@
               "limitations": [
                 "null-signal-arithmetic-raises"
               ]
-            }
-          ]
-        },
-        "go-template": {
-          "gaps": [
+            },
             {
-              "fixture": "number-arithmetic-attr-formatting",
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
-                "number-arithmetic-attr-exponent-form"
+                "number-exponent-boundary-spelling"
               ]
             }
           ]
         },
+        "go-template": {},
         "jinja": {
           "gaps": [
             {
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             }
           ]
@@ -10663,7 +10783,16 @@
             }
           ]
         },
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
         "pebble": {
           "gaps": [
             {
@@ -10674,8 +10803,26 @@
             }
           ]
         },
-        "twig": {},
-        "xslate": {}
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -10730,12 +10877,6 @@
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -10847,24 +10988,69 @@
     "binary:/": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {
+        "blade": {
           "gaps": [
             {
-              "fixture": "number-arithmetic-attr-formatting",
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
-                "number-arithmetic-attr-exponent-form"
+                "number-exponent-boundary-spelling"
               ]
             }
           ]
         },
-        "jinja": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
+        "go-template": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
         "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -11816,6 +12002,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11883,6 +12075,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -11959,12 +12157,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "number-arithmetic-attr-formatting",
-              "limitations": [
-                "number-arithmetic-attr-exponent-form"
               ]
             },
             {
@@ -12059,6 +12251,12 @@
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -12193,6 +12391,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {
@@ -12342,6 +12546,12 @@
               ]
             },
             {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12403,6 +12613,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "number-arithmetic-attr-exponent-boundaries",
+              "limitations": [
+                "number-exponent-boundary-spelling"
               ]
             },
             {

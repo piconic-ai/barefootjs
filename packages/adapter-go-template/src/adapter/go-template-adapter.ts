@@ -7217,8 +7217,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return lowerTernary(this.emitCtx, test, consequent, alternate)
   }
 
-  /** One text-sink decision for direct expressions and template interpolations.
-   * Numeric values remain boxed everywhere outside text rendering. A value
+  /** One text-sink decision for direct expressions, template interpolations
+   * and attribute values (#3359). Numeric values remain boxed everywhere
+   * outside these string sinks. A value
    * that can be a `float64` here — a numeric memo read, or an arithmetic
    * expression (`props.value + 0.5`, #3320) whose `bf_add`/`bf_div`/… result
    * is boxed `any` — prints through `bf_string`, whose `numberString` spells
@@ -7233,6 +7234,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!expr) return false
     if (expr.kind === 'binary') return ARITHMETIC_OPS.has(expr.op)
     if (expr.kind === 'unary') return expr.op === '-' || expr.op === '+'
+    // A ternary whose taken branch can be a boxed number (`c ? n + 0.5 : 'x'`).
+    if (expr.kind === 'conditional') {
+      return this.isNumericTextValue(expr.consequent) || this.isNumericTextValue(expr.alternate)
+    }
     if (expr.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return false
     const name = this.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
     const memo = this.state.currentMemos.find(m => m.name === name)
@@ -10233,12 +10238,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // value (no longer a `{{if}}…{{end}}` fragment), so wrap it in a single
         // `{{…}}` action inside the attribute string — `name="{{bf_ternary …}}"`.
         const ternary = this.renderParsedExpr(parsed)
+        const ternaryText = this.numericTextExpression(ternary, parsed)
         // A branch that can be nullish (#3322, `attrValueMayBeNullish`) omits
         // the attribute when the taken branch is nil.
         if (attrValueMayBeNullish(parsed, this.state.nullishAttrCtx, n => this.scope.isBound(n))) {
-          return `{{if ne ${ternary} nil}}${nameTok}="{{${ternary}}}"{{end}}`
+          return `{{if ne ${ternary} nil}}${nameTok}="{{${ternaryText}}}"{{end}}`
         }
-        return `${nameTok}="{{${ternary}}}"`
+        return `${nameTok}="{{${ternaryText}}}"`
       }
       if (parsed.kind === 'template-literal') {
         // Inline Go template syntax with embedded `{{...}}` actions.
@@ -10295,14 +10301,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const exprOut: { parsed?: ParsedExpr } = {}
       const go = this.convertExpressionToGo(value.expr, exprOut, value.parsed)
       if (this.isTemplateFragment(go, exprOut.parsed?.kind)) return `${nameTok}="${go}"`
+      // #3359: an arithmetic result or numeric memo is a boxed `float64`
+      // here as in text position, so the attribute string takes the same
+      // JS number spelling (`1234567890.5`, not `1.2345678905e+09`).
+      const goText = this.numericTextExpression(go, exprOut.parsed ?? value.parsed)
       // A value that reaches `undefined`/`null` through a memo, an optional
       // member read or a ternary branch (#3322, `attrValueMayBeNullish`)
       // omits the attribute on a nil value, as Hono does. `ne x nil` is
       // false only for an untyped nil, so a typed field always renders.
       if (attrValueMayBeNullish(value.parsed, this.state.nullishAttrCtx, n => this.scope.isBound(n))) {
-        return `{{if ne (${go}) nil}}${nameTok}="{{${go}}}"{{end}}`
+        return `{{if ne (${go}) nil}}${nameTok}="{{${goText}}}"{{end}}`
       }
-      return `${nameTok}="{{${go}}}"`
+      return `${nameTok}="{{${goText}}}"`
     },
     emitBooleanAttr: (_value, name) => name,
     // Spread attributes (`<div {...attrs()} />`) lower through the

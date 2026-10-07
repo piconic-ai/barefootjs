@@ -15,6 +15,8 @@ import { fixture as underscorePrefixedProp } from './underscore-prefixed-prop'
 import { fixture as numberAdditionTextFormatting } from './number-addition-text-formatting'
 import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-text-formatting'
 import { fixture as numberArithmeticAttrFormatting } from './number-arithmetic-attr-formatting'
+import { fixture as numberArithmeticAttrForms } from './number-arithmetic-attr-forms'
+import { fixture as numberArithmeticAttrExponentBoundaries } from './number-arithmetic-attr-exponent-boundaries'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
@@ -1534,6 +1536,8 @@ export const jsxFixtures: JSXFixture[] = [
   numberAdditionTextFormatting,
   numberArithmeticTextFormatting,
   numberArithmeticAttrFormatting,
+  numberArithmeticAttrForms,
+  numberArithmeticAttrExponentBoundaries,
   numberDivisionText,
   numberDivisionMatrix,
   conditionalNestedClient,

@@ -35,6 +35,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // An attribute number at the 1e-6 / 1e21 notation boundary prints with
+  // Perl's `%g` stringification pads a negative exponent (`1.23456789e-06`).
+  'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
   // `yes() ? false : s()`: the `false` literal lowers to Perl `0` inside the
   // ternary, so `data-choice="0"` where JS renders `"false"`.
   'nullish-ternary-false-branch-attr': { limitation: 'ternary-false-branch-attr-renders-perl-false' },
