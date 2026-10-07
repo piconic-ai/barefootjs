@@ -1304,15 +1304,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * True when `node` is a non-computed member chain rooted in a call of a
    * `mapSeededSignalGetters` getter (`data().meta`, #3353). The getter's
    * field holds a map keyed by the source property names, so each hop reads
-   * through `bf_get` like `isMapRootedPropChain`.
+   * through `bf_get` like `isMapRootedPropChain`. A bracket hop
+   * (`data()['meta']`, `data()[k]`) also reads through `bf_get` and yields a
+   * value of the same map, so the chain continues through it.
    */
   private isMapSeededSignalChain(node: ParsedExpr): boolean {
     if (node.kind === 'call') {
       return node.callee.kind === 'identifier' && node.args.length === 0 &&
         this.state.mapSeededSignalGetters.has(node.callee.name)
     }
-    if (node.kind !== 'member' || node.computed) return false
-    return this.isMapSeededSignalChain(node.object)
+    if (node.kind === 'member' || node.kind === 'index-access') return this.isMapSeededSignalChain(node.object)
+    return false
   }
 
   private isMapRootedPropChain(node: ParsedExpr): boolean {

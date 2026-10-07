@@ -6,7 +6,7 @@ import { createFixture } from '../src/types'
  * or an inline one) or is untyped (#3353), while an omitted optional member
  * stays absent, `JSON.stringify` keeps the source keys, nested ones
  * included, and a member read without `?.` (in a value, an attribute, and a
- * condition) resolves the same member. The plainly typed signal is the control. The serialized objects'
+ * condition, also after a bracket hop) resolves the same member. The plainly typed signal is the control. The serialized objects'
  * keys are already sorted, since object key order is not part of the
  * cross-adapter contract (#1187).
  */
@@ -37,13 +37,14 @@ export function ObjectSeed() {
       <p>{JSON.stringify(g())}</p>
       <p data-id={h().meta.id}>{h().meta.id === 1 ? 'one' : 'other'}</p>
       {h().on && <span>on</span>}
+      <p data-id={h()['meta'].id}>{h()['meta'].id === 1 ? 'yes' : 'no'}</p>
       <p>{e()!.name}</p>
     </div>
   )
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf="s14">
+    <div bf-s="test" bf="s16">
       <p bf="s0" data-age="0" data-name="">a</p>
       <p bf="s1" data-age="0" data-name="">b</p>
       <p bf="s2" data-name="">c</p>
@@ -53,7 +54,8 @@ export function ObjectSeed() {
       <p bf="s8"><!--bf:s7-->{&quot;id&quot;:2}<!--/--></p>
       <p bf="s10" data-id="1"><!--bf-cond-start:s9-->one<!--bf-cond-end:s9--></p>
       <span bf-c="s11">on</span>
-      <p bf="s13"><!--bf:s12-->x<!--/--></p>
+      <p bf="s13" data-id="1"><!--bf-cond-start:s12-->yes<!--bf-cond-end:s12--></p>
+      <p bf="s15"><!--bf:s14-->x<!--/--></p>
     </div>
   `,
 })
