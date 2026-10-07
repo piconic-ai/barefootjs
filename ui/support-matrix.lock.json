@@ -3166,12 +3166,6 @@
               ]
             },
             {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3610,12 +3604,6 @@
               ]
             },
             {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3821,12 +3809,6 @@
               ]
             },
             {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3890,12 +3872,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -5058,12 +5034,6 @@
               ]
             },
             {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -5595,12 +5565,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -6494,12 +6458,6 @@
               ]
             },
             {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -6869,12 +6827,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {
@@ -11754,12 +11706,6 @@
               ]
             },
             {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11817,12 +11763,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "nullish-ternary-false-branch-attr",
-              "limitations": [
-                "ternary-false-branch-attr-renders-perl-false"
               ]
             },
             {

@@ -4193,20 +4193,6 @@
           ]
         }
       },
-      "nullish-ternary-false-branch-attr": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "ternary-false-branch-attr-renders-perl-false"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "ternary-false-branch-attr-renders-perl-false"
-          ]
-        }
-      },
       "number-arithmetic-attr-exponent-boundaries": {
         "blade": {
           "kind": "render",
@@ -5695,10 +5681,6 @@
         "description": "A memo computing arithmetic over a null-initialized signal renders JS coercion, alongside an…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-signal-arithmetic-memo.ts"
       },
-      "nullish-ternary-false-branch-attr": {
-        "description": "A ternary attribute with a nullable branch renders a taken false branch as \"false\"",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-ternary-false-branch-attr.ts"
-      },
       "number-arithmetic-attr-exponent-boundaries": {
         "description": "Attribute arithmetic spells numbers as JavaScript does at the 1e-6 and 1e21 boundaries",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-exponent-boundaries.ts"
@@ -6485,20 +6467,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "ternary-false-branch-attr-renders-perl-false": {
-      "title": "A taken `false` ternary branch in a non-boolean attribute renders as Perl false",
-      "kind": "silent",
-      "given": "a non-boolean attribute bound to a ternary whose taken branch is the literal `false` and whose other branch is not boolean (`data-choice={yes() ? false : s()}`)",
-      "expected": "renders `data-choice=\"false\"`, as JS `String(false)`",
-      "actual": "renders `data-choice=\"0\"`: the `false` literal lowers to Perl `0` inside the ternary, and the attribute routes through `bool_str` only when the whole value is boolean-shaped",
-      "fixtures": [
-        "nullish-ternary-false-branch-attr"
-      ],
-      "adapters": [
-        "mojolicious",
-        "xslate"
       ]
     },
     "untyped-loop-array-no-row-struct": {
