@@ -5285,6 +5285,40 @@
         "text"
       ]
     },
+    "memo-literal-division": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "memo-literal-division-destructured": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "module-const-array-seed": {
       "kinds": [
         "array-literal",
