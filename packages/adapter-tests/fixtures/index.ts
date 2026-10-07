@@ -21,6 +21,7 @@ import { fixture as memoLiteralDivision } from './memo-literal-division'
 import { fixture as memoLiteralDivisionDestructured } from './memo-literal-division-destructured'
 import { fixture as ternaryBooleanBranchAttr } from './ternary-boolean-branch-attr'
 import { fixture as memoLoopParamCollision } from './memo-loop-param-collision'
+import { fixture as memoStringConcatSignal } from './memo-string-concat-signal'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
@@ -1546,6 +1547,7 @@ export const jsxFixtures: JSXFixture[] = [
   memoLiteralDivisionDestructured,
   ternaryBooleanBranchAttr,
   memoLoopParamCollision,
+  memoStringConcatSignal,
   numberDivisionText,
   numberDivisionMatrix,
   conditionalNestedClient,

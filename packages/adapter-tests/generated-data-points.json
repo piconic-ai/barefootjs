@@ -2940,6 +2940,26 @@
       }
     }
   ],
+  "memo-string-concat-signal": [
+    {
+      "name": "gen:name:empty",
+      "props": {
+        "name": ""
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "name": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "name": "日本語"
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",
