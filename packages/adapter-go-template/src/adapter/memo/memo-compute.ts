@@ -396,14 +396,15 @@ function boxedLiteralArithmeticDep(
 /**
  * Whether a memo body's constructor value is the shared arithmetic runtime's
  * boxed `any` (`bf.Add` / `bf.Sub` / `bf.Mul` / `bf.Div`) rather than a Go
- * number. Three shapes:
+ * number. Four shapes:
  *
  * - two numeric operands ({@link numericMemoOperands}: `list().length +
  *   count()` → `bf.Add(…)`);
  * - literal arithmetic on a memo that is itself boxed (`total() * 2` →
  *   `bf.Mul(<total>, 2)`), recursively along the memo chain;
  * - division of a number read by a positive integer literal
- *   ({@link literalDivisionDividend}: `props.value / 8` → `bf.Div(…)`).
+ *   ({@link literalDivisionDividend}: `props.value / 8` → `bf.Div(…)`);
+ * - an identity read of a boxed memo (`() => eighth()`), recursively.
  *
  * The one decision both the memo field's Go type (`interface{}`, so the
  * boxed value assigns) and the constructor emission
@@ -418,6 +419,15 @@ export function isBoxedNumericMemoBody(
 ): boolean {
   if (numericMemoOperands(ctx, body, signals, propsParams)) return true
   if (literalDivisionDividend(ctx, body, propsParams)) return true
+  // An identity memo (`() => eighth()`) passes its dependency's boxed value
+  // through unchanged, so it is boxed exactly when that memo is.
+  const identityDep = body ? getterCallName(body) : null
+  if (identityDep && !seen.has(identityDep) && !signals.some(s => s.getter === identityDep)) {
+    const dep = ctx.state.currentMemos?.find(m => m.name === identityDep)
+    if (dep?.parsed && isBoxedNumericMemoBody(ctx, dep.parsed, signals, propsParams, new Set([...seen, identityDep]))) {
+      return true
+    }
+  }
   return boxedLiteralArithmeticDep(ctx, body, signals, propsParams, seen) !== null
 }
 

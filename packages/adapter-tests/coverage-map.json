@@ -5294,6 +5294,7 @@
         "member"
       ],
       "axes": [
+        "binary:*",
         "binary:+",
         "binary:/",
         "literal:number"
