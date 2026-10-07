@@ -6181,6 +6181,7 @@
     },
     "object-literal-signal-seed-nullable": {
       "kinds": [
+        "binary",
         "call",
         "identifier",
         "literal",
@@ -6188,6 +6189,9 @@
         "object-literal"
       ],
       "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
         "literal:number",
         "literal:string",
         "member:computed",
@@ -6195,6 +6199,7 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
         "text"
       ]
     },
