@@ -18,7 +18,7 @@ import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
-import { bakeInlineObjectAsGoMap, numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
+import { bakeSourceKeyedObjectAsGoMap, numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
 import { collapseLiteralUnion, typeInfoToGo } from '../type/type-codegen.ts'
 import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
 
@@ -310,34 +310,20 @@ export function convertInitialValue(
   // or an inline `{ name?: string } | undefined`) types the field
   // `interface{}`, and an untyped seed (`createSignal({…})`) types it
   // `map[string]interface{}`. Bake the literal into either rather than `nil`,
-  // which every read rendered as absent: as the named struct when the
-  // union's object branch is one, else as the capitalized-key map
-  // `bf_get` reads the same way. Any other field type keeps `nil`.
+  // which every read rendered as absent. It bakes as a map keyed by the
+  // source property names: `bf_get` reads members by those names, an
+  // omitted optional member stays absent (a struct would zero-fill it), and
+  // `bf_json` serializes the object with its source keys, as on Hono. Any
+  // other field type keeps `nil`.
   if (preParsed?.kind === 'object-literal') {
     const fieldGo = typeInfoToGo(ctx, typeInfo)
     if (fieldGo === 'interface{}' || fieldGo === 'map[string]interface{}') {
-      const objectBranch = nonNullishBranch(typeInfo)
-      if (fieldGo === 'interface{}' && objectBranch?.kind === 'interface' && objectBranch.raw && ctx.state.localStructFields.has(objectBranch.raw)) {
-        const baked = jsLiteralToGo(ctx, objectBranch, preParsed)
-        if (baked !== null) return baked
-      }
-      const map = bakeInlineObjectAsGoMap(ctx, preParsed)
+      const map = bakeSourceKeyedObjectAsGoMap(ctx, preParsed)
       if (map !== null) return map
     }
   }
 
   return 'nil'
-}
-
-/** The non-nullish member of a two-member `T | undefined` / `T | null` union. */
-function nonNullishBranch(typeInfo: TypeInfo): TypeInfo | null {
-  if (typeInfo.kind !== 'union' || typeInfo.unionTypes?.length !== 2) return null
-  const isNullish = (t: TypeInfo): boolean =>
-    t.kind === 'primitive' && (t.primitive === 'undefined' || t.primitive === 'null')
-  const [a, b] = typeInfo.unionTypes
-  if (isNullish(a) && !isNullish(b)) return b
-  if (isNullish(b) && !isNullish(a)) return a
-  return null
 }
 
 /**
