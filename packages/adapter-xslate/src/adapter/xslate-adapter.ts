@@ -90,7 +90,12 @@ import {
   collectNullishAttrContext,
   type NullishAttrContext,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
+import {
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  isBooleanResultParsed,
+  stringifyBooleanTernaryBranches,
+} from './boolean-result.ts'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { escapeLineStatementSigil, isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -1536,15 +1541,22 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           // `object-literal` (e.g. a registered call's params, `queryHref`'s
           // `{ tag }`) as a non-reparseable `[UNSUPPORTED: …]` placeholder.
           const cond = this.convertExpressionToKolon('', m.testParsed)
-          const val = this.convertExpressionToKolon('', m.consequentParsed)
-          return `\n: if (${cond}) {\n${name}="<: ${val} :>"\n: }\n`
+          const val = this.convertExpressionToKolon('', stringifyBooleanTernaryBranches(m.consequentParsed))
+          // A boolean-result consequent (`c ? false : undefined`) still
+          // renders JS `String(boolean)` (#3349).
+          const shown = isBooleanResultParsed(m.consequentParsed) ? `$bf.bool_str(${val})` : val
+          return `\n: if (${cond}) {\n${name}="<: ${shown} :>"\n: }\n`
         }
       }
       // A value that reaches `undefined`/`null` through a memo, an optional
       // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
       // bind it once and omit the attribute on a nil value, as Hono does.
+      // A ternary mixing a boolean branch with another kind
+      // (`yes() ? false : s()`) spells its boolean branch as JS does (#3349).
+      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
+      const mixedParsed = valueParsed ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
       if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const perl = this.convertExpressionToKolon(value.expr, value.parsed)
+        const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
         const tmp = `$bf_pu${this.presenceVarCounter++}`
         const body =
           isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
@@ -1556,7 +1568,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // `$bf.bool_str` so the wire bytes match JS `String(boolean)`.
       // #3166: thread `value.parsed` through (same reason as
       // `renderConditional`'s matching comment).
-      const perl = this.convertExpressionToKolon(value.expr, value.parsed)
+      const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
       if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
         return `${name}="<: $bf.bool_str(${perl}) :>"`
       }

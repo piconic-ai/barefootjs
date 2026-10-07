@@ -50,9 +50,10 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
-  // `yes() ? false : s()`: the `false` literal lowers to Perl `0` inside the
-  // ternary, so `data-choice="0"` where JS renders `"false"`.
-  'nullish-ternary-false-branch-attr': { limitation: 'ternary-false-branch-attr-renders-perl-false' },
+  // `nullish-ternary-false-branch-attr` used to sit here: a taken `false`
+  // branch next to a non-boolean branch lowered to Perl `0`. Such branches
+  // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
+  // it renders like Hono.
 }
 
 /**

@@ -38,9 +38,10 @@ export const renderDivergences: RenderDivergences = {
   // An attribute number at the 1e-6 / 1e21 notation boundary prints with
   // Perl's `%g` stringification pads a negative exponent (`1.23456789e-06`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
-  // `yes() ? false : s()`: the `false` literal lowers to Perl `0` inside the
-  // ternary, so `data-choice="0"` where JS renders `"false"`.
-  'nullish-ternary-false-branch-attr': { limitation: 'ternary-false-branch-attr-renders-perl-false' },
+  // `nullish-ternary-false-branch-attr` used to sit here: a taken `false`
+  // branch next to a non-boolean branch lowered to Perl `0`. Such branches
+  // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
+  // it renders like Hono.
 
   // The second loop's row param `label` redeclares the template-level
   // `my $label` the memo compiles to, which Kolon refuses to parse.

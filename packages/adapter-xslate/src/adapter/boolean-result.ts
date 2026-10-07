@@ -51,7 +51,7 @@ const COMPARISON_OPS = new Set([
   '!==',
 ])
 
-function isBooleanResultParsed(node: ParsedExpr): boolean {
+export function isBooleanResultParsed(node: ParsedExpr): boolean {
   switch (node.kind) {
     case 'literal':
       return node.literalType === 'boolean'
@@ -73,6 +73,39 @@ function isBooleanResultParsed(node: ParsedExpr): boolean {
       )
     default:
       return false
+  }
+}
+
+/**
+ * Rewrites the boolean-result branches of a ternary whose OTHER branch is
+ * not boolean (`yes() ? false : s()`), so a taken boolean branch carries
+ * JS `String(boolean)` instead of Perl's `0` / `''` / `1` (#3349). The whole
+ * value isn't boolean-shaped, so `bool_str` can't wrap it; instead a literal
+ * `true` / `false` branch becomes the string literal `'true'` / `'false'`,
+ * and any other boolean-result branch `b` becomes `b ? 'true' : 'false'`.
+ * The existing ternary lowering then renders the rewritten tree unchanged.
+ * Nested ternary branches are rewritten recursively; anything that is not
+ * a mixed ternary is returned as is.
+ */
+export function stringifyBooleanTernaryBranches(node: ParsedExpr): ParsedExpr {
+  if (node.kind !== 'conditional' || isBooleanResultParsed(node)) return node
+  return {
+    ...node,
+    consequent: stringifyBooleanBranch(node.consequent),
+    alternate: stringifyBooleanBranch(node.alternate),
+  }
+}
+
+function stringifyBooleanBranch(branch: ParsedExpr): ParsedExpr {
+  if (!isBooleanResultParsed(branch)) return stringifyBooleanTernaryBranches(branch)
+  if (branch.kind === 'literal') {
+    return { kind: 'literal', value: String(branch.value), literalType: 'string' }
+  }
+  return {
+    kind: 'conditional',
+    test: branch,
+    consequent: { kind: 'literal', value: 'true', literalType: 'string' },
+    alternate: { kind: 'literal', value: 'false', literalType: 'string' },
   }
 }
 

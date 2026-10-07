@@ -9083,6 +9083,24 @@
         "condition"
       ]
     },
+    "ternary-boolean-branch-attr": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "ternary-template-literal-branch": {
       "kinds": [
         "conditional",
