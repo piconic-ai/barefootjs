@@ -18,8 +18,8 @@ import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
-import { numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
-import { collapseLiteralUnion } from '../type/type-codegen.ts'
+import { bakeSourceKeyedObjectAsGoMap, numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
+import { collapseLiteralUnion, typeInfoToGo } from '../type/type-codegen.ts'
 import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
@@ -302,6 +302,24 @@ export function convertInitialValue(
       // ("falls back to the type's zero value") for every other typed
       // branch above.
       return `${literalTypeInfo.raw}{}`
+    }
+  }
+
+  // An object-literal seed whose field is not a named struct (#3353): a
+  // nullable union of an object type (`createSignal<User | undefined>({…})`,
+  // or an inline `{ name?: string } | undefined`) types the field
+  // `interface{}`, and an untyped seed (`createSignal({…})`) types it
+  // `map[string]interface{}`. Bake the literal into either rather than `nil`,
+  // which every read rendered as absent. It bakes as a map keyed by the
+  // source property names: `bf_get` reads members by those names, an
+  // omitted optional member stays absent (a struct would zero-fill it), and
+  // `bf_json` serializes the object with its source keys, as on Hono. Any
+  // other field type keeps `nil`.
+  if (preParsed?.kind === 'object-literal') {
+    const fieldGo = typeInfoToGo(ctx, typeInfo)
+    if (fieldGo === 'interface{}' || fieldGo === 'map[string]interface{}') {
+      const map = bakeSourceKeyedObjectAsGoMap(ctx, preParsed)
+      if (map !== null) return map
     }
   }
 

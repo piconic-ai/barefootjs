@@ -587,6 +587,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(p => p.type.kind === 'object')
         .map(p => p.name),
     )
+    // Object-literal signal seeds in an `interface{}` / map field bake as a
+    // source-keyed map (#3353); `member()` reads them through `bf_get`.
+    this.state.mapSeededSignalGetters = new Set(
+      (ir.metadata.signals ?? [])
+        .filter(s => {
+          if (s.parsed?.kind !== 'object-literal') return false
+          const goType = typeInfoToGo(this.emitCtx, s.type)
+          return goType === 'interface{}' || goType === 'map[string]interface{}'
+        })
+        .map(s => s.getter),
+    )
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
     // #2813: precompute which local consts are bare alias-hop chains onto a
@@ -1289,6 +1300,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * render empty. Recurses: once map-rooted, every further hop reads off an
    * `interface{}` value with no static struct, so it stays map-rooted.
    */
+  /**
+   * True when `node` is a non-computed member chain rooted in a call of a
+   * `mapSeededSignalGetters` getter (`data().meta`, #3353). The getter's
+   * field holds a map keyed by the source property names, so each hop reads
+   * through `bf_get` like `isMapRootedPropChain`. A bracket hop
+   * (`data()['meta']`, `data()[k]`) also reads through `bf_get` and yields a
+   * value of the same map, so the chain continues through it.
+   */
+  private isMapSeededSignalChain(node: ParsedExpr): boolean {
+    if (node.kind === 'call') {
+      return node.callee.kind === 'identifier' && node.args.length === 0 &&
+        this.state.mapSeededSignalGetters.has(node.callee.name)
+    }
+    if (node.kind === 'member' || node.kind === 'index-access') return this.isMapSeededSignalChain(node.object)
+    return false
+  }
+
   private isMapRootedPropChain(node: ParsedExpr): boolean {
     if (node.kind !== 'member' || node.computed) return false
     const obj = node.object
@@ -6954,7 +6982,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // below that would `MapIndex("ID")` a `"id"` map and render empty. Placed
     // after the `length`/`optional` special cases so it only intercepts the
     // otherwise-untyped dot access.
-    if (this.isMapRootedPropChain(object)) {
+    if (this.isMapRootedPropChain(object) || this.isMapSeededSignalChain(object)) {
       return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(property)}`
     }
     return `${obj}.${goFieldNameForKey(property)}`
@@ -8984,7 +9012,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // dot access after the direct `props.meta` read has resolved to
         // `.Meta` (#3275). `bf_get` also preserves optional-chain behavior
         // when the object itself is absent.
-        if (expr.optional) {
+        // A member of a source-keyed signal seed map (#3353) uses the same
+        // getter, as `member()` does in value position.
+        if (expr.optional || this.isMapSeededSignalChain(expr.object)) {
           return {
             preamble: obj.preamble,
             expr: this.renderOptionalMember(obj.expr, expr.property),

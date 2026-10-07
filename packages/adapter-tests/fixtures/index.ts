@@ -248,6 +248,8 @@ import { fixture as optionalChainLengthComposedReceiver } from './optional-chain
 import { fixture as nullishCoalesceEmptyArray } from './nullish-coalesce-empty-array'
 // A memo read in a loop row whose binding shadows the memo's dependency (#3352).
 import { fixture as memoDependencyLoopShadow } from './memo-dependency-loop-shadow'
+// An object-literal signal seed of a nullable-union-typed or untyped signal (#3353).
+import { fixture as objectLiteralSignalSeedNullable } from './object-literal-signal-seed-nullable'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
 import { fixture as branchMap } from './branch-map'
@@ -1092,6 +1094,7 @@ export const jsxFixtures: JSXFixture[] = [
   optionalChainLengthComposedReceiver,
   nullishCoalesceEmptyArray,
   memoDependencyLoopShadow,
+  objectLiteralSignalSeedNullable,
   logicalOrJsx,
   branchSelfClosing,
   branchMap,

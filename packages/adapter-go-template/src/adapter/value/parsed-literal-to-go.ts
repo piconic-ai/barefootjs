@@ -82,6 +82,33 @@ function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string |
 }
 
 /**
+ * Bake a whole object-literal signal seed (#3353) as a Go map literal keyed
+ * by the SOURCE property names, recursing for nested objects. Used where the
+ * signal's field is `interface{}` / `map[string]interface{}` rather than a
+ * named struct, so the object is read only through `bf_get` (which looks a
+ * map up by the source key first) and serialized through `bf_json`. Unlike
+ * `bakeInlineObjectAsGoMap` — a struct property's nested value, read through
+ * Go-cased dot access — the keys stay as written, so `JSON.stringify` keeps
+ * them and a non-identifier key (`'data-x'`) is still found. Omitted members
+ * stay absent. Null-means-defer, like the rest of this module.
+ */
+export function bakeSourceKeyedObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
+  if (expr.kind !== 'object-literal') return null
+  const entries: string[] = []
+  for (const prop of expr.properties) {
+    if (prop.kind === 'spread') return null
+    if (prop.shorthand) return null
+    const go =
+      prop.value.kind === 'object-literal'
+        ? bakeSourceKeyedObjectAsGoMap(ctx, prop.value)
+        : parsedLiteralToGo(ctx, prop.value)
+    if (go === null) return null
+    entries.push(`${JSON.stringify(prop.key)}: ${go}`)
+  }
+  return `map[string]interface{}{${entries.join(', ')}}`
+}
+
+/**
  * A literal number's exact Go source text, unwrapping a leading unary minus
  * (`-1` parses as `{kind:'unary', op:'-', argument:{literalType:'number'}}`).
  * Needs the exact source token — re-stringifying the parsed numeric VALUE

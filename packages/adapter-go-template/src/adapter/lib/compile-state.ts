@@ -193,6 +193,15 @@ export class CompileState {
   objectTypedPropNames: Set<string> = new Set()
 
   /**
+   * Getters of signals seeded with an object literal into an `interface{}` /
+   * `map[string]interface{}` field (#3353). The seed bakes as a map keyed by
+   * the source property names, so a member read on the getter's value goes
+   * through `bf_get` like an `objectTypedPropNames` chain. See `member()`'s
+   * `isMapSeededSignalChain` branch.
+   */
+  mapSeededSignalGetters: Set<string> = new Set()
+
+  /**
    * Local binding names the request-scoped `searchParams()` env signal is
    * imported under (handles `import { searchParams as sp }`).
    */
