@@ -6179,6 +6179,23 @@
         "text"
       ]
     },
+    "object-literal-signal-seed-nullable": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "on-prefixed-data-prop": {
       "kinds": [
         "array-literal",
