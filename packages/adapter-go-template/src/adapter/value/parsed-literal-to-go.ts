@@ -63,7 +63,7 @@ function structProperty(ctx: GoEmitContext, structGoType: string, key: string) {
  * `"Data-x"`, a key no emitted accessor can ever reach (Copilot review,
  * PR #2089).
  */
-function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
+export function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
   if (expr.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of expr.properties) {
