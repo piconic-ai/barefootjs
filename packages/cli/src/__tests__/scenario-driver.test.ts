@@ -461,6 +461,29 @@ describe('tsconfig `paths` alias imports (#3375)', () => {
     }
   })
 
+  test('a catch-all `paths` pattern does not turn package imports into errors', async () => {
+    // `"*": [...]` matches every bare specifier, `@barefootjs/client` included.
+    // A specifier no target resolves but an installed package does is a package
+    // import, not a missing alias. Created under this package so node_modules
+    // resolution finds the workspace's `@barefootjs/client`.
+    const dir = mkdtempSync(join(import.meta.dir, '.bf-alias-catchall-'))
+    try {
+      mkdirSync(join(dir, 'lib'), { recursive: true })
+      writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({
+        compilerOptions: { baseUrl: '.', moduleResolution: 'bundler', paths: { '*': ['./lib/*'] } },
+      }))
+      writeFileSync(join(dir, 'lib/btn.tsx'), CHILD)
+      const file = join(dir, 'Probe.tsx')
+      const src = parent('Probe', 'btn')
+      writeFileSync(file, src)
+      const r = await runAutoScenario(src, file, 'Probe')
+      expect(r.sources.map(s => s.filePath.slice(dir.length))).toEqual(['/lib/btn.tsx', '/Probe.tsx'])
+      expect(r.events.some(e => e.type === 'signalSet' && e.signal === 'Probe#signal:count' && e.turn !== null)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('the alias is resolved in a story file too', async () => {
     const dir = project()
     try {

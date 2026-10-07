@@ -243,7 +243,7 @@ function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>
  * comments.
  */
 function importSpecifiers(source: string, filePath: string): string[] {
-  const kind = /\.tsx$/.test(filePath) ? ts.ScriptKind.TSX : /\.ts$/.test(filePath) ? ts.ScriptKind.TS : ts.ScriptKind.TSX
+  const kind = filePath.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.TSX
   const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, false, kind)
   const out: string[] = []
   for (const stmt of sf.statements) {
@@ -261,6 +261,8 @@ interface PathAliases {
   patterns: { pattern: string; targets: string[] }[]
   /** Absolute paths of the files the tsconfig treats as project sources. */
   sources: Set<string>
+  /** The parsed compiler options, for telling a package import from a miss. */
+  options: ts.CompilerOptions
 }
 
 /**
@@ -289,6 +291,7 @@ function readPathAliases(dir: string): PathAliases | null {
       targets: targets.map(t => resolve(base, t)),
     })),
     sources: new Set(parsed.fileNames.map(f => resolve(f))),
+    options: parsed.options,
   }
 }
 
@@ -305,9 +308,10 @@ function matchAliasPattern(pattern: string, spec: string): string | null {
 
 /**
  * Resolve a non-relative specifier through tsconfig `paths`. Returns
- * `undefined` when no pattern matches (a package import — not ours to load),
- * the resolved file when one does, and null when a pattern matches but no
- * target exists on disk.
+ * `undefined` for a package import — no pattern matches, or a catch-all one
+ * (`"*": […]`) does but the specifier resolves to an installed package — which
+ * is not ours to load; the resolved file for an alias; and null when a pattern
+ * matches but neither a target nor a package exists.
  *
  * Targets are tried in declaration order, but a target the tsconfig does not
  * treat as a project source is passed over in favour of one it does: the Hono
@@ -315,14 +319,17 @@ function matchAliasPattern(pattern: string, spec: string): string | null {
  * `./dist/components/*` first (excluded from the tsconfig) and the source
  * second, and the profiler must compile the source.
  */
-function resolveAlias(spec: string, aliases: PathAliases): string | null | undefined {
+function resolveAlias(spec: string, importer: string, aliases: PathAliases): string | null | undefined {
   for (const { pattern, targets } of aliases.patterns) {
     const sub = matchAliasPattern(pattern, spec)
     if (sub === null) continue
     const resolved = targets
       .map(t => resolveLocalFile(t.replace('*', sub)))
       .filter((f): f is string => f !== null)
-    return resolved.find(f => aliases.sources.has(resolve(f))) ?? resolved[0] ?? null
+    const local = resolved.find(f => aliases.sources.has(resolve(f))) ?? resolved[0]
+    if (local) return local
+    const pkg = ts.resolveModuleName(spec, importer, aliases.options, ts.sys).resolvedModule
+    return pkg?.isExternalLibraryImport ? undefined : null
   }
   return undefined
 }
@@ -357,7 +364,7 @@ function loadWithLocalImports(entryPath: string, seedSource?: string): SourceFil
     if (spec.startsWith('.')) return resolveLocalFile(join(importerDir, spec))
     const aliases = aliasesFor(importerDir)
     if (!aliases) return null
-    const resolved = resolveAlias(spec, aliases)
+    const resolved = resolveAlias(spec, importer, aliases)
     if (resolved === null) {
       throw new Error(
         `"${spec}" (imported by ${importer}) matches a tsconfig \`paths\` alias but resolves ` +

@@ -521,7 +521,7 @@ export function buildIdIndex(graph: ComponentGraph): IdIndex {
  * only the prefix, so every spread with a slot is listed: one the compiler
  * applies statically never produces such a turn id, and its entry stays unused.
  */
-export function buildRestHandlerSites(componentName: string, ir: ComponentIR): Map<string, ResolvedNode> {
+function buildRestHandlerSites(componentName: string, ir: ComponentIR): Map<string, ResolvedNode> {
   const sites = new Map<string, ResolvedNode>()
   walkIR(ir.root, undefined, {
     element({ node, descend }) {
