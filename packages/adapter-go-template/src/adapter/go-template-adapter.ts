@@ -7219,8 +7219,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** One text-sink decision for direct expressions, template interpolations
    * and attribute values (#3359). Numeric values remain boxed everywhere
-   * outside these string sinks. A value
-   * that can be a `float64` here — a numeric memo read, or an arithmetic
+   * outside these string sinks. A value that can be a `float64` here — a
+   * numeric memo read, a ternary with such a branch, or an arithmetic
    * expression (`props.value + 0.5`, #3320) whose `bf_add`/`bf_div`/… result
    * is boxed `any` — prints through `bf_string`, whose `numberString` spells
    * it as JS does (`1234567890.5`); html/template's own `fmt.Sprint` would
