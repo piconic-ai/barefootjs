@@ -313,6 +313,9 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
   private options: Required<PebbleAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
+  /** Names bound at template level (signals, memos, props, local constants):
+   * a loop that binds one with `{% set %}` saves and restores it (#3386). */
+  private templateLevelNames: Set<string> = new Set()
   /**
    * SolidJS-style props identifier (`function(props: P)`) and the
    * analyzer-extracted prop names. Stashed at `generate()` entry so the
@@ -443,6 +446,12 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // `boolean-result.ts`'s file header).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.templateLevelNames = new Set([
+      ...ir.metadata.signals.map(sig => sig.getter),
+      ...ir.metadata.memos.map(m => m.name),
+      ...ir.metadata.propsParams.map(p => p.name),
+      ...(ir.metadata.localConstants ?? []).map(c => c.name),
+    ])
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
@@ -1198,6 +1207,24 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
         : loop.objectIteration === 'values'
           ? `{% for ${pebbleIdent(param)} in bf.values(${array}) %}`
           : `{% for ${pebbleIdent(loopVar)} in ${array} %}`
+    // Pebble's `{% set %}` inside a `for` body is not loop-scoped: an index,
+    // destructure or entry local named like a template-level signal, memo or
+    // prop overwrites it for the rest of the template (#3386; JS scopes the
+    // callback param to the row). Save each such name before the loop and
+    // restore it after. The for-header's own variable is loop-scoped already.
+    const setBoundNames = new Set<string>()
+    if (loop.objectIteration === 'entries') {
+      setBoundNames.add(loop.index ?? param)
+      setBoundNames.add(param)
+    } else if (!loop.objectIteration) {
+      if (loop.iterationShape === 'keys') setBoundNames.add(param)
+      else if (loop.index) setBoundNames.add(loop.index)
+    }
+    if (supportableDestructure) for (const b of loop.paramBindings ?? []) setBoundNames.add(b.name)
+    const savedNames = [...setBoundNames]
+      .filter(name => this.templateLevelNames.has(name))
+      .map(name => ({ local: pebbleIdent(name), saved: `bf_outer_${loop.markerId}_${pebbleIdent(name)}` }))
+    for (const { local, saved } of savedNames) lines.push(`{% set ${saved} = ${local} %}`)
     lines.push(forHeader)
     if (loop.objectIteration === 'entries') {
       lines.push(`{% set ${pebbleIdent(loop.index ?? param)} = ${entryPairVar}[0] %}`)
@@ -1241,6 +1268,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     }
 
     lines.push(`{% endfor %}`)
+    for (const { local, saved } of savedNames) lines.push(`{% set ${local} = ${saved} %}`)
     lines.push(`{{ bf.comment("/loop:${loop.markerId}") | raw }}`)
 
     return lines.join('\n')

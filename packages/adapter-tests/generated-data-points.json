@@ -2780,6 +2780,57 @@
       }
     }
   ],
+  "loop-set-bound-param-shadow": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "name": "outer"
+      }
+    },
+    {
+      "name": "gen:name:empty",
+      "props": {
+        "rows": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "b"
+          }
+        ],
+        "name": ""
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "rows": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "b"
+          }
+        ],
+        "name": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "rows": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "b"
+          }
+        ],
+        "name": "日本語"
+      }
+    }
+  ],
   "map-array-builder-body": [
     {
       "name": "gen:rows:empty",

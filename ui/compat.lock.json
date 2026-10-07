@@ -3602,14 +3602,6 @@
           ]
         }
       },
-      "memo-loop-param-collision": {
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "loop-index-param-overwrites-same-named-local"
-          ]
-        }
-      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -5645,10 +5637,6 @@
         "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
       },
-      "memo-loop-param-collision": {
-        "description": "Loop params named like memos shadow them only inside the row, with memo reads before and after the…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-loop-param-collision.ts"
-      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -6099,19 +6087,6 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
-    },
-    "loop-index-param-overwrites-same-named-local": {
-      "title": "A `.map()` index param named like a template-level local overwrites it after the loop",
-      "kind": "silent",
-      "given": "a `.map((item, i) => …)` callback whose index param has the same name as a component memo read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)",
-      "expected": "the index param shadows the memo only inside the row; the read after the loop renders the memo (`data-i=\"10\"`)",
-      "actual": "renders the last row index after the loop (`data-i=\"1\"`): the index binds with a template-level `set` inside the loop body, which overwrites the memo of the same name",
-      "fixtures": [
-        "memo-loop-param-collision"
-      ],
-      "adapters": [
-        "pebble"
-      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
