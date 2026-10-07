@@ -237,6 +237,26 @@ describe('applyRestAttrs profile-mode turn attribution (#3376)', () => {
     }
   })
 
+  test('the forwarded listener gets the same receiver and event with or without a turn site', () => {
+    const seen: { site: string; self: unknown; type: string }[] = []
+    function onClick(this: unknown, e: Event) {
+      seen.push({ site, self: this, type: e.type })
+    }
+    let site = ''
+    const plain = document.createElement('button')
+    const profiled = document.createElement('button')
+    applyRestAttrs(plain, { onClick }, [])
+    applyRestAttrs(profiled, { onClick }, [], 'B#handler:s0')
+    site = 'plain'
+    plain.dispatchEvent(new window.MouseEvent('click'))
+    site = 'profiled'
+    profiled.dispatchEvent(new window.MouseEvent('click'))
+    expect(seen).toEqual([
+      { site: 'plain', self: plain, type: 'click' },
+      { site: 'profiled', self: profiled, type: 'click' },
+    ])
+  })
+
   test('a throwing forwarded handler still closes its turn', () => {
     const events = record()
     try {

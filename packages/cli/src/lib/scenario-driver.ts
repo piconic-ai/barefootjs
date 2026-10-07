@@ -320,18 +320,25 @@ function matchAliasPattern(pattern: string, spec: string): string | null {
  * second, and the profiler must compile the source.
  */
 function resolveAlias(spec: string, importer: string, aliases: PathAliases): string | null | undefined {
+  // Pick the pattern TypeScript would: an exact (wildcard-free) match wins,
+  // otherwise the wildcard match with the longest prefix — never simply the
+  // first one declared.
+  let winner: { targets: string[]; sub: string; rank: number } | undefined
   for (const { pattern, targets } of aliases.patterns) {
     const sub = matchAliasPattern(pattern, spec)
     if (sub === null) continue
-    const resolved = targets
-      .map(t => resolveLocalFile(t.replace('*', sub)))
-      .filter((f): f is string => f !== null)
-    const local = resolved.find(f => aliases.sources.has(resolve(f))) ?? resolved[0]
-    if (local) return local
-    const pkg = ts.resolveModuleName(spec, importer, aliases.options, ts.sys).resolvedModule
-    return pkg?.isExternalLibraryImport ? undefined : null
+    const star = pattern.indexOf('*')
+    const rank = star === -1 ? Number.POSITIVE_INFINITY : star
+    if (!winner || rank > winner.rank) winner = { targets, sub, rank }
   }
-  return undefined
+  if (!winner) return undefined
+  const resolved = winner.targets
+    .map(t => resolveLocalFile(t.replace('*', winner.sub)))
+    .filter((f): f is string => f !== null)
+  const local = resolved.find(f => aliases.sources.has(resolve(f))) ?? resolved[0]
+  if (local) return local
+  const pkg = ts.resolveModuleName(spec, importer, aliases.options, ts.sys).resolvedModule
+  return pkg?.isExternalLibraryImport ? undefined : null
 }
 
 /**

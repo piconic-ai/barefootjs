@@ -484,6 +484,30 @@ describe('tsconfig `paths` alias imports (#3375)', () => {
     }
   })
 
+  for (const [label, paths, spec] of [
+    ['a longer-prefix wildcard after a broad one', { '@/*': ['./general/*'], '@/ui/*': ['./special/*'] }, '@/ui/btn'],
+    ['an exact mapping after a wildcard', { '@/*': ['./general/*'], '@/ui/btn': ['./special/btn'] }, '@/ui/btn'],
+  ] as const) {
+    test(`the pattern TypeScript picks wins: ${label}`, async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'bf-alias-precedence-'))
+      try {
+        mkdirSync(join(dir, 'special'), { recursive: true })
+        mkdirSync(join(dir, 'general/ui'), { recursive: true })
+        writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { baseUrl: '.', paths } }))
+        writeFileSync(join(dir, 'special/btn.tsx'), CHILD)
+        // The first-declared pattern also resolves — to the wrong child.
+        writeFileSync(join(dir, 'general/ui/btn.tsx'), CHILD.replace('className="btn"', 'className="wrong"'))
+        const file = join(dir, 'Probe.tsx')
+        const src = parent('Probe', spec)
+        writeFileSync(file, src)
+        const r = await runAutoScenario(src, file, 'Probe')
+        expect(r.sources.map(s => s.filePath.slice(dir.length))).toEqual(['/special/btn.tsx', '/Probe.tsx'])
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    })
+  }
+
   test('the alias is resolved in a story file too', async () => {
     const dir = project()
     try {

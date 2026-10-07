@@ -63,10 +63,12 @@ export function applyRestAttrs(
           eventName,
           handlerId === undefined
             ? (handler as EventListener)
-            : (...args: unknown[]) => {
+            : function (this: unknown, ...args: unknown[]) {
+                // `function` + `apply` keep the DOM receiver (`this` is the
+                // element) the bare listener would get.
                 beginTurn(handlerId)
                 try {
-                  return (handler as (...a: unknown[]) => unknown)(...args)
+                  return (handler as (...a: unknown[]) => unknown).apply(this, args)
                 } finally {
                   endTurn()
                 }
