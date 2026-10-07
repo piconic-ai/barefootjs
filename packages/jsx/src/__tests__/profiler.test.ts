@@ -564,8 +564,9 @@ describe('agent contract: status, findings, guidance (#1841)', () => {
 
   test('a clean run is status ok with no findings', () => {
     n = 0
-    // One memo run in a turn → runsPerTurn 1 → not hot, nothing flagged.
-    const turn = 'Calc#handler:s0:click'
+    // One memo run in a turn → runsPerTurn 1 → not hot, nothing flagged. The
+    // turn id is the button's real handler id, so coverage reads 1/1.
+    const turn = 'Calc#handler:s1:click'
     const events: ProfilerEvent[] = [
       ev('turnBegin', { handlerId: turn }),
       ev('effectEnter', { subscriber: 'Calc#memo:a', turn }),
@@ -614,18 +615,18 @@ describe('agent contract: status, findings, guidance (#1841)', () => {
     expect(gap.nextCommands.every(c => !c.includes('graph Calc'))).toBe(true)
   })
 
-  test('coverage.ratio is clamped to 1 when the stream over-counts handlers', () => {
+  test('a turn id the IR does not list joins the inventory, so the ratio stays within 1', () => {
     n = 0
-    // Calc exposes a single handler (handlersTotal 1), but a malformed stream
-    // reports two distinct turn ids — without clamping the ratio would be 2.0
-    // and silently pass a `--min-coverage` gate it shouldn't.
+    // Calc lists a single handler, but the stream reports a second distinct
+    // turn id (#3377). It is a handler site that ran, so it counts on both
+    // sides: 2/2, never 2/1 — the ratio can't pass a `--min-coverage` gate it
+    // shouldn't.
     const events: ProfilerEvent[] = [
-      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s0:click' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s1:click' }),
       ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s9:click' }),
     ]
     const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
-    expect(r.coverage.ratio).toBe(1)
-    expect(r.coverage.ratio).toBeLessThanOrEqual(1)
+    expect(r.coverage).toMatchObject({ handlersFired: 2, handlersTotal: 2, ratio: 1 })
   })
 
   test('a zero-turn run emits guidance pointing at a story file', () => {

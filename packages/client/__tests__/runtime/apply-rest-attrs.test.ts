@@ -179,3 +179,105 @@ describe('spreadAttrs', () => {
     expect(out).not.toContain('clip-path-units')
   })
 })
+
+describe('applyRestAttrs profile-mode turn attribution (#3376)', () => {
+  // The same module instance `applyRestAttrs` imports its turn markers from.
+  let reactive: typeof import('@barefootjs/client/reactive')
+  beforeAll(async () => {
+    reactive = await import('@barefootjs/client/reactive')
+  })
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function record(): string[] {
+    const events: string[] = []
+    const noop = () => {}
+    reactive.setProfilerSink({
+      signalSet: noop, subscribeAdd: noop, subscribeRemove: noop, effectCreate: noop,
+      effectEnter: noop, effectExit: noop, effectDispose: noop, batchBegin: noop, batchFlush: noop,
+      turnBegin: (id: string) => events.push(`begin ${id}`),
+      turnEnd: () => events.push('end'),
+    })
+    return events
+  }
+
+  /** Listeners `addEventListener` receives on `el`, in order. */
+  function captureListeners(el: Element): unknown[] {
+    const added: unknown[] = []
+    const orig = el.addEventListener.bind(el)
+    el.addEventListener = ((type: string, listener: EventListener) => {
+      added.push(listener)
+      orig(type, listener)
+    }) as typeof el.addEventListener
+    return added
+  }
+
+  test('with a turn site, a forwarded handler runs inside its own turn', () => {
+    const events = record()
+    try {
+      const el = document.createElement('button')
+      document.body.appendChild(el)
+      const calls: unknown[] = []
+      applyRestAttrs(el, {
+        onClick: (e: Event) => { calls.push(e.type); events.push('handler') },
+        onDoubleClick: () => events.push('dbl'),
+      }, [], 'SpreadButton#handler:s0')
+      el.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+      el.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }))
+      // The callback still runs with the event, between the turn markers, and
+      // the turn id carries the DOM event name the listener was wired for.
+      expect(calls).toEqual(['click'])
+      expect(events).toEqual([
+        'begin SpreadButton#handler:s0:click', 'handler', 'end',
+        'begin SpreadButton#handler:s0:dblclick', 'dbl', 'end',
+      ])
+    } finally {
+      reactive.setProfilerSink(null)
+    }
+  })
+
+  test('the forwarded listener gets the same receiver and event with or without a turn site', () => {
+    const seen: { site: string; self: unknown; type: string }[] = []
+    function onClick(this: unknown, e: Event) {
+      seen.push({ site, self: this, type: e.type })
+    }
+    let site = ''
+    const plain = document.createElement('button')
+    const profiled = document.createElement('button')
+    applyRestAttrs(plain, { onClick }, [])
+    applyRestAttrs(profiled, { onClick }, [], 'B#handler:s0')
+    site = 'plain'
+    plain.dispatchEvent(new window.MouseEvent('click'))
+    site = 'profiled'
+    profiled.dispatchEvent(new window.MouseEvent('click'))
+    expect(seen).toEqual([
+      { site: 'plain', self: plain, type: 'click' },
+      { site: 'profiled', self: profiled, type: 'click' },
+    ])
+  })
+
+  test('a throwing forwarded handler still closes its turn', () => {
+    const events = record()
+    try {
+      const el = document.createElement('button')
+      const added = captureListeners(el)
+      const boom = new Error('boom')
+      applyRestAttrs(el, { onClick: () => { throw boom } }, [], 'B#handler:s0')
+      // Call the wired listener directly: a dispatched event would have the
+      // DOM swallow and report the throw. The point is that `endTurn()` runs.
+      expect(() => (added[0] as (e: Event) => void)(new window.MouseEvent('click'))).toThrow(boom)
+      expect(events).toEqual(['begin B#handler:s0:click', 'end'])
+    } finally {
+      reactive.setProfilerSink(null)
+    }
+  })
+
+  test('without a turn site (production), the handler is attached bare', () => {
+    const el = document.createElement('button')
+    const handler = () => {}
+    const added = captureListeners(el)
+    applyRestAttrs(el, { onClick: handler }, [])
+    expect(added).toEqual([handler])
+  })
+})

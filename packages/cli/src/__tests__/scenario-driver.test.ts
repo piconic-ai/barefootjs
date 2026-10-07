@@ -7,7 +7,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { writeFileSync, mkdtempSync, rmSync } from 'fs'
+import { writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { runAutoScenario, runFileScenario } from '../lib/scenario-driver'
@@ -370,6 +370,156 @@ describe('runFileScenario (composition, #1796)', () => {
       expect(r.sources.map(s => s.filePath.split('/').pop())).toEqual(['knob.tsx', 'index.tsx'])
       const turn = r.events.find(e => e.type === 'turnBegin')
       expect(turn?.handlerId).toMatch(/^Knob#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('tsconfig `paths` alias imports (#3375)', () => {
+  // The scaffold's tsconfig: compiled SSR templates under `dist/` first (and
+  // excluded from the project), the source second.
+  const TSCONFIG = JSON.stringify({
+    compilerOptions: {
+      jsx: 'react-jsx',
+      baseUrl: '.',
+      paths: { '@/components/*': ['./dist/components/*', './components/*'] },
+    },
+    include: ['**/*.ts', '**/*.tsx'],
+    exclude: ['node_modules', 'dist/components'],
+  })
+  const CHILD = `
+    'use client'
+    interface Props { onClick?: () => void; children?: unknown }
+    export function Btn(props: Props) {
+      return <button className="btn" onClick={props.onClick}>{props.children}</button>
+    }
+  `
+  const parent = (name: string, spec: string) => `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    import { Btn } from '${spec}'
+    export function ${name}() {
+      const [count, setCount] = createSignal(0)
+      return <div><p>{count()}</p><Btn onClick={() => setCount(n => n + 1)}>+1</Btn></div>
+    }
+  `
+
+  function project(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'bf-alias-'))
+    mkdirSync(join(dir, 'components/ui/btn'), { recursive: true })
+    mkdirSync(join(dir, 'dist/components/ui/btn'), { recursive: true })
+    writeFileSync(join(dir, 'tsconfig.json'), TSCONFIG)
+    writeFileSync(join(dir, 'components/ui/btn/index.tsx'), CHILD)
+    // A compiled SSR template in the build output must not be what the
+    // profiler compiles — it would mount without the child's client code.
+    writeFileSync(join(dir, 'dist/components/ui/btn/index.tsx'), `
+      export function Btn() { throw new Error('compiled dist template was loaded') }
+    `)
+    return dir
+  }
+
+  for (const [label, spec] of [['an alias', '@/components/ui/btn'], ['a relative', './ui/btn']] as const) {
+    test(`a child imported through ${label} import mounts and its callback updates the parent`, async () => {
+      const dir = project()
+      try {
+        const file = join(dir, 'components/Probe.tsx')
+        const src = parent('Probe', spec)
+        writeFileSync(file, src)
+        const r = await runAutoScenario(src, file, 'Probe')
+        // The source child was loaded — not the dist template, not nothing.
+        expect(r.sources.map(s => s.filePath.slice(dir.length))).toEqual([
+          '/components/ui/btn/index.tsx',
+          '/components/Probe.tsx',
+        ])
+        // The child mounted as a real button (not an empty placeholder div)…
+        const root = document.body.lastElementChild!
+        expect(root.querySelectorAll('button.btn').length).toBe(1)
+        // …and the click ran the parent callback inside the child's turn.
+        const turn = r.events.find(e => e.type === 'turnBegin')
+        expect(turn?.handlerId).toMatch(/^Btn#handler:s\d+:click$/)
+        const set = r.events.find(e => e.type === 'signalSet' && e.signal === 'Probe#signal:count')
+        expect(set?.turn).toBe(turn!.handlerId)
+        expect(root.querySelector('p')!.textContent).toBe('1')
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    })
+  }
+
+  test('an alias that matches `paths` but resolves to no file names the import and importer', async () => {
+    const dir = project()
+    try {
+      const file = join(dir, 'components/Probe.tsx')
+      const src = parent('Probe', '@/components/ui/missing')
+      writeFileSync(file, src)
+      await expect(runAutoScenario(src, file, 'Probe')).rejects.toThrow(
+        /"@\/components\/ui\/missing" \(imported by .*Probe\.tsx\) matches a tsconfig `paths` alias/,
+      )
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('a catch-all `paths` pattern does not turn package imports into errors', async () => {
+    // `"*": [...]` matches every bare specifier, `@barefootjs/client` included.
+    // A specifier no target resolves but an installed package does is a package
+    // import, not a missing alias. Created under this package so node_modules
+    // resolution finds the workspace's `@barefootjs/client`.
+    const dir = mkdtempSync(join(import.meta.dir, '.bf-alias-catchall-'))
+    try {
+      mkdirSync(join(dir, 'lib'), { recursive: true })
+      writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({
+        compilerOptions: { baseUrl: '.', moduleResolution: 'bundler', paths: { '*': ['./lib/*'] } },
+      }))
+      writeFileSync(join(dir, 'lib/btn.tsx'), CHILD)
+      const file = join(dir, 'Probe.tsx')
+      const src = parent('Probe', 'btn')
+      writeFileSync(file, src)
+      const r = await runAutoScenario(src, file, 'Probe')
+      expect(r.sources.map(s => s.filePath.slice(dir.length))).toEqual(['/lib/btn.tsx', '/Probe.tsx'])
+      expect(r.events.some(e => e.type === 'signalSet' && e.signal === 'Probe#signal:count' && e.turn !== null)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  for (const [label, paths, spec] of [
+    ['a longer-prefix wildcard after a broad one', { '@/*': ['./general/*'], '@/ui/*': ['./special/*'] }, '@/ui/btn'],
+    ['an exact mapping after a wildcard', { '@/*': ['./general/*'], '@/ui/btn': ['./special/btn'] }, '@/ui/btn'],
+  ] as const) {
+    test(`the pattern TypeScript picks wins: ${label}`, async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'bf-alias-precedence-'))
+      try {
+        mkdirSync(join(dir, 'special'), { recursive: true })
+        mkdirSync(join(dir, 'general/ui'), { recursive: true })
+        writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { baseUrl: '.', paths } }))
+        writeFileSync(join(dir, 'special/btn.tsx'), CHILD)
+        // The first-declared pattern also resolves — to the wrong child.
+        writeFileSync(join(dir, 'general/ui/btn.tsx'), CHILD.replace('className="btn"', 'className="wrong"'))
+        const file = join(dir, 'Probe.tsx')
+        const src = parent('Probe', spec)
+        writeFileSync(file, src)
+        const r = await runAutoScenario(src, file, 'Probe')
+        expect(r.sources.map(s => s.filePath.slice(dir.length))).toEqual(['/special/btn.tsx', '/Probe.tsx'])
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    })
+  }
+
+  test('the alias is resolved in a story file too', async () => {
+    const dir = project()
+    try {
+      writeFileSync(join(dir, 'components/story.tsx'), `
+        import { Btn } from '@/components/ui/btn'
+        export function Story() { return <div><Btn>go</Btn></div> }
+      `)
+      const r = await runFileScenario(join(dir, 'components/story.tsx'))
+      expect(r.sources.map(s => s.filePath.slice(dir.length))).toEqual([
+        '/components/ui/btn/index.tsx',
+        '/components/story.tsx',
+      ])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

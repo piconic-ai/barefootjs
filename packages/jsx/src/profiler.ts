@@ -30,6 +30,8 @@ import {
   type UpdatePathEntry,
 } from './debug.ts'
 import { listComponentFunctions, createProgramForFile } from './analyzer.ts'
+import { walkIR } from './ir-to-client-js/walker.ts'
+import type { ComponentIR } from './types.ts'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 /**
@@ -507,6 +509,46 @@ export function buildIdIndex(graph: ComponentGraph): IdIndex {
     index.set(`${comp}#binding:${b.slotId}`, { kind: 'effect', name: `${b.slotId} (${b.type})`, loc })
   }
   return index
+}
+
+/**
+ * Handler sites behind a rest/props spread on an intrinsic element
+ * (`<button {...props}>`), keyed by their turn-id prefix
+ * `<Component>#handler:<slotId>` (#3376). The compiler wires the event handlers
+ * such a spread carries at runtime (`applyRestAttrs`), so which events they are
+ * is only known once a caller passes them — the turn id appends the DOM event
+ * name the runtime saw. Resolving a recorded turn id to its spread site needs
+ * only the prefix, so every spread with a slot is listed: one the compiler
+ * applies statically never produces such a turn id, and its entry stays unused.
+ */
+function buildRestHandlerSites(componentName: string, ir: ComponentIR): Map<string, ResolvedNode> {
+  const sites = new Map<string, ResolvedNode>()
+  walkIR(ir.root, undefined, {
+    element({ node, descend }) {
+      const spread = node.slotId ? node.attrs.find(a => a.name === '...') : undefined
+      if (spread && node.slotId) {
+        const loc = spread.loc ?? node.loc
+        sites.set(`${componentName}#handler:${node.slotId}`, {
+          kind: 'handler',
+          // Completed with the event name per turn id: `click@s0 {...}`.
+          name: `@${node.slotId} {...}`,
+          loc: { file: loc.file, line: loc.start.line },
+        })
+      }
+      descend()
+    },
+    component({ descend, descendJsxChildren }) {
+      descend()
+      descendJsxChildren()
+    },
+  })
+  return sites
+}
+
+/** The spread site a rest-forwarded turn id (`<site>:<event>`) belongs to. */
+function restSiteOf(handlerId: string, sites: ReadonlyMap<string, ResolvedNode>): ResolvedNode | undefined {
+  const colon = handlerId.lastIndexOf(':')
+  return colon < 0 ? undefined : sites.get(handlerId.slice(0, colon))
 }
 
 /** A profiler id that no IR node could be found for (SR4 coverage gap). */
@@ -1358,7 +1400,15 @@ export interface DiagnosticsSummary {
 export interface ProfileCoverage {
   /** Distinct handlers exercised (turns observed). */
   handlersFired: number
-  /** Handlers the IR knows about (`buildEventSummary`). */
+  /**
+   * DOM handler sites in the run (#3377): one per instrumented DOM listener —
+   * every `<el on*={…}>` event binding the IR knows about, plus each
+   * rest-forwarded listener (`<el {...props}>`, #3376) the run observed (its
+   * events are decided by the caller, so it is known only once wired). The same
+   * unit the numerator counts — a turn is recorded per DOM listener — so a
+   * callback prop a parent hands a child (`<Child onClick={…}>`) is not a unit
+   * of its own: it runs inside the child's DOM turn.
+   */
   handlersTotal: number
   /**
    * `handlersFired / handlersTotal` in `[0,1]` — the fraction of known handlers
@@ -1607,7 +1657,11 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   // turn id → the handler binding + the component graph that owns it (so the
   // safety oracle reasons over the right component's memos).
   const turnBindings = new Map<string, { binding: EventBinding; graph: ComponentGraph }>()
-  let handlersTotal = 0
+  // Coverage inventory (#3377): the turn ids of every DOM event binding — the
+  // same inventory the auto scenario fires and the static budget lists.
+  const staticHandlerIds = new Set<string>()
+  // Spread sites whose runtime-wired handlers carry their own turn ids (#3376).
+  const restSites = new Map<string, ResolvedNode>()
   // Per-file lines of the `createEffect` calls the compiler instrumented (top
   // level, carry a `__bfId`). Subtracted from a source scan to find the
   // uninstrumented ones behind anonymous `e<n>` ids (#1849 B6).
@@ -1628,12 +1682,17 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     if (componentNames.length === 0) componentNames = [undefined as unknown as string]
     for (const name of componentNames) {
       let graph: ComponentGraph
+      let ir: ComponentIR
       try {
-        graph = buildComponentAnalysis(s.source, s.filePath, name, program).graph
+        ;({ graph, ir } = buildComponentAnalysis(s.source, s.filePath, name, program))
       } catch {
         continue
       }
-      for (const [k, v] of buildIdIndex(graph)) index.set(k, v)
+      for (const [k, v] of buildIdIndex(graph)) {
+        index.set(k, v)
+        if (v.kind === 'handler') staticHandlerIds.add(k)
+      }
+      for (const [k, v] of buildRestHandlerSites(graph.componentName, ir)) restSites.set(k, v)
       for (const e of graph.effects) {
         const set = instrumentedEffectLines.get(e.loc.file) ?? new Set<number>()
         set.add(e.loc.line)
@@ -1641,7 +1700,6 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
       }
       try {
         const summary = buildEventSummary(s.source, s.filePath, name, program)
-        handlersTotal += summary.events.length
         for (const [turn, binding] of turnToEventBinding(graph, summary.events)) {
           turnBindings.set(turn, { binding, graph })
         }
@@ -1649,6 +1707,14 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
         /* a component the analyzer can't summarize contributes no handlers */
       }
     }
+  }
+
+  // A rest-forwarded turn id resolves to its spread site (#3376), so its batch
+  // candidate and findings cite source like any explicit handler's.
+  for (const e of events) {
+    if (e.turn === null || index.has(e.turn)) continue
+    const site = restSiteOf(e.turn, restSites)
+    if (site) index.set(e.turn, { ...site, name: `${e.turn.slice(e.turn.lastIndexOf(':') + 1)}${site.name}` })
   }
 
   // Candidate sites for uninstrumented `createEffect` ids, across every source
@@ -1701,6 +1767,11 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
       handlerIds.add(e.turn)
     }
   }
+  // The inventory is every static DOM handler site plus every one the run
+  // observed — a turn id the IR could not list (a rest-forwarded listener) is
+  // still a DOM handler that exists. Numerator and denominator count the same
+  // unit, so a fully exercised component reads 1 and the ratio can't pass 1.
+  const handlersTotal = new Set([...staticHandlerIds, ...handlerIds]).size
 
   const findings = buildAgentFindings(primary.componentName, hotSubscribers, wastedReReruns, batchAdvisor, unattributed)
   // Status is measurement-only here: any warning/error finding ⇒ `warning`. A
@@ -1709,11 +1780,9 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   const status: ProfileStatus = findings.some(f => f.severity === 'warning' || f.severity === 'error') ? 'warning' : 'ok'
 
   // Coverage ratio: 1 when there is nothing to cover (no handlers), else the
-  // exercised fraction. Clamped to `[0,1]` — a malformed stream (more distinct
-  // turn ids than `buildEventSummary` knows about, e.g. missing `extraSources`)
-  // must not push the ratio past 1 and break a gate's assumptions. Drives
-  // `--min-coverage` and the guidance below.
-  const ratio = handlersTotal > 0 ? Math.min(1, handlerIds.size / handlersTotal) : 1
+  // exercised fraction — in `[0,1]` by construction, since every exercised id
+  // is in the inventory. Drives `--min-coverage` and the guidance below.
+  const ratio = handlersTotal > 0 ? handlerIds.size / handlersTotal : 1
   let guidance: ScenarioGuidance | undefined
   if (turnSeqs.size === 0) {
     guidance =

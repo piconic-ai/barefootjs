@@ -7,10 +7,39 @@ import { scaffold } from '../lib/scaffold'
 import { resolveScaffoldLayout } from '../lib/scaffold-layout'
 import { commandsFor, detectPackageManager, testRunnerFor } from '../lib/pm'
 
+const USAGE = 'Usage: bf gen component <component-name> [use-component1] [use-component2] ...'
+const EXAMPLE = 'Example: bf gen component settings-form input switch button'
+
+// Component names become `<name>/index.tsx` paths and PascalCase
+// identifiers, so only lowercase kebab-case is accepted. Anything else
+// (a stray flag, `My Widget`, `--`) would otherwise reach the name
+// conversion in `scaffold` and crash or emit an invalid identifier.
+const KEBAB_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
+
 export function run(args: string[], ctx: CliContext): void {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(USAGE)
+    console.log(EXAMPLE)
+    return
+  }
+
   if (args.length < 1) {
-    console.error('Usage: bf gen component <component-name> [use-component1] [use-component2] ...')
-    console.error('Example: bf gen component settings-form input switch button')
+    console.error(USAGE)
+    console.error(EXAMPLE)
+    process.exit(1)
+  }
+
+  const unknownFlag = args.find(a => a.startsWith('-'))
+  if (unknownFlag) {
+    console.error(`Error: Unknown option '${unknownFlag}'.`)
+    console.error(USAGE)
+    process.exit(1)
+  }
+
+  const invalidName = args.find(a => !KEBAB_NAME.test(a))
+  if (invalidName !== undefined) {
+    console.error(`Error: Invalid component name '${invalidName}'. Use lowercase kebab-case (e.g. settings-form).`)
+    console.error(USAGE)
     process.exit(1)
   }
 

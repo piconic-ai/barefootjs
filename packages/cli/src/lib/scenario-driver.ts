@@ -237,11 +237,117 @@ function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>
 }
 
 /**
- * Walk a file's transitive local (relative) imports into a flat,
- * dependency-first source list — so a component (or story) that composes
- * separately-registered children (`<Collapsible><CollapsibleTrigger/>…`)
- * brings every piece it needs: each child registers via `hydrate(...)` before
- * the root mounts, and its handlers enter the discovery set.
+ * The module specifiers a source file imports or re-exports, read from its
+ * top-level statements (a `ts.createSourceFile` parse, no type checking) —
+ * never by regex, which would false-match inside string/template literals and
+ * comments.
+ */
+function importSpecifiers(source: string, filePath: string): string[] {
+  const kind = filePath.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.TSX
+  const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, false, kind)
+  const out: string[] = []
+  for (const stmt of sf.statements) {
+    if ((ts.isImportDeclaration(stmt) || ts.isExportDeclaration(stmt)) &&
+        stmt.moduleSpecifier && ts.isStringLiteral(stmt.moduleSpecifier)) {
+      out.push(stmt.moduleSpecifier.text)
+    }
+  }
+  return out
+}
+
+/** The `compilerOptions.paths` of the tsconfig governing a directory. */
+interface PathAliases {
+  /** `paths` patterns in declaration order, each with its absolute targets. */
+  patterns: { pattern: string; targets: string[] }[]
+  /** Absolute paths of the files the tsconfig treats as project sources. */
+  sources: Set<string>
+  /** The parsed compiler options, for telling a package import from a miss. */
+  options: ts.CompilerOptions
+}
+
+/**
+ * Read the nearest tsconfig's `paths` mapping (following `extends`), so a
+ * component that imports a child through an alias — the scaffold's
+ * `@/components/*` — loads that child exactly like a relative import (#3375).
+ * Null when there is no tsconfig or it declares no `paths`.
+ */
+function readPathAliases(dir: string): PathAliases | null {
+  const configPath = ts.findConfigFile(dir, ts.sys.fileExists)
+  if (!configPath) return null
+  const parsed = ts.getParsedCommandLineOfConfigFile(configPath, {}, {
+    ...ts.sys,
+    onUnRecoverableConfigFileDiagnostic: () => {},
+  })
+  const paths = parsed?.options.paths
+  if (!parsed || !paths) return null
+  // Targets are relative to `baseUrl`, or to the tsconfig declaring `paths`
+  // when there is none (`pathsBasePath`, set by the parser).
+  const base = parsed.options.baseUrl ??
+    (parsed.options as { pathsBasePath?: string }).pathsBasePath ??
+    dirname(configPath)
+  return {
+    patterns: Object.entries(paths).map(([pattern, targets]) => ({
+      pattern,
+      targets: targets.map(t => resolve(base, t)),
+    })),
+    sources: new Set(parsed.fileNames.map(f => resolve(f))),
+    options: parsed.options,
+  }
+}
+
+/** The substitution a `paths` pattern (`exact` or one `*`) gives `spec`, or null. */
+function matchAliasPattern(pattern: string, spec: string): string | null {
+  const star = pattern.indexOf('*')
+  if (star === -1) return pattern === spec ? '' : null
+  const prefix = pattern.slice(0, star)
+  const suffix = pattern.slice(star + 1)
+  if (spec.length < prefix.length + suffix.length) return null
+  if (!spec.startsWith(prefix) || !spec.endsWith(suffix)) return null
+  return spec.slice(prefix.length, spec.length - suffix.length)
+}
+
+/**
+ * Resolve a non-relative specifier through tsconfig `paths`. Returns
+ * `undefined` for a package import — no pattern matches, or a catch-all one
+ * (`"*": […]`) does but the specifier resolves to an installed package — which
+ * is not ours to load; the resolved file for an alias; and null when a pattern
+ * matches but neither a target nor a package exists.
+ *
+ * Targets are tried in declaration order, but a target the tsconfig does not
+ * treat as a project source is passed over in favour of one it does: the Hono
+ * scaffold maps `@/components/*` to the compiled SSR templates under
+ * `./dist/components/*` first (excluded from the tsconfig) and the source
+ * second, and the profiler must compile the source.
+ */
+function resolveAlias(spec: string, importer: string, aliases: PathAliases): string | null | undefined {
+  // Pick the pattern TypeScript would: an exact (wildcard-free) match wins,
+  // otherwise the wildcard match with the longest prefix — never simply the
+  // first one declared.
+  let winner: { targets: string[]; sub: string; rank: number } | undefined
+  for (const { pattern, targets } of aliases.patterns) {
+    const sub = matchAliasPattern(pattern, spec)
+    if (sub === null) continue
+    const star = pattern.indexOf('*')
+    const rank = star === -1 ? Number.POSITIVE_INFINITY : star
+    if (!winner || rank > winner.rank) winner = { targets, sub, rank }
+  }
+  if (!winner) return undefined
+  const resolved = winner.targets
+    .map(t => resolveLocalFile(t.replace('*', winner.sub)))
+    .filter((f): f is string => f !== null)
+  const local = resolved.find(f => aliases.sources.has(resolve(f))) ?? resolved[0]
+  if (local) return local
+  const pkg = ts.resolveModuleName(spec, importer, aliases.options, ts.sys).resolvedModule
+  return pkg?.isExternalLibraryImport ? undefined : null
+}
+
+/**
+ * Walk a file's transitive local imports — relative ones, and ones through a
+ * tsconfig `paths` alias (#3375) — into a flat, dependency-first source list,
+ * so a component (or story) that composes separately-registered children
+ * (`<Collapsible><CollapsibleTrigger/>…`) brings every piece it needs: each
+ * child registers via `hydrate(...)` before the root mounts, and its handlers
+ * enter the discovery set.
  *
  * `seedSource` lets the caller supply already-read content for the entry file
  * (the `bf debug profile <component>` path reads it before resolving), avoiding
@@ -250,14 +356,43 @@ function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>
 function loadWithLocalImports(entryPath: string, seedSource?: string): SourceFile[] {
   const out: SourceFile[] = []
   const visited = new Set<string>()
-  const visitImport = (p: string): void => {
-    const resolved = resolveLocalFile(p)
-    if (!resolved || visited.has(resolved)) return
+  const aliasCache = new Map<string, PathAliases | null>()
+  const aliasesFor = (dir: string): PathAliases | null => {
+    if (!aliasCache.has(dir)) aliasCache.set(dir, readPathAliases(dir))
+    return aliasCache.get(dir)!
+  }
+  // Relative specifiers resolve against the importer's directory; a missing
+  // one is skipped here (a partial/standalone component still profiles, and
+  // `rewriteLocalImports` reports it if its compiled chunk still needs it).
+  // An alias that matches a `paths` pattern but resolves to nothing is an
+  // error: skipping it would mount an empty placeholder where the child
+  // belongs and report a scenario that never ran.
+  const resolveImport = (spec: string, importer: string, importerDir: string): string | null => {
+    if (spec.startsWith('.')) return resolveLocalFile(join(importerDir, spec))
+    const aliases = aliasesFor(importerDir)
+    if (!aliases) return null
+    const resolved = resolveAlias(spec, importer, aliases)
+    if (resolved === null) {
+      throw new Error(
+        `"${spec}" (imported by ${importer}) matches a tsconfig \`paths\` alias but resolves ` +
+          'to no file, so the dynamic scenario runner cannot load that component. Check the ' +
+          'import path and the alias targets, or use the static budget ' +
+          '(`bf debug profile <component>`), which needs no run.',
+      )
+    }
+    return resolved ?? null
+  }
+  const visitImports = (source: string, importer: string, importerDir: string): void => {
+    for (const spec of importSpecifiers(source, importer)) {
+      const resolved = resolveImport(spec, importer, importerDir)
+      if (resolved) visitFile(resolved)
+    }
+  }
+  const visitFile = (resolved: string): void => {
+    if (visited.has(resolved)) return
     visited.add(resolved)
     const source = readFileSync(resolved, 'utf-8')
-    for (const m of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
-      visitImport(join(dirname(resolved), m[1]))
-    }
+    visitImports(source, resolved, dirname(resolved))
     out.push({ source, filePath: resolved })
   }
   // Resolve the entry on disk. With no seed AND no on-disk file there is
@@ -268,17 +403,14 @@ function loadWithLocalImports(entryPath: string, seedSource?: string): SourceFil
   if (seedSource === undefined && !entryResolved) return out
   // The entry is included from its seed (or disk). Its `filePath` may be
   // synthetic (in-memory tests, stdin) and need not exist on disk. Resolve its
-  // local imports against the *resolved* file's directory (so a directory spec
-  // that maps to `…/index.tsx` resolves siblings correctly), falling back to the
-  // entry spec's dir when synthetic; missing imports are skipped so a
-  // partial/standalone component still profiles.
+  // imports against the *resolved* file's directory (so a directory spec that
+  // maps to `…/index.tsx` resolves siblings correctly), falling back to the
+  // entry spec's dir when synthetic.
   if (entryResolved) visited.add(entryResolved)
   const entrySource = seedSource ?? readFileSync(entryResolved!, 'utf-8')
-  const entryDir = dirname(entryResolved ?? entryPath)
-  for (const m of entrySource.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
-    visitImport(join(entryDir, m[1]))
-  }
-  out.push({ source: entrySource, filePath: entryResolved ?? entryPath })
+  const entryFile = entryResolved ?? entryPath
+  visitImports(entrySource, entryFile, dirname(entryFile))
+  out.push({ source: entrySource, filePath: entryFile })
   return out
 }
 

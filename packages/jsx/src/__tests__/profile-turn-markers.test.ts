@@ -52,3 +52,25 @@ describe('profile mode on (SR3)', () => {
     expect(importLine).toContain('endTurn')
   })
 })
+
+describe('rest-spread event forwarding (#3376)', () => {
+  const spread = `
+    'use client'
+    interface Props { onClick?: () => void }
+    export function SpreadButton(props: Props) {
+      return <button {...props}>Increment</button>
+    }
+  `
+  const compile = (profile: boolean) =>
+    compileJSX(spread, 'SpreadButton.tsx', { adapter, profile }).files.find(f => f.type === 'clientJs')!.content
+
+  test('profile mode names the spread site so the runtime can open a turn per handler', () => {
+    expect(compile(true)).toContain('applyRestAttrs(_s0, _p, [], "SpreadButton#handler:s0")')
+  })
+
+  test('profile mode off passes no site (zero instrumentation in production)', () => {
+    const off = compile(false)
+    expect(off).toContain('applyRestAttrs(_s0, _p, [])')
+    expect(off).not.toContain('#handler:')
+  })
+})
