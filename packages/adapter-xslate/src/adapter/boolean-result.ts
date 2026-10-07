@@ -10,6 +10,9 @@
  * the value with `bool_str` realigns the serialised attribute with
  * JS `String(boolean)` semantics.
  *
+ * The structural classification itself (`isBooleanResultParsed`) is
+ * shared with the other Perl adapter through `@barefootjs/jsx`.
+ *
  * The classifier walks a `ParsedExpr` produced by
  * `@barefootjs/jsx::parseExpression` — same AST the filter / loop
  * lowerings already use — so detection is structural rather than
@@ -38,76 +41,7 @@
  * `aria-*={booleanFn()}` divergence.
  */
 
-import { parseExpression, type ParsedExpr } from '@barefootjs/jsx'
-
-const COMPARISON_OPS = new Set([
-  '<',
-  '>',
-  '<=',
-  '>=',
-  '==',
-  '===',
-  '!=',
-  '!==',
-])
-
-export function isBooleanResultParsed(node: ParsedExpr): boolean {
-  switch (node.kind) {
-    case 'literal':
-      return node.literalType === 'boolean'
-    case 'binary':
-      return COMPARISON_OPS.has(node.op)
-    case 'unary':
-      return node.op === '!'
-    case 'logical':
-      // `x > 0 && y < 10` is boolean; `x() || 'fallback'` is not.
-      // Only both-sides-boolean qualifies.
-      return (
-        isBooleanResultParsed(node.left) && isBooleanResultParsed(node.right)
-      )
-    case 'conditional':
-      // `cond ? bool : bool` is boolean; `cond ? 'a' : 'b'` is not.
-      return (
-        isBooleanResultParsed(node.consequent) &&
-        isBooleanResultParsed(node.alternate)
-      )
-    default:
-      return false
-  }
-}
-
-/**
- * Rewrites the boolean-result branches of a ternary whose OTHER branch is
- * not boolean (`yes() ? false : s()`), so a taken boolean branch carries
- * JS `String(boolean)` instead of Perl's `0` / `''` / `1` (#3349). The whole
- * value isn't boolean-shaped, so `bool_str` can't wrap it; instead a literal
- * `true` / `false` branch becomes the string literal `'true'` / `'false'`,
- * and any other boolean-result branch `b` becomes `b ? 'true' : 'false'`.
- * The existing ternary lowering then renders the rewritten tree unchanged.
- * Nested ternary branches are rewritten recursively; anything that is not
- * a mixed ternary is returned as is.
- */
-export function stringifyBooleanTernaryBranches(node: ParsedExpr): ParsedExpr {
-  if (node.kind !== 'conditional' || isBooleanResultParsed(node)) return node
-  return {
-    ...node,
-    consequent: stringifyBooleanBranch(node.consequent),
-    alternate: stringifyBooleanBranch(node.alternate),
-  }
-}
-
-function stringifyBooleanBranch(branch: ParsedExpr): ParsedExpr {
-  if (!isBooleanResultParsed(branch)) return stringifyBooleanTernaryBranches(branch)
-  if (branch.kind === 'literal') {
-    return { kind: 'literal', value: String(branch.value), literalType: 'string' }
-  }
-  return {
-    kind: 'conditional',
-    test: branch,
-    consequent: { kind: 'literal', value: 'true', literalType: 'string' },
-    alternate: { kind: 'literal', value: 'false', literalType: 'string' },
-  }
-}
+import { isBooleanResultParsed, parseExpression } from '@barefootjs/jsx'
 
 export function isBooleanResultExpr(expr: string): boolean {
   const parsed = parseExpression(expr.trim())
