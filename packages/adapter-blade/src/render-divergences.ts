@@ -48,6 +48,7 @@ export const renderDivergences: RenderDivergences = {
   // PHP `foreach` binds the row params in the template scope, so a memo
   // read after the loop renders the last row's item and index.
   'memo-loop-param-collision': { limitation: 'loop-index-param-overwrites-same-named-local' },
+  'loop-set-bound-param-shadow': { limitation: 'loop-index-param-overwrites-same-named-local' },
 
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through

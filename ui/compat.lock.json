@@ -3356,6 +3356,20 @@
           }
         }
       },
+      "loop-set-bound-param-shadow": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        }
+      },
       "map-array-builder-body": {
         "blade": {
           "kind": "refusal",
@@ -3604,12 +3618,6 @@
       },
       "memo-loop-param-collision": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "loop-index-param-overwrites-same-named-local"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "loop-index-param-overwrites-same-named-local"
@@ -5645,6 +5653,10 @@
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows carry a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-nested-field.ts"
       },
+      "loop-set-bound-param-shadow": {
+        "description": "An index or destructure param named like a signal or prop leaves it intact after the loop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-set-bound-param-shadow.ts"
+      },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
@@ -6115,15 +6127,15 @@
     "loop-index-param-overwrites-same-named-local": {
       "title": "A `.map()` param named like a template-level local overwrites it after the loop",
       "kind": "silent",
-      "given": "a `.map((label, i) => …)` callback whose params have the same names as component memos read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)",
-      "expected": "the params shadow the memos only inside the row; the reads after the loop render the memos (`data-i=\"10\"`)",
-      "actual": "renders the last row values after the loop (`data-i=\"1\"`): the index binds with a template-level `set` inside the loop body (Pebble, Twig), and PHP `foreach` also binds the item param in the template scope (Blade), so they overwrite the memos of the same names",
+      "given": "a `.map((label, i) => …)` or `.map(({ name }, count) => …)` callback whose params have the same names as a memo, signal or prop read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)",
+      "expected": "the params shadow the outer names only inside the row; the reads after the loop render the outer values (`data-i=\"10\"`)",
+      "actual": "renders the last row values after the loop (`data-i=\"1\"`): the index and destructure bindings are template-level `set`s inside the loop body (Twig), and PHP `foreach` also binds the item param in the template scope (Blade), so they overwrite the outer values of the same names",
       "fixtures": [
+        "loop-set-bound-param-shadow",
         "memo-loop-param-collision"
       ],
       "adapters": [
         "blade",
-        "pebble",
         "twig"
       ]
     },

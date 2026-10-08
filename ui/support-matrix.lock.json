@@ -971,12 +971,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -2095,12 +2089,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
                 "null-signal-arithmetic-raises"
@@ -2363,6 +2351,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -3320,12 +3314,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -3471,6 +3459,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -4060,6 +4054,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5242,12 +5242,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5405,6 +5399,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -5805,6 +5805,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -6636,12 +6642,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6757,6 +6757,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -7253,6 +7259,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8141,12 +8153,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8256,6 +8262,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -10006,12 +10018,6 @@
               "limitations": [
                 "off-subset-callback-body"
               ]
-            },
-            {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
             }
           ]
         },
@@ -10855,12 +10861,6 @@
         },
         "pebble": {
           "gaps": [
-            {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
             {
               "fixture": "nullish-signal-arithmetic-memo",
               "limitations": [
@@ -12044,6 +12044,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "memo-loop-param-collision",
               "limitations": [
                 "loop-index-param-overwrites-same-named-local"
@@ -12524,12 +12530,6 @@
               ]
             },
             {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12597,6 +12597,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -13236,12 +13242,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "memo-loop-param-collision",
-              "limitations": [
-                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {

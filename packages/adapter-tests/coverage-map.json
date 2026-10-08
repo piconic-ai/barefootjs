@@ -4969,6 +4969,22 @@
         "loop"
       ]
     },
+    "loop-set-bound-param-shadow": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "map-array-builder-body": {
       "kinds": [
         "identifier",
