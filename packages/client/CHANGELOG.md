@@ -1,5 +1,15 @@
 # @barefootjs/client
 
+## 0.39.4
+
+### Patch Changes
+
+- 8b0b33c: A reactive attribute on an element forwarded as a conditional child component's `children` (`{show() && <Wrapper><strong data-label={label()} /></Wrapper>}`) now updates. The branch's `qsa` lookup skipped the parent-owned (`^`-prefixed) slot because it renders inside the receiving child's scope. The compiler now passes the slot ids of the receiving components (`qsa(__branchScope, '[bf="^s2"]', ["s3"])`), and `qsa` accepts a nested parent-owned candidate only when every scope between it and the searching component is one of those receivers — so a same-numbered `^sN` another component authored (a sibling, or a receiver's own internal component) is never written.
+- 945f6a3: `bf debug profile --scenario` now attributes the work of an event handler forwarded through a rest/props spread (`<button {...props}>`) to an interaction turn. In profile mode the compiler passes the spread site to `applyRestAttrs`, which brackets each handler it wires with `beginTurn("<Component>#handler:<slot>:<event>")` / `endTurn()` like an explicit `on*` handler; the profiler resolves that id to the spread's source location. Production builds pass no site and attach the handlers unchanged.
+- 71649cc: Keep loop-row elements that a `ref` callback portals out of their row working after hydration (#3318). An element in a keyed top-level `.map()` row whose `ref` callback portals it with `createPortal(el, …, { ownerScope })` is now rendered at the portal outlet by SSR, carrying its row key, also when the callback is declared in the component body. Hydration pairs it with its row, the row's bindings reach it, the loop's delegated listeners fire for it, and it is removed with its row. This covers top-level, static-array, branch-scoped and composite loops. A row that cannot be paired is refused with the new BF064 error: an unkeyed row, a nested loop's row, or an element passed as a child component's children.
+- eae6a47: Add the runtime groundwork for loop-row elements that a `ref` callback portals out of their row (#3318). A new `row-portal` module records which row and loop container such an element belongs to. A hydrating row claims the element SSR placed at the portal outlet by its slot, owner scope and row key. Delegated loop listeners are relayed to the element, and the element is removed when its row is disposed. `qsaItem`, the claim-plan marker scan and `mapArray`'s key backfill treat the element as part of its row. The compiler does not emit calls to it yet, so rendering is unchanged.
+- @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes
