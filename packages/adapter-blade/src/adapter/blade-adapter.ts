@@ -1232,8 +1232,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       this.scope.lookup(name)?.depth === 0 && !prevScope.isBound(name) && !aliasedRootProps.has(name))
     const savedBindings = [...this.scope.shadowedNames(), ...templateShadowed].map((name, ordinal) => {
       let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
-      while (this.scope.isBound(temporary) || this.propsParams.some(p => p.name === temporary) ||
-        this.localConstants.some(c => c.name === temporary)) temporary += '_'
+      while (this.scope.isBound(temporary) || this.templateLevelNames.has(temporary)) temporary += '_'
       return { name, temporary }
     })
 
@@ -1266,8 +1265,10 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     const lines: string[] = []
     // PHP foreach shares its surrounding variable scope. Preserve bindings
     // shadowed by this callback so the enclosing row continues with its value.
+    // A literal constant is inlined and never assigned, so read it with `??`:
+    // an undefined variable warns, and Laravel turns the warning into an error.
     for (const { name, temporary } of savedBindings) {
-      lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)})`)
+      lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)} ?? null)`)
     }
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.

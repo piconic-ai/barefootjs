@@ -4307,6 +4307,21 @@
         "text"
       ]
     },
+    "loop-param-shadows-inlined-const": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-shadows-outer-name": {
       "kinds": [
         "binary",

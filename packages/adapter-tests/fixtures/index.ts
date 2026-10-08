@@ -25,6 +25,7 @@ import { fixture as memoStringConcatSignal } from './memo-string-concat-signal'
 import { fixture as loopSetBoundParamShadow } from './loop-set-bound-param-shadow'
 import { fixture as loopPreambleLocalShadow } from './loop-preamble-local-shadow'
 import { fixture as nestedLoopIndexShadowsRowBinding } from './nested-loop-index-shadows-row-binding'
+import { fixture as loopParamShadowsInlinedConst } from './loop-param-shadows-inlined-const'
 import { fixture as undefinedSignalArithmeticMemo } from './undefined-signal-arithmetic-memo'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
@@ -1555,6 +1556,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopSetBoundParamShadow,
   loopPreambleLocalShadow,
   nestedLoopIndexShadowsRowBinding,
+  loopParamShadowsInlinedConst,
   undefinedSignalArithmeticMemo,
   numberDivisionText,
   numberDivisionMatrix,

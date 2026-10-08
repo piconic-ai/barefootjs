@@ -1137,7 +1137,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     const savedNames = [...this.templateLevelNames, ...prevScope.boundNames()]
       .filter((name, i, all) => all.indexOf(name) === i)
       .filter(name => this.scope.lookup(name)?.depth === 0 && !headerNames.has(name))
-      .map((name, ordinal) => ({ name, saved: `__bf_saved_${loop.markerId}_${ordinal}` }))
+      .map((name, ordinal) => {
+        let saved = `__bf_saved_${loop.markerId}_${ordinal}`
+        while (this.scope.isBound(saved) || this.templateLevelNames.has(saved)) saved += '_'
+        return { name, saved }
+      })
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the

@@ -1226,7 +1226,11 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     for (const d of loop.preamble?.declarations ?? []) setBoundNames.add(d.name)
     const savedNames = [...setBoundNames]
       .filter(name => this.templateLevelNames.has(name) || prevScope.isBound(name))
-      .map(name => ({ local: pebbleIdent(name), saved: `bf_outer_${loop.markerId}_${pebbleIdent(name)}` }))
+      .map(name => {
+        let saved = `bf_outer_${loop.markerId}_${pebbleIdent(name)}`
+        while (this.scope.isBound(saved) || setBoundNames.has(saved) || this.templateLevelNames.has(saved)) saved += '_'
+        return { local: pebbleIdent(name), saved }
+      })
     for (const { local, saved } of savedNames) lines.push(`{% set ${saved} = ${local} %}`)
     lines.push(forHeader)
     if (loop.objectIteration === 'entries') {

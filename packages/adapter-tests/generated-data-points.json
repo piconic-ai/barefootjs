@@ -2696,6 +2696,14 @@
       }
     }
   ],
+  "loop-param-shadows-inlined-const": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-param-shadows-outer-name": [
     {
       "name": "gen:label:empty",
