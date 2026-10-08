@@ -5841,6 +5841,23 @@
         "text"
       ]
     },
+    "nested-loop-preamble-shadows-row-binding": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-ref-const": {
       "kinds": [
         "array-literal",
@@ -5863,15 +5880,10 @@
     },
     "nested-loop-row-binding-shadow-shapes": {
       "kinds": [
-        "binary",
         "identifier",
-        "literal",
         "member"
       ],
-      "axes": [
-        "binary:+",
-        "literal:string"
-      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",
