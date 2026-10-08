@@ -3603,7 +3603,19 @@
         }
       },
       "memo-loop-param-collision": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
         "pebble": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
+        "twig": {
           "kind": "render",
           "limitations": [
             "loop-index-param-overwrites-same-named-local"
@@ -6110,7 +6122,9 @@
         "memo-loop-param-collision"
       ],
       "adapters": [
-        "pebble"
+        "blade",
+        "pebble",
+        "twig"
       ]
     },
     "loop-row-child-children-attrs-frozen": {
