@@ -2903,6 +2903,14 @@
       }
     }
   ],
+  "map-param-named-loop": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
   "map-preamble-branch-body": [
     {
       "name": "gen:items:empty",

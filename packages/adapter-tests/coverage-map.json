@@ -5219,6 +5219,18 @@
         "text"
       ]
     },
+    "map-param-named-loop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "map-preamble-branch-body": {
       "kinds": [
         "array-method",

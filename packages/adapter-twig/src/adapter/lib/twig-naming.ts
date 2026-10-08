@@ -61,6 +61,8 @@ const RESERVED_WORDS = new Set([
   'with', 'block', 'macro', 'import', 'from', 'as', 'extends', 'include',
   'embed', 'use', 'filter', 'do', 'then', 'endif', 'endfor', 'endset',
   'defined', 'same', 'divisible', 'constant', 'even', 'odd', 'iterable',
+  // The engine's own loop variable inside `{% for %}` (#3404).
+  'loop',
 ])
 
 /**

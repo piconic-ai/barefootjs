@@ -39,6 +39,8 @@ if (!defined(__NAMESPACE__ . '\\TWIG_RESERVED_WORDS')) {
         'for', 'set', 'true', 'false', 'null', 'none', 'with', 'block', 'macro', 'import',
         'from', 'as', 'extends', 'include', 'embed', 'use', 'filter', 'do', 'then', 'endif',
         'endfor', 'endset', 'defined', 'same', 'divisible', 'constant', 'even', 'odd', 'iterable',
+        // The engine's own loop variable inside `{% for %}` (#3404).
+        'loop',
     ]);
 }
 

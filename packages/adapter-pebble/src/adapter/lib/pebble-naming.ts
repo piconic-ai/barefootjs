@@ -84,6 +84,8 @@ const RESERVED_WORDS = new Set([
   'endblock', 'extends', 'include', 'import', 'from', 'as', 'filter',
   'endfilter', 'autoescape', 'endautoescape', 'verbatim', 'endverbatim',
   'flush', 'cache', 'endcache', 'parallel', 'endparallel', 'empty',
+  // The engine's own loop variable inside `{% for %}` (#3404).
+  'loop',
   // Java reserved words (full keyword list) — see the file header, point 2.
   'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char',
   'class', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',

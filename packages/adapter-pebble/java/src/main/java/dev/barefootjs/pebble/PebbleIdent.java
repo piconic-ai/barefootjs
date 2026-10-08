@@ -34,6 +34,8 @@ public final class PebbleIdent {
       "endblock", "extends", "include", "import", "from", "as", "filter",
       "endfilter", "autoescape", "endautoescape", "verbatim", "endverbatim",
       "flush", "cache", "endcache", "parallel", "endparallel", "empty",
+      // The engine's own loop variable inside `{% for %}` (#3404).
+      "loop",
       // Java reserved words (full keyword list).
       "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
       "class", "const", "continue", "default", "do", "double", "enum",

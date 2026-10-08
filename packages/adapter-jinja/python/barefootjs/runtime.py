@@ -100,6 +100,8 @@ RESERVED_WORDS = frozenset(
         "import", "from", "class", "def", "pass", "del", "return", "lambda", "global",
         "with", "as", "raise", "try", "except", "finally", "while", "break",
         "continue", "elif", "yield", "assert", "nonlocal",
+        # The engine's own loop variable inside `{% for %}` (#3404).
+        "loop",
     }
 )
 

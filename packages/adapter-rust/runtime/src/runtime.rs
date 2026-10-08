@@ -70,6 +70,8 @@ const RESERVED_WORDS: &[&str] = &[
     "if", "else", "for", "in", "is", "not", "and", "or", "none", "true", "false", "import", "from", "class", "def",
     "pass", "del", "return", "lambda", "global", "with", "as", "raise", "try", "except", "finally", "while", "break",
     "continue", "elif", "yield", "assert", "nonlocal",
+    // The engine's own loop variable inside `{% for %}` (#3404).
+    "loop",
 ];
 
 /// Mangle a JS identifier (prop name, signal getter, loop param, ...) into a
