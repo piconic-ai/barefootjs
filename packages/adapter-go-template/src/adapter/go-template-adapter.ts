@@ -6561,6 +6561,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * resolves to the Go range variable `$name`, not the inner dot or the
    * root data.
    */
+  /** True when `name` is bound in `scope` as any enclosing row's plain item
+   * param, which renders as its `$name` range variable inside a nested
+   * `{{range}}` such as a filtered loop's predicate (#3396). */
+  private isOuterRowItem(name: string): boolean {
+    return this.scope.lookup(name)?.binding.source === 'item'
+  }
+
   private isOuterLoopParam(name: string): boolean {
     const hit = this.scope.lookup(name)
     return hit !== null && hit.depth > 0 && hit.binding.source === 'item'
@@ -8072,6 +8079,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // (`const items__alias = items`) still emits the field the
           // signal itself seeds instead of a phantom `.Items__alias`.
           return this.filterRootFieldRef(signal)
+        }
+        // An enclosing row's binding (#3396). The predicate always sits inside
+        // the filtered loop's own `{{range}}`, so an enclosing item reads its
+        // `$name` range variable, never the dot or a root field; a destructure
+        // binding reads its accessor; an index or preamble local is `$name`.
+        if (this.scope.lookup(expr.name)) {
+          const acc = this.lookupDestructureBinding(expr.name)
+          if (acc !== undefined) return acc
+          if (this.isOuterRowItem(expr.name) || this.loopVarRefCount.has(expr.name)) return `$${expr.name}`
         }
         // Any other identifier reaching here is ALSO a root-scope
         // reference (a memo, a plain derived const, or — #2857 — a
