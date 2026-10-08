@@ -49,11 +49,6 @@ export const renderDivergences: RenderDivergences = {
   // operand as `0` (#3390).
   'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
 
-  // PHP `foreach` binds the row params in the template scope, so a memo
-  // read after the loop renders the last row's item and index.
-  'memo-loop-param-collision': { limitation: 'loop-index-param-overwrites-same-named-local' },
-  'loop-set-bound-param-shadow': { limitation: 'loop-index-param-overwrites-same-named-local' },
-
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through
   // `BarefootJS::register_portal_element` / `bf.portals()` (an

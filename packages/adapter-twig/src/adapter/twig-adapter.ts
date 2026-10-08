@@ -329,6 +329,9 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
   private localConstants: IRMetadata['localConstants'] = []
+  /** Names bound at template level (signals, memos, props, local constants):
+   * a loop that binds one with `{% set %}` saves and restores it (#3391). */
+  private templateLevelNames: Set<string> = new Set()
   /** Each prop's collision-free root alias (#3314), decided once per component. */
   private rootPropAliases: ReadonlyMap<string, string> = new Map()
 
@@ -401,6 +404,12 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // ("1"/"") (#1897, pagination's data-active).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.templateLevelNames = new Set([
+      ...ir.metadata.signals.map(sig => sig.getter),
+      ...ir.metadata.memos.map(m => m.name),
+      ...ir.metadata.propsParams.map(p => p.name),
+      ...(ir.metadata.localConstants ?? []).map(c => c.name),
+    ])
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
@@ -1111,6 +1120,24 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // Props this row's bindings newly shadow, aliased before the loop header
     // so an explicit `props.X` inside still reads the root value (#3314).
     const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
+    // Twig's `for` restores its header variables after `endfor`, but a
+    // `{% set %}` in the body (index, keys-shape param, destructure binding,
+    // preamble local) writes the enclosing context: a name it shares with a
+    // template-level signal, memo, prop or constant, or with an enclosing
+    // row's binding, would keep the last row's value after the loop (#3391;
+    // JS scopes the callback param to the row). Save each such name before
+    // the loop and restore it after.
+    const headerNames = new Set<string>(
+      loop.objectIteration === 'entries'
+        ? [loop.index ?? param, param]
+        : loop.objectIteration || (loop.iterationShape !== 'keys' && !supportableDestructure)
+          ? [param]
+          : [],
+    )
+    const savedNames = [...this.templateLevelNames, ...prevScope.boundNames()]
+      .filter((name, i, all) => all.indexOf(name) === i)
+      .filter(name => this.scope.lookup(name)?.depth === 0 && !headerNames.has(name))
+      .map((name, ordinal) => ({ name, saved: `__bf_saved_${loop.markerId}_${ordinal}` }))
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1142,6 +1169,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     for (const { name, alias } of rootAliases) lines.push(`{% set ${twigIdent(alias)} = ${twigIdent(name)} %}`)
+    for (const { name, saved } of savedNames) lines.push(`{% set ${saved} = ${twigIdent(name)} %}`)
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | raw }}`)
     // `objectIteration` (#2168 object-entries-map): Twig's own `for` tag
     // needs a plain PHP array to unpack `key, value` from (it can't iterate
@@ -1196,6 +1224,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     }
 
     lines.push(`{% endfor %}`)
+    for (const { name, saved } of savedNames) lines.push(`{% set ${twigIdent(name)} = ${saved} %}`)
     lines.push(`{{ bf.comment("/loop:${loop.markerId}") | raw }}`)
 
     return lines.join('\n')

@@ -4435,6 +4435,24 @@
         "text"
       ]
     },
+    "loop-preamble-local-shadow": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-attrs": {
       "kinds": [
         "array-literal",
@@ -5758,6 +5776,18 @@
         "literal:number",
         "literal:string"
       ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-index-shadows-row-binding": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",

@@ -2780,6 +2780,14 @@
       }
     }
   ],
+  "loop-preamble-local-shadow": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
   "loop-set-bound-param-shadow": [
     {
       "name": "gen:rows:empty",
@@ -3508,6 +3516,14 @@
           "b"
         ],
         "values": []
+      }
+    }
+  ],
+  "nested-loop-index-shadows-row-binding": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
       }
     }
   ],
