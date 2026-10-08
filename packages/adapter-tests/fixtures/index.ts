@@ -35,6 +35,7 @@ import { fixture as filterCaptureShadowedByMapParam } from './filter-capture-sha
 import { fixture as filterCaptureKeepsSameNameLiteral } from './filter-capture-keeps-same-name-literal'
 import { fixture as filterCaptureReservedAnd } from './filter-capture-reserved-and'
 import { fixture as mapParamNamedLoop } from './map-param-named-loop'
+import { fixture as reservedNameAndSuffixedTwin } from './reserved-name-and-suffixed-twin'
 import { fixture as undefinedSignalArithmeticMemo } from './undefined-signal-arithmetic-memo'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
@@ -1575,6 +1576,7 @@ export const jsxFixtures: JSXFixture[] = [
   filterCaptureKeepsSameNameLiteral,
   filterCaptureReservedAnd,
   mapParamNamedLoop,
+  reservedNameAndSuffixedTwin,
   undefinedSignalArithmeticMemo,
   numberDivisionText,
   numberDivisionMatrix,

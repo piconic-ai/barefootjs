@@ -34,8 +34,6 @@ public final class PebbleIdent {
       "endblock", "extends", "include", "import", "from", "as", "filter",
       "endfilter", "autoescape", "endautoescape", "verbatim", "endverbatim",
       "flush", "cache", "endcache", "parallel", "endparallel", "empty",
-      // The engine's own loop variable inside `{% for %}` (#3404).
-      "loop",
       // Java reserved words (full keyword list).
       "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
       "class", "const", "continue", "default", "do", "double", "enum",
@@ -48,6 +46,11 @@ public final class PebbleIdent {
 
   /** Mangle a JS identifier into a Pebble-safe context-map key: reserved words get a trailing `_`. */
   public static String mangle(String name) {
+    // The engine binds its own `loop` inside `{% for %}`; a JS `loop` takes
+    // the compiler-internal `__bf_loop` (#3404), mirroring `pebbleIdent`.
+    if ("loop".equals(name)) {
+      return "__bf_loop";
+    }
     return RESERVED_WORDS.contains(name) ? name + "_" : name;
   }
 

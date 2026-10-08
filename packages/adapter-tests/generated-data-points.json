@@ -4868,6 +4868,50 @@
       }
     }
   ],
+  "reserved-name-and-suffixed-twin": [
+    {
+      "name": "gen:loop:empty",
+      "props": {
+        "loop": "",
+        "loop_": "second"
+      }
+    },
+    {
+      "name": "gen:loop:markup",
+      "props": {
+        "loop": "<b>&\"'</b>",
+        "loop_": "second"
+      }
+    },
+    {
+      "name": "gen:loop:multibyte",
+      "props": {
+        "loop": "日本語",
+        "loop_": "second"
+      }
+    },
+    {
+      "name": "gen:loop_:empty",
+      "props": {
+        "loop": "first",
+        "loop_": ""
+      }
+    },
+    {
+      "name": "gen:loop_:markup",
+      "props": {
+        "loop": "first",
+        "loop_": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:loop_:multibyte",
+      "props": {
+        "loop": "first",
+        "loop_": "日本語"
+      }
+    }
+  ],
   "return-logical-or": [
     {
       "name": "gen:label:empty",

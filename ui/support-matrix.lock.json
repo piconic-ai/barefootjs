@@ -4138,6 +4138,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-and-suffixed-twin",
+              "limitations": [
+                "reserved-name-suffixed-twin-collides"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7316,6 +7322,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reserved-name-and-suffixed-twin",
+              "limitations": [
+                "reserved-name-suffixed-twin-collides"
               ]
             },
             {

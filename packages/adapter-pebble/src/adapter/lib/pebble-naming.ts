@@ -84,8 +84,6 @@ const RESERVED_WORDS = new Set([
   'endblock', 'extends', 'include', 'import', 'from', 'as', 'filter',
   'endfilter', 'autoescape', 'endautoescape', 'verbatim', 'endverbatim',
   'flush', 'cache', 'endcache', 'parallel', 'endparallel', 'empty',
-  // The engine's own loop variable inside `{% for %}` (#3404).
-  'loop',
   // Java reserved words (full keyword list) — see the file header, point 2.
   'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char',
   'class', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',
@@ -105,6 +103,10 @@ const RESERVED_WORDS = new Set([
  * mirrors `jinjaIdent`/`twigIdent`'s role for their respective ports.
  */
 export function pebbleIdent(name: string): string {
+  // The engine binds its own `loop` inside `{% for %}`, so a JS `loop` takes
+  // the compiler-internal `__bf_loop` (#3404). Unlike a `_` suffix it cannot
+  // collide with a real `loop_`, and mangling it again leaves it unchanged.
+  if (name === 'loop') return '__bf_loop'
   return RESERVED_WORDS.has(name) ? `${name}_` : name
 }
 
