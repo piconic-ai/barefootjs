@@ -5777,6 +5777,23 @@
         "text"
       ]
     },
+    "nested-loop-filter-captures-outer-bindings": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-filter-captures-shadowing-param": {
       "kinds": [
         "binary",

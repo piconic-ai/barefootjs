@@ -4143,14 +4143,6 @@
           ]
         }
       },
-      "nested-loop-filter-captures-shadowing-param": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "filter-predicate-reads-outer-param-as-root-field"
-          ]
-        }
-      },
       "nullish-coalesce-empty-array": {
         "go-template": {
           "kind": "render",
@@ -5695,10 +5687,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "nested-loop-filter-captures-shadowing-param": {
-        "description": "A filter predicate captures the inner item param that shadows an outer row binding",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-filter-captures-shadowing-param.ts"
-      },
       "nullish-coalesce-empty-array": {
         "description": "`??` keeps a present empty array instead of taking the fallback",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts"
@@ -6076,19 +6064,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "filter-predicate-reads-outer-param-as-root-field": {
-      "title": "A `.filter()` predicate reads an enclosing loop param as a root field",
-      "kind": "silent",
-      "given": "a `.filter()` predicate inside a nested loop that compares against an enclosing row's item param (`tags.map(name => tags.filter(t => t === name).map(…))`)",
-      "expected": "the predicate reads the enclosing row's item, so each inner row keeps only its own matching tag",
-      "actual": "throws at render on go-template: the predicate lowers the enclosing param to a root-scope field (`$.Name`) instead of its range variable (`$name`), and the root Props struct has no such field",
-      "fixtures": [
-        "nested-loop-filter-captures-shadowing-param"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

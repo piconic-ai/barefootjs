@@ -1827,12 +1827,6 @@
               ]
             },
             {
-              "fixture": "nested-loop-filter-captures-shadowing-param",
-              "limitations": [
-                "filter-predicate-reads-outer-param-as-root-field"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4503,12 +4497,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-filter-captures-shadowing-param",
-              "limitations": [
-                "filter-predicate-reads-outer-param-as-root-field"
               ]
             },
             {
@@ -7582,12 +7570,6 @@
               "fixture": "member-seeded-nullable-signal-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "nested-loop-filter-captures-shadowing-param",
-              "limitations": [
-                "filter-predicate-reads-outer-param-as-root-field"
               ]
             },
             {
@@ -11343,12 +11325,6 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
-              ]
-            },
-            {
-              "fixture": "nested-loop-filter-captures-shadowing-param",
-              "limitations": [
-                "filter-predicate-reads-outer-param-as-root-field"
               ]
             },
             {

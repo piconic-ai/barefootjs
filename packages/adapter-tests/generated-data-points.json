@@ -3527,6 +3527,30 @@
       }
     }
   ],
+  "nested-loop-filter-captures-outer-bindings": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "tags": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "groups": [
+          {
+            "name": "a"
+          }
+        ],
+        "tags": []
+      }
+    }
+  ],
   "nested-loop-filter-captures-shadowing-param": [
     {
       "name": "gen:groups:empty",
