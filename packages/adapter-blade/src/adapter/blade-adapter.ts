@@ -429,6 +429,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
   private localConstants: IRMetadata['localConstants'] = []
+  /** Names bound at template level (signals, memos, props, local constants):
+   * a loop whose row binds one saves and restores it (#3391). */
+  private templateLevelNames: Set<string> = new Set()
   /** Each prop's collision-free root alias (#3314), decided once per component. */
   private rootPropAliases: ReadonlyMap<string, string> = new Map()
 
@@ -501,6 +504,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // ("1"/"") (#1897, pagination's data-active).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.templateLevelNames = new Set([
+      ...ir.metadata.signals.map(sig => sig.getter),
+      ...ir.metadata.memos.map(m => m.name),
+      ...ir.metadata.propsParams.map(p => p.name),
+      ...(ir.metadata.localConstants ?? []).map(c => c.name),
+    ])
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
@@ -1213,10 +1222,17 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // Props this row's bindings newly shadow, aliased before the loop header
     // so an explicit `props.X` inside still reads the root value (#3314).
     const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
-    const savedBindings = this.scope.shadowedNames().map((name, ordinal) => {
+    // PHP `foreach` has no block scope: every name the row binds (item,
+    // index, destructure binding, preamble local) keeps the last row's value
+    // after `@endforeach`. Save each one an enclosing row binds, or that a
+    // template-level signal, memo, prop or constant shares (#3391), and
+    // restore it after the loop. A root prop with an alias is restored below.
+    const aliasedRootProps = new Set(rootAliases.map(a => a.name))
+    const templateShadowed = [...this.templateLevelNames].filter(name =>
+      this.scope.lookup(name)?.depth === 0 && !prevScope.isBound(name) && !aliasedRootProps.has(name))
+    const savedBindings = [...this.scope.shadowedNames(), ...templateShadowed].map((name, ordinal) => {
       let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
-      while (this.scope.isBound(temporary) || this.propsParams.some(p => p.name === temporary) ||
-        this.localConstants.some(c => c.name === temporary)) temporary += '_'
+      while (this.scope.isBound(temporary) || this.templateLevelNames.has(temporary)) temporary += '_'
       return { name, temporary }
     })
 
@@ -1249,8 +1265,10 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     const lines: string[] = []
     // PHP foreach shares its surrounding variable scope. Preserve bindings
     // shadowed by this callback so the enclosing row continues with its value.
+    // A literal constant is inlined and never assigned, so read it with `??`:
+    // an undefined variable warns, and Laravel turns the warning into an error.
     for (const { name, temporary } of savedBindings) {
-      lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)})`)
+      lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)} ?? null)`)
     }
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.

@@ -35,6 +35,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // Kolon refuses the inner index's `my $name`, which redeclares the outer
+  // row's destructure binding (#3392).
+  'nested-loop-index-shadows-row-binding': { limitation: 'nested-loop-index-misses-row-binding-shadow' },
+
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
   // operand throws or reads as `0` here (#3350 covers only `null`).
   'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },

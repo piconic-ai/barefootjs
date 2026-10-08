@@ -4307,6 +4307,21 @@
         "text"
       ]
     },
+    "loop-param-shadows-inlined-const": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-shadows-outer-name": {
       "kinds": [
         "binary",
@@ -4431,6 +4446,24 @@
       "contexts": [
         "attribute",
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-preamble-local-shadow": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -5758,6 +5791,18 @@
         "literal:number",
         "literal:string"
       ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-index-shadows-row-binding": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",

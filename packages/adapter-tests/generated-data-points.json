@@ -2696,6 +2696,14 @@
       }
     }
   ],
+  "loop-param-shadows-inlined-const": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-param-shadows-outer-name": [
     {
       "name": "gen:label:empty",
@@ -2777,6 +2785,14 @@
           }
         ],
         "big": false
+      }
+    }
+  ],
+  "loop-preamble-local-shadow": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
       }
     }
   ],
@@ -3508,6 +3524,14 @@
           "b"
         ],
         "values": []
+      }
+    }
+  ],
+  "nested-loop-index-shadows-row-binding": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
       }
     }
   ],

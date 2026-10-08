@@ -788,3 +788,31 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
     expect(result.template).toContain("data_get($t, 'label') . $skipLabel")
   })
 })
+
+describe('BladeAdapter - loop row shadowing a template-level name (#3391)', () => {
+  test('reads an inlined literal constant with `??` so PHP never warns on it', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { rows: string[] }) {
+  const label = 'outer'
+  return <div>{props.rows.map(label => <b key={label}>{label}</b>)}<p>{label}</p></div>
+}
+`)
+    expect(template).toContain('@php($__bf_saved_l0_0 = $label ?? null)')
+    expect(template).toContain('@endforeach\n@php($label = $__bf_saved_l0_0)')
+  })
+
+  test('picks a temporary that does not collide with a signal', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSignal } from '@barefootjs/client'
+export function C(props: { rows: string[] }) {
+  const [__bf_saved_l0_0] = createSignal('keep')
+  const [n] = createSignal(5)
+  const i = createMemo(() => n() * 2)
+  return <div><ul>{props.rows.map((x, i) => <li key={x}>{i}</li>)}</ul><p>{__bf_saved_l0_0()}</p><p data-i={i()}>x</p></div>
+}
+`)
+    expect(template).toContain('@php($__bf_saved_l0_0_ = $i ?? null)')
+    expect(template).not.toContain('@php($__bf_saved_l0_0 = ')
+  })
+})

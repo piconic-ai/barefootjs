@@ -1209,10 +1209,11 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
           ? `{% for ${pebbleIdent(param)} in bf.values(${array}) %}`
           : `{% for ${pebbleIdent(loopVar)} in ${array} %}`
     // Pebble's `{% set %}` inside a `for` body is not loop-scoped: an index,
-    // destructure or entry local named like a template-level signal, memo or
-    // prop overwrites it for the rest of the template (#3386; JS scopes the
-    // callback param to the row). Save each such name before the loop and
-    // restore it after. The for-header's own variable is loop-scoped already.
+    // destructure, entry or preamble local named like a template-level
+    // signal, memo or prop (#3386), or like an enclosing row's binding
+    // (#3391), overwrites it past the loop (JS scopes the callback param to
+    // the row). Save each such name before the loop and restore it after.
+    // The for-header's own variable is loop-scoped already.
     const setBoundNames = new Set<string>()
     if (loop.objectIteration === 'entries') {
       setBoundNames.add(loop.index ?? param)
@@ -1222,9 +1223,14 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       else if (loop.index) setBoundNames.add(loop.index)
     }
     if (supportableDestructure) for (const b of loop.paramBindings ?? []) setBoundNames.add(b.name)
+    for (const d of loop.preamble?.declarations ?? []) setBoundNames.add(d.name)
     const savedNames = [...setBoundNames]
-      .filter(name => this.templateLevelNames.has(name))
-      .map(name => ({ local: pebbleIdent(name), saved: `bf_outer_${loop.markerId}_${pebbleIdent(name)}` }))
+      .filter(name => this.templateLevelNames.has(name) || prevScope.isBound(name))
+      .map(name => {
+        let saved = `bf_outer_${loop.markerId}_${pebbleIdent(name)}`
+        while (this.scope.isBound(saved) || setBoundNames.has(saved) || this.templateLevelNames.has(saved)) saved += '_'
+        return { local: pebbleIdent(name), saved }
+      })
     for (const { local, saved } of savedNames) lines.push(`{% set ${saved} = ${local} %}`)
     lines.push(forHeader)
     if (loop.objectIteration === 'entries') {

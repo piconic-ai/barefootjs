@@ -969,3 +969,33 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
     expect(result.template).toContain('t.label ~ skipLabel')
   })
 })
+
+describe('TwigAdapter - loop row shadowing a template-level name (#3391)', () => {
+  test('saves the shadowed memo before the loop and restores it after', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSignal } from '@barefootjs/client'
+export function C(props: { rows: string[] }) {
+  const [n] = createSignal(5)
+  const i = createMemo(() => n() * 2)
+  return <div><ul>{props.rows.map((x, i) => <li key={x}>{i}</li>)}</ul><p data-i={i()}>x</p></div>
+}
+`)
+    expect(template).toContain('{% set __bf_saved_l0_0 = i %}')
+    expect(template).toContain('{% endfor %}\n{% set i = __bf_saved_l0_0 %}')
+  })
+
+  test('picks a temporary that does not collide with a user binding', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSignal } from '@barefootjs/client'
+export function C(props: { rows: string[]; __bf_saved_l0_0: string }) {
+  const [n] = createSignal(5)
+  const i = createMemo(() => n() * 2)
+  return <div><ul>{props.rows.map((x, i) => <li key={x}>{i}</li>)}</ul><p>{props.__bf_saved_l0_0}</p><p data-i={i()}>x</p></div>
+}
+`)
+    expect(template).toContain('{% set __bf_saved_l0_0_ = i %}')
+    expect(template).not.toContain('{% set __bf_saved_l0_0 = ')
+  })
+})
