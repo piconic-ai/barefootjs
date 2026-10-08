@@ -878,7 +878,7 @@ export function memoInitialFromParsedBody(
   // `resolveStringConcatChainGo`; any other leaf shape falls through to the
   // caller's zero-value default, same as any other unsupported shape.
   if (body.kind === 'binary' && body.op === '+') {
-    const concatGo = resolveStringConcatChainGo(ctx, body, signals, propsParams, propFallbackVars, propRef)
+    const concatGo = resolveStringConcatChainGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving)
     if (concatGo !== null) return concatGo
   }
 
@@ -907,6 +907,24 @@ export function memoInitialFromParsedBody(
  * @returns the concatenated Go expression, or null when any leaf isn't one
  *   of the three shapes above
  */
+/**
+ * Whether a signal certainly holds a plain JS string: declared `string`, seeded
+ * with a string literal, or seeded from a required `string` prop. A nullable
+ * union is excluded — `bf.String(nil)` is `""` where JS concatenates
+ * `"undefined"`.
+ */
+function isPlainStringSignal(
+  signal: { type?: TypeInfo; parsed?: ParsedExpr },
+  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
+): boolean {
+  if (signal.type?.kind === 'primitive' && signal.type.primitive === 'string') return true
+  const seed = signal.parsed
+  if (seed?.kind === 'literal' && seed.literalType === 'string') return true
+  const propName = seed ? (propsMemberName(seed) ?? (seed.kind === 'identifier' ? seed.name : null)) : null
+  const prop = propName ? propsParams.find(p => p.name === propName) : undefined
+  return prop?.type?.kind === 'primitive' && prop.type.primitive === 'string' && !prop.optional
+}
+
 function resolveStringConcatChainGo(
   ctx: GoEmitContext,
   expr: ParsedExpr,
@@ -914,15 +932,42 @@ function resolveStringConcatChainGo(
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   propRef: (propName: string) => string,
+  resolving: ReadonlySet<string> = new Set(),
 ): string | null {
   if (expr.kind === 'binary' && expr.op === '+') {
-    const l = resolveStringConcatChainGo(ctx, expr.left, signals, propsParams, propFallbackVars, propRef)
-    const r = resolveStringConcatChainGo(ctx, expr.right, signals, propsParams, propFallbackVars, propRef)
+    const l = resolveStringConcatChainGo(ctx, expr.left, signals, propsParams, propFallbackVars, propRef, resolving)
+    const r = resolveStringConcatChainGo(ctx, expr.right, signals, propsParams, propFallbackVars, propRef, resolving)
     return l !== null && r !== null ? `${l} + ${r}` : null
   }
 
   if (expr.kind === 'literal' && expr.literalType === 'string') {
     return JSON.stringify(expr.value)
+  }
+
+  // A string-typed signal or memo read (`s() + '!'`, #3367): its constructor
+  // value, through `bf.String` so the leaf is a Go `string` whatever field
+  // type carries it. Only a plain `string` type — a nullable union would
+  // print `""` where JS concatenates `"undefined"`.
+  const getter = getterCallName(expr)
+  if (getter && !resolving.has(getter)) {
+    const inner = new Set([...resolving, getter])
+    const signal = signals.find(sig => sig.getter === getter)
+    if (signal) {
+      if (!isPlainStringSignal(signal, propsParams)) return null
+      // A string-literal seed lowers from its parsed value, whatever the
+      // source quote style (`'can\'t'`, a backtick literal) — the raw-text
+      // seed lowering is not quote-safe here.
+      const seed = signal.parsed
+      if (seed?.kind === 'literal' && seed.literalType === 'string') return JSON.stringify(seed.value)
+      const value = resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, inner)
+      return value === null ? null : `bf.String(${value})`
+    }
+    // A memo that is itself such a chain (`label = () => s() + '!'`).
+    const memo = ctx.state.currentMemos?.find(m => m.name === getter)
+    if (memo?.parsed) {
+      const chain = resolveStringConcatChainGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, propRef, inner)
+      return chain === null ? null : `(${chain})`
+    }
   }
 
   const propName = propsMemberName(expr) ?? (expr.kind === 'identifier' ? expr.name : null)
