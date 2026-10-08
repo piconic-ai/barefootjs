@@ -4500,6 +4500,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-index-shadows-row-binding",
+              "limitations": [
+                "nested-loop-index-misses-row-binding-shadow"
+              ]
+            },
+            {
               "fixture": "nullish-coalesce-empty-array",
               "limitations": [
                 "nullish-coalesce-empty-array-falls-back"
@@ -5637,6 +5643,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nested-loop-index-shadows-row-binding",
+              "limitations": [
+                "nested-loop-index-misses-row-binding-shadow"
               ]
             },
             {
@@ -7573,6 +7585,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-index-shadows-row-binding",
+              "limitations": [
+                "nested-loop-index-misses-row-binding-shadow"
+              ]
+            },
+            {
               "fixture": "nullish-coalesce-empty-array",
               "limitations": [
                 "nullish-coalesce-empty-array-falls-back"
@@ -8416,6 +8434,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "nested-loop-index-shadows-row-binding",
+              "limitations": [
+                "nested-loop-index-misses-row-binding-shadow"
               ]
             },
             {
