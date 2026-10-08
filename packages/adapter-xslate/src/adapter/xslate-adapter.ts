@@ -90,15 +90,15 @@ import {
   collectNullishAttrContext,
   type NullishAttrContext,
 } from '@barefootjs/jsx'
-import {
-  isAriaBooleanAttr,
-  isBooleanResultExpr,
-  isBooleanResultParsed,
-  stringifyBooleanTernaryBranches,
-} from './boolean-result.ts'
+import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { escapeLineStatementSigil, isOpaqueLocalAccessorName } from '@barefootjs/jsx'
+import {
+  escapeLineStatementSigil,
+  isBooleanResultParsed,
+  isOpaqueLocalAccessorName,
+  stringifyBooleanTernaryBranches,
+} from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
@@ -1553,13 +1553,18 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // bind it once and omit the attribute on a nil value, as Hono does.
       // A ternary mixing a boolean branch with another kind
       // (`yes() ? false : s()`) spells its boolean branch as JS does (#3349).
+      // Not when the whole value is serialized by `bool_str` below (an ARIA
+      // boolean name, a boolean-typed prop): it reads the branch's truth,
+      // and a stringified `'false'` is truthy in Perl.
+      const wrapsBoolStr =
+        isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
       const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
-      const mixedParsed = valueParsed ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+      const mixedParsed = valueParsed && !wrapsBoolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
       if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
         const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
         const tmp = `$bf_pu${this.presenceVarCounter++}`
         const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+          wrapsBoolStr
             ? `${name}="<: $bf.bool_str(${tmp}) :>"`
             : `${name}="<: ${tmp} :>"`
         return `\n: my ${tmp} = ${perl};\n: if (defined ${tmp}) {\n${body}\n: }\n`
@@ -1569,7 +1574,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // #3166: thread `value.parsed` through (same reason as
       // `renderConditional`'s matching comment).
       const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
-      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
+      if (wrapsBoolStr) {
         return `${name}="<: $bf.bool_str(${perl}) :>"`
       }
       return `${name}="<: ${perl} :>"`
