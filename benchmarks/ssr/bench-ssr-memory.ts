@@ -28,16 +28,30 @@
  * number, not as comparable to the DOM-suite figures.
  *
  * Usage:
- *   PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium \
- *     bun benchmarks/ssr/bench-ssr-memory.ts
+ *   bun benchmarks/ssr/bench-ssr-memory.ts [--md]
+ *
+ * Besides the table, the run is persisted to
+ * `benchmarks/results/ssr-memory-latest.json` so `runner/update-readme.ts`
+ * can fold it into the README's results section.
  */
+import { join } from 'node:path'
 import { chromium, type Browser, type CDPSession, type Page } from '@playwright/test'
 import { chromiumLaunchOptions } from '../runner/chromium.ts'
 import { median, computeStats } from '../runner/stats.ts'
 import { startServer } from './serve.ts'
 
+const ssrDir = import.meta.dirname
+const resultsDir = join(ssrDir, '..', 'results')
+
 const FRAMEWORKS = ['react', 'solid', 'barefoot'] as const
 const ITERS = 3
+
+/** Shape of `benchmarks/results/ssr-memory-latest.json`. */
+export interface SsrMemoryResults {
+  environment: { date: string; bunVersion: string; chromiumVersion: string }
+  iterations: number
+  results: Array<{ framework: string; median: number; stddev: number; iterations: number[] }>
+}
 
 async function waitHydrated(page: Page): Promise<void> {
   await page.waitForFunction(() => document.body.dataset.hydrated === '1', undefined, { timeout: 10_000 })
@@ -83,6 +97,7 @@ const mdMode = process.argv.slice(2).includes('--md')
 async function main() {
   const server = startServer(0)
   const browser = await chromium.launch(chromiumLaunchOptions())
+  const chromiumVersion = browser.version()
   const rows: Array<{ framework: string; med: number; iterations: number[]; stddev: number }> = []
   try {
     if (!mdMode) console.log(`Post-hydration JS heap (forced GC), n=${ITERS}, 1000 rows\n`)
@@ -113,6 +128,13 @@ async function main() {
     )
     console.log(`| stdev | ${rows.map((r) => fmtBytes(r.stddev)).join(' | ')} |`)
   }
+
+  const data: SsrMemoryResults = {
+    environment: { date: new Date().toISOString(), bunVersion: Bun.version, chromiumVersion },
+    iterations: ITERS,
+    results: rows.map((r) => ({ framework: r.framework, median: r.med, stddev: r.stddev, iterations: r.iterations })),
+  }
+  await Bun.write(join(resultsDir, 'ssr-memory-latest.json'), `${JSON.stringify(data, null, 2)}\n`)
 }
 
 await main()

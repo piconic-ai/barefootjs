@@ -130,22 +130,32 @@ function shippedCell(results: FullResults, framework: string, md: boolean): stri
   return `${fmtBytes(s.raw)} raw / ${fmtBytes(s.gzip)} gzip${suffix}`
 }
 
+/**
+ * The DOM-suite table as GitHub-flavored markdown lines. Shared by `--md`
+ * output (the CI PR comment) and `update-readme.ts` (the README snapshot) so
+ * the two never disagree on a cell's format.
+ */
+export function formatReportMd(results: FullResults): string[] {
+  const { frameworks } = results
+  const lines: string[] = []
+  lines.push(`| Operation | ${frameworks.join(' | ')} |`)
+  lines.push(`|---|${frameworks.map(() => '---').join('|')}|`)
+  for (const op of OP_ORDER) {
+    const cells = frameworks.map((f) => opCellMd(results, op, f))
+    lines.push(`| ${op} | ${cells.join(' | ')} |`)
+  }
+  lines.push(`| startup | ${frameworks.map((f) => startupCell(results, f, true)).join(' | ')} |`)
+  lines.push(`| memory (1k rows) | ${frameworks.map((f) => memoryCell(results, f, true)).join(' | ')} |`)
+  lines.push(`| shipped JS | ${frameworks.map((f) => shippedCell(results, f, true)).join(' | ')} |`)
+  return lines
+}
+
 export function printReport(results: FullResults, opts: { md: boolean }): void {
   const { frameworks } = results
   const rowLabel = (op: string) => op
 
   if (opts.md) {
-    const header = `| Operation | ${frameworks.join(' | ')} |`
-    const sep = `|---|${frameworks.map(() => '---').join('|')}|`
-    console.log(header)
-    console.log(sep)
-    for (const op of OP_ORDER) {
-      const cells = frameworks.map((f) => opCellMd(results, op, f))
-      console.log(`| ${rowLabel(op)} | ${cells.join(' | ')} |`)
-    }
-    console.log(`| startup | ${frameworks.map((f) => startupCell(results, f, true)).join(' | ')} |`)
-    console.log(`| memory (1k rows) | ${frameworks.map((f) => memoryCell(results, f, true)).join(' | ')} |`)
-    console.log(`| shipped JS | ${frameworks.map((f) => shippedCell(results, f, true)).join(' | ')} |`)
+    for (const line of formatReportMd(results)) console.log(line)
     return
   }
 

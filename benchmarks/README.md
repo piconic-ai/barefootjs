@@ -41,18 +41,13 @@ consolidated `createEffect` per plain loop row (slot unification row
 granularity, `spec/slot-unification.md` §5a), so a compiler change that
 splits or multiplies per-row effects shows up here first.
 
-This app exercises the lazy row graph (§9). It did not until §9.5c(2) was
-lifted: its row used to read `createSelector(selected)`, an opaque local
-whose CALL was the reactive read, which the eligibility gate refused while
-the compiler still had to prove every outer read primable. With the
-runtime's re-subscribe seam carrying that obligation the loop became
-eligible, and this memory column moved 1768KB -> ~1052KB in the same
-change — the first time the DOM suite reflected that work at all.
-`createSelector` was removed from `@barefootjs/client` afterwards (#3091,
-zero authored callers besides this benchmark); the row now expresses
-selection as the plain `selected() === row.id` comparison instead (same
-pattern as the SSR app below), so this app no longer depends on the
-opaque-local path specifically — the lazy row graph itself is still
+This app exercises the lazy row graph (§9). Its row reads the selection
+signal directly (`selected() === row.id`, the same pattern as the SSR app
+below); an earlier version went through `createSelector`, an opaque local
+whose CALL was the reactive read, which the eligibility gate (§9.4) refused
+until the runtime's re-subscribe seam (§9.3a) took over that obligation.
+`createSelector` was then removed from `@barefootjs/client` (#3091, no
+authored caller besides this benchmark). The lazy row graph is still
 exercised through the ordinary primable-signal-getter path.
 
 ### 2. SSR + hydration (`ssr/bench-ssr.ts`)
@@ -71,7 +66,7 @@ Signal/effect/memo micro-operations, BarefootJS vs SolidJS only. React is
 deliberately excluded here: it has no equivalent standalone primitive, so
 including it would be a strawman. Solid's `createComputed` is used as the
 synchronous analogue of BarefootJS's `createEffect` (the file-top comment
-documents why, with measured evidence).
+documents why, with measured evidence). Runs on Bun, not in a browser.
 
 ## Why you can trust the comparison
 
@@ -126,91 +121,166 @@ bun install
 bun run --filter '@barefootjs/shared' build && \
 bun run --filter '@barefootjs/streaming' build && \
 bun run --filter '@barefootjs/jsx' build && \
+bun run --filter '@barefootjs/vite' build && \
 bun run --filter '@barefootjs/client' build
 
-bun benchmarks/runner/build.ts          # build all four apps (+ size table)
+bun benchmarks/runner/build.ts          # build all four DOM-suite apps (+ size table)
+bun benchmarks/ssr/apps/react/build.ts  # SSR apps (also built on demand by bench-ssr.ts)
+bun benchmarks/ssr/apps/solid/build.ts
+bun benchmarks/ssr/apps/barefoot/build.ts
+
 bun benchmarks/runner/bench-dom.ts      # full DOM suite (~10 min)
 bun benchmarks/runner/bench-dom.ts --quick --md   # reduced iterations, markdown
 bun benchmarks/ssr/bench-ssr.ts         # SSR + hydration
+bun benchmarks/ssr/bench-ssr-memory.ts  # SSR post-hydration heap
 bun benchmarks/reactive.ts              # reactive primitives microbench
 ```
 
+Every bench accepts `--md` (GitHub-flavored markdown instead of the plain
+table); `bench-dom.ts` and `bench-ssr.ts` also take `--framework=a,b`, and
+`bench-dom.ts` takes `--op=x,y`. The `@barefootjs/vite` build is required:
+the BarefootJS apps are compiled through its `barefoot()` plugin.
+
+Each bench writes its raw per-iteration data, library versions, Chromium
+version and CPU model to `benchmarks/results/` (gitignored):
+`latest.json` (DOM), `ssr-latest.json`, `ssr-memory-latest.json`,
+`reactive-latest.json`. Those four files feed the snapshot below:
+
+```sh
+bun benchmarks/runner/update-readme.ts            # rewrite the Results block from results/*.json
+bun benchmarks/runner/update-readme.ts --dry-run  # print the block instead
+```
+
+The script replaces only the text between the `benchmark-results` HTML
+comment markers and refuses a `--quick` DOM run.
+
 Per-app Playwright smoke tests (correctness only):
-`bun benchmarks/apps/<react|solid|barefoot>/smoke.ts`.
+`bun benchmarks/apps/<react|solid|barefoot>/smoke.ts`. The one-off
+investigation scripts under `ssr/measure-*.ts` and
+`ssr/apps/barefoot/measure-*.ts` are documented in their file headers; they
+are not part of the suite.
 
-CI runs the quick DOM suite, the SSR bench, and the SSR post-hydration heap
-bench on PRs touching `packages/client/**` or `benchmarks/**`, and posts the
-tables as a PR comment (`.github/workflows/benchmark.yml`).
+Chromium is resolved by `runner/chromium.ts`: a pre-provisioned build at
+`$PLAYWRIGHT_BROWSERS_PATH/chromium` (the managed dev environment) wins,
+otherwise Playwright's own install (`bunx playwright install chromium`).
 
-Two different memory numbers appear there, and they are not comparable:
-the DOM suite's **memory** row is a heap DELTA around a client-side create
-of 1,000 rows, while **SSR post-hydration heap** (`ssr/bench-ssr-memory.ts`)
-is the ABSOLUTE heap after hydrating a server-rendered 1,000-row table. The
-second isolates per-row hydration bookkeeping — signals, effects, claim
-tables — for a DOM both sides already have, which is why it is the metric
-the lazy row graph moves most.
+### CI
+
+Two workflows:
+
+- **`.github/workflows/benchmark.yml`** runs the quick DOM suite, the SSR
+  bench and the SSR post-hydration heap bench on main-based PRs touching
+  `packages/client/**` or `benchmarks/**`, and posts the tables as a PR
+  comment. It is a regression smoke check, not a source of publishable
+  numbers. A stacked PR (base is not `main`) does not run it; dispatch it by
+  hand against the branch when you need the numbers early (see AGENTS.md,
+  "CI on stacked PRs").
+- **`.github/workflows/update-benchmark-results.yml`** runs all four benches
+  in full weekly (and on `workflow_dispatch`), regenerates the Results block
+  below with `runner/update-readme.ts`, and opens or refreshes a PR on the
+  `benchmark-results/update` branch with the diff. Review the diff against
+  the previous snapshot before merging: single cells swing between runs on
+  shared runners, so compare whole columns.
+
+Two different memory numbers appear in both places, and they are not
+comparable: the DOM suite's **memory** row is a heap DELTA around a
+client-side create of 1,000 rows, while **SSR post-hydration heap**
+(`ssr/bench-ssr-memory.ts`) is the ABSOLUTE heap after hydrating a
+server-rendered 1,000-row table. The second isolates per-row hydration
+bookkeeping — signals, effects, claim tables — for a DOM both sides already
+have, which is why it is the metric the lazy row graph moves most.
 
 ## Results
 
-Snapshot from one full run. Environment: headless Chromium 141.0.7390.37,
-Bun 1.3.11, React 19.2.7, Solid 1.9.14, Intel Xeon @ 2.10GHz (containerized
-CI-class hardware — rerun locally for your own numbers; ratios are the
-signal, wall-clock will differ).
+<!-- benchmark-results:start -->
+<!-- Generated by `bun benchmarks/runner/update-readme.ts` from benchmarks/results/*.json. Do not edit by hand. -->
+
+Snapshot from one full run on 2026-10-08. Environment: headless Chromium 141.0.7390.37, Bun 1.4.2,
+React 19.3.0, Solid 1.9.17, Intel(R) Xeon(R) Processor @ 2.10GHz (containerized
+CI-class hardware — rerun locally for your own numbers; ratios are the signal, wall-clock
+will differ).
 
 ### DOM update suite (median, ×factor vs vanilla)
 
 | Operation | vanilla | barefoot | react | solid |
 |---|---|---|---|---|
-| create1k | 104.20 ms | 116.40 ms (1.12x) | 105.85 ms (1.02x) | 111.35 ms (1.07x) |
-| replace1k | 128.10 ms | 142.50 ms (1.11x) | 136.20 ms (1.06x) | 131.95 ms (1.03x) |
-| update10th | 20.70 ms | 19.00 ms (0.92x) | 22.15 ms (1.07x) | 21.95 ms (1.06x) |
-| select | 4.70 ms | 6.15 ms (1.31x) | 8.00 ms (1.70x) | 5.85 ms (1.24x) |
-| swap | 20.85 ms | 21.35 ms (1.02x) | 104.15 ms (5.00x) | 29.95 ms (1.44x) |
-| remove | 24.90 ms | 27.35 ms (1.10x) | 28.65 ms (1.15x) | 29.70 ms (1.19x) |
-| create10k | 914.60 ms | 1027.60 ms (1.12x) | 1372.40 ms (1.50x) | 955.60 ms (1.04x) |
-| append1k | 353.10 ms | 390.20 ms (1.11x) | 476.80 ms (1.35x) | 357.70 ms (1.01x) |
-| clear10k | 73.70 ms | 92.50 ms (1.26x) | 155.80 ms (2.11x) | 84.00 ms (1.14x) |
-| startup | 39.30 ms | 47.20 ms (1.20x) | 83.40 ms (2.12x) | 39.90 ms (1.02x) |
-| memory (1k rows) | 253.2KB | 1495.4KB (5.91x) | 2092.3KB (8.26x) | 1483.4KB (5.86x) |
-| shipped JS (gzip) | 1.1KB | 8.7KB | 58.8KB | 6.8KB |
-
-Reading it honestly: BarefootJS sits close to the vanilla baseline on
-every operation — competitive with React and Solid across the board
-(individual cells swing a few tenths between runs on shared hardware;
-compare whole columns, not single cells). Heap per 1k rows is at Solid's
-level and shipped JS (8.7KB gzip) is near Solid's 6.8KB after the CLI
-started tree-shaking the runtime bundle to each project's used exports.
-These numbers include the compiler's hoisted shared loop template (one
-HTML parse per loop, clone per row) and the runtime's generation-stamped
-dependency tracking — the first published run of this suite predated all
-three optimizations and had creation-path numbers at 1.4-1.5x and
-19.4KB gzip shipped.
+| create1k | 73.00 ms | 72.45 ms (0.99x) | 105.40 ms (1.44x) | 88.10 ms (1.21x) |
+| replace1k | 98.20 ms | 107.40 ms (1.09x) | 144.45 ms (1.47x) | 118.25 ms (1.20x) |
+| update10th | 18.85 ms | 35.15 ms (1.86x) | 24.10 ms (1.28x) | 17.75 ms (0.94x) |
+| select | 4.45 ms | 0.60 ms (0.13x) | 6.25 ms (1.40x) | 4.05 ms (0.91x) |
+| swap | 19.60 ms | 15.70 ms (0.80x) | 98.25 ms (5.01x) | 20.50 ms (1.05x) |
+| remove | 25.30 ms | 18.05 ms (0.71x) | 28.80 ms (1.14x) | 21.55 ms (0.85x) |
+| create10k | 796.70 ms | 830.70 ms (1.04x) | 1247.20 ms (1.57x) | 863.20 ms (1.08x) |
+| append1k | 333.80 ms | 250.80 ms (0.75x) | 329.20 ms (0.99x) | 313.50 ms (0.94x) |
+| clear10k | 81.80 ms | 75.70 ms (0.93x) | 111.40 ms (1.36x) | 83.10 ms (1.02x) |
+| startup | 26.40 ms | 46.50 ms (1.76x) | 62.20 ms (2.36x) | 31.10 ms (1.18x) |
+| memory (1k rows) | 253.1KB | 752.2KB (2.97x) | 2096.0KB (8.28x) | 1486.3KB (5.87x) |
+| shipped JS | 2.7KB raw / 1.1KB gzip | 29.2KB raw / 11.2KB gzip (10.06x) | 209.6KB raw / 66.1KB gzip (59.14x) | 17.4KB raw / 6.9KB gzip (6.15x) |
 
 ### SSR + hydration (1,000-row table)
 
 | Metric | react | solid | barefoot |
 |---|---|---|---|
-| Server render (median, n=20) | 24.76 ms | 0.38 ms | 9.18 ms |
-| Hydration time (median, n=10) | 43.35 ms | 25.05 ms | 31.15 ms |
+| Server render (median, n=20) | 12.10 ms | 0.25 ms | 5.48 ms |
+| Hydration time (median, n=10) | 51.20 ms | 30.30 ms | 34.75 ms |
 | Interactivity gate | PASS | PASS | PASS |
-| Client JS (raw / gzip) | 182.3KB / 58.1KB | 17.0KB / 6.6KB | 18.6KB / 7.0KB |
-| HTML document (raw / gzip) | 220.0KB / 14.9KB | 235.9KB / 18.6KB | 318.6KB / 19.5KB |
+| Client JS (raw / gzip) | 207.8KB / 65.4KB | 17.1KB / 6.7KB | 22.6KB / 8.1KB |
+| HTML document (raw / gzip) | 220.0KB / 14.7KB | 235.9KB / 18.5KB | 318.6KB / 19.1KB |
 
-Solid's sub-millisecond server render (precompiled string templates) is a
-genuine strength of its SSR design. BarefootJS renders 3x faster than
-React and hydrates between the two, with a Solid-sized client payload; its
-HTML is the largest because props ride in the `bf-p` attribute (see
-limitations).
+### SSR post-hydration JS heap
 
-### Reactive primitives (`bun benchmarks/reactive.ts`)
+| Metric | react | solid | barefoot |
+|---|---|---|---|
+| Post-hydration heap (median, n=3) | 3510.5KB | 2596.7KB | 1661.3KB |
+| stdev | 1.2KB | 0.2KB | 0.0KB |
 
-BarefootJS vs SolidJS on raw signal/effect/memo operations: after the
-generation-stamped dependency-tracking optimization, BarefootJS leads on
-signal creation, reads, effect dispatch (single-subscriber and fan-out),
-unbatched deep chains, independent chains, and partial updates; Solid
-stays ahead on raw no-subscriber writes and batched deep-chain
-propagation. Run it locally for the full table — neither library is
-uniformly faster at the primitive level.
+### Reactive primitives
+
+| Case | BarefootJS (ms) | BarefootJS (ops/sec) | SolidJS (ms) | SolidJS (ops/sec) |
+|---|---|---|---|---|
+| Create 100,000 signals | 6.946 | 14,397,488 | 10.958 | 9,125,650 |
+| Read 100,000 signals | 0.963 | 103,852,729 | 1.146 | 87,261,482 |
+| Write 100,000 signals (no sub) | 0.907 | 110,312,692 | 1.084 | 92,269,819 |
+| Update signal -> 1 effect x 10,000 | 0.657 | 15,219,357 | 1.883 | 5,310,844 |
+| Fan-out: 1 signal -> 1,000 effects | 0.038 | 26,327,568 | 0.060 | 16,546,703 |
+| Deep chain (100 memos) x 1,000 updates | 10.895 | 91,787 | 17.840 | 56,055 |
+| Deep chain batched (100 memos) x 1,000 | 0.021 | 48,668,905 | 0.067 | 15,013,888 |
+| 1,000 independent signal->memo->effect | 0.009 | 109,541,023 | 0.013 | 78,449,831 |
+| Partial update: 100 of 1000 rows | 0.011 | 8,922,995 | 0.017 | 5,948,486 |
+<!-- benchmark-results:end -->
+
+The block above is generated; what follows is hand-written against the
+snapshot dated there and may lag it — the table is the source of truth.
+
+**DOM update suite.** Compare whole columns, not single cells: individual
+cells swing between runs on shared hardware. In this snapshot BarefootJS
+sits at or below the vanilla baseline on the creation, swap, remove, append
+and clear paths, and its heap per 1,000 rows is the lowest of the three
+frameworks — the compiler emits one consolidated `createEffect` per plain
+loop row (`spec/slot-unification.md` §5a) on top of the lazy row graph (§9),
+which is what moved this column from the ~1.5MB of earlier snapshots. The
+cells where it does not lead: `update10th` (the partial label update runs at
+close to 2x vanilla; it reproduces when re-measured in isolation, so it is
+not run noise), `startup`, and shipped JS, which sits above Solid's. Earlier
+snapshots of this table had other cells on either side; the creation-path
+numbers of the first published run were at 1.4-1.5x before the hoisted
+shared loop template (one HTML parse per loop, clone per row), the
+generation-stamped dependency tracking, and tree-shaking of the runtime
+bundle to each project's used exports landed.
+
+**SSR + hydration.** Solid's sub-millisecond server render (precompiled
+string templates) is a genuine strength of its SSR design. BarefootJS
+renders faster than React and hydrates between the two, with a client
+payload in Solid's range; its HTML is the largest because props ride in the
+`bf-p` attribute (see limitations). The post-hydration heap is where the
+lazy row graph shows most clearly: BarefootJS hydrates the same 1,000-row
+DOM with the smallest JS heap of the three.
+
+**Reactive primitives.** In this snapshot BarefootJS is ahead of SolidJS on
+every case. Earlier snapshots had Solid ahead on raw no-subscriber writes
+and batched deep-chain propagation, so treat a per-case lead as
+run-dependent rather than structural. This is the reactive graph in
+isolation on Bun/JSC, not browser frame cost.
 
 ## Honest limitations
 
