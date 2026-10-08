@@ -129,7 +129,10 @@ jobs:
             # tests register happy-dom's globals, whose Headers drop Set-Cookie /
             # Cookie as a browser does, so the Workers Cache policy tests would
             # see cookie-free responses if they shared the process.
-            run: bun test packages/client packages/shared packages/test packages/router scripts/lib && bun test integrations/shared/lib
+            # site/core keeps unit tests next to its pages and build helpers
+            # (lib/, pages/, playground/); e2e/ holds Playwright specs, which
+            # bun test must not pick up, hence the directory list.
+            run: bun test packages/client packages/shared packages/test packages/router scripts/lib site/core/lib site/core/pages site/core/playground && bun test integrations/shared/lib
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

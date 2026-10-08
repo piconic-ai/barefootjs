@@ -30,3 +30,32 @@ test.describe('playground', () => {
     await expect(preview.locator('p')).toHaveText('Count: 1')
   })
 })
+
+test.describe('playground editor types', () => {
+  test.setTimeout(60_000)
+
+  // The type bundle is registered with Monaco's TypeScript worker as extra
+  // libs; this asks that worker for the hover text the user sees. A bundle
+  // that fails to resolve `@barefootjs/client` shows `const count: any`
+  // here with no diagnostic anywhere, so the hover is the only observable.
+  test('hover on the default source shows real signal types', async ({ page }) => {
+    await page.goto('/playground')
+    await expect(page.locator('#pg-status')).toHaveText(/Preview up to date/, { timeout: 45_000 })
+
+    const hover = await page.evaluate(async () => {
+      const monaco = (window as any).monaco
+      const model = monaco.editor.getModels().find((m: any) => m.uri.path.endsWith('component.tsx'))
+      const worker = await (await monaco.languages.typescript.getTypeScriptWorker())(model.uri)
+      const quickInfo = async (needle: string) => {
+        const offset = model.getValue().indexOf(needle)
+        const info = await worker.getQuickInfoAtPosition(model.uri.toString(), offset + 1)
+        return info?.displayParts?.map((p: any) => p.text).join('') ?? ''
+      }
+      return { count: await quickInfo('count()'), createSignal: await quickInfo('createSignal(') }
+    })
+    // Monaco's bundled TypeScript may print the `Reactive<…>` alias expanded;
+    // the accessor signature is what proves the import resolved.
+    expect(hover.count).toMatch(/^const count: (Reactive<)?\(\) => number>?$/)
+    expect(hover.createSignal).toContain('createSignal<number>(initialValue: number')
+  })
+})
