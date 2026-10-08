@@ -2,11 +2,11 @@ import { defineLimitation } from '../src/limitations'
 
 export default defineLimitation({
   kind: 'silent',
-  title: 'A `.map()` index param named like a template-level local overwrites it after the loop',
+  title: 'A `.map()` param named like a template-level local overwrites it after the loop',
   given:
-    'a `.map((item, i) => …)` callback whose index param has the same name as a component memo read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)',
-  expected: 'the index param shadows the memo only inside the row; the read after the loop renders the memo (`data-i="10"`)',
+    'a `.map((label, i) => …)` callback whose params have the same names as component memos read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)',
+  expected: 'the params shadow the memos only inside the row; the reads after the loop render the memos (`data-i="10"`)',
   actual:
-    'renders the last row index after the loop (`data-i="1"`): the index binds with a template-level `set` inside the loop body, which overwrites the memo of the same name',
+    'renders the last row values after the loop (`data-i="1"`): the index binds with a template-level `set` inside the loop body (Pebble, Twig), and PHP `foreach` also binds the item param in the template scope (Blade), so they overwrite the memos of the same names',
   fixtures: ['memo-loop-param-collision'],
 })
