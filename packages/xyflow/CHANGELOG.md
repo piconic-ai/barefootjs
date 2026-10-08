@@ -1,5 +1,9 @@
 # @barefootjs/xyflow
 
+## 0.39.4
+
+No changes in this release.
+
 ## 0.39.3
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @barefootjs/erb
 
+## 0.39.4
+
+### Patch Changes
+
+- 6d49dc7: Division (`{props.value / 4}`) now renders the JavaScript quotient on ERB. Ruby's `/` on two Integers is integer division, so `1234567890 / 4` rendered `308641972` and `-7 / 4` rendered `-2`; template-emitted `/` now goes through a new `bf.div` helper — the same JS division (JS `Number()` operand coercion, IEEE quotient) the callback evaluator uses — keeping JS's spelling (`308641972.5`, `-1.75`, `8 / 4` → `2`), with division by zero giving `Infinity` / `-Infinity` / `NaN`.
+- a982376: Arithmetic over a signal whose SSR value can be `null` (`createMemo(() => s() * 2)` with `createSignal<any>(null)`) now renders JS's coerced result (`0`) on ERB, Jinja, Pebble and MiniJinja, instead of throwing at render on the native operator's nil operand. A possibly-nullish operand of `-`, `*`, `/`, `%` or `**` reads as `0`, as go-template's `bf.Mul` already did.
+- 9a00178: An optional-chained `.length` (`{props.items?.length}`) over an absent or `null` receiver now renders empty, as JavaScript reads `undefined`. It used to render `0`, the length of an empty array. An empty array or string still renders `0`, and a `?? 0` fallback still takes over for an absent receiver. On go-template, an absent optional string prop still reads as `""` (and so `0`), because its struct field is a plain `string`.
+- @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @barefootjs/blade
 
+## 0.39.4
+
+### Patch Changes
+
+- 9a00178: An optional-chained `.length` (`{props.items?.length}`) over an absent or `null` receiver now renders empty, as JavaScript reads `undefined`. It used to render `0`, the length of an empty array. An empty array or string still renders `0`, and a `?? 0` fallback still takes over for an absent receiver. On go-template, an absent optional string prop still reads as `""` (and so `0`), because its struct field is a plain `string`.
+- 4f6b4dd: Keep a template-level name intact after a `.map()` loop whose row binds the same name. Twig, Blade and Pebble now save a signal, memo, prop, constant or enclosing row binding that the row's index, destructure binding or preamble local shadows, and restore it after the loop (#3391).
+- @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes
