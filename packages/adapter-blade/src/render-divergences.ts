@@ -44,6 +44,12 @@ export const renderDivergences: RenderDivergences = {
   // An attribute number at the 1e-6 / 1e21 notation boundary prints with
   // PHP's float-to-string conversion: an exponent at 1e-6 and an upper-case `E` (`1.23456789E+21`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
+
+  // PHP `foreach` binds the row params in the template scope, so a memo
+  // read after the loop renders the last row's item and index.
+  'memo-loop-param-collision': { limitation: 'loop-index-param-overwrites-same-named-local' },
+  'loop-set-bound-param-shadow': { limitation: 'loop-index-param-overwrites-same-named-local' },
+
   // #3119 (graduated): the `ref`-callback SSR-portal pattern
   // (`ssrPortalOwnerScope`) now renders through
   // `BarefootJS::register_portal_element` / `bf.portals()` (an

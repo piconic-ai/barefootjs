@@ -3356,6 +3356,20 @@
           }
         }
       },
+      "loop-set-bound-param-shadow": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        }
+      },
       "map-array-builder-body": {
         "blade": {
           "kind": "refusal",
@@ -3599,6 +3613,20 @@
           "kind": "render",
           "limitations": [
             "optional-struct-field-absent-renders-zero"
+          ]
+        }
+      },
+      "memo-loop-param-collision": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
           ]
         }
       },
@@ -5625,6 +5653,10 @@
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows carry a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-nested-field.ts"
       },
+      "loop-set-bound-param-shadow": {
+        "description": "An index or destructure param named like a signal or prop leaves it intact after the loop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-set-bound-param-shadow.ts"
+      },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
@@ -5636,6 +5668,10 @@
       "member-seeded-nullable-signal-attr": {
         "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
+      },
+      "memo-loop-param-collision": {
+        "description": "Loop params named like memos shadow them only inside the row, with memo reads before and after the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-loop-param-collision.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
@@ -6087,6 +6123,21 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-index-param-overwrites-same-named-local": {
+      "title": "A `.map()` param named like a template-level local overwrites it after the loop",
+      "kind": "silent",
+      "given": "a `.map((label, i) => …)` or `.map(({ name }, count) => …)` callback whose params have the same names as a memo, signal or prop read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)",
+      "expected": "the params shadow the outer names only inside the row; the reads after the loop render the outer values (`data-i=\"10\"`)",
+      "actual": "renders the last row values after the loop (`data-i=\"1\"`): the index and destructure bindings are template-level `set`s inside the loop body (Twig), and PHP `foreach` also binds the item param in the template scope (Blade), so they overwrite the outer values of the same names",
+      "fixtures": [
+        "loop-set-bound-param-shadow",
+        "memo-loop-param-collision"
+      ],
+      "adapters": [
+        "blade",
+        "twig"
+      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",

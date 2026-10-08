@@ -44,6 +44,11 @@ export const renderDivergences: RenderDivergences = {
   // PHP's float-to-string conversion: an exponent at 1e-6 and an upper-case `E` (`1.23456789E+21`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
 
+  // The index param binds with `{% set i = loop.index0 %}`, which overwrites a
+  // template-level memo of the same name read after the loop.
+  'memo-loop-param-collision': { limitation: 'loop-index-param-overwrites-same-named-local' },
+  'loop-set-bound-param-shadow': { limitation: 'loop-index-param-overwrites-same-named-local' },
+
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`
