@@ -797,6 +797,12 @@
               ]
             },
             {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -990,6 +996,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -1669,6 +1681,12 @@
               ]
             },
             {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -2147,6 +2165,12 @@
               ]
             },
             {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -2345,6 +2369,18 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -3453,6 +3489,18 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -4042,6 +4090,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -4051,6 +4105,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -5390,6 +5450,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -5399,6 +5465,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -5787,6 +5859,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -6739,6 +6823,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -7235,6 +7331,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -7244,6 +7346,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -8229,6 +8337,12 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8238,6 +8352,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -9868,6 +9988,12 @@
               "limitations": [
                 "off-subset-callback-body"
               ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
             }
           ]
         },
@@ -9979,6 +10105,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             }
           ]
@@ -10733,6 +10865,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -10820,6 +10958,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
             {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
@@ -11957,6 +12101,18 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12513,6 +12669,18 @@
               ]
             },
             {
+              "fixture": "loop-set-bound-param-shadow",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12717,6 +12885,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
@@ -13201,6 +13375,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "memo-loop-param-collision",
+              "limitations": [
+                "loop-index-param-overwrites-same-named-local"
               ]
             },
             {
