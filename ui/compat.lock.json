@@ -4143,20 +4143,6 @@
           ]
         }
       },
-      "nested-loop-index-shadows-row-binding": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-index-misses-row-binding-shadow"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "nested-loop-index-misses-row-binding-shadow"
-          ]
-        }
-      },
       "nullish-coalesce-empty-array": {
         "go-template": {
           "kind": "render",
@@ -5701,10 +5687,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "nested-loop-index-shadows-row-binding": {
-        "description": "An inner index named like an outer row binding leaves the binding intact after the inner loop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-index-shadows-row-binding.ts"
-      },
       "nullish-coalesce-empty-array": {
         "description": "`??` keeps a present empty array instead of taking the fallback",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts"
@@ -6245,20 +6227,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "nested-loop-index-misses-row-binding-shadow": {
-      "title": "An inner `.map()` index named like an outer row binding does not shadow it",
-      "kind": "silent",
-      "given": "a nested `.map()` whose inner index param has the same name as the outer row's destructure binding (`groups.map(({ name, tags }) => … tags.map((t, name) => …{name}…) …{name}…)`)",
-      "expected": "the inner index shadows the binding only inside the inner row (`a0`); the outer row reads its own binding after the inner loop (`g1`)",
-      "actual": "renders the outer binding inside the inner row on go-template (`ag1`), which lowers the destructure binding to the item accessor everywhere, and throws at render on Xslate, where Kolon refuses the inner `my $name` that redeclares the outer one",
-      "fixtures": [
-        "nested-loop-index-shadows-row-binding"
-      ],
-      "adapters": [
-        "go-template",
-        "xslate"
       ]
     },
     "nullish-coalesce-empty-array-falls-back": {

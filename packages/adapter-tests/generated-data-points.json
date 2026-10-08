@@ -3543,6 +3543,14 @@
       }
     }
   ],
+  "nested-loop-row-binding-shadow-shapes": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
   "nested-loop-string-addition": [
     {
       "name": "gen:groups:empty",

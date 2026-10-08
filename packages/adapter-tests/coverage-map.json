@@ -5861,6 +5861,23 @@
         "text"
       ]
     },
+    "nested-loop-row-binding-shadow-shapes": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-string-addition": {
       "kinds": [
         "binary",
