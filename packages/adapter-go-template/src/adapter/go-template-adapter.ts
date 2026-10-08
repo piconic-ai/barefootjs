@@ -9528,7 +9528,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // loop-param stack for the same shape. The key stays reachable only
     // via `loopVarRefCount`'s `$name` bookkeeping below, unchanged by this
     // migration.
-    const scopeLoop: LoopBindingSource = loop.iterationShape === 'keys' ? { ...loop, param: '' } : loop
+    // The keys-shape param is the range *index*, so it binds as `index`: still
+    // the nearest binding for a shadowed outer name (#3392), never the dot.
+    const scopeLoop: LoopBindingSource =
+      loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : loop
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(scopeLoop)
     // Track Go template loop variables. The range *index* variable needs

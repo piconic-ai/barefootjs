@@ -5824,6 +5824,18 @@
         "text"
       ]
     },
+    "nested-loop-keys-shadows-row-binding": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-outer-binding": {
       "kinds": [
         "identifier",
