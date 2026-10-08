@@ -119,6 +119,7 @@ import { groupBinaryOperand,
   sortComparatorFromArrow,
   queryHrefArgs,
   isValidHelperId,
+  NULL_COERCING_ARITHMETIC_OPS,
 } from '@barefootjs/jsx'
 
 import type { PebbleEmitContext } from '../emit-context.ts'
@@ -576,12 +577,19 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return emit(argument)
   }
 
+  /** A `null` arithmetic operand reads as `0`, as JS `ToNumber(null)` does
+   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one is left
+   * alone: JS gives `NaN`, not `0`. */
+  private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
+    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isNullOperand(expr) ? `(${operand} is null ? 0 : ${operand})` : operand
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = groupBinaryOperand(left, emit(left))
-    const r = groupBinaryOperand(right, emit(right))
+    const l = this.coerceNullishOperand(op, left, groupBinaryOperand(left, emit(left)))
+    const r = this.coerceNullishOperand(op, right, groupBinaryOperand(right, emit(right)))
     // See the file header, divergence 4: never a native Pebble equality
     // operator for `===`/`!==`.
     if (op === '===') return `bf.eq(${l}, ${r})`

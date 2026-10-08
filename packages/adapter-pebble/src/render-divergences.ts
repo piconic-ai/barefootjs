@@ -27,13 +27,16 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
+  // operand throws or reads as `0` here (#3350 covers only `null`).
+  'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
   // `memo-loop-param-collision` used to sit here: an index param bound with
   // `{% set i = loop.index %}` overwrote the template-level memo `i` after
   // the loop. A loop now saves and restores each template-level name it
   // binds with `set`; it renders like Hono.
-  // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
-  // operand at render, where JS coerces `null` to `0` (#3322).
-  'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
+  // `nullish-signal-arithmetic-memo` used to sit here: `s() * 2` with
+  // `s()` = `null` raised on the nil operand. A possibly-nullish arithmetic
+  // operand now reads as `0` (`coerceNullishOperand`); it renders like Hono.
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf.register_portal_element`/`bf.portals()`

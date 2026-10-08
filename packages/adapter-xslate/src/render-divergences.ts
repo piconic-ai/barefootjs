@@ -35,6 +35,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
+  // operand throws or reads as `0` here (#3350 covers only `null`).
+  'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
   // An attribute number at the 1e-6 / 1e21 notation boundary prints with
   // Perl's `%g` stringification pads a negative exponent (`1.23456789e-06`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },

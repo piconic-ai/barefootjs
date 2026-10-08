@@ -1709,6 +1709,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -1745,12 +1751,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -1772,6 +1772,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -1855,6 +1861,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -1897,12 +1909,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -1924,6 +1930,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -1967,12 +1979,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1988,6 +1994,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -2047,6 +2059,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -2089,12 +2107,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2110,6 +2122,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -2181,6 +2199,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -2244,6 +2268,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -2442,6 +2472,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -2532,12 +2568,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2583,6 +2613,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -2816,6 +2852,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -2912,12 +2954,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2963,6 +2999,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -3060,12 +3102,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3111,6 +3147,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -3248,6 +3290,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -3344,12 +3392,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3395,6 +3437,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -3550,6 +3598,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -3691,6 +3745,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -4160,6 +4220,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -4274,12 +4340,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -4331,6 +4391,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -4624,6 +4690,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -4744,12 +4816,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -4801,6 +4867,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -4922,12 +4994,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4973,6 +5039,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -5152,6 +5224,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -5272,12 +5350,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5323,6 +5395,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -5508,6 +5586,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -5691,6 +5775,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -5884,6 +5974,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -5956,12 +6052,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -6007,6 +6097,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -6216,6 +6312,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -6288,12 +6390,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -6339,6 +6435,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -6412,12 +6514,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6457,6 +6553,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -6588,6 +6690,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -6660,12 +6768,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6705,6 +6807,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -6836,6 +6944,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -6965,6 +7079,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -10803,38 +10923,53 @@
               "limitations": [
                 "number-exponent-boundary-spelling"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
         "erb": {
           "gaps": [
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
         },
-        "go-template": {},
-        "jinja": {
+        "go-template": {
           "gaps": [
             {
-              "fixture": "nullish-signal-arithmetic-memo",
+              "fixture": "undefined-signal-arithmetic-memo",
               "limitations": [
-                "null-signal-arithmetic-raises"
+                "undefined-signal-arithmetic-not-nan"
               ]
-            },
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
             {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -10842,9 +10977,9 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "nullish-signal-arithmetic-memo",
+              "fixture": "undefined-signal-arithmetic-memo",
               "limitations": [
-                "null-signal-arithmetic-raises"
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -10856,15 +10991,21 @@
               "limitations": [
                 "number-exponent-boundary-spelling"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
         "pebble": {
           "gaps": [
             {
-              "fixture": "nullish-signal-arithmetic-memo",
+              "fixture": "undefined-signal-arithmetic-memo",
               "limitations": [
-                "null-signal-arithmetic-raises"
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -10882,6 +11023,12 @@
               "limitations": [
                 "number-exponent-boundary-spelling"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -10891,6 +11038,12 @@
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -11922,16 +12075,7 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "erb": {},
         "go-template": {
           "gaps": [
             {
@@ -11954,26 +12098,8 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
+        "minijinja": {},
         "mojolicious": {
           "gaps": [
             {
@@ -11984,16 +12110,7 @@
             }
           ]
         },
-        "pebble": {
-          "gaps": [
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            }
-          ]
-        },
+        "pebble": {},
         "twig": {},
         "xslate": {
           "gaps": [
@@ -12108,6 +12225,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -12144,12 +12267,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
@@ -12183,6 +12300,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -12284,6 +12407,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -12317,12 +12446,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
               ]
             },
             {
@@ -12360,6 +12483,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -12396,12 +12525,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12429,6 +12552,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -12512,6 +12641,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -12548,12 +12683,6 @@
               ]
             },
             {
-              "fixture": "nullish-signal-arithmetic-memo",
-              "limitations": [
-                "null-signal-arithmetic-raises"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12581,6 +12710,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -12664,6 +12799,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -12745,6 +12886,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]

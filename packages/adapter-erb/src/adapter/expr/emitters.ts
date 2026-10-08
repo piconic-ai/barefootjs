@@ -51,6 +51,7 @@ import {
   type LoweringNode,
   queryHrefArgs,
   isValidHelperId,
+  NULL_COERCING_ARITHMETIC_OPS,
 } from '@barefootjs/jsx'
 
 import type { ErbEmitContext } from '../emit-context.ts'
@@ -563,9 +564,16 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return arg
   }
 
+  /** A `null` arithmetic operand reads as `0`, as JS `ToNumber(null)` does
+   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one is left
+   * alone: JS gives `NaN`, not `0`. */
+  private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
+    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isNullOperand(expr) ? `(${operand} || 0)` : operand
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    const l = this.coerceNullishOperand(op, left, emit(left))
+    const r = this.coerceNullishOperand(op, right, emit(right))
     // Ruby `/` on two Integers is integer division; JS `/` keeps the
     // fractional quotient (#3328).
     if (op === '/') return `bf.div(${l}, ${r})`

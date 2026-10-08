@@ -124,11 +124,13 @@ export { isBooleanResultParsed, stringifyBooleanTernaryBranches } from './adapte
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
+  arithmeticOperandIsNull,
   attrValueMayBeNullish,
   collectNullableSignalGetters,
   collectNullishAttrContext,
   isNullableSignal,
   isNullishLiteral,
+  NULL_COERCING_ARITHMETIC_OPS,
   nullableSignalAttrGetter,
   type NullishAttrContext,
 } from './nullable-signal-attr.ts'
