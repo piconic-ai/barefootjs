@@ -90,6 +90,13 @@ documents why, with measured evidence). Runs on Bun, not in a browser.
   (`apps/shared/data.ts`, krausest's adjective/colour/noun tables) and one
   stylesheet. The SSR bench uses a single fixed `data.json` for
   byte-identical server workloads.
+- **Same page everywhere.** Layout is a large share of click-to-frame time
+  on a 1,000-row table, so the runner checks that the shared stylesheet
+  actually applied before timing an app and reports every op FAILED when it
+  did not. This gate exists because the BarefootJS app once linked its
+  stylesheet with a root-absolute href that 404'd under the runner's
+  `/<app>/` mount, and its whole DOM column was measured on an unstyled
+  table (`update10th` read ~1.8x vanilla from the extra layout work alone).
 - **Statistics, not single numbers.** Warmup iterations are discarded;
   medians with quartile spread are reported; raw per-iteration data,
   library versions, Chromium version, and CPU model are written to
