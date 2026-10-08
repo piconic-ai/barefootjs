@@ -3531,7 +3531,22 @@
     {
       "name": "gen:groups:empty",
       "props": {
-        "groups": []
+        "groups": [],
+        "tags": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "groups": [
+          {
+            "name": "g1"
+          }
+        ],
+        "tags": []
       }
     }
   ],
