@@ -31,6 +31,7 @@ import { fixture as nestedLoopPreambleShadowsRowBinding } from './nested-loop-pr
 import { fixture as nestedLoopFilterCapturesShadowingParam } from './nested-loop-filter-captures-shadowing-param'
 import { fixture as nestedLoopKeysShadowsRowBinding } from './nested-loop-keys-shadows-row-binding'
 import { fixture as nestedLoopFilterCapturesOuterBindings } from './nested-loop-filter-captures-outer-bindings'
+import { fixture as filterCaptureShadowedByMapParam } from './filter-capture-shadowed-by-map-param'
 import { fixture as undefinedSignalArithmeticMemo } from './undefined-signal-arithmetic-memo'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
@@ -1567,6 +1568,7 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopFilterCapturesShadowingParam,
   nestedLoopKeysShadowsRowBinding,
   nestedLoopFilterCapturesOuterBindings,
+  filterCaptureShadowedByMapParam,
   undefinedSignalArithmeticMemo,
   numberDivisionText,
   numberDivisionMatrix,

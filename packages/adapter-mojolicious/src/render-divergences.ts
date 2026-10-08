@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // The predicate's param is renamed to the following map's param, which
+  // also captures the enclosing name of the same spelling (#3402).
+  'filter-capture-shadowed-by-map-param': { limitation: 'filter-capture-shadowed-by-map-param' },
+
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
   // operand throws or reads as `0` here (#3350 covers only `null`).
   'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },

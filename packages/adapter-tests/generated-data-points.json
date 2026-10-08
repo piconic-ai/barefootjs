@@ -2129,6 +2129,14 @@
       }
     }
   ],
+  "filter-capture-shadowed-by-map-param": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
   "filter-predicate-props-member": [
     {
       "name": "gen:items:empty",

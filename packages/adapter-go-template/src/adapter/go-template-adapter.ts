@@ -267,6 +267,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   // syntactically valid when a child rendered the fallback sentinel.
   private filterExprDepth = 0
   private filterExprUnsupported = false
+  /** Captured enclosing names a filtered loop's own `{{range}}` redeclares,
+   * mapped to the Go variable that holds the enclosing value (#3396). */
+  private filterCaptureAliases: Map<string, string> = new Map()
 
   /**
    * Identifier-path callees the Go runtime can render in template scope, keyed
@@ -8085,6 +8088,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // `$name` range variable, never the dot or a root field; a destructure
         // binding reads its accessor; an index or preamble local is `$name`.
         if (this.scope.lookup(expr.name)) {
+          const captured = this.filterCaptureAliases.get(expr.name)
+          if (captured !== undefined) return `$${captured}`
           const acc = this.lookupDestructureBinding(expr.name)
           if (acc !== undefined) return acc
           if (this.isOuterRowItem(expr.name) || this.loopVarRefCount.has(expr.name)) return `$${expr.name}`
@@ -9648,6 +9653,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // filter().map(): gate the body on an `{{if}}` condition.
     if (loop.filterPredicate) {
       let filterCond: string
+      const captureAliases = new Map<string, string>()
 
       if (loop.filterPredicate.predicate) {
         // #2228: for a wrapper-slice loop (`.TodoItems` ranging over
@@ -9659,19 +9665,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // loop, where `.` already IS the datum — `renderPredicateCondition`
         // then keeps emitting the bare `.`/`.Field` form unchanged.
         const datumField = this.wrapperDatumField(loop)
-        filterCond = this.renderPredicateCondition(
-          loop.filterPredicate.predicate,
-          loop.filterPredicate.param,
-          datumField
-        )
+        // The predicate runs inside this loop's own `{{range}}`, whose
+        // `$item`/`$index` would shadow an enclosing `$name` the predicate
+        // captures (`.filter(t => t === name).map(name => …)`). Keep each such
+        // enclosing value under a loop-scoped variable declared before the
+        // range, and read that in the predicate (#3396).
+        for (const declared of [rangeValue, rangeIndex]) {
+          if (declared === '_' || this.filterCaptureAliases.has(declared)) continue
+          if (this.lookupDestructureBinding(declared) !== undefined) continue
+          if (this.isOuterRowItem(declared) || this.loopVarRefCount.has(declared)) {
+            captureAliases.set(declared, `__bf_cap_${loop.markerId}_${declared}`)
+          }
+        }
+        const prevAliases = this.filterCaptureAliases
+        this.filterCaptureAliases = new Map([...prevAliases, ...captureAliases])
+        try {
+          filterCond = this.renderPredicateCondition(
+            loop.filterPredicate.predicate,
+            loop.filterPredicate.param,
+            datumField
+          )
+        } finally {
+          this.filterCaptureAliases = prevAliases
+        }
       } else {
         filterCond = 'true'
       }
+      const captureDecls = [...captureAliases].map(([name, alias]) => `{{$${alias} := $${name}}}`).join('')
 
       // The preamble assignments sit INSIDE the `{{if}}`, matching JS
       // evaluation order: a `.filter(p).map(cb)` chain never runs `cb`'s
       // body for a filtered-out item.
-      return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}{{if ${filterCond}}}${preambleAssignments}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
+      return `{{bfComment "loop:${loop.markerId}"}}${captureDecls}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}{{if ${filterCond}}}${preambleAssignments}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
     }
 
     return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${preambleAssignments}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`

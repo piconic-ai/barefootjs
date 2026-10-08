@@ -3009,6 +3009,21 @@
         "text"
       ]
     },
+    "filter-capture-shadowed-by-map-param": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-nested-callback-predicate": {
       "kinds": [
         "array-literal",
