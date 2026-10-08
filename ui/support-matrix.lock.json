@@ -1709,6 +1709,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -2193,6 +2199,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -2459,6 +2471,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -3580,6 +3598,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -4195,6 +4219,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -5556,6 +5586,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -5937,6 +5973,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -6901,6 +6943,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -10875,6 +10923,12 @@
               "limitations": [
                 "number-exponent-boundary-spelling"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -10968,6 +11022,12 @@
               "fixture": "number-arithmetic-attr-exponent-boundaries",
               "limitations": [
                 "number-exponent-boundary-spelling"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
@@ -12165,6 +12225,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
+              ]
             }
           ]
         },
@@ -12732,6 +12798,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "undefined-signal-arithmetic-memo",
+              "limitations": [
+                "undefined-signal-arithmetic-not-nan"
               ]
             }
           ]
