@@ -247,6 +247,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  filterCaptureCollisions,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1181,10 +1182,15 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
         : childrenUnderLoop
     this.scope = prevScope
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own row binds again would read the row's item inside the loop;
+    // keep the enclosing value under a loop-scoped alias (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     for (const { name, alias } of rootAliases) lines.push(`{% set ${pebbleIdent(alias)} = ${pebbleIdent(name)} %}`)
+    for (const { name, alias } of captureAliases) lines.push(`{% set ${pebbleIdent(alias)} = ${pebbleIdent(name)} %}`)
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | raw }}`)
     // `objectIteration` (#2168 object-entries-map): routed through the
     // runtime's `bf.entries`/`bf.keys`/`bf.values` rather than any native
@@ -1259,6 +1265,9 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       // plain word boundaries, since Pebble identifiers have no sigil).
       // Bounded, pre-existing risk: see `lib/ir-scope.ts`'s file header for
       // the general sigil-less text-scan caveat.
+      for (const { name, alias } of captureAliases) {
+        filterCond = filterCond.replace(new RegExp(`(?<![.\\w$])${name}\\b`, 'g'), alias)
+      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),

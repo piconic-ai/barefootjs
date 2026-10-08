@@ -65,6 +65,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  filterCaptureCollisions,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1100,10 +1101,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         ? `<%== bf->comment("loop-i:" . bf->escape_comment_key(${this.convertExpressionToPerl(loop.key)})) %>\n${renderedChildren}`
         : renderedChildren
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own row binds again would read the row's item inside the loop;
+    // keep the enclosing value under a loop-scoped alias (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range (#1087).
     lines.push(`<%== bf->comment("loop:${loop.markerId}") %>`)
+    for (const { name, alias } of captureAliases) lines.push(`% my $${alias} = $${name};`)
     if (rootAliases.length > 0) {
       lines.push('% {')
       for (const { name, alias } of rootAliases) lines.push(`% my $${alias} = $${name};`)
@@ -1219,6 +1225,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         filterCond = '1'
       }
       // Map filter param to loop param (e.g., $t → $todo)
+      for (const { name, alias } of captureAliases) {
+        filterCond = filterCond.replace(new RegExp(`\\$${name}\\b`, 'g'), `$${alias}`)
+      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),

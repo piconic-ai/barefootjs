@@ -146,6 +146,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  filterCaptureCollisions,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1083,8 +1084,13 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         : childrenUnderLoop
     this.scope = prevScope
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own row binds again would read the row's item inside the loop;
+    // keep the enclosing value under a loop-scoped alias (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
     const lines: string[] = []
     for (const { name, alias } of rootAliases) lines.push(`{% set ${jinjaIdent(alias)} = ${jinjaIdent(name)} %}`)
+    for (const { name, alias } of captureAliases) lines.push(`{% set ${jinjaIdent(alias)} = ${jinjaIdent(name)} %}`)
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | safe }}`)
@@ -1123,6 +1129,9 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       // since Jinja identifiers have no sigil). Bounded, pre-existing risk:
       // see `lib/ir-scope.ts`'s file header for the general sigil-less
       // text-scan caveat.
+      for (const { name, alias } of captureAliases) {
+        filterCond = filterCond.replace(new RegExp(`(?<![.\\w$])${name}\\b`, 'g'), alias)
+      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),

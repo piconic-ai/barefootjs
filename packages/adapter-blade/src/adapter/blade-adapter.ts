@@ -295,6 +295,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  filterCaptureCollisions,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1262,6 +1263,10 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
         : childrenUnderLoop
     this.scope = prevScope
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own row binds again would read the row's item inside the loop;
+    // keep the enclosing value under a loop-scoped alias (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
     const lines: string[] = []
     // PHP foreach shares its surrounding variable scope. Preserve bindings
     // shadowed by this callback so the enclosing row continues with its value.
@@ -1273,6 +1278,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     for (const { name, alias } of rootAliases) lines.push(`@php(${bladeVar(alias)} = ${bladeVar(name)})`)
+    for (const { name, alias } of captureAliases) lines.push(`@php(${bladeVar(alias)} = ${bladeVar(name)})`)
     lines.push(`{!! $bf->comment("loop:${loop.markerId}") !!}`)
     // See this file's header, divergence 2: raw PHP `foreach` over a
     // null/undefined array raises, unlike Twig's `strict_variables: false`
@@ -1316,6 +1322,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // own `$bf`/`$loop`) can't misfire — the SAME mechanism Kolon uses,
       // made trivially safe here by Blade's `$` sigil (see `lib/ir-scope.ts`'s
       // file header for the analogous point about `extractTopLevelIdentifiers`).
+      for (const { name, alias } of captureAliases) {
+        filterCond = filterCond.replace(new RegExp(`\\$${name}\\b`, 'g'), `$${alias}`)
+      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),

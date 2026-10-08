@@ -95,6 +95,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  filterCaptureCollisions,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -1185,10 +1186,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         ? `<%= bf.comment("loop-i:" + bf.escape_comment_key(${this.convertExpressionToRuby(loop.key)})) %>\n${renderedChildren}`
         : renderedChildren
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own block binds again would read the block param inside the
+    // loop; keep the enclosing value under a loop-scoped local (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same
     // parent each get their own reconciliation range.
     lines.push(`<%= bf.comment("loop:${loop.markerId}") %>`)
+    for (const { name, alias } of captureAliases) lines.push(`<%- ${alias} = ${rubyLocal(name)} -%>`)
     if (sortedHoist && loop.sortComparator) {
       // Evaluator-first: serialize the comparator + emit `bf.sort_eval`;
       // fall back to the structured `bf.sort` for a comparator the
@@ -1321,7 +1327,14 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           filterOwnParam && !filterOwnParam.startsWith('[') && !filterOwnParam.startsWith('{')
             ? filterOwnParam
             : param
-        filterCond = this.renderRubyFilterExpr(loop.filterPredicate.predicate, matchParam, undefined, rubyLocal(param))
+        // With captures to alias, emit the filter's own param as a placeholder
+        // first so the capture rewrite can't touch it, then bind it (#3402).
+        const itemToken = captureAliases.length > 0 ? '__bf_filter_item' : rubyLocal(param)
+        filterCond = this.renderRubyFilterExpr(loop.filterPredicate.predicate, matchParam, undefined, itemToken)
+        for (const { name, alias } of captureAliases) {
+          filterCond = filterCond.replace(new RegExp(`(?<![.\\w@$:])${rubyLocal(name)}\\b`, 'g'), alias)
+        }
+        if (itemToken !== rubyLocal(param)) filterCond = filterCond.replace(/\b__bf_filter_item\b/g, rubyLocal(param))
       } else {
         filterCond = 'true'
       }
