@@ -16,11 +16,21 @@ name: Update Benchmark Results
 # are noisy on shared runners: a human should eyeball the diff against the
 # previous snapshot before it is published as the README.
 #
-# Known limitation of PRs created with GITHUB_TOKEN: they do not trigger
-# `pull_request` workflows. That is acceptable here because the PR only
-# touches benchmarks/README.md, which no `pull_request` workflow's `paths`
-# filter covers (benchmark.yml's `benchmarks/**` would only re-measure).
-# The same shape as the changesets "Version Packages" PR in release.yml.
+# Token. A PR opened or pushed with the default GITHUB_TOKEN does not get
+# its `pull_request` workflows run the way a human's push does (GitHub
+# withholds runs started by that token, except workflow_dispatch and
+# repository_dispatch). ci-heavy-gate.yml has no `paths` filter, so on such
+# a PR `heavy-ci-ran` is simply absent, and AGENTS.md's rule not to merge
+# while that gate is red or missing applies. Two ways to satisfy it:
+#
+#  - set the `BENCHMARK_RESULTS_TOKEN` secret to a fine-grained PAT (this
+#    repo, contents + pull-requests: write). The branch push and the PR
+#    then come from that identity and CI runs as for any contributor;
+#  - with the default token, push to the results branch (e.g. merge main
+#    into it) so a `synchronize` event from a human starts the heavy set,
+#    exactly as AGENTS.md prescribes for a retargeted stacked PR.
+#
+# The generated PR body repeats this for whoever reviews it.
 #
 # Not a `pull_request` workflow, so it belongs to neither the light nor the
 # heavy set of AGENTS.md's stacked-PR policy and scripts/lib/heavy-gate.ts
@@ -54,6 +64,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
+          # Persisted for the branch push below; see the token note above.
+          token: ${{ secrets.BENCHMARK_RESULTS_TOKEN || github.token }}
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
@@ -125,7 +137,8 @@ jobs:
       - name: Open or refresh the pull request
         if: steps.diff.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.BENCHMARK_RESULTS_TOKEN || github.token }}
+          USING_DEFAULT_TOKEN: ${{ secrets.BENCHMARK_RESULTS_TOKEN == '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           body_file="$(mktemp)"
@@ -140,6 +153,18 @@ jobs:
           \`bun benchmarks/runner/update-readme.ts\`. Shared-runner numbers are noisy: compare
           whole columns against the previous snapshot, not single cells, before merging.
           BODY
+          if [ "$USING_DEFAULT_TOKEN" = "true" ]; then
+            cat >> "$body_file" <<BODY
+
+          ## Before merging
+
+          This PR was opened with the default \`GITHUB_TOKEN\`, so GitHub does not start its
+          \`pull_request\` workflows and \`heavy-ci-ran\` is absent. Per AGENTS.md ("CI on
+          stacked PRs"), push to this branch (e.g. merge \`main\` into it) so the heavy set
+          runs on this head before merging — or set the \`BENCHMARK_RESULTS_TOKEN\` secret so
+          future runs open the PR as a contributor.
+          BODY
+          fi
 
           existing="$(gh pr list --head "$RESULTS_BRANCH" --base main --state open --json number --jq '.[0].number')"
           if [ -z "$existing" ]; then

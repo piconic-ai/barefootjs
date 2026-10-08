@@ -63,6 +63,13 @@ jobs:
           bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
 
+      # Unit test for the results-completeness checks update-readme.ts
+      # relies on (benchmarks/runner/validate-results.ts). No other workflow
+      # runs benchmarks/ tests, and these are what stop a filtered local
+      # rerun from being published as the README snapshot.
+      - name: Test benchmark runner
+        run: bun test benchmarks/runner
+
       - name: Build benchmark apps
         run: |
           bun benchmarks/runner/build.ts

@@ -9,8 +9,9 @@
  *
  * Only the text between the `<!-- benchmark-results:start -->` and
  * `<!-- benchmark-results:end -->` markers is replaced; the prose around it
- * is hand-written and left alone. Run every bench in full first (not
- * `--quick`) — this script refuses to publish a quick-mode DOM run.
+ * is hand-written and left alone. Run every bench in full first — this
+ * script refuses a `--quick`, `--framework=` or `--op=` run (see
+ * validate-results.ts), since those overwrite the same JSON files.
  *
  * `.github/workflows/update-benchmark-results.yml` runs the four benches and
  * this script on a schedule and opens a PR with the diff.
@@ -20,6 +21,7 @@
  */
 import { join } from 'node:path'
 import { formatReportMd, type FullResults } from './report.ts'
+import { assertCompleteDomRun, assertCompleteSsrRun } from './validate-results.ts'
 
 const runnerDir = import.meta.dirname
 const benchDir = join(runnerDir, '..')
@@ -80,22 +82,6 @@ async function loadJson<T>(name: string, producer: string): Promise<T> {
     throw new Error(`missing ${path} — run \`bun ${producer}\` first`)
   }
   return JSON.parse(await file.text()) as T
-}
-
-/**
- * `bench-dom.ts --quick` measures 3 iterations per op; a full run measures
- * 10 (5 for the stress ops create10k / append1k / clear10k). Anything under
- * the stress-op count is a quick run and must not be published.
- */
-const MIN_FULL_ITERATIONS = 5
-
-function assertFullRun(dom: FullResults): void {
-  const short = dom.ops.filter((o) => o.ok && o.iterations.length < MIN_FULL_ITERATIONS)
-  if (short.length > 0) {
-    throw new Error(
-      `results/latest.json looks like a --quick run (${short[0]!.op}/${short[0]!.framework} has ${short[0]!.iterations.length} iterations); rerun bench-dom.ts without --quick before publishing`,
-    )
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +194,8 @@ async function main() {
   const ssr = await loadJson<SsrResults>('ssr-latest.json', 'benchmarks/ssr/bench-ssr.ts')
   const mem = await loadJson<SsrMemoryResults>('ssr-memory-latest.json', 'benchmarks/ssr/bench-ssr-memory.ts')
   const re = await loadJson<ReactiveResults>('reactive-latest.json', 'benchmarks/reactive.ts')
-  assertFullRun(dom)
+  assertCompleteDomRun(dom)
+  assertCompleteSsrRun(ssr)
 
   const readme = await Bun.file(readmePath).text()
   const start = readme.indexOf(START)

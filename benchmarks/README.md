@@ -180,7 +180,11 @@ Two workflows:
   below with `runner/update-readme.ts`, and opens or refreshes a PR on the
   `benchmark-results/update` branch with the diff. Review the diff against
   the previous snapshot before merging: single cells swing between runs on
-  shared runners, so compare whole columns.
+  shared runners, so compare whole columns. With the default `GITHUB_TOKEN`
+  the PR gets no `pull_request` workflow runs (so no `heavy-ci-ran`); push
+  to the branch to start them, or set the `BENCHMARK_RESULTS_TOKEN` secret
+  so the workflow opens the PR as a contributor (details in the workflow's
+  header comment).
 
 Two different memory numbers appear in both places, and they are not
 comparable: the DOM suite's **memory** row is a heap DELTA around a
