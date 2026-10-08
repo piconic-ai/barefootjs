@@ -215,17 +215,17 @@ will differ).
 
 | Operation | vanilla | barefoot | react | solid |
 |---|---|---|---|---|
-| create1k | 73.00 ms | 72.45 ms (0.99x) | 105.40 ms (1.44x) | 88.10 ms (1.21x) |
-| replace1k | 98.20 ms | 107.40 ms (1.09x) | 144.45 ms (1.47x) | 118.25 ms (1.20x) |
-| update10th | 18.85 ms | 35.15 ms (1.86x) | 24.10 ms (1.28x) | 17.75 ms (0.94x) |
-| select | 4.45 ms | 0.60 ms (0.13x) | 6.25 ms (1.40x) | 4.05 ms (0.91x) |
-| swap | 19.60 ms | 15.70 ms (0.80x) | 98.25 ms (5.01x) | 20.50 ms (1.05x) |
-| remove | 25.30 ms | 18.05 ms (0.71x) | 28.80 ms (1.14x) | 21.55 ms (0.85x) |
-| create10k | 796.70 ms | 830.70 ms (1.04x) | 1247.20 ms (1.57x) | 863.20 ms (1.08x) |
-| append1k | 333.80 ms | 250.80 ms (0.75x) | 329.20 ms (0.99x) | 313.50 ms (0.94x) |
-| clear10k | 81.80 ms | 75.70 ms (0.93x) | 111.40 ms (1.36x) | 83.10 ms (1.02x) |
-| startup | 26.40 ms | 46.50 ms (1.76x) | 62.20 ms (2.36x) | 31.10 ms (1.18x) |
-| memory (1k rows) | 253.1KB | 752.2KB (2.97x) | 2096.0KB (8.28x) | 1486.3KB (5.87x) |
+| create1k | 77.75 ms | 89.00 ms (1.14x) | 81.85 ms (1.05x) | 75.15 ms (0.97x) |
+| replace1k | 86.90 ms | 106.85 ms (1.23x) | 119.75 ms (1.38x) | 91.75 ms (1.06x) |
+| update10th | 13.65 ms | 16.15 ms (1.18x) | 17.15 ms (1.26x) | 15.45 ms (1.13x) |
+| select | 3.60 ms | 4.60 ms (1.28x) | 4.95 ms (1.37x) | 4.55 ms (1.26x) |
+| swap | 17.20 ms | 18.55 ms (1.08x) | 94.00 ms (5.47x) | 16.60 ms (0.97x) |
+| remove | 21.05 ms | 24.80 ms (1.18x) | 23.85 ms (1.13x) | 21.95 ms (1.04x) |
+| create10k | 786.80 ms | 794.10 ms (1.01x) | 1116.20 ms (1.42x) | 772.30 ms (0.98x) |
+| append1k | 306.30 ms | 325.40 ms (1.06x) | 334.10 ms (1.09x) | 269.50 ms (0.88x) |
+| clear10k | 59.30 ms | 70.00 ms (1.18x) | 113.60 ms (1.92x) | 64.50 ms (1.09x) |
+| startup | 36.80 ms | 43.70 ms (1.19x) | 61.40 ms (1.67x) | 38.10 ms (1.04x) |
+| memory (1k rows) | 253.1KB | 752.9KB (2.97x) | 2094.7KB (8.27x) | 1486.0KB (5.87x) |
 | shipped JS | 2.7KB raw / 1.1KB gzip | 29.2KB raw / 11.2KB gzip (10.06x) | 209.6KB raw / 66.1KB gzip (59.14x) | 17.4KB raw / 6.9KB gzip (6.15x) |
 
 ### SSR + hydration (1,000-row table)
@@ -264,20 +264,27 @@ The block above is generated; what follows is hand-written against the
 snapshot dated there and may lag it — the table is the source of truth.
 
 **DOM update suite.** Compare whole columns, not single cells: individual
-cells swing between runs on shared hardware. In this snapshot BarefootJS
-sits at or below the vanilla baseline on the creation, swap, remove, append
-and clear paths, and its heap per 1,000 rows is the lowest of the three
-frameworks — the compiler emits one consolidated `createEffect` per plain
-loop row (`spec/slot-unification.md` §5a) on top of the lazy row graph (§9),
-which is what moved this column from the ~1.5MB of earlier snapshots. The
-cells where it does not lead: `update10th` (the partial label update runs at
-close to 2x vanilla; it reproduces when re-measured in isolation, so it is
-not run noise), `startup`, and shipped JS, which sits above Solid's. Earlier
-snapshots of this table had other cells on either side; the creation-path
-numbers of the first published run were at 1.4-1.5x before the hoisted
-shared loop template (one HTML parse per loop, clone per row), the
-generation-stamped dependency tracking, and tree-shaking of the runtime
-bundle to each project's used exports landed.
+cells swing between runs on shared hardware (the vanilla `startup` cell
+moved by ten milliseconds between two runs an hour apart). In this snapshot
+BarefootJS sits within roughly 1.0-1.3x of the vanilla baseline on every
+operation, in the same band as Solid and ahead of React on the paths where
+React's reconciliation shows (`swap`, `create10k`, `clear10k`, `startup`).
+Its heap per 1,000 rows is the lowest of the three frameworks — the
+compiler emits one consolidated `createEffect` per plain loop row
+(`spec/slot-unification.md` §5a) on top of the lazy row graph (§9), which is
+what moved this column from the ~1.5MB of earlier snapshots. Shipped JS
+sits above Solid's. The creation-path numbers of the first published run
+were at 1.4-1.5x before the hoisted shared loop template (one HTML parse per
+loop, clone per row), the generation-stamped dependency tracking, and
+tree-shaking of the runtime bundle to each project's used exports landed.
+
+A note on the snapshot before this one: it had `update10th` at ~1.8x and
+`select` at ~0.1x for BarefootJS. Both were artifacts of the app being
+measured without the shared stylesheet (see "Same page everywhere" above):
+an unstyled auto-layout table is far more expensive to relayout after a
+text change, and far cheaper to restyle for a class change. With the
+stylesheet applied both cells sit in the same band as the rest of the
+column.
 
 **SSR + hydration.** Solid's sub-millisecond server render (precompiled
 string templates) is a genuine strength of its SSR design. BarefootJS
