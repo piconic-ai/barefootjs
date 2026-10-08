@@ -3527,6 +3527,29 @@
       }
     }
   ],
+  "nested-loop-filter-captures-shadowing-param": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "tags": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "groups": [
+          {
+            "name": "g1"
+          }
+        ],
+        "tags": []
+      }
+    }
+  ],
   "nested-loop-index-shadows-row-binding": [
     {
       "name": "gen:groups:empty",
@@ -3535,7 +3558,31 @@
       }
     }
   ],
+  "nested-loop-keys-shadows-row-binding": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
   "nested-loop-outer-binding": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
+  "nested-loop-preamble-shadows-row-binding": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
+  "nested-loop-row-binding-shadow-shapes": [
     {
       "name": "gen:groups:empty",
       "props": {

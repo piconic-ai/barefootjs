@@ -1827,6 +1827,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-filter-captures-shadowing-param",
+              "limitations": [
+                "filter-predicate-reads-outer-param-as-root-field"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4500,9 +4506,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-index-shadows-row-binding",
+              "fixture": "nested-loop-filter-captures-shadowing-param",
               "limitations": [
-                "nested-loop-index-misses-row-binding-shadow"
+                "filter-predicate-reads-outer-param-as-root-field"
               ]
             },
             {
@@ -5643,12 +5649,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-loop-index-shadows-row-binding",
-              "limitations": [
-                "nested-loop-index-misses-row-binding-shadow"
               ]
             },
             {
@@ -7585,9 +7585,9 @@
               ]
             },
             {
-              "fixture": "nested-loop-index-shadows-row-binding",
+              "fixture": "nested-loop-filter-captures-shadowing-param",
               "limitations": [
-                "nested-loop-index-misses-row-binding-shadow"
+                "filter-predicate-reads-outer-param-as-root-field"
               ]
             },
             {
@@ -8434,12 +8434,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-loop-index-shadows-row-binding",
-              "limitations": [
-                "nested-loop-index-misses-row-binding-shadow"
               ]
             },
             {
@@ -11352,6 +11346,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-filter-captures-shadowing-param",
+              "limitations": [
+                "filter-predicate-reads-outer-param-as-root-field"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11678,10 +11678,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "nested-ternary-bare-branch",
-        "description": "Nested ternary chain under a non-reactive (module-const) outer condition (#2470)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-ternary-bare-branch.ts",
-        "code": "MODE === 'a'"
+        "fixture": "nested-loop-filter-captures-shadowing-param",
+        "description": "A filter predicate captures the inner item param that shadows an outer row binding",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-filter-captures-shadowing-param.ts",
+        "code": "t === name"
       }
     },
     "binary:>": {

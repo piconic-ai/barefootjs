@@ -93,9 +93,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  // The outer destructure binding lowers to `$item.Name` inside the inner
-  // row too, where the inner index should shadow it (#3392).
-  'nested-loop-index-shadows-row-binding': { limitation: 'nested-loop-index-misses-row-binding-shadow' },
+  // The predicate lowers an enclosing loop param to a root field (`$.Name`)
+  // instead of its range variable (#3396).
+  'nested-loop-filter-captures-shadowing-param': { limitation: 'filter-predicate-reads-outer-param-as-root-field' },
 
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
   // operand throws or reads as `0` here (#3350 covers only `null`).

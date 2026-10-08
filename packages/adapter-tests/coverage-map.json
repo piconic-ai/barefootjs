@@ -5777,6 +5777,21 @@
         "text"
       ]
     },
+    "nested-loop-filter-captures-shadowing-param": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-independent-signal": {
       "kinds": [
         "array-literal",
@@ -5798,6 +5813,18 @@
       ]
     },
     "nested-loop-index-shadows-row-binding": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-keys-shadows-row-binding": {
       "kinds": [
         "identifier",
         "member"
@@ -5841,6 +5868,23 @@
         "text"
       ]
     },
+    "nested-loop-preamble-shadows-row-binding": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-ref-const": {
       "kinds": [
         "array-literal",
@@ -5855,6 +5899,18 @@
         "literal:number",
         "literal:string"
       ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-row-binding-shadow-shapes": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",

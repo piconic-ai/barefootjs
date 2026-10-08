@@ -121,6 +121,9 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   private readonly onUnsupported?: (message: string, reason?: string) => void
   // The Kolon local a getter call reads (#3369); identity without an adapter.
   private readonly memoKolonName: (name: string) => string
+  // The Kolon local an enclosing loop row binds a captured name under
+  // (#3392); identity without an adapter.
+  private readonly rowLocalName: (name: string) => string
 
   constructor(
     param: string,
@@ -128,19 +131,21 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     memoKolonName: (name: string) => string = name => name,
+    rowLocalName: (name: string) => string = name => name,
   ) {
     this.param = param
     this.localVarMap = localVarMap
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
     this.memoKolonName = memoKolonName
+    this.rowLocalName = rowLocalName
   }
 
   identifier(name: string): string {
     if (name === this.param) return `$${this.param}`
     const signal = this.localVarMap.get(name)
     if (signal) return `$${signal}`
-    return `$${name}`
+    return `$${this.rowLocalName(name)}`
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
@@ -344,7 +349,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // #1897 pagination's `Page {currentPage()} of {totalPages}`).
     const literalConst = this.ctx._resolveLiteralConst(name)
     if (literalConst !== null) return literalConst
-    return `$${name}`
+    return `$${this.ctx._rowLocalName(name)}`
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {

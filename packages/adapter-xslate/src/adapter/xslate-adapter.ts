@@ -80,6 +80,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  type ScopeFrame,
   rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
@@ -979,7 +980,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
     // `$param`. Kolon's `$~loopvar.index` provides the 0-based index.
-    const loopVar = loop.objectIteration === 'entries'
+    let loopVar = loop.objectIteration === 'entries'
       ? '__bf_pair'
       : loop.objectIteration
         ? param
@@ -1004,32 +1005,51 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // `parent` is `$__bf_item` walked through the binding's PARENT-prefix
     // `segments` (empty at the loop root, per the `LoopParamBinding` jsdoc) —
     // NOT the same as a fixed binding's full-accessor segments.
+    // A `my` local named like an enclosing row's binding is renamed (#3392).
+    const myBoundNames = [
+      ...(loop.objectIteration === 'entries' ? [loop.index ?? param, param] : []),
+      ...(!loop.objectIteration && loop.iterationShape === 'keys' ? [param] : []),
+      ...(!loop.objectIteration && loop.iterationShape !== 'keys' && loop.index ? [loop.index] : []),
+      ...(supportableDestructure ? (loop.paramBindings ?? []).map(b => b.name) : []),
+      ...(loop.preamble?.declarations ?? []).map(d => d.name),
+    ]
+    const rowNames = new Map<string, string>()
+    // Kolon refuses a `for` target that redeclares an enclosing local too.
+    const renamed = (name: string) => this.scope.isBound(name) ? `__bf_row_${loop.markerId}_${name}` : name
+    if (loopVar === param) {
+      loopVar = renamed(param)
+      if (loopVar !== param) rowNames.set(param, loopVar)
+    }
+    for (const name of myBoundNames) {
+      if (renamed(name) !== name) rowNames.set(name, renamed(name))
+    }
+    const my = (name: string) => rowNames.get(name) ?? name
     const indexLocalLines: string[] = []
     if (loop.objectIteration === 'entries') {
       // `key`/`value` bind off the `.kv()` pair (see the for-header below)
       // — no derived `.index` local needed, unlike the array
       // `iterationShape` cases.
-      indexLocalLines.push(`: my $${loop.index ?? param} = $${loopVar}.key;`)
-      indexLocalLines.push(`: my $${param} = $${loopVar}.value;`)
+      indexLocalLines.push(`: my $${my(loop.index ?? param)} = $${loopVar}.key;`)
+      indexLocalLines.push(`: my $${my(param)} = $${loopVar}.value;`)
     } else if (loop.objectIteration) {
       // 'keys'/'values': `.keys()`/`.values()` already yield the bound
       // value directly — no derived local needed either.
     } else if (loop.iterationShape === 'keys') {
-      indexLocalLines.push(`: my $${param} = $~${loopVar}.index;`)
+      indexLocalLines.push(`: my $${my(param)} = $~${loopVar}.index;`)
     } else if (loop.index) {
-      indexLocalLines.push(`: my $${loop.index} = $~${loopVar}.index;`)
+      indexLocalLines.push(`: my $${my(loop.index)} = $~${loopVar}.index;`)
     }
     if (supportableDestructure) {
       for (const b of loop.paramBindings ?? []) {
         const parent = kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])
         if (b.rest?.kind === 'object') {
           const exclude = b.rest.exclude.map(k => kolonStringLiteral(k.key)).join(', ')
-          indexLocalLines.push(`: my $${b.name} = $bf.omit(${parent}, [${exclude}]);`)
+          indexLocalLines.push(`: my $${my(b.name)} = $bf.omit(${parent}, [${exclude}]);`)
         } else if (b.rest?.kind === 'array') {
-          indexLocalLines.push(`: my $${b.name} = $bf.slice(${parent}, ${b.rest.from}, nil);`)
+          indexLocalLines.push(`: my $${my(b.name)} = $bf.slice(${parent}, ${b.rest.from}, nil);`)
         } else {
           indexLocalLines.push(
-            `: my $${b.name} = ${kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])};`,
+            `: my $${my(b.name)} = ${kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])};`,
           )
         }
       }
@@ -1072,6 +1092,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // loop so an explicit `props.X` inside still reads the root value
     // (#3314). The block keeps a sibling loop's alias from redeclaring it.
     const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
+    const [firstRenamed] = rowNames.keys()
+    const rowFrame = firstRenamed !== undefined ? this.scope.lookup(firstRenamed)?.frame : undefined
+    if (rowFrame) this.rowKolonRenames.set(rowFrame, rowNames)
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1079,7 +1102,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // isn't fully declarable, so there is no partial-lowering case: either
     // every statement is lowered here, or the build already failed.
     const preambleLines = (loop.preamble?.declarations ?? []).map(
-      d => `: my $${d.name} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
+      d => `: my $${my(d.name)} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
     )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.inLoop = prevInLoop
@@ -1136,11 +1159,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       } else {
         filterCond = '1'
       }
-      // Map filter param to loop param (e.g., $t → $todo)
-      if (loop.filterPredicate.param !== param) {
+      // Map filter param to loop param (e.g., $t → $todo), under the row's
+      // renamed local when it has one (#3392).
+      const itemLocal = rowNames.get(param) ?? param
+      if (loop.filterPredicate.param !== itemLocal) {
         filterCond = filterCond.replace(
           new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),
-          `$${param}`
+          `$${itemLocal}`
         )
       }
       lines.push(`: if (${filterCond}) {`)
@@ -1359,6 +1384,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private childrenCaptureCounter = 0
   /** Memos declared under a renamed Kolon local (`collectMemoKolonRenames`, #3369). */
   private memoKolonNames: Map<string, string> = new Map()
+  /**
+   * Renamed Kolon locals per loop row, keyed by the row's `BindingScope`
+   * frame. Kolon refuses a `my` or `for` target that redeclares an enclosing
+   * local, so such a row local is bound as `__bf_row_<marker>_<name>`; `scope`
+   * still decides which row binds a name (#3392).
+   */
+  private rowKolonRenames = new WeakMap<ScopeFrame, Map<string, string>>()
 
   /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
@@ -1760,6 +1792,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         // its receiver.
         (message, reason) => this._recordExprBF101(message, reason),
         name => this.memoKolonNames.get(name) ?? name,
+        name => this.rowLocalName(name),
       ),
     )
   }
@@ -1864,6 +1897,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
+      _rowLocalName: (name) => this.rowLocalName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
     }
@@ -2028,6 +2062,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
+  /** The Kolon local the nearest binding of `name` in `scope` uses (#3392). */
+  private rowLocalName(name: string): string {
+    const hit = this.scope.lookup(name)
+    return (hit && this.rowKolonRenames.get(hit.frame)?.get(name)) ?? name
+  }
+
   private isLoopBoundName(name: string): boolean {
     return this.scope.isBound(name)
   }

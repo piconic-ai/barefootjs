@@ -87,6 +87,7 @@ import {
   collectLoopBoundNames,
   evaluateStaticLiteral,
   BindingScope,
+  type ScopeFrame,
   freeIdentifiers,
   isEventHandlerName,
   isFunctionShapedExpression,
@@ -395,6 +396,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *  })` / `.map(([k, v]) =>` / nested-path destructure resolve instead of
    *  BF104 (#2087 Phase B — see `buildDestructureBindingMap`). */
   private loopBindingStack: Array<Map<string, string>> = []
+  /**
+   * Go accessor text for each destructured row's bindings, keyed by the row's
+   * `BindingScope` frame. `scope` decides which row binds a name; this table
+   * only carries the Go-specific accessor for a `destructure` binding (#3392).
+   */
+  private destructureAccessors = new WeakMap<ScopeFrame, Map<string, string>>()
   /**
    * Stack of object-rest exclude-key maps, parallel to `loopBindingStack`
    * (same push/pop points, innermost last). Only object-rest bindings appear
@@ -6420,10 +6427,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // binding name to its accessor on the range var. Innermost loop wins, and
     // this runs *before* module-const inlining so a binding whose name collides
     // with a module string const still resolves to the loop item.
-    for (let i = this.loopBindingStack.length - 1; i >= 0; i--) {
-      const acc = this.loopBindingStack[i].get(name)
-      if (acc !== undefined) return acc
-    }
+    const acc = this.lookupDestructureBinding(name)
+    if (acc !== undefined) return acc
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
     // Literal-initialized const, module or function scope (`const TRACK = 8`,
@@ -8892,10 +8897,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // (#2486). Innermost-first, and BEFORE module-const inlining so a
           // binding whose name collides with a module string const still
           // resolves to the loop item — same ordering as `identifier` above.
-          for (let i = this.loopBindingStack.length - 1; i >= 0; i--) {
-            const acc = this.loopBindingStack[i].get(expr.name)
-            if (acc !== undefined) return plain(acc)
-          }
+          const acc = this.lookupDestructureBinding(expr.name)
+          if (acc !== undefined) return plain(acc)
           const inlined = this.resolveModuleStringConst(expr.name) ?? this.resolveLiteralConstAsGo(expr.name)
           if (inlined !== null) return plain(inlined)
           if (this.isCurrentLoopItem(expr.name)) {
@@ -9237,6 +9240,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return { bindings, restExcludes }
   }
 
+  /** The destructure accessor `name` resolves to, or undefined when the
+   * nearest binding of `name` in `scope` is not a destructure binding: an
+   * inner item, index or preamble local shadows it (#3392). */
+  private lookupDestructureBinding(name: string): string | undefined {
+    const hit = this.scope.lookup(name)
+    if (hit?.binding.source !== 'destructure') return undefined
+    return this.destructureAccessors.get(hit.frame)?.get(name)
+  }
+
   /** Innermost-first lookup mirroring `loopBindingStack`'s search in
    * `identifier()`, but over the object-rest exclude-key side table. */
   private lookupRestExclude(name: string): { parent: string; excludeKeys: string[] } | undefined {
@@ -9516,7 +9528,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // loop-param stack for the same shape. The key stays reachable only
     // via `loopVarRefCount`'s `$name` bookkeeping below, unchanged by this
     // migration.
-    const scopeLoop: LoopBindingSource = loop.iterationShape === 'keys' ? { ...loop, param: '' } : loop
+    // The keys-shape param is the range *index*, so it binds as `index`: still
+    // the nearest binding for a shadowed outer name (#3392), never the dot.
+    const scopeLoop: LoopBindingSource =
+      loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : loop
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(scopeLoop)
     // Track Go template loop variables. The range *index* variable needs
@@ -9543,6 +9558,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Bindings resolve against the synthetic `$__bf_item` range var.
       const built = this.buildDestructureBindingMap(loop, rangeValue)
       this.loopBindingStack.push(built.bindings)
+      const rowFrame = (loop.paramBindings ?? []).length > 0
+        ? this.scope.lookup(loop.paramBindings![0].name)?.frame
+        : undefined
+      if (rowFrame) this.destructureAccessors.set(rowFrame, built.bindings)
       this.loopRestExcludeStack.push(built.restExcludes)
       pushedBindingMap = true
       if (rangeIndex !== '_') {
