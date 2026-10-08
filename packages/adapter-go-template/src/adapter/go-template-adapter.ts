@@ -87,6 +87,7 @@ import {
   collectLoopBoundNames,
   evaluateStaticLiteral,
   BindingScope,
+  type ScopeFrame,
   freeIdentifiers,
   isEventHandlerName,
   isFunctionShapedExpression,
@@ -396,13 +397,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *  BF104 (#2087 Phase B — see `buildDestructureBindingMap`). */
   private loopBindingStack: Array<Map<string, string>> = []
   /**
-   * One frame per rendered loop, innermost last: the row's destructure
-   * accessors (or null) and the other names the row binds (item, index,
-   * preamble locals). A destructure lookup stops at the first frame that
-   * binds the name, so an inner index named like an outer row's binding
-   * resolves to the inner `$name` rather than the outer accessor (#3392).
+   * Go accessor text for each destructured row's bindings, keyed by the row's
+   * `BindingScope` frame. `scope` decides which row binds a name; this table
+   * only carries the Go-specific accessor for a `destructure` binding (#3392).
    */
-  private loopNameFrames: Array<{ bindings: Map<string, string> | null; names: Set<string> }> = []
+  private destructureAccessors = new WeakMap<ScopeFrame, Map<string, string>>()
   /**
    * Stack of object-rest exclude-key maps, parallel to `loopBindingStack`
    * (same push/pop points, innermost last). Only object-rest bindings appear
@@ -9241,16 +9240,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return { bindings, restExcludes }
   }
 
-  /** The destructure accessor `name` resolves to, innermost row first, or
-   * undefined when a nearer row binds `name` some other way (#3392). */
+  /** The destructure accessor `name` resolves to, or undefined when the
+   * nearest binding of `name` in `scope` is not a destructure binding: an
+   * inner item, index or preamble local shadows it (#3392). */
   private lookupDestructureBinding(name: string): string | undefined {
-    for (let i = this.loopNameFrames.length - 1; i >= 0; i--) {
-      const frame = this.loopNameFrames[i]
-      const acc = frame.bindings?.get(name)
-      if (acc !== undefined) return acc
-      if (frame.names.has(name)) return undefined
-    }
-    return undefined
+    const hit = this.scope.lookup(name)
+    if (hit?.binding.source !== 'destructure') return undefined
+    return this.destructureAccessors.get(hit.frame)?.get(name)
   }
 
   /** Innermost-first lookup mirroring `loopBindingStack`'s search in
@@ -9553,14 +9549,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       addedLoopVars.push(d.name)
     }
     let pushedBindingMap = false
-    let rowBindings: Map<string, string> | null = null
     const outerDestructureRangeVar = this.innermostDestructureRangeVar
     this.innermostDestructureRangeVar = supportableDestructure ? rangeValue : null
     if (supportableDestructure) {
       // Bindings resolve against the synthetic `$__bf_item` range var.
       const built = this.buildDestructureBindingMap(loop, rangeValue)
       this.loopBindingStack.push(built.bindings)
-      rowBindings = built.bindings
+      const rowFrame = (loop.paramBindings ?? []).length > 0
+        ? this.scope.lookup(loop.paramBindings![0].name)?.frame
+        : undefined
+      if (rowFrame) this.destructureAccessors.set(rowFrame, built.bindings)
       this.loopRestExcludeStack.push(built.restExcludes)
       pushedBindingMap = true
       if (rangeIndex !== '_') {
@@ -9580,14 +9578,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // so its `bf_tmpl` companion is fed `.BfLoopItem` instead of `.`. Pushed
     // around the body render only; mirrors the wrapper/constructor
     // `scalarLiteralLoopGoType` gate.
-    this.loopNameFrames.push({
-      bindings: rowBindings,
-      names: new Set([
-        ...(supportableDestructure ? [] : [param]),
-        ...(loop.index ? [loop.index] : []),
-        ...(loop.preamble?.declarations ?? []).map(d => d.name),
-      ]),
-    })
     this.loopScalarItemStack.push(
       this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null,
     )
@@ -9606,7 +9596,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // range item (`.` context) like `data-key` does — restoring first would
     // rewrite `t.id` to `.T.ID` instead of `.ID`.
     const itemMarker = this.loopItemMarker(loop)
-    this.loopNameFrames.pop()
     for (const v of addedLoopVars) {
       const rc = (this.loopVarRefCount.get(v) ?? 1) - 1
       if (rc <= 0) this.loopVarRefCount.delete(v)

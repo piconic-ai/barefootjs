@@ -3527,6 +3527,14 @@
       }
     }
   ],
+  "nested-loop-filter-captures-shadowing-param": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
   "nested-loop-index-shadows-row-binding": [
     {
       "name": "gen:groups:empty",

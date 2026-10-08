@@ -80,6 +80,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  type ScopeFrame,
   rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
@@ -1013,13 +1014,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       ...(loop.preamble?.declarations ?? []).map(d => d.name),
     ]
     const rowNames = new Map<string, string>()
+    // Kolon refuses a `for` target that redeclares an enclosing local too.
+    const renamed = (name: string) => this.scope.isBound(name) ? `__bf_row_${loop.markerId}_${name}` : name
     if (loopVar === param) {
-      // Kolon refuses a `for` target that redeclares an enclosing local too.
-      loopVar = this.scope.isBound(param) ? `__bf_row_${loop.markerId}_${param}` : param
-      rowNames.set(param, loopVar)
+      loopVar = renamed(param)
+      if (loopVar !== param) rowNames.set(param, loopVar)
     }
     for (const name of myBoundNames) {
-      rowNames.set(name, this.scope.isBound(name) ? `__bf_row_${loop.markerId}_${name}` : name)
+      if (renamed(name) !== name) rowNames.set(name, renamed(name))
     }
     const my = (name: string) => rowNames.get(name) ?? name
     const indexLocalLines: string[] = []
@@ -1090,7 +1092,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // loop so an explicit `props.X` inside still reads the root value
     // (#3314). The block keeps a sibling loop's alias from redeclaring it.
     const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
-    this.rowKolonNames.push(rowNames)
+    const [firstRenamed] = rowNames.keys()
+    const rowFrame = firstRenamed !== undefined ? this.scope.lookup(firstRenamed)?.frame : undefined
+    if (rowFrame) this.rowKolonRenames.set(rowFrame, rowNames)
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -1117,7 +1121,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       loop.bodyIsItemConditional && loop.key
         ? `<: $bf.comment("loop-i:" ~ $bf.escape_comment_key(${this.convertExpressionToKolon(loop.key)})) | mark_raw :>\n${childrenUnderLoop}`
         : childrenUnderLoop
-    this.rowKolonNames.pop()
     this.scope = prevScope
 
     const lines: string[] = []
@@ -1382,12 +1385,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   /** Memos declared under a renamed Kolon local (`collectMemoKolonRenames`, #3369). */
   private memoKolonNames: Map<string, string> = new Map()
   /**
-   * One frame per rendered loop row, innermost last: each name the row binds
-   * mapped to its Kolon local. Kolon refuses a `my` that redeclares an
-   * enclosing row's local, so such a local is renamed to
-   * `__bf_row_<marker>_<name>` (#3392).
+   * Renamed Kolon locals per loop row, keyed by the row's `BindingScope`
+   * frame. Kolon refuses a `my` or `for` target that redeclares an enclosing
+   * local, so such a row local is bound as `__bf_row_<marker>_<name>`; `scope`
+   * still decides which row binds a name (#3392).
    */
-  private rowKolonNames: Array<Map<string, string>> = []
+  private rowKolonRenames = new WeakMap<ScopeFrame, Map<string, string>>()
 
   /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
@@ -1789,6 +1792,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         // its receiver.
         (message, reason) => this._recordExprBF101(message, reason),
         name => this.memoKolonNames.get(name) ?? name,
+        name => this.rowLocalName(name),
       ),
     )
   }
@@ -1893,13 +1897,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
-      _rowLocalName: (name) => {
-        for (let i = this.rowKolonNames.length - 1; i >= 0; i--) {
-          const local = this.rowKolonNames[i].get(name)
-          if (local !== undefined) return local
-        }
-        return name
-      },
+      _rowLocalName: (name) => this.rowLocalName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
     }
@@ -2064,6 +2062,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
+  /** The Kolon local the nearest binding of `name` in `scope` uses (#3392). */
+  private rowLocalName(name: string): string {
+    const hit = this.scope.lookup(name)
+    return (hit && this.rowKolonRenames.get(hit.frame)?.get(name)) ?? name
+  }
+
   private isLoopBoundName(name: string): boolean {
     return this.scope.isBound(name)
   }
