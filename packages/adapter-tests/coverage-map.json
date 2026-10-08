@@ -3009,6 +3009,40 @@
         "text"
       ]
     },
+    "filter-capture-keeps-same-name-literal": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-capture-reserved-and": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-capture-shadowed-by-map-param": {
       "kinds": [
         "binary",

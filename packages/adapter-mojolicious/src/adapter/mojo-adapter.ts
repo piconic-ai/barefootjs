@@ -66,6 +66,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1105,6 +1106,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
     const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range (#1087).
@@ -1217,17 +1219,21 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
-        filterCond = this.renderPerlFilterExpr(
-          loop.filterPredicate.predicate,
-          loop.filterPredicate.param
-        )
+        // The aliases render and type like the enclosing names they keep (#3402).
+        const scopeBeforeAliases = this.scope
+        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
+        try {
+          filterCond = this.renderPerlFilterExpr(
+            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
+            loop.filterPredicate.param
+          )
+        } finally {
+          this.scope = scopeBeforeAliases
+        }
       } else {
         filterCond = '1'
       }
       // Map filter param to loop param (e.g., $t → $todo)
-      for (const { name, alias } of captureAliases) {
-        filterCond = filterCond.replace(new RegExp(`\\$${name}\\b`, 'g'), `$${alias}`)
-      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),

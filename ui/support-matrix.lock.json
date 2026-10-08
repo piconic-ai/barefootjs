@@ -11654,10 +11654,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "filter-capture-shadowed-by-map-param",
-        "description": "A filter predicate capture survives a following map param of the same name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-capture-shadowed-by-map-param.ts",
-        "code": "t === name"
+        "fixture": "filter-capture-reserved-and",
+        "description": "A filter capture named like a template keyword reads the enclosing value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-capture-reserved-and.ts",
+        "code": "t === and"
       }
     },
     "binary:>": {

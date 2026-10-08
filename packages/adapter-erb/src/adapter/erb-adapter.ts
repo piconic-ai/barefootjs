@@ -96,6 +96,7 @@ import {
   derivesScopeFromSlot,
   BindingScope,
   filterCaptureCollisions,
+  renameFreeIdentifiers,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -1190,6 +1191,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // loop's own block binds again would read the block param inside the
     // loop; keep the enclosing value under a loop-scoped local (#3402).
     const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same
     // parent each get their own reconciliation range.
@@ -1327,14 +1329,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           filterOwnParam && !filterOwnParam.startsWith('[') && !filterOwnParam.startsWith('{')
             ? filterOwnParam
             : param
-        // With captures to alias, emit the filter's own param as a placeholder
-        // first so the capture rewrite can't touch it, then bind it (#3402).
-        const itemToken = captureAliases.length > 0 ? '__bf_filter_item' : rubyLocal(param)
-        filterCond = this.renderRubyFilterExpr(loop.filterPredicate.predicate, matchParam, undefined, itemToken)
-        for (const { name, alias } of captureAliases) {
-          filterCond = filterCond.replace(new RegExp(`(?<![.\\w@$:])${rubyLocal(name)}\\b`, 'g'), alias)
+        // The aliases render and type like the enclosing names they keep (#3402).
+        const scopeBeforeAliases = this.scope
+        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
+        try {
+          filterCond = this.renderRubyFilterExpr(
+            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
+            matchParam,
+            undefined,
+            rubyLocal(param),
+          )
+        } finally {
+          this.scope = scopeBeforeAliases
         }
-        if (itemToken !== rubyLocal(param)) filterCond = filterCond.replace(/\b__bf_filter_item\b/g, rubyLocal(param))
       } else {
         filterCond = 'true'
       }

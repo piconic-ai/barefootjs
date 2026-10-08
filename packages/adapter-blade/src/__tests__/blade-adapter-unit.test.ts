@@ -816,3 +816,16 @@ export function C(props: { rows: string[] }) {
     expect(template).not.toContain('@php($__bf_saved_l0_0 = ')
   })
 })
+
+describe('BladeAdapter - filter capture shadowed by the following map param (#3402)', () => {
+  test('a capture named `loop` keeps the mangled enclosing local', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { tags: string[] }) {
+  return <ul>{props.tags.map(loop => <li key={loop}>{props.tags.filter(t => t === loop).map(loop => <i key={loop}>{loop}</i>)}</li>)}</ul>
+}
+`)
+    expect(template).toContain('@php($__bf_cap_l0_loop = $loop_)')
+    expect(template).toMatch(/\$__bf_cap_l0_loop\b/)
+    expect(template).not.toMatch(/\$bf->eq\(\$loop_, \$loop_\)/)
+  })
+})

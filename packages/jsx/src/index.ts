@@ -250,7 +250,7 @@ export { ErrorCodes, createError, formatError, generateCodeFrame } from './error
 export { isValueReferenceIdentifier, collectValueReferencedNames } from './value-references.ts'
 
 // Expression Parser
-export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, materializeGetterCalls, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, hasUnsafeStyleValue, parseProviderObjectLiteral, isFunctionShapedExpression, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
+export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, renameFreeIdentifiers, materializeGetterCalls, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, hasUnsafeStyleValue, parseProviderObjectLiteral, isFunctionShapedExpression, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
 export type { StyleObjectEntry } from './expression-parser.ts'
 export { literalMemberIndex } from './literal-member-index.ts'
 export { PARSED_EXPR_KINDS, ARRAY_METHOD_NAMES, SORT_KEY_TYPES, SORT_KEY_TARGETS, SORT_KEY_DIRECTIONS } from './expression-parser.ts'

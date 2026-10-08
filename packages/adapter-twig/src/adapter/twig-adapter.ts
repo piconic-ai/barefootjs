@@ -202,6 +202,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1174,6 +1175,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
     const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
@@ -1202,10 +1204,17 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
-        filterCond = this.renderTwigFilterExpr(
-          loop.filterPredicate.predicate,
-          loop.filterPredicate.param
-        )
+        // The aliases render and type like the enclosing names they keep (#3402).
+        const scopeBeforeAliases = this.scope
+        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
+        try {
+          filterCond = this.renderTwigFilterExpr(
+            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
+            loop.filterPredicate.param
+          )
+        } finally {
+          this.scope = scopeBeforeAliases
+        }
         // See the file header, divergence 1: the loop-hoist filter test is a
         // condition position too.
         filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)
@@ -1218,9 +1227,6 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       // since Twig identifiers have no sigil). Bounded, pre-existing risk:
       // see `lib/ir-scope.ts`'s file header for the general sigil-less
       // text-scan caveat.
-      for (const { name, alias } of captureAliases) {
-        filterCond = filterCond.replace(new RegExp(`(?<![.\\w$])${name}\\b`, 'g'), alias)
-      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),

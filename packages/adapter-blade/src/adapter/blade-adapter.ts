@@ -296,6 +296,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1267,6 +1268,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
     const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // PHP foreach shares its surrounding variable scope. Preserve bindings
     // shadowed by this callback so the enclosing row continues with its value.
@@ -1306,10 +1308,17 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
-        filterCond = this.renderBladeFilterExpr(
-          loop.filterPredicate.predicate,
-          loop.filterPredicate.param
-        )
+        // The aliases render and type like the enclosing names they keep (#3402).
+        const scopeBeforeAliases = this.scope
+        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
+        try {
+          filterCond = this.renderBladeFilterExpr(
+            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
+            loop.filterPredicate.param
+          )
+        } finally {
+          this.scope = scopeBeforeAliases
+        }
         // See the file header, divergence tied to `expr/emitters.ts`'s
         // divergence 4: the loop-hoist filter test is a condition position too.
         filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)
@@ -1322,9 +1331,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // own `$bf`/`$loop`) can't misfire — the SAME mechanism Kolon uses,
       // made trivially safe here by Blade's `$` sigil (see `lib/ir-scope.ts`'s
       // file header for the analogous point about `extractTopLevelIdentifiers`).
-      for (const { name, alias } of captureAliases) {
-        filterCond = filterCond.replace(new RegExp(`\\$${name}\\b`, 'g'), `$${alias}`)
-      }
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
           new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),

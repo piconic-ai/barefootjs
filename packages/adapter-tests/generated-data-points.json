@@ -2129,6 +2129,22 @@
       }
     }
   ],
+  "filter-capture-keeps-same-name-literal": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
+  "filter-capture-reserved-and": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
   "filter-capture-shadowed-by-map-param": [
     {
       "name": "gen:tags:empty",
