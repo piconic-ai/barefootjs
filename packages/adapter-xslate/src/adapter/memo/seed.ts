@@ -13,6 +13,7 @@ import {
   type ComponentIR,
   type ContextConsumer,
   collectContextConsumers,
+  collectLoopBoundNames,
   computeSsrSeedPlan,
 } from '@barefootjs/jsx'
 
@@ -67,6 +68,27 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
  * `opaque` steps emit nothing (the runtime supplies the reader, or the
  * adapter's ssr-defaults path already covers it). (#1297, #2075, #2679)
  */
+/**
+ * Derived memos whose name some `.map()`/`.filter()` callback in the same
+ * component also binds as its item or index param (#3369), mapped to the
+ * Kolon local they are declared and read under instead. A derived memo is a
+ * template-level `: my $<name>`, and Kolon refuses a loop variable (or any
+ * nested `my`) that redeclares an enclosing lexical (`for … -> $label` →
+ * `Expected '{', but got '$label'`), so the memo moves out of the row param's
+ * way: `__bf_memo_<name>` follows the adapter's `__bf_` internal-local
+ * convention (`__bf_item`, `__bf_seed_*`). The row param keeps its own name,
+ * so reads inside the row still resolve to the row, as in JavaScript.
+ */
+export function collectMemoKolonRenames(ir: ComponentIR): Map<string, string> {
+  const plan = ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata)
+  const loopBound = collectLoopBoundNames(ir)
+  const renames = new Map<string, string>()
+  for (const step of plan.steps) {
+    if (step.kind === 'derived' && loopBound.has(step.name)) renames.set(step.name, `__bf_memo_${step.name}`)
+  }
+  return renames
+}
+
 export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR): string {
   // Package G attached this to metadata at compile time; the `??` fallback
   // only covers hand-built metadata in older tests that predate the attached
@@ -77,7 +99,13 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
     if (step.kind !== 'derived') continue
     // `'value'` — this RHS is an assignment, not a render (#2696 review).
     const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed, 'value')
-    if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) continue
+    const local = ctx.memoKolonName(step.name)
+    if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) {
+      // Not computed in-template: the value arrives as the stash var
+      // `$<name>`. A renamed memo still needs its local bound to it.
+      if (local !== step.name) lines.push(`: my $${local} = $${step.name};`)
+      continue
+    }
     if (new RegExp(`\\$${step.name}\\b`).test(kolon)) {
       // Self-referencing lowering (#2679): capture the RHS into a
       // throwaway local BEFORE `$<name>` is declared — `$<name>` inside
@@ -90,10 +118,10 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
       // unique per plan (each step declares a distinct local).
       const tmp = `__bf_seed_${step.name}`
       lines.push(`: my $${tmp} = ${kolon};`)
-      lines.push(`: my $${step.name} = $${tmp};`)
+      lines.push(`: my $${local} = $${tmp};`)
       continue
     }
-    lines.push(`: my $${step.name} = ${kolon};`)
+    lines.push(`: my $${local} = ${kolon};`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
 }

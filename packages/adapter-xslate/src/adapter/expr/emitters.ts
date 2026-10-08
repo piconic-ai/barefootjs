@@ -119,17 +119,21 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   // (#2038). Optional so emitter construction stays possible without an
   // adapter; a missing hook keeps the old silent-degrade emit.
   private readonly onUnsupported?: (message: string, reason?: string) => void
+  // The Kolon local a getter call reads (#3369); identity without an adapter.
+  private readonly memoKolonName: (name: string) => string
 
   constructor(
     param: string,
     localVarMap: Map<string, string>,
     isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
+    memoKolonName: (name: string) => string = name => name,
   ) {
     this.param = param
     this.localVarMap = localVarMap
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
+    this.memoKolonName = memoKolonName
   }
 
   identifier(name: string): string {
@@ -167,7 +171,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
     // Signal getter calls: filter() → $filter
     if (callee.kind === 'identifier' && args.length === 0) {
-      return `$${callee.name}`
+      return `$${this.memoKolonName(callee.name)}`
     }
     return emit(callee)
   }
@@ -390,9 +394,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       )
       return "''"
     }
-    // Signal getter: count() → $count
+    // Signal getter: count() → $count (a renamed memo reads its own local)
     if (callee.kind === 'identifier' && args.length === 0) {
-      return `$${callee.name}`
+      return `$${this.ctx._memoKolonName(callee.name)}`
     }
     // Env-signal method call (#1922): `searchParams().get('sort')` is a real
     // method call on the per-request `$searchParams` reader object, not the

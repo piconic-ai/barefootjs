@@ -3602,11 +3602,23 @@
           ]
         }
       },
-      "memo-dependency-loop-shadow": {
-        "xslate": {
+      "memo-loop-param-collision": {
+        "blade": {
           "kind": "render",
           "limitations": [
-            "loop-param-named-like-memo"
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-index-param-overwrites-same-named-local"
           ]
         }
       },
@@ -5645,9 +5657,9 @@
         "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
       },
-      "memo-dependency-loop-shadow": {
-        "description": "A memo read in a loop row resolves its dependencies in its declaration scope, not against a…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-dependency-loop-shadow.ts"
+      "memo-loop-param-collision": {
+        "description": "Loop params named like memos shadow them only inside the row, with memo reads before and after the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-loop-param-collision.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
@@ -6100,17 +6112,19 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
-    "loop-param-named-like-memo": {
-      "title": "A `.map()` row param named like a memo",
+    "loop-index-param-overwrites-same-named-local": {
+      "title": "A `.map()` param named like a template-level local overwrites it after the loop",
       "kind": "silent",
-      "given": "a `.map()` callback whose row param has the same name as a memo of the component (`props.rows.map(label => …)` beside `const label = createMemo(…)`)",
-      "expected": "the row param shadows the memo inside the row, as in JavaScript",
-      "actual": "throws at render time instead of rendering: the memo compiles to a template-level `my $label`, and Kolon refuses a `for … -> $label` loop variable that redeclares it (`Expected '{', but got '$label'`)",
+      "given": "a `.map((label, i) => …)` callback whose params have the same names as component memos read after the loop (`const i = createMemo(() => n() * 2)` and `data-i={i()}` below the loop)",
+      "expected": "the params shadow the memos only inside the row; the reads after the loop render the memos (`data-i=\"10\"`)",
+      "actual": "renders the last row values after the loop (`data-i=\"1\"`): the index binds with a template-level `set` inside the loop body (Pebble, Twig), and PHP `foreach` also binds the item param in the template scope (Blade), so they overwrite the memos of the same names",
       "fixtures": [
-        "memo-dependency-loop-shadow"
+        "memo-loop-param-collision"
       ],
       "adapters": [
-        "xslate"
+        "blade",
+        "pebble",
+        "twig"
       ]
     },
     "loop-row-child-children-attrs-frozen": {

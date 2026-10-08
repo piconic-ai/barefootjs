@@ -70,6 +70,9 @@ export interface XslateEmitContext {
    * `isOpaqueLocalAccessorName` (`@barefootjs/jsx`).
    */
   _isOpaqueLocalAccessorCall(name: string): boolean
+  /** The Kolon local a getter call reads: a memo renamed out of a row
+   * param's way (`collectMemoKolonRenames`, #3369), else the name itself. */
+  _memoKolonName(name: string): string
 
   _recordExprBF101(message: string, reason?: string): void
 
@@ -132,4 +135,6 @@ export interface XslateMemoContext {
    * classification the seed plan already used.
    */
   convertExpressionToKolon(expr: string, preParsed?: ParsedExpr, pos?: 'rendered' | 'value'): string
+  /** The Kolon local a memo is declared under (`collectMemoKolonRenames`, #3369). */
+  memoKolonName(name: string): string
 }

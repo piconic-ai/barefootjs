@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // The index param `i` binds via `{% set i = loop.index %}` inside the
+  // loop, which overwrites the template-level memo `i`, so `data-i` after
+  // the loop renders the last index instead of the memo.
+  'memo-loop-param-collision': { limitation: 'loop-index-param-overwrites-same-named-local' },
   // `s() * 2` with `s()` = `null`: the native `*` raises on the nil
   // operand at render, where JS coerces `null` to `0` (#3322).
   'nullish-signal-arithmetic-memo': { limitation: 'null-signal-arithmetic-raises' },
