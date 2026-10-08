@@ -73,6 +73,8 @@ export interface XslateEmitContext {
   /** The Kolon local a getter call reads: a memo renamed out of a row
    * param's way (`collectMemoKolonRenames`, #3369), else the name itself. */
   _memoKolonName(name: string): string
+  /** The Kolon local a loop row binds `name` under (`__bf_row_<marker>_<name>` when renamed, #3392). */
+  _rowLocalName(name: string): string
 
   _recordExprBF101(message: string, reason?: string): void
 

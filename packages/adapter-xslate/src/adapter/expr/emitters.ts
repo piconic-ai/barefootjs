@@ -344,7 +344,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // #1897 pagination's `Page {currentPage()} of {totalPages}`).
     const literalConst = this.ctx._resolveLiteralConst(name)
     if (literalConst !== null) return literalConst
-    return `$${name}`
+    return `$${this.ctx._rowLocalName(name)}`
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
