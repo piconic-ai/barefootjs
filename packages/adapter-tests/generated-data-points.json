@@ -3569,6 +3569,14 @@
       }
     }
   ],
+  "nested-destructured-rows-read-outer-list": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": []
+      }
+    }
+  ],
   "nested-loop-addition-shadowing": [
     {
       "name": "gen:groups:empty",

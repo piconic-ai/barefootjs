@@ -32,6 +32,7 @@ import { fixture as nestedLoopFilterCapturesShadowingParam } from './nested-loop
 import { fixture as nestedLoopKeysShadowsRowBinding } from './nested-loop-keys-shadows-row-binding'
 import { fixture as nestedLoopFilterCapturesOuterBindings } from './nested-loop-filter-captures-outer-bindings'
 import { fixture as nestedLoopFilterReadsOuterDestructureList } from './nested-loop-filter-reads-outer-destructure-list'
+import { fixture as nestedDestructuredRowsReadOuterList } from './nested-destructured-rows-read-outer-list'
 import { fixture as filterCaptureShadowedByMapParam } from './filter-capture-shadowed-by-map-param'
 import { fixture as filterCaptureKeepsSameNameLiteral } from './filter-capture-keeps-same-name-literal'
 import { fixture as filterCaptureReservedAnd } from './filter-capture-reserved-and'
@@ -1584,6 +1585,7 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopKeysShadowsRowBinding,
   nestedLoopFilterCapturesOuterBindings,
   nestedLoopFilterReadsOuterDestructureList,
+  nestedDestructuredRowsReadOuterList,
   filterCaptureShadowedByMapParam,
   filterCaptureKeepsSameNameLiteral,
   filterCaptureReservedAnd,

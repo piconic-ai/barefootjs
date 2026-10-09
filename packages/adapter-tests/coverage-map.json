@@ -5852,6 +5852,18 @@
         "text"
       ]
     },
+    "nested-destructured-rows-read-outer-list": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-elements": {
       "kinds": [
         "call",
