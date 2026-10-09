@@ -7443,6 +7443,18 @@
         "text"
       ]
     },
+    "reserved-name-in-sibling-loops": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "reserved-word-child-signal": {
       "kinds": [
         "identifier",

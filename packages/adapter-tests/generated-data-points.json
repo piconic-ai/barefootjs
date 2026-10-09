@@ -4979,6 +4979,26 @@
       }
     }
   ],
+  "reserved-name-in-sibling-loops": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": [],
+        "b": [
+          "second"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": [
+          "first"
+        ],
+        "b": []
+      }
+    }
+  ],
   "return-logical-or": [
     {
       "name": "gen:label:empty",

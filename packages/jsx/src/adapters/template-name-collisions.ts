@@ -1,5 +1,5 @@
-import { collectLoopBoundNames } from './loop-bound-names.ts'
-import type { CompilerError, ComponentIR } from '../types.ts'
+import { BindingScope } from '../scope/binding-scope.ts'
+import type { CompilerError, ComponentIR, IRNode } from '../types.ts'
 
 /**
  * BF105: two distinct source names of a component that an adapter's
@@ -15,7 +15,8 @@ import type { CompilerError, ComponentIR } from '../types.ts'
  *
  * The names checked are the ones the adapter turns into bare template
  * variables: props, local consts and functions, signal getters and setters,
- * memos, and every loop binding. `ident` is the adapter's own mangling
+ * memos, and the bindings of each loop row together with its enclosing
+ * rows (`BindingScope`). `ident` is the adapter's own mangling
  * (`jinjaIdent`, `twigIdent`, …). One error per colliding group.
  */
 export function templateNameCollisionErrors(
@@ -26,35 +27,91 @@ export function templateNameCollisionErrors(
   componentName: string,
 ): CompilerError[] {
   const { metadata } = ir
-  const names = new Set<string>([
+  const rootNames = new Set<string>([
     ...propNames,
     ...metadata.localConstants.map(c => c.name),
     ...metadata.localFunctions.map(f => f.name),
     ...metadata.signals.flatMap(s => (s.setter ? [s.getter, s.setter] : [s.getter])),
     ...metadata.memos.map(m => m.name),
-    ...collectLoopBoundNames(ir),
   ])
-  const byTarget = new Map<string, string[]>()
-  for (const name of names) {
-    const target = ident(name)
-    const group = byTarget.get(target)
-    if (group) group.push(name)
-    else byTarget.set(target, [name])
-  }
   const errors: CompilerError[] = []
-  for (const [target, group] of byTarget) {
-    if (group.length < 2) continue
-    const list = group.map(n => `\`${n}\``).join(' and ')
-    errors.push({
-      code: 'BF105',
-      severity: 'error',
-      message: `${list} both become the ${adapterName} template variable \`${target}\`, so they would read the same value. ${adapterName} reserves some names and renames them, and the new name collides with another name in this component.`,
-      loc: { file: `${componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-      suggestion: {
-        message: `Rename one of ${list} so the two names stay distinct after the ${adapterName} renaming.`,
-        escape: [{ kind: 'rewrite' }],
-      },
-    })
+  const reported = new Set<string>()
+  // Only names visible at the same point can collide: the component's own
+  // names plus the bindings of the enclosing loop rows. Sibling loops never
+  // see each other's bindings, so `a.map(loop => …)` next to
+  // `b.map(__bf_loop => …)` is fine.
+  const check = (scope: BindingScope): void => {
+    const byTarget = new Map<string, string[]>()
+    for (const name of new Set([...rootNames, ...scope.boundNames()])) {
+      const target = ident(name)
+      const group = byTarget.get(target)
+      if (group) group.push(name)
+      else byTarget.set(target, [name])
+    }
+    for (const [target, group] of byTarget) {
+      if (group.length < 2) continue
+      const key = `${target}\0${[...group].sort().join('\0')}`
+      if (reported.has(key)) continue
+      reported.add(key)
+      const list = group.map(n => `\`${n}\``).join(' and ')
+      errors.push({
+        code: 'BF105',
+        severity: 'error',
+        message: `${list} both become the ${adapterName} template variable \`${target}\`, so they would read the same value. ${adapterName} reserves some names and renames them, and the new name collides with another name in this component.`,
+        loc: { file: `${componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message: `Rename one of ${list} so the two names stay distinct after the ${adapterName} renaming.`,
+          escape: [{ kind: 'rewrite' }],
+        },
+      })
+    }
   }
+  const visit = (node: IRNode | null | undefined, scope: BindingScope): void => {
+    if (!node) return
+    switch (node.type) {
+      case 'element':
+      case 'component':
+      case 'fragment':
+      case 'provider':
+        for (const child of node.children) visit(child, scope)
+        break
+      case 'async':
+        visit(node.fallback, scope)
+        for (const child of node.children) visit(child, scope)
+        break
+      case 'loop': {
+        const row = scope.enterLoopRow(node)
+        check(row)
+        for (const child of node.children) visit(child, row)
+        if (node.childComponent) {
+          for (const child of node.childComponent.children) visit(child, row)
+        }
+        for (const nested of node.nestedComponents ?? []) {
+          for (const child of nested.children) visit(child, row)
+        }
+        for (const seg of node.flatMapCallback?.segments ?? []) {
+          if (seg.kind === 'jsx') visit(seg.ir, row)
+        }
+        for (const seg of node.preamble?.segments ?? []) {
+          if (seg.kind === 'jsx') visit(seg.ir, row)
+        }
+        break
+      }
+      case 'conditional':
+        visit(node.whenTrue, scope)
+        visit(node.whenFalse, scope)
+        break
+      case 'if-statement':
+        visit(node.consequent, scope)
+        if (node.alternate) visit(node.alternate, scope)
+        break
+      case 'text':
+      case 'expression':
+      case 'slot':
+        break
+    }
+  }
+  check(BindingScope.EMPTY)
+  visit(ir.root, BindingScope.EMPTY)
   return errors
 }
