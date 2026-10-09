@@ -2,8 +2,8 @@ import { createFixture } from '../src/types'
 
 /**
  * Sibling of `map-param-named-loop` (#3404): props named `loop` and `loop_`
- * stay distinct. Adapters that mangle a reserved word with a trailing `_`
- * also mangle the already-suffixed twin, so the two never collide.
+ * stay distinct. Jinja, MiniJinja, Twig and Pebble rename `loop` to
+ * `__bf_loop` rather than `loop_`, so the two never collide there.
  */
 export const fixture = createFixture({
   id: 'reserved-name-and-suffixed-twin',

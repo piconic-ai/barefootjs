@@ -4792,6 +4792,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4961,6 +4967,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
               ]
             },
             {
@@ -5320,6 +5332,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5495,6 +5513,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
               ]
             },
             {
@@ -7811,6 +7835,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7932,6 +7962,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
               ]
             },
             {
@@ -8195,6 +8231,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8322,6 +8364,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
               ]
             },
             {

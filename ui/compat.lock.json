@@ -4801,6 +4801,60 @@
           ]
         }
       },
+      "reserved-name-and-internal-twin": {
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-suffixed-twin"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-suffixed-twin"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-suffixed-twin"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-suffixed-twin"
+          }
+        }
+      },
       "reserved-name-and-suffixed-twin": {
         "blade": {
           "kind": "render",
@@ -5739,6 +5793,10 @@
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       },
+      "reserved-name-and-internal-twin": {
+        "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-internal-twin.ts"
+      },
       "reserved-name-and-suffixed-twin": {
         "description": "Props named loop and loop_ render their own values",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-suffixed-twin.ts"
@@ -6383,6 +6441,25 @@
       ],
       "diagnostics": [
         "BF063"
+      ]
+    },
+    "reserved-name-collides-with-internal-name": {
+      "title": "Reserved name and the internal name it is renamed to",
+      "kind": "refusal",
+      "given": "a component that uses both `loop` and `__bf_loop` as names",
+      "expected": "each name renders its own value",
+      "actual": "the compiler refuses with BF105",
+      "fixtures": [
+        "reserved-name-and-internal-twin"
+      ],
+      "adapters": [
+        "jinja",
+        "minijinja",
+        "pebble",
+        "twig"
+      ],
+      "diagnostics": [
+        "BF105"
       ]
     },
     "reserved-name-suffixed-twin-collides": {

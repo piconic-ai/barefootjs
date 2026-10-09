@@ -4868,6 +4868,29 @@
       }
     }
   ],
+  "reserved-name-and-internal-twin": [
+    {
+      "name": "gen:loop:empty",
+      "props": {
+        "loop": "",
+        "__bf_loop": "second"
+      }
+    },
+    {
+      "name": "gen:loop:markup",
+      "props": {
+        "loop": "<b>&\"'</b>",
+        "__bf_loop": "second"
+      }
+    },
+    {
+      "name": "gen:loop:multibyte",
+      "props": {
+        "loop": "日本語",
+        "__bf_loop": "second"
+      }
+    }
+  ],
   "reserved-name-and-suffixed-twin": [
     {
       "name": "gen:loop:empty",

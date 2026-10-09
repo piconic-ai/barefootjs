@@ -248,6 +248,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -466,6 +467,9 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
+    // Two source names that Pebble's renaming of reserved names turns into one
+    // template variable would read the same value (#3404).
+    this.errors.push(...templateNameCollisionErrors(ir, this.propsParams.map(p => p.name), pebbleIdent, 'Pebble', this.componentName))
     this.childrenCaptureCounter = 0
 
     // Mirror of the Jinja/Twig adapters' BF103 check: a child component

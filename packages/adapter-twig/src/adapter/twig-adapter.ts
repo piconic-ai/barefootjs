@@ -202,6 +202,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -423,6 +424,9 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
+    // Two source names that Twig's renaming of reserved names turns into one
+    // template variable would read the same value (#3404).
+    this.errors.push(...templateNameCollisionErrors(ir, this.propsParams.map(p => p.name), twigIdent, 'Twig', this.componentName))
     this.childrenCaptureCounter = 0
 
     // Mirror of the Jinja adapter's BF103 check: a child component referenced

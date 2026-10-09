@@ -172,6 +172,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -412,6 +413,9 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
+    // Two source names that MiniJinja's renaming of reserved names turns into one
+    // template variable would read the same value (#3404).
+    this.errors.push(...templateNameCollisionErrors(ir, this.propsParams.map(p => p.name), minijinjaIdent, 'MiniJinja', this.componentName))
     this.childrenCaptureCounter = 0
 
     // Mirror of the Xslate adapter's BF103 check: a child component referenced

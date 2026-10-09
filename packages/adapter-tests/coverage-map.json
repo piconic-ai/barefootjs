@@ -7413,6 +7413,16 @@
       "axes": [],
       "contexts": []
     },
+    "reserved-name-and-internal-twin": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "reserved-name-and-suffixed-twin": {
       "kinds": [
         "identifier",
