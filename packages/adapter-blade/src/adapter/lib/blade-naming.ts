@@ -97,15 +97,17 @@ const RESERVED_WORDS = new Set(['bf', 'this', '__env', '__data', '__path', 'app'
 
 /**
  * Mangle a JS identifier (prop name, signal getter, loop param, …) into a
- * Blade-safe NAME: reserved words get a trailing `_` suffix, everything else
- * passes through unchanged. This is the BARE (no `$`) form — used for a PHP
+ * Blade-safe NAME: reserved words map to the compiler-internal `__bf_<name>`,
+ * everything else passes through unchanged. A trailing `_` would collide
+ * with a real `loop_` (#3408), and `__bf_<name>` is not reserved, so mangling
+ * an already-mangled name leaves it unchanged. This is the BARE (no `$`) form — used for a PHP
  * array KEY a prop is threaded through as (`naming.php`'s `blade_ident`,
  * `BladeBackend::render_named`'s per-prop mangling). Every place the adapter
  * emits an actual Blade VARIABLE REFERENCE uses `bladeVar` (below), which
  * wraps this with the `$` sigil Twig's `twigIdent` never needed.
  */
 export function bladeIdent(name: string): string {
-  return RESERVED_WORDS.has(name) ? `${name}_` : name
+  return RESERVED_WORDS.has(name) ? `__bf_${name}` : name
 }
 
 /**

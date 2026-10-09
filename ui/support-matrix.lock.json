@@ -4138,9 +4138,15 @@
               ]
             },
             {
-              "fixture": "reserved-name-and-suffixed-twin",
+              "fixture": "reserved-name-and-internal-twin",
               "limitations": [
-                "reserved-name-suffixed-twin-collides"
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
               ]
             },
             {
@@ -7373,9 +7379,15 @@
               ]
             },
             {
-              "fixture": "reserved-name-and-suffixed-twin",
+              "fixture": "reserved-name-and-internal-twin",
               "limitations": [
-                "reserved-name-suffixed-twin-collides"
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
               ]
             },
             {

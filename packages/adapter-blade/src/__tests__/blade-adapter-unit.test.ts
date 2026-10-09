@@ -824,8 +824,8 @@ export function C(props: { tags: string[] }) {
   return <ul>{props.tags.map(loop => <li key={loop}>{props.tags.filter(t => t === loop).map(loop => <i key={loop}>{loop}</i>)}</li>)}</ul>
 }
 `)
-    expect(template).toContain('@php($__bf_cap_l0_loop = $loop_)')
+    expect(template).toContain('@php($__bf_cap_l0_loop = $__bf_loop)')
     expect(template).toMatch(/\$__bf_cap_l0_loop\b/)
-    expect(template).not.toMatch(/\$bf->eq\(\$loop_, \$loop_\)/)
+    expect(template).not.toMatch(/\$bf->eq\(\$__bf_loop, \$__bf_loop\)/)
   })
 })
