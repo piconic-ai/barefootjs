@@ -2811,6 +2811,14 @@
       }
     }
   ],
+  "loop-param-shadows-signal-after-loop": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-param-shadows-spread-const": [
     {
       "name": "gen:items:empty",
