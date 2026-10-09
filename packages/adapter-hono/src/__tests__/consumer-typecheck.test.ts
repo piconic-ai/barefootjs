@@ -283,6 +283,45 @@ export function Page() {
 }
 `
 
+/**
+ * #3372: the ORIGINAL component source is type-checked too — a scaffold's
+ * tsconfig includes every source `.tsx`, not just the compiled
+ * templates. `<Ctx.Provider>` is compiled away, but its stub's type still
+ * has to be a valid JSX component under the Hono runtime.
+ */
+const PROVIDER_SOURCE = `"use client"
+
+import { createContext, useContext } from '@barefootjs/client'
+
+const ItemContext = createContext<{ open: () => boolean }>()
+
+function Panel(props: { children?: unknown }) {
+  const ctx = useContext(ItemContext)
+  return <div data-open={ctx?.open()}>{props.children}</div>
+}
+
+export function Item(props: { children?: unknown }) {
+  return (
+    <ItemContext.Provider value={{ open: () => true }}>
+      <Panel>{props.children}</Panel>
+    </ItemContext.Provider>
+  )
+}
+`
+
+const PROVIDER_SERVER_SOURCE = `import { Item } from './components/Item.tsx'
+
+export function Page() {
+  return <Item>body</Item>
+}
+`
+
+/** Same component, but providing a value of the wrong shape. */
+const PROVIDER_BAD_SOURCE = PROVIDER_SOURCE.replace(
+  'value={{ open: () => true }}',
+  'value={{ open: 1 }}',
+)
+
 describe('consumer program type-check', () => {
   test('a compiled template used as a JSX component type-checks clean (#2559)', () => {
     const result = compileJSX(COMPONENT_SOURCE, '/virtual/Counter.tsx', {
@@ -399,5 +438,14 @@ describe('consumer program type-check', () => {
     expect(template).toMatch(/^function sizeOf/m)
 
     expect(typeCheckConsumer('Box', template!, EXPORTED_TYPE_SERVER_SOURCE)).toEqual([])
+  })
+
+  test('Context.Provider in the original source is a valid JSX component (#3372)', () => {
+    // TS2786 = "'ItemContext.Provider' cannot be used as a JSX component."
+    expect(typeCheckConsumer('Item', PROVIDER_SOURCE, PROVIDER_SERVER_SOURCE)).toEqual([])
+
+    // The provider's props stay checked — the fix must not loosen `value`.
+    const rejected = typeCheckConsumer('Item', PROVIDER_BAD_SOURCE, PROVIDER_SERVER_SOURCE)
+    expect(rejected.map(d => d.code)).toEqual([2322])
   })
 })
