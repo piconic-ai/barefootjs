@@ -37,6 +37,8 @@ import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
 import {
   wrapLoopParamAsAccessor,
   rowBoundNames,
+  unionNames,
+  type ShadowableWrap,
   attrValueToString,
 } from '../../utils.ts'
 import { buildChildRefBindings } from '../shared.ts'
@@ -103,9 +105,9 @@ export interface BuildInnerLoopsArgs {
  */
 export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
   const { levels, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex, rowHasPortal } = args
-  const wrapOuter = outerLoopParam
-    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex)
-    : (expr: string) => expr
+  const wrapOuter: ShadowableWrap = outerLoopParam
+    ? (expr, shadowed) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex, shadowed)
+    : expr => expr
 
   const plan: InnerLoopPlan[] = []
   let i = 0
@@ -171,7 +173,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
 function buildReactiveEmit(
   inner: NestedLoop,
   level: DepthLevel,
-  wrapOuter: (expr: string) => string,
+  wrapOuter: ShadowableWrap,
   uidSuffix: string,
   outerLoopParam?: string,
   outerLoopParamBindings?: readonly LoopParamBinding[],
@@ -181,10 +183,9 @@ function buildReactiveEmit(
   // Inside the inner row, a name it rebinds (item, index, destructure
   // binding, preamble local) is not the outer row's binding (#3394).
   const innerShadowed = rowBoundNames(inner)
-  const wrapOuterRow = outerLoopParam
-    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex, innerShadowed)
-    : wrapOuter
-  const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuterRow(expr), inner.param, inner.paramBindings, inner.index)
+  const wrapOuterRow: ShadowableWrap = (expr, shadowed) => wrapOuter(expr, unionNames(innerShadowed, shadowed))
+  const wrapBoth: ShadowableWrap = (expr, shadowed) =>
+    wrapLoopParamAsAccessor(wrapOuterRow(expr, shadowed), inner.param, inner.paramBindings, inner.index, shadowed)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
   const wrappedKey = inner.key
     ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings, inner.index)

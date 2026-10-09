@@ -735,6 +735,18 @@ export function wrapLoopParamAsAccessor(
 }
 
 /**
+ * A loop-param accessor rewrite that can be told which names a nearer row
+ * rebinds (#3394). Each wrap passes `shadowed` on to the enclosing loops'
+ * wraps it composes, so every ancestor rewrite skips them too.
+ */
+export type ShadowableWrap = (expr: string, shadowed?: ReadonlySet<string>) => string
+
+/** `a` and `b` together; `a` alone when `b` is empty or absent. */
+export function unionNames(a: ReadonlySet<string>, b?: ReadonlySet<string>): ReadonlySet<string> {
+  return b && b.size > 0 ? new Set([...a, ...b]) : a
+}
+
+/**
  * Every name the row of `loop` binds — its item (or destructure bindings),
  * index and preamble locals — via `BindingScope.enterLoopRow`. Inside that
  * row an enclosing loop's accessor rewrite must skip these names, or an

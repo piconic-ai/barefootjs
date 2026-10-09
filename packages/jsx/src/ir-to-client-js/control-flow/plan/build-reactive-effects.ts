@@ -29,7 +29,7 @@ import type {
 } from '../../types.ts'
 import type { LoopParamBinding } from '../../../types.ts'
 import { pickAttrMeta } from '../../../types.ts'
-import { wrapLoopParamAsAccessor } from '../../utils.ts'
+import { wrapLoopParamAsAccessor, type ShadowableWrap } from '../../utils.ts'
 import { addCondAttrToTemplate } from '../../html-template.ts'
 import {
   buildArmAttrsPlan,
@@ -65,7 +65,7 @@ export function buildReactiveEffectsPlan(
   args: BuildReactiveEffectsArgs,
 ): ReactiveEffectsPlan {
   const { attrs, texts, conditionals, loopParam, loopParamBindings, loopIndex, profileComponentName } = args
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings, loopIndex)
+  const wrap: ShadowableWrap = (expr, shadowed) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings, loopIndex, shadowed)
 
   // 1. Group attrs by slot, preserving declaration order (Map insertion order
   //    matches the legacy iteration that produced byte-identical output).
