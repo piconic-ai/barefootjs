@@ -42,4 +42,12 @@ export interface ComponentDef {
    * child's own (#2649's shape, #2722).
    */
   fragmentRoot?: boolean
+  /**
+   * True for a stateless component whose root is a transparent fragment
+   * (`<>{children}</>`). SSR renders such a root with no scope marker at
+   * all — no `bf-s` element attribute and no `<!--bf-scope:-->` comment —
+   * so `renderChild()` must emit its markup as-is rather than stamping
+   * `bf-s` / `bf-h` / `bf-m` onto the caller's content (#3355).
+   */
+  transparent?: boolean
 }

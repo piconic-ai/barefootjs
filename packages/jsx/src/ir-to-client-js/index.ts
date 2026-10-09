@@ -16,7 +16,7 @@ import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.t
 import { addConstantPropRefsToSet } from './init-declarations.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
-import { PROPS_PARAM, initFunctionName, componentDefScopeFlags } from './utils.ts'
+import { PROPS_PARAM, initFunctionName, componentDefScopeFlags, isTransparentFragmentRoot } from './utils.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
 import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from './component-scope.ts'
@@ -367,7 +367,12 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // uses — a fragment-rooted stateless child must declare `comment` /
   // `fragmentRoot` too, or `renderChild()` stamps `bf-s` onto its first
   // element while SSR scopes it with a comment pair.
-  const scopeFlags = componentDefScopeFlags(ir.root).map((f) => `, ${f}`).join('')
+  // A stateless transparent root (`<>{children}</>`) owns no scope at all —
+  // SSR renders the caller's content unmarked — so `renderChild()` must not
+  // stamp one either (#3355). Only the template-only path declares it: a
+  // stateful child still needs a scope for its init to bind against.
+  const transparentFlag = isTransparentFragmentRoot(ir.root) ? ['transparent: true'] : []
+  const scopeFlags = [...componentDefScopeFlags(ir.root), ...transparentFlag].map((f) => `, ${f}`).join('')
   lines.push(`hydrate('${registryKey}', { init: ${initName}, template: (${PROPS_PARAM}) => \`${templateHtml}\`${scopeFlags}${nameField} })`)
   // See `emitRegistrationAndHydration` (./emit-registration.ts) for the
   // rationale on why the component is also emitted as a callable
