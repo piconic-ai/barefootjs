@@ -3736,6 +3736,91 @@
       }
     }
   ],
+  "nullish-coalesce-array-matrix": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": [],
+        "nul": null,
+        "empty": [],
+        "full": [
+          9,
+          8,
+          7
+        ]
+      }
+    },
+    {
+      "name": "gen:absent:empty",
+      "props": {
+        "a": [
+          1,
+          2
+        ],
+        "nul": null,
+        "empty": [],
+        "full": [
+          9,
+          8,
+          7
+        ],
+        "absent": []
+      }
+    },
+    {
+      "name": "gen:nul:absent",
+      "props": {
+        "a": [
+          1,
+          2
+        ],
+        "empty": [],
+        "full": [
+          9,
+          8,
+          7
+        ]
+      }
+    },
+    {
+      "name": "gen:empty:absent",
+      "props": {
+        "a": [
+          1,
+          2
+        ],
+        "nul": null,
+        "full": [
+          9,
+          8,
+          7
+        ]
+      }
+    },
+    {
+      "name": "gen:full:absent",
+      "props": {
+        "a": [
+          1,
+          2
+        ],
+        "nul": null,
+        "empty": []
+      }
+    },
+    {
+      "name": "gen:full:empty",
+      "props": {
+        "a": [
+          1,
+          2
+        ],
+        "nul": null,
+        "empty": [],
+        "full": []
+      }
+    }
+  ],
   "nullish-coalesce-empty-array": [
     {
       "name": "gen:c:absent",

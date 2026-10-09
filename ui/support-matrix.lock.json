@@ -4512,12 +4512,6 @@
               ]
             },
             {
-              "fixture": "nullish-coalesce-empty-array",
-              "limitations": [
-                "nullish-coalesce-empty-array-falls-back"
-              ]
-            },
-            {
               "fixture": "nullish-optional-member-missing-field-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
@@ -7104,12 +7098,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "nullish-coalesce-empty-array",
-              "limitations": [
-                "nullish-coalesce-empty-array-falls-back"
-              ]
-            },
-            {
               "fixture": "optional-chain-length-string-receiver",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
@@ -7642,12 +7630,6 @@
               "fixture": "member-seeded-nullable-signal-attr",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "nullish-coalesce-empty-array",
-              "limitations": [
-                "nullish-coalesce-empty-array-falls-back"
               ]
             },
             {
@@ -13560,12 +13542,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "nullish-coalesce-empty-array",
-              "limitations": [
-                "nullish-coalesce-empty-array-falls-back"
-              ]
-            },
             {
               "fixture": "optional-chain-length-string-receiver",
               "limitations": [
