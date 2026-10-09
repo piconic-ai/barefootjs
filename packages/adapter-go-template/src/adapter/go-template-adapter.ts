@@ -7196,6 +7196,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (name === null || !this.state.nullishConsumedPropNames.has(name)) return null
     if (this.state.nillablePropNames.has(name)) return name
+    // A slice-typed prop is nil when absent and an empty non-nil slice when
+    // present as `[]`, so `bf_nullish` keeps a present `[]` where the
+    // truthiness-based `or` would fall back (#3362).
+    if (!memberOfRoot) {
+      const param = this.state.currentPropsParams.find(p => p.name === name)
+      if (param && resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides).startsWith('[]')) {
+        return name
+      }
+    }
     // The root of a `user?.name` hop is also nillable when it lowers to the
     // optional-object `map[string]interface{}` field (`resolvePropGoType`'s
     // struct-map branch — an optional prop typed by a same-file object

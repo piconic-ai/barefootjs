@@ -6218,6 +6218,20 @@
         "condition"
       ]
     },
+    "nullish-coalesce-array-matrix": {
+      "kinds": [
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "nullish-coalesce-empty-array": {
       "kinds": [
         "identifier",
