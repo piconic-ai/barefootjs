@@ -37,6 +37,7 @@ import { fixture as filterCaptureReservedAnd } from './filter-capture-reserved-a
 import { fixture as mapParamNamedLoop } from './map-param-named-loop'
 import { fixture as reservedNameAndSuffixedTwin } from './reserved-name-and-suffixed-twin'
 import { fixture as reservedNameAndInternalTwin } from './reserved-name-and-internal-twin'
+import { fixture as reservedNameAndRenamedTwin } from './reserved-name-and-renamed-twin'
 import { fixture as undefinedSignalArithmeticMemo } from './undefined-signal-arithmetic-memo'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
@@ -1579,6 +1580,7 @@ export const jsxFixtures: JSXFixture[] = [
   mapParamNamedLoop,
   reservedNameAndSuffixedTwin,
   reservedNameAndInternalTwin,
+  reservedNameAndRenamedTwin,
   undefinedSignalArithmeticMemo,
   numberDivisionText,
   numberDivisionMatrix,

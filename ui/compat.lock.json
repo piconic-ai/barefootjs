@@ -4812,7 +4812,7 @@
           ],
           "escape": {
             "state": "escapable",
-            "twin": "reserved-name-and-suffixed-twin"
+            "twin": "reserved-name-and-renamed-twin"
           }
         },
         "minijinja": {
@@ -4825,7 +4825,7 @@
           ],
           "escape": {
             "state": "escapable",
-            "twin": "reserved-name-and-suffixed-twin"
+            "twin": "reserved-name-and-renamed-twin"
           }
         },
         "pebble": {
@@ -4838,7 +4838,7 @@
           ],
           "escape": {
             "state": "escapable",
-            "twin": "reserved-name-and-suffixed-twin"
+            "twin": "reserved-name-and-renamed-twin"
           }
         },
         "twig": {
@@ -4851,7 +4851,7 @@
           ],
           "escape": {
             "state": "escapable",
-            "twin": "reserved-name-and-suffixed-twin"
+            "twin": "reserved-name-and-renamed-twin"
           }
         }
       },
@@ -5928,6 +5928,10 @@
       "reduce-typeof-body-client": {
         "description": "Off-subset `.reduce()` body deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body-client.ts"
+      },
+      "reserved-name-and-renamed-twin": {
+        "description": "Props named loop and other render their own values",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-renamed-twin.ts"
       },
       "signal-object-spread-init-client": {
         "description": "Signal initializer spreads a prop-derived object, reads deferred to the client via /* @client */",

@@ -7423,6 +7423,16 @@
         "text"
       ]
     },
+    "reserved-name-and-renamed-twin": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "reserved-name-and-suffixed-twin": {
       "kinds": [
         "identifier",

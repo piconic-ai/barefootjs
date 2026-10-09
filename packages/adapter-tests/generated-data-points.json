@@ -4891,6 +4891,50 @@
       }
     }
   ],
+  "reserved-name-and-renamed-twin": [
+    {
+      "name": "gen:loop:empty",
+      "props": {
+        "loop": "",
+        "other": "second"
+      }
+    },
+    {
+      "name": "gen:loop:markup",
+      "props": {
+        "loop": "<b>&\"'</b>",
+        "other": "second"
+      }
+    },
+    {
+      "name": "gen:loop:multibyte",
+      "props": {
+        "loop": "日本語",
+        "other": "second"
+      }
+    },
+    {
+      "name": "gen:other:empty",
+      "props": {
+        "loop": "first",
+        "other": ""
+      }
+    },
+    {
+      "name": "gen:other:markup",
+      "props": {
+        "loop": "first",
+        "other": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:other:multibyte",
+      "props": {
+        "loop": "first",
+        "other": "日本語"
+      }
+    }
+  ],
   "reserved-name-and-suffixed-twin": [
     {
       "name": "gen:loop:empty",

@@ -18,5 +18,5 @@ export function ReservedNameAndInternalTwin(props: { loop: string; __bf_loop: st
   expectedHtml: `
     <div bf-s="test" bf="s2"><!--bf:s0-->first<!--/-->:<!--bf:s1-->second<!--/--></div>
   `,
-  escapes: [{ kind: 'rewrite', fixture: 'reserved-name-and-suffixed-twin' }],
+  escapes: [{ kind: 'rewrite', fixture: 'reserved-name-and-renamed-twin' }],
 })
