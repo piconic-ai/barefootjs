@@ -40,6 +40,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // The predicate's param is renamed to the following map's param, which
+  // also captures the enclosing name of the same spelling (#3402).
+  'filter-capture-shadowed-by-map-param': { limitation: 'filter-capture-shadowed-by-map-param' },
+
   // An attribute number at the 1e-6 / 1e21 notation boundary prints with
   // PHP's float-to-string conversion: an exponent at 1e-6 and an upper-case `E` (`1.23456789E+21`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },

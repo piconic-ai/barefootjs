@@ -3009,6 +3009,21 @@
         "text"
       ]
     },
+    "filter-capture-shadowed-by-map-param": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-nested-callback-predicate": {
       "kinds": [
         "array-literal",
@@ -5770,6 +5785,23 @@
         "binary:+",
         "literal:number",
         "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-filter-captures-outer-bindings": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "logical:||"
       ],
       "contexts": [
         "attribute",

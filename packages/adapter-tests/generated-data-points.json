@@ -2129,6 +2129,14 @@
       }
     }
   ],
+  "filter-capture-shadowed-by-map-param": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
   "filter-predicate-props-member": [
     {
       "name": "gen:items:empty",
@@ -3524,6 +3532,30 @@
           "b"
         ],
         "values": []
+      }
+    }
+  ],
+  "nested-loop-filter-captures-outer-bindings": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "tags": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "groups": [
+          {
+            "name": "a"
+          }
+        ],
+        "tags": []
       }
     }
   ],
