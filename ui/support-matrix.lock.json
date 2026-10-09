@@ -1639,12 +1639,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1712,12 +1706,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -1873,12 +1861,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1949,12 +1931,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2016,12 +1992,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -2089,12 +2059,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2156,12 +2120,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -4060,12 +4018,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4241,12 +4193,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -4720,12 +4666,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4904,12 +4844,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5079,12 +5013,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -5272,12 +5200,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5447,12 +5369,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -7325,12 +7241,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7458,12 +7368,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -7817,12 +7721,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7953,12 +7851,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -8080,12 +7972,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -8225,12 +8111,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -8352,12 +8232,6 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -11308,12 +11182,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -11363,12 +11231,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -11488,12 +11350,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -11543,12 +11399,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -11604,12 +11454,6 @@
               ]
             },
             {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
-              ]
-            },
-            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -11653,12 +11497,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -11711,12 +11549,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "filter-capture-shadowed-by-map-param",
-              "limitations": [
-                "filter-capture-shadowed-by-map-param"
               ]
             },
             {
@@ -11822,10 +11654,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "filter-capture-shadowed-by-map-param",
-        "description": "A filter predicate capture survives a following map param of the same name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-capture-shadowed-by-map-param.ts",
-        "code": "t === name"
+        "fixture": "filter-capture-reserved-and",
+        "description": "A filter capture named like a template keyword reads the enclosing value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-capture-reserved-and.ts",
+        "code": "t === and"
       }
     },
     "binary:>": {

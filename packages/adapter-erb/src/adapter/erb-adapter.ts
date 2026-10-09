@@ -95,6 +95,8 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  filterCaptureCollisions,
+  renameFreeIdentifiers,
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
@@ -1185,10 +1187,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         ? `<%= bf.comment("loop-i:" + bf.escape_comment_key(${this.convertExpressionToRuby(loop.key)})) %>\n${renderedChildren}`
         : renderedChildren
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own block binds again would read the block param inside the
+    // loop; keep the enclosing value under a loop-scoped local (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same
     // parent each get their own reconciliation range.
     lines.push(`<%= bf.comment("loop:${loop.markerId}") %>`)
+    for (const { name, alias } of captureAliases) lines.push(`<%- ${alias} = ${rubyLocal(name)} -%>`)
     if (sortedHoist && loop.sortComparator) {
       // Evaluator-first: serialize the comparator + emit `bf.sort_eval`;
       // fall back to the structured `bf.sort` for a comparator the
@@ -1321,7 +1329,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           filterOwnParam && !filterOwnParam.startsWith('[') && !filterOwnParam.startsWith('{')
             ? filterOwnParam
             : param
-        filterCond = this.renderRubyFilterExpr(loop.filterPredicate.predicate, matchParam, undefined, rubyLocal(param))
+        // The aliases render and type like the enclosing names they keep (#3402).
+        const scopeBeforeAliases = this.scope
+        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
+        try {
+          filterCond = this.renderRubyFilterExpr(
+            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
+            matchParam,
+            undefined,
+            rubyLocal(param),
+          )
+        } finally {
+          this.scope = scopeBeforeAliases
+        }
       } else {
         filterCond = 'true'
       }

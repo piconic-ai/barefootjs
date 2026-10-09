@@ -3802,6 +3802,38 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
 }
 
 /**
+ * `expr` with each free reference to a name in `renames` replaced by its
+ * mapped name. An `arrow` param of the same name shadows the rename inside
+ * its body; string literals, member property names and object-literal keys
+ * are never touched, because they are not `identifier` nodes. Used to point a
+ * `.filter()` predicate's captured enclosing names at loop-scoped aliases
+ * before an adapter emits it, so target-language name mangling still applies
+ * (#3402).
+ */
+export function renameFreeIdentifiers(expr: ParsedExpr, renames: ReadonlyMap<string, string>): ParsedExpr {
+  if (renames.size === 0) return expr
+  const walk = (value: unknown, active: ReadonlyMap<string, string>): unknown => {
+    if (Array.isArray(value)) return value.map(v => walk(v, active))
+    if (value === null || typeof value !== 'object') return value
+    const node = value as { kind?: unknown } & Record<string, unknown>
+    if (node.kind === 'identifier' && typeof node.name === 'string') {
+      const renamed = active.get(node.name)
+      return renamed === undefined ? node : { ...node, name: renamed }
+    }
+    let inner = active
+    if (node.kind === 'arrow' && Array.isArray(node.params)) {
+      const shadowed = new Map(active)
+      for (const p of node.params as string[]) shadowed.delete(p)
+      inner = shadowed
+    }
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(node)) out[k] = walk(v, inner)
+    return out
+  }
+  return walk(expr, renames) as ParsedExpr
+}
+
+/**
  * Every value-position identifier in `expr` NOT bound by an enclosing arrow's
  * own parameters — with proper lexical scoping: an arrow's params bind only
  * within that arrow's body, and nested arrows accumulate onto the enclosing

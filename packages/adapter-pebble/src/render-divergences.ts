@@ -27,10 +27,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
-  // The predicate's param is renamed to the following map's param, which
-  // also captures the enclosing name of the same spelling (#3402).
-  'filter-capture-shadowed-by-map-param': { limitation: 'filter-capture-shadowed-by-map-param' },
-
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
   // operand throws or reads as `0` here (#3350 covers only `null`).
   'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },

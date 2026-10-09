@@ -171,6 +171,8 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  filterCaptureCollisions,
+  renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
   rootPropAliasesForLoop,
@@ -1129,10 +1131,16 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
         : childrenUnderLoop
     this.scope = prevScope
 
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own row binds again would read the row's item inside the loop;
+    // keep the enclosing value under a loop-scoped alias (#3402).
+    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     for (const { name, alias } of rootAliases) lines.push(`{% set ${minijinjaIdent(alias)} = ${minijinjaIdent(name)} %}`)
+    for (const { name, alias } of captureAliases) lines.push(`{% set ${minijinjaIdent(alias)} = ${minijinjaIdent(name)} %}`)
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | safe }}`)
     // `objectIteration` (#2168 object-entries-map): minijinja has no
     // built-in `.items()` OBJECT METHOD (unlike Python's dict) — `|items`
@@ -1159,10 +1167,17 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
-        filterCond = this.renderJinjaFilterExpr(
-          loop.filterPredicate.predicate,
-          loop.filterPredicate.param
-        )
+        // The aliases render and type like the enclosing names they keep (#3402).
+        const scopeBeforeAliases = this.scope
+        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
+        try {
+          filterCond = this.renderJinjaFilterExpr(
+            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
+            loop.filterPredicate.param
+          )
+        } finally {
+          this.scope = scopeBeforeAliases
+        }
         // See the file header, divergence 1: the loop-hoist filter test is a
         // condition position too.
         filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)

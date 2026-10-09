@@ -225,3 +225,14 @@ describe('scoped string value types', () => {
     expect(mixedRow.isStringValueName('row', () => true)).toBe(false)
   })
 })
+
+describe('enterAliases (#3402)', () => {
+  test('binds each alias like the name it stands for', () => {
+    const row = BindingScope.EMPTY.enterLoopRow({ param: 'name', itemType: { primitive: 'string' } })
+    const aliased = row.enterAliases(new Map([['__bf_cap_l0_name', 'name'], ['__bf_cap_l0_x', 'x']]))
+    expect(aliased.lookup('__bf_cap_l0_name')?.binding).toEqual(row.lookup('name')?.binding)
+    expect(aliased.isStringValueName('__bf_cap_l0_name', () => false)).toBe(true)
+    expect(aliased.isBound('__bf_cap_l0_x')).toBe(false)
+    expect(BindingScope.EMPTY.enterAliases(new Map([['a', 'b']]))).toBe(BindingScope.EMPTY)
+  })
+})

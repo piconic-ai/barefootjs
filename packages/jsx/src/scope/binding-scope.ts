@@ -148,6 +148,25 @@ export class BindingScope {
     return new BindingScope([frame, ...this.frames])
   }
 
+  /**
+   * Child scope with a `'callback'` frame binding each alias to the binding
+   * its original name resolves to here (same source and string typing). An
+   * adapter that rewrites a `.filter()` predicate's captured names to
+   * loop-scoped aliases enters this while emitting the predicate, so the
+   * aliases render and type exactly like the names they stand for (#3402).
+   * Aliases whose original is unbound are skipped; returns `this` when none
+   * bind. Parent is not mutated.
+   */
+  enterAliases(aliasToOriginal: ReadonlyMap<string, string>): BindingScope {
+    const bindings = new Map<string, ScopeBinding>()
+    for (const [alias, original] of aliasToOriginal) {
+      const hit = this.lookup(original)
+      if (hit) bindings.set(alias, hit.binding)
+    }
+    if (bindings.size === 0) return this
+    return new BindingScope([{ kind: 'callback', bindings }, ...this.frames])
+  }
+
   /** Innermost-first membership check across every frame in the stack. */
   isBound(name: string): boolean {
     for (const frame of this.frames) {

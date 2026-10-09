@@ -2467,50 +2467,6 @@
           }
         }
       },
-      "filter-capture-shadowed-by-map-param": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "filter-capture-shadowed-by-map-param"
-          ]
-        }
-      },
       "filter-nested-callback-predicate": {
         "blade": {
           "kind": "refusal",
@@ -5655,10 +5611,6 @@
         "description": "Off-subset array method `.fill()` — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fill-unsupported.ts"
       },
-      "filter-capture-shadowed-by-map-param": {
-        "description": "A filter predicate capture survives a following map param of the same name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-capture-shadowed-by-map-param.ts"
-      },
       "filter-nested-callback-predicate": {
         "description": "Filter predicate containing a nested .some() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate.ts"
@@ -6112,25 +6064,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "filter-capture-shadowed-by-map-param": {
-      "title": "A `.filter()` predicate capture is shadowed by the following `.map()` param of the same name",
-      "kind": "silent",
-      "given": "a `.filter(t => t === name).map(name => …)` chain inside a row whose own param is `name`, so the predicate captures the enclosing `name` and the following map rebinds it",
-      "expected": "the predicate compares each item with the enclosing `name`, so each outer row keeps only its own tag",
-      "actual": "renders every item in each row: the predicate's param is renamed to the loop param, so the captured `name` reads the inner loop variable and the comparison is the item with itself (`{% if name == name %}` on Jinja)",
-      "fixtures": [
-        "filter-capture-shadowed-by-map-param"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {
