@@ -78,6 +78,11 @@ const RESERVED_WORDS: &[&str] = &[
 /// a props dict is turned into template variables (`render_named`,
 /// `render_child` prop passing).
 pub fn mangle_ident(name: &str) -> String {
+    // The engine binds its own `loop` inside `{% for %}`; a JS `loop` takes
+    // the compiler-internal `__bf_loop` (#3404), mirroring `minijinjaIdent`.
+    if name == "loop" {
+        return "__bf_loop".to_string();
+    }
     if RESERVED_WORDS.contains(&name) {
         format!("{name}_")
     } else {

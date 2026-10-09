@@ -147,6 +147,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -364,6 +365,9 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
+    // Two source names that Jinja's renaming of reserved names turns into one
+    // template variable would read the same value (#3404).
+    this.errors.push(...templateNameCollisionErrors(ir, this.propsParams.map(p => p.name), jinjaIdent, 'Jinja', this.componentName))
     this.childrenCaptureCounter = 0
 
     // Mirror of the Xslate adapter's BF103 check: a child component referenced
@@ -1115,13 +1119,19 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
+        // The filter param reads the row item, so rename its references in
+        // the parsed predicate to the loop param. Renaming the AST, not the
+        // rendered text, leaves a string literal with the same spelling and
+        // a property key alone (#3404).
+        const filterRenames = new Map(captureRenames)
+        if (loop.filterPredicate.param !== param) filterRenames.set(loop.filterPredicate.param, param)
         // The aliases render and type like the enclosing names they keep (#3402).
         const scopeBeforeAliases = this.scope
         this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
         try {
           filterCond = this.renderJinjaFilterExpr(
-            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
-            loop.filterPredicate.param
+            renameFreeIdentifiers(loop.filterPredicate.predicate, filterRenames),
+            param
           )
         } finally {
           this.scope = scopeBeforeAliases
@@ -1131,18 +1141,6 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)
       } else {
         filterCond = 'true'
-      }
-      // Map filter param to loop param (e.g., t → todo). Word-boundary
-      // rename over the RENDERED text — same mechanism Kolon uses (there
-      // scoped to `$`-sigiled tokens; here scoped by plain word boundaries,
-      // since Jinja identifiers have no sigil). Bounded, pre-existing risk:
-      // see `lib/ir-scope.ts`'s file header for the general sigil-less
-      // text-scan caveat.
-      if (loop.filterPredicate.param !== param) {
-        filterCond = filterCond.replace(
-          new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),
-          jinjaIdent(param)
-        )
       }
       lines.push(`{% if ${filterCond} %}`)
       lines.push(...preambleLines)

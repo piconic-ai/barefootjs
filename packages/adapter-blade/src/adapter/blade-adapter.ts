@@ -1308,13 +1308,19 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
+        // The filter param reads the row item, so rename its references in
+        // the parsed predicate to the loop param. Renaming the AST, not the
+        // rendered text, leaves a string literal with the same spelling and
+        // a property key alone (#3404).
+        const filterRenames = new Map(captureRenames)
+        if (loop.filterPredicate.param !== param) filterRenames.set(loop.filterPredicate.param, param)
         // The aliases render and type like the enclosing names they keep (#3402).
         const scopeBeforeAliases = this.scope
         this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
         try {
           filterCond = this.renderBladeFilterExpr(
-            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
-            loop.filterPredicate.param
+            renameFreeIdentifiers(loop.filterPredicate.predicate, filterRenames),
+            param
           )
         } finally {
           this.scope = scopeBeforeAliases
@@ -1324,18 +1330,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
         filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)
       } else {
         filterCond = 'true'
-      }
-      // Map filter param to loop param (e.g., t → todo). Word-boundary
-      // rename over the RENDERED text, scoped to the `$`-sigiled token so a
-      // substring match inside an unrelated identifier (or this adapter's
-      // own `$bf`/`$loop`) can't misfire — the SAME mechanism Kolon uses,
-      // made trivially safe here by Blade's `$` sigil (see `lib/ir-scope.ts`'s
-      // file header for the analogous point about `extractTopLevelIdentifiers`).
-      if (loop.filterPredicate.param !== param) {
-        filterCond = filterCond.replace(
-          new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),
-          bladeVar(param)
-        )
       }
       lines.push(`@if(${filterCond})`)
       lines.push(...preambleLines)

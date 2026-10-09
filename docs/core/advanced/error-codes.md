@@ -181,7 +181,7 @@ See [Fragments](../rendering/jsx-compatibility.md#fragments).
 
 ---
 
-## Template Adapter Errors (BF101–BF102)
+## Template Adapter Errors (BF101–BF105)
 
 <a id="bf101"></a>
 
@@ -227,6 +227,30 @@ export function Badge({ user }: { user: User }) {
 #### Fix
 
 Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: { user: User; vip: boolean }`). A condition has no `/* @client */` escape: forcing it to a fixed value at SSR would be a correctness hazard. See [Go Template Adapter](../adapters/go-template-adapter.md).
+
+<a id="bf105"></a>
+
+### BF105 — Two Names Become the Same Template Variable
+
+Jinja, MiniJinja, Twig and Pebble rename a name the engine reserves: `loop` becomes `__bf_loop`. When a component also uses `__bf_loop` where `loop` is visible, both would read one value, so the adapter refuses. Bindings of sibling loops never meet and are fine.
+
+```tsx
+// ❌ BF105 on Jinja/MiniJinja/Twig/Pebble
+export function Both(props: { loop: string; __bf_loop: string }) {
+  return <div>{props.loop}:{props.__bf_loop}</div>
+}
+```
+
+#### Fix
+
+Rename one of the two names:
+
+```tsx
+// ✅ Fixed
+export function Both(props: { loop: string; other: string }) {
+  return <div>{props.loop}:{props.other}</div>
+}
+```
 
 ---
 
@@ -398,3 +422,4 @@ Key the top-level row (`<li key={r}>`) and portal an element inside it rather th
 | BF064 | Portaled `.map()` row element cannot be paired with its row |
 | BF101 | No template-language lowering for the expression |
 | BF102 | Adapter-specific condition not supported |
+| BF105 | Two names become the same template variable |

@@ -50,6 +50,11 @@ if (!function_exists(__NAMESPACE__ . '\\twig_ident')) {
      */
     function twig_ident(string $name): string
     {
+        // The engine binds its own `loop` inside `{% for %}`; a JS `loop` takes
+        // the compiler-internal `__bf_loop` (#3404), mirroring `twigIdent`.
+        if ($name === 'loop') {
+            return '__bf_loop';
+        }
         return in_array($name, TWIG_RESERVED_WORDS, true) ? $name . '_' : $name;
     }
 }

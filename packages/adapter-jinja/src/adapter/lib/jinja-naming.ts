@@ -74,6 +74,10 @@ const RESERVED_WORDS = new Set([
  * for free; Jinja has no sigil, so the adapter mangles instead.
  */
 export function jinjaIdent(name: string): string {
+  // The engine binds its own `loop` inside `{% for %}`, so a JS `loop` takes
+  // the compiler-internal `__bf_loop` (#3404). Unlike a `_` suffix it cannot
+  // collide with a real `loop_`, and mangling it again leaves it unchanged.
+  if (name === 'loop') return '__bf_loop'
   return RESERVED_WORDS.has(name) ? `${name}_` : name
 }
 

@@ -34,6 +34,17 @@ import { fixture as nestedLoopFilterCapturesOuterBindings } from './nested-loop-
 import { fixture as filterCaptureShadowedByMapParam } from './filter-capture-shadowed-by-map-param'
 import { fixture as filterCaptureKeepsSameNameLiteral } from './filter-capture-keeps-same-name-literal'
 import { fixture as filterCaptureReservedAnd } from './filter-capture-reserved-and'
+import { fixture as mapParamNamedLoop } from './map-param-named-loop'
+import { fixture as filterParamNamedLoop } from './filter-param-named-loop'
+import { fixture as filterParamLiteralMatchesRenamedName } from './filter-param-literal-matches-renamed-name'
+import { fixture as filterFeedsMapItemNamedProps } from './filter-feeds-map-item-named-props'
+import { fixture as reservedNameAndSuffixedTwin } from './reserved-name-and-suffixed-twin'
+import { fixture as reservedNameAndInternalTwin } from './reserved-name-and-internal-twin'
+import { fixture as reservedNameAndRenamedTwin } from './reserved-name-and-renamed-twin'
+import { fixture as reservedNameInSiblingLoops } from './reserved-name-in-sibling-loops'
+import { fixture as reservedNameFilterParamAndInternalProp } from './reserved-name-filter-param-and-internal-prop'
+import { fixture as reservedNameFilterParamRenamed } from './reserved-name-filter-param-renamed'
+import { fixture as reservedNameFilterParamFeedsInternalMapParam } from './reserved-name-filter-param-feeds-internal-map-param'
 import { fixture as undefinedSignalArithmeticMemo } from './undefined-signal-arithmetic-memo'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
@@ -1573,6 +1584,17 @@ export const jsxFixtures: JSXFixture[] = [
   filterCaptureShadowedByMapParam,
   filterCaptureKeepsSameNameLiteral,
   filterCaptureReservedAnd,
+  mapParamNamedLoop,
+  filterParamNamedLoop,
+  filterParamLiteralMatchesRenamedName,
+  filterFeedsMapItemNamedProps,
+  reservedNameAndSuffixedTwin,
+  reservedNameAndInternalTwin,
+  reservedNameAndRenamedTwin,
+  reservedNameInSiblingLoops,
+  reservedNameFilterParamAndInternalProp,
+  reservedNameFilterParamRenamed,
+  reservedNameFilterParamFeedsInternalMapParam,
   undefinedSignalArithmeticMemo,
   numberDivisionText,
   numberDivisionMatrix,

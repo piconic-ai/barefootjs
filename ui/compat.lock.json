@@ -4801,6 +4801,122 @@
           ]
         }
       },
+      "reserved-name-and-internal-twin": {
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-renamed-twin"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-renamed-twin"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-renamed-twin"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-and-renamed-twin"
+          }
+        }
+      },
+      "reserved-name-and-suffixed-twin": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "reserved-name-suffixed-twin-collides"
+          ]
+        }
+      },
+      "reserved-name-filter-param-and-internal-prop": {
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-filter-param-renamed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-filter-param-renamed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-filter-param-renamed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF105"
+          ],
+          "limitations": [
+            "reserved-name-collides-with-internal-name"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reserved-name-filter-param-renamed"
+          }
+        }
+      },
       "rich-prop-client-read": {
         "blade": {
           "kind": "refusal",
@@ -5731,6 +5847,18 @@
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       },
+      "reserved-name-and-internal-twin": {
+        "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-internal-twin.ts"
+      },
+      "reserved-name-and-suffixed-twin": {
+        "description": "Props named loop and loop_ render their own values",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-suffixed-twin.ts"
+      },
+      "reserved-name-filter-param-and-internal-prop": {
+        "description": "A filter param named loop next to a prop named __bf_loop filters by the item, or the adapter refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-filter-param-and-internal-prop.ts"
+      },
       "rich-prop-client-read": {
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
@@ -5858,6 +5986,14 @@
       "reduce-typeof-body-client": {
         "description": "Off-subset `.reduce()` body deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body-client.ts"
+      },
+      "reserved-name-and-renamed-twin": {
+        "description": "Props named loop and other render their own values",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-renamed-twin.ts"
+      },
+      "reserved-name-filter-param-renamed": {
+        "description": "A filter param renamed away from loop filters by the item next to a prop named __bf_loop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-filter-param-renamed.ts"
       },
       "signal-object-spread-init-client": {
         "description": "Signal initializer spreads a prop-derived object, reads deferred to the client via /* @client */",
@@ -6371,6 +6507,39 @@
       ],
       "diagnostics": [
         "BF063"
+      ]
+    },
+    "reserved-name-collides-with-internal-name": {
+      "title": "Reserved name and the internal name it is renamed to",
+      "kind": "refusal",
+      "given": "a component that uses both `loop` and `__bf_loop` as names visible at the same point",
+      "expected": "each name renders its own value",
+      "actual": "the compiler refuses with BF105",
+      "fixtures": [
+        "reserved-name-and-internal-twin",
+        "reserved-name-filter-param-and-internal-prop"
+      ],
+      "adapters": [
+        "jinja",
+        "minijinja",
+        "pebble",
+        "twig"
+      ],
+      "diagnostics": [
+        "BF105"
+      ]
+    },
+    "reserved-name-suffixed-twin-collides": {
+      "title": "A reserved name and its `_`-suffixed twin collide",
+      "kind": "silent",
+      "given": "a component with both a reserved name and its `_`-suffixed twin as props (`props.loop` and `props.loop_`)",
+      "expected": "each prop renders its own value (`first:second`)",
+      "actual": "renders the twin's value for both (`second:second`): the reserved word is mangled by appending `_`, which yields the twin's own name",
+      "fixtures": [
+        "reserved-name-and-suffixed-twin"
+      ],
+      "adapters": [
+        "blade"
       ]
     },
     "rich-typed-prop-hydration": {

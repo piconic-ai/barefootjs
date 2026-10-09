@@ -3058,6 +3058,17 @@
         "text"
       ]
     },
+    "filter-feeds-map-item-named-props": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "filter-nested-callback-predicate": {
       "kinds": [
         "array-literal",
@@ -3134,6 +3145,25 @@
         "text"
       ]
     },
+    "filter-param-literal-matches-renamed-name": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-param-name-differs": {
       "kinds": [
         "array-literal",
@@ -3153,6 +3183,18 @@
         "unary:!"
       ],
       "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "filter-param-named-loop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -5216,6 +5258,18 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "map-param-named-loop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -7400,6 +7454,89 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "reserved-name-and-internal-twin": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reserved-name-and-renamed-twin": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reserved-name-and-suffixed-twin": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reserved-name-filter-param-and-internal-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "reserved-name-filter-param-feeds-internal-map-param": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "reserved-name-filter-param-renamed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "reserved-name-in-sibling-loops": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
     },
     "reserved-word-child-signal": {
       "kinds": [

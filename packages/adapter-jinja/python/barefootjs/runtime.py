@@ -110,6 +110,10 @@ def jinja_ident(name: str) -> str:
     `_` suffix, everything else passes through unchanged. Applied at every
     point a props dict is turned into template variables (`render_named`,
     `render_child` prop passing) -- see the module divergence notes above."""
+    # The engine binds its own `loop` inside `{% for %}`; a JS `loop` takes
+    # the compiler-internal `__bf_loop` (#3404), mirroring `jinjaIdent`.
+    if name == "loop":
+        return "__bf_loop"
     return f"{name}_" if name in RESERVED_WORDS else name
 
 
