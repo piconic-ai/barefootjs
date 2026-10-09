@@ -232,7 +232,10 @@ export function destructureLoopParam(
 ): { head: string; unwrap: string } {
   if (param.startsWith('[') || param.startsWith('{')) {
     if (paramBindings && paramBindings.length > 0) {
-      return { head: '__bfItem', unwrap: '' }
+      // A nested row names its accessor after its loop (`withRowAccessor`,
+      // #3397), so it does not shadow an enclosing row's `__bfItem`.
+      const accessor = paramBindings[0].accessor
+      return { head: accessor ? accessor.replace(/\(\)$/, '') : '__bfItem', unwrap: '' }
     }
     return {
       head: '__bfItem',

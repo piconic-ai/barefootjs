@@ -656,7 +656,7 @@ function scanForIdentifiers(expr: string, predicate: (token: string) => boolean)
  *   native array method (no runtime helper required).
  */
 function renderLoopBindingAccess(b: LoopParamBinding, base: string): string {
-  const parent = `${base}${b.path}`
+  const parent = `${b.accessor ?? base}${b.path}`
   if (b.rest?.kind === 'object') {
     if (b.rest.exclude.length === 0) {
       // No sibling keys to omit. A fresh shallow clone — not a direct alias
@@ -1044,4 +1044,19 @@ export function specsInsideRow(
     const shadowed = spec.shadowed ? new Set([...spec.shadowed, ...names]) : names
     return { ...spec, shadowed }
   })
+}
+
+/**
+ * The bindings of a nested destructured `.map()` row, each reading through
+ * the row's own accessor `__bfItem_<markerId>()` (#3397). Every nested row
+ * then names its render callback's item accessor differently, so a row
+ * inside another destructured row can still read the outer row's bindings.
+ */
+export function withRowAccessor(
+  bindings: readonly LoopParamBinding[] | undefined,
+  markerId: string,
+): readonly LoopParamBinding[] | undefined {
+  if (!bindings || bindings.length === 0) return bindings
+  const accessor = `__bfItem_${markerId}()`
+  return bindings.map(b => ({ ...b, accessor }))
 }

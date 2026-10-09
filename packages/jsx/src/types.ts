@@ -1130,6 +1130,13 @@ export interface LoopParamBinding {
    * reading it as "binding at the loop root".
    */
   segments?: readonly LoopBindingPathSegment[]
+  /**
+   * Client JS only: the row accessor call this binding reads through
+   * (`__bfItem_l0()`), set on the bindings of a nested destructured `.map()`
+   * row so its render callback does not shadow an enclosing row's
+   * `__bfItem` (#3397). Absent for a top-level row, which reads `__bfItem()`.
+   */
+  accessor?: string
 }
 
 export interface IRComponent {

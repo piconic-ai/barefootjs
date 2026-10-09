@@ -5,8 +5,8 @@ import { createFixture } from '../src/types'
  * `.filter()` predicate in a nested loop captures both the enclosing row's
  * item param and the outer row's destructure binding, with no shadowing.
  * Each inner row keeps the tags equal to its own tag or to the group name.
- * The list is a prop: an outer destructure list read inside the nested
- * `.filter()` hits a separate client-JS defect (#3397).
+ * The list is a prop; `nested-loop-filter-reads-outer-destructure-list`
+ * reads it from the outer destructure binding instead (#3397).
  */
 export const fixture = createFixture({
   id: 'nested-loop-filter-captures-outer-bindings',

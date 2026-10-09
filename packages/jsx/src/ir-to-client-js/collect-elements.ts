@@ -4,7 +4,7 @@
 
 import { type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
-import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, toHtmlAttrName, rowBoundNames, type LoopParamSpec } from './utils.ts'
+import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, toHtmlAttrName, rowBoundNames, withRowAccessor, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
@@ -328,13 +328,16 @@ export function collectInnerLoops(
       },
       loop: ({ node: n, scope, descend }) => {
         const emitDepth = fixedDepth ?? scope.depth + 1
+        // This nested row reads its destructure bindings through its own
+        // accessor, not the enclosing row's `__bfItem` (#3397).
+        const rowBindings = withRowAccessor(n.paramBindings, n.markerId)
         // Generate item template for CSR rendering in mapArray.
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
         // Forward destructured bindings (#951) so inner-loop template
         // references to the destructured locals are rewritten.
         // The outer spec skips the names this row rebinds (#3394).
         const loopParamsForTemplate = outerSpec
-          ? [{ ...outerSpec, shadowed: rowBoundNames(n) }, { param: n.param, bindings: n.paramBindings, index: n.index }]
+          ? [{ ...outerSpec, shadowed: rowBoundNames(n) }, { param: n.param, bindings: rowBindings, index: n.index }]
           : undefined
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Per-item bindings for inner loop body, collected uniformly when
@@ -370,8 +373,8 @@ export function collectInnerLoops(
             // guarantees the branch's marker is mounted the moment this
             // effect first runs (issue-2706-nested-loop-conditional-slot
             // .test.ts's original repro).
-            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index, scope.bindingScope))
-            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index, scope.bindingScope))
+            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, rowBindings, true, innerPreambleNames, n.index, scope.bindingScope))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, rowBindings, true, innerPreambleNames, n.index, scope.bindingScope))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
           bindings.conditionals.push(...collectLoopChildConditionals(
@@ -379,7 +382,7 @@ export function collectInnerLoops(
             ctx,
             siblingOffsets,
             n.param,
-            n.paramBindings,
+            rowBindings,
             innerPreambleNames,
             n.index,
             // Render a branch's HTML against the FULL ancestor chain (outer
@@ -428,7 +431,7 @@ export function collectInnerLoops(
           array: n.array,
           arrayFreeIdentifiers: n.arrayFreeIdentifiers,
           param: n.param,
-          paramBindings: n.paramBindings,
+          paramBindings: rowBindings,
           index: n.index,
           key: n.key,
           markerId: n.markerId,
@@ -452,7 +455,7 @@ export function collectInnerLoops(
           descend({
             ...scope,
             depth: scope.depth + 1,
-            bindingScope: buildLoopRowScope(n.param, n.paramBindings, innerPreambleNames, n.index, scope.bindingScope),
+            bindingScope: buildLoopRowScope(n.param, rowBindings, innerPreambleNames, n.index, scope.bindingScope),
           })
         }
       },
