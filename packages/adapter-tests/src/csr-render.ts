@@ -197,6 +197,10 @@ const __comments = new Map()
 // below can render that shape instead of splicing an attribute onto an
 // element that, structurally, owns none of the parent-scope markers (#2732).
 const __fragmentRoots = new Map()
+// Mirrors production's \`ComponentDef.transparent\` (#3355): a stateless
+// transparent-fragment child (\`<>{children}</>\`) owns no scope, so
+// \`renderChild\` emits its markup as-is.
+const __transparent = new Map()
 let __lastComponent = null
 
 function hydrate(name, def) {
@@ -204,6 +208,7 @@ function hydrate(name, def) {
   if (def.init) __inits.set(name, def.init)
   __comments.set(name, !!def.comment)
   __fragmentRoots.set(name, !!def.fragmentRoot)
+  __transparent.set(name, !!def.transparent)
   __lastComponent = name
 }
 
@@ -239,6 +244,18 @@ function renderChild(name, props, key, suffix, loopItemRoot) {
     : '~' + name + '_' + Math.random().toString(36).slice(2, 8)
   const keyAttr = key !== undefined ? ' data-key="' + key + '"' : ''
   const isFragmentRoot = !!__fragmentRoots.get(name)
+  // A stateless transparent-root child adds no scope (#3355): render its
+  // markup as-is, resolve the hoisted-children placeholder against the
+  // caller's scope, and keep only \`data-key\` on the first element —
+  // mirrors production's renderChild.
+  if (template && __transparent.get(name)) {
+    const html = template(props).trim()
+      .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __parentScope + '"')
+    if (!keyAttr) return html
+    const m = html.match(/<([a-zA-Z][^\\s/>]*)/)
+    if (!m) return html
+    return html.slice(0, m.index) + html.slice(m.index).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + keyAttr)
+  }
   // Slot-relationship markers (bf-h/bf-m) — mirrors the production
   // runtime renderChild in @barefootjs/client/runtime so CSR conformance
   // output asserts the same shape SSR emits. Stamped regardless of
