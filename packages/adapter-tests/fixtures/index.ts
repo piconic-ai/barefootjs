@@ -37,6 +37,7 @@ import { fixture as filterCaptureReservedAnd } from './filter-capture-reserved-a
 import { fixture as mapParamNamedLoop } from './map-param-named-loop'
 import { fixture as filterParamNamedLoop } from './filter-param-named-loop'
 import { fixture as filterParamLiteralMatchesRenamedName } from './filter-param-literal-matches-renamed-name'
+import { fixture as filterFeedsMapItemNamedProps } from './filter-feeds-map-item-named-props'
 import { fixture as reservedNameAndSuffixedTwin } from './reserved-name-and-suffixed-twin'
 import { fixture as reservedNameAndInternalTwin } from './reserved-name-and-internal-twin'
 import { fixture as reservedNameAndRenamedTwin } from './reserved-name-and-renamed-twin'
@@ -1586,6 +1587,7 @@ export const jsxFixtures: JSXFixture[] = [
   mapParamNamedLoop,
   filterParamNamedLoop,
   filterParamLiteralMatchesRenamedName,
+  filterFeedsMapItemNamedProps,
   reservedNameAndSuffixedTwin,
   reservedNameAndInternalTwin,
   reservedNameAndRenamedTwin,

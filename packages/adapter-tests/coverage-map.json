@@ -3058,6 +3058,17 @@
         "text"
       ]
     },
+    "filter-feeds-map-item-named-props": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "filter-nested-callback-predicate": {
       "kinds": [
         "array-literal",

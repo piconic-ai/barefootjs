@@ -2153,6 +2153,14 @@
       }
     }
   ],
+  "filter-feeds-map-item-named-props": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "filter-param-literal-matches-renamed-name": [
     {
       "name": "gen:items:empty",

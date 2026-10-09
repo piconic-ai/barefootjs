@@ -227,7 +227,10 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    const flat = flattenPropsMember(object, property)
+    // A callback param spelled `props` (a `.map((props) => …)` row the
+    // filter param was renamed to) is the row item, not the component
+    // props (#3404).
+    const flat = object.kind === 'identifier' && object.name === this.param ? null : flattenPropsMember(object, property)
     if (flat !== null) return flat
     // `.length` — route through `$bf->length` (handles both array element
     // count and string char count, JS-compatibly).
