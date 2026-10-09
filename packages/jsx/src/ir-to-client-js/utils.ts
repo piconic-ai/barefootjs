@@ -7,6 +7,7 @@ import ts from 'typescript'
 import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
 import { isNonReferenceIdentifierPosition } from '../analyzer.ts'
+import { BindingScope, type LoopBindingSource } from '../scope/binding-scope.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
 import {
@@ -714,17 +715,46 @@ export function wrapLoopParamAsAccessor(
   paramName: string,
   bindings?: readonly LoopParamBinding[],
   indexParam?: string | null,
+  shadowed?: ReadonlySet<string>,
 ): string {
+  // `shadowed`: names a nearer row rebinds (`rowBoundNames`), so inside that
+  // row they mean the nearer binding and keep their plain spelling (#3394).
+  const destructured = !!bindings && bindings.length > 0
+  const liveBindings = destructured && shadowed ? bindings.filter(b => !shadowed.has(b.name)) : bindings
+  const liveIndex = indexParam && shadowed?.has(indexParam) ? null : indexParam
   let result: string
-  if (bindings && bindings.length > 0) {
-    result = rewriteLoopBindingRefs(expr, bindings, '__bfItem()')
+  if (destructured) {
+    result = liveBindings && liveBindings.length > 0 ? rewriteLoopBindingRefs(expr, liveBindings, '__bfItem()') : expr
   } else {
-    result = rewriteIdentifierAsAccessor(expr, paramName)
+    result = shadowed?.has(paramName) ? expr : rewriteIdentifierAsAccessor(expr, paramName)
   }
-  if (indexParam && indexParam !== paramName) {
-    result = wrapIndexParamAsAccessor(result, indexParam)
+  if (liveIndex && liveIndex !== paramName) {
+    result = wrapIndexParamAsAccessor(result, liveIndex)
   }
   return result
+}
+
+/**
+ * A loop-param accessor rewrite that can be told which names a nearer row
+ * rebinds (#3394). Each wrap passes `shadowed` on to the enclosing loops'
+ * wraps it composes, so every ancestor rewrite skips them too.
+ */
+export type ShadowableWrap = (expr: string, shadowed?: ReadonlySet<string>) => string
+
+/** `a` and `b` together; `a` alone when `b` is empty or absent. */
+export function unionNames(a: ReadonlySet<string>, b?: ReadonlySet<string>): ReadonlySet<string> {
+  return b && b.size > 0 ? new Set([...a, ...b]) : a
+}
+
+/**
+ * Every name the row of `loop` binds — its item (or destructure bindings),
+ * index and preamble locals — via `BindingScope.enterLoopRow`. Inside that
+ * row an enclosing loop's accessor rewrite must skip these names, or an
+ * inner `const name = …` that shadows an outer destructure binding becomes
+ * `const __bfItem().name = …` (#3394).
+ */
+export function rowBoundNames(loop: LoopBindingSource): ReadonlySet<string> {
+  return BindingScope.EMPTY.enterLoopRow(loop).boundNames()
 }
 
 /**
@@ -962,6 +992,8 @@ export interface LoopParamSpec {
   bindings?: readonly LoopParamBinding[]
   /** This loop's index parameter name, when it declares one (#2859). */
   index?: string | null
+  /** Names a nearer row rebinds, left as written (#3394). */
+  shadowed?: ReadonlySet<string>
 }
 
 /**
@@ -991,8 +1023,25 @@ export function wrapExprWithLoopParams(expr: string, loopParams?: ReadonlyArray<
   let result = expr
   for (const p of loopParams) {
     const spec = typeof p === 'string' ? { param: p } : p
-    result = wrapLoopParamAsAccessor(result, spec.param, spec.bindings, spec.index)
+    result = wrapLoopParamAsAccessor(result, spec.param, spec.bindings, spec.index, spec.shadowed)
   }
   return result
 }
 
+/**
+ * Enclosing loop specs as seen inside the row of `loop`: each spec also
+ * skips the names that row rebinds (`rowBoundNames`, #3394).
+ */
+export function specsInsideRow(
+  specs: ReadonlyArray<string | LoopParamSpec> | undefined,
+  loop: LoopBindingSource,
+): ReadonlyArray<string | LoopParamSpec> | undefined {
+  if (!specs) return specs
+  const names = rowBoundNames(loop)
+  if (names.size === 0) return specs
+  return specs.map(p => {
+    const spec = typeof p === 'string' ? { param: p } : p
+    const shadowed = spec.shadowed ? new Set([...spec.shadowed, ...names]) : names
+    return { ...spec, shadowed }
+  })
+}

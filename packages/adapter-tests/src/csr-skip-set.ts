@@ -4,10 +4,6 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
-  // #3394: the client template's destructure rewrite turns the inner
-  // preamble's own `const name` into `const __bfItem().name`, which does not
-  // parse. SSR renders it correctly on every adapter.
-  'nested-loop-preamble-shadows-row-binding',
   // The client-directive escape intentionally elides the outer loop's
   // SSR rows. Its native-element CSR template eagerly creates those rows,
   // so comparing it with the empty SSR placeholder is not its contract.

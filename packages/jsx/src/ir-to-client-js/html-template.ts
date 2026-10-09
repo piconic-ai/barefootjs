@@ -4,7 +4,7 @@
 
 import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
@@ -965,7 +965,10 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // Increment loopDepth so inner key attrs become data-key-N
       // Forward loopParams so expressions referencing outer/inner loop params
       // get wrapped as signal accessors (e.g., task.title → task().title).
-      const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar)
+      // Inside the row, a name the row rebinds is no longer an enclosing
+      // loop's binding (#3394).
+      const rowLoopParams = specsInsideRow(loopParams, node)
+      const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1, rowLoopParams, branchSlotsVar)
       let childTemplate = node.children.map(innerRecurse).join('')
       // Whole-item conditional loops (#1665): prepend an always-present
       // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
@@ -1001,13 +1004,13 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
         // `mapArray` stamps on adoption/creation, so SSR, hydrate template and
         // csr-mount agree on it (see `leafKeyAsDataKeyAttr`).
         const body = renderPreamble(node.flatMapCallback, {
-          renderLeaf: (ir) => irToHtmlTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar),
+          renderLeaf: (ir) => irToHtmlTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, loopDepth + 1, rowLoopParams, branchSlotsVar),
         })
         mapExpr = interp(mappedRowsMarkup(wrappedArray, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder
         // preamble (the hydrate-template context uses the bare loop param).
-        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar) })
+        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, rowLoopParams, branchSlotsVar) })
         mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`))
       } else {
         mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `\`${childTemplate}\``))
@@ -1455,7 +1458,10 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
     case 'loop': {
       // Inner loops: generate inline .map().join('') with placeholders for components
       // Forward loopParams so inner loop param expressions get wrapped as signal accessors.
-      const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1, loopParams)
+      // Inside the row, a name the row rebinds is no longer an enclosing
+      // loop's binding (#3394).
+      const rowLoopParams = specsInsideRow(loopParams, node)
+      const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1, rowLoopParams)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
       // Apply sort / filter chain (#1448 Tier B) — same shape as the
@@ -1468,12 +1474,12 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       if (node.flatMapCallback) {
         const body = renderPreamble(node.flatMapCallback, {
           // Leaf `key` → `data-key` — see the irToHtmlTemplate site above.
-          renderLeaf: (ir) => irToPlaceholderTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams),
+          renderLeaf: (ir) => irToPlaceholderTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, loopDepth + 1, rowLoopParams),
         })
         mapExpr = interp(mappedRowsMarkup(wrappedArray, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder preamble.
-        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams) })
+        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, rowLoopParams) })
         mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`))
       } else {
         mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `\`${childTemplate}\``))

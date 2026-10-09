@@ -24,7 +24,7 @@ import type {
   LoopParamBinding,
 } from '../../../types.ts'
 import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
-import { quotePropName, wrapLoopParamAsAccessor, attrValueToString } from '../../utils.ts'
+import { quotePropName, wrapLoopParamAsAccessor, attrValueToString, rowBoundNames, unionNames, type ShadowableWrap } from '../../utils.ts'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template.ts'
 import type { ReactiveAttrSlot } from './reactive-effects.ts'
 
@@ -234,7 +234,7 @@ export interface BuildBranchInnerLoopsArgs {
    * Outer-wrap closure — defaults to wrapping with `outerLoopParam`. Overridden
    * by `emitNestedLoopChildConditionals` recursion (which threads its own wrap).
    */
-  wrapOuter: (expr: string) => string
+  wrapOuter: ShadowableWrap
 }
 
 /**
@@ -269,7 +269,14 @@ export function buildBranchInnerLoopsPlan(
     if (!inner.template) continue
 
     const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
-    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)
+    // Inside the inner row, a name it rebinds is not the outer row's
+    // binding (#3394).
+    // `wrapOuter` already composes every enclosing loop's rewrite; pass the
+    // shadowed names through it so each of them skips them.
+    const innerShadowed = rowBoundNames(inner)
+    const wrapOuterRow: ShadowableWrap = (expr, shadowed) => wrapOuter(expr, unionNames(innerShadowed, shadowed))
+    const wrapBoth: ShadowableWrap = (expr, shadowed) =>
+      wrapLoopParamAsAccessor(wrapOuterRow(expr, shadowed), inner.param, inner.paramBindings, inner.index, shadowed)
 
     const csl = inner.containerSlotId
     // Inner loop's container: host-side `bf="<slot>"` slot marker first,
@@ -378,7 +385,7 @@ export interface BuildLoopChildConditionalsArgs {
   /** Element variable used as `insert(scopeVar, ...)` first arg. */
   scopeVar: string
   /** Wrap closure for condition / HTML / handlers. */
-  wrap: (expr: string) => string
+  wrap: ShadowableWrap
   /**
    * Loop param identifier — the wrap that wires the recursion's nested
    * inner loops uses this. Typically equals the inner loop's param when
@@ -501,7 +508,7 @@ export function buildArmTextsPlan(
 
 interface BuildLoopChildArmArgs {
   branch: LoopChildBranchSummary
-  wrap: (expr: string) => string
+  wrap: ShadowableWrap
   loopParam: string
   loopParamBindings?: readonly LoopParamBinding[]
   /** Loop's index param name, when it declares one (#2861). */
