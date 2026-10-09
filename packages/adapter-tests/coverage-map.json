@@ -6514,6 +6514,22 @@
         "attribute"
       ]
     },
+    "number-arithmetic-text-exponent-boundaries": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "number-arithmetic-text-formatting": {
       "kinds": [
         "binary",

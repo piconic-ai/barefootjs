@@ -17,6 +17,7 @@ import { fixture as numberArithmeticTextFormatting } from './number-arithmetic-t
 import { fixture as numberArithmeticAttrFormatting } from './number-arithmetic-attr-formatting'
 import { fixture as numberArithmeticAttrForms } from './number-arithmetic-attr-forms'
 import { fixture as numberArithmeticAttrExponentBoundaries } from './number-arithmetic-attr-exponent-boundaries'
+import { fixture as numberArithmeticTextExponentBoundaries } from './number-arithmetic-text-exponent-boundaries'
 import { fixture as memoLiteralDivision } from './memo-literal-division'
 import { fixture as memoLiteralDivisionDestructured } from './memo-literal-division-destructured'
 import { fixture as ternaryBooleanBranchAttr } from './ternary-boolean-branch-attr'
@@ -1574,6 +1575,7 @@ export const jsxFixtures: JSXFixture[] = [
   numberArithmeticAttrFormatting,
   numberArithmeticAttrForms,
   numberArithmeticAttrExponentBoundaries,
+  numberArithmeticTextExponentBoundaries,
   memoLiteralDivision,
   memoLiteralDivisionDestructured,
   ternaryBooleanBranchAttr,

@@ -41,9 +41,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // An attribute number at the 1e-6 / 1e21 notation boundary prints with
-  // PHP's float-to-string conversion: an exponent at 1e-6 and an upper-case `E` (`1.23456789E+21`).
-  'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
+  // `number-arithmetic-attr-exponent-boundaries` used to sit here: a number
+  // at the 1e-6 / 1e21 boundary kept the host spelling. The runtime number
+  // formatter now applies JavaScript's notation rules (#3380).
 
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, PHP reads the null
   // operand as `0` (#3390).

@@ -38,9 +38,11 @@ export const renderDivergences: RenderDivergences = {
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
   // operand throws or reads as `0` here (#3350 covers only `null`).
   'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
-  // An attribute number at the 1e-6 / 1e21 notation boundary prints with
-  // Perl's `%g` stringification pads a negative exponent (`1.23456789e-06`).
+  // A number at the 1e-6 / 1e21 notation boundary, in an attribute or in
+  // text, prints with Perl's `%g` stringification, which pads a negative
+  // exponent (`1.23456789e-06`).
   'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
+  'number-arithmetic-text-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
   // `nullish-ternary-false-branch-attr` used to sit here: a taken `false`
   // branch next to a non-boolean branch lowered to Perl `0`. Such branches
   // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);

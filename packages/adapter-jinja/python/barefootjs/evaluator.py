@@ -246,17 +246,45 @@ def _to_number(v: Any) -> float:
 
 
 def _format_number(n: float) -> str:
-    # Shortest round-trip repr with JS's integral-float spelling (`1.0` ->
-    # `"1"`). Python's `repr(float)` has been shortest-round-trip since 3.1,
-    # matching JS engines' digit sequences for the common range; very
-    # large/small magnitudes can diverge in exponent-notation formatting --
-    # the same documented divergence region the Go runtime's evalToString
-    # carries (see bf.go / eval.go), not re-solved here either.
+    # JS `Number::toString` for a finite number. Python's `repr(float)` gives
+    # the shortest round-trip digits (the same digits JS engines pick); only
+    # the notation differs. JS prints decimal within [1e-6, 1e21) and an
+    # unpadded lower-case exponent outside it (`1.23456789e-7`,
+    # `1.23456789e+21`), where `repr` switches to an exponent below 1e-4 and
+    # pads it (`1.23456789e-06`) (#3380).
     if n == 0:
         return "0"
-    if n == int(n) and abs(n) < 1e21:
+    # Exact integers print as such; beyond 2**53 JS prints the shortest
+    # digits padded with zeros (`12345678901234567000`), not the exact value.
+    if n == int(n) and abs(n) < 2**53:
         return str(int(n))
-    return repr(n)
+    return _js_notation(repr(n))
+
+
+def _js_notation(shortest: str) -> str:
+    # Re-spell a shortest round-trip decimal (`[-]d[.ddd][e[+-]x]`) with the
+    # ECMA-262 Number::toString notation rules (step 6-10): `digits` holds the
+    # significant digits, `point` where the decimal point falls in them.
+    sign = "-" if shortest.startswith("-") else ""
+    body = shortest.lstrip("-")
+    mantissa, _, exp = body.lower().partition("e")
+    int_part, _, frac_part = mantissa.partition(".")
+    raw = int_part + frac_part
+    point = len(int_part) + (int(exp) if exp else 0)
+    digits = raw.lstrip("0")
+    point -= len(raw) - len(digits)
+    digits = digits.rstrip("0") or "0"
+    k = len(digits)
+    if k <= point <= 21:
+        out = digits + "0" * (point - k)
+    elif 0 < point <= 21:
+        out = digits[:point] + "." + digits[point:]
+    elif -6 < point <= 0:
+        out = "0." + "0" * (-point) + digits
+    else:
+        e = point - 1
+        out = digits[0] + ("." + digits[1:] if k > 1 else "") + "e" + ("+" if e >= 0 else "-") + str(abs(e))
+    return sign + out
 
 
 def _to_string(v: Any) -> str:

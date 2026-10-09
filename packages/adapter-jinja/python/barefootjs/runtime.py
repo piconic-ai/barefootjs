@@ -148,9 +148,7 @@ def _format_js_number(n: float) -> str:
         return "-Infinity"
     if n == 0:
         return "0"  # normalises -0.0 to JS's "0" spelling
-    if n == int(n) and abs(n) < 1e21:
-        return str(int(n))
-    return repr(n)  # shortest round-trip; see evaluator._format_number
+    return _evaluator._format_number(n)  # JS notation at the 1e-6 / 1e21 boundaries (#3380)
 
 
 def js_string(value: Any) -> str:
@@ -165,7 +163,9 @@ def js_string(value: Any) -> str:
     if isinstance(value, float):
         return _format_js_number(value)
     if isinstance(value, int):
-        return str(value)
+        # Every JS number is a double: an int past 2**53 (e.g. an exact
+        # Python product `1234567890 * 10**12`) prints as that double does.
+        return str(value) if abs(value) < 2**53 else _format_js_number(float(value))
     if isinstance(value, str):
         return value
     if isinstance(value, list):

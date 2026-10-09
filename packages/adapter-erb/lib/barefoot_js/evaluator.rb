@@ -225,33 +225,53 @@ module BarefootJS
     end
     private_class_method :parse_numeric_string
 
-    # JS Number#toString. Integral finite values (however they arrived --
-    # Integer or an integral Float) render without a decimal point
-    # ("1.0" -> "1"); non-finite values use the JS spellings ("NaN" /
-    # "Infinity" / "-Infinity"), which Ruby's own Float#to_s does not use.
-    # Non-integral floats fall back to Ruby's shortest-round-trip Float#to_s
-    # (the same class of algorithm V8 uses), reformatted to JS's exponent
-    # style. This is not the full ECMA-262 Number::toString grammar (no
-    # attempt to match JS's exact exponential-notation thresholds), but it
-    # is exact for every value the golden vectors exercise.
+    # JS Number#toString. Integral finite values below 2**53 (however they
+    # arrived -- Integer or an integral Float) render exactly, without a
+    # decimal point ("1.0" -> "1"); non-finite values use the JS spellings
+    # ("NaN" / "Infinity" / "-Infinity"), which Ruby's own Float#to_s does
+    # not use. Everything else takes Ruby's shortest-round-trip Float#to_s
+    # digits (the same digits V8 picks) re-spelled with ECMA-262's notation
+    # rules: decimal within [1e-6, 1e21), otherwise an unpadded lower-case
+    # exponent (`1.23456789e-7`, `1.23456789e+21`) -- Ruby switches to an
+    # exponent below 1e-4 and pads it (`1.23456789e-06`) (#3380).
     def number_to_string(n)
       f = n.to_f
       return 'NaN' if f.nan?
       return f.negative? ? '-Infinity' : 'Infinity' if f.infinite?
       return '0' if f.zero?
-      return n.to_i.to_s if f == f.to_i && f.abs < 1e21
+      return n.to_i.to_s if f == f.to_i && f.abs < 2**53
 
-      s = f.to_s
-      if s.include?('e')
-        mantissa, exp = s.split('e')
-        mantissa = mantissa.sub(/\.0\z/, '')
-        sign = exp.start_with?('-') ? '-' : '+'
-        digits = exp.sub(/\A[+-]/, '').sub(/\A0+(?=\d)/, '')
-        "#{mantissa}e#{sign}#{digits}"
-      else
-        s
-      end
+      js_notation(f.to_s)
     end
+
+    # Re-spell a shortest round-trip decimal (`[-]d[.ddd][e[+-]x]`) with the
+    # ECMA-262 Number::toString notation rules: `digits` holds the
+    # significant digits, `point` where the decimal point falls in them.
+    def js_notation(shortest)
+      sign = shortest.start_with?('-') ? '-' : ''
+      mantissa, exp = shortest.delete_prefix('-').downcase.split('e', 2)
+      int_part, frac_part = mantissa.split('.', 2)
+      raw = int_part + (frac_part || '')
+      point = int_part.length + (exp ? exp.to_i : 0)
+      digits = raw.sub(/\A0+/, '')
+      point -= raw.length - digits.length
+      digits = digits.sub(/0+\z/, '')
+      digits = '0' if digits.empty?
+      k = digits.length
+      out =
+        if k <= point && point <= 21
+          digits + ('0' * (point - k))
+        elsif point.positive? && point <= 21
+          "#{digits[0, point]}.#{digits[point..]}"
+        elsif point > -6 && point <= 0
+          "0.#{'0' * -point}#{digits}"
+        else
+          e = point - 1
+          "#{digits[0]}#{k > 1 ? ".#{digits[1..]}" : ''}e#{e >= 0 ? '+' : '-'}#{e.abs}"
+        end
+      sign + out
+    end
+    private_class_method :js_notation
 
     # ---------------------------------------------------------------------
     # Operators

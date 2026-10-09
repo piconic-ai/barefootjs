@@ -4152,31 +4152,21 @@
         }
       },
       "number-arithmetic-attr-exponent-boundaries": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "number-exponent-boundary-spelling"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "number-exponent-boundary-spelling"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "number-exponent-boundary-spelling"
-          ]
-        },
         "mojolicious": {
           "kind": "render",
           "limitations": [
             "number-exponent-boundary-spelling"
           ]
         },
-        "twig": {
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "number-exponent-boundary-spelling"
+          ]
+        }
+      },
+      "number-arithmetic-text-exponent-boundaries": {
+        "mojolicious": {
           "kind": "render",
           "limitations": [
             "number-exponent-boundary-spelling"
@@ -5821,6 +5811,10 @@
         "description": "Attribute arithmetic spells numbers as JavaScript does at the 1e-6 and 1e21 boundaries",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-exponent-boundaries.ts"
       },
+      "number-arithmetic-text-exponent-boundaries": {
+        "description": "Text arithmetic spells numbers as JavaScript does at the 1e-6 and 1e21 boundaries",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-text-exponent-boundaries.ts"
+      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6370,18 +6364,15 @@
     "number-exponent-boundary-spelling": {
       "title": "A number at the decimal/exponent notation boundary keeps the host language spelling",
       "kind": "silent",
-      "given": "an attribute arithmetic result at 1e-6 or below, or at 1e21 or above (`data-small={props.value / 1e15}` with `value` 1234567890)",
+      "given": "an arithmetic result in an attribute or text at 1e-6 or below, or at 1e21 or above (`data-small={props.value / 1e15}` with `value` 1234567890)",
       "expected": "the JavaScript spelling: decimal within [1e-6, 1e21), otherwise an unpadded lower-case exponent (`0.00000123456789`, `1.23456789e-7`, `1.23456789e+21`)",
-      "actual": "renders the host language spelling: an exponent at 1e-6 (`1.23456789e-6`), a padded (`e-07`) or upper-case (`E+21`) exponent, or the full digits at 1e21",
+      "actual": "renders the host language spelling: an exponent at 1e-6 with a zero-padded exponent (`1.23456789e-06`, `1.23456789e-07`)",
       "fixtures": [
-        "number-arithmetic-attr-exponent-boundaries"
+        "number-arithmetic-attr-exponent-boundaries",
+        "number-arithmetic-text-exponent-boundaries"
       ],
       "adapters": [
-        "blade",
-        "erb",
-        "jinja",
         "mojolicious",
-        "twig",
         "xslate"
       ]
     },

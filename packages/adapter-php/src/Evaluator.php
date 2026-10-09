@@ -78,23 +78,59 @@ final class Evaluator
      * stringification is already shortest-round-trip. `serialize_precision`
      * (default -1 since PHP 7.1, shortest round-trip, matching V8) is what
      * `var_export()`/`json_encode()` honour but plain `(string)` casts do
-     * not, hence the explicit routine (mirrors runtime.py's
-     * `_format_js_number` / this module's own `_format_number` in the
-     * Python port -- two independent copies there too, not shared, since
-     * runtime.py and evaluator.py are standalone modules; here it is
-     * shared between BarefootJS::string() and self::toStringJs() since nothing
-     * requires them to be independent implementations in PHP).
+     * not, hence the explicit routine (mirrors evaluator.py's
+     * `_format_number` in the Python port; shared here between
+     * BarefootJS::string() and self::toStringJs()).
+     *
+     * The shortest digits are re-spelled with ECMA-262's notation rules:
+     * decimal within [1e-6, 1e21), otherwise an unpadded lower-case exponent
+     * (`1.23456789e-7`, `1.23456789e+21`). `var_export` switches to an
+     * upper-case exponent below 1e-4 (`1.23456789E-6`) (#3380). Integers past
+     * 2**53 likewise print the shortest digits padded with zeros
+     * (`12345678901234567000`), as JS does, not the exact binary value.
      */
     public static function formatNumber(float $n): string
     {
         if ($n === 0.0) {
             return '0'; // normalises -0.0 to JS's "0" spelling
         }
-        if ($n == floor($n) && abs($n) < 1e21) {
+        if ($n == floor($n) && abs($n) < 9007199254740992.0) {
             return sprintf('%.0f', $n);
         }
         // Shortest round-trip decimal representation (serialize_precision=-1).
-        return var_export($n, true);
+        return self::jsNotation(var_export($n, true));
+    }
+
+    /**
+     * Re-spell a shortest round-trip decimal (`[-]d[.ddd][E[+-]x]`) with the
+     * ECMA-262 Number::toString notation rules: `$digits` holds the
+     * significant digits, `$point` where the decimal point falls in them.
+     */
+    private static function jsNotation(string $shortest): string
+    {
+        $sign = str_starts_with($shortest, '-') ? '-' : '';
+        $parts = explode('e', strtolower(ltrim($shortest, '-')), 2);
+        $mantissa = explode('.', $parts[0], 2);
+        $raw = $mantissa[0] . ($mantissa[1] ?? '');
+        $point = strlen($mantissa[0]) + (isset($parts[1]) ? (int) $parts[1] : 0);
+        $digits = ltrim($raw, '0');
+        $point -= strlen($raw) - strlen($digits);
+        $digits = rtrim($digits, '0');
+        if ($digits === '') {
+            $digits = '0';
+        }
+        $k = strlen($digits);
+        if ($k <= $point && $point <= 21) {
+            $out = $digits . str_repeat('0', $point - $k);
+        } elseif ($point > 0 && $point <= 21) {
+            $out = substr($digits, 0, $point) . '.' . substr($digits, $point);
+        } elseif ($point > -6 && $point <= 0) {
+            $out = '0.' . str_repeat('0', -$point) . $digits;
+        } else {
+            $e = $point - 1;
+            $out = $digits[0] . ($k > 1 ? '.' . substr($digits, 1) : '') . 'e' . ($e >= 0 ? '+' : '-') . abs($e);
+        }
+        return $sign . $out;
     }
 
     private static function get($node, string $key)
