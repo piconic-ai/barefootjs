@@ -50,6 +50,7 @@ import { fixture as reservedNameFilterParamAndInternalProp } from './reserved-na
 import { fixture as reservedNameFilterParamRenamed } from './reserved-name-filter-param-renamed'
 import { fixture as reservedNameFilterParamFeedsInternalMapParam } from './reserved-name-filter-param-feeds-internal-map-param'
 import { fixture as undefinedSignalArithmeticMemo } from './undefined-signal-arithmetic-memo'
+import { fixture as undefinedSignalArithmeticDirect } from './undefined-signal-arithmetic-direct'
 import { fixture as numberDivisionText } from './number-division-text'
 import { fixture as numberDivisionMatrix } from './number-division-matrix'
 import { fixture as conditionalNestedStatic } from './conditional-nested-loop-static-reactivity'
@@ -1608,6 +1609,7 @@ export const jsxFixtures: JSXFixture[] = [
   reservedNameFilterParamRenamed,
   reservedNameFilterParamFeedsInternalMapParam,
   undefinedSignalArithmeticMemo,
+  undefinedSignalArithmeticDirect,
   numberDivisionText,
   numberDivisionMatrix,
   conditionalNestedClient,

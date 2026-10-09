@@ -44,9 +44,9 @@ export const renderDivergences: RenderDivergences = {
   // at the 1e-6 / 1e21 boundary kept the host spelling. The runtime number
   // formatter now applies JavaScript's notation rules (#3380).
 
-  // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, PHP reads the null
-  // operand as `0` (#3390).
-  'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
+  // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
+  // `undefined`-initialized signal read the nil operand as `0` or threw. The
+  // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
 
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own

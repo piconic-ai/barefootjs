@@ -512,10 +512,13 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
   }
 
   /** A `null` arithmetic operand reads as `0`, as JS `ToNumber(null)` does
-   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one is left
-   * alone: JS gives `NaN`, not `0`. */
+   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one goes through
+   * `bf.number`, which maps the engine's nil to `NaN` as JS
+   * `ToNumber(undefined)` does (#3390). */
   private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
-    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isNullOperand(expr) ? `(${operand} or 0)` : operand
+    if (!NULL_COERCING_ARITHMETIC_OPS.has(op)) return operand
+    if (this.ctx._isUndefinedOperand(expr)) return `bf.number(${operand})`
+    return this.ctx._isNullOperand(expr) ? `(${operand} or 0)` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {

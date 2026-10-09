@@ -55,6 +55,8 @@ import {
   isBooleanAttr,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  NULL_COERCING_ARITHMETIC_OPS,
+  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   parseExpression,
@@ -7060,8 +7062,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `(elapsed / TRACK) * 100` would emit `bf_mul bf_div .Elapsed .TRACK 100`,
     // handing `bf_mul` four args. `wrapIfMultiToken` is a no-op for single tokens
     // and quoted literals.
-    const wl = wrapIfMultiToken(l)
-    const wr = wrapIfMultiToken(r)
+    // An operand that is certainly `undefined` at SSR goes through
+    // `bf_number`, which maps nil to `NaN` as JS `ToNumber(undefined)` does;
+    // the arithmetic helpers read nil as `0` (#3390).
+    const undefinedOperand = (e: ParsedExpr, w: string): string =>
+      NULL_COERCING_ARITHMETIC_OPS.has(op) &&
+      arithmeticOperandIsUndefined(e, this.state.nullishAttrCtx, n => this.scope.isBound(n))
+        ? `(bf_number ${w})`
+        : w
+    const wl = undefinedOperand(left, wrapIfMultiToken(l))
+    const wr = undefinedOperand(right, wrapIfMultiToken(r))
     const comparison = goComparisonCall(op, wl, wr)
     if (comparison !== null) return comparison
     switch (op) {

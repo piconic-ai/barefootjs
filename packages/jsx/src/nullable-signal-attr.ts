@@ -84,6 +84,10 @@ export interface NullishAttrContext {
   /** Signals seeded with a literal `null`: their SSR value is `null`, not
    * `undefined` (`arithmeticOperandIsNull`). */
   readonly nullSeededSignals?: ReadonlySet<string>
+  /** Signals seeded with `undefined` (`createSignal(undefined)` or a
+   * zero-arg `createSignal()`): their SSR value is `undefined`, not `null`
+   * (`arithmeticOperandIsUndefined`). */
+  readonly undefinedSeededSignals?: ReadonlySet<string>
   readonly memos: ReadonlyMap<string, MemoInfo>
 }
 
@@ -93,6 +97,9 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
     nullableSignals: collectNullableSignalGetters(ir),
     nullSeededSignals: new Set(
       signals.filter(s => s.parsed?.kind === 'literal' && s.parsed.literalType === 'null').map(s => s.getter),
+    ),
+    undefinedSeededSignals: new Set(
+      signals.filter(s => s.parsed?.kind === 'identifier' && s.parsed.name === 'undefined').map(s => s.getter),
     ),
     memos: new Map((ir.metadata.memos ?? []).map(m => [m.name, m])),
   }
@@ -176,20 +183,45 @@ export function arithmeticOperandIsNull(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): boolean {
+  return arithmeticOperandSeed(parsed, ctx, isShadowed) === 'null'
+}
+
+/**
+ * Whether an arithmetic operand's SSR value is certainly `undefined` — the
+ * literal `undefined`, a read of a signal seeded with `undefined` (or a
+ * zero-arg `createSignal()`), or a memo whose body is such a read. JS
+ * `ToNumber(undefined)` is `NaN`, so adapters coerce such an operand with
+ * their JS `Number()` helper, which maps the engine's nil to `NaN` (#3390).
+ */
+export function arithmeticOperandIsUndefined(
+  parsed: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean = () => false,
+): boolean {
+  return arithmeticOperandSeed(parsed, ctx, isShadowed) === 'undefined'
+}
+
+function arithmeticOperandSeed(
+  parsed: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean,
+): 'null' | 'undefined' | null {
   const visiting = new Set<string>()
-  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
-    if (expr.kind === 'literal') return expr.literalType === 'null'
+  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): 'null' | 'undefined' | null => {
+    if (expr.kind === 'literal') return expr.literalType === 'null' ? 'null' : null
+    if (expr.kind === 'identifier' && expr.name === 'undefined' && !shadowed('undefined')) return 'undefined'
     const getter = expr.kind === 'identifier' ? expr.name : bareGetterCallName(expr)
-    if (getter === null || shadowed(getter)) return false
-    if (ctx.nullSeededSignals?.has(getter)) return true
+    if (getter === null || shadowed(getter)) return null
+    if (ctx.nullSeededSignals?.has(getter)) return 'null'
+    if (ctx.undefinedSeededSignals?.has(getter)) return 'undefined'
     const memo = ctx.memos.get(getter)
-    if (!memo?.parsed || visiting.has(getter)) return false
+    if (!memo?.parsed || visiting.has(getter)) return null
     visiting.add(getter)
     const result = walk(memo.parsed, () => false)
     visiting.delete(getter)
     return result
   }
-  return parsed !== undefined && walk(parsed, isShadowed)
+  return parsed === undefined ? null : walk(parsed, isShadowed)
 }
 
 /**

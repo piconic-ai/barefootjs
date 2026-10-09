@@ -71,6 +71,10 @@ export interface PebbleEmitContext {
   /** Whether an arithmetic operand's SSR value is certainly `null`
    * (`arithmeticOperandIsNull`), so the emitter coerces it to `0` (#3350). */
   _isNullOperand(expr: ParsedExpr): boolean
+  /** Whether an arithmetic operand's SSR value is certainly `undefined`
+   * (`arithmeticOperandIsUndefined`), so the emitter coerces it with the
+   * runtime's JS `Number()` helper, which gives `NaN` (#3390). */
+  _isUndefinedOperand(expr: ParsedExpr): boolean
 
   _recordExprBF101(message: string, reason?: string): void
 

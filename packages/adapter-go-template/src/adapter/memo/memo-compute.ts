@@ -10,10 +10,12 @@
 
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 import {
+  arithmeticOperandIsUndefined,
   asCallbackMethodCall,
   freeVarsInBody,
   materializeGetterCalls,
   isNullishLiteral,
+  NULL_COERCING_ARITHMETIC_OPS,
   serializeParsedExpr,
 } from '@barefootjs/jsx'
 
@@ -250,6 +252,28 @@ export function filterArmEarlierSiblingRefs(
 }
 
 /**
+ * Whether a memo body is `-` / `*` / `/` / `%` / `**` arithmetic with an
+ * operand that is certainly `undefined` at SSR (`arithmeticOperandIsUndefined`)
+ * or is itself such arithmetic: the result is `NaN` whatever the other
+ * operand is (#3390).
+ */
+function arithmeticYieldsNaN(
+  expr: ParsedExpr,
+  signals: { getter: string; parsed?: ParsedExpr }[],
+): boolean {
+  if (expr.kind !== 'binary' || !NULL_COERCING_ARITHMETIC_OPS.has(expr.op)) return false
+  const ctx = {
+    nullableSignals: new Set<string>(),
+    undefinedSeededSignals: new Set(
+      signals.filter(s => s.parsed?.kind === 'identifier' && s.parsed.name === 'undefined').map(s => s.getter),
+    ),
+    memos: new Map(),
+  }
+  const nan = (e: ParsedExpr) => arithmeticOperandIsUndefined(e, ctx) || arithmeticYieldsNaN(e, signals)
+  return nan(expr.left) || nan(expr.right)
+}
+
+/**
  * Compute a memo's SSR initial value as a Go expression — e.g.
  * `() => count() * 2` → `in.Initial * 2`, `() => props.value * 10` →
  * `in.Value * 10`. Unresolved computations default to the memo's Go zero value.
@@ -285,6 +309,14 @@ export function computeMemoInitialValue(
   // computing over it keeps resolving the dependency's usual seed, since
   // `nil` can't be a native Go arithmetic operand.
   if (nillable && isNullishIdentityMemo(ctx, memo, signals, new Set([memo.name]))) return 'nil'
+  // Arithmetic over an `undefined`-initialized signal is `NaN` in JS
+  // (`ToNumber(undefined)`), but a Go seed would read the signal as `0`
+  // (#3390). `bf.Number(nil)` is that NaN; only a field that can hold a
+  // float64 takes it.
+  if ((goType === undefined || goType === 'float64' || goType.includes('interface{}') || goType === 'any') &&
+      memo.parsed && arithmeticYieldsNaN(memo.parsed, signals)) {
+    return 'bf.Number(nil)'
+  }
   const resolved = computeMemoInitialValueOrNull(
     ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
   )

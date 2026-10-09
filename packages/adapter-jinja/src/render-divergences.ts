@@ -40,9 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
-  // operand throws or reads as `0` here (#3350 covers only `null`).
-  'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
+  // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
+  // `undefined`-initialized signal read the nil operand as `0` or threw. The
+  // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
   // `number-arithmetic-attr-exponent-boundaries` used to sit here: a number
   // at the 1e-6 / 1e21 boundary kept the host spelling. The runtime number
   // formatter now applies JavaScript's notation rules (#3380).
