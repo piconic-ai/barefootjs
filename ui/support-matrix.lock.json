@@ -4798,6 +4798,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4971,6 +4977,12 @@
             },
             {
               "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
               ]
@@ -5338,6 +5350,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5517,6 +5535,12 @@
             },
             {
               "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
               ]
@@ -7841,6 +7865,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7966,6 +7996,12 @@
             },
             {
               "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
               ]
@@ -8237,6 +8273,12 @@
               ]
             },
             {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8368,6 +8410,12 @@
             },
             {
               "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
               ]

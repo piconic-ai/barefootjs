@@ -15,8 +15,8 @@ import type { CompilerError, ComponentIR, IRNode } from '../types.ts'
  *
  * The names checked are the ones the adapter turns into bare template
  * variables: props, local consts and functions, signal getters and setters,
- * memos, and the bindings of each loop row together with its enclosing
- * rows (`BindingScope`). `ident` is the adapter's own mangling
+ * memos, and the bindings of each loop row or `.filter()` callback together
+ * with its enclosing rows (`BindingScope`). `ident` is the adapter's own mangling
  * (`jinjaIdent`, `twigIdent`, …). One error per colliding group.
  */
 export function templateNameCollisionErrors(
@@ -80,6 +80,9 @@ export function templateNameCollisionErrors(
         for (const child of node.children) visit(child, scope)
         break
       case 'loop': {
+        // A `.filter()` predicate is its own callback: its param sees the
+        // enclosing scope, not the map row it feeds.
+        if (node.filterPredicate) check(scope.enterCallback([node.filterPredicate.param]))
         const row = scope.enterLoopRow(node)
         check(row)
         for (const child of node.children) visit(child, row)

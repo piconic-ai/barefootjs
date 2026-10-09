@@ -1280,7 +1280,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       // the general sigil-less text-scan caveat.
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
-          new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),
+          new RegExp(`\\b${pebbleIdent(loop.filterPredicate.param)}\\b`, 'g'),
           pebbleIdent(param)
         )
       }

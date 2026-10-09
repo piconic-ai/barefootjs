@@ -1196,7 +1196,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       // text-scan caveat.
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
-          new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),
+          new RegExp(`\\b${minijinjaIdent(loop.filterPredicate.param)}\\b`, 'g'),
           minijinjaIdent(param)
         )
       }

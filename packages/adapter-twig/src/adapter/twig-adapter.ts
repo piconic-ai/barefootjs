@@ -1233,7 +1233,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       // text-scan caveat.
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
-          new RegExp(`\\b${loop.filterPredicate.param}\\b`, 'g'),
+          new RegExp(`\\b${twigIdent(loop.filterPredicate.param)}\\b`, 'g'),
           twigIdent(param)
         )
       }

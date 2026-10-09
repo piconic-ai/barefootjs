@@ -3157,6 +3157,18 @@
         "text"
       ]
     },
+    "filter-param-named-loop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-predicate-modulo": {
       "kinds": [
         "array-literal",
@@ -7440,6 +7452,47 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "reserved-name-filter-param-and-internal-prop": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "reserved-name-filter-param-feeds-internal-map-param": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "reserved-name-filter-param-renamed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },

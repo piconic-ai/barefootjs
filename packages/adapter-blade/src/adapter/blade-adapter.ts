@@ -1333,7 +1333,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // file header for the analogous point about `extractTopLevelIdentifiers`).
       if (loop.filterPredicate.param !== param) {
         filterCond = filterCond.replace(
-          new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),
+          new RegExp(`\\$${bladeIdent(loop.filterPredicate.param)}\\b`, 'g'),
           bladeVar(param)
         )
       }

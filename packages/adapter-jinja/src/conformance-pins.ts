@@ -73,6 +73,9 @@ export const conformancePins: ConformancePins = {
   'reserved-name-and-internal-twin': [
     { code: 'BF105', severity: 'error', limitation: 'reserved-name-collides-with-internal-name' },
   ],
+  'reserved-name-filter-param-and-internal-prop': [
+    { code: 'BF105', severity: 'error', limitation: 'reserved-name-collides-with-internal-name' },
+  ],
   // Top-level `.find`/`.findIndex`/`.findLast`/`.findLastIndex` are NOT
   // pinned — unlike mojo (which refuses them), Jinja lowers them via the
   // same evaluator-JSON mechanism as `.filter`/`.some`. Only the nested form

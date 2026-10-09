@@ -2153,6 +2153,14 @@
       }
     }
   ],
+  "filter-param-named-loop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "filter-predicate-props-member": [
     {
       "name": "gen:items:empty",
@@ -4976,6 +4984,36 @@
       "props": {
         "loop": "first",
         "loop_": "日本語"
+      }
+    }
+  ],
+  "reserved-name-filter-param-and-internal-prop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "__bf_loop": {
+          "visible": false
+        }
+      }
+    }
+  ],
+  "reserved-name-filter-param-feeds-internal-map-param": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "reserved-name-filter-param-renamed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "__bf_loop": {
+          "visible": false
+        }
       }
     }
   ],

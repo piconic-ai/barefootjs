@@ -58,4 +58,24 @@ describe('templateNameCollisionErrors (#3404)', () => {
     `)
     expect(codes(component, ['loop', 'items'])).toEqual(['BF105'])
   })
+
+  test('a filter param collides with a prop', () => {
+    const component = ir(`
+      function Test(props: { items: { visible: boolean; label: string }[]; __bf_loop: { visible: boolean } }) {
+        return <div>{props.items.filter(loop => loop.visible).map(item => <span key={item.label}>{item.label}</span>)}</div>
+      }
+      export { Test }
+    `)
+    expect(codes(component, ['items', '__bf_loop'])).toEqual(['BF105'])
+  })
+
+  test('a filter param does not collide with the map param it feeds', () => {
+    const component = ir(`
+      function Test(props: { items: string[] }) {
+        return <ul>{props.items.filter(loop => loop !== '').map(__bf_loop => <li key={__bf_loop}>{__bf_loop}</li>)}</ul>
+      }
+      export { Test }
+    `)
+    expect(codes(component, ['items'])).toEqual([])
+  })
 })
