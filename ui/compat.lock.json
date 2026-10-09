@@ -3594,14 +3594,6 @@
           }
         }
       },
-      "member-seeded-nullable-signal-attr": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "optional-struct-field-absent-renders-zero"
-          ]
-        }
-      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -5694,10 +5686,6 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
-      },
-      "member-seeded-nullable-signal-attr": {
-        "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",

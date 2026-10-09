@@ -2572,12 +2572,6 @@
               ]
             },
             {
-              "fixture": "member-seeded-nullable-signal-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4305,12 +4299,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "member-seeded-nullable-signal-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -7288,12 +7276,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "member-seeded-nullable-signal-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
