@@ -4469,6 +4469,22 @@
         "text"
       ]
     },
+    "loop-param-shadows-signal-after-loop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-shadows-spread-const": {
       "kinds": [
         "call",
