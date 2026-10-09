@@ -96,6 +96,13 @@ export interface BuildInnerLoopsArgs {
    * inside it is looked up through the row's registered roots (`qsaItem`).
    */
   rowHasPortal?: boolean
+  /**
+   * Every enclosing loop's accessor rewrite, composed (#3397). A recursion
+   * for a deeper level passes it so a row two or more loops deep still
+   * rewrites its grandparent's bindings; the top call builds it from
+   * `outerLoopParam`.
+   */
+  wrapOuter?: ShadowableWrap
 }
 
 /**
@@ -105,9 +112,9 @@ export interface BuildInnerLoopsArgs {
  */
 export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
   const { levels, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex, rowHasPortal } = args
-  const wrapOuter: ShadowableWrap = outerLoopParam
+  const wrapOuter: ShadowableWrap = args.wrapOuter ?? (outerLoopParam
     ? (expr, shadowed) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex, shadowed)
-    : expr => expr
+    : expr => expr)
 
   const plan: InnerLoopPlan[] = []
   let i = 0
@@ -145,6 +152,12 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
           outerLoopParam: inner.param,
           outerLoopParamBindings: inner.paramBindings,
           outerLoopIndex: inner.index,
+          // This row's accessor over every enclosing one, so a deeper row
+          // still rewrites the outer rows' bindings (#3397).
+          wrapOuter: (expr, shadowed) => wrapLoopParamAsAccessor(
+            wrapOuter(expr, unionNames(rowBoundNames(inner), shadowed)),
+            inner.param, inner.paramBindings, inner.index, shadowed,
+          ),
         })
       : []
 

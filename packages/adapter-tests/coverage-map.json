@@ -5928,6 +5928,21 @@
         "text"
       ]
     },
+    "nested-loop-filter-reads-outer-destructure-list": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-loop-independent-signal": {
       "kinds": [
         "array-literal",
