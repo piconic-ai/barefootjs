@@ -16,8 +16,13 @@
 export type Context<T> = {
   readonly id: symbol
   readonly defaultValue: T | undefined
-  /** JSX Provider component. Compiled to provideContext() by the compiler. */
-  readonly Provider: (props: { value: T; children?: unknown }) => unknown
+  /**
+   * JSX Provider component. Compiled to provideContext() by the compiler.
+   * Returns `never` because the runtime stub only throws; `never` is also
+   * assignable to every JSX runtime's `JSX.Element`, so the source
+   * type-checks under any `jsxImportSource` (#3372).
+   */
+  readonly Provider: (props: { value: T; children?: unknown }) => never
 }
 
 /**
