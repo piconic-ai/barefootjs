@@ -98,6 +98,16 @@ export function isScopeCommentFragmentRoot(root: ComponentIR['root']): boolean {
 }
 
 /**
+ * True for a transparent fragment root (`<>{children}</>`). SSR renders it
+ * with no scope marker of any kind, so a stateless component of this shape
+ * declares `transparent: true` and `renderChild()` emits its markup as-is
+ * (#3355).
+ */
+export function isTransparentFragmentRoot(root: ComponentIR['root']): boolean {
+  return root.type === 'fragment' && !!(root as IRFragment).transparent
+}
+
+/**
  * The scope-shape flags (`comment: true` / `fragmentRoot: true`) a
  * component's `hydrate()` def declares — the ONE answer both registration
  * emitters read: `emitRegistrationAndHydration` (emit-registration.ts, a

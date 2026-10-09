@@ -754,6 +754,20 @@ export function renderChild(
   // `materializeComponent`'s equivalent fix) kept stamping `bf-s` onto an
   // element the SSR/hydrate reference never puts one on.
   const isFragmentRoot = def?.fragmentRoot === true
+  // A stateless transparent-root child (`<>{children}</>`, #3355) owns no
+  // scope: SSR renders the caller's content with nothing added, so stamping
+  // `bf-s` / `bf-h` / `bf-m` here made hydration rewrite the SSR DOM inside a
+  // conditional branch and made a CSR mount diverge from SSR. Hoisted
+  // children resolve their placeholder against the CALLER's scope, since
+  // this child adds no scope level of its own. `data-key` still lands on the
+  // first element — it is `mapArray`'s reconciliation contract.
+  if (def?.transparent && templateFn) {
+    const html = templateFn(props).trim().replace(
+      PLACEHOLDER_ATTR_PATTERN,
+      _parentScopeId ? ` bf-s="${_parentScopeId}"` : '',
+    )
+    return key !== undefined ? spliceAttrsAfterFirstTag(html, ` ${BF_KEY}="${key}"`) : html
+  }
   // Slot identity (bf-h/bf-m) and scope id (bf-s) are separate questions
   // (#2833): a loop item root has slot identity — `hasSlot` — but, unlike an
   // ordinary slotted child, does not DERIVE its scope id from the parent, so

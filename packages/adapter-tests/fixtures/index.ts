@@ -910,6 +910,7 @@ import { fixture as loopRowChildUntypedArrayMismatchedKeysTyped } from './loop-r
 // survived the branch's removal). Found by the explore sweep's
 // `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
+import { fixture as fragmentChildInConditional } from './fragment-child-in-conditional'
 import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // Diamond propagation: one signal read through two memos by one effect.
 // Regression test for glitch-free propagation — the effect runs once per
@@ -1524,6 +1525,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildUntypedArrayMismatchedKeys,
   loopRowChildUntypedArrayMismatchedKeysTyped,
   conditionalChildListenerCleanup,
+  fragmentChildInConditional,
   nestedChildNegatedProp,
   diamondPropagation,
   onPrefixedDataProp,

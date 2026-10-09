@@ -3597,6 +3597,21 @@
         "text"
       ]
     },
+    "fragment-child-in-conditional": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "fragment-conditional": {
       "kinds": [
         "call",
