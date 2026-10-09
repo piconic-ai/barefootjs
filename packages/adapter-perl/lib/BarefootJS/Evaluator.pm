@@ -324,18 +324,59 @@ sub _to_number ($v) {
 sub _to_string ($v) {
     return 'null' if !defined $v;
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 'true' : 'false' }
-    # JS spells the non-finite doubles "Infinity" / "-Infinity" / "NaN";
-    # Perl stringifies them "Inf" / "-Inf" / "NaN", so the non-finite cases
-    # are pinned here to stay JS-faithful (and match the Go evaluator's
-    # evalToString). Finite numbers and strings fall through to plain
-    # interpolation.
-    if (_is_number($v)) {
-        my $n = $v + 0;
-        return 'NaN'       if $n != $n;
-        return 'Infinity'  if $n == 9**9**9;
-        return '-Infinity' if $n == -(9**9**9);
-    }
+    return _format_number($v + 0) if _is_number($v);
     return "$v";
+}
+
+# _format_number: JS `Number::toString`. Perl's own stringification is
+# `%.15g`, which drops digits (`0.1 + 0.2` -> "0.3"), spells the non-finite
+# doubles "Inf" / "NaN", and pads a small exponent (`1.23456789e-06`).
+# Integers below 2**53 print exactly; everything else takes the shortest
+# `%.Ng` that round-trips and re-spells it with ECMA-262's notation rules:
+# decimal within [1e-6, 1e21), otherwise an unpadded lower-case exponent
+# (`1.23456789e-7`, `1.23456789e+21`) (#3380).
+sub _format_number ($n) {
+    return 'NaN'       if $n != $n;
+    return 'Infinity'  if $n == 9**9**9;
+    return '-Infinity' if $n == -(9**9**9);
+    return '0'         if $n == 0;
+    return sprintf('%.0f', $n) if $n == int($n) && abs($n) < 9007199254740992;
+    my $s;
+    for my $p (1 .. 17) {
+        $s = sprintf('%.*g', $p, $n);
+        last if $s + 0 == $n;
+    }
+    return _js_notation($s);
+}
+
+# _js_notation: re-spell a shortest round-trip decimal (`[-]d[.ddd][e[+-]x]`)
+# with ECMA-262's Number::toString notation rules. `$digits` holds the
+# significant digits, `$point` where the decimal point falls in them.
+sub _js_notation ($shortest) {
+    my $sign = $shortest =~ s/\A-// ? '-' : '';
+    my ($mantissa, $exp) = split /e/i, $shortest, 2;
+    my ($int, $frac) = split /\./, $mantissa, 2;
+    $frac //= '';
+    my $raw = $int . $frac;
+    my $point = length($int) + (defined $exp ? $exp + 0 : 0);
+    (my $digits = $raw) =~ s/\A0+//;
+    $point -= length($raw) - length($digits);
+    $digits =~ s/0+\z//;
+    $digits = '0' if $digits eq '';
+    my $k = length $digits;
+    my $out;
+    if ($k <= $point && $point <= 21) {
+        $out = $digits . ('0' x ($point - $k));
+    } elsif ($point > 0 && $point <= 21) {
+        $out = substr($digits, 0, $point) . '.' . substr($digits, $point);
+    } elsif ($point > -6 && $point <= 0) {
+        $out = '0.' . ('0' x -$point) . $digits;
+    } else {
+        my $e = $point - 1;
+        $out = substr($digits, 0, 1) . ($k > 1 ? '.' . substr($digits, 1) : '')
+            . 'e' . ($e >= 0 ? '+' : '-') . abs($e);
+    }
+    return $sign . $out;
 }
 
 sub _truthy ($v) {

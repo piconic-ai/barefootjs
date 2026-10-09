@@ -288,6 +288,24 @@ export function isStringConcatBinary(
 }
 
 /**
+ * Whether a top-level expression yields a JS NUMBER from arithmetic: a
+ * `-` / `*` / `/` / `%` binary, a `+` that is not string concatenation, or
+ * a unary minus. Backends that print an output expression with the host
+ * language's own number stringification (Perl's `%.15g`) route such a
+ * result through their JS `Number::toString` helper instead (#3380).
+ */
+export function isNumericArithmeticResult(
+  expr: ParsedExpr | null | undefined,
+  isStringName: (n: string, componentProperty?: boolean) => boolean,
+): boolean {
+  if (!expr) return false
+  if (expr.kind === 'unary') return expr.op === '-'
+  if (expr.kind !== 'binary') return false
+  if (expr.op === '+') return !isStringConcatBinary(expr.op, expr.left, expr.right, isStringName)
+  return expr.op === '-' || expr.op === '*' || expr.op === '/' || expr.op === '%'
+}
+
+/**
  * Wrap an emitted binary/logical/ternary OPERAND in parentheses so the
  * source grouping the `ParsedExpr` tree encodes survives infix
  * re-emission (#2173). `(count() + 2) * 3` parses as

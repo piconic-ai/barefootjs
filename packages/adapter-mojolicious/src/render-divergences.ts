@@ -30,11 +30,9 @@ export const renderDivergences: RenderDivergences = {
   // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
   // operand throws or reads as `0` here (#3350 covers only `null`).
   'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
-  // A number at the 1e-6 / 1e21 notation boundary, in an attribute or in
-  // text, prints with Perl's `%g` stringification, which pads a negative
-  // exponent (`1.23456789e-06`).
-  'number-arithmetic-attr-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
-  'number-arithmetic-text-exponent-boundaries': { limitation: 'number-exponent-boundary-spelling' },
+  // `number-arithmetic-{attr,text}-exponent-boundaries` used to sit here:
+  // Perl's `%.15g` padded a small exponent. An arithmetic result now prints
+  // through `string`'s JS `Number::toString` (#3380).
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `bf->register_portal_element`/`bf->portals`
