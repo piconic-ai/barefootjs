@@ -235,7 +235,7 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // loop-param accessor-rewrite spec — see `ir-to-client-js/utils.ts`'s
   // `wrapExprWithLoopParams` docstring (the canonical explanation, pointed
   // to from this file's own function signature since Stage 4).
-  'packages/jsx/src/ir-to-client-js/html-template.ts': { loopParams: 17 },
+  'packages/jsx/src/ir-to-client-js/html-template.ts': { loopParams: 13 },
   // FLOOR (shape 1, already guarded): both `expandDynamicPropValue` and
   // `expandConstantForReactivity` precede their `.find(` with
   // `scope?.isBound(trimmedValue)` — see this file's own header comment

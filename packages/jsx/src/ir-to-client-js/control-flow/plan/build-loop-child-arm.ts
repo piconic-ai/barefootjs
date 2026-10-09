@@ -24,7 +24,7 @@ import type {
   LoopParamBinding,
 } from '../../../types.ts'
 import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
-import { quotePropName, wrapLoopParamAsAccessor, attrValueToString } from '../../utils.ts'
+import { quotePropName, wrapLoopParamAsAccessor, attrValueToString, rowBoundNames } from '../../utils.ts'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template.ts'
 import type { ReactiveAttrSlot } from './reactive-effects.ts'
 
@@ -269,7 +269,13 @@ export function buildBranchInnerLoopsPlan(
     if (!inner.template) continue
 
     const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
-    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)
+    // Inside the inner row, a name it rebinds is not the outer row's
+    // binding (#3394).
+    const innerShadowed = rowBoundNames(inner)
+    const wrapOuterRow = outerLoopParam
+      ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex, innerShadowed)
+      : wrapOuter
+    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuterRow(expr), inner.param, inner.paramBindings, inner.index)
 
     const csl = inner.containerSlotId
     // Inner loop's container: host-side `bf="<slot>"` slot marker first,

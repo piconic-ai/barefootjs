@@ -36,6 +36,7 @@ import type {
 import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
 import {
   wrapLoopParamAsAccessor,
+  rowBoundNames,
   attrValueToString,
 } from '../../utils.ts'
 import { buildChildRefBindings } from '../shared.ts'
@@ -177,7 +178,13 @@ function buildReactiveEmit(
   outerLoopIndex?: string | null,
 ): InnerLoopReactiveEmit {
   const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
-  const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)
+  // Inside the inner row, a name it rebinds (item, index, destructure
+  // binding, preamble local) is not the outer row's binding (#3394).
+  const innerShadowed = rowBoundNames(inner)
+  const wrapOuterRow = outerLoopParam
+    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex, innerShadowed)
+    : wrapOuter
+  const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuterRow(expr), inner.param, inner.paramBindings, inner.index)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
   const wrappedKey = inner.key
     ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings, inner.index)
@@ -217,12 +224,12 @@ function buildReactiveEmit(
 
   const reactiveTexts: InnerLoopText[] = inner.bindings.reactiveTexts.map(text => ({
     slotId: text.slotId,
-    wrappedExpression: wrapLoopParamAsAccessor(wrapOuter(text.expression), inner.param, inner.paramBindings, inner.index),
+    wrappedExpression: wrapLoopParamAsAccessor(wrapOuterRow(text.expression), inner.param, inner.paramBindings, inner.index),
     insideConditional: !!text.insideConditional,
   }))
 
   const reactiveAttrs: InnerLoopReactiveAttr[] = inner.bindings.reactiveAttrs.map(attr => {
-    const wrapped = wrapLoopParamAsAccessor(wrapOuter(attr.expression), inner.param, inner.paramBindings, inner.index)
+    const wrapped = wrapLoopParamAsAccessor(wrapOuterRow(attr.expression), inner.param, inner.paramBindings, inner.index)
     return {
       slotId: attr.childSlotId,
       attrName: attr.attrName,
@@ -252,15 +259,15 @@ function buildReactiveEmit(
   if (paramUnwrap) preludeStatements.push(paramUnwrap)
   if (inner.preamble) {
     // Leaf JSX renders under both param contexts, mirroring the
-    // wrapInner(wrapOuter(...)) applied to the js text.
+    // wrapInner(wrapOuterRow(...)) applied to the js text.
     const leafLoopParams = outerLoopParam
       ? [
-          { param: outerLoopParam, bindings: outerLoopParamBindings, index: outerLoopIndex },
+          { param: outerLoopParam, bindings: outerLoopParamBindings, index: outerLoopIndex, shadowed: innerShadowed },
           { param: inner.param, bindings: inner.paramBindings, index: inner.index },
         ]
       : [{ param: inner.param, bindings: inner.paramBindings, index: inner.index }]
     preludeStatements.push(renderPreamble(inner.preamble, {
-      transformJs: (t) => wrapInner(wrapOuter(t)),
+      transformJs: (t) => wrapInner(wrapOuterRow(t)),
       renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, leafLoopParams, undefined),
     }))
   }

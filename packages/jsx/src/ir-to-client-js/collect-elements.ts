@@ -4,7 +4,7 @@
 
 import { type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
-import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, toHtmlAttrName, type LoopParamSpec } from './utils.ts'
+import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, toHtmlAttrName, rowBoundNames, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
@@ -332,8 +332,9 @@ export function collectInnerLoops(
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
         // Forward destructured bindings (#951) so inner-loop template
         // references to the destructured locals are rewritten.
+        // The outer spec skips the names this row rebinds (#3394).
         const loopParamsForTemplate = outerSpec
-          ? [outerSpec, { param: n.param, bindings: n.paramBindings, index: n.index }]
+          ? [{ ...outerSpec, shadowed: rowBoundNames(n) }, { param: n.param, bindings: n.paramBindings, index: n.index }]
           : undefined
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Per-item bindings for inner loop body, collected uniformly when
