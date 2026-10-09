@@ -284,6 +284,15 @@ export class CompileState {
   nullableSignalSeedPropNames: Set<string> = new Set()
 
   /**
+   * `Struct.field` keys of optional scalar struct fields a nullable signal
+   * seeds from (`createSignal<string | undefined>(initial.label)`) — #3323.
+   * `propertyInfoToGo` types them `interface{}` so an omitted member stays
+   * nil. File-wide: the adapter unions every component's keys, so a named
+   * type shared by several components gets one struct definition.
+   */
+  nullableSeedStructFields: Set<string> = new Set()
+
+  /**
    * OPTIONAL no-default prop names consumed as a BARE TEXT-position
    * expression value (`{size}`) — #2267. Same `resolvePropGoType` flip and
    * same populate-before-first-resolve ordering as

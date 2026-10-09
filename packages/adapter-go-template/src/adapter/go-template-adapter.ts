@@ -174,6 +174,7 @@ import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/mem
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, memoArithmeticYieldsNaN } from "./memo/memo-compute.ts"
+import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -508,6 +509,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** See `crossFileTypeAliases`. Object/interface counterpart (tsName → Go field name). */
   private crossFileStructFields: Map<string, Map<string, string>> = new Map()
+  /**
+   * `Struct.field` keys flipped to `interface{}` for a nullable signal seed
+   * (#3323), unioned over every component this adapter has seen — both
+   * its own `primeCompileState` and `registerChildComponentShape`'s
+   * pre-pass — so a named type shared within a file is emitted once, the
+   * same way, by each component.
+   */
+  private fileNullableSeedStructFields: Set<string> = new Set()
 
   /**
    * See `crossFileTypeAliases`. The DEFINING component's own `TypeDefinition`
@@ -706,6 +715,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
+    for (const key of collectNullableSeedStructFields(ir.metadata)) this.fileNullableSeedStructFields.add(key)
+    this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
@@ -725,7 +736,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return new Set(
       ir.metadata.signals
         .filter(signal => nullable.has(signal.getter))
-        .filter(signal => this.isNillableSeedSignal(signal) || (
+        .filter(signal => this.isNillableSeedSignal(signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}' || (
           !propNames.has(signal.initialValue) &&
           !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
           !propMemberSeedGoType(this.emitCtx, signal) &&
@@ -1167,6 +1178,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
+    for (const key of collectNullableSeedStructFields(ir.metadata)) this.fileNullableSeedStructFields.add(key)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
     // `sourceName ?? name` — identity for an un-aliased param, the original
@@ -1727,7 +1739,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `// ${td.name} is a string type.\ntype ${td.name} = string`
     }
 
-    const fields = this.structFieldsFor(td)
+    const fields = this.structFieldsFor(td.name, td)
     if (fields.length === 0) return null
 
     const goFields = fields.map(f => this.structFieldDeclaration(f))
@@ -1752,19 +1764,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * both the named-type struct emitter and the anonymous-type synthesis
    * pre-pass share one field-derivation path.
    */
-  private structFieldsFor(td: { properties?: PropertyInfo[] }): Array<{ tsName: string; goName: string; goType: string }> {
+  private structFieldsFor(owner: string, td: { properties?: PropertyInfo[] }): Array<{ tsName: string; goName: string; goType: string; nullableSeed: boolean }> {
     const propertyByName = new Map((td.properties ?? []).map(p => [p.name, p]))
     return structFieldNamePairs(td.properties ?? []).map(({ tsName, goName }) => ({
       tsName,
       goName,
-      goType: propertyInfoToGo(this.emitCtx, propertyByName.get(tsName)!),
+      goType: propertyInfoToGo(this.emitCtx, propertyByName.get(tsName)!, owner),
+      nullableSeed: this.state.nullableSeedStructFields.has(`${owner}.${tsName}`),
     }))
   }
 
-  private structFieldDeclaration(field: { tsName: string; goName: string; goType: string }): string {
+  private structFieldDeclaration(field: { tsName: string; goName: string; goType: string; nullableSeed?: boolean }): string {
     // Pointer fields represent optional nested objects. Keep a nil field
     // absent from the hydration payload rather than serializing it as null.
-    const omit = field.goType.startsWith('*') ? ',omitempty' : ''
+    // A field flipped to `interface{}` for a nullable signal seed (#3323)
+    // likewise leaves a missing member out of the payload, as JS does.
+    const omit = field.goType.startsWith('*') || field.nullableSeed ? ',omitempty' : ''
     return `\t${field.goName} ${field.goType} \`json:"${this.toJsonTag(field.tsName)}${omit}"\``
   }
 
@@ -2263,7 +2278,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // (`'data-priority'` → `DataPriority`): the wrapper copies each one
         // by the same `structFieldNamePairs` name, and a destructured row
         // binding (#3313) may read any of them.
-        const fields = this.structFieldsFor(td)
+        const fields = this.structFieldsFor(td.name, td)
         if (fields.length > 0) return fields
         break
       }
@@ -3746,7 +3761,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
         this.crossFileTypeAliases.set(td.name, 'string')
       } else {
-        const fields = this.structFieldsFor(td)
+        const fields = this.structFieldsFor(td.name, td)
         if (fields.length > 0) {
           this.crossFileStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
           this.crossFileTypeDefinitions.set(td.name, td)
@@ -3841,7 +3856,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       } else {
         // Source-key → Go-field-name map for the baker, from the same field
         // derivation the struct emitter uses.
-        const fields = this.structFieldsFor(td)
+        const fields = this.structFieldsFor(td.name, td)
         if (fields.length > 0) {
           this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
         }
@@ -4033,7 +4048,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const entry of planSynthPropStructs(ir.metadata, componentName)) {
       this.state.localTypeNames.add(entry.name)
       this.state.synthObjectStructNames.set(entry.typeInfo, entry.name)
-      const fields = this.structFieldsFor(entry.typeInfo)
+      const fields = this.structFieldsFor(entry.name, entry.typeInfo)
       this.registerSynthStruct(
         lines,
         entry.name,

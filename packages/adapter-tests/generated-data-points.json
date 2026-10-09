@@ -2959,6 +2959,57 @@
       }
     }
   ],
+  "member-seeded-nullable-signal-attr-inline": [
+    {
+      "name": "gen:initial:object:+label",
+      "props": {
+        "initial": {
+          "label": ""
+        },
+        "given": {
+          "label": "",
+          "count": 0
+        }
+      }
+    },
+    {
+      "name": "gen:initial:object:+count",
+      "props": {
+        "initial": {
+          "count": 0
+        },
+        "given": {
+          "label": "",
+          "count": 0
+        }
+      }
+    },
+    {
+      "name": "gen:given:object:minimal",
+      "props": {
+        "initial": {},
+        "given": {}
+      }
+    },
+    {
+      "name": "gen:given:object:+label",
+      "props": {
+        "initial": {},
+        "given": {
+          "label": ""
+        }
+      }
+    },
+    {
+      "name": "gen:given:object:+count",
+      "props": {
+        "initial": {},
+        "given": {
+          "count": 0
+        }
+      }
+    }
+  ],
   "memo-dependency-loop-shadow": [
     {
       "name": "gen:rows:empty",

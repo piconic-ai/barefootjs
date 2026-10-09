@@ -100,10 +100,6 @@ export const renderDivergences: RenderDivergences = {
   // `Name string` field reads as `""`, not nil, so the nil guard keeps
   // `data-name=""` where JS reads `undefined` and omits it (#3322).
   'nullish-optional-member-missing-field-attr': { limitation: 'optional-struct-field-absent-renders-zero' },
-  // `createSignal<string | undefined>(initial.label)` with `initial` = `{}`:
-  // `Init.Label` is a plain `string`, so the absent member seeds `""` and
-  // the nil guard keeps `title=""` (#3323's member half).
-  'member-seeded-nullable-signal-attr': { limitation: 'optional-struct-field-absent-renders-zero' },
   // `{props.noText?.length}` with `noText` absent: the props struct's
   // `NoText string` reads as `""`, so the nil guard on `?.length` sees a
   // present empty string and renders `0` where JS renders nothing (#3332).

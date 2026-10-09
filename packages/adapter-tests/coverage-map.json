@@ -5388,6 +5388,17 @@
         "attribute"
       ]
     },
+    "member-seeded-nullable-signal-attr-inline": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "memo": {
       "kinds": [
         "binary",
