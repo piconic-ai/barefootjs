@@ -3,7 +3,7 @@ import { createFixture } from '../src/types'
 /**
  * Sibling of `reserved-name-and-internal-twin` (#3404): `loop` and
  * `__bf_loop` bind items of two sibling loops. They become the same template
- * variable on Jinja, MiniJinja, Twig and Pebble, but never in the same row,
+ * variable on Jinja, MiniJinja, Twig, Pebble and Blade, but never in the same row,
  * so each list renders its own values and BF105 does not fire.
  */
 export const fixture = createFixture({

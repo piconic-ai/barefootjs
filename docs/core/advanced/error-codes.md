@@ -232,10 +232,10 @@ Pre-compute the value in your Go handler and pass it as a prop (`{ user, vip }: 
 
 ### BF105 — Two Names Become the Same Template Variable
 
-Jinja, MiniJinja, Twig and Pebble rename a name the engine reserves: `loop` becomes `__bf_loop`. When a component also uses `__bf_loop` where `loop` is visible, both would read one value, so the adapter refuses. Bindings of sibling loops never meet and are fine.
+Jinja, MiniJinja, Twig, Pebble and Blade rename a name the engine reserves: `loop` becomes `__bf_loop`. When a component also uses `__bf_loop` where `loop` is visible, both would read one value, so the adapter refuses. Bindings of sibling loops never meet and are fine.
 
 ```tsx
-// ❌ BF105 on Jinja/MiniJinja/Twig/Pebble
+// ❌ BF105 on Jinja/MiniJinja/Twig/Pebble/Blade
 export function Both(props: { loop: string; __bf_loop: string }) {
   return <div>{props.loop}:{props.__bf_loop}</div>
 }

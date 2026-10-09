@@ -4,13 +4,13 @@
  * be silently clobbered by the child's static default.
  *
  * `$child_props` arrives at `deriveStashFromDefaults` already
- * keyword-mangled (`blade_ident`, `naming.php`) — `loop` becomes `loop_`
+ * keyword-mangled (`blade_ident`, `naming.php`) — `loop` becomes `__bf_loop`
  * (Blade's reserved-word set, unlike Twig's, is render-time-PHP-scope
  * collisions, not template-syntax keywords — see `naming.php`'s docstring)
  * — but the serialised `$_defaults` array's own keys and each entry's
  * `propName` were the RAW (un-mangled) spellings `extractSsrDefaults`
  * emits. For a reserved-word prop, `deriveStashFromDefaults` looked up
- * `$props['loop']` (never present — the real key is `loop_`), missed, and
+ * `$props['loop']` (never present — the real key is `__bf_loop`), missed, and
  * fell back to the static default under the RAW key `loop`; after
  * `$_vars = array_merge($child_props, $_extra)`, the WRONG static default
  * won over the real caller value.

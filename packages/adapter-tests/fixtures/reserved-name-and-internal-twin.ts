@@ -2,7 +2,7 @@ import { createFixture } from '../src/types'
 
 /**
  * Sibling of `reserved-name-and-suffixed-twin` (#3404): props named `loop`
- * and `__bf_loop`. Jinja, MiniJinja, Twig and Pebble rename `loop` to
+ * and `__bf_loop`. Jinja, MiniJinja, Twig, Pebble and Blade rename `loop` to
  * `__bf_loop`, so the two would read one value there. Those adapters refuse
  * with BF105 instead of rendering `second:second`.
  */

@@ -69,6 +69,14 @@ export const conformancePins: ConformancePins = {
     { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
   ],
   'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' }],
+  // Reserved names map to `__bf_<name>`, so a component that also uses
+  // `__bf_loop` would read one value under both names (#3408).
+  'reserved-name-and-internal-twin': [
+    { code: 'BF105', severity: 'error', limitation: 'reserved-name-collides-with-internal-name' },
+  ],
+  'reserved-name-filter-param-and-internal-prop': [
+    { code: 'BF105', severity: 'error', limitation: 'reserved-name-collides-with-internal-name' },
+  ],
   // Top-level `.find`/`.findIndex`/`.findLast`/`.findLastIndex` are NOT pinned
   // — unlike mojo (which refuses them), this adapter lowers them via the same
   // `$bf->find_eval` evaluator-JSON mechanism as `.filter`/`.some`. Only the

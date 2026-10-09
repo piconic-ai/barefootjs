@@ -296,6 +296,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   filterCaptureCollisions,
+  templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -523,6 +524,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
+    // Two source names that Blade's renaming of reserved names turns into one
+    // template variable would read the same value (#3408).
+    this.errors.push(...templateNameCollisionErrors(ir, this.propsParams.map(p => p.name), bladeIdent, 'Blade', this.componentName))
     this.childrenCaptureCounter = 0
 
     // Mirror of the Twig adapter's BF103 check: a child component referenced

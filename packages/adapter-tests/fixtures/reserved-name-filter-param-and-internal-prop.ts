@@ -2,9 +2,9 @@ import { createFixture } from '../src/types'
 
 /**
  * Sibling of `reserved-name-and-internal-twin` (#3404): a `.filter()` param
- * named `loop` next to a prop named `__bf_loop`. Jinja, MiniJinja, Twig and
- * Pebble rename the param to `__bf_loop`, so the predicate would read the
- * prop. Those adapters refuse with BF105.
+ * named `loop` next to a prop named `__bf_loop`. Jinja, MiniJinja, Twig,
+ * Pebble and Blade rename the param to `__bf_loop`, so the predicate would
+ * read the prop. Those adapters refuse with BF105.
  */
 export const fixture = createFixture({
   id: 'reserved-name-filter-param-and-internal-prop',

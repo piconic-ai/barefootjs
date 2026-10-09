@@ -5,9 +5,9 @@ import type { CompilerError, ComponentIR, IRNode } from '../types.ts'
  * BF105: two distinct source names of a component that an adapter's
  * identifier mangling turns into the SAME template variable (#3404).
  *
- * Template engines without a variable sigil (Jinja, MiniJinja, Twig, Pebble)
- * rename a source name the engine reserves — `loop` becomes `__bf_loop`,
- * `none` becomes `none_`. The mapping is per name and must be idempotent
+ * Template engines rename a source name they reserve — `loop` becomes
+ * `__bf_loop` on Jinja, MiniJinja, Twig, Pebble and Blade, `none` becomes
+ * `none_` on Jinja. The mapping is per name and must be idempotent
  * (some paths mangle an already-mangled name, and the runtimes re-mangle
  * prop keys), so it cannot also be injective: whatever a reserved name
  * becomes is itself a name a user may write. When a component writes both,

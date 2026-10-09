@@ -113,14 +113,14 @@ bf_test('backend unit operations', function () use ($backend) {
 });
 
 bf_test('render_named mangles reserved-word props', function () use ($backend, $bf, $tmpDir) {
-    file_put_contents($tmpDir . '/kw.blade.php', '{{ $bf_ }}-{{ $this_ }}');
+    file_put_contents($tmpDir . '/kw.blade.php', '{{ $__bf_bf }}-{{ $__bf_this }}');
     $out = $backend->render_named('kw', $bf, ['bf' => 'X', 'this' => 'Y']);
     bf_assert_eq($out, 'X-Y');
 });
 
 bf_test('render_child end-to-end (parent -> renderer -> render_named)', function () use ($backend, $bf, $tmpDir) {
     file_put_contents($tmpDir . '/parent.blade.php', "parent:{!! \$bf->render_child('child', 'bf', 'c1', 'label', 'hi') !!}");
-    file_put_contents($tmpDir . '/child.blade.php', '[{{ $bf_ }}:{{ $label }}]');
+    file_put_contents($tmpDir . '/child.blade.php', '[{{ $__bf_bf }}:{{ $label }}]');
 
     $childRenderer = function ($props, $caller) use ($backend) {
         $childBf = new BarefootJS(null, ['backend' => $backend]);
@@ -150,8 +150,8 @@ bf_test('render_child mangles reserved-word props via backend->ident (Blade-spec
         return 'ok';
     });
     $bf->render_child('probe', 'bf', 'x', 'this', 'y');
-    bf_assert_eq($seen['props']['bf_'], 'x');
-    bf_assert_eq($seen['props']['this_'], 'y');
+    bf_assert_eq($seen['props']['__bf_bf'], 'x');
+    bf_assert_eq($seen['props']['__bf_this'], 'y');
     bf_assert(!array_key_exists('bf', $seen['props']), 'expected the raw "bf" key to be gone after mangling');
 });
 

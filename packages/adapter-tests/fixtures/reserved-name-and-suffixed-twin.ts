@@ -2,7 +2,7 @@ import { createFixture } from '../src/types'
 
 /**
  * Sibling of `map-param-named-loop` (#3404): props named `loop` and `loop_`
- * stay distinct. Jinja, MiniJinja, Twig and Pebble rename `loop` to
+ * stay distinct. Jinja, MiniJinja, Twig, Pebble and Blade rename `loop` to
  * `__bf_loop` rather than `loop_`, so the two never collide there.
  */
 export const fixture = createFixture({

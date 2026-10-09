@@ -74,11 +74,12 @@ if (!function_exists(__NAMESPACE__ . '\\blade_ident')) {
     /**
      * Mangle a JS identifier (prop name, signal getter, loop param, ...)
      * into a Blade-safe (i.e. render-time-PHP-scope-safe) variable name:
-     * reserved words get a trailing `_` suffix, everything else passes
-     * through unchanged.
+     * reserved words map to the compiler-internal `__bf_<name>` (a `_`
+     * suffix would collide with a real `loop_`, #3408), everything else
+     * passes through unchanged.
      */
     function blade_ident(string $name): string
     {
-        return in_array($name, BLADE_RESERVED_WORDS, true) ? $name . '_' : $name;
+        return in_array($name, BLADE_RESERVED_WORDS, true) ? '__bf_' . $name : $name;
     }
 }
