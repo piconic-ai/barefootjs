@@ -1,5 +1,15 @@
 # @barefootjs/pebble
 
+## 0.39.4
+
+### Patch Changes
+
+- a982376: Arithmetic over a signal whose SSR value can be `null` (`createMemo(() => s() * 2)` with `createSignal<any>(null)`) now renders JS's coerced result (`0`) on ERB, Jinja, Pebble and MiniJinja, instead of throwing at render on the native operator's nil operand. A possibly-nullish operand of `-`, `*`, `/`, `%` or `**` reads as `0`, as go-template's `bf.Mul` already did.
+- 9a00178: An optional-chained `.length` (`{props.items?.length}`) over an absent or `null` receiver now renders empty, as JavaScript reads `undefined`. It used to render `0`, the length of an empty array. An empty array or string still renders `0`, and a `?? 0` fallback still takes over for an absent receiver. On go-template, an absent optional string prop still reads as `""` (and so `0`), because its struct field is a plain `string`.
+- c0f2038: A `.map()` index, destructure or entry param named like a template-level signal, memo, prop or local constant no longer overwrites it for the rest of the template. Pebble's `{% set %}` inside a `for` body is not loop-scoped, so the loop now saves each such name before it runs and restores it afterwards. The param shadows the outer name only inside the row, as in JavaScript.
+- 4f6b4dd: Keep a template-level name intact after a `.map()` loop whose row binds the same name. Twig, Blade and Pebble now save a signal, memo, prop, constant or enclosing row binding that the row's index, destructure binding or preamble local shadows, and restore it after the loop (#3391).
+- @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

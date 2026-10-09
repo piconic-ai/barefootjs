@@ -304,6 +304,45 @@ async function runOp(browser: Browser, appUrl: string, op: OpDef): Promise<OpTim
 }
 
 // ---------------------------------------------------------------------------
+// Stylesheet gate
+// ---------------------------------------------------------------------------
+
+/**
+ * CONTRACT.md: every app loads the shared `styles.css` via a relative href.
+ * Layout cost is a large share of click-to-frame time on a 1,000-row table,
+ * so an app whose stylesheet silently failed to apply is measured on a
+ * different page than the others and its numbers are not comparable. This
+ * happened for real: the barefoot app linked `/styles.css` (root-absolute)
+ * while the runner serves apps under `/<app>/`, the link 404'd, and the
+ * unstyled table made `update10th` read ~1.8x vanilla. Returns a reason
+ * string when the contract is violated, null when the stylesheet applied.
+ */
+async function checkStylesheet(browser: Browser, appUrl: string): Promise<string | null> {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  const failed: string[] = []
+  page.on('response', (r) => {
+    if (r.status() >= 400 && r.request().resourceType() === 'stylesheet') failed.push(`${r.status()} ${r.url()}`)
+  })
+  await page.goto(appUrl)
+  await waitReady(page)
+  const applied = await page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[]
+    const shared = links.find((l) => l.href.endsWith('/styles.css'))
+    if (!shared) return 'no <link rel="stylesheet"> to styles.css'
+    try {
+      const rules = shared.sheet?.cssRules.length ?? 0
+      return rules > 0 ? null : `styles.css applied 0 rules (href=${shared.getAttribute('href')})`
+    } catch (e) {
+      return `styles.css not readable: ${String(e)}`
+    }
+  })
+  await context.close()
+  if (failed.length > 0) return `stylesheet failed to load: ${failed.join(', ')}`
+  return applied
+}
+
+// ---------------------------------------------------------------------------
 // Startup + memory
 // ---------------------------------------------------------------------------
 
@@ -476,6 +515,17 @@ async function main() {
 
     for (const framework of frameworks) {
       const appUrl = `http://localhost:${server.port}/${framework}/index.html`
+
+      // Contract gate before any timing: an app measured without the shared
+      // stylesheet gets FAILED cells, not numbers (see checkStylesheet).
+      const cssProblem = await checkStylesheet(browser, appUrl)
+      if (cssProblem) {
+        log(`  [${framework}] FAILED: ${cssProblem}`)
+        for (const op of ops) {
+          opResults.push({ op: op.name, framework, ok: false, reason: cssProblem, iterations: [], stats: null })
+        }
+        continue
+      }
 
       for (const op of ops) {
         log(`  [${framework}] ${op.name}...`)

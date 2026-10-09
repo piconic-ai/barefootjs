@@ -71,10 +71,17 @@ export async function build(): Promise<void> {
     throw new Error(`barefoot: vite build failed (exit ${exitCode})`)
   }
 
-  // `index.html`'s `<link href="/styles.css">` is a root-absolute
-  // reference — Vite passes those through untouched (the publicDir
-  // convention) rather than resolving/hashing them, so nothing copies the
-  // shared stylesheet into dist/ on its own. Copy it in directly.
+  // `index.html` links `./styles.css`, which does not exist next to the
+  // source `index.html` — Vite leaves the unresolvable relative href as-is
+  // and nothing copies the shared stylesheet into dist/ on its own, so copy
+  // it in directly (CONTRACT.md: `dist/styles.css`, loaded via a RELATIVE
+  // href). The href used to be the root-absolute `/styles.css`: Vite passed
+  // that through too, but the runner serves every app under `/<app>/`, so
+  // the page 404'd its stylesheet and the whole DOM suite measured this app
+  // on an unstyled 245px-wide table while the other three had the shared
+  // CSS applied — `update10th` alone read ~1.8x vanilla from the extra
+  // layout work. bench-dom.ts now fails a framework whose stylesheet did
+  // not apply.
   await mkdir(resolve(appDir, 'dist'), { recursive: true })
   await cp(sharedStylesPath, resolve(appDir, 'dist/styles.css'))
 }

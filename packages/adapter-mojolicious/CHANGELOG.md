@@ -1,5 +1,13 @@
 # @barefootjs/mojolicious
 
+## 0.39.4
+
+### Patch Changes
+
+- ead21b6: An attribute serialized through `bool_str` as a whole (an ARIA boolean name or a boolean-typed prop) whose ternary mixes a boolean branch with another kind (`aria-hidden={yes() ? false : no()}`) renders the taken branch's truth again (`"false"`), instead of `"true"` from the stringified `'false'` branch. The boolean-result classifier the two Perl adapters kept as identical copies now lives in `@barefootjs/jsx` (`isBooleanResultParsed`, `stringifyBooleanTernaryBranches`).
+- c944dc2: A non-boolean attribute bound to a ternary whose taken branch is boolean and whose other branch is not (`data-choice={yes() ? false : s()}`, `data-c={yes() ? n() > 0 : 'x'}`, `data-d={yes() ? false : undefined}`) now renders JS `String(boolean)` (`"false"` / `"true"`) instead of Perl's `0` / `1` / `''`.
+- @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes
