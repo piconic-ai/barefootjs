@@ -5788,7 +5788,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // destination: the signal's own field, or a child Input the child itself
     // made nillable (`ChildComponentShape.nillableParamNames`). A concrete
     // child Input keeps the asserted form.
-    const ownNillableField = nillableDest && this.isNillableSeedSignal(signal)
+    const ownNillableField = nillableDest && (
+      this.isNillableSeedSignal(signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}')
     return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField)
   }
 

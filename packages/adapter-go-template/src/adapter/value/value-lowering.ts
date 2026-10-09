@@ -86,18 +86,25 @@ function nillableAwarePropRef(
   expectedType: TypeInfo,
 ): string {
   const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+  if (!ctx.state.nillablePropNames.has(param.name)) return fieldRef
+  return assertNillableScalar(fieldRef, expectedType) ?? fieldRef
+}
+
+/**
+ * `ref` (an `interface{}` value) asserted to the concrete Go scalar
+ * `expectedType` names, zero-defaulting a nil or mismatched value — or null
+ * when `expectedType` isn't a string / number / boolean.
+ */
+function assertNillableScalar(ref: string, expectedType: TypeInfo): string | null {
   const scalar = unwrapNullableUnion(expectedType)
-  if (ctx.state.nillablePropNames.has(param.name) && scalar.kind === 'primitive') {
-    const goType =
-      scalar.primitive === 'boolean' ? 'bool' :
-      scalar.primitive === 'number' ? 'float64' :
-      scalar.primitive === 'string' ? 'string' : null
-    if (goType) {
-      const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
-      return `func() ${goType} { if v, ok := ${fieldRef}.(${goType}); ok { return v }; return ${zero} }()`
-    }
-  }
-  return fieldRef
+  if (scalar.kind !== 'primitive') return null
+  const goType =
+    scalar.primitive === 'boolean' ? 'bool' :
+    scalar.primitive === 'number' ? 'float64' :
+    scalar.primitive === 'string' ? 'string' : null
+  if (!goType) return null
+  const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
+  return `func() ${goType} { if v, ok := ${ref}.(${goType}); ok { return v }; return ${zero} }()`
 }
 
 /**
@@ -110,7 +117,7 @@ export function convertInitialValue(
   _typeInfo: TypeInfo,
   propsParams?: { name: string; sourceName?: string }[],
   preParsed?: ParsedExpr,
-  /** The destination is the signal's own `interface{}` field (#3323). */
+  /** The destination is an `interface{}` field that keeps a nillable seed whole (#3323). */
   ownNillableField = false,
 ): string {
   // Literal unions collapse to their backing primitive the same way
@@ -163,7 +170,15 @@ export function convertInitialValue(
   // falling through to the literal-baking branches below (none of which
   // match a `member` node) and silently baking `nil` (#3142).
   const memberSeed = resolvePropMemberSeed(ctx, preParsed, propsParams)
-  if (memberSeed?.kind === 'resolved') return memberSeed.goRef
+  if (memberSeed?.kind === 'resolved') {
+    // A member field flipped to `interface{}` for a nullable seed (#3323)
+    // bakes whole only into another `interface{}` destination; a concrete
+    // one (a child's `string` Input, a memo) gets the asserted scalar.
+    if (memberSeed.goType === 'interface{}' && !ownNillableField) {
+      return assertNillableScalar(memberSeed.goRef, typeInfo) ?? memberSeed.goRef
+    }
+    return memberSeed.goRef
+  }
   if (memberSeed) {
     ctx.state.errors.push({
       code: 'BF101',

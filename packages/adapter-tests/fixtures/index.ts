@@ -753,6 +753,7 @@ import { fixture as nullishSignalArithmeticMemo } from './nullish-signal-arithme
 import { fixture as propSeededNullableSignalAttr } from './prop-seeded-nullable-signal-attr'
 import { fixture as memberSeededNullableSignalAttr } from './member-seeded-nullable-signal-attr'
 import { fixture as memberSeededNullableSignalAttrInline } from './member-seeded-nullable-signal-attr-inline'
+import { fixture as memberSeededNullableSignalSharedType } from './member-seeded-nullable-signal-shared-type'
 import { fixture as propSeededNullableSignalChildProp } from './prop-seeded-nullable-signal-child-prop'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
@@ -1458,6 +1459,7 @@ export const jsxFixtures: JSXFixture[] = [
   propSeededNullableSignalAttr,
   memberSeededNullableSignalAttr,
   memberSeededNullableSignalAttrInline,
+  memberSeededNullableSignalSharedType,
   propSeededNullableSignalChildProp,
   conditionalReturnFragmentBranch,
   logicalAndZero,

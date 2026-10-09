@@ -5399,6 +5399,18 @@
         "attribute"
       ]
     },
+    "member-seeded-nullable-signal-shared-type": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo": {
       "kinds": [
         "binary",
