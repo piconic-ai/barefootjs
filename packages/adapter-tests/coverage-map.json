@@ -3134,6 +3134,25 @@
         "text"
       ]
     },
+    "filter-param-literal-matches-renamed-name": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-param-name-differs": {
       "kinds": [
         "array-literal",

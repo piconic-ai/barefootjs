@@ -2153,6 +2153,14 @@
       }
     }
   ],
+  "filter-param-literal-matches-renamed-name": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "filter-param-named-loop": [
     {
       "name": "gen:items:empty",
