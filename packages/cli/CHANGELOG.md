@@ -1,5 +1,19 @@
 # @barefootjs/cli
 
+## 0.39.4
+
+### Patch Changes
+
+- 70df50b: `bf gen component --help` (and `-h`) now prints usage and exits 0 instead of crashing with a `TypeError` in the name conversion. Unknown flags and component names that are not lowercase kebab-case now get a clear diagnostic.
+- 945f6a3: `bf debug profile --scenario` coverage now counts one unit — DOM handler sites — on both sides of the ratio. The denominator is every `on*` event binding on an element plus any rest-forwarded listener the run observed; component callback props (`<Child onClick={…}>`) are no longer counted on their own, since they run inside the child's DOM handler turn. A fully exercised forwarded callback chain (an explicit `onClick={props.onClick}`, a controlled `Switch` / `Checkbox`) now reports 1/1 instead of 1/2, and no longer suggests a scenario file to "cover the rest". An unexercised handler still lowers coverage and fails `--min-coverage`.
+- 22e3f73: `bf debug profile --scenario` now loads child components imported through a tsconfig `paths` alias (the scaffold's `@/components/*`), so profiling the starter `Counter` mounts its `Button`s instead of empty placeholders. When an alias target exists both as a build output and as a source file, the file the tsconfig treats as a project source is used. An alias that matches `paths` but resolves to no file now fails with an error naming the import and its importer instead of silently profiling a partial mount. Import specifiers are now read from the parsed source instead of a regex.
+- Updated dependencies [8b0b33c]
+- Updated dependencies [945f6a3]
+- Updated dependencies [71649cc]
+- Updated dependencies [eae6a47]
+  - @barefootjs/client@0.39.4
+  - @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

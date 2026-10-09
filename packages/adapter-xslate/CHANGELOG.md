@@ -1,5 +1,16 @@
 # @barefootjs/xslate
 
+## 0.39.4
+
+### Patch Changes
+
+- ae55e03: An inner `.map()` index, item param or preamble local named like an outer row's binding now shadows it only inside the inner row (#3392). go-template no longer resolves the name to the outer destructure accessor. Xslate binds the inner local under a renamed Kolon local, because Kolon refuses a `my` or `for` target that redeclares an enclosing one.
+- 9a00178: An optional-chained `.length` (`{props.items?.length}`) over an absent or `null` receiver now renders empty, as JavaScript reads `undefined`. It used to render `0`, the length of an empty array. An empty array or string still renders `0`, and a `?? 0` fallback still takes over for an absent receiver. On go-template, an absent optional string prop still reads as `""` (and so `0`), because its struct field is a plain `string`.
+- ead21b6: An attribute serialized through `bool_str` as a whole (an ARIA boolean name or a boolean-typed prop) whose ternary mixes a boolean branch with another kind (`aria-hidden={yes() ? false : no()}`) renders the taken branch's truth again (`"false"`), instead of `"true"` from the stringified `'false'` branch. The boolean-result classifier the two Perl adapters kept as identical copies now lives in `@barefootjs/jsx` (`isBooleanResultParsed`, `stringifyBooleanTernaryBranches`).
+- c944dc2: A non-boolean attribute bound to a ternary whose taken branch is boolean and whose other branch is not (`data-choice={yes() ? false : s()}`, `data-c={yes() ? n() > 0 : 'x'}`, `data-d={yes() ? false : undefined}`) now renders JS `String(boolean)` (`"false"` / `"true"`) instead of Perl's `0` / `1` / `''`.
+- f6b0b40: A `.map()` callback whose item or index param has the same name as a component memo (`props.rows.map(label => …)` beside `const label = createMemo(…)`) now renders on Text::Xslate instead of failing to parse (`Expected '{', but got '$label'`). Such a memo is declared and read under its own Kolon local (`$__bf_memo_label`), so the row param shadows it only inside the row, as in JavaScript.
+- @barefootjs/shared@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

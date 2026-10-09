@@ -1,0 +1,179 @@
+name: Update Benchmark Results
+
+# Keeps the results snapshot in benchmarks/README.md current.
+#
+# benchmark.yml runs a --quick DOM suite on PRs and posts the tables as a
+# comment, but that comment is a regression smoke check and nothing ever
+# carried its numbers back into the README. The README's snapshot was pasted
+# by hand once and then drifted: it kept quoting library versions, a
+# Chromium build and memory figures that several compiler and runtime
+# changes had since moved.
+#
+# This workflow runs the four benches in FULL (never --quick), regenerates
+# the block between the `benchmark-results` markers in benchmarks/README.md
+# via benchmarks/runner/update-readme.ts, and opens (or refreshes) a PR with
+# the diff. It opens a PR rather than committing to main because the numbers
+# are noisy on shared runners: a human should eyeball the diff against the
+# previous snapshot before it is published as the README.
+#
+# Token. A PR opened or pushed with the default GITHUB_TOKEN does not get
+# its `pull_request` workflows run the way a human's push does (GitHub
+# withholds runs started by that token, except workflow_dispatch and
+# repository_dispatch). ci-heavy-gate.yml has no `paths` filter, so on such
+# a PR `heavy-ci-ran` is simply absent, and AGENTS.md's rule not to merge
+# while that gate is red or missing applies. Two ways to satisfy it:
+#
+#  - set the `BENCHMARK_RESULTS_TOKEN` secret to a fine-grained PAT (this
+#    repo, contents + pull-requests: write). The branch push and the PR
+#    then come from that identity and CI runs as for any contributor;
+#  - with the default token, push to the results branch (e.g. merge main
+#    into it) so a `synchronize` event from a human starts the heavy set,
+#    exactly as AGENTS.md prescribes for a retargeted stacked PR.
+#
+# The generated PR body repeats this for whoever reviews it.
+#
+# Not a `pull_request` workflow, so it belongs to neither the light nor the
+# heavy set of AGENTS.md's stacked-PR policy and scripts/lib/heavy-gate.ts
+# does not lint it.
+
+on:
+  schedule:
+    # Weekly, Monday 03:17 UTC — off the hour to avoid the :00 rush.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never cancel a running measurement; a second dispatch queues behind it.
+concurrency:
+  group: update-benchmark-results
+  cancel-in-progress: false
+
+env:
+  RESULTS_BRANCH: benchmark-results/update
+
+jobs:
+  update-benchmark-results:
+    runs-on: ubuntu-latest
+    # Full DOM suite is ~10 min; SSR, heap and reactive add a few more.
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          # Persisted for the branch push below; see the token note above.
+          token: ${{ secrets.BENCHMARK_RESULTS_TOKEN || github.token }}
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        env:
+          SKIP_INSTALL_SIMPLE_GIT_HOOKS: '1'
+        run: bun install
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      # Same build list as benchmark.yml: the benchmark apps bundle from the
+      # published dists, not the workspace sources.
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/shared' build
+          bun run --filter '@barefootjs/streaming' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Build benchmark apps
+        run: |
+          bun benchmarks/runner/build.ts
+          for f in react solid barefoot; do
+            bun "benchmarks/ssr/apps/$f/build.ts"
+          done
+
+      # Full iterations, one bench at a time — running them concurrently
+      # would have them contend for the same CPU and skew each other.
+      - name: Run DOM benchmark (full)
+        run: bun benchmarks/runner/bench-dom.ts
+
+      - name: Run SSR benchmark
+        run: bun benchmarks/ssr/bench-ssr.ts
+
+      - name: Run SSR post-hydration heap benchmark
+        run: bun benchmarks/ssr/bench-ssr-memory.ts
+
+      - name: Run reactive primitives benchmark
+        run: bun benchmarks/reactive.ts
+
+      - name: Regenerate the README results block
+        run: bun benchmarks/runner/update-readme.ts
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- benchmarks/README.md; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff -- benchmarks/README.md
+          fi
+
+      - name: Push the results branch
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -B "$RESULTS_BRANCH"
+          git add benchmarks/README.md
+          git commit -m "docs(benchmarks): refresh README results snapshot"
+          # The branch holds exactly one generated commit on top of main;
+          # force-pushing it is how the open PR is refreshed in place.
+          git push --force --set-upstream origin "$RESULTS_BRANCH"
+
+      - name: Open or refresh the pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BENCHMARK_RESULTS_TOKEN || github.token }}
+          USING_DEFAULT_TOKEN: ${{ secrets.BENCHMARK_RESULTS_TOKEN == '' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          body_file="$(mktemp)"
+          cat > "$body_file" <<BODY
+          ## Summary
+
+          Refreshes the results snapshot in \`benchmarks/README.md\` from a full run of the
+          four benches (DOM update suite, SSR + hydration, SSR post-hydration heap, reactive
+          primitives) on \`main\` at \`${GITHUB_SHA}\`.
+
+          Generated by [\`update-benchmark-results.yml\`]($RUN_URL) via
+          \`bun benchmarks/runner/update-readme.ts\`. Shared-runner numbers are noisy: compare
+          whole columns against the previous snapshot, not single cells, before merging.
+          BODY
+          if [ "$USING_DEFAULT_TOKEN" = "true" ]; then
+            cat >> "$body_file" <<BODY
+
+          ## Before merging
+
+          This PR was opened with the default \`GITHUB_TOKEN\`, so GitHub does not start its
+          \`pull_request\` workflows and \`heavy-ci-ran\` is absent. Per AGENTS.md ("CI on
+          stacked PRs"), push to this branch (e.g. merge \`main\` into it) so the heavy set
+          runs on this head before merging — or set the \`BENCHMARK_RESULTS_TOKEN\` secret so
+          future runs open the PR as a contributor.
+          BODY
+          fi
+
+          existing="$(gh pr list --head "$RESULTS_BRANCH" --base main --state open --json number --jq '.[0].number')"
+          if [ -z "$existing" ]; then
+            gh pr create \
+              --base main \
+              --head "$RESULTS_BRANCH" \
+              --title "docs(benchmarks): refresh README results snapshot" \
+              --body-file "$body_file"
+          else
+            gh pr edit "$existing" --body-file "$body_file"
+            echo "Refreshed existing PR #$existing"
+          fi

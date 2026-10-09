@@ -21,6 +21,12 @@ js-framework-benchmark (keyed category).
     the reported "shipped JS" size is the total of all `.js` files in
     `dist/`.
   - `dist/styles.css` — copied from `benchmarks/apps/shared/styles.css`.
+    The href in `dist/index.html` MUST be relative (`./styles.css`): the
+    runner serves each app under `/<app>/`, where a root-absolute
+    `/styles.css` 404s and the app is measured on an unstyled table.
+    `runner/bench-dom.ts` checks that the stylesheet applied before timing
+    anything and reports every op FAILED otherwise; the per-app smoke tests
+    check the href shape.
 - Frameworks are bundled from the versions in the repo root `node_modules`
   (react 19.x, solid-js 1.9.x, `@barefootjs/*` workspace sources).
 - BarefootJS app uses the real compiler pipeline (`vite build` via

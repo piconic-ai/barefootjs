@@ -95,8 +95,12 @@
  * - `--md` prints the results table as GitHub-flavored markdown; otherwise
  *   plain fixed-width text. No editorializing in the numbers — this file
  *   prints what it measures, nothing is framed as a win or a loss.
+ * - Either way the rows are also persisted to
+ *   `benchmarks/results/reactive-latest.json` so `runner/update-readme.ts`
+ *   can fold them into the README's results section.
  */
 
+import { join } from 'node:path'
 import {
   createSignal,
   createEffect,
@@ -124,6 +128,16 @@ import {
 // ---------------------------------------------------------------------------
 
 const MD = process.argv.includes('--md')
+
+const benchDir = import.meta.dirname
+const repoRoot = join(benchDir, '..')
+const resultsDir = join(benchDir, 'results')
+
+/** Shape of `benchmarks/results/reactive-latest.json`. */
+export interface ReactiveResults {
+  environment: { date: string; bunVersion: string; solidVersion: string | null }
+  rows: Row[]
+}
 
 // ---------------------------------------------------------------------------
 // Measurement helpers
@@ -807,3 +821,21 @@ console.log('')
 console.log('')
 printTable()
 console.log('')
+
+async function readVersion(pkgPath: string): Promise<string | null> {
+  try {
+    return JSON.parse(await Bun.file(pkgPath).text()).version ?? null
+  } catch {
+    return null
+  }
+}
+
+const data: ReactiveResults = {
+  environment: {
+    date: new Date().toISOString(),
+    bunVersion: Bun.version,
+    solidVersion: await readVersion(join(repoRoot, 'node_modules/solid-js/package.json')),
+  },
+  rows,
+}
+await Bun.write(join(resultsDir, 'reactive-latest.json'), `${JSON.stringify(data, null, 2)}\n`)

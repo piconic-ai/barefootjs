@@ -58,6 +58,24 @@ async function main() {
     await page.goto(`http://localhost:${server.port}/`)
     await page.waitForSelector('body[data-ready="1"]')
 
+    // CONTRACT.md: the shared stylesheet is loaded via a RELATIVE href and must
+    // apply. The benchmark runner serves this app under `/<app>/`, where a
+    // root-absolute `/styles.css` 404s (this smoke test serves dist/ at the root,
+    // so only the href shape catches that here); bench-dom.ts gates on it too.
+    {
+      const css = await page.evaluate(() => {
+        const link = document.querySelector('link[rel="stylesheet"]') as HTMLLinkElement | null
+        if (!link) return { href: null, rules: 0 }
+        let rules = 0
+        try {
+          rules = link.sheet?.cssRules.length ?? 0
+        } catch {}
+        return { href: link.getAttribute('href'), rules }
+      })
+      check('stylesheet href is relative', css.href === './styles.css', `href=${css.href}`)
+      check('stylesheet applied', css.rules > 0, `${css.rules} rules`)
+    }
+
     const getRows = (): Promise<RowSnapshot[]> =>
       page.$$eval('#tbody > tr', (trs) =>
         trs.map((tr) => ({

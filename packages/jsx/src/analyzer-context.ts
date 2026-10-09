@@ -29,6 +29,20 @@ import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { nodeContainsJsx } from './reactivity-checker.ts'
 
 /**
+ * Whether the getJS trust-boundary assertion is armed (BF_ASSERT_NO_JSX_IN_GETJS=1).
+ *
+ * Read through `globalThis` rather than a bare `process` identifier: the
+ * compiler also runs where no Node `process` exists (the site playground
+ * bundles it into a browser Worker), and a bare reference there throws
+ * ReferenceError on the first getJS call. Evaluated per call, not at module
+ * load, because the test harnesses that arm it set the env var in `beforeAll`.
+ */
+function isGetJsAssertionArmed(): boolean {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+  return env?.BF_ASSERT_NO_JSX_IN_GETJS === '1'
+}
+
+/**
  * The props destructuring pattern's own source location. Carries no
  * diagnostic of its own — it is the more precise location other
  * props-parameter diagnostics point at instead of the component root (see
@@ -327,7 +341,7 @@ export function createAnalyzerContext(
       // anything, so it must not silently disarm this assertion too (#2867)
       // — only `error` severity does.
       if (
-        process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' &&
+        isGetJsAssertionArmed() &&
         !this.errors.some((e) => e.severity === 'error') &&
         nodeContainsJsx(node)
       ) {
