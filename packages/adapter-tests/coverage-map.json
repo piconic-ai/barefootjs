@@ -5411,6 +5411,18 @@
         "text"
       ]
     },
+    "member-seeded-nullable-signal-shared-type-number": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo": {
       "kinds": [
         "binary",
