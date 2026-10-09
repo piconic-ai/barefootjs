@@ -45,7 +45,7 @@ $html = "<!doctype html><body>{$body}{$bf->scripts()}</body>";
 - `TwigBackend` builds a `Twig\Environment` with `autoescape: 'html'` and `strict_variables: false`, the settings the templates assume. Pass `'env' => $env` to supply a pre-built Environment, or `'environment_options' => ['cache' => false, 'auto_reload' => true]` in development so rebuilt templates render on the next request.
 - `BladeBackend` runs on `illuminate/view` standalone: it wires the `Filesystem`, `EngineResolver`, `BladeCompiler` and `FileViewFinder` itself, so no Laravel application or service container is required. Inside a Laravel app, [`integrations/laravel`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/laravel) shows the wiring.
 - Template names are the snake_cased component name: `UserCard` → `user_card.twig` / `user_card.blade.php`.
-- Prop names that collide with engine keywords are mangled at render time (Twig: `for` → `for_`; Blade: `loop` → `loop_`).
+- Prop names that collide with engine keywords are mangled at render time (Twig: `for` → `for_`; Blade: `loop` → `__bf_loop`).
 - `===`/`!==` route through `bf.eq`/`bf.neq` because PHP's own comparisons diverge from JS strict equality; nothing to configure.
 
 Examples: [`integrations/php`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/php) (Twig) and [`integrations/blade`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/blade).
