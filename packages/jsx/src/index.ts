@@ -128,6 +128,7 @@ export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } 
 export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,
+  bareGetterCallName,
   attrValueMayBeNullish,
   collectNullableSignalGetters,
   collectNullishAttrContext,

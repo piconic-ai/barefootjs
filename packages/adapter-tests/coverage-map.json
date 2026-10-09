@@ -9874,6 +9874,21 @@
         "attribute"
       ]
     },
+    "undefined-signal-arithmetic-memo-chains": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "underscore-prefixed-prop": {
       "kinds": [
         "identifier",

@@ -173,7 +173,7 @@ import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, memoArithmeticYieldsNaN } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -5562,6 +5562,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // heuristic below into `int`. The analyzer classified the body shape from
     // the arrow AST (`MemoInfo.bodyIsTemplateLiteral`).
     if (memo.bodyIsTemplateLiteral) return 'string'
+
+    // Arithmetic whose SSR result is `NaN` (#3390) needs a field that can hold
+    // a float64 NaN, whatever the declared `number` type would infer (`int`).
+    if (memo.parsed && memoArithmeticYieldsNaN(this.emitCtx, memo.parsed)) return 'interface{}'
 
     // The shared arithmetic runtime returns an integer or float as needed;
     // keep its boxed result rather than truncating it to an int field.
