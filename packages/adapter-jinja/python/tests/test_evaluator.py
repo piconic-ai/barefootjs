@@ -83,6 +83,26 @@ class EvaluatorTest(unittest.TestCase):
         self.assertEqual(evaluator._to_string(-inf), "-Infinity")
         self.assertEqual(evaluator._to_string(inf - inf), "NaN")
 
+    def test_number_notation_boundaries(self):
+        # JS prints decimal within [1e-6, 1e21) and an unpadded lower-case
+        # exponent outside it (#3380); integers past 2**53 print the shortest
+        # digits padded with zeros.
+        cases = [
+            (1234567890 / 1e15, "0.00000123456789"),
+            (1234567890 / 1e16, "1.23456789e-7"),
+            (1234567890 * 1e12, "1.23456789e+21"),
+            (1e-6, "0.000001"),
+            (1e-7, "1e-7"),
+            (-1.5e-7, "-1.5e-7"),
+            (1e20, "100000000000000000000"),
+            (1e21, "1e+21"),
+            (12345678901234567890.0, "12345678901234567000"),
+            (0.1 + 0.2, "0.30000000000000004"),
+            (5e-324, "5e-324"),
+        ]
+        for n, want in cases:
+            self.assertEqual(evaluator._to_string(n), want, repr(n))
+
     def test_captured_free_vars_via_base_env(self):
         body = nbin("+", nid("acc"), nbin("*", nid("item"), nid("factor")))
         total = evaluator.fold([1, 2, 3], body, "acc", "item", 0, "left", {"factor": 10})

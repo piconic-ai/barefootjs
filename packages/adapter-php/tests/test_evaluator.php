@@ -117,6 +117,28 @@ bf_test('non-finite division and JS stringification', function () {
     bf_assert_eq($toString(INF - INF), 'NaN');
 });
 
+bf_test('number notation at the 1e-6 / 1e21 boundaries', function () {
+    // JS prints decimal within [1e-6, 1e21) and an unpadded lower-case
+    // exponent outside it (#3380); integers past 2**53 print the shortest
+    // digits padded with zeros.
+    $cases = [
+        [1234567890 / 1e15, '0.00000123456789'],
+        [1234567890 / 1e16, '1.23456789e-7'],
+        [1234567890 * 1e12, '1.23456789e+21'],
+        [1e-6, '0.000001'],
+        [1e-7, '1e-7'],
+        [-1.5e-7, '-1.5e-7'],
+        [1e20, '100000000000000000000'],
+        [1e21, '1e+21'],
+        [12345678901234567890.0, '12345678901234567000'],
+        [0.1 + 0.2, '0.30000000000000004'],
+        [5e-324, '5e-324'],
+    ];
+    foreach ($cases as [$n, $want]) {
+        bf_assert_eq(Evaluator::formatNumber($n), $want);
+    }
+});
+
 bf_test('captured free vars via base_env', function () {
     $body = bft_bin('+', bft_id('acc'), bft_bin('*', bft_id('item'), bft_id('factor')));
     $total = Evaluator::fold([1, 2, 3], $body, 'acc', 'item', 0, 'left', ['factor' => 10]);
