@@ -33,10 +33,20 @@ const SUITES: ReadonlyArray<{ name: string; dir: string; file: string }> = [
 
 const args = process.argv.slice(2)
 const onlyIndex = args.indexOf('--only')
-const only = onlyIndex >= 0 ? new Set((args[onlyIndex + 1] ?? '').split(',').filter(Boolean)) : null
+const usage = `usage: bun run fixtures:smoke <test-name-pattern> [--only ${SUITES.map(s => s.name).join(',')}]`
+const onlyArg = onlyIndex >= 0 ? args[onlyIndex + 1] : undefined
+const only = onlyIndex >= 0 ? new Set((onlyArg?.startsWith('--') ? '' : (onlyArg ?? '')).split(',').filter(Boolean)) : null
+if (only) {
+  const unknown = [...only].filter(name => !SUITES.some(s => s.name === name))
+  if (only.size === 0 || unknown.length > 0) {
+    console.error(only.size === 0 ? '--only needs at least one suite name' : `unknown suite: ${unknown.join(', ')}`)
+    console.error(usage)
+    process.exit(2)
+  }
+}
 const pattern = args.find((a, i) => !a.startsWith('--') && (onlyIndex < 0 || i !== onlyIndex + 1))
 if (!pattern) {
-  console.error('usage: bun run fixtures:smoke <test-name-pattern> [--only go-template,jinja]')
+  console.error(usage)
   process.exit(2)
 }
 
