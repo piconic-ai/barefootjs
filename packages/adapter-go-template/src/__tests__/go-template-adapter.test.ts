@@ -2137,6 +2137,61 @@ export function Host({ label }: { label: string }) {
     })
   })
 
+  describe('#3323 nullable signal seeded from an optional struct member', () => {
+    // `Init.label` is flipped to `interface{}` because `Host` seeds a
+    // nullable signal from it. `Plain`, declared first in the same file,
+    // reads the same field through its own signal: both components must
+    // agree on the one `Init` struct or the combined Go doesn't compile.
+    const source = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+type Init = { label?: string }
+function Plain({ initial }: { initial: Init }) {
+  const [l] = createSignal<string>(initial.label!)
+  return <span>{l()}</span>
+}
+export function Host({ initial }: { initial: Init }) {
+  const [a] = createSignal<string | undefined>(initial.label)
+  return <div title={a()}><Plain initial={initial} /></div>
+}
+`.trimStart()
+
+    test('every component of the file emits the same flipped struct field', () => {
+      const result = compileJSX(source, 'test.tsx', { adapter: new GoTemplateAdapter() })
+      const types = result.files.filter(f => f.path.endsWith('.types')).map(f => f.content).join('\n')
+      // One `Init` shape for both components, and `Plain`'s non-nullable
+      // seed follows the field's type so `in.Initial.Label` stays assignable.
+      expect(types).not.toContain('Label string')
+      expect(types).toContain('Label interface{} `json:"label,omitempty"`')
+      expect(types).toContain('L interface{} `json:"-"`')
+    })
+
+    test('a shared named type keeps one struct shape across components', async () => {
+      try {
+        const absent = await renderGoTemplateComponent({
+          source,
+          adapter: new GoTemplateAdapter(),
+          componentName: 'Host',
+          props: { initial: {} },
+        })
+        expect(absent).not.toContain('title=')
+        const given = await renderGoTemplateComponent({
+          source,
+          adapter: new GoTemplateAdapter(),
+          componentName: 'Host',
+          props: { initial: { label: '' } },
+        })
+        expect(given).toContain('title=""')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping #3323 shared-type e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
+  })
+
   describe('#3061 nullable-union signal seed', () => {
     // `createSignal<T | undefined>(lit)` / `<T | null>(lit)`: the union is
     // source-level nullability documentation, not evidence about the initial

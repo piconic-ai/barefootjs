@@ -3594,14 +3594,6 @@
           }
         }
       },
-      "member-seeded-nullable-signal-attr": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "optional-struct-field-absent-renders-zero"
-          ]
-        }
-      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -5695,10 +5687,6 @@
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
       },
-      "member-seeded-nullable-signal-attr": {
-        "description": "An attribute bound to a nullable signal seeded from an optional member of a required object prop is…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/member-seeded-nullable-signal-attr.ts"
-      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -6323,11 +6311,10 @@
     "optional-struct-field-absent-renders-zero": {
       "title": "A missing optional field of a named object type reads as its type's zero value",
       "kind": "silent",
-      "given": "a read of an optional scalar field of a named object type — off an object signal (`createSignal<User>({})`, `data-name={blank()?.name}`) or seeding a nullable signal off a required object prop (`createSignal<string | undefined>(initial.label)` with `initial` = `{}`) — bound to an attribute, or an absent optional string prop read through `?.length` in text",
+      "given": "a read of an optional scalar field of a named object type off an object signal (`createSignal<User>({})`, `data-name={blank()?.name}`) bound to an attribute, or an absent optional string prop read through `?.length` in text",
       "expected": "the read is `undefined`, so the attribute is omitted (or the text renders empty)",
       "actual": "renders the zero value (`data-name=\"\"`, `data-n=\"0\"`, or `0` for `noText?.length`): the generated struct's optional field is a non-pointer `string` / `float64`, so a missing field is indistinguishable from a supplied `''` / `0`",
       "fixtures": [
-        "member-seeded-nullable-signal-attr",
         "nullish-optional-member-missing-field-attr",
         "optional-chain-length-string-receiver"
       ],

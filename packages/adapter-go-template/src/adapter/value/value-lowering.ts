@@ -86,18 +86,41 @@ function nillableAwarePropRef(
   expectedType: TypeInfo,
 ): string {
   const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+  if (!ctx.state.nillablePropNames.has(param.name)) return fieldRef
+  return assertNillableScalar(fieldRef, expectedType) ?? fieldRef
+}
+
+/**
+ * A flipped `interface{}` member (#3323) unboxed into the concrete scalar a
+ * non-nillable destination declares — `typeInfoToGo`'s choice, so a
+ * `number` lands as the `int` a bare numeric field gets, or `float64`. A
+ * number arrives boxed as `float64` (JSON-decoded input) or `int` (a Go
+ * caller's literal); either converts. Nil or a mismatched value takes the
+ * zero value.
+ */
+function unboxMemberScalar(ctx: GoEmitContext, ref: string, expectedType: TypeInfo): string | null {
   const scalar = unwrapNullableUnion(expectedType)
-  if (ctx.state.nillablePropNames.has(param.name) && scalar.kind === 'primitive') {
-    const goType =
-      scalar.primitive === 'boolean' ? 'bool' :
-      scalar.primitive === 'number' ? 'float64' :
-      scalar.primitive === 'string' ? 'string' : null
-    if (goType) {
-      const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
-      return `func() ${goType} { if v, ok := ${fieldRef}.(${goType}); ok { return v }; return ${zero} }()`
-    }
-  }
-  return fieldRef
+  if (scalar.kind !== 'primitive' || scalar.primitive !== 'number') return assertNillableScalar(ref, expectedType)
+  const goType = typeInfoToGo(ctx, scalar)
+  if (goType !== 'int' && goType !== 'float64') return null
+  return `func() ${goType} { switch v := ${ref}.(type) { case int: return ${goType}(v); case float64: return ${goType}(v) }; return 0 }()`
+}
+
+/**
+ * `ref` (an `interface{}` value) asserted to the concrete Go scalar
+ * `expectedType` names, zero-defaulting a nil or mismatched value — or null
+ * when `expectedType` isn't a string / number / boolean.
+ */
+function assertNillableScalar(ref: string, expectedType: TypeInfo): string | null {
+  const scalar = unwrapNullableUnion(expectedType)
+  if (scalar.kind !== 'primitive') return null
+  const goType =
+    scalar.primitive === 'boolean' ? 'bool' :
+    scalar.primitive === 'number' ? 'float64' :
+    scalar.primitive === 'string' ? 'string' : null
+  if (!goType) return null
+  const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
+  return `func() ${goType} { if v, ok := ${ref}.(${goType}); ok { return v }; return ${zero} }()`
 }
 
 /**
@@ -110,7 +133,7 @@ export function convertInitialValue(
   _typeInfo: TypeInfo,
   propsParams?: { name: string; sourceName?: string }[],
   preParsed?: ParsedExpr,
-  /** The destination is the signal's own `interface{}` field (#3323). */
+  /** The destination is an `interface{}` field that keeps a nillable seed whole (#3323). */
   ownNillableField = false,
 ): string {
   // Literal unions collapse to their backing primitive the same way
@@ -163,7 +186,15 @@ export function convertInitialValue(
   // falling through to the literal-baking branches below (none of which
   // match a `member` node) and silently baking `nil` (#3142).
   const memberSeed = resolvePropMemberSeed(ctx, preParsed, propsParams)
-  if (memberSeed?.kind === 'resolved') return memberSeed.goRef
+  if (memberSeed?.kind === 'resolved') {
+    // A member field flipped to `interface{}` for a nullable seed (#3323)
+    // bakes whole only into another `interface{}` destination; a concrete
+    // one (a child's `string` Input, a memo) gets the asserted scalar.
+    if (memberSeed.goType === 'interface{}' && !ownNillableField) {
+      return unboxMemberScalar(ctx, memberSeed.goRef, typeInfo) ?? memberSeed.goRef
+    }
+    return memberSeed.goRef
+  }
   if (memberSeed) {
     ctx.state.errors.push({
       code: 'BF101',

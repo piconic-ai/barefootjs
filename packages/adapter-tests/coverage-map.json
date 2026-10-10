@@ -5388,6 +5388,41 @@
         "attribute"
       ]
     },
+    "member-seeded-nullable-signal-attr-inline": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "member-seeded-nullable-signal-shared-type": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "member-seeded-nullable-signal-shared-type-number": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo": {
       "kinds": [
         "binary",

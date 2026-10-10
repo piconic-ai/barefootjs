@@ -17,8 +17,12 @@ import type { GoEmitContext } from '../emit-context.ts'
 
 /** Optional nested objects need a nil representation, not a populated zero struct.
  * Shared by field emission and literal baking so omitted and present objects
- * keep the same representation in caller-provided and compiler-baked rows. */
-export function propertyInfoToGo(ctx: GoEmitContext, property: PropertyInfo): string {
+ * keep the same representation in caller-provided and compiler-baked rows.
+ * `owner` is the struct the field belongs to: an optional scalar field a
+ * nullable signal seeds from (`nullableSeedStructFields`, #3323) is
+ * `interface{}` so an omitted member stays `nil`. */
+export function propertyInfoToGo(ctx: GoEmitContext, property: PropertyInfo, owner?: string): string {
+  if (owner !== undefined && ctx.state.nullableSeedStructFields.has(`${owner}.${property.name}`)) return 'interface{}'
   const base = typeInfoToGo(ctx, property.type)
   return property.optional && ctx.state.localStructFields.has(base) ? `*${base}` : base
 }

@@ -210,7 +210,7 @@ export function parsedLiteralToGo(
           nestedGoType && ctx.state.localStructFields.has(nestedGoType)
             ? parsedLiteralToGo(ctx, prop.value, propType)
             : bakeInlineObjectAsGoMap(ctx, prop.value)
-        if (go !== null && property && propertyInfoToGo(ctx, property).startsWith('*')) {
+        if (go !== null && property && propertyInfoToGo(ctx, property, goType).startsWith('*')) {
           go = `&${go}`
         }
       } else {

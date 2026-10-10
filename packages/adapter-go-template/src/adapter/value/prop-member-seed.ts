@@ -19,12 +19,14 @@
  * decision is made here.
  */
 
-import type { ParsedExpr, PropertyInfo } from '@barefootjs/jsx'
+import type { IRMetadata, ParsedExpr, PropertyInfo, TypeInfo } from '@barefootjs/jsx'
+import { isNullableSignal } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { resolvePropGoType } from '../props/prop-types.ts'
 import { propertyInfoToGo } from '../type/type-codegen.ts'
+import { planSynthPropStructs } from '../type/synth-prop-structs.ts'
 
 export type PropMemberSeed =
   | {
@@ -119,7 +121,7 @@ export function resolvePropMemberSeed(
       return unresolved(`Go struct '${goType}' has no field for '${property}'`)
     }
     goRef = `${goRef}.${goName}`
-    goType = propertyInfoToGo(ctx, propInfo)
+    goType = propertyInfoToGo(ctx, propInfo, goType)
     owner = `'${property}'`
   }
   return { kind: 'resolved', propName, path, goRef, goType }
@@ -199,4 +201,83 @@ export function propMemberSeedGoType(
 ): string | null {
   const seed = resolvePropMemberSeed(ctx, signal.parsed, ctx.state.currentPropsParams)
   return seed?.kind === 'resolved' ? seed.goType : null
+}
+
+/**
+ * `Struct.field` keys of OPTIONAL scalar struct fields that a nullable
+ * signal seeds from whole (`createSignal<string | undefined>(initial.label)`)
+ * — #3323. Such a field must hold `nil` for a member the caller left out:
+ * the signal's SSR value is `undefined` then, and a concrete `string` /
+ * `float64` field reads the absence as `""` / `0`, which the attribute nil
+ * guard can't tell from a supplied value. `propertyInfoToGo` flips these
+ * fields to `interface{}`.
+ *
+ * Walked over the TS types alone (named type definitions, plus the
+ * `planSynthPropStructs` name of an anonymous object type), so it runs
+ * before any Go type table exists — including at
+ * `registerChildComponentShape` time, which is how every component sharing
+ * a named type in one file sees the same flip.
+ */
+export function collectNullableSeedStructFields(
+  metadata: Pick<IRMetadata, 'signals' | 'propsParams' | 'typeDefinitions' | 'propsObjectName' | 'componentName'>,
+): Set<string> {
+  const keys = new Set<string>()
+  const propsParams = metadata.propsParams ?? []
+  const typeDefinitions = metadata.typeDefinitions ?? []
+  let synthNames: Map<TypeInfo, string> | null = null
+  const ownerOf = (type: TypeInfo): { name: string; properties: PropertyInfo[] } | null => {
+    if (type.kind === 'object') {
+      synthNames ??= new Map(
+        planSynthPropStructs({ typeDefinitions, propsParams }, metadata.componentName).map(e => [e.typeInfo, e.name]),
+      )
+      const name = synthNames.get(type)
+      return name && type.properties ? { name, properties: type.properties } : null
+    }
+    const td = type.raw ? typeDefinitions.find(t => t.name === type.raw) : undefined
+    return td?.properties ? { name: td.name, properties: td.properties } : null
+  }
+  for (const signal of metadata.signals ?? []) {
+    if (!isNullableSignal(signal)) continue
+    const chain = tsPropMemberChain(signal.parsed, propsParams, metadata.propsObjectName ?? null)
+    if (!chain) continue
+    let type: TypeInfo | undefined = propsParams.find(p => p.name === chain.propName)?.type
+    let owner: { name: string; properties: PropertyInfo[] } | null = null
+    let property: PropertyInfo | undefined
+    for (const hop of chain.path) {
+      owner = type ? ownerOf(type) : null
+      property = owner?.properties.find(p => p.name === hop)
+      if (!property) break
+      type = property.type
+    }
+    if (owner && property && property.optional && property.type.kind === 'primitive' &&
+        NULLABLE_SEED_PRIMITIVES.has(property.type.primitive ?? '')) {
+      keys.add(`${owner.name}.${property.name}`)
+    }
+  }
+  return keys
+}
+
+const NULLABLE_SEED_PRIMITIVES = new Set(['string', 'number', 'boolean'])
+
+/** `propMemberChain` without a `GoEmitContext`: the props-object name comes from the metadata. */
+function tsPropMemberChain(
+  preParsed: ParsedExpr | undefined,
+  propsParams: readonly { name: string }[],
+  propsObjectName: string | null,
+): { propName: string; path: string[] } | null {
+  if (!preParsed || preParsed.kind !== 'member') return null
+  const path: string[] = []
+  let node: ParsedExpr = preParsed
+  while (node.kind === 'member') {
+    if (node.computed) return null
+    path.unshift(node.property)
+    node = node.object
+  }
+  if (node.kind !== 'identifier') return null
+  if (propsParams.some(p => p.name === node.name)) return { propName: node.name, path }
+  if (propsObjectName !== null && node.name === propsObjectName && path.length >= 2 &&
+      propsParams.some(p => p.name === path[0])) {
+    return { propName: path[0], path: path.slice(1) }
+  }
+  return null
 }
