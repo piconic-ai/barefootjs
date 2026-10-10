@@ -3194,10 +3194,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             ir.metadata.propsParams,
             propFallbackVars,
             childShape?.nillableParamNames.has(prop.name) ?? false,
-            childShape?.paramGoTypes.get(prop.name),
           )
           if (resolvedValue !== null) {
-            emitChildField(prop.name, resolvedValue)
+            emitChildField(prop.name, childShape?.nillableParamNames.has(prop.name)
+              ? resolvedValue
+              : this.unboxNillablePropRef(resolvedValue, ir.metadata.propsParams, childShape?.paramGoTypes.get(prop.name)))
           } else if (parsedValue?.kind === 'unary' && parsedValue.op === '!') {
             // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
             // recursion still can't lower (e.g. a multi-arg call, a deep
@@ -5376,8 +5377,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     /** The destination child Input field is nillable `interface{}` (#3323). */
     nillableDest = false,
-    /** The destination child Input field's declared Go type, when known. */
-    destGoType?: string,
   ): string | null {
     // A unary-not wrapping any shape this function otherwise resolves
     // (`!value()`, `!open()`, `!props.v`, `!label` — #3174) — recurse on the
@@ -5519,16 +5518,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // binding (`bareIdentifier`) or the `props.<key>` source key
       // (`barePropAccess`, never aliased) — resolve through the matched
       // param rather than assuming the two coincide.
-      const ref = `in.${capitalizeFieldName(passthroughParam.sourceName ?? passthroughParam.name)}`
-      // A prop flipped to `interface{}` here (`resolvePropGoType`) forwarded
-      // into a child's concrete scalar field is unboxed to that type (#3422).
-      if (!nillableDest && destGoType && this.state.nillablePropNames.has(passthroughParam.name)) {
-        return unboxToGoScalar(ref, destGoType) ?? ref
-      }
-      return ref
+      return `in.${capitalizeFieldName(passthroughParam.sourceName ?? passthroughParam.name)}`
     }
 
     return null
+  }
+
+  /**
+   * `value` unboxed into a child's concrete scalar Input field when it is
+   * the bare `in.<Field>` of a prop this component flipped to `interface{}`
+   * (`resolvePropGoType`, #3422) — reached by a direct passthrough
+   * (`text={props.text}`) or an identity memo over it (`text={relayed()}`).
+   * Any other value, or an unknown / non-scalar destination, is unchanged.
+   */
+  private unboxNillablePropRef(
+    value: string,
+    propsParams: readonly { name: string; sourceName?: string }[],
+    destGoType: string | undefined,
+  ): string {
+    if (!destGoType) return value
+    const param = propsParams.find(p => value === `in.${capitalizeFieldName(p.sourceName ?? p.name)}`)
+    if (!param || !this.state.nillablePropNames.has(param.name)) return value
+    return unboxToGoScalar(value, destGoType) ?? value
   }
 
   /**

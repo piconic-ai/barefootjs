@@ -6902,6 +6902,7 @@
     },
     "optional-chain-receiver-forwarded-child": {
       "kinds": [
+        "call",
         "identifier",
         "literal",
         "logical",
