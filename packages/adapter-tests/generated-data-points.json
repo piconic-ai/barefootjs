@@ -4551,6 +4551,79 @@
       }
     }
   ],
+  "optional-chain-receiver-positions": [
+    {
+      "name": "gen:absent:empty",
+      "props": {
+        "blank": "",
+        "text": "ab",
+        "absent": ""
+      }
+    },
+    {
+      "name": "gen:absent:markup",
+      "props": {
+        "blank": "",
+        "text": "ab",
+        "absent": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:absent:multibyte",
+      "props": {
+        "blank": "",
+        "text": "ab",
+        "absent": "日本語"
+      }
+    },
+    {
+      "name": "gen:blank:absent",
+      "props": {
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:blank:markup",
+      "props": {
+        "blank": "<b>&\"'</b>",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:blank:multibyte",
+      "props": {
+        "blank": "日本語",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:text:absent",
+      "props": {
+        "blank": ""
+      }
+    },
+    {
+      "name": "gen:text:empty",
+      "props": {
+        "blank": "",
+        "text": ""
+      }
+    },
+    {
+      "name": "gen:text:markup",
+      "props": {
+        "blank": "",
+        "text": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:text:multibyte",
+      "props": {
+        "blank": "",
+        "text": "日本語"
+      }
+    }
+  ],
   "optional-object-nullish-compare": [
     {
       "name": "gen:user:object:minimal",

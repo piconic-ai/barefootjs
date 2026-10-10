@@ -6900,6 +6900,38 @@
         "text"
       ]
     },
+    "optional-chain-receiver-forwarded-child": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "optional-chain-receiver-positions": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "optional-chaining-prop": {
       "kinds": [
         "identifier",

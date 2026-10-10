@@ -2137,6 +2137,50 @@ export function Host({ label }: { label: string }) {
     })
   })
 
+  describe('#3422 optional-chain receiver prop', () => {
+    const source = `
+"use client"
+type Props = { noText?: string; tail?: string }
+export function Host(props: Props) {
+  return <p>{props.noText?.length}|{props.tail}</p>
+}
+`.trimStart()
+
+    test('the receiver prop is nillable and an absent one is dropped from the payload', () => {
+      const result = compileJSX(source, 'test.tsx', { adapter: new GoTemplateAdapter() })
+      const types = result.files.filter(f => f.path.endsWith('.types')).map(f => f.content).join('\n')
+      expect(types).not.toContain('NoText string')
+      expect(types).toMatch(/NoText\s+interface\{\}/)
+      expect(types).toContain('if in.NoText != nil {')
+    })
+
+    test('an absent receiver renders empty, an empty string renders 0', async () => {
+      try {
+        const absent = await renderGoTemplateComponent({
+          source,
+          adapter: new GoTemplateAdapter(),
+          componentName: 'Host',
+          props: {},
+        })
+        expect(absent).toContain('<!--bf:s0--><!--/-->|')
+        expect(absent).not.toContain('noText')
+        const blank = await renderGoTemplateComponent({
+          source,
+          adapter: new GoTemplateAdapter(),
+          componentName: 'Host',
+          props: { noText: '' },
+        })
+        expect(blank).toContain('<!--bf:s0-->0<!--/-->|')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping #3422 e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
+  })
+
   describe('#3323 nullable signal seeded from an optional struct member', () => {
     // `Init.label` is flipped to `interface{}` because `Host` seeds a
     // nullable signal from it. `Plain`, declared first in the same file,
@@ -7330,7 +7374,8 @@ export function C(props: Props) {
     // `html/template` parses those as `gt`/`len`/`eq` receiving 3/4 sibling
     // args instead of the intended 1/2.
     expect(template).toContain('gt (len (or .Todos bf_arr)) 0')
-    expect(template).toContain('gt (or (len .Todos) 0) 0')
+    // `todos()?.length` takes the nil-safe `bf_length` (#3422).
+    expect(template).toContain('gt (or (bf_length .Todos) 0) 0')
     expect(template).toContain('gt (or .Count 0) 0')
     expect(template).toContain('eq (or .Count 0) 2')
   })
