@@ -246,8 +246,6 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
  * inspects the generated Go text before compilation, needs to look
  * through the escaping to find it. Same harness-side-extractor-gap shape
  * as the `^`-caret fix above: the adapter's output was already correct.
- * A loop-row portal element (#3420) carries its text markers
- * (`bfTextStart \"<id>\"`) through the same escaping.
  */
 export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   const out = emptySets()
@@ -256,7 +254,6 @@ export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   for (const m of template.matchAll(/bfText\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/text_start\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/bfTextStart\s+"(\^?[\w-]+)"/g)) out.slots.add(m[1])
-  for (const m of template.matchAll(/bfTextStart\s+\\"(\^?[\w-]+)\\"/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/\bbf-c="(\^?[\w-]+)"/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/\bbf-c=\\"(\^?[\w-]+)\\"/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/cond-start:(\^?[\w-]+)/g)) out.conds.add(m[1])

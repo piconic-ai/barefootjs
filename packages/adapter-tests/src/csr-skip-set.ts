@@ -146,13 +146,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same harness gap for a loop-row element a `ref` callback portals
   // (#3318): SSR places it at the outlet, and the template-only CSR render
   // leaves it in its row. The real-browser oracle's `csr-mount` leg covers
-  // all six.
+  // all seven.
   'row-portal-ref',
   'row-portal-ref-remove',
   'row-portal-ref-static',
   'row-portal-ref-branch',
   'row-portal-ref-composite',
   'row-portal-ref-scope',
+  'row-portal-ref-contents',
   // A `/* @client */` prop on a component inside a loop row: the CSR
   // template omits it by design (it is deferred to `initChild`'s props
   // getters, `IRProp.clientOnly`), and this harness evaluates only the

@@ -938,6 +938,7 @@ import { fixture as rowPortalRefStatic } from './row-portal-ref-static'
 import { fixture as rowPortalRefBranch } from './row-portal-ref-branch'
 import { fixture as rowPortalRefComposite } from './row-portal-ref-composite'
 import { fixture as rowPortalRefScope } from './row-portal-ref-scope'
+import { fixture as rowPortalRefContents } from './row-portal-ref-contents'
 // Static text directly adjacent to a conditional: no whitespace of the
 // template's own between them (#3321).
 import { fixture as textThenConditional } from './text-then-conditional'
@@ -1551,6 +1552,7 @@ export const jsxFixtures: JSXFixture[] = [
   rowPortalRefBranch,
   rowPortalRefComposite,
   rowPortalRefScope,
+  rowPortalRefContents,
   textThenConditional,
   textThenConditionalStatic,
   conditionalThenText,

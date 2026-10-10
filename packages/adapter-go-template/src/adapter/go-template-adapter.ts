@@ -159,6 +159,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
+import { freeTemplateVars } from "./lib/template-scope.ts"
 import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
@@ -6265,23 +6266,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * `wrapSsrPortalElement` for an element inside a `{{range}}` (#3420). The
-   * collected string is re-executed at the outlet, where neither the row's
-   * `.`, the loop's `$name` variables nor the define's root `$` exist, so
-   * `bfPortalHTMLIn` hands them over: the root as `$__bfRoot` (every bare
-   * `$` in the element's actions is renamed to it), each referenced loop
-   * variable rebound by name, and the row as `.` through a one-element
+   * element renders at the outlet, away from its row, so it moves into a
+   * companion define executed through `bf_tmpl` — which keeps the
+   * component template set in reach for nested `{{template}}` calls — with
+   * `bf_portal_scope` handing over what the row could see: the define's
+   * root (every bare `$` in the element's actions is renamed to
+   * `$__bfRoot`), each loop variable the element reads without declaring
+   * it (`freeTemplateVars`), and the row as `.` through a one-element
    * `range`, which rebinds `.` even when the row is falsy.
    */
   private wrapLoopRowSsrPortalElement(rendered: string): string {
-    const declared = new Set([...rendered.matchAll(/\$([A-Za-z_]\w*)\s*:=/g)].map(m => m[1]))
-    const outer = [...new Set([...rendered.matchAll(/\$([A-Za-z_]\w*)/g)].map(m => m[1]))]
-      .filter(name => !declared.has(name))
-    const body = rendered.replace(/\{\{[\s\S]*?\}\}/g, action => action.replace(/\$(?![A-Za-z_\d])/g, '$__bfRoot'))
-    const prelude = ['{{$__bfRoot := index . "root"}}', ...outer.map(name => `{{$${name} := index . "${name}"}}`)].join('')
-    const tmpl = `${prelude}{{range index . "dot"}}${body}{{end}}`
-    const vars = outer.map(name => ` "${name}" $${name}`).join('')
-    return `{{$.Portals.AddElement (bfPortalHTMLIn $ . "${escapeGoTemplateString(tmpl)}"${vars})}}`
+    const { free, body } = freeTemplateVars(rendered, '__bfRoot')
+    const prelude = ['{{$__bfRoot := index . "root"}}', ...free.map(name => `{{$${name} := index . "${name}"}}`)].join('')
+    const name = `${this.state.componentName}__portal_${this.state.pendingChildrenDefines.length}`
+    this.state.pendingChildrenDefines.push({ name, content: `${prelude}{{range index . "dot"}}${body}{{end}}` })
+    const vars = free.map(v => ` "${v}" $${v}`).join('')
+    return `{{$.Portals.AddElement (bf_tmpl "${name}" (bf_portal_scope $ .${vars}))}}`
   }
+
 
   /**
    * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — see the Blade

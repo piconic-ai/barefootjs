@@ -193,8 +193,11 @@ func FuncMap() template.FuncMap {
 		"bfPropsAttr": BfPropsAttr,
 
 		// Portal HTML rendering (parses and executes template string)
-		"bfPortalHTML":   PortalHTML,
-		"bfPortalHTMLIn": PortalHTMLIn,
+		"bfPortalHTML": PortalHTML,
+
+		// Data for a loop-row `ref`-callback portal element's companion
+		// define (#3420), executed through bf_tmpl.
+		"bf_portal_scope": PortalScope,
 
 		// JSX children passed to an imported child component (#1896):
 		// the parent renders the children fragment via a companion
@@ -3311,19 +3314,19 @@ func PortalHTML(data interface{}, tmplStr string) template.HTML {
 	return template.HTML(buf.String())
 }
 
-// PortalHTMLIn is PortalHTML for a `ref`-callback portal element inside a
-// `{{range}}` row (#3420): the template string is re-executed away from the
-// row, so it receives the define's root under "root", the row under "dot"
-// (as a one-element slice its own `range` rebinds `.` to), and each loop
-// variable it reads as a name/value pair.
-func PortalHTMLIn(root, dot interface{}, tmplStr string, vars ...interface{}) template.HTML {
+// PortalScope is the data of a `ref`-callback portal element's companion
+// define inside a `{{range}}` row (#3420): the element renders at the
+// outlet, away from the row, so it receives the define's root under
+// "root", the row under "dot" (as a one-element slice its own `range`
+// rebinds `.` to) and each loop variable it reads as a name/value pair.
+func PortalScope(root, dot interface{}, vars ...interface{}) map[string]interface{} {
 	data := map[string]interface{}{"root": root, "dot": []interface{}{dot}}
 	for i := 0; i+1 < len(vars); i += 2 {
 		if name, ok := vars[i].(string); ok {
 			data[name] = vars[i+1]
 		}
 	}
-	return PortalHTML(data, tmplStr)
+	return data
 }
 
 // =============================================================================

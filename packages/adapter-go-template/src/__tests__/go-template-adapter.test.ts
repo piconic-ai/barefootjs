@@ -2159,8 +2159,8 @@ export function Host(props: { rows: Row[]; prefix: string }) {
     test('the element is collected with its row scope', () => {
       const result = compileJSX(source, 'test.tsx', { adapter: new GoTemplateAdapter() })
       const template = result.files.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
-      expect(template).toContain('{{$.Portals.AddElement (bfPortalHTMLIn $ . ')
-      expect(template).toContain('bf-po=\\"{{bfScopeAttr $__bfRoot}}\\"')
+      expect(template).toContain('{{$.Portals.AddElement (bf_tmpl "Host__portal_0" (bf_portal_scope $ . "i" $i))}}')
+      expect(template).toContain('bf-po="{{bfScopeAttr $__bfRoot}}"')
     })
 
     test('renders each row element at the outlet with its item, index and root prop', async () => {
@@ -2179,6 +2179,90 @@ export function Host(props: { rows: Row[]; prefix: string }) {
           console.log('Skipping #3420 e2e: go command not found')
           return
         }
+        throw err
+      }
+    })
+  })
+
+  describe('#3420 loop-row portal element contents', () => {
+    const mount = `const mount = (el: HTMLElement) => {
+    if (el.parentNode !== document.body) createPortal(el, document.body, { ownerScope: el.closest('[bf-s]') ?? undefined })
+  }`
+    const render = (source: string, props: Record<string, unknown>, components?: Record<string, string>) =>
+      renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), componentName: 'Host', props, components })
+
+    test('a literal dollar in text or a string stays verbatim', async () => {
+      const source = `
+"use client"
+import { createPortal } from '@barefootjs/client'
+export function Host(props: { rows: string[] }) {
+  ${mount}
+  return <ul>{props.rows.map(r => <li key={r}><button ref={mount}>$price:{r}|{r + "$"}</button></li>)}</ul>
+}
+`
+      try {
+        const html = await render(source, { rows: ['a'] })
+        expect(html).toContain('$price:<!--bf:s0-->a<!--/-->|<!--bf:s1-->a$<!--/-->')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) return
+        throw err
+      }
+    })
+
+    test('a nested loop shadowing the row variable leaves a sibling read of it intact', async () => {
+      const source = `
+"use client"
+import { createPortal } from '@barefootjs/client'
+type Kid = { id: string; name: string }
+type Row = { id: string; name: string; children: Kid[] }
+export function Host(props: { rows: Row[] }) {
+  ${mount}
+  return (
+    <ul>
+      {props.rows.map(row => (
+        <li key={row.id}>
+          <button ref={mount}>
+            {row.children.map(row => <i key={row.id}>{row.name}</i>)}
+            {row.children.map(child => <b key={child.id}>{row.name}:{child.name}</b>)}
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+`
+      try {
+        const html = await render(source, { rows: [{ id: 'r', name: 'outer', children: [{ id: 'k', name: 'kid' }] }] })
+        expect(html).not.toContain('bfPortalHTML')
+        expect(html).not.toContain('undefined variable')
+        expect(html).toContain('kid')
+        expect(html).toMatch(/outer.*:.*kid/)
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) return
+        throw err
+      }
+    })
+
+    test('a child component inside the portaled element renders', async () => {
+      const source = `
+"use client"
+import { createPortal } from '@barefootjs/client'
+import { Child } from './Child'
+export function Host(props: { rows: string[] }) {
+  ${mount}
+  return <ul>{props.rows.map(r => <li key={r}><div ref={mount}><Child label={r} /></div></li>)}</ul>
+}
+`
+      const child = `export function Child(props: { label: string }) {
+  return <b>{props.label}</b>
+}
+`
+      try {
+        const html = await render(source, { rows: ['a'] }, { './Child': child })
+        expect(html).not.toContain('error')
+        expect(html).toMatch(/<div[^>]*bf-po="test"[^>]*><b[^>]*>.*a.*<\/b><\/div>/)
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) return
         throw err
       }
     })

@@ -7937,6 +7937,24 @@
         "text"
       ]
     },
+    "row-portal-ref-contents": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "row-portal-ref-remove": {
       "kinds": [
         "call",
