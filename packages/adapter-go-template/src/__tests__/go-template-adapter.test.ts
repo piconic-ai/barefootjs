@@ -2137,6 +2137,43 @@ export function Host({ label }: { label: string }) {
     })
   })
 
+  describe('#3421 object signal missing optional field', () => {
+    const source = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+type User = { name?: string; age?: number }
+export function Host() {
+  const [blank] = createSignal<User>({})
+  const [given] = createSignal<User>({ name: '', age: 0 })
+  return <p data-a={blank()?.name} data-b={given()?.age}>{given().name ?? 'anon'}</p>
+}
+`.trimStart()
+
+    test('a field read in a nullable position is nillable and `??` tests nil-ness', () => {
+      const result = compileJSX(source, 'test.tsx', { adapter: new GoTemplateAdapter() })
+      const types = result.files.filter(f => f.path.endsWith('.types')).map(f => f.content).join('\n')
+      const template = result.files.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+      expect(types).toContain('Name interface{} `json:"name,omitempty"`')
+      expect(types).toContain('Age interface{} `json:"age,omitempty"`')
+      expect(template).toContain('bf_nullish (bf_get .Given "name") "anon"')
+    })
+
+    test('a missing field omits the attribute, a supplied empty value keeps it', async () => {
+      try {
+        const html = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), componentName: 'Host' })
+        expect(html).not.toContain('data-a=')
+        expect(html).toContain('data-b="0"')
+        expect(html).not.toContain('anon')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping #3421 e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
+  })
+
   describe('#3422 optional-chain receiver prop', () => {
     const source = `
 "use client"

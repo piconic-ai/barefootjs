@@ -96,10 +96,9 @@ export const renderDivergences: RenderDivergences = {
   // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
   // `undefined`-initialized signal read the nil operand as `0` or threw. The
   // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
-  // `blank()?.name` with `blank()` = `{}` typed `User`: the struct's
-  // `Name string` field reads as `""`, not nil, so the nil guard keeps
-  // `data-name=""` where JS reads `undefined` and omits it (#3322).
-  'nullish-optional-member-missing-field-attr': { limitation: 'optional-struct-field-absent-renders-zero' },
+  // `nullish-optional-member-missing-field-attr` used to sit here: an object
+  // signal's missing optional field rendered `data-name=""`. A field read
+  // where `undefined` is observable is now `interface{}` (#3421).
   // `optional-chain-length-string-receiver` used to sit here: an absent
   // optional string prop read through `?.length` rendered `0`. An
   // optional-chain receiver prop is now `interface{}`, so the guard sees nil (#3422).
