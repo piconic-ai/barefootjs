@@ -4135,14 +4135,6 @@
           ]
         }
       },
-      "nullish-optional-member-missing-field-attr": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "optional-struct-field-absent-renders-zero"
-          ]
-        }
-      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -5699,10 +5691,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "nullish-optional-member-missing-field-attr": {
-        "description": "An attribute bound to a present object's missing optional field is omitted",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-member-missing-field-attr.ts"
-      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6294,19 +6282,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "optional-struct-field-absent-renders-zero": {
-      "title": "A missing optional field of a named object type reads as its type's zero value",
-      "kind": "silent",
-      "given": "a read of an optional scalar field of a named object type off an object signal (`createSignal<User>({})`, `data-name={blank()?.name}`) bound to an attribute",
-      "expected": "the read is `undefined`, so the attribute is omitted",
-      "actual": "renders the zero value (`data-name=\"\"`, `data-n=\"0\"`): the generated struct's optional field is a non-pointer `string` / `float64`, so a missing field is indistinguishable from a supplied `''` / `0`",
-      "fixtures": [
-        "nullish-optional-member-missing-field-attr"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "prop-member-chain-signal-seed": {

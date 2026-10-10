@@ -20,7 +20,7 @@
  */
 
 import type { IRMetadata, ParsedExpr, PropertyInfo, TypeInfo } from '@barefootjs/jsx'
-import { isNullableSignal } from '@barefootjs/jsx'
+import { isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
@@ -220,6 +220,7 @@ export function propMemberSeedGoType(
  */
 export function collectNullableSeedStructFields(
   metadata: Pick<IRMetadata, 'signals' | 'propsParams' | 'typeDefinitions' | 'propsObjectName' | 'componentName'>,
+  root?: unknown,
 ): Set<string> {
   const keys = new Set<string>()
   const propsParams = metadata.propsParams ?? []
@@ -249,12 +250,69 @@ export function collectNullableSeedStructFields(
       if (!property) break
       type = property.type
     }
-    if (owner && property && property.optional && property.type.kind === 'primitive' &&
-        NULLABLE_SEED_PRIMITIVES.has(property.type.primitive ?? '')) {
+    if (owner && property && isNullableScalarField(property)) {
       keys.add(`${owner.name}.${property.name}`)
     }
   }
+  // An object signal's optional field read where `undefined` is observable
+  // (#3421): `data-name={user()?.name}` omits the attribute and
+  // `user().name ?? 'x'` falls back only for a missing field, which a
+  // concrete `string` / `float64` field can't tell from `''` / `0`.
+  if (root !== undefined) {
+    const signalTypes = new Map((metadata.signals ?? []).map(sig => [sig.getter, sig.type]))
+    for (const { getter, field } of collectNullableSignalFieldReads(root, new Set(signalTypes.keys()))) {
+      const type = signalTypes.get(getter)
+      const owner = type ? ownerOf(type) : null
+      const property = owner?.properties.find(p => p.name === field)
+      if (owner && property && isNullableScalarField(property)) keys.add(`${owner.name}.${property.name}`)
+    }
+  }
   return keys
+}
+
+function isNullableScalarField(property: PropertyInfo): boolean {
+  return property.optional && property.type.kind === 'primitive' &&
+    NULLABLE_SEED_PRIMITIVES.has(property.type.primitive ?? '')
+}
+
+/**
+ * Single-hop field reads off a signal getter call (`user().name`,
+ * `user()?.name`) in a position where a missing field is observable: the
+ * whole value of a non-class/style, non-boolean attribute, the left operand
+ * of `??`, or the receiver of a further `?.` hop (`user().name?.length`).
+ */
+function collectNullableSignalFieldReads(
+  root: unknown,
+  getters: ReadonlySet<string>,
+): Array<{ getter: string; field: string }> {
+  const reads: Array<{ getter: string; field: string }> = []
+  const fieldRead = (expr: unknown): void => {
+    const e = expr as ParsedExpr | undefined
+    if (!e || e.kind !== 'member' || e.computed) return
+    const call = e.object
+    if (call.kind !== 'call' || call.args.length !== 0 || call.callee.kind !== 'identifier') return
+    if (getters.has(call.callee.name)) reads.push({ getter: call.callee.name, field: e.property })
+  }
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.type === 'element' && Array.isArray(rec.attrs)) {
+      for (const attr of rec.attrs as Array<{ name: string; value: { kind?: string; parsed?: unknown } }>) {
+        if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') continue
+        if (isBooleanAttr(attr.name) || attr.value?.kind !== 'expression') continue
+        fieldRead(attr.value.parsed)
+      }
+    }
+    if (rec.kind === 'logical' && rec.op === '??') fieldRead(rec.left)
+    if (rec.kind === 'member' && rec.optional === true) fieldRead(rec.object)
+    for (const value of Object.values(rec)) walk(value)
+  }
+  walk(root)
+  return reads
 }
 
 const NULLABLE_SEED_PRIMITIVES = new Set(['string', 'number', 'boolean'])
