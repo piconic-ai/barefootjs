@@ -7951,6 +7951,23 @@
         "text"
       ]
     },
+    "row-portal-ref-scope": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "row-portal-ref-static": {
       "kinds": [
         "array-literal",

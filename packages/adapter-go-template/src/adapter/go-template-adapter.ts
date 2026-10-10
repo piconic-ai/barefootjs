@@ -6208,14 +6208,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // needs its own runtime path distinct from the explicit `<Portal>`
     // component's `.Portals.Add`.
     //
-    // Inside a `{{range}}` (a loop row, #3318), `.` is the row item and the
-    // collected string would be re-executed against it without the loop's
-    // variables, so the element renders inline in its row instead; the
-    // client's `ref` callback portals it at hydration and the row adopts it
-    // (limitation `go-loop-row-portal-inline`).
-    const portalOut = element.ssrPortalOwnerScope && !this.inLoop
+    // Inside a `{{range}}` (a loop row, #3318), `.` is the row item, so the
+    // owner scope is read off the root (`$`) and the element is collected
+    // with its row scope (`wrapSsrPortalElement`, #3420).
+    const portalOut = element.ssrPortalOwnerScope
     if (portalOut) {
-      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{bfScopeAttr .}}"`
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{bfScopeAttr ${this.inLoop ? '$' : '.'}}}"`
     }
 
     const voidElements = [
@@ -6256,11 +6254,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * split for the same reason.
    */
   private wrapSsrPortalElement(rendered: string): string {
-    const escaped = rendered.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+    if (this.inLoop && rendered.includes('{{')) return this.wrapLoopRowSsrPortalElement(rendered)
+    const escaped = escapeGoTemplateString(rendered)
     if (rendered.includes('{{')) {
       return `{{.Portals.AddElement (bfPortalHTML . "${escaped}")}}`
     }
-    return `{{.Portals.AddElement "${escaped}"}}`
+    // Inside a `{{range}}`, `.` is the row; the collector lives on the root.
+    return `{{${this.inLoop ? '$' : ''}.Portals.AddElement "${escaped}"}}`
+  }
+
+  /**
+   * `wrapSsrPortalElement` for an element inside a `{{range}}` (#3420). The
+   * collected string is re-executed at the outlet, where neither the row's
+   * `.`, the loop's `$name` variables nor the define's root `$` exist, so
+   * `bfPortalHTMLIn` hands them over: the root as `$__bfRoot` (every bare
+   * `$` in the element's actions is renamed to it), each referenced loop
+   * variable rebound by name, and the row as `.` through a one-element
+   * `range`, which rebinds `.` even when the row is falsy.
+   */
+  private wrapLoopRowSsrPortalElement(rendered: string): string {
+    const declared = new Set([...rendered.matchAll(/\$([A-Za-z_]\w*)\s*:=/g)].map(m => m[1]))
+    const outer = [...new Set([...rendered.matchAll(/\$([A-Za-z_]\w*)/g)].map(m => m[1]))]
+      .filter(name => !declared.has(name))
+    const body = rendered.replace(/\{\{[\s\S]*?\}\}/g, action => action.replace(/\$(?![A-Za-z_\d])/g, '$__bfRoot'))
+    const prelude = ['{{$__bfRoot := index . "root"}}', ...outer.map(name => `{{$${name} := index . "${name}"}}`)].join('')
+    const tmpl = `${prelude}{{range index . "dot"}}${body}{{end}}`
+    const vars = outer.map(name => ` "${name}" $${name}`).join('')
+    return `{{$.Portals.AddElement (bfPortalHTMLIn $ . "${escapeGoTemplateString(tmpl)}"${vars})}}`
   }
 
   /**
@@ -10769,3 +10789,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 }
 
 export const goTemplateAdapter = new GoTemplateAdapter()
+
+/** `s` as the body of a Go double-quoted string literal. */
+function escapeGoTemplateString(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+}

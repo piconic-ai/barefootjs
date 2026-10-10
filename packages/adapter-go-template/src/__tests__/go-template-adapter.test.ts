@@ -2137,6 +2137,53 @@ export function Host({ label }: { label: string }) {
     })
   })
 
+  describe('#3420 loop-row ref-callback portal element', () => {
+    const source = `
+"use client"
+import { createPortal } from '@barefootjs/client'
+type Row = { id: string; label: string }
+export function Host(props: { rows: Row[]; prefix: string }) {
+  const mount = (el: HTMLElement) => {
+    if (el.parentNode !== document.body) createPortal(el, document.body, { ownerScope: el.closest('[bf-s]') ?? undefined })
+  }
+  return (
+    <ul>
+      {props.rows.map((r, i) => (
+        <li key={r.id}><button type="button" data-index={i} title={props.prefix} ref={mount}>{r.label}</button></li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart()
+
+    test('the element is collected with its row scope', () => {
+      const result = compileJSX(source, 'test.tsx', { adapter: new GoTemplateAdapter() })
+      const template = result.files.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+      expect(template).toContain('{{$.Portals.AddElement (bfPortalHTMLIn $ . ')
+      expect(template).toContain('bf-po=\\"{{bfScopeAttr $__bfRoot}}\\"')
+    })
+
+    test('renders each row element at the outlet with its item, index and root prop', async () => {
+      try {
+        const html = await renderGoTemplateComponent({
+          source,
+          adapter: new GoTemplateAdapter(),
+          componentName: 'Host',
+          props: { rows: [{ id: 'a', label: 'alpha' }, { id: 'b', label: 'beta' }], prefix: 'p' },
+        })
+        expect(html).toContain('<li data-key="a"></li><li data-key="b"></li>')
+        expect(html).toContain('data-index="1" title="p" data-key="b"')
+        expect(html.indexOf('<!--bf:s0-->beta')).toBeGreaterThan(html.indexOf('</ul>'))
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping #3420 e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
+  })
+
   describe('#3421 object signal missing optional field', () => {
     const source = `
 "use client"
