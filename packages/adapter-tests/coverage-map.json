@@ -6399,6 +6399,30 @@
         "attribute"
       ]
     },
+    "nullish-optional-member-field-matrix": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nullish-optional-member-missing-field-attr": {
       "kinds": [
         "call",

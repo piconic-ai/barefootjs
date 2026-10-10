@@ -2602,12 +2602,6 @@
               ]
             },
             {
-              "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4329,12 +4323,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -7261,12 +7249,6 @@
               ]
             },
             {
-              "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -8252,12 +8234,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
               ]
             },
             {
@@ -13131,12 +13107,6 @@
         "erb": {},
         "go-template": {
           "gaps": [
-            {
-              "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
             {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [

@@ -747,6 +747,7 @@ import { fixture as nullishSignalAttr } from './nullish-signal-attr'
 import { fixture as nullishMemoAttr } from './nullish-memo-attr'
 import { fixture as nullishOptionalMemberAttr } from './nullish-optional-member-attr'
 import { fixture as nullishOptionalMemberMissingFieldAttr } from './nullish-optional-member-missing-field-attr'
+import { fixture as nullishOptionalMemberFieldMatrix } from './nullish-optional-member-field-matrix'
 import { fixture as nullishTernaryAttr } from './nullish-ternary-attr'
 import { fixture as nullishTernaryFalseBranchAttr } from './nullish-ternary-false-branch-attr'
 import { fixture as nullishSignalArithmeticMemo } from './nullish-signal-arithmetic-memo'
@@ -1456,6 +1457,7 @@ export const jsxFixtures: JSXFixture[] = [
   nullishMemoAttr,
   nullishOptionalMemberAttr,
   nullishOptionalMemberMissingFieldAttr,
+  nullishOptionalMemberFieldMatrix,
   nullishTernaryAttr,
   nullishTernaryFalseBranchAttr,
   nullishSignalArithmeticMemo,

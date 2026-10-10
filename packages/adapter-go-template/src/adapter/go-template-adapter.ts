@@ -717,7 +717,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
     this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
-    for (const key of collectNullableSeedStructFields(ir.metadata)) this.fileNullableSeedStructFields.add(key)
+    for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
@@ -1180,7 +1180,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
-    for (const key of collectNullableSeedStructFields(ir.metadata)) this.fileNullableSeedStructFields.add(key)
+    for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
     // `sourceName ?? name` — identity for an un-aliased param, the original
@@ -7202,7 +7202,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // present-but-empty `""` — JS `??` keeps it. `bf_nullish` tests nil-ness
     // only. Non-nillable operands keep `or`: their concrete Go type can't
     // represent "absent" at all, so `or` and `??` are indistinguishable there.
-    if (op === '??' && this.nillablePropNameOf(left) !== null) {
+    if (op === '??' && this.isNillableNullishLeft(left)) {
       return `bf_nullish ${wrapLeft} ${wrapRight}`
     }
     return `or ${wrapLeft} ${wrapRight}`
@@ -7226,6 +7226,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * gate to props the `??` analysis actually saw — the same set that drives
    * the `interface{}` flip in `resolvePropGoType`.
    */
+  private isNillableNullishLeft(expr: ParsedExpr): boolean {
+    return this.nillablePropNameOf(expr) !== null || this.isNillableSignalField(expr)
+  }
+
+  /**
+   * `user().name` / `user()?.name` where `user` is a signal of a named
+   * object type whose `name` field is `interface{}`
+   * (`nullableSeedStructFields`, #3421): a missing field is nil there, so
+   * `??` can test nil-ness like it does for a nillable prop.
+   */
+  private isNillableSignalField(expr: ParsedExpr): boolean {
+    if (expr.kind !== 'member' || expr.computed) return false
+    const call = expr.object
+    if (call.kind !== 'call' || call.args.length !== 0 || call.callee.kind !== 'identifier') return false
+    const getter = call.callee.name
+    const signal = this.state.currentSignals.find(sig => sig.getter === getter)
+    return !!signal && this.state.nullableSeedStructFields.has(`${signal.type.raw}.${expr.property}`)
+  }
+
   private nillablePropNameOf(expr: ParsedExpr): string | null {
     let name: string | null = null
     let memberOfRoot = false
@@ -9214,7 +9233,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // `nullishConsumed ∩ nillable` check via `nillablePropNameOf`.
         const result = expr.op === '&&'
           ? `and ${wrapLeft} ${wrapRight}`
-          : expr.op === '??' && this.nillablePropNameOf(expr.left) !== null
+          : expr.op === '??' && this.isNillableNullishLeft(expr.left)
             ? `bf_nullish ${wrapLeft} ${wrapRight}`
             : `or ${wrapLeft} ${wrapRight}`
         return { preamble, expr: result }
