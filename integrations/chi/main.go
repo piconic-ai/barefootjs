@@ -56,6 +56,9 @@ func currentTemplates() *template.Template {
 // doesn't crash on the Slot template's conditional {{template "Tag" ...}}.
 func loadTemplates() *template.Template {
 	root := template.New("").Funcs(bf.FuncMap())
+	// bf_tmpl renders companion defines (JSX children, loop-row portal
+	// elements) from this same set, so it must be registered before parsing.
+	root.Funcs(bf.TemplateFuncMap(root))
 	template.Must(root.New("Tag").Parse(""))
 	err := filepath.WalkDir("dist/templates", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
