@@ -97,6 +97,7 @@ import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
+  isNumericArithmeticResult,
   isOpaqueLocalAccessorName,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
@@ -751,7 +752,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const perlExpr = this.convertExpressionToKolon(expr.expr, expr.parsed)
+    const perlExpr = this.jsNumberOutput(
+      expr.parsed ?? parseExpression(expr.expr.trim()),
+      this.convertExpressionToKolon(expr.expr, expr.parsed),
+    )
 
     if (expr.slotId) {
       return `<: $bf.text_start("${expr.slotId}") | mark_raw :><: ${perlExpr} :><: $bf.text_end() | mark_raw :>`
@@ -1582,7 +1586,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           const val = this.convertExpressionToKolon('', stringifyBooleanTernaryBranches(m.consequentParsed))
           // A boolean-result consequent (`c ? false : undefined`) still
           // renders JS `String(boolean)` (#3349).
-          const shown = isBooleanResultParsed(m.consequentParsed) ? `$bf.bool_str(${val})` : val
+          const shown = isBooleanResultParsed(m.consequentParsed)
+            ? `$bf.bool_str(${val})`
+            : this.jsNumberOutput(m.consequentParsed, val)
           return `\n: if (${cond}) {\n${name}="<: ${shown} :>"\n: }\n`
         }
       }
@@ -1615,7 +1621,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (wrapsBoolStr) {
         return `${name}="<: $bf.bool_str(${perl}) :>"`
       }
-      return `${name}="<: ${perl} :>"`
+      return `${name}="<: ${this.jsNumberOutput(mixedParsed, perl)} :>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1994,6 +2000,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   private renderParsedExprToKolon(expr: ParsedExpr): string {
     return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx))
+  }
+
+  /**
+   * Print an arithmetic result with JS `Number::toString` (`$bf.string`)
+   * rather than Perl's `%.15g`, which pads a small exponent
+   * (`1.23456789e-06`) and drops digits past 15 (#3380).
+   */
+  private jsNumberOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
+    return isNumericArithmeticResult(parsed, (n, c) => this._isStringValueName(n, c)) ? `$bf.string(${kolon})` : kolon
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an

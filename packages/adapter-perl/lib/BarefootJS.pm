@@ -695,6 +695,9 @@ sub string ($self, $value) {
     # `.flat(0)`'s shallow copy stringified afterwards (#2262, shared
     # with Mojolicious/Xslate via this runtime).
     return CORE::join(',', map { $self->string($_) } @$value) if ref($value) eq 'ARRAY';
+    # A number prints as JS `Number::toString` does, not with Perl's `%.15g`
+    # (#3380); a string passes through unchanged.
+    return BarefootJS::Evaluator::_format_number($value + 0) if BarefootJS::Evaluator::_is_number($value);
     return "$value";
 }
 

@@ -117,7 +117,7 @@ export type {
 export { JsxAdapter } from './adapters/jsx-adapter.ts'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
 export { rewriteImportsForTemplate, rewriteDynamicImportsInSource } from './adapters/template-imports.ts'
-export { emitParsedExpr, groupBinaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary } from './adapters/parsed-expr-emitter.ts'
+export { emitParsedExpr, groupBinaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary, isNumericArithmeticResult } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, LoweringEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
 export { filterCaptureCollisions } from './adapters/filter-capture-collisions.ts'

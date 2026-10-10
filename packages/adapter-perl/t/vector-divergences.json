@@ -36,10 +36,6 @@
       "expect": "1",
       "reason": "Perl has no boolean type; template data carries 1/0"
     },
-    "string/17-significant-digit double round-trips": {
-      "expect": "0.3",
-      "reason": "Perl stringifies doubles via %.15g"
-    },
     "filter_truthy/the string \"0\" is truthy": {
       "expect": ["x"],
       "reason": "Perl truthiness treats the string \"0\" as false"
