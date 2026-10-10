@@ -159,6 +159,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
+import { freeTemplateVars } from "./lib/template-scope.ts"
 import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
@@ -6208,14 +6209,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // needs its own runtime path distinct from the explicit `<Portal>`
     // component's `.Portals.Add`.
     //
-    // Inside a `{{range}}` (a loop row, #3318), `.` is the row item and the
-    // collected string would be re-executed against it without the loop's
-    // variables, so the element renders inline in its row instead; the
-    // client's `ref` callback portals it at hydration and the row adopts it
-    // (limitation `go-loop-row-portal-inline`).
-    const portalOut = element.ssrPortalOwnerScope && !this.inLoop
+    // Inside a `{{range}}` (a loop row, #3318), `.` is the row item, so the
+    // owner scope is read off the root (`$`) and the element is collected
+    // with its row scope (`wrapSsrPortalElement`, #3420).
+    const portalOut = element.ssrPortalOwnerScope
     if (portalOut) {
-      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{bfScopeAttr .}}"`
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{bfScopeAttr ${this.inLoop ? '$' : '.'}}}"`
     }
 
     const voidElements = [
@@ -6256,12 +6255,35 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * split for the same reason.
    */
   private wrapSsrPortalElement(rendered: string): string {
-    const escaped = rendered.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+    if (this.inLoop && rendered.includes('{{')) return this.wrapLoopRowSsrPortalElement(rendered)
+    const escaped = escapeGoTemplateString(rendered)
     if (rendered.includes('{{')) {
       return `{{.Portals.AddElement (bfPortalHTML . "${escaped}")}}`
     }
-    return `{{.Portals.AddElement "${escaped}"}}`
+    // Inside a `{{range}}`, `.` is the row; the collector lives on the root.
+    return `{{${this.inLoop ? '$' : ''}.Portals.AddElement "${escaped}"}}`
   }
+
+  /**
+   * `wrapSsrPortalElement` for an element inside a `{{range}}` (#3420). The
+   * element renders at the outlet, away from its row, so it moves into a
+   * companion define executed through `bf_tmpl` — which keeps the
+   * component template set in reach for nested `{{template}}` calls — with
+   * `bf_portal_scope` handing over what the row could see: the define's
+   * root (every bare `$` in the element's actions is renamed to
+   * `$__bfRoot`), each loop variable the element reads without declaring
+   * it (`freeTemplateVars`), and the row as `.` through a one-element
+   * `range`, which rebinds `.` even when the row is falsy.
+   */
+  private wrapLoopRowSsrPortalElement(rendered: string): string {
+    const { free, body } = freeTemplateVars(rendered, '__bfRoot')
+    const prelude = ['{{$__bfRoot := index . "root"}}', ...free.map(name => `{{$${name} := index . "${name}"}}`)].join('')
+    const name = `${this.state.componentName}__portal_${this.state.pendingChildrenDefines.length}`
+    this.state.pendingChildrenDefines.push({ name, content: `${prelude}{{range index . "dot"}}${body}{{end}}` })
+    const vars = free.map(v => ` "${v}" $${v}`).join('')
+    return `{{$.Portals.AddElement (bf_tmpl "${name}" (bf_portal_scope $ .${vars}))}}`
+  }
+
 
   /**
    * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — see the Blade
@@ -10769,3 +10791,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 }
 
 export const goTemplateAdapter = new GoTemplateAdapter()
+
+/** `s` as the body of a Go double-quoted string literal. */
+function escapeGoTemplateString(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+}

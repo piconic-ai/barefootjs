@@ -5356,6 +5356,101 @@
       }
     }
   ],
+  "row-portal-ref-scope": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "nums": [
+          0,
+          1
+        ],
+        "prefix": "p",
+        "__instanceId": "RowPortalRefScope_test"
+      }
+    },
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "rows": [
+          {
+            "id": "a",
+            "label": "alpha"
+          },
+          {
+            "id": "b",
+            "label": "beta"
+          }
+        ],
+        "nums": [],
+        "prefix": "p",
+        "__instanceId": "RowPortalRefScope_test"
+      }
+    },
+    {
+      "name": "gen:prefix:empty",
+      "props": {
+        "rows": [
+          {
+            "id": "a",
+            "label": "alpha"
+          },
+          {
+            "id": "b",
+            "label": "beta"
+          }
+        ],
+        "nums": [
+          0,
+          1
+        ],
+        "prefix": "",
+        "__instanceId": "RowPortalRefScope_test"
+      }
+    },
+    {
+      "name": "gen:prefix:markup",
+      "props": {
+        "rows": [
+          {
+            "id": "a",
+            "label": "alpha"
+          },
+          {
+            "id": "b",
+            "label": "beta"
+          }
+        ],
+        "nums": [
+          0,
+          1
+        ],
+        "prefix": "<b>&\"'</b>",
+        "__instanceId": "RowPortalRefScope_test"
+      }
+    },
+    {
+      "name": "gen:prefix:multibyte",
+      "props": {
+        "rows": [
+          {
+            "id": "a",
+            "label": "alpha"
+          },
+          {
+            "id": "b",
+            "label": "beta"
+          }
+        ],
+        "nums": [
+          0,
+          1
+        ],
+        "prefix": "日本語",
+        "__instanceId": "RowPortalRefScope_test"
+      }
+    }
+  ],
   "search-params-derived-filter": [
     {
       "name": "gen:items:empty",
