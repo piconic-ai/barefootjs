@@ -4957,46 +4957,6 @@
           ]
         }
       },
-      "row-portal-ref": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-portal-renders-inline"
-          ]
-        }
-      },
-      "row-portal-ref-branch": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-portal-renders-inline"
-          ]
-        }
-      },
-      "row-portal-ref-composite": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-portal-renders-inline"
-          ]
-        }
-      },
-      "row-portal-ref-remove": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-portal-renders-inline"
-          ]
-        }
-      },
-      "row-portal-ref-static": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-portal-renders-inline"
-          ]
-        }
-      },
       "signal-object-spread-init": {
         "go-template": {
           "kind": "refusal",
@@ -5731,26 +5691,6 @@
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
       },
-      "row-portal-ref": {
-        "description": "A ref-callback createPortal on a keyed loop-row element keeps the row click handler working after…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/row-portal-ref.ts"
-      },
-      "row-portal-ref-branch": {
-        "description": "A ref-callback createPortal on a keyed loop-row element inside a conditional branch keeps working…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/row-portal-ref-branch.ts"
-      },
-      "row-portal-ref-composite": {
-        "description": "A ref-callback createPortal on a keyed loop-row element next to a child component keeps the row…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/row-portal-ref-composite.ts"
-      },
-      "row-portal-ref-remove": {
-        "description": "Removing a keyed loop row removes the element its ref callback portaled out, and the other rows…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/row-portal-ref-remove.ts"
-      },
-      "row-portal-ref-static": {
-        "description": "A ref-callback createPortal on a keyed static-array loop-row element keeps the row click handler…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/row-portal-ref-static.ts"
-      },
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
@@ -6132,23 +6072,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "loop-row-portal-renders-inline": {
-      "title": "A loop-row element portaled by a `ref` callback renders inside its row",
-      "kind": "silent",
-      "given": "an element inside a keyed `.map()` row whose `ref` callback moves it out of the row with `createPortal(el, document.body, { ownerScope })`",
-      "expected": "the server HTML places the element at the portal outlet, carrying its row key, as hydration leaves it",
-      "actual": "renders the element inside its row: inside `{{range}}`, `.` is the row item, so the element's markup cannot be collected and re-executed at the outlet the way a top-level portal element is. Hydration portals the element and the row adopts it, so it keeps working, but the server HTML differs from the hydrated DOM",
-      "fixtures": [
-        "row-portal-ref",
-        "row-portal-ref-branch",
-        "row-portal-ref-composite",
-        "row-portal-ref-remove",
-        "row-portal-ref-static"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "module-scope-helper-call": {

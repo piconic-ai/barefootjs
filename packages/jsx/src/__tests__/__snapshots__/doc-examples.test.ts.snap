@@ -1944,7 +1944,7 @@ hydrate('Layout', { init: initLayout, template: (_p) => \`<html><body>\${markupO
 export function Layout(_p, __bfKey) { return createComponent('Layout', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L71 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L72 — (no label) 1`] = `
 "import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 

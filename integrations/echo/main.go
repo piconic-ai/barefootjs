@@ -28,9 +28,11 @@ var basePath string
 
 // loadTemplates loads all templates with BarefootJS functions registered
 func loadTemplates() *template.Template {
-	return template.Must(
-		template.New("").Funcs(bf.FuncMap()).ParseGlob("dist/templates/*.tmpl"),
-	)
+	root := template.New("").Funcs(bf.FuncMap())
+	// bf_tmpl renders companion defines (JSX children, loop-row portal
+	// elements) from this same set, so it must be registered before parsing.
+	root.Funcs(bf.TemplateFuncMap(root))
+	return template.Must(root.ParseGlob("dist/templates/*.tmpl"))
 }
 
 // baseTemplates is the parsed template set, kept so the blog renderer (which

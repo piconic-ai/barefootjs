@@ -102,14 +102,9 @@ export const renderDivergences: RenderDivergences = {
   // `optional-chain-length-string-receiver` used to sit here: an absent
   // optional string prop read through `?.length` rendered `0`. An
   // optional-chain receiver prop is now `interface{}`, so the guard sees nil (#3422).
-  // A `ref`-callback portal element in a loop row renders inline in its row
-  // (`{{range}}` rebinds `.` to the row item), not at the portal outlet
-  // (#3318).
-  'row-portal-ref': { limitation: 'loop-row-portal-renders-inline' },
-  'row-portal-ref-remove': { limitation: 'loop-row-portal-renders-inline' },
-  'row-portal-ref-static': { limitation: 'loop-row-portal-renders-inline' },
-  'row-portal-ref-branch': { limitation: 'loop-row-portal-renders-inline' },
-  'row-portal-ref-composite': { limitation: 'loop-row-portal-renders-inline' },
+  // The `row-portal-ref*` fixtures used to sit here: a `ref`-callback portal
+  // element in a loop row rendered inline in its row. It is now collected
+  // with its row scope (`bfPortalHTMLIn`) and rendered at the outlet (#3420).
   // `fractional-number-array-row-ops` used to sit here: html/template's
   // native `gt`/`lt`/`eq` refused a float64 against an int literal.
   // Comparisons now go through `bf_eq`/`bf_gt`/… (`goComparisonCall`).

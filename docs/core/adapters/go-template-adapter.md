@@ -36,10 +36,11 @@ npm create barefootjs@latest -- --adapter <name>
 | `chi` | [Chi](https://go-chi.io/) | `chi.Router` (net/http) |
 | `nethttp` | Go standard library | `http.ServeMux` |
 
-Each scaffold parses the generated `.tmpl` files into a `template.Template` with `bf.FuncMap()`, then renders through `bf.NewRenderer(templates, layout)`. The layout is a `bf.LayoutFunc` that receives the rendered component, the collected scripts, and portals:
+Each scaffold parses the generated `.tmpl` files into a `template.Template` with `bf.FuncMap()` and `bf.TemplateFuncMap(root)`, then renders through `bf.NewRenderer(templates, layout)`. The layout is a `bf.LayoutFunc` that receives the rendered component, the collected scripts, and portals:
 
 ```go
 root := template.New("").Funcs(bf.FuncMap())
+root.Funcs(bf.TemplateFuncMap(root)) // bf_tmpl: companion defines (JSX children, loop-row portal elements)
 template.Must(root.New("Tag").Parse("")) // stub referenced by the generated Slot template
 template.Must(root.ParseGlob("dist/templates/*.tmpl"))
 

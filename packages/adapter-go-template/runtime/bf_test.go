@@ -1,6 +1,7 @@
 package bf
 
 import (
+	"bytes"
 	"html/template"
 	"math"
 	"reflect"
@@ -3180,5 +3181,35 @@ func TestCapitalizeUnderscorePrefix(t *testing.T) {
 	type row struct{ X_value string }
 	if got := getFieldValue(row{X_value: "one"}, capitalize("_value")); got != "one" {
 		t.Errorf("getFieldValue(_value) = %v, want one", got)
+	}
+}
+
+// TestLoopRowPortalCompanionDefine renders a loop-row `ref`-callback portal
+// element the way the adapter emits it (#3420): collected from inside the
+// `{{range}}` through `bf_tmpl` + `bf_portal_scope`, with the template set
+// loaded like the integrations do (FuncMap and TemplateFuncMap registered
+// before parsing).
+func TestLoopRowPortalCompanionDefine(t *testing.T) {
+	src := `{{define "Host"}}<ul>{{range $i, $r := .Rows}}<li>{{$.Portals.AddElement (bf_tmpl "Host__portal_0" (bf_portal_scope $ . "i" $i))}}</li>{{end}}</ul>{{end}}` +
+		`{{define "Host__portal_0"}}{{$__bfRoot := index . "root"}}{{$i := index . "i"}}{{range index . "dot"}}<b title="{{$__bfRoot.Prefix}}">{{$i}}:{{.}}</b>{{end}}{{end}}`
+	root := template.New("").Funcs(FuncMap())
+	root.Funcs(TemplateFuncMap(root))
+	template.Must(root.Parse(src))
+
+	portals := NewPortalCollector()
+	data := struct {
+		Rows    []interface{}
+		Prefix  string
+		Portals *PortalCollector
+	}{Rows: []interface{}{0, "b"}, Prefix: "p", Portals: portals}
+	var buf bytes.Buffer
+	if err := root.ExecuteTemplate(&buf, "Host", data); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := buf.String(), "<ul><li></li><li></li></ul>"; got != want {
+		t.Errorf("rows = %q, want %q", got, want)
+	}
+	if got, want := string(portals.Render()), `<b title="p">0:0</b>`+"\n"+`<b title="p">1:b</b>`+"\n"; got != want {
+		t.Errorf("outlet = %q, want %q", got, want)
 	}
 }
