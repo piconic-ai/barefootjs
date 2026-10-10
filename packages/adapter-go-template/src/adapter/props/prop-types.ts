@@ -420,6 +420,55 @@ export function collectTextConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR
 }
 
 /**
+ * Names of OPTIONAL no-default scalar props read as the RECEIVER of an
+ * optional chain (`props.text?.length`, `text?.length`) anywhere in the
+ * component's element tree (#3422).
+ *
+ * The `?.` lowering guards the read with `bf_eq <receiver> nil`, so an
+ * absent receiver yields `undefined` (empty text, and the `??` fallback).
+ * A concrete `string` field reads an omitted prop as `""`, the guard never
+ * fires, and `.length` renders `0`. These props take the same
+ * `interface{}` flip as `??`/attribute/text consumption
+ * (`resolvePropGoType`), which also drops the absent prop from the
+ * hydration payload. Same shadowing caveat as the sibling collectors: a
+ * same-named loop/callback param can misattribute, making the flip merely
+ * unnecessary, not incorrect.
+ */
+export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const names = new Set<string>()
+  const optionalParams = new Set(
+    ir.metadata.propsParams
+      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
+      .map(p => p.name),
+  )
+  if (optionalParams.size === 0) return names
+
+  const propsObject = ctx.state.propsObjectName
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.kind === 'member' && rec.optional === true && rec.object) {
+      const receiver = rec.object as ParsedExpr
+      const propName =
+        receiver.kind === 'member' && !receiver.computed &&
+          receiver.object.kind === 'identifier' && receiver.object.name === propsObject
+          ? receiver.property
+          : !propsObject && receiver.kind === 'identifier'
+            ? receiver.name
+            : null
+      if (propName && optionalParams.has(propName)) names.add(propName)
+    }
+    for (const value of Object.values(rec)) walk(value)
+  }
+  walk(ir.root)
+  return names
+}
+
+/**
  * Names of OPTIONAL no-default props whose PRESENCE is tested — `props.X
  * !== undefined` / `!= undefined` (or the `===`/`==` negation) — anywhere in
  * a memo's computation (#2260). This is the "controlled component" idiom's
@@ -526,7 +575,8 @@ export function resolvePropGoType(
   // undefined`, the "controlled component" idiom's `isControlled` memo)
   // takes the same flip too (#2260) — see `collectPresenceCheckedPropNames`.
   // A prop seeding a nullable signal takes it too (#3323) — see
-  // `collectNullableSignalSeedPropNames`.
+  // `collectNullableSignalSeedPropNames`. So does an optional-chain
+  // receiver (#3422) — see `collectOptionalChainReceiverPropNames`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
@@ -534,7 +584,8 @@ export function resolvePropGoType(
       ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
       ctx.state.textConsumedPropNames.has(param.name) ||
       ctx.state.presenceCheckedPropNames.has(param.name) ||
-      ctx.state.nullableSignalSeedPropNames.has(param.name)) &&
+      ctx.state.nullableSignalSeedPropNames.has(param.name) ||
+      ctx.state.optionalChainReceiverPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'

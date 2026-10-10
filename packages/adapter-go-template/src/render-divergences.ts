@@ -100,10 +100,9 @@ export const renderDivergences: RenderDivergences = {
   // `Name string` field reads as `""`, not nil, so the nil guard keeps
   // `data-name=""` where JS reads `undefined` and omits it (#3322).
   'nullish-optional-member-missing-field-attr': { limitation: 'optional-struct-field-absent-renders-zero' },
-  // `{props.noText?.length}` with `noText` absent: the props struct's
-  // `NoText string` reads as `""`, so the nil guard on `?.length` sees a
-  // present empty string and renders `0` where JS renders nothing (#3332).
-  'optional-chain-length-string-receiver': { limitation: 'optional-struct-field-absent-renders-zero' },
+  // `optional-chain-length-string-receiver` used to sit here: an absent
+  // optional string prop read through `?.length` rendered `0`. An
+  // optional-chain receiver prop is now `interface{}`, so the guard sees nil (#3422).
   // A `ref`-callback portal element in a loop row renders inline in its row
   // (`{{range}}` rebinds `.` to the row item), not at the portal outlet
   // (#3318).

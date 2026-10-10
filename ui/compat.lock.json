@@ -4262,14 +4262,6 @@
           }
         }
       },
-      "optional-chain-length-string-receiver": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "optional-struct-field-absent-renders-zero"
-          ]
-        }
-      },
       "optional-object-prop-member-signal-seed": {
         "go-template": {
           "kind": "refusal",
@@ -5715,10 +5707,6 @@
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
       },
-      "optional-chain-length-string-receiver": {
-        "description": "An optional-chained string `.length` is empty only for an absent receiver",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-string-receiver.ts"
-      },
       "optional-object-prop-member-signal-seed": {
         "description": "a signal seeded from a member of an optional object prop renders its seed (or the fallback) at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-object-prop-member-signal-seed.ts"
@@ -6311,12 +6299,11 @@
     "optional-struct-field-absent-renders-zero": {
       "title": "A missing optional field of a named object type reads as its type's zero value",
       "kind": "silent",
-      "given": "a read of an optional scalar field of a named object type off an object signal (`createSignal<User>({})`, `data-name={blank()?.name}`) bound to an attribute, or an absent optional string prop read through `?.length` in text",
-      "expected": "the read is `undefined`, so the attribute is omitted (or the text renders empty)",
-      "actual": "renders the zero value (`data-name=\"\"`, `data-n=\"0\"`, or `0` for `noText?.length`): the generated struct's optional field is a non-pointer `string` / `float64`, so a missing field is indistinguishable from a supplied `''` / `0`",
+      "given": "a read of an optional scalar field of a named object type off an object signal (`createSignal<User>({})`, `data-name={blank()?.name}`) bound to an attribute",
+      "expected": "the read is `undefined`, so the attribute is omitted",
+      "actual": "renders the zero value (`data-name=\"\"`, `data-n=\"0\"`): the generated struct's optional field is a non-pointer `string` / `float64`, so a missing field is indistinguishable from a supplied `''` / `0`",
       "fixtures": [
-        "nullish-optional-member-missing-field-attr",
-        "optional-chain-length-string-receiver"
+        "nullish-optional-member-missing-field-attr"
       ],
       "adapters": [
         "go-template"

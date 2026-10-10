@@ -284,6 +284,13 @@ export class CompileState {
   nullableSignalSeedPropNames: Set<string> = new Set()
 
   /**
+   * OPTIONAL no-default scalar prop names read as an optional-chain receiver
+   * (`props.text?.length`) — #3422. Same `resolvePropGoType` flip: the `?.`
+   * guard needs a nil to see an omitted prop.
+   */
+  optionalChainReceiverPropNames: Set<string> = new Set()
+
+  /**
    * `Struct.field` keys of optional scalar struct fields a nullable signal
    * seeds from (`createSignal<string | undefined>(initial.label)`) — #3323.
    * `propertyInfoToGo` types them `interface{}` so an omitted member stays
