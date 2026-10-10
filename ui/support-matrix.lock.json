@@ -4344,12 +4344,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-string-receiver",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -5918,12 +5912,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-string-receiver",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -6762,12 +6750,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-string-receiver",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -7280,12 +7262,6 @@
             },
             {
               "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-string-receiver",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
               ]
@@ -11734,12 +11710,6 @@
               ]
             },
             {
-              "fixture": "optional-chain-length-string-receiver",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12904,12 +12874,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "optional-chain-length-string-receiver",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13169,12 +13133,6 @@
           "gaps": [
             {
               "fixture": "nullish-optional-member-missing-field-attr",
-              "limitations": [
-                "optional-struct-field-absent-renders-zero"
-              ]
-            },
-            {
-              "fixture": "optional-chain-length-string-receiver",
               "limitations": [
                 "optional-struct-field-absent-renders-zero"
               ]

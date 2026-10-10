@@ -165,6 +165,7 @@ import {
   jsLiteralToGo,
   objectLiteralToGoMap,
   objectLiteralToGoComposite,
+  unboxToGoScalar,
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
@@ -176,7 +177,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, memoArithmeticYieldsNaN } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -715,6 +716,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
+    this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
     for (const key of collectNullableSeedStructFields(ir.metadata)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
@@ -3194,7 +3196,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             childShape?.nillableParamNames.has(prop.name) ?? false,
           )
           if (resolvedValue !== null) {
-            emitChildField(prop.name, resolvedValue)
+            emitChildField(prop.name, childShape?.nillableParamNames.has(prop.name)
+              ? resolvedValue
+              : this.unboxNillablePropRef(resolvedValue, ir.metadata.propsParams, childShape?.paramGoTypes.get(prop.name)))
           } else if (parsedValue?.kind === 'unary' && parsedValue.op === '!') {
             // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
             // recursion still can't lower (e.g. a multi-arg call, a deep
@@ -5518,6 +5522,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return null
+  }
+
+  /**
+   * `value` unboxed into a child's concrete scalar Input field when it is
+   * the bare `in.<Field>` of a prop this component flipped to `interface{}`
+   * (`resolvePropGoType`, #3422) — reached by a direct passthrough
+   * (`text={props.text}`) or an identity memo over it (`text={relayed()}`).
+   * Any other value, or an unknown / non-scalar destination, is unchanged.
+   */
+  private unboxNillablePropRef(
+    value: string,
+    propsParams: readonly { name: string; sourceName?: string }[],
+    destGoType: string | undefined,
+  ): string {
+    if (!destGoType) return value
+    const param = propsParams.find(p => value === `in.${capitalizeFieldName(p.sourceName ?? p.name)}`)
+    if (!param || !this.state.nillablePropNames.has(param.name)) return value
+    return unboxToGoScalar(value, destGoType) ?? value
   }
 
   /**
@@ -9071,7 +9093,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // e.g. `(todos()?.length ?? 0)`'s inner `todos()?.length`, or
           // `(todos() ?? []).length`'s `todos() ?? []`) must be parenthesised
           // or Go reads it as extra sibling args of `len` (#3249).
-          return { preamble: obj.preamble, expr: `len ${wrapIfMultiToken(obj.expr)}` }
+          // A `?.length` receiver can be nil (an absent optional prop is
+          // `interface{}`, #3422), which `len` refuses at execution time;
+          // `bf_length` reads nil as 0, the same falsy answer as `undefined`.
+          const lengthFn = expr.optional ? 'bf_length' : 'len'
+          return { preamble: obj.preamble, expr: `${lengthFn} ${wrapIfMultiToken(obj.expr)}` }
         }
         // A `?.`-written member hop must use the same nil-safe, case-tolerant
         // runtime getter as the value-position emitter. In particular, an

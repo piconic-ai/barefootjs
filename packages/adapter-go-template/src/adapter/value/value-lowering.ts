@@ -103,7 +103,7 @@ function unboxMemberScalar(ctx: GoEmitContext, ref: string, expectedType: TypeIn
   if (scalar.kind !== 'primitive' || scalar.primitive !== 'number') return assertNillableScalar(ref, expectedType)
   const goType = typeInfoToGo(ctx, scalar)
   if (goType !== 'int' && goType !== 'float64') return null
-  return `func() ${goType} { switch v := ${ref}.(type) { case int: return ${goType}(v); case float64: return ${goType}(v) }; return 0 }()`
+  return unboxToGoScalar(ref, goType)
 }
 
 /**
@@ -120,6 +120,22 @@ function assertNillableScalar(ref: string, expectedType: TypeInfo): string | nul
     scalar.primitive === 'string' ? 'string' : null
   if (!goType) return null
   const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
+  return `func() ${goType} { if v, ok := ${ref}.(${goType}); ok { return v }; return ${zero} }()`
+}
+
+/**
+ * `ref` (an `interface{}` value) unboxed into the concrete Go scalar
+ * `goType` — `string` / `bool` by assertion, `int` / `float64` from either
+ * boxed numeric type (JSON-decoded input arrives as `float64`, a Go
+ * caller's literal as `int`). Nil or a mismatched value takes the zero
+ * value; null when `goType` isn't one of those four.
+ */
+export function unboxToGoScalar(ref: string, goType: string): string | null {
+  if (goType === 'int' || goType === 'float64') {
+    return `func() ${goType} { switch v := ${ref}.(type) { case int: return ${goType}(v); case float64: return ${goType}(v) }; return 0 }()`
+  }
+  if (goType !== 'string' && goType !== 'bool') return null
+  const zero = goType === 'bool' ? 'false' : '""'
   return `func() ${goType} { if v, ok := ${ref}.(${goType}); ok { return v }; return ${zero} }()`
 }
 
