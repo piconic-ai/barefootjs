@@ -1,5 +1,13 @@
 # @barefootjs/client
 
+## 0.39.5
+
+### Patch Changes
+
+- e2269ac: `Context.Provider` is now typed to return `never` instead of `unknown` (#3372). Under the Hono runtime (`jsxImportSource: '@barefootjs/hono/jsx'`), `tsc` rejected `<Ctx.Provider>` in component source with TS2786 because `unknown` is not a valid `JSX.Element`. The stub only throws (the compiler lowers the provider to `provideContext()`), so `never` is the accurate return type and is assignable to every runtime's `JSX.Element`. The provider's `value` prop is still checked.
+- 1f0d4da: A stateless child whose root is a transparent fragment (`<>{children}</>`) no longer gains `bf-s` / `bf-h` / `bf-m` on the client (#3355). SSR renders such a child with no scope marker at all. `renderChild()` stamped one onto the passed-through content anyway, so hydrating a conditional branch that rendered the child rewrote the server DOM, and a client-side mount diverged from SSR. The compiler now declares `transparent: true` on the child's definition, and `renderChild()` emits its markup as-is, keeping only `data-key`.
+- @barefootjs/shared@0.39.5
+
 ## 0.39.4
 
 ### Patch Changes

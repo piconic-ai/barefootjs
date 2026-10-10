@@ -1,5 +1,23 @@
 # @barefootjs/jsx
 
+## 0.39.5
+
+### Patch Changes
+
+- 29aebbf: A `.filter()` predicate that captures an enclosing name now keeps reading the enclosing value when the following `.map()` param reuses that name (#3402). Previously the comparison read the loop's own item, so every item passed the filter.
+- 33cacb3: The client JS no longer rewrites an inner `.map()` row's own names as an enclosing row's bindings (#3394). An inner preamble local, item or index named like an outer destructure binding (`const name = t + '!'` inside a row bound as `({ name, tags })`) used to become `const __bfItem().name = …`, which does not parse. Each enclosing loop's accessor rewrite now skips the names the inner row rebinds, found via `BindingScope.enterLoopRow`.
+- 92fc2a4: A JS binding named `loop` no longer collides with the engine's own loop variable inside `{% for %}` (#3404). Jinja, MiniJinja, Twig and Pebble now map it to the compiler-internal `__bf_loop`, in both the emitted template and the runtime's prop-name mangling. A real `loop_` stays distinct.
+  
+  A `.filter()` param is now renamed to the `.map()` row item on the parsed predicate instead of the rendered text, on Jinja, MiniJinja, Twig, Pebble and Blade. A param named `loop` now tests each row, and a string literal spelled like the renamed name stays as written.
+  
+  New diagnostic BF105: those four adapters refuse a component in which two distinct names visible at the same point would become one template variable (for example `loop` and `__bf_loop`), instead of rendering both with one value.
+- d2de627: The client JS of a loop two or more levels deep now reads the enclosing rows' bindings through their accessors (#3397). A nested `.filter().map()` that read the outer row's destructure binding (`tags` from `({ name, tags })`) emitted the bare `tags`, an undeclared identifier at runtime. Each deeper level now gets every enclosing loop's accessor rewrite, composed, not just its immediate parent's.
+- d5fc999: Mojolicious and Xslate now print an arithmetic result the way JavaScript does (#3380). The Perl runtime's `string` formats a number with JS `Number::toString`, where it used to use Perl's `%.15g`. `%.15g` padded a small exponent (`1.23456789e-06`) and dropped digits past 15 (`0.1 + 0.2` printed `0.3`). Both adapters route a top-level arithmetic output, in text or in an attribute, through that helper. This closes the `number-exponent-boundary-spelling` limitation on every adapter.
+- 37127bc: The compiler no longer reads the Node `process` global on the compile path. The opt-in `BF_ASSERT_NO_JSX_IN_GETJS` gate in `getJS` is now read through `globalThis`, so bundling the compiler into a browser Worker (the site playground) works again instead of failing every compile with `ReferenceError: process is not defined`.
+- 1f0d4da: A stateless child whose root is a transparent fragment (`<>{children}</>`) no longer gains `bf-s` / `bf-h` / `bf-m` on the client (#3355). SSR renders such a child with no scope marker at all. `renderChild()` stamped one onto the passed-through content anyway, so hydrating a conditional branch that rendered the child rewrote the server DOM, and a client-side mount diverged from SSR. The compiler now declares `transparent: true` on the child's definition, and `renderChild()` emits its markup as-is, keeping only `data-key`.
+- 0017d98: Arithmetic over a signal whose SSR value is `undefined` now renders `NaN` on every template adapter, as JavaScript does (#3390). This covers `createSignal(undefined)`, a zero-arg `createSignal()`, and a memo over either. The template engines hold `undefined` and `null` as the same nil, so the operand used to throw (ERB, Jinja, Pebble, MiniJinja) or read as `0`. The compiler now recognises such an operand (`arithmeticOperandIsUndefined`) and routes it through the runtime's JS `Number()`, which maps nil to `NaN`. Pebble spells the NaN out, and Go seeds such a memo with `bf.Number(nil)`.
+- @barefootjs/shared@0.39.5
+
 ## 0.39.4
 
 ### Patch Changes

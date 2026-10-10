@@ -1,5 +1,14 @@
 # @barefootjs/erb
 
+## 0.39.5
+
+### Patch Changes
+
+- 29aebbf: A `.filter()` predicate that captures an enclosing name now keeps reading the enclosing value when the following `.map()` param reuses that name (#3402). Previously the comparison read the loop's own item, so every item passed the filter.
+- 83510c2: A number at JavaScript's decimal/exponent notation boundary now prints the way JavaScript does in the PHP (Blade, Twig), Ruby (ERB) and Python (Jinja) runtimes (#3380). JavaScript prints decimal within [1e-6, 1e21) and an unpadded lower-case exponent outside it, so the runtimes now print `0.00000123456789`, `1.23456789e-7` and `1.23456789e+21` instead of `1.23456789E-6`, `1.23456789e-07` or the full 22 digits. Integers past 2**53 likewise print the shortest digits padded with zeros (`12345678901234567000`), as JavaScript does.
+- 0017d98: Arithmetic over a signal whose SSR value is `undefined` now renders `NaN` on every template adapter, as JavaScript does (#3390). This covers `createSignal(undefined)`, a zero-arg `createSignal()`, and a memo over either. The template engines hold `undefined` and `null` as the same nil, so the operand used to throw (ERB, Jinja, Pebble, MiniJinja) or read as `0`. The compiler now recognises such an operand (`arithmeticOperandIsUndefined`) and routes it through the runtime's JS `Number()`, which maps nil to `NaN`. Pebble spells the NaN out, and Go seeds such a memo with `bf.Number(nil)`.
+- @barefootjs/shared@0.39.5
+
 ## 0.39.4
 
 ### Patch Changes

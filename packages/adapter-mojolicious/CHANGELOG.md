@@ -1,5 +1,14 @@
 # @barefootjs/mojolicious
 
+## 0.39.5
+
+### Patch Changes
+
+- 29aebbf: A `.filter()` predicate that captures an enclosing name now keeps reading the enclosing value when the following `.map()` param reuses that name (#3402). Previously the comparison read the loop's own item, so every item passed the filter.
+- d5fc999: Mojolicious and Xslate now print an arithmetic result the way JavaScript does (#3380). The Perl runtime's `string` formats a number with JS `Number::toString`, where it used to use Perl's `%.15g`. `%.15g` padded a small exponent (`1.23456789e-06`) and dropped digits past 15 (`0.1 + 0.2` printed `0.3`). Both adapters route a top-level arithmetic output, in text or in an attribute, through that helper. This closes the `number-exponent-boundary-spelling` limitation on every adapter.
+- 0017d98: Arithmetic over a signal whose SSR value is `undefined` now renders `NaN` on every template adapter, as JavaScript does (#3390). This covers `createSignal(undefined)`, a zero-arg `createSignal()`, and a memo over either. The template engines hold `undefined` and `null` as the same nil, so the operand used to throw (ERB, Jinja, Pebble, MiniJinja) or read as `0`. The compiler now recognises such an operand (`arithmeticOperandIsUndefined`) and routes it through the runtime's JS `Number()`, which maps nil to `NaN`. Pebble spells the NaN out, and Go seeds such a memo with `bf.Number(nil)`.
+- @barefootjs/shared@0.39.5
+
 ## 0.39.4
 
 ### Patch Changes
