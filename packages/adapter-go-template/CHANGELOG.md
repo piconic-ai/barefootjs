@@ -1,5 +1,15 @@
 # @barefootjs/go-template
 
+## 0.39.5
+
+### Patch Changes
+
+- ff8fdb2: A `.filter()` predicate inside a nested loop now reads an enclosing row's item param, index or destructure binding, instead of lowering it to a root-scope field that the Props struct does not have (#3396).
+- f2c539c: An attribute bound to a nullable signal seeded from an optional member of an object prop is now omitted when the caller leaves the member out, as Hono does (#3323). An example is `createSignal<string | undefined>(initial.label)` with `initial` = `{}`. The member's generated struct field becomes `interface{}`, with `omitempty`, so the absent value stays `nil` instead of reading as `""` / `0`. This applies to both named and inline object types, and every component in a file that shares the type emits it the same way.
+- 0926458: `??` over an optional array prop now keeps a present empty array (#3362). It lowered to html/template's truthiness-based `or`, which treats an empty slice as falsy, so `(props.c ?? props.a).length` with `c = []` read `a`. A slice-typed prop now takes the `bf_nullish` path, which falls back only on a nil (absent or null) slice.
+- 0017d98: Arithmetic over a signal whose SSR value is `undefined` now renders `NaN` on every template adapter, as JavaScript does (#3390). This covers `createSignal(undefined)`, a zero-arg `createSignal()`, and a memo over either. The template engines hold `undefined` and `null` as the same nil, so the operand used to throw (ERB, Jinja, Pebble, MiniJinja) or read as `0`. The compiler now recognises such an operand (`arithmeticOperandIsUndefined`) and routes it through the runtime's JS `Number()`, which maps nil to `NaN`. Pebble spells the NaN out, and Go seeds such a memo with `bf.Number(nil)`.
+- @barefootjs/shared@0.39.5
+
 ## 0.39.4
 
 ### Patch Changes
