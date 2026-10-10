@@ -5612,62 +5612,6 @@
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
           }
         }
-      },
-      "undefined-signal-arithmetic-memo": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "undefined-signal-arithmetic-not-nan"
-          ]
-        }
       }
     },
     "docs": {
@@ -5882,10 +5826,6 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
-      },
-      "undefined-signal-arithmetic-memo": {
-        "description": "A memo computing arithmetic over an undefined-initialized signal renders NaN",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undefined-signal-arithmetic-memo.ts"
       },
       "conditional-nested-loop-precomputed-reactivity": {
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
@@ -6542,27 +6482,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "undefined-signal-arithmetic-not-nan": {
-      "title": "Arithmetic over an `undefined`-valued signal does not render `NaN`",
-      "kind": "silent",
-      "given": "a memo or expression computing arithmetic over a signal whose SSR value is `undefined` (`createSignal<any>(undefined)`, `createMemo(() => s() * 2)`)",
-      "expected": "JS `ToNumber(undefined)` is `NaN`, so the value renders `NaN`",
-      "actual": "renders without `NaN`: the template engine holds `undefined` as the same nil as `null`, so ERB, Jinja, Pebble and MiniJinja throw at render on the nil operand, and Mojolicious, Xslate, go-template, Twig and Blade read it as `0` and render `0`",
-      "fixtures": [
-        "undefined-signal-arithmetic-memo"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
       ]
     },
     "untyped-loop-array-no-row-struct": {

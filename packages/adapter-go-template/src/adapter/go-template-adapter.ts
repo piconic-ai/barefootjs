@@ -55,6 +55,8 @@ import {
   isBooleanAttr,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
+  NULL_COERCING_ARITHMETIC_OPS,
+  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   parseExpression,
@@ -171,7 +173,7 @@ import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, memoArithmeticYieldsNaN } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -5561,6 +5563,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // the arrow AST (`MemoInfo.bodyIsTemplateLiteral`).
     if (memo.bodyIsTemplateLiteral) return 'string'
 
+    // Arithmetic whose SSR result is `NaN` (#3390) needs a field that can hold
+    // a float64 NaN, whatever the declared `number` type would infer (`int`).
+    if (memo.parsed && memoArithmeticYieldsNaN(this.emitCtx, memo.parsed)) return 'interface{}'
+
     // The shared arithmetic runtime returns an integer or float as needed;
     // keep its boxed result rather than truncating it to an int field.
     if (isBoxedNumericMemoBody(this.emitCtx, memo.parsed, signals, [...propsParamMap.values()])) return 'interface{}'
@@ -7060,8 +7066,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `(elapsed / TRACK) * 100` would emit `bf_mul bf_div .Elapsed .TRACK 100`,
     // handing `bf_mul` four args. `wrapIfMultiToken` is a no-op for single tokens
     // and quoted literals.
-    const wl = wrapIfMultiToken(l)
-    const wr = wrapIfMultiToken(r)
+    // An operand that is certainly `undefined` at SSR goes through
+    // `bf_number`, which maps nil to `NaN` as JS `ToNumber(undefined)` does;
+    // the arithmetic helpers read nil as `0` (#3390).
+    const undefinedOperand = (e: ParsedExpr, w: string): string =>
+      NULL_COERCING_ARITHMETIC_OPS.has(op) &&
+      arithmeticOperandIsUndefined(e, this.state.nullishAttrCtx, n => this.scope.isBound(n))
+        ? `(bf_number ${w})`
+        : w
+    const wl = undefinedOperand(left, wrapIfMultiToken(l))
+    const wr = undefinedOperand(right, wrapIfMultiToken(r))
     const comparison = goComparisonCall(op, wl, wr)
     if (comparison !== null) return comparison
     switch (op) {

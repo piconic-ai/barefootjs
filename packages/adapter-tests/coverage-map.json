@@ -9842,7 +9842,39 @@
         "text"
       ]
     },
+    "undefined-signal-arithmetic-direct": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:-",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "undefined-signal-arithmetic-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "undefined-signal-arithmetic-memo-chains": {
       "kinds": [
         "binary",
         "call",

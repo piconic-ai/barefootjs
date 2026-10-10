@@ -29,8 +29,7 @@ import { groupBinaryOperand,
   matchSearchParamsMethodCall,
   sortComparatorFromArrow,
   queryHrefArgs,
-  isValidHelperId,
-} from '@barefootjs/jsx'
+  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
 import { XSLATE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
@@ -464,12 +463,20 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return arg
   }
 
+  /** An arithmetic operand whose SSR value is certainly `undefined` goes
+   * through `$bf.number`, which maps the engine's nil to `NaN` as JS
+   * `ToNumber(undefined)` does; the native operator reads nil as `0`
+   * (#3390). */
+  private coerceUndefinedOperand(op: string, expr: ParsedExpr, operand: string): string {
+    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isUndefinedOperand(expr) ? `$bf.number(${operand})` : operand
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = groupBinaryOperand(left, emit(left))
-    const r = groupBinaryOperand(right, emit(right))
+    const l = this.coerceUndefinedOperand(op, left, groupBinaryOperand(left, emit(left)))
+    const r = this.coerceUndefinedOperand(op, right, groupBinaryOperand(right, emit(right)))
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
     // (#2176). Lower to Kolon's `~` concat operator. The adapter's

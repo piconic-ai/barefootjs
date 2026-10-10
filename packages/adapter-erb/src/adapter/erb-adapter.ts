@@ -101,6 +101,7 @@ import {
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
   arithmeticOperandIsNull,
+  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -2058,6 +2059,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       _isStringValueName: (name) => this._isStringValueName(name),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
     }

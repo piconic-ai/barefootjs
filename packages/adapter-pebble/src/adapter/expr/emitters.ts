@@ -581,10 +581,13 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
   }
 
   /** A `null` arithmetic operand reads as `0`, as JS `ToNumber(null)` does
-   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one is left
-   * alone: JS gives `NaN`, not `0`. */
+   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one reads as
+   * `NaN`, as JS `ToNumber(undefined)` does (#3390). */
   private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
-    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isNullOperand(expr) ? `(${operand} is null ? 0 : ${operand})` : operand
+    if (!NULL_COERCING_ARITHMETIC_OPS.has(op)) return operand
+    // Pebble's `bf.number(null)` is JS `Number(null)`, `0`; spell the NaN out.
+    if (this.ctx._isUndefinedOperand(expr)) return `(${operand} is null ? bf.number('NaN') : ${operand})`
+    return this.ctx._isNullOperand(expr) ? `(${operand} is null ? 0 : ${operand})` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {

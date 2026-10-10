@@ -10,10 +10,13 @@
 
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 import {
+  arithmeticOperandIsUndefined,
   asCallbackMethodCall,
+  bareGetterCallName,
   freeVarsInBody,
   materializeGetterCalls,
   isNullishLiteral,
+  NULL_COERCING_ARITHMETIC_OPS,
   serializeParsedExpr,
 } from '@barefootjs/jsx'
 
@@ -250,6 +253,34 @@ export function filterArmEarlierSiblingRefs(
 }
 
 /**
+ * Whether a memo body is `-` / `*` / `/` / `%` / `**` arithmetic whose result
+ * is `NaN` at SSR: an operand is certainly `undefined`
+ * (`arithmeticOperandIsUndefined`, which follows identity memos), is itself
+ * such arithmetic, or reads a memo whose body is (`doubled() * 2` with
+ * `doubled = () => s() * 2`). JS gives `NaN` whatever the other operand is
+ * (#3390); a Go seed would read the undefined signal as `0`.
+ */
+export function memoArithmeticYieldsNaN(ctx: GoEmitContext, expr: ParsedExpr): boolean {
+  const nullishCtx = ctx.state.nullishAttrCtx
+  const visiting = new Set<string>()
+  const yieldsNaN = (e: ParsedExpr): boolean => {
+    if (e.kind !== 'binary' || !NULL_COERCING_ARITHMETIC_OPS.has(e.op)) return false
+    return isNaNOperand(e.left) || isNaNOperand(e.right)
+  }
+  const isNaNOperand = (e: ParsedExpr): boolean => {
+    if (arithmeticOperandIsUndefined(e, nullishCtx) || yieldsNaN(e)) return true
+    const getter = e.kind === 'identifier' ? e.name : bareGetterCallName(e)
+    const memo = getter === null ? undefined : nullishCtx.memos.get(getter)
+    if (!memo?.parsed || visiting.has(getter!)) return false
+    visiting.add(getter!)
+    const result = yieldsNaN(memo.parsed)
+    visiting.delete(getter!)
+    return result
+  }
+  return yieldsNaN(expr)
+}
+
+/**
  * Compute a memo's SSR initial value as a Go expression — e.g.
  * `() => count() * 2` → `in.Initial * 2`, `() => props.value * 10` →
  * `in.Value * 10`. Unresolved computations default to the memo's Go zero value.
@@ -285,6 +316,14 @@ export function computeMemoInitialValue(
   // computing over it keeps resolving the dependency's usual seed, since
   // `nil` can't be a native Go arithmetic operand.
   if (nillable && isNullishIdentityMemo(ctx, memo, signals, new Set([memo.name]))) return 'nil'
+  // Arithmetic over an `undefined`-initialized signal is `NaN` in JS
+  // (`ToNumber(undefined)`), but a Go seed would read the signal as `0`
+  // (#3390). `bf.Number(nil)` is that NaN; only a field that can hold a
+  // float64 takes it.
+  if ((goType === undefined || goType === 'float64' || goType.includes('interface{}') || goType === 'any') &&
+      memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) {
+    return 'bf.Number(nil)'
+  }
   const resolved = computeMemoInitialValueOrNull(
     ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
   )

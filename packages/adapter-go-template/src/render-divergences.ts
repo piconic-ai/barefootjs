@@ -93,9 +93,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  // `s() * 2` with `s()` = `undefined`: JS renders `NaN`, the template's nil
-  // operand throws or reads as `0` here (#3350 covers only `null`).
-  'undefined-signal-arithmetic-memo': { limitation: 'undefined-signal-arithmetic-not-nan' },
+  // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
+  // `undefined`-initialized signal read the nil operand as `0` or threw. The
+  // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
   // `blank()?.name` with `blank()` = `{}` typed `User`: the struct's
   // `Name string` field reads as `""`, not nil, so the nil guard keeps
   // `data-name=""` where JS reads `undefined` and omits it (#3322).

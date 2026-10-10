@@ -127,6 +127,8 @@ export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,
+  arithmeticOperandIsUndefined,
+  bareGetterCallName,
   attrValueMayBeNullish,
   collectNullableSignalGetters,
   collectNullishAttrContext,
