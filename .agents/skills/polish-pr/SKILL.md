@@ -68,7 +68,12 @@ For each actionable CI/review finding:
    Inspect failed job logs, not only the summary or an older run's failure.
 2. Add a repro at the correct layer, fix the root decision, verify, commit, and
    push. New divergences found during this work need executable evidence, not
-   speculative registry entries or broad late-stage cleanup.
+   speculative registry entries or broad late-stage cleanup. A finding that names
+   one missed shape usually has siblings: check the list in implement-issues
+   step 3 and cover them in the same push. A drift failure in a fixture ledger
+   (`expectedHtml`, coverage map, data points, compat or support-matrix lock)
+   is fixed by `bun run fixtures:regen`, never by regenerating one file by hand.
+   Verify with `bun run fixtures:smoke <fixture>` before pushing.
 3. Reply with the fix and verification; resolve an inline thread only after its
    finding is addressed or a reasoned disagreement is documented. Check review
    bodies as well as threads: a blocking finding can exist without an inline thread.

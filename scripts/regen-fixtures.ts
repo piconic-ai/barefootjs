@@ -4,19 +4,20 @@
  *
  *   bun run fixtures:regen
  *
- * Adding or editing a fixture changes four committed files, each gated by
+ * Adding or editing a fixture changes five committed files, each gated by
  * its own CI drift check. They must be rebuilt in this order because each
  * one reads the previous one (or the adapter builds):
  *
  *   1. fixture `expectedHtml`       — from the Hono reference adapter
  *   2. `coverage-map.json`          — from the fixture sources
- *   3. `ui/compat.lock.json`        — from the built adapters' pins
- *   4. `ui/support-matrix.lock.json` — joins (2) with the adapters' pins
+ *   3. `generated-data-points.json` — from the fixture sources' prop types
+ *   4. `ui/compat.lock.json`        — from the built adapters' pins
+ *   5. `ui/support-matrix.lock.json` — joins (2) with the adapters' pins
  *
  * Missing one costs a full CI round (every adapter workflow) per push, so
  * run this once before pushing a fixture change and commit what it writes.
  *
- * (2)-(4) commit per-fixture / per-cell facts only, never aggregates (no
+ * (2), (4) and (5) commit per-fixture / per-cell facts only, never aggregates (no
  * kind/axis counts, corpus size, or pass/total): those lines would change
  * on every fixture PR and make unrelated fixture PRs conflict. Readers
  * derive them via `computeCoverageCounts`
@@ -55,6 +56,10 @@ const STEPS: ReadonlyArray<{ label: string; cmd: string[] }> = [
     cmd: ['bun', 'run', 'packages/adapter-tests/scripts/generate-expected-html.ts'],
   },
   { label: 'coverage-map.json', cmd: ['bun', 'packages/adapter-tests/scripts/coverage-map.ts'] },
+  {
+    label: 'generated-data-points.json',
+    cmd: ['bun', 'packages/adapter-tests/scripts/generate-data-points.ts'],
+  },
   { label: 'ui/compat.lock.json', cmd: ['bun', 'run', 'compat:lock'] },
   { label: 'ui/support-matrix.lock.json', cmd: ['bun', 'run', 'support-matrix:lock'] },
 ]
