@@ -28,7 +28,6 @@ import { groupBinaryOperand,
   identifierPath,
   matchSearchParamsMethodCall,
   sortComparatorFromArrow,
-  asCallbackMethodCall,
   type LoweringEmitter,
   type LoweringNode,
   queryHrefArgs,
@@ -198,15 +197,14 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
     if (flat !== null) return flat
-    // `.length` on a higher-order result (e.g.
-    // `x.tags.filter(t => t.active).length > 0` inside the outer
-    // filter predicate, #1443). The higher-order emit produces an
-    // anonymous array ref `[grep ...]`; reading `->{length}` on that
-    // is undef at runtime, which is why the pre-#1443 `containsHigherOrder`
-    // gate refused this shape outright. Lowering `.length` to
-    // `scalar(@{...})` makes the result a real Perl integer.
-    if (property === 'length' && (asCallbackMethodCall(object) !== null || object.kind === 'array-literal')) {
-      return optionalLength(emit(object), optional, obj => `scalar(@{${obj}})`)
+    // `.length` goes through the runtime's `bf->length`, which counts an
+    // array ref's elements and a string's UTF-16 code units. That covers a
+    // higher-order result (`x.tags.filter(t => t.active).length > 0`, whose
+    // emit is an anonymous array ref `[grep ...]`, #1443) and a row item's
+    // string field (`i.name.length`, #3439) alike; `->{length}` dies on a
+    // string under `strict refs`.
+    if (property === 'length') {
+      return optionalLength(emit(object), optional, obj => `bf->length(${obj})`)
     }
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${emit(object)}->{${property}}`
@@ -385,8 +383,6 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
  * Lowering for top-level expressions whose identifiers resolve against
  * the Mojo template's stash (signals, props, locals introduced by
  * `% my $x = ...;` lines). Differs from the filter emitter mainly in
- *   - `.length` → `scalar(@{...})` (filter contexts never see arrays
- *     in lvalue position),
  *   - `conditional` is supported (filter predicates can't return
  *     ternaries),
  *   - the `unsupported` fallback drops to the regex pipeline so legacy
@@ -470,24 +466,14 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     }
     const obj = emit(object)
     if (property === 'length') {
-      // `.length` dispatches on receiver type: a STRING receiver needs
-      // Perl's scalar `length($x)`, while the array lowering
-      // `scalar(@{$x})` dereferences the value as an array ref and
-      // returns 0 for a scalar string (the `string-length-text`
-      // divergence). The receiver is string-typed when it's a known
-      // string prop/getter (`isStringTypedOperand`) or a bare
-      // identifier bound to one — the same `_isStringValueName` witness
-      // the `eq`/concat lowering already consults.
-      const isStr = (e: ParsedExpr) => isStringTypedOperand(e, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
-      const isStringReceiver =
-        isStr(object) ||
-        (object.kind === 'identifier' && this.ctx._isStringValueName(object.name))
-      // A string receiver routes through the shared `bf->length` (NOT
-      // Perl's builtin `length()`) because JS `.length` counts UTF-16
-      // CODE UNITS, not Perl's codepoint-counting `length()` (#2255) — an
-      // astral codepoint (a surrogate pair in UTF-16, e.g. '👍') counts as
-      // 2, not 1.
-      return optionalLength(obj, optional, o => (isStringReceiver ? `bf->length(${o})` : `scalar(@{${o}})`))
+      // `.length` goes through the shared `bf->length`, which dispatches on
+      // the value at render time: an array ref counts its elements, a
+      // string counts UTF-16 code units like JS (#2255 — Perl's builtin
+      // `length()` counts codepoints). The receiver's type is not known
+      // here for every shape — a named object type's string field
+      // (`user().name.length`, #3439) reads like an array field — and the
+      // array-only `scalar(@{...})` dies on a string under `strict refs`.
+      return optionalLength(obj, optional, o => `bf->length(${o})`)
     }
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
     return `${obj}->{${property}}`
