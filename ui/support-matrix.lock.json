@@ -131,6 +131,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -337,6 +343,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -410,6 +422,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -568,6 +586,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -1153,6 +1177,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1287,6 +1317,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1348,6 +1384,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -1470,6 +1512,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -1727,6 +1775,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1873,6 +1927,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1928,6 +1988,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -2044,6 +2110,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -2460,6 +2532,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2798,6 +2876,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -2937,6 +3021,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -3221,6 +3311,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -4136,6 +4232,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4546,6 +4648,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4721,6 +4829,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -5077,6 +5191,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -5746,6 +5866,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6042,6 +6168,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6151,6 +6283,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -6393,6 +6531,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -7113,6 +7257,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7421,6 +7571,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7554,6 +7710,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -7826,6 +7988,12 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -8203,6 +8371,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8283,6 +8457,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8304,6 +8484,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -8360,6 +8546,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -11181,7 +11373,16 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -11192,10 +11393,37 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            }
+          ]
+        },
         "mojolicious": {},
-        "pebble": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            }
+          ]
+        },
         "twig": {},
         "xslate": {}
       },
@@ -11625,6 +11853,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11783,6 +12017,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11844,6 +12084,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -11984,6 +12230,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -12280,6 +12532,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12450,6 +12708,12 @@
               ]
             },
             {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12505,6 +12769,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
@@ -12633,6 +12903,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "object-length-property-filter",
+              "limitations": [
+                "object-length-property-reads-zero"
               ]
             },
             {
