@@ -4175,14 +4175,6 @@
           ]
         }
       },
-      "object-signal-field-length": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-filter-predicate-field-length"
-          ]
-        }
-      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -5707,10 +5699,6 @@
         "description": "An object's own length property in an inline and a counted filter predicate",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-length-property-filter.ts"
       },
-      "object-signal-field-length": {
-        "description": ".length on a named object type's string and array fields, read directly and in a filter predicate",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-signal-field-length.ts"
-      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6089,19 +6077,6 @@
       ],
       "diagnostics": [
         "BF029"
-      ]
-    },
-    "go-filter-predicate-field-length": {
-      "title": ".length on a loop item's field inside a .filter() predicate never matches on go-template",
-      "kind": "silent",
-      "given": "a `.filter()` predicate that reads `.length` on a loop item's string or array field (`items().filter(i => i.name.length > 2)`)",
-      "expected": "the predicate compares the field's length and keeps the matching rows",
-      "actual": "drops every row: the inline lowering reads a `Length` field off a Go string, and the filter evaluator does not resolve `.length` on the item's field",
-      "fixtures": [
-        "object-signal-field-length"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "jsx-wrapped-in-non-children-prop": {
