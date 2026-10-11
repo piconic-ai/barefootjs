@@ -421,3 +421,21 @@ func TestIncludesEval(t *testing.T) {
 		t.Errorf("non-collection receiver includes = %v, want false", nonCollection)
 	}
 }
+
+// `.length` on a struct's typed slice field reads its element count, not a
+// `length` field (#3447).
+func TestEvalReadProperty_TypedSliceLength(t *testing.T) {
+	type item struct {
+		Name string
+		Tags []string
+	}
+	if got := evalReadProperty([]string{"a", "b"}, "length"); got != 2 {
+		t.Fatalf("[]string length = %v, want 2", got)
+	}
+	if got := evalReadProperty([2]int{1, 2}, "length"); got != 2 {
+		t.Fatalf("[2]int length = %v, want 2", got)
+	}
+	if got := evalReadProperty(evalReadProperty(item{Tags: []string{"x"}}, "tags"), "length"); got != 1 {
+		t.Fatalf("item.tags.length = %v, want 1", got)
+	}
+}

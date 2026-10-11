@@ -8269,6 +8269,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Nested member access or local var.prop.
         const obj = this.renderFilterExpr(expr.object, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
+        // JS `.length` on a field (`i.name.length`, `i.tags.length`, #3447):
+        // `bf_length` counts a string's UTF-16 code units or a slice's
+        // elements. A `.Length` field read is not defined on either.
+        if (expr.property === 'length' && !expr.computed) {
+          const read = `bf_length ${wrapIfMultiToken(obj)}`
+          return expr.optional ? `(bf_ternary (bf_eq ${wrapIfMultiToken(obj)} nil) nil (${read}))` : `(${read})`
+        }
         if ((expr.optional || expr.computed) && expr.property !== 'length') {
           return `(${this.renderOptionalMember(obj, expr.property)})`
         }

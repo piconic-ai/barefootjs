@@ -93,9 +93,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
-  // `.length` on a loop item's field inside a `.filter()` predicate never
-  // matches, so the filtered rows are dropped (#3447).
-  'object-signal-field-length': { limitation: 'go-filter-predicate-field-length' },
+  // `object-signal-field-length` used to sit here: `.length` on a loop
+  // item's field inside a `.filter()` predicate never matched. It now reads
+  // through `bf_length` inline and the evaluator counts a typed slice (#3447).
   // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
   // `undefined`-initialized signal read the nil operand as `0` or threw. The
   // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
