@@ -160,7 +160,7 @@ import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./anal
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { freeTemplateVars } from "./lib/template-scope.ts"
-import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
+import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerNilGuardedValue, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -7136,7 +7136,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         : w
     const wl = undefinedOperand(left, wrapIfMultiToken(l))
     const wr = undefinedOperand(right, wrapIfMultiToken(r))
-    const comparison = goComparisonCall(op, wl, wr)
+    const comparison = goComparisonCall(op, wl, wr, [left, right])
     if (comparison !== null) return comparison
     switch (op) {
       case '+':
@@ -7226,6 +7226,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // represent "absent" at all, so `or` and `??` are indistinguishable there.
     if (op === '??' && this.isNillableNullishLeft(left)) {
       return `bf_nullish ${wrapLeft} ${wrapRight}`
+    }
+    // `(c ? undefined : x) ?? d` — the guard an optional-chained call
+    // `props.s?.trim() ?? d` lowers to (#3435). The `undefined` branch
+    // yields nil here so `bf_nullish` falls back only for it, keeping a
+    // present `''` / `0` result that `or` would replace.
+    if (op === '??' && left.kind === 'conditional' && left.consequent.kind === 'identifier' && left.consequent.name === 'undefined') {
+      return `bf_nullish ${lowerNilGuardedValue(this.emitCtx, left.test, left.alternate)} ${wrapRight}`
     }
     return `or ${wrapLeft} ${wrapRight}`
   }
@@ -8324,7 +8331,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const wl = wrapIfMultiToken(left)
         const wr = wrapIfMultiToken(right)
 
-        const comparison = goComparisonCall(expr.op, wl, wr)
+        const comparison = goComparisonCall(expr.op, wl, wr, [expr.left, expr.right])
         if (comparison !== null) return comparison
         switch (expr.op) {
           case '+':
@@ -9196,7 +9203,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const preamble = leftResult.preamble + rightResult.preamble
 
         let result: string
-        const comparison = goComparisonCall(expr.op, left, right)
+        const comparison = goComparisonCall(expr.op, left, right, [expr.left, expr.right])
         if (comparison !== null) {
           result = comparison
         } else switch (expr.op) {

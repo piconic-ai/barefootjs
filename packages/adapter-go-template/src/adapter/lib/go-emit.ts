@@ -358,12 +358,20 @@ const GO_COMPARISON_HELPERS: Readonly<Record<string, string>> = {
  * equality never coerces; relational operators compare two strings by code
  * unit and anything else as numbers). Equality keeps
  * `stringTolerantEqOperands`' string-literal side handling. Operands must
- * already be `wrapIfMultiToken`-wrapped.
+ * already be `wrapIfMultiToken`-wrapped; `operands` (the parsed sides) lets
+ * an equality against `undefined` lower to a nil test.
  */
-export function goComparisonCall(op: string, l: string, r: string): string | null {
+export function goComparisonCall(
+  op: string, l: string, r: string, operands?: readonly [ParsedExpr, ParsedExpr],
+): string | null {
   const helper = GO_COMPARISON_HELPERS[op]
   if (!helper) return null
   if (helper === 'bf_eq' || helper === 'bf_ne') {
+    // `x === undefined` is a nil test. The bare `undefined` operand renders
+    // as `""` elsewhere, which would also match a present `''` (#3435).
+    const isUndefined = (e: ParsedExpr | undefined) => e?.kind === 'identifier' && e.name === 'undefined'
+    if (isUndefined(operands?.[1])) return `${helper} ${wrapIfMultiToken(l)} nil`
+    if (isUndefined(operands?.[0])) return `${helper} nil ${wrapIfMultiToken(r)}`
     const [el, er] = stringTolerantEqOperands(l, r)
     return `${helper} ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
   }

@@ -88,6 +88,16 @@ export function lowerTernary(
 }
 
 /**
+ * `test ? undefined : alternate` as a value whose `undefined` branch is a
+ * real nil — for a `??` left operand, where `bf_nullish` must tell it from
+ * a present `''` / `0` (#3435). `lowerTernary` renders `undefined` as `""`
+ * for text output.
+ */
+export function lowerNilGuardedValue(ctx: GoEmitContext, test: ParsedExpr, alternate: ParsedExpr): string {
+  return `(bf_ternary ${lowerTernaryTest(ctx, test)} nil ${lowerValueOperand(ctx, alternate)})`
+}
+
+/**
  * Lower a template literal to ONE Go pipeline VALUE (#2863): a left fold of
  * `bf_concat_str` over the parts — static text as an escaped Go string
  * literal, each interpolation as its own value operand. The TEXT-position

@@ -1377,18 +1377,27 @@ func Neg(a any) any {
 // String Operations
 // =============================================================================
 
+// The string helpers take their receiver as `any` and read it through
+// String: an optional-chained call `x?.toUpperCase()` lowers to
+// `bf_ternary <x is nil> "" (bf_upper .X)`, and template pipelines evaluate
+// both branches, so the call also runs on an absent (nil) receiver whose
+// result is then discarded (#3435).
+
 // Lower returns the lowercase version of s.
-func Lower(s string) string {
+func Lower(recv any) string {
+	s := String(recv)
 	return strings.ToLower(s)
 }
 
 // Upper returns the uppercase version of s.
-func Upper(s string) string {
+func Upper(recv any) string {
+	s := String(recv)
 	return strings.ToUpper(s)
 }
 
 // Trim returns s with leading and trailing whitespace removed.
-func Trim(s string) string {
+func Trim(recv any) string {
+	s := String(recv)
 	return strings.TrimSpace(s)
 }
 
@@ -1396,18 +1405,21 @@ func Trim(s string) string {
 // (String.prototype.trimStart, #2183) — the one-sided sibling of
 // Trim above, using the same unicode.IsSpace predicate strings.TrimSpace
 // applies to both sides.
-func TrimStart(s string) string {
+func TrimStart(recv any) string {
+	s := String(recv)
 	return strings.TrimLeftFunc(s, unicode.IsSpace)
 }
 
 // TrimEnd returns s with trailing whitespace removed
 // (String.prototype.trimEnd, #2183) — the one-sided sibling of Trim.
-func TrimEnd(s string) string {
+func TrimEnd(recv any) string {
+	s := String(recv)
 	return strings.TrimRightFunc(s, unicode.IsSpace)
 }
 
 // Contains returns true if s contains substr.
-func Contains(s, substr string) bool {
+func Contains(recv any, substr string) bool {
+	s := String(recv)
 	return strings.Contains(s, substr)
 }
 
@@ -1422,7 +1434,8 @@ func Contains(s, substr string) bool {
 // ignored (JS would also return every piece — its ToUint32 wrap makes
 // the limit effectively unbounded). The no-separator form is handled by
 // the adapter (it emits `bf_arr` for the whole-string single element).
-func Split(s, sep string, limit ...int) []any {
+func Split(recv any, sep string, limit ...int) []any {
+	s := String(recv)
 	parts := strings.Split(s, sep)
 	if len(limit) > 0 && limit[0] >= 0 && limit[0] < len(parts) {
 		parts = parts[:limit[0]]
@@ -1439,7 +1452,8 @@ func Split(s, sep string, limit ...int) []any {
 // true (JS parity). The optional `position` re-anchors the test to start
 // at that index (clamped to `[0, len]` so it never panics), matching JS
 // `"abc".startsWith("b", 1) === true`.
-func StartsWith(s, prefix string, position ...int) bool {
+func StartsWith(recv any, prefix string, position ...int) bool {
+	s := String(recv)
 	if len(position) > 0 {
 		p := position[0]
 		if p < 0 {
@@ -1458,7 +1472,8 @@ func StartsWith(s, prefix string, position ...int) bool {
 // true (JS parity). The optional `endPosition` treats the string as if
 // it were only that many bytes long (clamped to `[0, len]`), matching JS
 // `"abc".endsWith("b", 2) === true`.
-func EndsWith(s, suffix string, endPosition ...int) bool {
+func EndsWith(recv any, suffix string, endPosition ...int) bool {
+	s := String(recv)
 	if len(endPosition) > 0 {
 		e := endPosition[0]
 		if e < 0 {
@@ -1481,7 +1496,8 @@ func EndsWith(s, suffix string, endPosition ...int) bool {
 // literal replacement, keeping the two template adapters byte-equal;
 // this diverges from the Hono/CSR JS path only for replacement strings
 // that contain `$`-patterns, which are rare in template position).
-func Replace(s, old, new string) string {
+func Replace(recv any, old, new string) string {
+	s := String(recv)
 	return strings.Replace(s, old, new, 1)
 }
 
@@ -1489,7 +1505,8 @@ func Replace(s, old, new string) string {
 // `String.prototype.replaceAll` (#2182): every occurrence, via
 // `strings.ReplaceAll` (equivalent to `strings.Replace` with n=-1).
 // Same literal-replacement caveat as `Replace` above.
-func ReplaceAll(s, old, new string) string {
+func ReplaceAll(recv any, old, new string) string {
+	s := String(recv)
 	return strings.ReplaceAll(s, old, new)
 }
 
@@ -1498,7 +1515,8 @@ func ReplaceAll(s, old, new string) string {
 // count and `strings.Repeat` panics, so a negative count clamps to the
 // empty string — SSR templates degrade rather than crash the render.
 // A zero count is the empty string (JS parity).
-func Repeat(s string, n int) string {
+func Repeat(recv any, n int) string {
+	s := String(recv)
 	if n <= 0 {
 		return ""
 	}
@@ -1539,7 +1557,8 @@ func padTo(s string, target int, pad string, atStart bool) string {
 
 // PadStart lowers `String.prototype.padStart(target, pad?)` (#1448 Tier
 // B). The pad string defaults to a single space when omitted.
-func PadStart(s string, target int, pad ...string) string {
+func PadStart(recv any, target int, pad ...string) string {
+	s := String(recv)
 	p := " "
 	if len(pad) > 0 {
 		p = pad[0]
@@ -1548,7 +1567,8 @@ func PadStart(s string, target int, pad ...string) string {
 }
 
 // PadEnd lowers `String.prototype.padEnd(target, pad?)` (#1448 Tier B).
-func PadEnd(s string, target int, pad ...string) string {
+func PadEnd(recv any, target int, pad ...string) string {
+	s := String(recv)
 	p := " "
 	if len(pad) > 0 {
 		p = pad[0]
