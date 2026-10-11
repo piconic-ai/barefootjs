@@ -6775,6 +6775,29 @@
         "text"
       ]
     },
+    "object-signal-field-length": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "on-prefixed-data-prop": {
       "kinds": [
         "array-literal",

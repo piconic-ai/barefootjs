@@ -237,6 +237,12 @@
               ]
             },
             {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1211,6 +1217,12 @@
               ]
             },
             {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1794,6 +1806,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
               ]
             },
             {
@@ -2605,6 +2623,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
               ]
             },
             {
@@ -4314,6 +4338,12 @@
               ]
             },
             {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5864,6 +5894,12 @@
               ]
             },
             {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7219,6 +7255,12 @@
               ]
             },
             {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -8192,6 +8234,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
               ]
             },
             {
@@ -11134,7 +11182,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -11641,6 +11698,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
               ]
             },
             {
@@ -12302,6 +12365,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
               ]
             },
             {
@@ -13083,6 +13152,12 @@
         "erb": {},
         "go-template": {
           "gaps": [
+            {
+              "fixture": "object-signal-field-length",
+              "limitations": [
+                "go-filter-predicate-field-length"
+              ]
+            },
             {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
