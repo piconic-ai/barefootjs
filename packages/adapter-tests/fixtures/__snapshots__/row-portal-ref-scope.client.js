@@ -60,7 +60,7 @@ export function initRowPortalRefScope(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const r = _p.rows.find(item => String(item.id) === key)
-        if (r) {
+        if (r !== undefined) {
           ;(() => setLast(r.label))(__bfEvt)
         }
       }
@@ -93,7 +93,7 @@ export function initRowPortalRefScope(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const n = _p.nums.find(item => String(item) === key)
-        if (n) {
+        if (n !== undefined) {
           ;(() => setLast(String(n)))(__bfEvt)
         }
       }

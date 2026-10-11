@@ -2961,6 +2961,24 @@
         "text"
       ]
     },
+    "falsy-row-clicks": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "falsy-text-values": {
       "kinds": [
         "literal"

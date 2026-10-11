@@ -3,9 +3,7 @@
  * the loop index and a root-level prop, plus a second loop whose first row
  * is the falsy `0` (#3420). Every adapter renders the elements at the
  * portal outlet with those values, and a row's click still reaches its own
- * handler after hydration. The click goes to the `1` row: the delegated
- * handler looks the row item up by truthiness, so the `0` row's click is
- * dropped on every adapter, portaled or not.
+ * handler after hydration, including the falsy `0` row's (#3433).
  * Source lives in the fixture-only root
  * (`fixtures/components/RowPortalRefScope.tsx`).
  *
@@ -29,6 +27,8 @@ export const spec: SharedFixtureSpec = {
     { type: 'expectText', selector: '.last', text: 'none' },
     { type: 'click', selector: 'button.row[data-key="b"]' },
     { type: 'expectText', selector: '.last', text: 'beta' },
+    { type: 'click', selector: 'button.num[data-key="0"]' },
+    { type: 'expectText', selector: '.last', text: '0' },
     { type: 'click', selector: 'button.num[data-key="1"]' },
     { type: 'expectText', selector: '.last', text: '1' },
   ],

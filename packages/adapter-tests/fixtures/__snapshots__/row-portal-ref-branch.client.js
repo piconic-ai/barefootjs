@@ -47,7 +47,7 @@ export function initRowPortalRefBranch(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const r = _p.rows.find(item => String(item) === key)
-        if (r) {
+        if (r !== undefined) {
           ;(() => setLast(r))(__bfEvt)
         }
       }

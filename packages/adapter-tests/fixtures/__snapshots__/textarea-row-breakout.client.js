@@ -55,7 +55,7 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const id = ids().find(item => String(item) === key)
-        if (id) {
+        if (id !== undefined) {
           ;(() => setValue(PAYLOAD))(__bfEvt)
         }
       }

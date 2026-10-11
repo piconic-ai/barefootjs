@@ -34,7 +34,7 @@ export function initPreambleCells(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const t = todos().find(item => String(item.id) === key)
-        if (t) {
+        if (t !== undefined) {
           ;(() => toggle(t.id))(__bfEvt)
         }
       }

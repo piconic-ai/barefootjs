@@ -447,6 +447,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -678,6 +684,12 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -2974,6 +2986,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -3391,6 +3409,12 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -4752,6 +4776,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -5277,6 +5307,12 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -6140,6 +6176,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -6485,6 +6527,12 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -7531,6 +7579,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -7930,6 +7984,12 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -11704,6 +11764,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -11905,6 +11971,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -12347,6 +12419,12 @@
               ]
             },
             {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -12530,6 +12608,12 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "falsy-row-clicks",
+              "limitations": [
+                "perl-boolean-stringifies-as-number"
               ]
             },
             {

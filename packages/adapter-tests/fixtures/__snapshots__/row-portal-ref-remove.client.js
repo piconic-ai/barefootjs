@@ -47,7 +47,7 @@ export function initRowPortalRefRemove(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const r = rows().find(item => String(item) === key)
-        if (r) {
+        if (r !== undefined) {
           ;(() => setRows(rs => rs.filter(x => x !== r)))(__bfEvt)
         }
       }

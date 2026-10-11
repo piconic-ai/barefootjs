@@ -103,7 +103,7 @@ describe('static-index event delegation resolves nested .map() params (#3240)', 
     // static-index event — same shape as before #3240.
     expect(content).not.toContain('__ic1')
     expect(content).not.toContain('__iidx1')
-    expect(content).toMatch(/const item = ITEMS\[__idx\]\n\s*if \(item\) \{\n\s*;\(\(\) => setPicked\(item\)\)\(__bfEvt\)\n\s*\}/)
+    expect(content).toMatch(/const item = ITEMS\[__idx\]\n\s*if \(item !== undefined\) \{\n\s*;\(\(\) => setPicked\(item\)\)\(__bfEvt\)\n\s*\}/)
   })
 
   test('a nested array expression referencing the outer param resolves inside the outer guard', () => {
