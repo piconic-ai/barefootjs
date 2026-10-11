@@ -942,345 +942,26 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
   if (ts.isCallExpression(node)) {
     const callee = convertNode(node.expression, raw)
     const args = node.arguments.map(arg => convertNode(arg, raw))
-
-    // Higher-order callback methods (`.filter`/`.find`/`.every`/`.some`/
-    // `.sort`/`.reduce`/`.flatMap`/…) are NOT folded here (#2018 P5): they
-    // flow through as a generic `call` whose argument is a generic `arrow`,
-    // and the adapter recognises the callback shape at dispatch and serializes
-    // the arrow body to the runtime evaluator. The one exception is the
-    // non-arrow `.filter(Boolean)` callable: synthesise the equivalent
-    // identity arrow `_ => _` so it flows through the same callback lowering
-    // (the adapter keeps a dedicated truthiness fallback for the identity body).
-    if (
-      callee.kind === 'member' &&
-      !callee.computed &&
-      callee.property === 'filter' &&
-      args.length === 1 &&
-      args[0].kind === 'identifier' &&
-      args[0].name === 'Boolean'
-    ) {
+    // `recv?.method(args)` is `undefined` when `recv` is nullish (#3435).
+    // The lowerings below (an `array-method` node above all) model a plain
+    // call, so the optional hop becomes an explicit guard every adapter
+    // already lowers: `recv === null || recv === undefined ? undefined :
+    // recv.method(args)`. Strict comparisons: several backends compare a
+    // loose `== null` as falsy-equal, which would swallow a present `0`.
+    if (callee.kind === 'member' && callee.optional) {
       return {
-        kind: 'call',
-        callee,
-        args: [{ kind: 'arrow', params: ['_'], body: { kind: 'identifier', name: '_' } }],
+        kind: 'conditional',
+        test: {
+          kind: 'logical',
+          op: '||',
+          left: { kind: 'binary', op: '===', left: callee.object, right: { kind: 'literal', value: null, literalType: 'null' } },
+          right: { kind: 'binary', op: '===', left: callee.object, right: { kind: 'identifier', name: 'undefined' } },
+        },
+        consequent: { kind: 'identifier', name: 'undefined' },
+        alternate: convertCallExpression(node, raw, { ...callee, optional: false }, args),
       }
     }
-
-    // Non-higher-order array methods (#1443). Lifting these into an
-    // `array-method` IR node — instead of detecting at each adapter's
-    // `call()` emitter — keeps the abstraction at the IR layer where
-    // it belongs: an array supports `.join`, and the per-target
-    // lowering is the adapter's choice. Adding `.concat` / `.slice` /
-    // etc. later means widening the IR discriminator, not adding more
-    // branches to every adapter's call dispatch.
-    if (callee.kind === 'member' && !callee.computed) {
-      // `.join()` / `.join(sep)` — JS defaults the separator to `,` when
-      // omitted and ignores any extra arguments. Accept every arity; the
-      // adapters supply the default separator and read only `args[0]`.
-      if (callee.property === 'join') {
-        return { kind: 'array-method', method: 'join', object: callee.object, args }
-      }
-      // `.includes(x)` — shared between `Array.prototype.includes` and
-      // `String.prototype.includes`. The parser can't tell the receiver
-      // type without TS inference, so both shapes lower through the
-      // same IR node and each adapter dispatches at the runtime level
-      // (`bf_includes` on Go uses `reflect.Kind()`; `$bf->includes`
-      // on Mojo uses `ref()`). See #1448 Tier A.
-      if (callee.property === 'includes' && args.length === 1) {
-        return { kind: 'array-method', method: 'includes', object: callee.object, args }
-      }
-      // `.indexOf(x)` / `.lastIndexOf(x)` — value-equality search,
-      // both adapters dispatch through a runtime helper that walks
-      // the slice (forward / backward) and compares with `DeepEqual`
-      // (Go) / `eq` (Perl). The existing `bf_find_index` (Go)
-      // operates on struct-field equality and stays — see the
-      // higher-order `.find` lowering. See #1448 Tier A.
-      if ((callee.property === 'indexOf' || callee.property === 'lastIndexOf') && args.length === 1) {
-        return { kind: 'array-method', method: callee.property, object: callee.object, args }
-      }
-      // `.at(i)` — negative-index support (`.at(-1)` is the last
-      // element). Go has `bf_at` registered already (see runtime
-      // FuncMap); Mojo's `bf->at` wraps the same arithmetic.
-      // See #1448 Tier A.
-      // `.at(i)` — JS ignores any argument past the first, and `.at()`
-      // with no argument is `.at(0)` (the first element). Accept every
-      // arity; the adapters read `args[0]` (defaulting the index to 0).
-      if (callee.property === 'at') {
-        return { kind: 'array-method', method: 'at', object: callee.object, args }
-      }
-      // `.concat()` / `.concat(other)` — `.concat()` returns a shallow
-      // copy (indistinguishable from the receiver in an SSR snapshot),
-      // and `.concat(other)` merges the two arrays. Go uses `bf_concat`
-      // (reflect-based append into `[]any`); Mojo uses `bf->concat`
-      // (Perl list builder). The VARIADIC form (`.concat(a, b, …)`) is
-      // not lowered yet — it's refused by the guard below rather than
-      // silently dropping the extra arrays.
-      if (callee.property === 'concat' && args.length <= 1) {
-        return { kind: 'array-method', method: 'concat', object: callee.object, args }
-      }
-      // `.slice()` / `.slice(start)` / `.slice(start, end)` — route
-      // through `bf_slice` (Go) / `bf->slice` (Mojo). A missing `start`
-      // defaults to 0 (full copy), a missing / undef `end` means "to
-      // length", and JS ignores any third+ argument. Accept every arity;
-      // the adapters read only `args[0]` / `args[1]`.
-      if (callee.property === 'slice') {
-        return { kind: 'array-method', method: 'slice', object: callee.object, args }
-      }
-      // `.reverse()` and `.toReversed()` — both zero-arg shapes
-      // share the runtime lowering. SSR templates render a snapshot
-      // of state, so JS's mutate-and-return-receiver (`reverse`)
-      // vs return-new-array (`toReversed`) distinction has no
-      // template-level meaning; both produce a new reversed array.
-      // JS takes no argument and ignores any that are passed.
-      if (callee.property === 'reverse' || callee.property === 'toReversed') {
-        return { kind: 'array-method', method: callee.property, object: callee.object, args }
-      }
-      // `.flat(depth?)` — flatten nested arrays `depth` levels deep
-      // (default 1). The depth is validated to a literal and normalised
-      // into a structured `FlatDepth` here: `Infinity` becomes the
-      // full-depth form, a 0 / negative JS depth normalises to 0 ("no
-      // flatten" → shallow copy), and a fractional literal truncates
-      // toward zero (JS ToIntegerOrInfinity). A NON-literal depth can't be
-      // resolved at template time, so it refuses with BF101 rather than
-      // emitting a broken helper call. Go uses `bf_flat`; Mojo uses
-      // `bf->flat`. See #1448 Tier C.
-      if (callee.property === 'flat') {
-        const depthNode = node.arguments[0]
-        let flatDepth: FlatDepth
-        let depthExpr: ParsedExpr | undefined
-        if (depthNode === undefined) {
-          flatDepth = 1
-        } else if (ts.isIdentifier(depthNode) && depthNode.text === 'Infinity') {
-          flatDepth = 'infinity'
-        } else {
-          let n: number | undefined
-          if (ts.isNumericLiteral(depthNode)) {
-            n = Number(depthNode.text)
-          } else if (
-            ts.isPrefixUnaryExpression(depthNode) &&
-            depthNode.operator === ts.SyntaxKind.MinusToken &&
-            ts.isNumericLiteral(depthNode.operand)
-          ) {
-            n = -Number(depthNode.operand.text)
-          }
-          if (n === undefined || Number.isNaN(n)) {
-            // Not a literal — try a DYNAMIC depth: an expression that
-            // itself resolves to a supported `ParsedExpr` (a numeric prop,
-            // signal read, arithmetic, …) can be lowered through a runtime
-            // helper that coerces it at render time (JS
-            // `ToIntegerOrInfinity`; see the `depthExpr` doc on the
-            // `array-method`/`flat` type). Still refuse with BF101 when
-            // the depth expression itself is outside the supported
-            // surface — the depth must be *expressible*, even if not
-            // known until render time.
-            const parsedDepth = convertNode(depthNode, raw)
-            if (checkSupport(parsedDepth, 'rendered', []).supported) {
-              depthExpr = parsedDepth
-              flatDepth = 1 // unused placeholder — consumers must check `depthExpr` first
-            } else {
-              return {
-                kind: 'unsupported',
-                raw,
-                reason: `\`.flat(depth)\` needs a literal integer, \`Infinity\`, or a supported dynamic depth expression — this depth can't be resolved. Use a literal depth, a supported expression (prop/signal/arithmetic), or pre-compute the value before the template.`,
-              }
-            }
-          } else {
-            const truncated = Math.trunc(n)
-            flatDepth = truncated < 0 ? 0 : truncated
-          }
-        }
-        return depthExpr !== undefined
-          ? { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth, depthExpr }
-          : { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth }
-      }
-      // `.toLowerCase()` — string-only (the IR carries a value-builtin
-      // tag, not a receiver-type discriminator, so the `array-method`
-      // label is a misnomer for string methods but the mechanical
-      // pipeline matches). Go uses the existing `bf_lower` helper;
-      // Mojo uses Perl's native `lc`. See #1448 Tier A.
-      if (callee.property === 'toLowerCase') {
-        return { kind: 'array-method', method: 'toLowerCase', object: callee.object, args }
-      }
-      // `.toUpperCase()` — Go uses the existing `bf_upper` helper;
-      // Mojo uses Perl's native `uc`.
-      if (callee.property === 'toUpperCase') {
-        return { kind: 'array-method', method: 'toUpperCase', object: callee.object, args }
-      }
-      // `.trim()` — Go uses the existing `bf_trim` helper; Mojo uses
-      // a new `bf->trim` method that mirrors JS's "strip leading +
-      // trailing whitespace" semantic via a Perl regex.
-      if (callee.property === 'trim') {
-        return { kind: 'array-method', method: 'trim', object: callee.object, args }
-      }
-      // `.trimStart()` / `.trimEnd()` — the one-sided siblings of
-      // `.trim()` (#2183 follow-up). No array equivalent exists, so
-      // there's no receiver-type ambiguity to resolve (unlike `.slice`);
-      // each is a dedicated `array-method` variant (matching the
-      // `padStart`/`padEnd` precedent — separate members, not a shared
-      // member with a `side` flag) lowering to its own runtime helper
-      // per adapter, not `.trim()` with a flag.
-      if (callee.property === 'trimStart' || callee.property === 'trimEnd') {
-        return { kind: 'array-method', method: callee.property, object: callee.object, args }
-      }
-      // `.toFixed(digits?)` — Number → fixed-decimal string. The digit
-      // count (default 0) travels as the single arg; all adapters route
-      // through a `to_fixed` runtime helper (Perl) / `fmt.Sprintf` (Go)
-      // so JS's rounding + zero-padding semantics match. #1897
-      // (data-table's `payment.amount.toFixed(2)`).
-      if (callee.property === 'toFixed') {
-        return { kind: 'array-method', method: 'toFixed', object: callee.object, args }
-      }
-      // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
-      // array, full JS arity. `.split()` (no separator) returns the
-      // whole string as a single element; `.split(sep)` splits on the
-      // (literal) separator; the optional `limit` caps the number of
-      // pieces. JS ignores a third+ argument. Go uses `bf_split`
-      // (`strings.Split`, optional limit, normalised to `[]any`) and
-      // `bf_arr` for the no-separator whole-string case; Mojo uses
-      // `bf->split`. The regex-separator form stays refused (the parser
-      // never reaches here for it — a regex literal arg is `unsupported`
-      // and propagates). See #1448 Tier B.
-      if (callee.property === 'split') {
-        return { kind: 'array-method', method: 'split', object: callee.object, args }
-      }
-      // Arity guard for the forms whose EXTRA argument changes the
-      // result and is not yet lowered: the `fromIndex` of `.includes` /
-      // `.indexOf` / `.lastIndexOf` (the 2-arg form), and the additional
-      // arrays of a variadic `.concat(a, b, …)`. Silently dropping those
-      // would make the SSR output *differ* from the client (worse than a
-      // build error), so they refuse with BF101 until lowered. (The
-      // single-argument forms, zero-arg defaults, and JS-ignored
-      // trailing arguments of every method are accepted by the relaxed
-      // arms above.) See #1448.
-      if (LOWERED_ARRAY_METHODS.has(callee.property)) {
-        const argName = callee.property === 'concat' ? 'other' : 'x'
-        const detail =
-          callee.property === 'concat'
-            ? 'the variadic `.concat(a, b, …)` form'
-            : `\`.${callee.property}(…)\` with ${args.length} argument(s)`
-        return {
-          kind: 'unsupported',
-          raw,
-          reason: `${detail} is not yet lowered to the Go/Mojo template adapters. Use the single-argument \`.${callee.property}(${argName})\` form, or pre-compute the value before the template.`,
-        }
-      }
-      // `.startsWith(search, position?)` / `.endsWith(search, endPosition?)`
-      // — string → boolean, full JS arity. Go uses `bf_starts_with` /
-      // `bf_ends_with` (wrapping `strings.HasPrefix` / `strings.HasSuffix`,
-      // with an optional position that re-anchors the comparison); Mojo
-      // uses `bf->starts_with` / `bf->ends_with` (substr comparison). JS
-      // ignores a third+ argument. The zero-arg form (`.startsWith()`) is
-      // refused: JS coerces the missing search to the literal string
-      // "undefined", a degenerate result not worth lowering (mirrors the
-      // `.includes()` zero-arg refusal). See #1448 Tier B.
-      if (callee.property === 'startsWith' || callee.property === 'endsWith') {
-        if (args.length === 0) {
-          return {
-            kind: 'unsupported',
-            raw,
-            reason: `\`.${callee.property}()\` with no search string is not lowered — JS coerces the missing argument to the string "undefined", a degenerate result. Pass an explicit search string, or pre-compute the value before the template.`,
-          }
-        }
-        return { kind: 'array-method', method: callee.property, object: callee.object, args }
-      }
-      // `.replace(pattern, replacement)` — string-pattern form,
-      // replacing the FIRST occurrence (JS semantics for a string
-      // pattern). Go uses `bf_replace` (`strings.Replace` with n=1);
-      // Mojo uses `bf->replace` (index/substr splice, no regex). A
-      // regex-literal pattern is the deferred form — its `regex` first
-      // arg is carried STRUCTURALLY (not collapsed to `unsupported`) so
-      // the Go ctor lowering can recover the one trailing-slash pattern
-      // it supports without re-parsing (#2039). Template use stays
-      // refused: `isSupported` maps a regex-pattern `.replace` to the
-      // deferred-form BF101 reason — the Perl `s///` vs Go
-      // `regexp.ReplaceAllString` flavour gap is the open design
-      // question in #1448. `.replaceAll(pattern, replacement)` shares
-      // this arm (#2182 follow-up): same arity/regex/object-literal
-      // gates, only the `method` tag and its runtime helper differ —
-      // `bf_replace_all` (Go, `strings.ReplaceAll`) / `bf->replace_all`
-      // (Mojo) replace EVERY occurrence, where `.replace`'s helpers
-      // replace only the first.
-      //
-      // Full JS arity: a third+ argument is ignored (the adapter reads
-      // only the pattern + replacement). The one- and zero-argument
-      // forms are refused: JS coerces the missing replacement (and
-      // pattern) to the literal string "undefined", a degenerate result
-      // (mirrors the `.includes()` / `.startsWith()` zero-arg refusal).
-      if (callee.property === 'replace' || callee.property === 'replaceAll') {
-        const method = callee.property
-        if (args.length < 2) {
-          return {
-            kind: 'unsupported',
-            raw,
-            reason: `\`.${method}(${args.length === 0 ? '' : 'pattern'})\` needs both a pattern and a replacement — JS coerces the missing argument to the string "undefined", a degenerate result. Pass both arguments, or pre-compute the value before the template.`,
-          }
-        }
-        // A regex-literal pattern is the deferred form (the Perl `s///`
-        // vs Go `regexp.ReplaceAllString` flavour gap, #1448). Its shape
-        // is carried structurally — `args[0]` is a `regex` node (convertNode
-        // line ~1127) — so a consumer that recognises one fixed pattern (the
-        // Go ctor's `/\/+$/` trailing-slash strip → `strings.TrimRight`) reads
-        // it from the tree instead of re-parsing the raw (#2039). Returned
-        // before the object-literal `badArg` check below so the regex form
-        // keeps its dedicated diagnostic precedence; `isSupported` then refuses
-        // any template use with the deferred-form reason.
-        const patternNode = node.arguments[0]
-        if (patternNode && ts.isRegularExpressionLiteral(patternNode)) {
-          return { kind: 'array-method', method, object: callee.object, args }
-        }
-        // Treat an object-literal argument like `unsupported` — a `.replace`
-        // with an object pattern/replacement isn't lowerable, same as before
-        // the `object-literal` kind existed (byte-identical; Roadmap A-1).
-        const badArg =
-          args[0].kind === 'unsupported' || args[0].kind === 'object-literal'
-            ? args[0]
-            : args[1].kind === 'unsupported' || args[1].kind === 'object-literal'
-              ? args[1]
-              : undefined
-        if (badArg) {
-          const reason = badArg.kind === 'unsupported' ? badArg.reason : 'Unsupported syntax: ObjectLiteralExpression'
-          return { kind: 'unsupported', raw, reason }
-        }
-        return { kind: 'array-method', method, object: callee.object, args }
-      }
-      // `.repeat(n)` — string → string (the receiver concatenated `n`
-      // times). Go uses `bf_repeat` (`strings.Repeat`, clamping a
-      // negative count to "" instead of panicking); Mojo uses
-      // `bf->repeat` (Perl's `x` operator). JS throws RangeError for a
-      // negative count, but SSR templates degrade to the empty string
-      // rather than crashing the render. See #1448 Tier B.
-      // Full JS arity: `.repeat()` (no count) is `repeat(0)` → "" (JS
-      // coerces the missing count to 0, not a RangeError), and a
-      // second+ argument is ignored. The adapter supplies the `0` for
-      // the no-argument form. See #1448 Tier B.
-      if (callee.property === 'repeat') {
-        return { kind: 'array-method', method: 'repeat', object: callee.object, args }
-      }
-      // `.padStart(target, pad?)` / `.padEnd(target, pad?)` — string →
-      // string, padded to `target` length with `pad` (default a single
-      // space) repeated + truncated to fill. Go uses `bf_pad_start` /
-      // `bf_pad_end`; Mojo uses `bf->pad_start` / `bf->pad_end`. Both
-      // count length in code points (Go runes / Perl chars) so they
-      // stay byte-equal — this differs from JS's UTF-16-unit length
-      // only for astral-plane receivers, which are vanishingly rare in
-      // numeric / space padding. See #1448 Tier B.
-      // Full JS arity: `.padStart()` (no target) is `padStart(0)` → the
-      // receiver unchanged (JS coerces the missing target to 0), and a
-      // third+ argument is ignored. The adapter supplies the `0` for the
-      // no-argument form and reads only target + padString.
-      if (callee.property === 'padStart' || callee.property === 'padEnd') {
-        return { kind: 'array-method', method: callee.property, object: callee.object, args }
-      }
-      // `.sort` / `.toSorted` / `.reduce` / `.reduceRight` / `.flatMap`
-      // (callback methods) are NOT folded here (#2018 P5): they fall through
-      // to the generic `call` construction below (callee = member, arg =
-      // generic `arrow`), and the adapter serializes the arrow body to the
-      // runtime evaluator. The localeCompare-sort fallback recovers a
-      // structured comparator from the generic arrow via
-      // `sortComparatorFromArrow`.
-    }
-
-    return { kind: 'call', callee, args }
+    return convertCallExpression(node, raw, callee, args)
   }
 
   // Array literal: [a, b, c]
@@ -4160,4 +3841,347 @@ export function identifierPath(callee: ParsedExpr): string | null {
     return head ? `${head}.${callee.property}` : null
   }
   return null
+}
+
+/** A call expression `node` with its converted `callee` and `args` (see `convertNode`). */
+function convertCallExpression(node: ts.CallExpression, raw: string, callee: ParsedExpr, args: ParsedExpr[]): ParsedExpr {
+
+  // Higher-order callback methods (`.filter`/`.find`/`.every`/`.some`/
+  // `.sort`/`.reduce`/`.flatMap`/…) are NOT folded here (#2018 P5): they
+  // flow through as a generic `call` whose argument is a generic `arrow`,
+  // and the adapter recognises the callback shape at dispatch and serializes
+  // the arrow body to the runtime evaluator. The one exception is the
+  // non-arrow `.filter(Boolean)` callable: synthesise the equivalent
+  // identity arrow `_ => _` so it flows through the same callback lowering
+  // (the adapter keeps a dedicated truthiness fallback for the identity body).
+  if (
+    callee.kind === 'member' &&
+    !callee.computed &&
+    callee.property === 'filter' &&
+    args.length === 1 &&
+    args[0].kind === 'identifier' &&
+    args[0].name === 'Boolean'
+  ) {
+    return {
+      kind: 'call',
+      callee,
+      args: [{ kind: 'arrow', params: ['_'], body: { kind: 'identifier', name: '_' } }],
+    }
+  }
+
+  // Non-higher-order array methods (#1443). Lifting these into an
+  // `array-method` IR node — instead of detecting at each adapter's
+  // `call()` emitter — keeps the abstraction at the IR layer where
+  // it belongs: an array supports `.join`, and the per-target
+  // lowering is the adapter's choice. Adding `.concat` / `.slice` /
+  // etc. later means widening the IR discriminator, not adding more
+  // branches to every adapter's call dispatch.
+  if (callee.kind === 'member' && !callee.computed) {
+    // `.join()` / `.join(sep)` — JS defaults the separator to `,` when
+    // omitted and ignores any extra arguments. Accept every arity; the
+    // adapters supply the default separator and read only `args[0]`.
+    if (callee.property === 'join') {
+      return { kind: 'array-method', method: 'join', object: callee.object, args }
+    }
+    // `.includes(x)` — shared between `Array.prototype.includes` and
+    // `String.prototype.includes`. The parser can't tell the receiver
+    // type without TS inference, so both shapes lower through the
+    // same IR node and each adapter dispatches at the runtime level
+    // (`bf_includes` on Go uses `reflect.Kind()`; `$bf->includes`
+    // on Mojo uses `ref()`). See #1448 Tier A.
+    if (callee.property === 'includes' && args.length === 1) {
+      return { kind: 'array-method', method: 'includes', object: callee.object, args }
+    }
+    // `.indexOf(x)` / `.lastIndexOf(x)` — value-equality search,
+    // both adapters dispatch through a runtime helper that walks
+    // the slice (forward / backward) and compares with `DeepEqual`
+    // (Go) / `eq` (Perl). The existing `bf_find_index` (Go)
+    // operates on struct-field equality and stays — see the
+    // higher-order `.find` lowering. See #1448 Tier A.
+    if ((callee.property === 'indexOf' || callee.property === 'lastIndexOf') && args.length === 1) {
+      return { kind: 'array-method', method: callee.property, object: callee.object, args }
+    }
+    // `.at(i)` — negative-index support (`.at(-1)` is the last
+    // element). Go has `bf_at` registered already (see runtime
+    // FuncMap); Mojo's `bf->at` wraps the same arithmetic.
+    // See #1448 Tier A.
+    // `.at(i)` — JS ignores any argument past the first, and `.at()`
+    // with no argument is `.at(0)` (the first element). Accept every
+    // arity; the adapters read `args[0]` (defaulting the index to 0).
+    if (callee.property === 'at') {
+      return { kind: 'array-method', method: 'at', object: callee.object, args }
+    }
+    // `.concat()` / `.concat(other)` — `.concat()` returns a shallow
+    // copy (indistinguishable from the receiver in an SSR snapshot),
+    // and `.concat(other)` merges the two arrays. Go uses `bf_concat`
+    // (reflect-based append into `[]any`); Mojo uses `bf->concat`
+    // (Perl list builder). The VARIADIC form (`.concat(a, b, …)`) is
+    // not lowered yet — it's refused by the guard below rather than
+    // silently dropping the extra arrays.
+    if (callee.property === 'concat' && args.length <= 1) {
+      return { kind: 'array-method', method: 'concat', object: callee.object, args }
+    }
+    // `.slice()` / `.slice(start)` / `.slice(start, end)` — route
+    // through `bf_slice` (Go) / `bf->slice` (Mojo). A missing `start`
+    // defaults to 0 (full copy), a missing / undef `end` means "to
+    // length", and JS ignores any third+ argument. Accept every arity;
+    // the adapters read only `args[0]` / `args[1]`.
+    if (callee.property === 'slice') {
+      return { kind: 'array-method', method: 'slice', object: callee.object, args }
+    }
+    // `.reverse()` and `.toReversed()` — both zero-arg shapes
+    // share the runtime lowering. SSR templates render a snapshot
+    // of state, so JS's mutate-and-return-receiver (`reverse`)
+    // vs return-new-array (`toReversed`) distinction has no
+    // template-level meaning; both produce a new reversed array.
+    // JS takes no argument and ignores any that are passed.
+    if (callee.property === 'reverse' || callee.property === 'toReversed') {
+      return { kind: 'array-method', method: callee.property, object: callee.object, args }
+    }
+    // `.flat(depth?)` — flatten nested arrays `depth` levels deep
+    // (default 1). The depth is validated to a literal and normalised
+    // into a structured `FlatDepth` here: `Infinity` becomes the
+    // full-depth form, a 0 / negative JS depth normalises to 0 ("no
+    // flatten" → shallow copy), and a fractional literal truncates
+    // toward zero (JS ToIntegerOrInfinity). A NON-literal depth can't be
+    // resolved at template time, so it refuses with BF101 rather than
+    // emitting a broken helper call. Go uses `bf_flat`; Mojo uses
+    // `bf->flat`. See #1448 Tier C.
+    if (callee.property === 'flat') {
+      const depthNode = node.arguments[0]
+      let flatDepth: FlatDepth
+      let depthExpr: ParsedExpr | undefined
+      if (depthNode === undefined) {
+        flatDepth = 1
+      } else if (ts.isIdentifier(depthNode) && depthNode.text === 'Infinity') {
+        flatDepth = 'infinity'
+      } else {
+        let n: number | undefined
+        if (ts.isNumericLiteral(depthNode)) {
+          n = Number(depthNode.text)
+        } else if (
+          ts.isPrefixUnaryExpression(depthNode) &&
+          depthNode.operator === ts.SyntaxKind.MinusToken &&
+          ts.isNumericLiteral(depthNode.operand)
+        ) {
+          n = -Number(depthNode.operand.text)
+        }
+        if (n === undefined || Number.isNaN(n)) {
+          // Not a literal — try a DYNAMIC depth: an expression that
+          // itself resolves to a supported `ParsedExpr` (a numeric prop,
+          // signal read, arithmetic, …) can be lowered through a runtime
+          // helper that coerces it at render time (JS
+          // `ToIntegerOrInfinity`; see the `depthExpr` doc on the
+          // `array-method`/`flat` type). Still refuse with BF101 when
+          // the depth expression itself is outside the supported
+          // surface — the depth must be *expressible*, even if not
+          // known until render time.
+          const parsedDepth = convertNode(depthNode, raw)
+          if (checkSupport(parsedDepth, 'rendered', []).supported) {
+            depthExpr = parsedDepth
+            flatDepth = 1 // unused placeholder — consumers must check `depthExpr` first
+          } else {
+            return {
+              kind: 'unsupported',
+              raw,
+              reason: `\`.flat(depth)\` needs a literal integer, \`Infinity\`, or a supported dynamic depth expression — this depth can't be resolved. Use a literal depth, a supported expression (prop/signal/arithmetic), or pre-compute the value before the template.`,
+            }
+          }
+        } else {
+          const truncated = Math.trunc(n)
+          flatDepth = truncated < 0 ? 0 : truncated
+        }
+      }
+      return depthExpr !== undefined
+        ? { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth, depthExpr }
+        : { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth }
+    }
+    // `.toLowerCase()` — string-only (the IR carries a value-builtin
+    // tag, not a receiver-type discriminator, so the `array-method`
+    // label is a misnomer for string methods but the mechanical
+    // pipeline matches). Go uses the existing `bf_lower` helper;
+    // Mojo uses Perl's native `lc`. See #1448 Tier A.
+    if (callee.property === 'toLowerCase') {
+      return { kind: 'array-method', method: 'toLowerCase', object: callee.object, args }
+    }
+    // `.toUpperCase()` — Go uses the existing `bf_upper` helper;
+    // Mojo uses Perl's native `uc`.
+    if (callee.property === 'toUpperCase') {
+      return { kind: 'array-method', method: 'toUpperCase', object: callee.object, args }
+    }
+    // `.trim()` — Go uses the existing `bf_trim` helper; Mojo uses
+    // a new `bf->trim` method that mirrors JS's "strip leading +
+    // trailing whitespace" semantic via a Perl regex.
+    if (callee.property === 'trim') {
+      return { kind: 'array-method', method: 'trim', object: callee.object, args }
+    }
+    // `.trimStart()` / `.trimEnd()` — the one-sided siblings of
+    // `.trim()` (#2183 follow-up). No array equivalent exists, so
+    // there's no receiver-type ambiguity to resolve (unlike `.slice`);
+    // each is a dedicated `array-method` variant (matching the
+    // `padStart`/`padEnd` precedent — separate members, not a shared
+    // member with a `side` flag) lowering to its own runtime helper
+    // per adapter, not `.trim()` with a flag.
+    if (callee.property === 'trimStart' || callee.property === 'trimEnd') {
+      return { kind: 'array-method', method: callee.property, object: callee.object, args }
+    }
+    // `.toFixed(digits?)` — Number → fixed-decimal string. The digit
+    // count (default 0) travels as the single arg; all adapters route
+    // through a `to_fixed` runtime helper (Perl) / `fmt.Sprintf` (Go)
+    // so JS's rounding + zero-padding semantics match. #1897
+    // (data-table's `payment.amount.toFixed(2)`).
+    if (callee.property === 'toFixed') {
+      return { kind: 'array-method', method: 'toFixed', object: callee.object, args }
+    }
+    // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
+    // array, full JS arity. `.split()` (no separator) returns the
+    // whole string as a single element; `.split(sep)` splits on the
+    // (literal) separator; the optional `limit` caps the number of
+    // pieces. JS ignores a third+ argument. Go uses `bf_split`
+    // (`strings.Split`, optional limit, normalised to `[]any`) and
+    // `bf_arr` for the no-separator whole-string case; Mojo uses
+    // `bf->split`. The regex-separator form stays refused (the parser
+    // never reaches here for it — a regex literal arg is `unsupported`
+    // and propagates). See #1448 Tier B.
+    if (callee.property === 'split') {
+      return { kind: 'array-method', method: 'split', object: callee.object, args }
+    }
+    // Arity guard for the forms whose EXTRA argument changes the
+    // result and is not yet lowered: the `fromIndex` of `.includes` /
+    // `.indexOf` / `.lastIndexOf` (the 2-arg form), and the additional
+    // arrays of a variadic `.concat(a, b, …)`. Silently dropping those
+    // would make the SSR output *differ* from the client (worse than a
+    // build error), so they refuse with BF101 until lowered. (The
+    // single-argument forms, zero-arg defaults, and JS-ignored
+    // trailing arguments of every method are accepted by the relaxed
+    // arms above.) See #1448.
+    if (LOWERED_ARRAY_METHODS.has(callee.property)) {
+      const argName = callee.property === 'concat' ? 'other' : 'x'
+      const detail =
+        callee.property === 'concat'
+          ? 'the variadic `.concat(a, b, …)` form'
+          : `\`.${callee.property}(…)\` with ${args.length} argument(s)`
+      return {
+        kind: 'unsupported',
+        raw,
+        reason: `${detail} is not yet lowered to the Go/Mojo template adapters. Use the single-argument \`.${callee.property}(${argName})\` form, or pre-compute the value before the template.`,
+      }
+    }
+    // `.startsWith(search, position?)` / `.endsWith(search, endPosition?)`
+    // — string → boolean, full JS arity. Go uses `bf_starts_with` /
+    // `bf_ends_with` (wrapping `strings.HasPrefix` / `strings.HasSuffix`,
+    // with an optional position that re-anchors the comparison); Mojo
+    // uses `bf->starts_with` / `bf->ends_with` (substr comparison). JS
+    // ignores a third+ argument. The zero-arg form (`.startsWith()`) is
+    // refused: JS coerces the missing search to the literal string
+    // "undefined", a degenerate result not worth lowering (mirrors the
+    // `.includes()` zero-arg refusal). See #1448 Tier B.
+    if (callee.property === 'startsWith' || callee.property === 'endsWith') {
+      if (args.length === 0) {
+        return {
+          kind: 'unsupported',
+          raw,
+          reason: `\`.${callee.property}()\` with no search string is not lowered — JS coerces the missing argument to the string "undefined", a degenerate result. Pass an explicit search string, or pre-compute the value before the template.`,
+        }
+      }
+      return { kind: 'array-method', method: callee.property, object: callee.object, args }
+    }
+    // `.replace(pattern, replacement)` — string-pattern form,
+    // replacing the FIRST occurrence (JS semantics for a string
+    // pattern). Go uses `bf_replace` (`strings.Replace` with n=1);
+    // Mojo uses `bf->replace` (index/substr splice, no regex). A
+    // regex-literal pattern is the deferred form — its `regex` first
+    // arg is carried STRUCTURALLY (not collapsed to `unsupported`) so
+    // the Go ctor lowering can recover the one trailing-slash pattern
+    // it supports without re-parsing (#2039). Template use stays
+    // refused: `isSupported` maps a regex-pattern `.replace` to the
+    // deferred-form BF101 reason — the Perl `s///` vs Go
+    // `regexp.ReplaceAllString` flavour gap is the open design
+    // question in #1448. `.replaceAll(pattern, replacement)` shares
+    // this arm (#2182 follow-up): same arity/regex/object-literal
+    // gates, only the `method` tag and its runtime helper differ —
+    // `bf_replace_all` (Go, `strings.ReplaceAll`) / `bf->replace_all`
+    // (Mojo) replace EVERY occurrence, where `.replace`'s helpers
+    // replace only the first.
+    //
+    // Full JS arity: a third+ argument is ignored (the adapter reads
+    // only the pattern + replacement). The one- and zero-argument
+    // forms are refused: JS coerces the missing replacement (and
+    // pattern) to the literal string "undefined", a degenerate result
+    // (mirrors the `.includes()` / `.startsWith()` zero-arg refusal).
+    if (callee.property === 'replace' || callee.property === 'replaceAll') {
+      const method = callee.property
+      if (args.length < 2) {
+        return {
+          kind: 'unsupported',
+          raw,
+          reason: `\`.${method}(${args.length === 0 ? '' : 'pattern'})\` needs both a pattern and a replacement — JS coerces the missing argument to the string "undefined", a degenerate result. Pass both arguments, or pre-compute the value before the template.`,
+        }
+      }
+      // A regex-literal pattern is the deferred form (the Perl `s///`
+      // vs Go `regexp.ReplaceAllString` flavour gap, #1448). Its shape
+      // is carried structurally — `args[0]` is a `regex` node (convertNode
+      // line ~1127) — so a consumer that recognises one fixed pattern (the
+      // Go ctor's `/\/+$/` trailing-slash strip → `strings.TrimRight`) reads
+      // it from the tree instead of re-parsing the raw (#2039). Returned
+      // before the object-literal `badArg` check below so the regex form
+      // keeps its dedicated diagnostic precedence; `isSupported` then refuses
+      // any template use with the deferred-form reason.
+      const patternNode = node.arguments[0]
+      if (patternNode && ts.isRegularExpressionLiteral(patternNode)) {
+        return { kind: 'array-method', method, object: callee.object, args }
+      }
+      // Treat an object-literal argument like `unsupported` — a `.replace`
+      // with an object pattern/replacement isn't lowerable, same as before
+      // the `object-literal` kind existed (byte-identical; Roadmap A-1).
+      const badArg =
+        args[0].kind === 'unsupported' || args[0].kind === 'object-literal'
+          ? args[0]
+          : args[1].kind === 'unsupported' || args[1].kind === 'object-literal'
+            ? args[1]
+            : undefined
+      if (badArg) {
+        const reason = badArg.kind === 'unsupported' ? badArg.reason : 'Unsupported syntax: ObjectLiteralExpression'
+        return { kind: 'unsupported', raw, reason }
+      }
+      return { kind: 'array-method', method, object: callee.object, args }
+    }
+    // `.repeat(n)` — string → string (the receiver concatenated `n`
+    // times). Go uses `bf_repeat` (`strings.Repeat`, clamping a
+    // negative count to "" instead of panicking); Mojo uses
+    // `bf->repeat` (Perl's `x` operator). JS throws RangeError for a
+    // negative count, but SSR templates degrade to the empty string
+    // rather than crashing the render. See #1448 Tier B.
+    // Full JS arity: `.repeat()` (no count) is `repeat(0)` → "" (JS
+    // coerces the missing count to 0, not a RangeError), and a
+    // second+ argument is ignored. The adapter supplies the `0` for
+    // the no-argument form. See #1448 Tier B.
+    if (callee.property === 'repeat') {
+      return { kind: 'array-method', method: 'repeat', object: callee.object, args }
+    }
+    // `.padStart(target, pad?)` / `.padEnd(target, pad?)` — string →
+    // string, padded to `target` length with `pad` (default a single
+    // space) repeated + truncated to fill. Go uses `bf_pad_start` /
+    // `bf_pad_end`; Mojo uses `bf->pad_start` / `bf->pad_end`. Both
+    // count length in code points (Go runes / Perl chars) so they
+    // stay byte-equal — this differs from JS's UTF-16-unit length
+    // only for astral-plane receivers, which are vanishingly rare in
+    // numeric / space padding. See #1448 Tier B.
+    // Full JS arity: `.padStart()` (no target) is `padStart(0)` → the
+    // receiver unchanged (JS coerces the missing target to 0), and a
+    // third+ argument is ignored. The adapter supplies the `0` for the
+    // no-argument form and reads only target + padString.
+    if (callee.property === 'padStart' || callee.property === 'padEnd') {
+      return { kind: 'array-method', method: callee.property, object: callee.object, args }
+    }
+    // `.sort` / `.toSorted` / `.reduce` / `.reduceRight` / `.flatMap`
+    // (callback methods) are NOT folded here (#2018 P5): they fall through
+    // to the generic `call` construction below (callee = member, arg =
+    // generic `arrow`), and the adapter serializes the arrow body to the
+    // runtime evaluator. The localeCompare-sort fallback recovers a
+    // structured comparator from the generic arrow via
+    // `sortComparatorFromArrow`.
+  }
+
+  return { kind: 'call', callee, args }
 }

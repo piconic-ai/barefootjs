@@ -6939,6 +6939,30 @@
         "text"
       ]
     },
+    "optional-chain-method-call": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toFixed",
+        "array-method:toUpperCase",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chain-numeric-key-condition": {
       "kinds": [
         "binary",

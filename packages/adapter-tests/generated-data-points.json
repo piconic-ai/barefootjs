@@ -4630,6 +4630,190 @@
       }
     }
   ],
+  "optional-chain-method-call": [
+    {
+      "name": "gen:noCount:zero",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab",
+        "noCount": 0
+      }
+    },
+    {
+      "name": "gen:noCount:negative",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab",
+        "noCount": -7
+      }
+    },
+    {
+      "name": "gen:noCount:large",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab",
+        "noCount": 1234567890
+      }
+    },
+    {
+      "name": "gen:zero:absent",
+      "props": {
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:frac:absent",
+      "props": {
+        "zero": 0,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:frac:zero",
+      "props": {
+        "zero": 0,
+        "frac": 0,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:frac:negative",
+      "props": {
+        "zero": 0,
+        "frac": -7,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:frac:large",
+      "props": {
+        "zero": 0,
+        "frac": 1234567890,
+        "blank": "",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:noText:empty",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab",
+        "noText": ""
+      }
+    },
+    {
+      "name": "gen:noText:markup",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab",
+        "noText": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:noText:multibyte",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "ab",
+        "noText": "日本語"
+      }
+    },
+    {
+      "name": "gen:blank:absent",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:blank:markup",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "<b>&\"'</b>",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:blank:multibyte",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "日本語",
+        "text": "ab"
+      }
+    },
+    {
+      "name": "gen:text:absent",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": ""
+      }
+    },
+    {
+      "name": "gen:text:empty",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": ""
+      }
+    },
+    {
+      "name": "gen:text:markup",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:text:multibyte",
+      "props": {
+        "zero": 0,
+        "frac": 2.25,
+        "blank": "",
+        "text": "日本語"
+      }
+    }
+  ],
   "optional-chain-numeric-key-condition": [
     {
       "name": "gen:items:absent",

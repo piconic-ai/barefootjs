@@ -120,6 +120,22 @@ function emitLookupLiteralEquality(
   return op === '!==' ? `!(${equality})` : equality
 }
 
+/** JS `x === null` / `x === undefined` (and the loose forms) is a
+ * nullish test. Perl's numeric `$x == undef` coerces both sides to 0, so a
+ * present `0` (or `''`) would read as absent — the guard an optional-chained
+ * method call `x?.m()` lowers to (#3435) must keep them distinct. */
+function emitNullishEquality(
+  op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string,
+): string | null {
+  if (op !== '===' && op !== '!==' && op !== '==' && op !== '!=') return null
+  const isNullish = (expr: ParsedExpr) => (expr.kind === 'literal' && expr.literalType === 'null') ||
+    (expr.kind === 'identifier' && expr.name === 'undefined')
+  const operand = isNullish(right) ? left : isNullish(left) ? right : null
+  if (operand === null) return null
+  const defined = `defined(${emit(operand)})`
+  return op === '===' || op === '==' ? `!${defined}` : defined
+}
+
 /**
  * `x?.length` (#3319): Perl dies dereferencing an absent array
  * (`scalar(@{undef})` → "Can't use an undefined value as an ARRAY
@@ -222,6 +238,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, this.isStringName)
     if (lookupEquality !== null) return lookupEquality
+    const nullishEquality = emitNullishEquality(op, left, right, emit)
+    if (nullishEquality !== null) return nullishEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -572,6 +590,8 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
     if (lookupEquality !== null) return lookupEquality
+    const nullishEquality = emitNullishEquality(op, left, right, emit)
+    if (nullishEquality !== null) return nullishEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).

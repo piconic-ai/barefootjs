@@ -172,11 +172,14 @@ const TWIG_VARIABLE_PATH = /^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]]*\])*$/
 /**
  * JS `l ?? r`. Twig's native `??` wraps its left operand in a `defined`
  * test, which only accepts a variable, attribute or call — an
- * optional-chained `.length` guard is a conditional, so it is tested with
- * `is null` instead (it is never an undefined variable).
+ * optional-chained `.length` guard and a conditional (which is how an
+ * optional-chained method call `x?.m()` reaches the emitter, #3435) are
+ * tested with `is null` instead (neither is ever an undefined variable).
  */
 function nullishCoalesce(left: ParsedExpr, l: string, r: string): string {
-  if (left.kind === 'member' && left.optional && left.property === 'length') return `(${l} is null ? ${r} : ${l})`
+  if ((left.kind === 'member' && left.optional && left.property === 'length') || left.kind === 'conditional') {
+    return `(${l} is null ? ${r} : ${l})`
+  }
   return `(${l} ?? ${r})`
 }
 
