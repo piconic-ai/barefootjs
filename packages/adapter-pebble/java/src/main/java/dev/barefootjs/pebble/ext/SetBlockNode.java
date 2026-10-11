@@ -70,5 +70,9 @@ public final class SetBlockNode extends AbstractRenderableNode {
     // the documented pattern for a custom extension's node type (Pebble
     // wiki's "Extending Pebble" guide worked custom-tag example).
     visitor.visit((Node) this);
+    // Descend into the captured body so visitors that rewrite print
+    // statements reach it — above all the autoescaper, which would
+    // otherwise leave every `{{ }}` inside the capture unescaped (#3432).
+    body.accept(visitor);
   }
 }

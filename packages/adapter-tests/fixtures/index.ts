@@ -942,6 +942,7 @@ import { fixture as rowPortalRefContents } from './row-portal-ref-contents'
 import { fixture as falsyRowClicks } from './falsy-row-clicks'
 import { fixture as booleanStringifyPositions } from './boolean-stringify-positions'
 import { fixture as booleanLogicalStringify } from './boolean-logical-stringify'
+import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 // Static text directly adjacent to a conditional: no whitespace of the
 // template's own between them (#3321).
 import { fixture as textThenConditional } from './text-then-conditional'
@@ -1559,6 +1560,7 @@ export const jsxFixtures: JSXFixture[] = [
   falsyRowClicks,
   booleanStringifyPositions,
   booleanLogicalStringify,
+  capturedMarkupEscaping,
   textThenConditional,
   textThenConditionalStatic,
   conditionalThenText,

@@ -1175,6 +1175,18 @@
         "attribute"
       ]
     },
+    "captured-markup-escaping": {
+      "kinds": [
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "checkbox": {
       "kinds": [
         "array-literal",

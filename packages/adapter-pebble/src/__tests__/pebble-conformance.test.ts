@@ -32,12 +32,7 @@ runAdapterConformanceTests({
     'todo-app',
     'data-table',
   ]),
-  skipDataPoints: new Set<string>([
-    // A markup-valued prop bound to an attribute of a loop-row `ref`-callback
-    // portal element is not escaped inside its `{% set %}` capture, which
-    // garbles the element at the outlet (#3432).
-    'row-portal-ref-scope:gen:prefix:markup',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof JavaNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
