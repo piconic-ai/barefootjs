@@ -787,12 +787,13 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
           terms.push(`"${part.value.replace(/[\\"$@]/g, m => `\\${m}`)}"`)
         }
       } else {
+        // Each substitution prints as JS `String(v)` does (`bf->string`), so a
+        // boolean renders `true` / `false` rather than Perl's `1` / `0`
+        // and a number keeps JS formatting (#3440). A string literal is
+        // already its own text.
         const rendered = emit(part.expr)
-        const needsParens =
-          part.expr.kind === 'binary' ||
-          part.expr.kind === 'logical' ||
-          part.expr.kind === 'conditional'
-        terms.push(needsParens ? `(${rendered})` : rendered)
+        const isStringLiteral = part.expr.kind === 'literal' && part.expr.literalType === 'string'
+        terms.push(isStringLiteral ? rendered : `bf->string(${rendered})`)
       }
     }
     if (terms.length === 0) return '""'

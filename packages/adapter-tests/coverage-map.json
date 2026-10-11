@@ -1004,6 +1004,23 @@
         "attribute"
       ]
     },
+    "boolean-stringify-positions": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "branch-local-filter-join": {
       "kinds": [
         "array-literal",

@@ -2097,9 +2097,10 @@ export function C() {
 
   test('template literal with a complex expr lowers to Perl concatenation', () => {
     // Double-quote interpolation would leave `+ 1` unevaluated; concat
-    // (with parens for precedence) evaluates the arithmetic.
+    // evaluates the arithmetic, and each substitution prints through
+    // `bf->string` as JS `String(v)` does (#3440).
     const { template } = gen('`n=${count() + 1}`')
-    expect(template).toContain('"n=" . ($count + 1)')
+    expect(template).toContain('"n=" . bf->string($count + 1)')
   })
 
   test('static template-literal text escapes Perl $ and @ sigils', () => {

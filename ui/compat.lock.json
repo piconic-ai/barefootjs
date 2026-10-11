@@ -2348,20 +2348,6 @@
           }
         }
       },
-      "falsy-row-clicks": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "perl-boolean-stringifies-as-number"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "perl-boolean-stringifies-as-number"
-          ]
-        }
-      },
       "fill-unsupported": {
         "blade": {
           "kind": "refusal",
@@ -5589,10 +5575,6 @@
         "description": "Off-subset `.every()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate.ts"
       },
-      "falsy-row-clicks": {
-        "description": "A delegated click on a loop row whose item is falsy (0, empty string, false) reaches that row's…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/falsy-row-clicks.ts"
-      },
       "fill-unsupported": {
         "description": "Off-subset array method `.fill()` — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fill-unsupported.ts"
@@ -6223,20 +6205,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "perl-boolean-stringifies-as-number": {
-      "title": "A stringified boolean renders 1 / 0 on the Perl adapters",
-      "kind": "silent",
-      "given": "a boolean value stringified in a template (`String(flag)`, `${flag}`, or a boolean row key)",
-      "expected": "it renders `true` / `false`",
-      "actual": "renders `1` / `0`: Perl has no boolean type, and the decoded JSON boolean stringifies as a number",
-      "fixtures": [
-        "falsy-row-clicks"
-      ],
-      "adapters": [
-        "mojolicious",
-        "xslate"
       ]
     },
     "prop-member-chain-signal-seed": {

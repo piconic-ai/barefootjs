@@ -265,6 +265,10 @@ sub escape_comment_key ($self, $value) {
 # bindings stay on the plain `<%= expr %>` emit path and never reach
 # this function.
 sub bool_str ($self, $value) {
+    # An already-stringified JS boolean (`String(flag)`, which `string`
+    # prints as `true` / `false`, #3440) keeps its text: the string
+    # `'false'` is truthy in Perl.
+    return $value if defined $value && !ref($value) && ($value eq 'true' || $value eq 'false');
     return $value ? 'true' : 'false';
 }
 
@@ -695,10 +699,19 @@ sub string ($self, $value) {
     # `.flat(0)`'s shallow copy stringified afterwards (#2262, shared
     # with Mojolicious/Xslate via this runtime).
     return CORE::join(',', map { $self->string($_) } @$value) if ref($value) eq 'ARRAY';
+    # A JSON boolean prints as JS does (`true` / `false`), not as the `1` /
+    # `0` its numeric overload yields (#3440).
+    return $value ? 'true' : 'false' if _is_json_bool($value);
     # A number prints as JS `Number::toString` does, not with Perl's `%.15g`
     # (#3380); a string passes through unchanged.
     return BarefootJS::Evaluator::_format_number($value + 0) if BarefootJS::Evaluator::_is_number($value);
     return "$value";
+}
+
+# A decoded JSON boolean (`Mojo::JSON::true` / `false`, a `JSON::PP::Boolean`).
+sub _is_json_bool ($value) {
+    my $ref = ref($value);
+    return $ref eq 'JSON::PP::Boolean' || $ref eq 'Mojo::JSON::_Bool';
 }
 
 sub number ($self, $value) {

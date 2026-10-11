@@ -35,9 +35,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A boolean row (`flags`) renders its key and `String(f)` as `0` / `1`
-  // where JS renders `false` / `true` (#3440).
-  'falsy-row-clicks': { limitation: 'perl-boolean-stringifies-as-number' },
+  // `falsy-row-clicks` used to sit here: a boolean row rendered its key and
+  // `String(f)` as `0` / `1`. The runtime's `string` now prints a JSON
+  // boolean as `true` / `false` (#3440).
   // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
   // `undefined`-initialized signal read the nil operand as `0` or threw. The
   // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
