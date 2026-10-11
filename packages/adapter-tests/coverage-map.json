@@ -6943,6 +6943,7 @@
       "kinds": [
         "array-method",
         "binary",
+        "call",
         "conditional",
         "identifier",
         "literal",
@@ -6952,6 +6953,7 @@
       "axes": [
         "array-method:toFixed",
         "array-method:toUpperCase",
+        "array-method:trim",
         "binary:===",
         "literal:null",
         "literal:number",

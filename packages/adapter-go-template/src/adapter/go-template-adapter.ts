@@ -160,7 +160,7 @@ import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./anal
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { freeTemplateVars } from "./lib/template-scope.ts"
-import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerNilGuardedValue, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
+import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -7228,11 +7228,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `bf_nullish ${wrapLeft} ${wrapRight}`
     }
     // `(c ? undefined : x) ?? d` — the guard an optional-chained call
-    // `props.s?.trim() ?? d` lowers to (#3435). The `undefined` branch
-    // yields nil here so `bf_nullish` falls back only for it, keeping a
-    // present `''` / `0` result that `or` would replace.
+    // `props.s?.trim() ?? d` lowers to (#3435). Its `undefined` branch is
+    // nil (`lowerTernary`), so `bf_nullish` falls back only for it, keeping
+    // a present `''` / `0` result that `or` would replace.
     if (op === '??' && left.kind === 'conditional' && left.consequent.kind === 'identifier' && left.consequent.name === 'undefined') {
-      return `bf_nullish ${lowerNilGuardedValue(this.emitCtx, left.test, left.alternate)} ${wrapRight}`
+      return `bf_nullish ${wrapLeft} ${wrapRight}`
     }
     return `or ${wrapLeft} ${wrapRight}`
   }

@@ -5,7 +5,8 @@ import { createFixture } from '../src/types'
  * `undefined` (#3435): `?.toFixed(2)` / `?.toUpperCase()` render empty when
  * the prop is omitted, alone and under a `??` fallback, while a present `0`,
  * a fraction and an empty string still call the method (and `''` survives
- * the `??`).
+ * the `??`). A chained `?.a()?.b()` stays `undefined` through both guards,
+ * and an absent result compares equal to `undefined`.
  */
 export const fixture = createFixture({
   id: 'optional-chain-method-call',
@@ -20,6 +21,8 @@ export function OptionalChainMethodCall(props: Props) {
       <li>{props.zero?.toFixed(2)}|{props.frac?.toFixed(1)}</li>
       <li>{props.noText?.toUpperCase()}|{props.noText?.toUpperCase() ?? 'none'}</li>
       <li>[{props.blank?.toUpperCase()}]|[{props.blank?.toUpperCase() ?? 'none'}]|{props.text?.toUpperCase()}</li>
+      <li>{props.noText?.trim()?.toUpperCase() ?? 'none'}|[{props.blank?.trim()?.toUpperCase() ?? 'none'}]|{props.text?.trim()?.toUpperCase() ?? 'none'}</li>
+      <li>{String(props.noText?.trim() === undefined)}|{String(props.blank?.trim() === undefined)}</li>
     </ul>
   )
 }
@@ -31,6 +34,8 @@ export function OptionalChainMethodCall(props: Props) {
       <li bf="s5"><!--bf:s3-->0.00<!--/-->|<!--bf:s4-->2.3<!--/--></li>
       <li bf="s8"><!--bf:s6--><!--/-->|<!--bf:s7-->none<!--/--></li>
       <li bf="s12">[<!--bf:s9--><!--/-->]|[<!--bf:s10--><!--/-->]|<!--bf:s11-->AB<!--/--></li>
+      <li bf="s16"><!--bf:s13-->none<!--/-->|[<!--bf:s14--><!--/-->]|<!--bf:s15-->AB<!--/--></li>
+      <li bf="s19"><!--bf:s17-->true<!--/-->|<!--bf:s18-->false<!--/--></li>
     </ul>
   `,
 })
