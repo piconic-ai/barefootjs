@@ -4150,6 +4150,12 @@
         }
       },
       "object-length-property-filter": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "object-length-property-reads-zero"
+          ]
+        },
         "erb": {
           "kind": "render",
           "limitations": [
@@ -4169,6 +4175,12 @@
           ]
         },
         "pebble": {
+          "kind": "render",
+          "limitations": [
+            "object-length-property-reads-zero"
+          ]
+        },
+        "twig": {
           "kind": "render",
           "limitations": [
             "object-length-property-reads-zero"
@@ -6210,10 +6222,12 @@
         "object-length-property-filter"
       ],
       "adapters": [
+        "blade",
         "erb",
         "jinja",
         "minijinja",
-        "pebble"
+        "pebble",
+        "twig"
       ]
     },
     "off-subset-callback-body": {
