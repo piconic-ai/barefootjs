@@ -143,6 +143,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // which this template-only harness never evaluates. The real-browser
   // oracle's `csr-mount` leg covers it.
   'portal-fragment-root',
+  // Same harness gap for a top-level portaled element next to forwarded
+  // children (#3432); its SSR escaping is what the fixture pins.
+  'captured-markup-escaping',
   // Same harness gap for a loop-row element a `ref` callback portals
   // (#3318): SSR places it at the outlet, and the template-only CSR render
   // leaves it in its row. The real-browser oracle's `csr-mount` leg covers
