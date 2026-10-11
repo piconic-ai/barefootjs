@@ -2001,6 +2001,20 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
+      "boolean-logical-stringify": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "perl-boolean-logical-stringifies-as-number"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "perl-boolean-logical-stringifies-as-number"
+          ]
+        }
+      },
       "conditional-nested-loop-signal-reactivity": {
         "go-template": {
           "kind": "refusal",
@@ -2346,20 +2360,6 @@
             "state": "escapable",
             "twin": "every-typeof-predicate-client"
           }
-        }
-      },
-      "falsy-row-clicks": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "perl-boolean-stringifies-as-number"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "perl-boolean-stringifies-as-number"
-          ]
         }
       },
       "fill-unsupported": {
@@ -5565,6 +5565,10 @@
       }
     },
     "docs": {
+      "boolean-logical-stringify": {
+        "description": "A stringified && / || over a boolean prop and a computed boolean renders true / false",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-logical-stringify.ts"
+      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -5588,10 +5592,6 @@
       "every-typeof-predicate": {
         "description": "Off-subset `.every()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate.ts"
-      },
-      "falsy-row-clicks": {
-        "description": "A delegated click on a loop row whose item is falsy (0, empty string, false) reaches that row's…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/falsy-row-clicks.ts"
       },
       "fill-unsupported": {
         "description": "Off-subset array method `.fill()` — JS-runtime faithful, DSL diagnostic",
@@ -6225,14 +6225,14 @@
         "BF101"
       ]
     },
-    "perl-boolean-stringifies-as-number": {
-      "title": "A stringified boolean renders 1 / 0 on the Perl adapters",
+    "perl-boolean-logical-stringifies-as-number": {
+      "title": "A stringified && / || over a boolean prop renders 1 on the Perl adapters",
       "kind": "silent",
-      "given": "a boolean value stringified in a template (`String(flag)`, `${flag}`, or a boolean row key)",
+      "given": "a stringified `&&` / `||` whose operands mix a boolean prop with a computed boolean (`String(props.on && !props.off)`)",
       "expected": "it renders `true` / `false`",
-      "actual": "renders `1` / `0`: Perl has no boolean type, and the decoded JSON boolean stringifies as a number",
+      "actual": "renders `1`: Perl returns the last evaluated operand, a native `1` from `!` or a comparison, and a boolean-typed identifier operand does not mark the expression as boolean",
       "fixtures": [
-        "falsy-row-clicks"
+        "boolean-logical-stringify"
       ],
       "adapters": [
         "mojolicious",

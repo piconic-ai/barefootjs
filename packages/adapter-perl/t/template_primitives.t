@@ -44,6 +44,11 @@ subtest 'string — JS String(v) mirror' => sub {
     is $bf->string('hi'),  'hi', 'string passthrough';
     # Documented divergence from JS String(null) === "null".
     is $bf->string(undef), '',   'undef → "" (intentional divergence)';
+    is $bf->string(JSON::PP::true),  'true',  'JSON true → "true" (#3440)';
+    is $bf->string(JSON::PP::false), 'false', 'JSON false → "false" (#3440)';
+    is $bf->bool_str('false'), 'false', 'bool_str keeps a stringified false (#3440)';
+    is $bf->bool_str('true'),  'true',  'bool_str keeps a stringified true';
+    is $bf->bool_str(0),       'false', 'bool_str of a Perl false';
 };
 
 # Real numeric NaN is the only float for which `$x != $x` holds.

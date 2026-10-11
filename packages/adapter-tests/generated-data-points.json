@@ -666,6 +666,54 @@
       }
     }
   ],
+  "boolean-logical-stringify": [
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
+        "off": false
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "on": true,
+        "off": true
+      }
+    }
+  ],
+  "boolean-stringify-positions": [
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
+        "off": false,
+        "flags": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "on": true,
+        "off": true,
+        "flags": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "name": "gen:flags:empty",
+      "props": {
+        "on": true,
+        "off": false,
+        "flags": []
+      }
+    }
+  ],
   "branch-local-filter-join": [
     {
       "name": "gen:on:true",

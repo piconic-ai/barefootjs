@@ -447,12 +447,6 @@
               ]
             },
             {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -684,12 +678,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -1947,6 +1935,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2114,6 +2108,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2968,6 +2968,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -2983,12 +2989,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -3394,6 +3394,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3409,12 +3415,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -4758,6 +4758,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4773,12 +4779,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -5292,6 +5292,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5307,12 +5313,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -6164,6 +6164,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6173,12 +6179,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -6518,6 +6518,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6527,12 +6533,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -6750,6 +6750,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -6797,6 +6803,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7561,6 +7573,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7576,12 +7594,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -7969,6 +7981,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7984,12 +8002,6 @@
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -8482,6 +8494,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8511,6 +8529,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -8612,6 +8636,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8653,6 +8683,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10869,6 +10905,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11018,6 +11060,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -11244,6 +11292,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11303,6 +11357,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -11764,12 +11824,6 @@
               ]
             },
             {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -11971,12 +12025,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
               ]
             },
             {
@@ -12419,12 +12467,6 @@
               ]
             },
             {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -12611,12 +12653,6 @@
               ]
             },
             {
-              "fixture": "falsy-row-clicks",
-              "limitations": [
-                "perl-boolean-stringifies-as-number"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -12699,10 +12735,28 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {},
-        "xslate": {}
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -12890,10 +12944,28 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {},
-        "xslate": {}
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -13310,6 +13382,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13351,6 +13429,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-logical-stringify",
+              "limitations": [
+                "perl-boolean-logical-stringifies-as-number"
+              ]
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
