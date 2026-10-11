@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A nested object's own `length` property reads 0 in an inline filter
+  // predicate: the runtime length helper counts strings and arrays only (#3449).
+  'object-length-property-filter': { limitation: 'object-length-property-reads-zero' },
   // `number-arithmetic-attr-exponent-boundaries` used to sit here: a number
   // at the 1e-6 / 1e21 boundary kept the host spelling. The runtime number
   // formatter now applies JavaScript's notation rules (#3380).

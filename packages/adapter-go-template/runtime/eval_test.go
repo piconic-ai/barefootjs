@@ -439,3 +439,26 @@ func TestEvalReadProperty_TypedSliceLength(t *testing.T) {
 		t.Fatalf("item.tags.length = %v, want 1", got)
 	}
 }
+
+// `.length` on an object is its own `length` property, not a count (#3447).
+func TestLength_ObjectOwnProperty(t *testing.T) {
+	type meta struct{ Length float64 }
+	if got := Length(meta{Length: 3}); got != float64(3) {
+		t.Fatalf("struct length = %v, want 3", got)
+	}
+	if got := Length(&meta{Length: 1}); got != float64(1) {
+		t.Fatalf("*struct length = %v, want 1", got)
+	}
+	if got := Length(map[string]any{"length": 2}); got != 2 {
+		t.Fatalf("map length = %v, want 2", got)
+	}
+	if got := Length(map[string]any{"a": 1}); got != nil {
+		t.Fatalf("map without length = %v, want nil", got)
+	}
+	if got := Length([]string{"a", "b"}); got != 2 {
+		t.Fatalf("slice length = %v, want 2", got)
+	}
+	if got := Length("日本"); got != 2 {
+		t.Fatalf("string length = %v, want 2", got)
+	}
+}
