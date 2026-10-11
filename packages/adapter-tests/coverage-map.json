@@ -1004,16 +1004,44 @@
         "attribute"
       ]
     },
-    "boolean-stringify-positions": {
+    "boolean-logical-stringify": {
       "kinds": [
+        "binary",
         "call",
         "identifier",
         "literal",
+        "logical",
         "member",
-        "template-literal"
+        "template-literal",
+        "unary"
       ],
       "axes": [
-        "literal:boolean"
+        "binary:===",
+        "literal:boolean",
+        "logical:&&",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "boolean-stringify-positions": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "logical:&&",
+        "unary:!"
       ],
       "contexts": [
         "attribute",

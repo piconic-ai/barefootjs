@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A stringified `&&` / `||` over a boolean prop and a computed boolean
+  // renders the native `1` its last operand evaluates to (#3443).
+  'boolean-logical-stringify': { limitation: 'perl-boolean-logical-stringifies-as-number' },
   // `falsy-row-clicks` used to sit here: a boolean row rendered its key and
   // `String(f)` as `0` / `1`. The runtime's `string` now prints a JSON
   // boolean as `true` / `false` (#3440).

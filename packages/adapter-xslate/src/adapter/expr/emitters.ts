@@ -12,6 +12,7 @@
  */
 
 import { groupBinaryOperand,
+  isBooleanResultParsed,
   literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
@@ -418,6 +419,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const path = identifierPath(callee)
     const spec = path ? XSLATE_TEMPLATE_PRIMITIVES[path] : undefined
     if (path && spec) {
+      if (path === 'String' && args.length === 1) return stringifyTerm(args[0], emit)
+      // A boolean's JSON text is its `String()` text (`true` / `false`).
+      if (path === 'JSON.stringify' && args.length === 1 && isBooleanResultParsed(args[0])) return stringifyTerm(args[0], emit)
       if (args.length === spec.arity) {
         return spec.emit(args.map(emit))
       }
@@ -678,13 +682,12 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
           terms.push(`'${part.value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`)
         }
       } else {
-        // Each substitution prints as JS `String(v)` does (`$bf.string`), so a
-        // boolean renders `true` / `false` rather than Perl's `1` / `0`
-        // and a number keeps JS formatting (#3440). A string literal is
-        // already its own text.
-        const rendered = emit(part.expr)
+        // Each substitution prints as JS `String(v)` does
+        // (`stringifyTerm`), so a boolean renders `true` / `false` rather
+        // than Perl's `1` / `0` and a number keeps JS formatting (#3440).
+        // A string literal is already its own text.
         const isStringLiteral = part.expr.kind === 'literal' && part.expr.literalType === 'string'
-        terms.push(isStringLiteral ? rendered : `$bf.string(${rendered})`)
+        terms.push(isStringLiteral ? emit(part.expr) : stringifyTerm(part.expr, emit))
       }
     }
     if (terms.length === 0) return `''`
@@ -728,4 +731,15 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const segments = groupObjectLiteralSegments(properties, literalOf, emit)
     return segments.reduce((acc, seg) => `${acc}.merge(${seg})`)
   }
+}
+
+/**
+ * JS `String(expr)`: a structurally boolean expression (a comparison, `!`,
+ * a boolean literal — `isBooleanResultParsed`) is a Perl `1` / `''` / `0`
+ * at runtime, so it prints through `bool_str`; anything else through
+ * `string`, which also prints a decoded JSON boolean as `true` / `false`
+ * (#3440).
+ */
+function stringifyTerm(expr: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  return isBooleanResultParsed(expr) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(expr)})`
 }
