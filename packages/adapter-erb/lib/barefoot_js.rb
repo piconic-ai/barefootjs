@@ -867,9 +867,12 @@ module BarefootJS
     # (Unicode codepoints). A codepoint outside the Basic Multilingual
     # Plane (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
     # UTF-16, so it counts as 2, not 1; '日本語' is 3 either way (BMP-only).
+    # An object's `.length` is its own `length` property (`{ length: 3 }`),
+    # nil when it has none (#3449).
     def length(recv)
       return recv.length if recv.is_a?(Array)
-      return 0 if recv.is_a?(Hash) || recv.nil?
+      return recv.key?(:length) ? recv[:length] : recv['length'] if recv.is_a?(Hash)
+      return 0 if recv.nil?
 
       string(recv).each_char.sum { |c| c.ord > 0xFFFF ? 2 : 1 }
     end
