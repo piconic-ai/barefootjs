@@ -83,7 +83,7 @@ describe('delegated-handler preamble splicing (BUG-3 / BUG-4)', () => {
     expect(js.split('cells.push')).toHaveLength(4) // three occurrences total
 
     // The item guard still gates the handler call.
-    expect(handler).toContain('if (t) {')
+    expect(handler).toContain('if (t !== undefined) {')
     expect(handler).toContain('(() => del(t.id))(__bfEvt)')
   })
 
@@ -107,8 +107,8 @@ describe('delegated-handler preamble splicing (BUG-3 / BUG-4)', () => {
     expect(handler).not.toContain('t().')
 
     // Guard-order (part 3): the preamble line and the handler call both
-    // land AFTER `if (t) {`, i.e. inside the item-null guard.
-    const guardIdx = handler.indexOf('if (t) {')
+    // land AFTER `if (t !== undefined) {`, i.e. inside the item-null guard.
+    const guardIdx = handler.indexOf('if (t !== undefined) {')
     const preambleIdx = handler.indexOf('const label = t.name')
     const callIdx = handler.indexOf('(() => del(label))(__bfEvt)')
     expect(guardIdx).toBeGreaterThanOrEqual(0)
@@ -143,7 +143,7 @@ describe('delegated-handler preamble splicing (BUG-3 / BUG-4)', () => {
     expect(handler).toContain('(() => del(label))(__bfEvt)')
 
     // Guard-order holds for the bindings-branch shape too.
-    const guardIdx = handler.indexOf('if (__bfLoopItem) {')
+    const guardIdx = handler.indexOf('if (__bfLoopItem !== undefined) {')
     const preambleIdx = handler.indexOf('const label = name')
     const callIdx = handler.indexOf('(() => del(label))(__bfEvt)')
     expect(guardIdx).toBeGreaterThanOrEqual(0)

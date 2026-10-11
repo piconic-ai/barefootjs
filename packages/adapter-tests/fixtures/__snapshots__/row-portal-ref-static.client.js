@@ -45,7 +45,7 @@ export function initRowPortalRefStatic(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const r = ROWS.find(item => String(item) === key)
-        if (r) {
+        if (r !== undefined) {
           ;(() => setLast(r))(__bfEvt)
         }
       }

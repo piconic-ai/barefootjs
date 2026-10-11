@@ -2129,6 +2129,90 @@
       }
     }
   ],
+  "falsy-row-clicks": [
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "nums": [],
+        "words": [
+          "",
+          "b"
+        ],
+        "flags": [
+          false,
+          true
+        ],
+        "groups": [
+          [
+            0,
+            1
+          ]
+        ],
+        "__instanceId": "FalsyRowClicks_test"
+      }
+    },
+    {
+      "name": "gen:words:empty",
+      "props": {
+        "nums": [
+          0,
+          1
+        ],
+        "words": [],
+        "flags": [
+          false,
+          true
+        ],
+        "groups": [
+          [
+            0,
+            1
+          ]
+        ],
+        "__instanceId": "FalsyRowClicks_test"
+      }
+    },
+    {
+      "name": "gen:flags:empty",
+      "props": {
+        "nums": [
+          0,
+          1
+        ],
+        "words": [
+          "",
+          "b"
+        ],
+        "flags": [],
+        "groups": [
+          [
+            0,
+            1
+          ]
+        ],
+        "__instanceId": "FalsyRowClicks_test"
+      }
+    },
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "nums": [
+          0,
+          1
+        ],
+        "words": [
+          "",
+          "b"
+        ],
+        "flags": [
+          false,
+          true
+        ],
+        "groups": [],
+        "__instanceId": "FalsyRowClicks_test"
+      }
+    }
+  ],
   "filter-capture-keeps-same-name-literal": [
     {
       "name": "gen:tags:empty",

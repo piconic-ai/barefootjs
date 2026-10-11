@@ -43,7 +43,7 @@ export function initRowPortalRef(__scope, _p = {}) {
       if (li) {
         const key = li.getAttribute('data-key')
         const r = _p.rows.find(item => String(item) === key)
-        if (r) {
+        if (r !== undefined) {
           ;(() => setCount(c => c + 1))(__bfEvt)
         }
       }

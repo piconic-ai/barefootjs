@@ -221,7 +221,7 @@ function emitKeyedLookup(
     if (hasBindings) {
       // TDZ-safe shape — see #951.
       ls.push(`        const __bfLoopItem = ${arrayExpr}.find(item => String(${keyWithItem}) === key)`)
-      ls.push(`        if (__bfLoopItem) {`)
+      ls.push(`        if (__bfLoopItem !== undefined) {`)
       ls.push(`          const ${param} = __bfLoopItem`)
       if (preambleLine) ls.push(`          ${preambleLine}`)
       if (idxLine) ls.push(`          ${idxLine}`)
@@ -239,8 +239,10 @@ function emitKeyedLookup(
       // the item null guard — a `.find()` miss (stale-DOM race, e.g. the
       // clicked row's key no longer in the current array) must short-circuit
       // before a preamble that dereferences the item ever runs (BUG-4).
+      // Every item guard here tests for that miss (`undefined`), never
+      // truthiness: a row item can be `0`, `''` or `false` (#3433).
       ls.push(`        const ${param} = ${arrayExpr}.find(item => String(${keyWithItem}) === key)`)
-      ls.push(`        if (${param}) {`)
+      ls.push(`        if (${param} !== undefined) {`)
       if (preambleLine) ls.push(`          ${preambleLine}`)
       if (idxLine) ls.push(`          ${idxLine}`)
       ls.push(`          ;${handlerCall}`)
@@ -273,14 +275,14 @@ function emitKeyedLookup(
       ? substituteLoopBindings(rawKey, nested.paramBindings, 'item')
       : rawKey.replace(identifierPattern(nested.param, 'g'), 'item')
     const outerRef = hasBindings ? '__bfLoopItem' : param
-    ls.push(`      const ${nested.param} = ${outerRef} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
+    ls.push(`      const ${nested.param} = ${outerRef} !== undefined ? ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth}) : undefined`)
   }
   const outerGuard = hasBindings ? '__bfLoopItem' : param
   const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
   // Preamble and idx binding run INSIDE the combined item guard (BUG-4) —
   // a nested `.find()` miss must short-circuit before the preamble runs.
   const idxLine = indexBindingLine(ev.handler, indexParam, `${arrayExpr}.findIndex(item => String(${keyWithItem}) === outerKey)`)
-  ls.push(`      if (${allParams.join(' && ')}) {`)
+  ls.push(`      if (${allParams.map(p => `${p} !== undefined`).join(' && ')}) {`)
   if (preambleLine) ls.push(`        ${preambleLine}`)
   if (idxLine) ls.push(`        ${idxLine}`)
   ls.push(`        ;${handlerCall}`)
@@ -301,7 +303,7 @@ function emitDynamicIndexLookup(
   ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
   if (hasBindings) {
     ls.push(`        const __bfLoopItem = ${arrayExpr}[idx]`)
-    ls.push(`        if (__bfLoopItem) {`)
+    ls.push(`        if (__bfLoopItem !== undefined) {`)
     ls.push(`          const ${param} = __bfLoopItem`)
     if (preambleLine) ls.push(`          ${preambleLine}`)
     if (idxLine) ls.push(`          ${idxLine}`)
@@ -311,7 +313,7 @@ function emitDynamicIndexLookup(
     // Preamble and idx binding run INSIDE the item null guard (BUG-4) — an
     // out-of-range index (stale-DOM race) must short-circuit first.
     ls.push(`        const ${param} = ${arrayExpr}[idx]`)
-    ls.push(`        if (${param}) {`)
+    ls.push(`        if (${param} !== undefined) {`)
     if (preambleLine) ls.push(`          ${preambleLine}`)
     if (idxLine) ls.push(`          ${idxLine}`)
     ls.push(`          ;${handlerCall}`)
@@ -338,7 +340,7 @@ function emitStaticIndexLookup(
   ls.push(`        const ${param} = ${arrayExpr}[__idx]`)
   // Preamble and idx binding run INSIDE the item null guard (BUG-4) — an
   // out-of-range index (stale-DOM race) must short-circuit first.
-  ls.push(`        if (${param}) {`)
+  ls.push(`        if (${param} !== undefined) {`)
   // Nested static `.map()` params (#3240): static arrays carry no
   // data-key markers, so — unlike `emitKeyedLookup`'s nested branch, which
   // resolves each level via `closest('[data-key-N]')` — each nested level's
