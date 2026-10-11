@@ -99,7 +99,7 @@ func FuncMap() template.FuncMap {
 
 		// Array/Slice
 		"bf_len":            Len,
-		"bf_length":         Length,
+		"bf_length":         LengthOf,
 		"bf_is_element":     IsValidElement,
 		"bf_style_object":   StyleObjectToCSS,
 		"bf_at":             At,
@@ -1794,32 +1794,21 @@ func Round(v any) float64 {
 // =============================================================================
 
 // Length lowers JS `.length`, matching JS semantics per receiver shape
-// (#2255): a slice/array counts ELEMENTS (`reflect.Value.Len`, same as
-// `Len` below), an object (struct or string-keyed map) yields its own
-// `length` property (#3447), but a STRING counts UTF-16 CODE UNITS — JS
+// (#2255): a slice/array/map counts ELEMENTS (`reflect.Value.Len`, same as
+// `Len` below), but a STRING counts UTF-16 CODE UNITS — JS
 // `String.prototype.length` counts UTF-16 code units, not bytes (Go's
 // native `len`) or codepoints. A codepoint outside the Basic Multilingual
 // Plane (astral, U+10000-U+10FFFF — e.g. '👍') is a surrogate PAIR in
 // UTF-16, so it counts as 2, not 1; `'日本語'` is 3 either way (BMP-only).
 // Routed from the `.length` member lowering's generic (non-array,
 // non-loop-slice) fallback — see `member()`'s `bf_length` call site.
-func Length(v any) any {
+func Length(v any) int {
 	if v == nil {
 		return 0
 	}
 	rv := reflect.ValueOf(v)
-	for rv.Kind() == reflect.Pointer && !rv.IsNil() {
-		rv = rv.Elem()
-	}
 	switch rv.Kind() {
-	case reflect.Struct:
-		// An object's `.length` is its own `length` property
-		// (`{ length: 3 }`), nil when it has none — not a count (#3447).
-		return getFieldValue(v, "length")
 	case reflect.Map:
-		if rv.Type().Key().Kind() == reflect.String {
-			return getFieldValue(v, "length")
-		}
 		return rv.Len()
 	case reflect.Slice, reflect.Array, reflect.Chan:
 		return rv.Len()
@@ -1836,6 +1825,21 @@ func Length(v any) any {
 	default:
 		return 0
 	}
+}
+
+// LengthOf is the template-facing `.length` (`bf_length`). An object's
+// `.length` is its own `length` property (`{ length: 3 }`), nil when it has
+// none — not a count (#3447). Strings, slices and arrays read `Length`.
+// Generated Go code that needs an `int` (a memo seed) calls `Length`.
+func LengthOf(v any) any {
+	rv := reflect.ValueOf(v)
+	for rv.IsValid() && rv.Kind() == reflect.Pointer && !rv.IsNil() {
+		rv = rv.Elem()
+	}
+	if rv.IsValid() && (rv.Kind() == reflect.Struct || (rv.Kind() == reflect.Map && rv.Type().Key().Kind() == reflect.String)) {
+		return getFieldValue(v, "length")
+	}
+	return Length(v)
 }
 
 // IsValidElement lowers React/Hono-style `isValidElement(x)` — the "is this
