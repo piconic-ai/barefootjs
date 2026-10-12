@@ -6866,6 +6866,27 @@
         "text"
       ]
     },
+    "object-signal-fractional-field-seed": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "on-prefixed-data-prop": {
       "kinds": [
         "array-literal",
