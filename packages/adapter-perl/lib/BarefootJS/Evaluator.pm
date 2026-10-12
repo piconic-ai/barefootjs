@@ -307,6 +307,14 @@ sub _nan {
 # JS coercion primitives (ToNumber / ToString / ToBoolean).
 # ---------------------------------------------------------------------------
 
+# _double: the IEEE double nearest $n. A JS number is a double, but a perl
+# built with -Duselongdouble or -Dusequadmath keeps a wider NV, so `0.1 + 0.2`
+# is 0.3 there and a round-trip check passes at a precision JS doesn't have
+# (#3445). Rounding where a number enters and after each arithmetic step keeps
+# those perls on JS's values; with an 8-byte NV it is the identity.
+use constant WIDE_NV => length(pack 'F', 0) > 8;
+sub _double ($n) { WIDE_NV ? unpack('d', pack('d', $n)) : $n }
+
 sub _to_number ($v) {
     return 0 if !defined $v;
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 1 : 0 }
@@ -316,9 +324,9 @@ sub _to_number ($v) {
         $t =~ s/\A\s+//;
         $t =~ s/\s+\z//;
         return 0 if $t eq '';
-        return looks_like_number($t) ? ($t + 0) : _nan();
+        return looks_like_number($t) ? _double($t + 0) : _nan();
     }
-    return $v + 0;
+    return _double($v + 0);
 }
 
 sub _to_string ($v) {
@@ -332,10 +340,11 @@ sub _to_string ($v) {
 # `%.15g`, which drops digits (`0.1 + 0.2` -> "0.3"), spells the non-finite
 # doubles "Inf" / "NaN", and pads a small exponent (`1.23456789e-06`).
 # Integers below 2**53 print exactly; everything else takes the shortest
-# `%.Ng` that round-trips and re-spells it with ECMA-262's notation rules:
+# `%.Ng` that round-trips as a double and re-spells it with ECMA-262's notation rules:
 # decimal within [1e-6, 1e21), otherwise an unpadded lower-case exponent
 # (`1.23456789e-7`, `1.23456789e+21`) (#3380).
 sub _format_number ($n) {
+    $n = _double($n);
     return 'NaN'       if $n != $n;
     return 'Infinity'  if $n == 9**9**9;
     return '-Infinity' if $n == -(9**9**9);
@@ -344,7 +353,7 @@ sub _format_number ($n) {
     my $s;
     for my $p (1 .. 17) {
         $s = sprintf('%.*g', $p, $n);
-        last if $s + 0 == $n;
+        last if _double($s + 0) == $n;
     }
     return _js_notation($s);
 }
@@ -404,10 +413,10 @@ sub _binary ($op, $l, $r) {
         # JS `+`: string concatenation once either operand is a string,
         # numeric addition otherwise.
         return _to_string($l) . _to_string($r) if _is_string($l) || _is_string($r);
-        return _to_number($l) + _to_number($r);
+        return _double(_to_number($l) + _to_number($r));
     }
-    return _to_number($l) - _to_number($r) if $op eq '-';
-    return _to_number($l) * _to_number($r) if $op eq '*';
+    return _double(_to_number($l) - _to_number($r)) if $op eq '-';
+    return _double(_to_number($l) * _to_number($r)) if $op eq '*';
     if ($op eq '/') {
         my $ln = _to_number($l);
         my $rn = _to_number($r);
@@ -419,7 +428,7 @@ sub _binary ($op, $l, $r) {
             return _nan() if $ln == 0 || $ln != $ln;
             return $ln > 0 ? 9**9**9 : -(9**9**9);
         }
-        return $ln / $rn;
+        return _double($ln / $rn);
     }
     if ($op eq '%') {
         my $rn = _to_number($r);
