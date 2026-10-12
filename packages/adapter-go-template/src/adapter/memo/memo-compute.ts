@@ -29,6 +29,7 @@ import {
   getSignalInitialValueAsGo,
   mapJoinChainToGo,
   matchMapJoinChain,
+  unboxToGoScalar,
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
@@ -330,14 +331,10 @@ export function computeMemoInitialValue(
   )
   if (resolved !== null) return resolved
   const evaluated = memo.parsed
-    ? evalMemoBodyGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
+    ? evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
     : null
-  if (evaluated !== null) {
-    if (goType === undefined || goType === 'any' || goType === 'interface{}') return evaluated
-    if (goType === 'string') return `bf.String(${evaluated})`
-    if (goType === 'bool') return `bf.Truthy(${evaluated})`
-    if (goType === 'float64') return `bf.Number(${evaluated})`
-  }
+  const typed = evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
+  if (typed !== null) return typed
   // Zero value for the memo's Go type: `false` for bool, `""` for string,
   // `nil` for reference types, else the int `0`.
   if (goType === 'bool') return 'false'
@@ -354,17 +351,34 @@ const STRING_METHOD_HELPER: Readonly<Record<string, string>> = {
 }
 
 /**
- * A memo body the shapes in {@link memoInitialFromParsedBody} don't
- * recognise, evaluated at construction by the runtime's JS evaluator
+ * An `any`-typed Go value (an {@link evalExprGo} result) converted to a
+ * destination of Go type `goType` with JS's coercion: `bf.String` for a
+ * `string`, `bf.Truthy` for a `bool`, `bf.Number` for a `float64`, and an
+ * `int`/`float64` type switch for an `int` (`unboxToGoScalar`). An
+ * `interface{}` or unknown destination takes it as is. Null for any other
+ * type, which the value can't be assigned to.
+ */
+export function evaluatedAsGoType(evaluated: string, goType: string | undefined): string | null {
+  if (goType === undefined || goType === 'any' || goType === 'interface{}') return evaluated
+  if (goType === 'string') return `bf.String(${evaluated})`
+  if (goType === 'bool') return `bf.Truthy(${evaluated})`
+  if (goType === 'float64') return `bf.Number(${evaluated})`
+  if (goType === 'int') return unboxToGoScalar(evaluated, 'int')
+  return null
+}
+
+/**
+ * An expression evaluated at construction by the runtime's JS evaluator
  * (`bf.EvalExpr`) over the SSR values of the signals, memos and props it
- * reads (#3436): `u().name ?? 'x'` or `(u().age ?? 0) + 1` over an object
- * signal. A no-argument `toUpperCase` / `toLowerCase` / `trim` call, which
+ * reads: a memo body the shapes in {@link memoInitialFromParsedBody} don't
+ * recognise (#3436), or a child prop value (#3437), such as `u().name ?? 'x'`
+ * or `(u().age ?? 0) + 1` over an object signal. A no-argument `toUpperCase` / `toLowerCase` / `trim` call, which
  * the evaluator does not run, wraps the evaluated receiver in its runtime
  * helper. The result is an `any`, so the caller converts it to the memo
  * field's Go type. Null when the body is outside the evaluator's surface or
  * reads a name with no SSR value.
  */
-function evalMemoBodyGo(
+export function evalExprGo(
   ctx: GoEmitContext,
   body: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
@@ -375,7 +389,7 @@ function evalMemoBodyGo(
   if (body.kind === 'array-method' && body.args.length === 0) {
     const helper = STRING_METHOD_HELPER[body.method]
     if (!helper) return null
-    const recv = evalMemoBodyGo(ctx, body.object, signals, propsParams, propFallbackVars, resolving)
+    const recv = evalExprGo(ctx, body.object, signals, propsParams, propFallbackVars, resolving)
     return recv === null ? null : `bf.${helper}(${recv})`
   }
   // Env readers are per-request readers the evaluator can't invoke.
@@ -467,7 +481,7 @@ function memoEnvValueGo(
   if (memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) return 'bf.Number(nil)'
   return ctx.state.hoistedMemoLocals.get(memo.name) ??
     computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, propFallbackVars, resolving) ??
-    (memo.parsed ? evalMemoBodyGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, resolving) : null)
+    (memo.parsed ? evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, resolving) : null)
 }
 
 /**

@@ -6797,6 +6797,28 @@
         "text"
       ]
     },
+    "object-signal-field-child-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "object-signal-field-length": {
       "kinds": [
         "array-literal",
