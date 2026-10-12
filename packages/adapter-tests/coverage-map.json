@@ -1272,6 +1272,27 @@
         "text"
       ]
     },
+    "child-number-prop-fraction": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "child-primitive-props": {
       "kinds": [
         "identifier",

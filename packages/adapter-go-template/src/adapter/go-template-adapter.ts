@@ -177,7 +177,7 @@ import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/mem
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, memoArithmeticYieldsNaN, evalExprGo, evaluatedAsGoType, isEvaluatedMemo } from "./memo/memo-compute.ts"
-import { collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
+import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -524,6 +524,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** See `fileNullableSeedStructFields`: the `float64` flip for a fractional seed (#3438). */
   private fileFractionalSeedStructFields: Set<string> = new Set()
 
+  /** See `fileNullableSeedStructFields`: child props a caller passes a fraction (#3459). */
+  private fileFractionalChildProps: Set<string> = new Set()
+
   /**
    * See `crossFileTypeAliases`. The DEFINING component's own `TypeDefinition`
    * (carrying `properties`, so each field's declared `TypeInfo` — not just
@@ -726,6 +729,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
     this.state.fractionalSeedStructFields = this.fileFractionalSeedStructFields
+    for (const key of collectFractionalChildProps(ir.metadata, ir.root, this.fileFractionalSeedStructFields)) this.fileFractionalChildProps.add(key)
+    this.state.fractionalChildProps = this.fileFractionalChildProps
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
@@ -1189,6 +1194,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!name) return
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
+    // This component as a CALLER: the child props it passes a fraction. A
+    // child registered earlier already holds its `int` param type, so it
+    // is widened here; one registered later reads the set itself.
+    this.state.fractionalChildProps = this.fileFractionalChildProps
+    for (const key of collectFractionalChildProps(ir.metadata, ir.root, this.fileFractionalSeedStructFields)) {
+      this.fileFractionalChildProps.add(key)
+      const dot = key.indexOf('.')
+      const shape = this.childComponentShapes.get(key.slice(0, dot))
+      const paramGoTypes = shape?.paramGoTypes as Map<string, string> | undefined
+      if (paramGoTypes?.get(key.slice(dot + 1)) === 'int') paramGoTypes.set(key.slice(dot + 1), 'float64')
+    }
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
     // `sourceName ?? name` — identity for an un-aliased param, the original
