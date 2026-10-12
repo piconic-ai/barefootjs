@@ -6837,7 +6837,8 @@
         "binary:+",
         "literal:number",
         "literal:string",
-        "logical:??"
+        "logical:??",
+        "member:optional"
       ],
       "contexts": [
         "text"

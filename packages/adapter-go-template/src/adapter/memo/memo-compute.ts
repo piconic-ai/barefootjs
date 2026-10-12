@@ -399,8 +399,13 @@ function evalMemoBodyGo(
       if (composite) {
         if (!bakeType) return null
         goExpr = convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed)
+      } else if (isNullishLiteral(signal.parsed)) {
+        goExpr = 'nil'
       } else {
         goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
+        // `0` is also its answer for a seed it can't resolve; the evaluator
+        // would compute over that stand-in instead of the real value.
+        if (goExpr === '0' && signal.initialValue.trim() !== '0') return null
       }
     } else if (memo) {
       if (resolving.has(memo.name)) return null

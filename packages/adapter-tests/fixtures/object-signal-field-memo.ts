@@ -3,8 +3,8 @@ import { createFixture } from '../src/types'
 /**
  * A memo computed from a field of an object signal typed by a named type
  * (#3436). The SSR value is the memo body evaluated over the seed, for a
- * string and a number field, with and without `??`, and a memo over such a
- * memo.
+ * string and a number field, with and without `??`, a memo over such a
+ * memo, and a field read off an `undefined`-seeded object signal.
  */
 export const fixture = createFixture({
   id: 'object-signal-field-memo',
@@ -20,10 +20,12 @@ export function ObjectSignalFieldMemo() {
   const upper = createMemo(() => u().name!.toUpperCase())
   const doubled = createMemo(() => u().age! * 2)
   const twice = createMemo(() => next() * 2)
-  return <p>{label()}|{next()}|{upper()}|{doubled()}|{twice()}</p>
+  const [none] = createSignal<User | undefined>(undefined)
+  const missing = createMemo(() => none()?.name ?? 'none')
+  return <p>{label()}|{next()}|{upper()}|{doubled()}|{twice()}|{missing()}</p>
 }
 `,
   expectedHtml: `
-    <p bf-s="test" bf="s5"><!--bf:s0-->pat<!--/-->|<!--bf:s1-->3<!--/-->|<!--bf:s2-->PAT<!--/-->|<!--bf:s3-->4<!--/-->|<!--bf:s4-->6<!--/--></p>
+    <p bf-s="test" bf="s6"><!--bf:s0-->pat<!--/-->|<!--bf:s1-->3<!--/-->|<!--bf:s2-->PAT<!--/-->|<!--bf:s3-->4<!--/-->|<!--bf:s4-->6<!--/-->|<!--bf:s5-->none<!--/--></p>
   `,
 })
