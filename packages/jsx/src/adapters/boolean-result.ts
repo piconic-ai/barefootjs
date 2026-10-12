@@ -13,9 +13,12 @@
  *   - `literal` with `literalType: 'boolean'`
  *   - `logical` (`&&` / `||` / `??`) when both sides are boolean-result
  *   - `conditional` (`?:`) when both branches are boolean-result
+ *   - with a caller's `isBooleanName`, a getter call, `props.X` or bare
+ *     name declared `boolean`
  */
 
 import type { ParsedExpr } from '../expression-parser.ts'
+import type { IRMetadata, TypeInfo } from '../types.ts'
 
 const COMPARISON_OPS = new Set([
   '<',
@@ -28,8 +31,18 @@ const COMPARISON_OPS = new Set([
   '!==',
 ])
 
-/** Whether `node` structurally evaluates to a JS boolean. */
-export function isBooleanResultParsed(node: ParsedExpr): boolean {
+/**
+ * Whether `node` evaluates to a JS boolean: structurally, or, when the
+ * caller passes `isBooleanName`, through a leaf declared `boolean` — a
+ * zero-arg getter call (`on()`), `props.on`, or a bare name — the same
+ * witness shape `isStringTypedOperand` takes for strings. A logical
+ * expression mixing a boolean prop with a comparison (`props.on &&
+ * !props.off`) then classifies as boolean (#3443).
+ */
+export function isBooleanResultParsed(
+  node: ParsedExpr,
+  isBooleanName?: (name: string, componentProperty?: boolean) => boolean,
+): boolean {
   switch (node.kind) {
     case 'literal':
       return node.literalType === 'boolean'
@@ -41,14 +54,21 @@ export function isBooleanResultParsed(node: ParsedExpr): boolean {
       // `x > 0 && y < 10` is boolean; `x() || 'fallback'` is not.
       // Only both-sides-boolean qualifies.
       return (
-        isBooleanResultParsed(node.left) && isBooleanResultParsed(node.right)
+        isBooleanResultParsed(node.left, isBooleanName) && isBooleanResultParsed(node.right, isBooleanName)
       )
     case 'conditional':
       // `cond ? bool : bool` is boolean; `cond ? 'a' : 'b'` is not.
       return (
-        isBooleanResultParsed(node.consequent) &&
-        isBooleanResultParsed(node.alternate)
+        isBooleanResultParsed(node.consequent, isBooleanName) &&
+        isBooleanResultParsed(node.alternate, isBooleanName)
       )
+    case 'call':
+      return !!isBooleanName && node.callee.kind === 'identifier' && node.args.length === 0 && isBooleanName(node.callee.name)
+    case 'member':
+      return !!isBooleanName && !node.computed && node.object.kind === 'identifier' && node.object.name === 'props' &&
+        isBooleanName(node.property, true)
+    case 'identifier':
+      return !!isBooleanName && isBooleanName(node.name)
     default:
       return false
   }
@@ -87,3 +107,32 @@ function stringifyBooleanBranch(branch: ParsedExpr): ParsedExpr {
   }
 }
 
+
+/**
+ * Names whose value is always a JS boolean, for {@link isBooleanResultParsed}'s
+ * `isBooleanName`: signals and memos typed `boolean` (or, untyped, seeded
+ * with a boolean literal), and `boolean` props that can't be `undefined` —
+ * required, or carrying a default. An omitted optional prop stringifies as
+ * `undefined`, not `false`. Keyed by local name; a loop or callback binding
+ * of the same name shadows it, which the caller's scope decides (#3443).
+ */
+export function collectBooleanValueNames(
+  metadata: Pick<IRMetadata, 'signals' | 'memos' | 'propsParams'>,
+): Set<string> {
+  const isBoolean = (type: TypeInfo | null | undefined): boolean =>
+    type?.kind === 'primitive' && type.primitive === 'boolean'
+  const names = new Set<string>()
+  for (const signal of metadata.signals) {
+    const seed = signal.initialValue.trim()
+    if (isBoolean(signal.type) || ((!signal.type || signal.type.kind === 'unknown') && (seed === 'true' || seed === 'false'))) {
+      names.add(signal.getter)
+    }
+  }
+  for (const memo of metadata.memos ?? []) {
+    if (isBoolean(memo.type)) names.add(memo.name)
+  }
+  for (const param of metadata.propsParams) {
+    if (isBoolean(param.type) && (!param.optional || param.defaultValue !== undefined)) names.add(param.name)
+  }
+  return names
+}

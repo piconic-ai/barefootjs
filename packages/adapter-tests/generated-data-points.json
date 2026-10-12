@@ -671,14 +671,32 @@
       "name": "gen:on:false",
       "props": {
         "on": false,
-        "off": false
+        "off": false,
+        "name": ""
       }
     },
     {
       "name": "gen:off:true",
       "props": {
         "on": true,
-        "off": true
+        "off": true,
+        "name": ""
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "on": true,
+        "off": false,
+        "name": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "on": true,
+        "off": false,
+        "name": "日本語"
       }
     }
   ],

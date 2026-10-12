@@ -308,6 +308,10 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     this.ctx = ctx
   }
 
+  /** Declared-`boolean` lookup for stringifying a logical expression (#3443). */
+  private readonly isBooleanName = (name: string, componentProperty?: boolean): boolean =>
+    this.ctx._isBooleanValueName(name, componentProperty)
+
   /**
    * Registered-lowering seam (#2843): `emitParsedExpr`'s shared `call` case
    * tries every matcher here BEFORE `call()` itself, so a registered call
@@ -419,9 +423,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const path = identifierPath(callee)
     const spec = path ? XSLATE_TEMPLATE_PRIMITIVES[path] : undefined
     if (path && spec) {
-      if (path === 'String' && args.length === 1) return stringifyTerm(args[0], emit)
+      if (path === 'String' && args.length === 1) return stringifyTerm(args[0], emit, this.isBooleanName)
       // A boolean's JSON text is its `String()` text (`true` / `false`).
-      if (path === 'JSON.stringify' && args.length === 1 && isBooleanResultParsed(args[0])) return stringifyTerm(args[0], emit)
+      if (path === 'JSON.stringify' && args.length === 1 && isBooleanResultParsed(args[0], this.isBooleanName)) return stringifyTerm(args[0], emit, this.isBooleanName)
       if (args.length === spec.arity) {
         return spec.emit(args.map(emit))
       }
@@ -687,7 +691,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
         // than Perl's `1` / `0` and a number keeps JS formatting (#3440).
         // A string literal is already its own text.
         const isStringLiteral = part.expr.kind === 'literal' && part.expr.literalType === 'string'
-        terms.push(isStringLiteral ? emit(part.expr) : stringifyTerm(part.expr, emit))
+        terms.push(isStringLiteral ? emit(part.expr) : stringifyTerm(part.expr, emit, this.isBooleanName))
       }
     }
     if (terms.length === 0) return `''`
@@ -734,12 +738,17 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
 }
 
 /**
- * JS `String(expr)`: a structurally boolean expression (a comparison, `!`,
- * a boolean literal — `isBooleanResultParsed`) is a Perl `1` / `''` / `0`
- * at runtime, so it prints through `bool_str`; anything else through
+ * JS `String(expr)`: a boolean expression (a comparison, `!`, a boolean
+ * literal, or a name declared `boolean` combined with them through `&&` /
+ * `||` — `isBooleanResultParsed`, #3443) is a Perl `1` / `''` / `0` at
+ * runtime, so it prints through `bool_str`; anything else through
  * `string`, which also prints a decoded JSON boolean as `true` / `false`
  * (#3440).
  */
-function stringifyTerm(expr: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-  return isBooleanResultParsed(expr) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(expr)})`
+function stringifyTerm(
+  expr: ParsedExpr,
+  emit: (e: ParsedExpr) => string,
+  isBooleanName: (name: string, componentProperty?: boolean) => boolean,
+): string {
+  return isBooleanResultParsed(expr, isBooleanName) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(expr)})`
 }

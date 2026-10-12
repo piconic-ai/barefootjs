@@ -61,6 +61,8 @@ export interface MojoEmitContext {
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean): boolean
+  /** Whether a name is declared `boolean` at this position (#3443). */
+  _isBooleanValueName(name: string, componentProperty?: boolean): boolean
   /** Whether an arithmetic operand's SSR value is certainly `undefined`
    * (`arithmeticOperandIsUndefined`), so the emitter coerces it with the
    * runtime's JS `Number()` helper, which gives `NaN` (#3390). */

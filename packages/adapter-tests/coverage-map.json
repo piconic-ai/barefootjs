@@ -1018,6 +1018,7 @@
       "axes": [
         "binary:===",
         "literal:boolean",
+        "literal:string",
         "logical:&&",
         "logical:||",
         "unary:!"

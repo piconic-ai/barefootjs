@@ -29,6 +29,7 @@ import type {
   LoopBindingPathSegment,
 } from '@barefootjs/jsx'
 import {
+  collectBooleanValueNames,
   BaseAdapter,
   type AdapterOutput,
   type AdapterGenerateOptions,
@@ -218,6 +219,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * true — selecting the string operator from the operand's type avoids that.
    */
   private stringValueNames: Set<string> = new Set()
+  private booleanValueNames: Set<string> = new Set()
   /**
    * (#1922) Local binding names the request-scoped `searchParams()` env signal
    * is imported under (handles `import { searchParams as sp }`). When non-empty
@@ -335,6 +337,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = collectStringValueNames(ir)
+    this.booleanValueNames = collectBooleanValueNames(ir.metadata)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
@@ -1993,6 +1996,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isBooleanValueName: (name, property) => property ? this.booleanValueNames.has(name) : !this.scope.isBound(name) && this.booleanValueNames.has(name),
       _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
