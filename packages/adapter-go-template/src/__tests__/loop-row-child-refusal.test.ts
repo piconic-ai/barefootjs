@@ -57,6 +57,10 @@ export function Row() {
 `
 
 describe('GoTemplateAdapter - loop-row child BF101 covers only undelivered SSR data', () => {
+  // A row-independent value no lowering path covers: `padStart` is outside
+  // the runtime evaluator's surface.
+  const UNLOWERABLE = "String(count()).padStart(3) === '  1'"
+
   for (const [label, props] of [
     ['a `ref` callback', 'ref={handleMount}'],
     ['a bare setter', 'update={setCount}'],
@@ -92,13 +96,21 @@ describe('GoTemplateAdapter - loop-row child BF101 covers only undelivered SSR d
     const lowered = compile(rowSource('on={highlight()}', 'data-x={highlight()}'))
     expect(lowered.bf101).toEqual([])
     expect(lowered.types).toContain('Rest: map[string]any{"data-x": true}')
-    const refused = compile(rowSource('on={highlight()}', 'data-x={highlight() && ready()}'))
+    const refused = compile(rowSource('on={highlight()}', `data-x={${UNLOWERABLE}}`))
     expect(refused.bf101).toHaveLength(1)
     expect(refused.bf101[0].message).toContain("Prop 'data-x' on <Chip> inside a loop row")
   })
 
+  // A row-independent value inside the evaluator's surface is computed from
+  // the parent's seeds (#3437), so it is delivered rather than refused.
+  test('a row-independent logical prop is delivered through the evaluator', () => {
+    const { bf101, types } = compile(rowSource('on={highlight() && ready()}'))
+    expect(bf101).toEqual([])
+    expect(types).toContain('On: bf.Truthy(bf.EvalExpr(')
+  })
+
   test('an unlowerable row-independent data prop still refuses', () => {
-    const { bf101 } = compile(rowSource('on={highlight() && ready()}'))
+    const { bf101 } = compile(rowSource(`on={${UNLOWERABLE}}`))
     expect(bf101).toHaveLength(1)
     expect(bf101[0].message).toContain("Prop 'on' on <Mark> inside a loop row")
   })
@@ -112,7 +124,7 @@ describe('GoTemplateAdapter - loop-row child BF101 covers only undelivered SSR d
       .replace('on?: boolean;', 'on?: boolean; once?: boolean;')
 
   test('an unlowerable prop named like `once` refuses like any data prop', () => {
-    const { bf101 } = compile(withOnce('on={highlight()} once={highlight() && ready()}'))
+    const { bf101 } = compile(withOnce(`on={highlight()} once={${UNLOWERABLE}}`))
     expect(bf101).toHaveLength(1)
     expect(bf101[0].message).toContain("Prop 'once' on <Mark> inside a loop row")
   })

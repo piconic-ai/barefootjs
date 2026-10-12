@@ -2729,8 +2729,16 @@ export function Demo() {
       expect(bf101).toHaveLength(0)
     })
 
-    test('a negated operand the recursion cannot lower refuses with BF101', () => {
+    // A compound operand inside the evaluator's surface is computed from the
+    // parent's seeds (#3437); `padStart` is outside it.
+    test('a negated compound operand reaches the child through the evaluator', () => {
       const { types, bf101 } = compileParent('!(value() && ready())')
+      expect(types).toContain('ShowPlaceholder: bf.Truthy(bf.EvalExpr(')
+      expect(bf101).toHaveLength(0)
+    })
+
+    test('a negated operand the recursion cannot lower refuses with BF101', () => {
+      const { types, bf101 } = compileParent('!value().padStart(2)')
       expect(types).not.toContain('ShowPlaceholder:')
       expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain("Prop 'showPlaceholder' on <Trigger> is a negated expression")
@@ -8185,8 +8193,10 @@ export function Row() {
     expect(template).toContain('(bf_with_props .MarkSlot1 "Tone" .Tone)')
   })
 
+  // `padStart` is outside the runtime evaluator's surface (#3437), so no
+  // lowering path covers this row-independent value.
   test('a row-independent prop the constructor cannot lower refuses with BF101', () => {
-    const { ctor, bf101 } = compileRow('on={highlight() && ready()}')
+    const { ctor, bf101 } = compileRow("on={String(highlight()).padStart(5) === ' true'}")
     expect(ctor).not.toContain('On:')
     expect(bf101).toHaveLength(1)
     expect(bf101[0].message).toContain("Prop 'on' on <Mark> inside a loop row")
@@ -8194,7 +8204,7 @@ export function Row() {
   })
 
   test('the /* @client */ escape on that prop lifts the refusal', () => {
-    const { ctor, bf101 } = compileRow('on={/* @client */ highlight() && ready()}')
+    const { ctor, bf101 } = compileRow("on={/* @client */ String(highlight()).padStart(5) === ' true'}")
     expect(bf101).toEqual([])
     expect(ctor).not.toContain('On:')
   })

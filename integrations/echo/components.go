@@ -1051,6 +1051,7 @@ func NewBodyDestructuredPropsLiveProps(in BodyDestructuredPropsLiveInput) BodyDe
 			BfParent: scopeID,
 			BfMount: "s6",
 			Value: 1,
+			Label: bf.String(bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false})),
 		}),
 	}
 }
@@ -1161,6 +1162,7 @@ func NewDestructuredPropsLiveProps(in DestructuredPropsLiveInput) DestructuredPr
 			BfParent: scopeID,
 			BfMount: "s6",
 			Value: 1,
+			Label: bf.String(bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false})),
 		}),
 	}
 }
