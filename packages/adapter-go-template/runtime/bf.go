@@ -99,7 +99,7 @@ func FuncMap() template.FuncMap {
 
 		// Array/Slice
 		"bf_len":            Len,
-		"bf_length":         Length,
+		"bf_length":         LengthOf,
 		"bf_is_element":     IsValidElement,
 		"bf_style_object":   StyleObjectToCSS,
 		"bf_at":             At,
@@ -1808,7 +1808,9 @@ func Length(v any) int {
 	}
 	rv := reflect.ValueOf(v)
 	switch rv.Kind() {
-	case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
+	case reflect.Map:
+		return rv.Len()
+	case reflect.Slice, reflect.Array, reflect.Chan:
 		return rv.Len()
 	case reflect.String:
 		n := 0
@@ -1823,6 +1825,21 @@ func Length(v any) int {
 	default:
 		return 0
 	}
+}
+
+// LengthOf is the template-facing `.length` (`bf_length`). An object's
+// `.length` is its own `length` property (`{ length: 3 }`), nil when it has
+// none — not a count (#3447). Strings, slices and arrays read `Length`.
+// Generated Go code that needs an `int` (a memo seed) calls `Length`.
+func LengthOf(v any) any {
+	rv := reflect.ValueOf(v)
+	for rv.IsValid() && rv.Kind() == reflect.Pointer && !rv.IsNil() {
+		rv = rv.Elem()
+	}
+	if rv.IsValid() && (rv.Kind() == reflect.Struct || (rv.Kind() == reflect.Map && rv.Type().Key().Kind() == reflect.String)) {
+		return getFieldValue(v, "length")
+	}
+	return Length(v)
 }
 
 // IsValidElement lowers React/Hono-style `isValidElement(x)` — the "is this

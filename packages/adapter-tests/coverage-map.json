@@ -6751,6 +6751,28 @@
         "text"
       ]
     },
+    "object-length-property-filter": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "object-literal-signal-seed-nullable": {
       "kinds": [
         "binary",
@@ -6772,6 +6794,29 @@
       "contexts": [
         "attribute",
         "condition",
+        "text"
+      ]
+    },
+    "object-signal-field-length": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },

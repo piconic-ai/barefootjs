@@ -1220,14 +1220,18 @@ final class BarefootJS
      * codepoint count. A codepoint outside the Basic Multilingual Plane
      * (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
      * UTF-16, so it counts as 2, not 1; '日本語' is 3 either way
-     * (BMP-only). */
-    public function length($recv): int
+     * (BMP-only). An object's `.length` is its own `length` property
+     * (`{ length: 3 }`), null when it has none (#3449). */
+    public function length($recv)
     {
         if (Evaluator::isJsArray($recv)) {
             return count($recv);
         }
-        if (is_array($recv) || $recv instanceof \stdClass) {
-            return 0; // a plain object has no `.length`
+        if (is_array($recv)) {
+            return $recv['length'] ?? null;
+        }
+        if ($recv instanceof \stdClass) {
+            return $recv->length ?? null;
         }
         $s = $this->scalarOrEmpty($recv);
         $n = 0;

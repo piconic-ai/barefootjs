@@ -1093,9 +1093,12 @@ sub join ($self, $recv, $sep = undef) {
 # `String.prototype.length` (#2255) — NOT `CORE::length`'s Unicode codepoint
 # count. A codepoint outside the Basic Multilingual Plane (astral,
 # U+10000-U+10FFFF — e.g. '👍') is a surrogate PAIR in UTF-16, so it counts
-# as 2, not 1; '日本語' is 3 either way (BMP-only).
+# as 2, not 1; '日本語' is 3 either way (BMP-only). An object's `.length` is
+# its own `length` property (`{ length: 3 }`), undef when it has none — the
+# same read the evaluator's `_read_property` does.
 sub length ($self, $recv) {
     return scalar @$recv if ref($recv) eq 'ARRAY';
+    return $recv->{length} if ref($recv) eq 'HASH';
     return 0 if ref($recv);
     my $n = 0;
     $n += ord($_) > 0xFFFF ? 2 : 1 for split //, ($recv // '');

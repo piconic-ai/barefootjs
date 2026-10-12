@@ -903,9 +903,9 @@ export function C() {
     // an anonymous array ref, undef at runtime. The
     // `containsHigherOrder` gate refused this outright with BF101.
     // PR4 fixes the `member` emit for `.length` on higher-order
-    // objects to produce `scalar(@{...})` and removes the gate, so
-    // the canonical "tags have at least one active" shape lowers
-    // to valid EP.
+    // objects and removes the gate, so the canonical "tags have at
+    // least one active" shape lowers to valid EP. `.length` now goes
+    // through the runtime's `bf->length` for every receiver (#3439).
     const adapter = new MojoAdapter()
     const result = compileJSX(`'use client'
 import { createSignal } from '@barefootjs/client'
@@ -915,7 +915,7 @@ export function C() {
 }`, 'C.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('scalar(@{[grep { $_->{active} } @{$t->{tags}}]})')
+    expect(template).toContain('bf->length([grep { $_->{active} } @{$t->{tags}}])')
   })
 
   test('lowers nested .some(...) in filter predicate to an inline grep — no BF101 (#2038)', () => {

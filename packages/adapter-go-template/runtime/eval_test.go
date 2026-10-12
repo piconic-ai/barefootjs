@@ -421,3 +421,44 @@ func TestIncludesEval(t *testing.T) {
 		t.Errorf("non-collection receiver includes = %v, want false", nonCollection)
 	}
 }
+
+// `.length` on a struct's typed slice field reads its element count, not a
+// `length` field (#3447).
+func TestEvalReadProperty_TypedSliceLength(t *testing.T) {
+	type item struct {
+		Name string
+		Tags []string
+	}
+	if got := evalReadProperty([]string{"a", "b"}, "length"); got != 2 {
+		t.Fatalf("[]string length = %v, want 2", got)
+	}
+	if got := evalReadProperty([2]int{1, 2}, "length"); got != 2 {
+		t.Fatalf("[2]int length = %v, want 2", got)
+	}
+	if got := evalReadProperty(evalReadProperty(item{Tags: []string{"x"}}, "tags"), "length"); got != 1 {
+		t.Fatalf("item.tags.length = %v, want 1", got)
+	}
+}
+
+// Template `.length` on an object is its own `length` property, not a count (#3447).
+func TestLengthOf_ObjectOwnProperty(t *testing.T) {
+	type meta struct{ Length float64 }
+	if got := LengthOf(meta{Length: 3}); got != float64(3) {
+		t.Fatalf("struct length = %v, want 3", got)
+	}
+	if got := LengthOf(&meta{Length: 1}); got != float64(1) {
+		t.Fatalf("*struct length = %v, want 1", got)
+	}
+	if got := LengthOf(map[string]any{"length": 2}); got != 2 {
+		t.Fatalf("map length = %v, want 2", got)
+	}
+	if got := LengthOf(map[string]any{"a": 1}); got != nil {
+		t.Fatalf("map without length = %v, want nil", got)
+	}
+	if got := LengthOf([]string{"a", "b"}); got != 2 {
+		t.Fatalf("slice length = %v, want 2", got)
+	}
+	if got := LengthOf("日本"); got != 2 {
+		t.Fatalf("string length = %v, want 2", got)
+	}
+}

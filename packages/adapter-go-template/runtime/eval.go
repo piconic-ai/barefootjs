@@ -724,6 +724,13 @@ func evalReadProperty(obj any, key string) any {
 	case nil:
 		return nil
 	default:
+		// A typed slice from real template data (a struct's `[]string`
+		// field) has a length too, not a `length` field (#3447).
+		if key == "length" {
+			if rv := reflect.ValueOf(obj); rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
+				return rv.Len()
+			}
+		}
 		// Real template data (Go structs): reuse the field reader the sort /
 		// reduce helpers use, which handles case-variant keys.
 		return getFieldValue(obj, key)

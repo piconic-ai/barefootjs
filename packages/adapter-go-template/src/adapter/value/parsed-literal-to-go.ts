@@ -201,6 +201,12 @@ export function parsedLiteralToGo(
         // array branch below bakes a properly-typed slice (`[]string{…}`)
         // instead of deferring.
         go = parsedLiteralToGo(ctx, prop.value, propType)
+        // An empty nested array (`tags: []`) is an empty slice of the
+        // declared type. The top-level empty-array deferral would otherwise
+        // drop the whole object, and the signal seed with it (#3447).
+        if (go === null && prop.value.elements.length === 0) {
+          go = `${propType?.kind === 'array' ? typeInfoToGo(ctx, propType) : '[]interface{}'}{}`
+        }
       } else if (prop.value.kind === 'object-literal') {
         // A nested object property (`user: { name: string }`, #2087): bake
         // against a named struct if the declared type resolves to one,

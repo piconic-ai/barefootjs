@@ -944,6 +944,8 @@ import { fixture as booleanStringifyPositions } from './boolean-stringify-positi
 import { fixture as booleanLogicalStringify } from './boolean-logical-stringify'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
+import { fixture as objectSignalFieldLength } from './object-signal-field-length'
+import { fixture as objectLengthPropertyFilter } from './object-length-property-filter'
 // Static text directly adjacent to a conditional: no whitespace of the
 // template's own between them (#3321).
 import { fixture as textThenConditional } from './text-then-conditional'
@@ -1563,6 +1565,8 @@ export const jsxFixtures: JSXFixture[] = [
   booleanLogicalStringify,
   capturedMarkupEscaping,
   optionalChainMethodCall,
+  objectSignalFieldLength,
+  objectLengthPropertyFilter,
   textThenConditional,
   textThenConditionalStatic,
   conditionalThenText,

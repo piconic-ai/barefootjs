@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // An object row's own `length` property reads 0 in an inline filter
+  // predicate: the runtime length helper counts strings and arrays only (#3449).
+  'object-length-property-filter': { limitation: 'object-length-property-reads-zero' },
   // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
   // `undefined`-initialized signal read the nil operand as `0` or threw. The
   // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).
