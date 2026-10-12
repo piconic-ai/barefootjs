@@ -84,7 +84,19 @@ export function lowerTernary(
   alternate: ParsedExpr,
 ): string {
   const t = lowerTernaryTest(ctx, test)
-  return `(bf_ternary ${t} ${lowerValueOperand(ctx, consequent)} ${lowerValueOperand(ctx, alternate)})`
+  return `(bf_ternary ${t} ${lowerTernaryBranch(ctx, consequent)} ${lowerTernaryBranch(ctx, alternate)})`
+}
+
+/**
+ * A ternary branch. An `undefined` branch is a real nil, not the `""` a bare
+ * `undefined` operand lowers to: the guard an optional-chained call `x?.m()`
+ * lowers to (#3435) is `x == null ? undefined : x.m()`, and a nil result is
+ * what a `??` fallback, an enclosing `?.` guard or an `=== undefined` test
+ * must see. html/template prints nil as empty text.
+ */
+function lowerTernaryBranch(ctx: GoEmitContext, branch: ParsedExpr): string {
+  if (branch.kind === 'identifier' && branch.name === 'undefined') return 'nil'
+  return lowerValueOperand(ctx, branch)
 }
 
 /**

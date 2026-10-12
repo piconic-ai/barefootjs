@@ -71,7 +71,7 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
   // math-methods half of the same divergence), a prop with no default has no
   // literal to read the fraction off of; the usage of `.toFixed()` itself is
   // the only available evidence, so it's collected by walking the JSX tree.
-  for (const propName of collectToFixedPropNames(ir.root)) {
+  for (const propName of collectToFixedPropNames(ir.root, ctx.state.propsObjectName)) {
     const param = ir.metadata.propsParams.find(p => p.name === propName)
     if (!param) continue
     const resolved = overrides.get(propName) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
@@ -90,8 +90,8 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
  * that needs this rescue (see `buildPropTypeOverrides` above); it isn't a
  * general "infer number-ness from usage" walker.
  *
- * KNOWN LIMITATION: only a DIRECT identifier receiver in the JSX tree is
- * caught (`{price.toFixed(2)}`). A bare `number` prop with no default is
+ * KNOWN LIMITATION: only a DIRECT prop receiver in the JSX tree is caught
+ * (`{price.toFixed(2)}`, `{props.price?.toFixed(2)}`, also under `??`). A bare `number` prop with no default is
  * still silently typed `int` — and hits the exact same `go run` compile
  * failure (#2168 number-tofixed) on a fractional runtime value — if the
  * fraction only surfaces indirectly (`.toFixed()` inside a signal's
@@ -103,11 +103,26 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
  * currently-unaddressed gap, not a hypothetical one — flag it rather than
  * treating a future occurrence as a fresh regression.
  */
-function collectToFixedPropNames(root: IRNode): Set<string> {
+function collectToFixedPropNames(root: IRNode, propsObject: string | null | undefined): Set<string> {
   const names = new Set<string>()
   const checkExpr = (expr: ParsedExpr | undefined) => {
-    if (expr?.kind === 'array-method' && expr.method === 'toFixed' && expr.object.kind === 'identifier') {
-      names.add(expr.object.name)
+    if (!expr) return
+    if (expr.kind === 'array-method' && expr.method === 'toFixed') {
+      const recv = expr.object
+      if (recv.kind === 'identifier') names.add(recv.name)
+      else if (recv.kind === 'member' && !recv.computed && recv.object.kind === 'identifier' && recv.object.name === propsObject) {
+        names.add(recv.property)
+      }
+    }
+    // An optional-chained call `props.x?.toFixed(2)` reaches here as a
+    // nullish guard around the call (#3435), and `??` wraps it again.
+    if (expr.kind === 'conditional') {
+      checkExpr(expr.consequent)
+      checkExpr(expr.alternate)
+    }
+    if (expr.kind === 'logical') {
+      checkExpr(expr.left)
+      checkExpr(expr.right)
     }
   }
   const walk = (node: IRNode | null | undefined) => {
@@ -421,8 +436,8 @@ export function collectTextConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR
 
 /**
  * Names of OPTIONAL no-default scalar props read as the RECEIVER of an
- * optional chain (`props.text?.length`, `text?.length`) anywhere in the
- * component's element tree (#3422).
+ * optional chain (`props.text?.length`, `text?.length`, `props.n?.toFixed(2)`)
+ * anywhere in the component's element tree (#3422, #3435).
  *
  * The `?.` lowering guards the read with `bf_eq <receiver> nil`, so an
  * absent receiver yields `undefined` (empty text, and the `??` fallback).
@@ -444,6 +459,15 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
   if (optionalParams.size === 0) return names
 
   const propsObject = ctx.state.propsObjectName
+  const propNameOf = (receiver: ParsedExpr): string | null =>
+    receiver.kind === 'member' && !receiver.computed &&
+      receiver.object.kind === 'identifier' && receiver.object.name === propsObject
+      ? receiver.property
+      : !propsObject && receiver.kind === 'identifier'
+        ? receiver.name
+        : null
+  const isNullish = (e: ParsedExpr): boolean =>
+    (e.kind === 'literal' && e.literalType === 'null') || (e.kind === 'identifier' && e.name === 'undefined')
   const walk = (node: unknown): void => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) {
@@ -452,14 +476,16 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
     }
     const rec = node as Record<string, unknown>
     if (rec.kind === 'member' && rec.optional === true && rec.object) {
-      const receiver = rec.object as ParsedExpr
-      const propName =
-        receiver.kind === 'member' && !receiver.computed &&
-          receiver.object.kind === 'identifier' && receiver.object.name === propsObject
-          ? receiver.property
-          : !propsObject && receiver.kind === 'identifier'
-            ? receiver.name
-            : null
+      const propName = propNameOf(rec.object as ParsedExpr)
+      if (propName && optionalParams.has(propName)) names.add(propName)
+    }
+    // An optional-chained CALL (`props.x?.toFixed(2)`) reaches here as the
+    // parser's guard `props.x === null || props.x === undefined ? … : …`
+    // (#3435), so an equality against null / undefined marks the receiver.
+    if (rec.kind === 'binary' && ['===', '!==', '==', '!='].includes(rec.op as string) && rec.left && rec.right) {
+      const l = rec.left as ParsedExpr
+      const r = rec.right as ParsedExpr
+      const propName = isNullish(r) ? propNameOf(l) : isNullish(l) ? propNameOf(r) : null
       if (propName && optionalParams.has(propName)) names.add(propName)
     }
     for (const value of Object.values(rec)) walk(value)
