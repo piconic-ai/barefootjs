@@ -226,7 +226,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * shared Perl-family codegen surface), not because Kolon needs it today.
    */
   private stringValueNames: Set<string> = new Set()
-  private booleanValueNames: Set<string> = new Set()
+  private booleanValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
 
   /**
    * Module-scope pure-string consts (`const x = 'literal'`), keyed by name →
@@ -1905,7 +1905,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
-      _isBooleanValueName: (name, property) => property ? this.booleanValueNames.has(name) : !this.scope.isBound(name) && this.booleanValueNames.has(name),
+      _isBooleanValueName: (name, property) => property ? this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,

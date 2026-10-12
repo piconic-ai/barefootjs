@@ -672,7 +672,8 @@
       "props": {
         "on": false,
         "off": false,
-        "name": ""
+        "name": "",
+        "shown": true
       }
     },
     {
@@ -680,7 +681,8 @@
       "props": {
         "on": true,
         "off": true,
-        "name": ""
+        "name": "",
+        "shown": true
       }
     },
     {
@@ -688,7 +690,8 @@
       "props": {
         "on": true,
         "off": false,
-        "name": "<b>&\"'</b>"
+        "name": "<b>&\"'</b>",
+        "shown": true
       }
     },
     {
@@ -696,7 +699,17 @@
       "props": {
         "on": true,
         "off": false,
-        "name": "日本語"
+        "name": "日本語",
+        "shown": true
+      }
+    },
+    {
+      "name": "gen:shown:false",
+      "props": {
+        "on": true,
+        "off": false,
+        "name": "",
+        "shown": false
       }
     }
   ],

@@ -110,29 +110,48 @@ function stringifyBooleanBranch(branch: ParsedExpr): ParsedExpr {
 
 /**
  * Names whose value is always a JS boolean, for {@link isBooleanResultParsed}'s
- * `isBooleanName`: signals and memos typed `boolean` (or, untyped, seeded
- * with a boolean literal), and `boolean` props that can't be `undefined` —
- * required, or carrying a default. An omitted optional prop stringifies as
- * `undefined`, not `false`. Keyed by local name; a loop or callback binding
- * of the same name shadows it, which the caller's scope decides (#3443).
+ * `isBooleanName` (#3443):
+ *
+ * - `names`, read as a bare identifier or getter call: signals and memos
+ *   typed `boolean` (or, untyped, seeded with a boolean literal), local
+ *   constants typed or seeded so, and — only when the props are
+ *   destructured — the `boolean` props. A local constant of another type
+ *   shadows a same-named prop: with a props object (`props.enabled`) a bare
+ *   `enabled` is never the prop.
+ * - `props`, read as `props.X`: the `boolean` props by their source key.
+ *
+ * A prop counts only when it can't be `undefined` (required, or carrying a
+ * default); an omitted one stringifies as `undefined`, not `false`. A loop
+ * or callback binding of the same name shadows a bare name, which the
+ * caller's scope decides.
  */
 export function collectBooleanValueNames(
-  metadata: Pick<IRMetadata, 'signals' | 'memos' | 'propsParams'>,
-): Set<string> {
+  metadata: Pick<IRMetadata, 'signals' | 'memos' | 'propsParams' | 'localConstants' | 'propsObjectName'>,
+): { names: Set<string>; props: Set<string> } {
   const isBoolean = (type: TypeInfo | null | undefined): boolean =>
     type?.kind === 'primitive' && type.primitive === 'boolean'
+  const isBooleanSeed = (type: TypeInfo | null | undefined, seed: string | undefined): boolean => {
+    const text = seed?.trim()
+    return isBoolean(type) || ((!type || type.kind === 'unknown') && (text === 'true' || text === 'false'))
+  }
   const names = new Set<string>()
+  const props = new Set<string>()
   for (const signal of metadata.signals) {
-    const seed = signal.initialValue.trim()
-    if (isBoolean(signal.type) || ((!signal.type || signal.type.kind === 'unknown') && (seed === 'true' || seed === 'false'))) {
-      names.add(signal.getter)
-    }
+    if (isBooleanSeed(signal.type, signal.initialValue)) names.add(signal.getter)
   }
   for (const memo of metadata.memos ?? []) {
     if (isBoolean(memo.type)) names.add(memo.name)
   }
   for (const param of metadata.propsParams) {
-    if (isBoolean(param.type) && (!param.optional || param.defaultValue !== undefined)) names.add(param.name)
+    if (!isBoolean(param.type) || (param.optional && param.defaultValue === undefined)) continue
+    props.add(param.sourceName ?? param.name)
+    if (!metadata.propsObjectName) names.add(param.name)
   }
-  return names
+  const propsObject = metadata.propsObjectName
+  for (const constant of metadata.localConstants ?? []) {
+    const aliasesProp = !!propsObject && constant.value === `${propsObject}.${constant.name}` && props.has(constant.name)
+    if (aliasesProp || isBooleanSeed(constant.type ?? undefined, constant.value)) names.add(constant.name)
+    else names.delete(constant.name)
+  }
+  return { names, props }
 }
