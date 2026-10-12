@@ -435,6 +435,18 @@ subtest 'array-method join (#2094)' => sub {
         'a,,b', 'a null/undef element joins as empty, not the string "null"');
 };
 
+subtest 'equality between an arithmetic result and a literal (#3445)' => sub {
+    # The literal stays at the perl's NV precision while `0.1 + 0` is
+    # rounded to a double; on a wide-NV perl they must still compare equal,
+    # as they do in JS.
+    my $lit = { kind => 'literal', value => 0.1, literalType => 'number' };
+    my $zero = { kind => 'literal', value => 0, literalType => 'number' };
+    my $sum = nbin('+', $lit, $zero);
+    ok(BarefootJS::Evaluator::evaluate(nbin('===', $sum, $lit), {}), '(0.1 + 0) === 0.1');
+    ok(!BarefootJS::Evaluator::evaluate(nbin('!==', $sum, nid('x')), { x => 0.1 }), '(0.1 + 0) !== x is false for x = 0.1');
+    ok(BarefootJS::Evaluator::evaluate(nincludes(nid('xs'), $sum), { xs => [0.1] }), '[0.1].includes(0.1 + 0)');
+};
+
 subtest 'number notation at the 1e-6 / 1e21 boundaries (#3380)' => sub {
     # JS prints decimal within [1e-6, 1e21) and an unpadded lower-case
     # exponent outside it; Perl's own `%.15g` pads the exponent and drops

@@ -467,7 +467,9 @@ sub _strict_eq ($l, $r) {
     my $ln = _is_number($l);
     my $rn = _is_number($r);
     if ($ln && $rn) {
-        my ($lf, $rf) = ($l + 0, $r + 0);
+        # Compared as doubles: an arithmetic result is already rounded to
+        # one, but a literal or env value on a wide-NV perl is not (#3445).
+        my ($lf, $rf) = (_double($l + 0), _double($r + 0));
         return 0 if $lf != $lf || $rf != $rf;    # NaN
         return $lf == $rf ? 1 : 0;
     }
