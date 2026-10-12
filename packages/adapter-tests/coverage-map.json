@@ -6820,6 +6820,29 @@
         "text"
       ]
     },
+    "object-signal-field-memo": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "on-prefixed-data-prop": {
       "kinds": [
         "array-literal",

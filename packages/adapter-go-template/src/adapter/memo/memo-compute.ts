@@ -328,12 +328,94 @@ export function computeMemoInitialValue(
     ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
   )
   if (resolved !== null) return resolved
+  const evaluated = memo.parsed
+    ? evalMemoBodyGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
+    : null
+  if (evaluated !== null) {
+    if (goType === undefined || goType === 'any' || goType === 'interface{}') return evaluated
+    if (goType === 'string') return `bf.String(${evaluated})`
+    if (goType === 'bool') return `bf.Truthy(${evaluated})`
+    if (goType === 'float64') return `bf.Number(${evaluated})`
+  }
   // Zero value for the memo's Go type: `false` for bool, `""` for string,
   // `nil` for reference types, else the int `0`.
   if (goType === 'bool') return 'false'
   if (goType === 'string') return '""'
   if (nillable) return 'nil'
   return '0'
+}
+
+/** String methods with a runtime helper of the same JS semantics. */
+const STRING_METHOD_HELPER: Readonly<Record<string, string>> = {
+  toUpperCase: 'Upper',
+  toLowerCase: 'Lower',
+  trim: 'Trim',
+}
+
+/**
+ * A memo body the shapes in {@link memoInitialFromParsedBody} don't
+ * recognise, evaluated at construction by the runtime's JS evaluator
+ * (`bf.EvalExpr`) over the SSR values of the signals, memos and props it
+ * reads (#3436): `u().name ?? 'x'` or `(u().age ?? 0) + 1` over an object
+ * signal. A no-argument `toUpperCase` / `toLowerCase` / `trim` call, which
+ * the evaluator does not run, wraps the evaluated receiver in its runtime
+ * helper. The result is an `any`, so the caller converts it to the memo
+ * field's Go type. Null when the body is outside the evaluator's surface or
+ * reads a name with no SSR value.
+ */
+function evalMemoBodyGo(
+  ctx: GoEmitContext,
+  body: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  resolving: ReadonlySet<string>,
+): string | null {
+  if (body.kind === 'array-method' && body.args.length === 0) {
+    const helper = STRING_METHOD_HELPER[body.method]
+    if (!helper) return null
+    const recv = evalMemoBodyGo(ctx, body.object, signals, propsParams, propFallbackVars, resolving)
+    return recv === null ? null : `bf.${helper}(${recv})`
+  }
+  // Env readers are per-request readers the evaluator can't invoke.
+  const knownGetterNames = new Set<string>(
+    ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),
+  )
+  const materialized = materializeGetterCalls(body, knownGetterNames)
+  const json = serializeParsedExpr(materialized)
+  if (json === null) return null
+  const entries: string[] = []
+  for (const name of freeVarsInBody(materialized, new Set())) {
+    if (name === 'undefined') continue
+    let goExpr: string | null = null
+    const signal = signals.find(s => s.getter === name)
+    const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
+    const param = propsParams.find(p => p.name === name)
+    if (signal) {
+      // An object or array seed bakes as the signal's own field does;
+      // `getSignalInitialValueAsGo` only resolves scalar and prop seeds.
+      const composite = signal.parsed?.kind === 'object-literal' || signal.parsed?.kind === 'array-literal'
+      const bakeType = ctx.state.synthStructTypes.get(signal.getter) ?? signal.type
+      if (composite) {
+        if (!bakeType) return null
+        goExpr = convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed)
+      } else {
+        goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
+      }
+    } else if (memo) {
+      if (resolving.has(memo.name)) return null
+      const inner = new Set([...resolving, memo.name])
+      goExpr = ctx.state.hoistedMemoLocals.get(memo.name) ??
+        computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, propFallbackVars, inner) ??
+        (memo.parsed ? evalMemoBodyGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, inner) : null)
+    } else if (param) {
+      const hoisted = propFallbackVars.get(name)
+      goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
+    }
+    if (goExpr === null) return null
+    entries.push(`${JSON.stringify(name)}: ${goExpr}`)
+  }
+  return `bf.EvalExpr("${escapeGoString(json)}", map[string]any{${entries.join(', ')}})`
 }
 
 /**
