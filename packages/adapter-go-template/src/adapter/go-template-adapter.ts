@@ -526,6 +526,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** See `fileNullableSeedStructFields`: child props a caller passes a fraction (#3459). */
   private fileFractionalChildProps: Set<string> = new Set()
+  /** Components seen as callers, re-walked until `fileFractionalChildProps` settles. */
+  private fractionalCallers: Map<string, Pick<ComponentIR, 'metadata' | 'root'>> = new Map()
 
   /**
    * See `crossFileTypeAliases`. The DEFINING component's own `TypeDefinition`
@@ -729,8 +731,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
     this.state.fractionalSeedStructFields = this.fileFractionalSeedStructFields
-    for (const key of collectFractionalChildProps(ir.metadata, ir.root, this.fileFractionalSeedStructFields)) this.fileFractionalChildProps.add(key)
-    this.state.fractionalChildProps = this.fileFractionalChildProps
+    this.propagateFractionalChildProps(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
@@ -1189,22 +1190,43 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
   }
 
+  /**
+   * Record `ir` as a caller and grow the file's fractional child props to a
+   * fixed point (#3459): a component that forwards a prop it receives a
+   * fraction for (`<Price value={value} />` inside `Relay`) makes the next
+   * child's prop fractional too, whatever order the components register
+   * in. A child shape registered before its prop turned fractional holds
+   * an `int` param type, which is widened in place; a later one reads the
+   * set through `buildPropTypeOverrides`.
+   */
+  private propagateFractionalChildProps(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
+    this.fractionalCallers.set(ir.metadata.componentName ?? '', ir)
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const caller of this.fractionalCallers.values()) {
+        const keys = collectFractionalChildProps(
+          caller.metadata, caller.root, this.fileFractionalSeedStructFields, this.fileFractionalChildProps,
+        )
+        for (const key of keys) {
+          if (this.fileFractionalChildProps.has(key)) continue
+          this.fileFractionalChildProps.add(key)
+          changed = true
+          const dot = key.indexOf('.')
+          const paramGoTypes = this.childComponentShapes.get(key.slice(0, dot))?.paramGoTypes as Map<string, string> | undefined
+          if (paramGoTypes?.get(key.slice(dot + 1)) === 'int') paramGoTypes.set(key.slice(dot + 1), 'float64')
+        }
+      }
+    }
+    this.state.fractionalChildProps = this.fileFractionalChildProps
+  }
+
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
-    // This component as a CALLER: the child props it passes a fraction. A
-    // child registered earlier already holds its `int` param type, so it
-    // is widened here; one registered later reads the set itself.
-    this.state.fractionalChildProps = this.fileFractionalChildProps
-    for (const key of collectFractionalChildProps(ir.metadata, ir.root, this.fileFractionalSeedStructFields)) {
-      this.fileFractionalChildProps.add(key)
-      const dot = key.indexOf('.')
-      const shape = this.childComponentShapes.get(key.slice(0, dot))
-      const paramGoTypes = shape?.paramGoTypes as Map<string, string> | undefined
-      if (paramGoTypes?.get(key.slice(dot + 1)) === 'int') paramGoTypes.set(key.slice(dot + 1), 'float64')
-    }
+    this.propagateFractionalChildProps(ir)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
     // `sourceName ?? name` — identity for an un-aliased param, the original
@@ -3052,7 +3074,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // LOCAL/Props field for `loopRowChildPropOverrides`'s different
       // struct.
       const fieldName = capitalizeFieldName(jsxName)
-      fields.push({ goField: fieldName, goValue })
+      // A `float64` field (a `number` prop widened for a fractional caller,
+      // #3459) also takes this caller's `int` value: `bf.Number` converts
+      // any numeric Go value. A numeric literal assigns as is.
+      const numeric = childShape?.paramGoTypes.get(jsxName) === 'float64' &&
+        !/^-?\d+(\.\d+)?$/.test(goValue) && !goValue.startsWith('bf.Number(')
+      fields.push({ goField: fieldName, goValue: numeric ? `bf.Number(${goValue})` : goValue })
     }
     for (const prop of child.props) {
       // A prop reading the row (`tone={o.tone}`) can't be evaluated here: the

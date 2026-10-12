@@ -408,15 +408,26 @@ function tsPropMemberChain(
  * another file is typed by its own compile, which this pass doesn't reach.
  */
 export function collectFractionalChildProps(
-  metadata: Pick<IRMetadata, 'signals' | 'memos' | 'propsParams' | 'typeDefinitions' | 'componentName'>,
+  metadata: Pick<IRMetadata, 'signals' | 'memos' | 'propsParams' | 'typeDefinitions' | 'componentName' | 'propsObjectName'>,
   root: unknown,
   fractionalStructFields: ReadonlySet<string>,
+  /** `Component.prop` keys already known fractional, so a component that
+   *  forwards its own fractional prop (`<Price value={value} />`) passes
+   *  the fraction on; the caller iterates to a fixed point. */
+  fractionalProps: ReadonlySet<string> = new Set(),
 ): Set<string> {
   const keys = new Set<string>()
   const ownerOf = structOwnerResolver(metadata)
   const isFraction = (e: ParsedExpr | undefined): boolean => {
     const n = e ? literalNumberValue(e) : null
     return n !== null && !Number.isInteger(n)
+  }
+  // One of this component's own props: fractional by its default or by a
+  // caller passing it a fraction.
+  const isFractionalOwnProp = (key: string): boolean => {
+    const param = (metadata.propsParams ?? []).find(p => (p.sourceName ?? p.name) === key || p.name === key)
+    if (!param) return false
+    return isFraction(param.parsed) || fractionalProps.has(`${metadata.componentName}.${param.sourceName ?? param.name}`)
   }
   // The declared type an expression's value has, for following a member
   // chain off an object signal (`u().address.zip`); null when untracked.
@@ -455,12 +466,15 @@ export function collectFractionalChildProps(
       }
       case 'member': {
         if (e.computed) return false
+        if (metadata.propsObjectName && e.object.kind === 'identifier' && e.object.name === metadata.propsObjectName) {
+          return isFractionalOwnProp(e.property)
+        }
         const objType = typeOf(e.object, rows)
         const owner = objType ? ownerOf(unwrapNullableUnion(collapseLiteralUnion(objType))) : null
         return !!owner && fractionalStructFields.has(`${owner.name}.${e.property}`)
       }
       case 'identifier':
-        return isFraction((metadata.propsParams ?? []).find(p => p.name === e.name)?.parsed)
+        return !rows.has(e.name) && (metadata.propsParams ?? []).some(p => p.name === e.name) && isFractionalOwnProp(e.name)
       default:
         return false
     }
