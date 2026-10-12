@@ -997,14 +997,19 @@ public final class Bf {
   // Array / string (receiver-dispatched where JS itself dispatches by type)
   // =========================================================================
 
-  public double length(Object v) {
+  public Object length(Object v) {
     if (v instanceof String) {
-      return ((String) v).length();
+      return (double) ((String) v).length();
     }
     if (v instanceof List) {
-      return ((List<?>) v).size();
+      return (double) ((List<?>) v).size();
     }
-    return 0;
+    // An object's `.length` is its own `length` property (`{ length: 3 }`),
+    // null when it has none (#3449).
+    if (v instanceof Map) {
+      return ((Map<?, ?>) v).get("length");
+    }
+    return 0.0;
   }
 
   public Object at(Object recv, Object indexObj) {

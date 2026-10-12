@@ -42,9 +42,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // An object row's own `length` property reads 0 in an inline filter
-  // predicate: the runtime length helper counts strings and arrays only (#3449).
-  'object-length-property-filter': { limitation: 'object-length-property-reads-zero' },
+  // `object-length-property-filter` used to sit here: an object row's own
+  // `length` property read 0 in an inline filter predicate. The runtime
+  // length helper now reads the object's property (#3449).
   // `undefined-signal-arithmetic-memo` used to sit here: arithmetic over an
   // `undefined`-initialized signal read the nil operand as `0` or threw. The
   // operand now goes through the runtime's JS `Number()`, giving `NaN` (#3390).

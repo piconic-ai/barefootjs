@@ -1556,7 +1556,12 @@ impl Object for BfInstance {
             "lc" => Ok(MjValue::from(js_string(a(0)).to_lowercase())),
             "uc" => Ok(MjValue::from(js_string(a(0)).to_uppercase())),
             "join" => Ok(MjValue::from(join(a(0), a(1)))),
-            "length" => Ok(MjValue::from(length(a(0)))),
+            // An object's `.length` is its own `length` property
+            // (`{ length: 3 }`), null when it has none (#3449).
+            "length" => match a(0) {
+                JsValue::Object(m) => Ok(js_to_mj(m.get("length").unwrap_or(&JsValue::Null))),
+                other => Ok(MjValue::from(length(other))),
+            },
             "get" => Ok(js_to_mj(&evaluator::read_index(a(0), a(1)))),
             "is_element" => Ok(MjValue::from(is_element(a(0)))),
             "style_object" => Ok(safe(style_object(&js_args))),

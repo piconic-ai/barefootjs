@@ -1377,11 +1377,13 @@ class BarefootJS:
     def get(self, recv: Any, key: Any) -> Any:
         return _evaluator._read_index(recv, key)
 
-    def length(self, recv: Any) -> int:
+    def length(self, recv: Any) -> Any:
         if isinstance(recv, list):
             return len(recv)
+        # An object's `.length` is its own `length` property
+        # (`{ length: 3 }`), None when it has none (#3449).
         if isinstance(recv, dict):
-            return 0
+            return recv.get("length")
         # JS `String.prototype.length` counts UTF-16 CODE UNITS, not
         # Python's codepoint-counting `len(str)` (#2255). A codepoint
         # outside the Basic Multilingual Plane (astral, U+10000-U+10FFFF —

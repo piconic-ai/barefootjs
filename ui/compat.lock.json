@@ -4149,32 +4149,6 @@
           ]
         }
       },
-      "object-length-property-filter": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "object-length-property-reads-zero"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "object-length-property-reads-zero"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "object-length-property-reads-zero"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "object-length-property-reads-zero"
-          ]
-        }
-      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -5695,10 +5669,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "object-length-property-filter": {
-        "description": "An object's own length property in an inline and a counted filter predicate",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-length-property-filter.ts"
-      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -6198,22 +6168,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "object-length-property-reads-zero": {
-      "title": ".length on an object's own length property reads 0 in an inline filter predicate",
-      "kind": "silent",
-      "given": "an inline `.filter()` predicate that reads an object row's own `length` property (`rows().filter(r => r.length > 2)`)",
-      "expected": "the predicate compares the row's `length` property and keeps the matching rows",
-      "actual": "drops the rows: the runtime length helper counts a string or an array and returns 0 for an object",
-      "fixtures": [
-        "object-length-property-filter"
-      ],
-      "adapters": [
-        "erb",
-        "jinja",
-        "minijinja",
-        "pebble"
       ]
     },
     "off-subset-callback-body": {
