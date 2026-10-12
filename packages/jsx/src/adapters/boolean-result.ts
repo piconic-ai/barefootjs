@@ -147,10 +147,30 @@ export function collectBooleanValueNames(
     props.add(param.sourceName ?? param.name)
     if (!metadata.propsObjectName) names.add(param.name)
   }
+  // A body destructure of a boolean prop (`const { on } = props` →
+  // `props.on`), or one defaulted to a boolean (`const { on = false } =
+  // props` → `props.on ?? false`), is boolean whatever the prop's
+  // optionality: the default covers the absent case.
   const propsObject = metadata.propsObjectName
+  const booleanTyped = new Set(
+    metadata.propsParams.filter(p => isBoolean(p.type)).map(p => p.sourceName ?? p.name),
+  )
+  const readsBooleanProp = (e: ParsedExpr | undefined): boolean => {
+    if (!e) return false
+    if (e.kind === 'member') {
+      return !e.computed && !!propsObject && e.object.kind === 'identifier' && e.object.name === propsObject &&
+        props.has(e.property)
+    }
+    if (e.kind === 'logical' && (e.op === '??' || e.op === '||')) {
+      const left = e.left
+      return left.kind === 'member' && !left.computed && !!propsObject && left.object.kind === 'identifier' &&
+        left.object.name === propsObject && booleanTyped.has(left.property) &&
+        e.right.kind === 'literal' && e.right.literalType === 'boolean'
+    }
+    return false
+  }
   for (const constant of metadata.localConstants ?? []) {
-    const aliasesProp = !!propsObject && constant.value === `${propsObject}.${constant.name}` && props.has(constant.name)
-    if (aliasesProp || isBooleanSeed(constant.type ?? undefined, constant.value)) names.add(constant.name)
+    if (readsBooleanProp(constant.parsed) || isBooleanSeed(constant.type ?? undefined, constant.value)) names.add(constant.name)
     else names.delete(constant.name)
   }
   return { names, props }

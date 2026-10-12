@@ -713,6 +713,28 @@
       }
     }
   ],
+  "boolean-logical-stringify-default-alias": [
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "off": false
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
+        "off": false
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "on": true,
+        "off": true
+      }
+    }
+  ],
   "boolean-stringify-positions": [
     {
       "name": "gen:on:false",

@@ -1027,6 +1027,27 @@
         "text"
       ]
     },
+    "boolean-logical-stringify-default-alias": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "literal:boolean",
+        "logical:&&",
+        "logical:??",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "boolean-stringify-positions": {
       "kinds": [
         "binary",
