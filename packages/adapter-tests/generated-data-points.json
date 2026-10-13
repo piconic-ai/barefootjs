@@ -671,6 +671,59 @@
       "name": "gen:on:false",
       "props": {
         "on": false,
+        "off": false,
+        "name": "",
+        "shown": true
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "on": true,
+        "off": true,
+        "name": "",
+        "shown": true
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "on": true,
+        "off": false,
+        "name": "<b>&\"'</b>",
+        "shown": true
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "on": true,
+        "off": false,
+        "name": "日本語",
+        "shown": true
+      }
+    },
+    {
+      "name": "gen:shown:false",
+      "props": {
+        "on": true,
+        "off": false,
+        "name": "",
+        "shown": false
+      }
+    }
+  ],
+  "boolean-logical-stringify-default-alias": [
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "off": false
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
         "off": false
       }
     },

@@ -1018,7 +1018,29 @@
       "axes": [
         "binary:===",
         "literal:boolean",
+        "literal:string",
         "logical:&&",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "boolean-logical-stringify-default-alias": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "literal:boolean",
+        "logical:&&",
+        "logical:??",
         "logical:||",
         "unary:!"
       ],

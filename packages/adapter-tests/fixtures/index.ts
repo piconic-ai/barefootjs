@@ -942,6 +942,7 @@ import { fixture as rowPortalRefContents } from './row-portal-ref-contents'
 import { fixture as falsyRowClicks } from './falsy-row-clicks'
 import { fixture as booleanStringifyPositions } from './boolean-stringify-positions'
 import { fixture as booleanLogicalStringify } from './boolean-logical-stringify'
+import { fixture as booleanLogicalStringifyDefaultAlias } from './boolean-logical-stringify-default-alias'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1567,6 +1568,7 @@ export const jsxFixtures: JSXFixture[] = [
   falsyRowClicks,
   booleanStringifyPositions,
   booleanLogicalStringify,
+  booleanLogicalStringifyDefaultAlias,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,
