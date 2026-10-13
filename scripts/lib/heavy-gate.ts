@@ -59,6 +59,8 @@ export const EVERY_PR_WORKFLOWS: ReadonlySet<string> = new Set([
   'update-doc-snapshots.yml',
   'update-api-reference.yml',
   'update-adapter-docs.yml',
+  // The cognitive-complexity ratchet (#3427): seconds, so every PR.
+  'ci-complexity.yml',
   // Opt-in by label (`cr-tracked`).
   'pkg-pr-new.yml',
 ])

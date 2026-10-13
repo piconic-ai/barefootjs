@@ -1,0 +1,66 @@
+# CI — Complexity
+#
+# The cognitive-complexity ratchet (#3427, AGENTS.md "Complexity"). cccc
+# measures every function under packages/ in about a second; the check
+# (scripts/ci/complexity-ratchet.ts) fails when a function above the
+# threshold in cccc-baseline.json got more complex, when a new function
+# entered above it, or when a refactoring lowered a function and the
+# baseline was not regenerated (`bun run complexity:baseline`).
+#
+# Light set under the stacked-PR policy (AGENTS.md "CI on stacked PRs"):
+# it takes seconds, so it runs on every PR and is listed in
+# scripts/lib/heavy-gate.ts's EVERY_PR_WORKFLOWS.
+name: CI — Complexity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**/*.ts'
+      - 'packages/**/*.tsx'
+      - 'cccc.toml'
+      - 'cccc-baseline.json'
+      - 'scripts/ci/complexity-ratchet.ts'
+      - 'scripts/lib/complexity-ratchet.ts'
+      - '.github/workflows/ci-complexity.yml'
+  pull_request:
+    paths:
+      - 'packages/**/*.ts'
+      - 'packages/**/*.tsx'
+      - 'cccc.toml'
+      - 'cccc-baseline.json'
+      - 'scripts/ci/complexity-ratchet.ts'
+      - 'scripts/lib/complexity-ratchet.ts'
+      - '.github/workflows/ci-complexity.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-complexity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratchet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # Install only (no `path`): the ratchet script runs cccc itself so the
+      # JSON it reads is the same a local `bun run complexity:check` reads.
+      # The version is pinned to the one cccc-baseline.json was generated
+      # with; the script refuses a mismatch.
+      - name: Install cccc
+        uses: moznion/cccc-action@1d5313811f8451953e46a268c61791a01e40b7df # v1.1.2
+        with:
+          version: v1.8.0
+
+      - name: Complexity ratchet
+        # No dependencies: the script and its library import nothing from
+        # node_modules, so no `bun install`.
+        run: bun scripts/ci/complexity-ratchet.ts

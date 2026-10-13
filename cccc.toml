@@ -1,0 +1,28 @@
+# Cognitive / cyclomatic complexity measurement with cccc
+# (https://github.com/moznion/cccc), see AGENTS.md "Complexity".
+#
+#   bun run complexity            # the 20 most complex functions under packages/*/src, as a table
+#   bun run complexity:check      # the ratchet against cccc-baseline.json (CI runs this)
+#   bun run complexity:baseline   # regenerate cccc-baseline.json after a refactor
+#
+# The scope is the TypeScript that ships: `packages/*/src` (the report and
+# the ratchet pass those directories), minus the tests, fixtures, build output
+# and declaration files excluded below. Benchmarks, e2e fixtures, scripts and
+# runtime sources under other package directories are not measured.
+# `--top-cognitive` is a command-line-only option, so the report command
+# passes it itself.
+languages = ["es"]
+exclude = [
+  "**/dist/**",
+  "**/node_modules/**",
+  "**/__tests__/**",
+  "**/*.test.ts",
+  "**/*.test.tsx",
+  "**/*.spec.ts",
+  "**/fixtures/**",
+  "**/e2e/**",
+  "**/*.d.ts",
+]
+
+[ext]
+es = ["ts", "tsx"]

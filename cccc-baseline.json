@@ -1,0 +1,1095 @@
+{
+  "$comment": "Cognitive complexity of every function above the threshold, as measured by cccc (cccc.toml). Checked by `bun run complexity:check`; regenerate with `bun run complexity:baseline` after a refactoring lowers a function. Never edit by hand.",
+  "cccc": "1.8.0",
+  "threshold": 25,
+  "files": {
+    "packages/adapter-blade/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-blade/src/adapter/blade-adapter.ts": {
+      "emitExpression": [
+        27
+      ],
+      "renderLoop": [
+        63
+      ]
+    },
+    "packages/adapter-blade/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-blade/src/test-render.ts": {
+      "buildBladeProps": [
+        57
+      ],
+      "renderBladeComponent": [
+        48
+      ]
+    },
+    "packages/adapter-erb/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-erb/src/adapter/erb-adapter.ts": {
+      "renderLoop": [
+        76
+      ]
+    },
+    "packages/adapter-erb/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-erb/src/test-render.ts": {
+      "buildRubyProps": [
+        50
+      ],
+      "renderErbComponent": [
+        52
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/analysis/component-tree.ts": {
+      "collectNestedComponents": [
+        37
+      ],
+      "hasEventsInTree": [
+        39
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/analysis/static-element-loop-bake.ts": {
+      "allExpressionsFoldFor": [
+        50
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/go-template-adapter.ts": {
+      "arrayMethod": [
+        33
+      ],
+      "bodyChildrenReferenceOuterReactiveState": [
+        38
+      ],
+      "buildLocalTypeTables": [
+        40
+      ],
+      "callbackMethod": [
+        39
+      ],
+      "checkImportedLoopChildComponents/visit": [
+        32
+      ],
+      "collectStaticChildInstancesRecursive": [
+        59
+      ],
+      "convertExpressionToGo": [
+        27
+      ],
+      "emitCallerPropsInit": [
+        29
+      ],
+      "emitExpression": [
+        34
+      ],
+      "emitStaticBodyWrappers": [
+        28
+      ],
+      "generateNewPropsFunction": [
+        97
+      ],
+      "isStringExpr": [
+        29
+      ],
+      "loopRowChildPropOverrides": [
+        63
+      ],
+      "lowerChildInputFields": [
+        101
+      ],
+      "member": [
+        34
+      ],
+      "renderComponent": [
+        36
+      ],
+      "renderConditionExpr": [
+        81
+      ],
+      "renderConditional": [
+        28
+      ],
+      "renderFilterExprNode": [
+        86
+      ],
+      "renderLoop": [
+        75
+      ],
+      "resolveDynamicPropValue": [
+        40
+      ],
+      "resolveNestedLoopItemTypes": [
+        46
+      ],
+      "substituteJsInterpolations": [
+        32
+      ],
+      "synthesizeStructsFromElements": [
+        55
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/lib/template-scope.ts": {
+      "analyzeAction": [
+        31
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/memo/ctor-lowering.ts": {
+      "lowerCtorExpr": [
+        92
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/memo/memo-compute.ts": {
+      "collectPropsReadByCtorInit/visit": [
+        37
+      ],
+      "evalExprGo": [
+        37
+      ],
+      "memoInitialFromParsedBody": [
+        226
+      ],
+      "resolveStringConcatChainGo": [
+        34
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/memo/memo-value.ts": {
+      "fromStatementPrefix": [
+        29
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/memo/template-interp.ts": {
+      "computeTemplateLiteralMemoInitialValue": [
+        32
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/props/prop-types.ts": {
+      "buildPropTypeOverrides": [
+        28
+      ],
+      "collectOmittableAttrConsumedPropNames/walk": [
+        32
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/spread/spread-codegen.ts": {
+      "buildSpreadInitializer": [
+        31
+      ],
+      "collectRawSpreadAttrs": [
+        39
+      ],
+      "parsedObjectLiteralToGoMap": [
+        28
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/type/state-fields.ts": {
+      "collectPropFallbackVars": [
+        46
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/type/type-codegen.ts": {
+      "typeInfoToGo": [
+        39
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/value/parsed-literal-to-go.ts": {
+      "parsedLiteralToGo": [
+        68
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {
+      "collectFractionalChildProps/mayBeFractional": [
+        35
+      ],
+      "collectFractionalChildProps/visit": [
+        28
+      ],
+      "collectNullableSeedStructFields": [
+        30
+      ]
+    },
+    "packages/adapter-go-template/src/adapter/value/value-lowering.ts": {
+      "convertInitialValue": [
+        96
+      ]
+    },
+    "packages/adapter-go-template/src/test-render.ts": {
+      "buildDynamicChildLoopSeeding": [
+        59
+      ],
+      "buildGoPropsInit": [
+        32
+      ],
+      "goStructLiteral": [
+        31
+      ],
+      "renderGoTemplateComponent": [
+        73
+      ]
+    },
+    "packages/adapter-hono/src/adapter/hono-adapter.ts": {
+      "generateComponent": [
+        66
+      ]
+    },
+    "packages/adapter-hono/src/test-render.tsx": {
+      "renderHonoComponent": [
+        27
+      ]
+    },
+    "packages/adapter-hono/src/utils.ts": {
+      "serializeHydrationProps": [
+        56
+      ]
+    },
+    "packages/adapter-jinja/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-jinja/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
+      "renderLoop": [
+        60
+      ]
+    },
+    "packages/adapter-jinja/src/test-render.ts": {
+      "buildPythonProps": [
+        64
+      ],
+      "renderJinjaComponent": [
+        48
+      ]
+    },
+    "packages/adapter-mojolicious/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-mojolicious/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
+      "emitExpression": [
+        33
+      ],
+      "renderLoop": [
+        73
+      ]
+    },
+    "packages/adapter-mojolicious/src/test-render.ts": {
+      "buildChildDefaultsPerl": [
+        39
+      ],
+      "buildPerlProps": [
+        81
+      ],
+      "renderMojoComponent": [
+        39
+      ]
+    },
+    "packages/adapter-pebble/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-pebble/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
+      "renderLoop": [
+        75
+      ]
+    },
+    "packages/adapter-pebble/src/test-render.ts": {
+      "buildVars": [
+        48
+      ],
+      "renderPebbleComponent": [
+        56
+      ]
+    },
+    "packages/adapter-rust/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-rust/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-rust/src/adapter/minijinja-adapter.ts": {
+      "renderLoop": [
+        60
+      ]
+    },
+    "packages/adapter-rust/src/test-render.ts": {
+      "buildVars": [
+        48
+      ],
+      "renderMinijinjaComponent": [
+        55
+      ]
+    },
+    "packages/adapter-tests/src/adversarial-catalog.ts": {
+      "catalogValuesFor": [
+        33
+      ]
+    },
+    "packages/adapter-tests/src/claim-plan-conformance.ts": {
+      "readSlotSpecLiteral": [
+        31
+      ]
+    },
+    "packages/adapter-tests/src/coverage-map.ts": {
+      "collectContexts": [
+        29
+      ],
+      "collectKindsAndAxes": [
+        33
+      ]
+    },
+    "packages/adapter-tests/src/html-normalize.ts": {
+      "normalizeTagAttributeOrder": [
+        40
+      ],
+      "sortHtmlAttributes": [
+        28
+      ]
+    },
+    "packages/adapter-tests/src/hydration-props-inventory.ts": {
+      "runHydrationPropsInventory": [
+        33
+      ]
+    },
+    "packages/adapter-tests/src/marker-conformance.ts": {
+      "walkIRNode": [
+        40
+      ]
+    },
+    "packages/adapter-twig/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-twig/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-twig/src/adapter/twig-adapter.ts": {
+      "renderLoop": [
+        68
+      ]
+    },
+    "packages/adapter-twig/src/test-render.ts": {
+      "buildTwigProps": [
+        57
+      ],
+      "renderTwigComponent": [
+        48
+      ]
+    },
+    "packages/adapter-xslate/src/adapter/analysis/component-tree.ts": {
+      "collectImportedLoopChildComponentErrors/visit": [
+        32
+      ]
+    },
+    "packages/adapter-xslate/src/adapter/expr/array-method.ts": {
+      "renderArrayMethod": [
+        33
+      ]
+    },
+    "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
+      "emitExpression": [
+        33
+      ],
+      "renderLoop": [
+        88
+      ]
+    },
+    "packages/adapter-xslate/src/test-render.ts": {
+      "buildPerlProps": [
+        64
+      ],
+      "renderXslateComponent": [
+        48
+      ]
+    },
+    "packages/cli/src/commands/add.ts": {
+      "addFromRegistry": [
+        50
+      ]
+    },
+    "packages/cli/src/commands/debug-profile.ts": {
+      "run": [
+        80
+      ]
+    },
+    "packages/cli/src/commands/docs.ts": {
+      "printComponent": [
+        48
+      ]
+    },
+    "packages/cli/src/commands/init.ts": {
+      "scaffoldApp": [
+        31
+      ]
+    },
+    "packages/cli/src/commands/tokens-apply.ts": {
+      "applyColorOverride": [
+        30
+      ]
+    },
+    "packages/cli/src/lib/mdx.ts": {
+      "parseMdx": [
+        28
+      ]
+    },
+    "packages/cli/src/lib/preview-generate.ts": {
+      "generatePreview": [
+        29
+      ]
+    },
+    "packages/cli/src/lib/resolve-source.ts": {
+      "resolveComponentSource": [
+        42
+      ]
+    },
+    "packages/cli/src/lib/scenario-driver.ts": {
+      "rewriteLocalImports": [
+        32
+      ],
+      "runScenario": [
+        39
+      ]
+    },
+    "packages/cli/src/lib/test-template.ts": {
+      "analyzeFunction": [
+        40
+      ],
+      "generateDescribeBlock": [
+        38
+      ]
+    },
+    "packages/client/src/runtime/apply-rest-attrs.ts": {
+      "applyRestAttrs/<anonymous>": [
+        36
+      ]
+    },
+    "packages/client/src/runtime/component.ts": {
+      "materializeComponent": [
+        63
+      ],
+      "renderChild": [
+        27
+      ]
+    },
+    "packages/client/src/runtime/insert.ts": {
+      "updateFragmentConditional": [
+        33
+      ]
+    },
+    "packages/client/src/runtime/loop-markers.ts": {
+      "findLoopMarkers": [
+        27
+      ]
+    },
+    "packages/client/src/runtime/map-array-lazy.ts": {
+      "mapArrayLazy/<anonymous>": [
+        104
+      ]
+    },
+    "packages/client/src/runtime/map-array.ts": {
+      "findLoopMarkers": [
+        27
+      ],
+      "mapArray/<anonymous>": [
+        160
+      ],
+      "mapArrayAnchored/<anonymous>": [
+        51
+      ]
+    },
+    "packages/client/src/runtime/query.ts": {
+      "$t": [
+        30
+      ],
+      "qsa": [
+        28
+      ]
+    },
+    "packages/client/src/runtime/scope.ts": {
+      "getCommentScopeBoundary": [
+        28
+      ]
+    },
+    "packages/client/src/runtime/slot-resolver.ts": {
+      "findSsrScopeBySlotIn": [
+        31
+      ]
+    },
+    "packages/compat/src/cli.ts": {
+      "main": [
+        53
+      ]
+    },
+    "packages/create-barefootjs/src/index.ts": {
+      "main": [
+        26
+      ]
+    },
+    "packages/jsx/src/adapters/jsx-adapter.ts": {
+      "generateModuleScopeDeclarations": [
+        44
+      ],
+      "generateSignalInitializers": [
+        100
+      ],
+      "moduleScopeDeclarationNames": [
+        44
+      ]
+    },
+    "packages/jsx/src/adapters/loop-bound-names.ts": {
+      "collectLoopBoundNames/visit": [
+        55
+      ]
+    },
+    "packages/jsx/src/adapters/template-name-collisions.ts": {
+      "templateNameCollisionErrors/visit": [
+        47
+      ]
+    },
+    "packages/jsx/src/analyzer-context.ts": {
+      "typeNodeToTypeInfo": [
+        37
+      ]
+    },
+    "packages/jsx/src/analyzer.ts": {
+      "analyzeComponent": [
+        32
+      ],
+      "checkStatementsForReactiveFactoryArity": [
+        73
+      ],
+      "collectAmbientGlobals": [
+        36
+      ],
+      "collectConstant": [
+        142
+      ],
+      "collectEntryBindingNames/visit": [
+        28
+      ],
+      "collectFactorySignal": [
+        34
+      ],
+      "collectFunction": [
+        44
+      ],
+      "collectHelperModuleValueBindings": [
+        57
+      ],
+      "collectImport": [
+        32
+      ],
+      "collectMemo": [
+        36
+      ],
+      "detectReactiveFactory": [
+        48
+      ],
+      "extractAssignedIdentifiersFromNode/addFromTarget": [
+        28
+      ],
+      "extractMultiReturnJsxBranches": [
+        119
+      ],
+      "extractMutatedIdentifiersFromNode/visit": [
+        36
+      ],
+      "extractProps": [
+        31
+      ],
+      "moduleCaptureCheck": [
+        26
+      ],
+      "prescanImportedReactiveFactories": [
+        96
+      ],
+      "prescanImportedReactiveFactories/loadHelperFile": [
+        54
+      ],
+      "rewriteFactoryCallsInSource": [
+        26
+      ],
+      "scanImportedClientSignals": [
+        35
+      ],
+      "validateNamespaceQualifiedPrimitives": [
+        41
+      ],
+      "validateReactiveFactoryCalls": [
+        45
+      ],
+      "visit": [
+        117
+      ],
+      "visitComponentBody": [
+        58
+      ]
+    },
+    "packages/jsx/src/async-action-refusal.ts": {
+      "localsReadingActions": [
+        52
+      ]
+    },
+    "packages/jsx/src/augment-inherited-props.ts": {
+      "augmentInheritedPropAccesses/pinCoalesceLiterals/visit": [
+        31
+      ],
+      "augmentInheritedPropAccesses/walk": [
+        55
+      ],
+      "parseRecordIndexAccess": [
+        26
+      ]
+    },
+    "packages/jsx/src/combine-client-js.ts": {
+      "parseAndMerge": [
+        26
+      ]
+    },
+    "packages/jsx/src/compiler.ts": {
+      "compileJSX": [
+        100
+      ],
+      "compileMultipleComponents": [
+        109
+      ]
+    },
+    "packages/jsx/src/css-layer-prefixer.ts": {
+      "applyCssLayerPrefixToFile": [
+        37
+      ]
+    },
+    "packages/jsx/src/debug.ts": {
+      "buildGraphFromIR": [
+        27
+      ],
+      "collectDomBindings": [
+        142
+      ],
+      "collectLoopChildBindings": [
+        78
+      ],
+      "collectLoops": [
+        29
+      ],
+      "formatComponentGraph": [
+        87
+      ],
+      "formatWhyUpdate": [
+        26
+      ],
+      "walkForEvents": [
+        37
+      ]
+    },
+    "packages/jsx/src/expression-parser.ts": {
+      "checkSupport": [
+        145
+      ],
+      "collectDestructureBindings": [
+        49
+      ],
+      "convertCallExpression": [
+        119
+      ],
+      "convertNode": [
+        136
+      ],
+      "exprToString": [
+        35
+      ],
+      "findImpureDefaultNode": [
+        29
+      ],
+      "freeIdentifiers/visit": [
+        64
+      ],
+      "freeVarsInBody/visit": [
+        34
+      ],
+      "hasUnsafeStyleValue": [
+        33
+      ],
+      "inlineBinding/walk": [
+        33
+      ],
+      "parseProviderObjectLiteral": [
+        32
+      ],
+      "parseStatement": [
+        36
+      ],
+      "stringifyParsedExpr": [
+        39
+      ],
+      "substituteDestructuredFields/walk": [
+        30
+      ],
+      "toEvalNode": [
+        111
+      ],
+      "usesPerPath/walk": [
+        26
+      ],
+      "validateRestUsage/walk": [
+        48
+      ]
+    },
+    "packages/jsx/src/format-date-refusal.ts": {
+      "exprCallsName": [
+        32
+      ]
+    },
+    "packages/jsx/src/free-refs.ts": {
+      "resolveFreeRefsInternal": [
+        48
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/build-references.ts": {
+      "buildReferencesGraph": [
+        95
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/child-components.ts": {
+      "collectComponentNamesFromIR": [
+        32
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/client-only-elision.ts": {
+      "walkChildren": [
+        32
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/collect-elements.ts": {
+      "collectBranchLoops/loop": [
+        26
+      ],
+      "collectElements/loop": [
+        64
+      ],
+      "collectFromElement": [
+        55
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/compute-inlinability.ts": {
+      "populateCsrInlinable": [
+        38
+      ],
+      "toLegacyInlinability": [
+        31
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/compute-scope.ts": {
+      "computeDeclarationScopes": [
+        42
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/control-flow/plan/build-lazy-row.ts": {
+      "decideLazyRow": [
+        26
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/control-flow/shared.ts": {
+      "nestedLoopReferencesIndex": [
+        30
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/control-flow/stringify/event-delegation.ts": {
+      "emitKeyedLookup": [
+        29
+      ],
+      "stringifyEventDelegation": [
+        31
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/control-flow/stringify/insert.ts": {
+      "emitArmBody": [
+        31
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/control-flow/stringify/lazy-row.ts": {
+      "stringifyLazyRowLoop": [
+        60
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/control-flow/stringify/loop.ts": {
+      "stringifyPlainLoop": [
+        40
+      ],
+      "stringifyStaticLoop": [
+        26
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/csr-substitute.ts": {
+      "csrSubstituteOnce/visit": [
+        38
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/declaration-sort.ts": {
+      "sortDeclarations": [
+        46
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/emit-module-level.ts": {
+      "emitModuleLevelDeclarations": [
+        26
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/emit-reactive.ts": {
+      "emitDynamicTextUpdates": [
+        27
+      ],
+      "emitReactiveChildProps": [
+        39
+      ],
+      "emitReactivePropBindings": [
+        40
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/emit-registration.ts": {
+      "resolveChainedRefs": [
+        47
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/html-template.ts": {
+      "buildLoopSkeletonTemplate": [
+        62
+      ],
+      "canGenerateStaticTemplate": [
+        56
+      ],
+      "generateCsrTemplateWithOpts": [
+        77
+      ],
+      "irToComponentTemplateWithOpts": [
+        46
+      ],
+      "irToHtmlTemplate": [
+        48
+      ],
+      "irToPlaceholderTemplate": [
+        31
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/imports.ts": {
+      "collectExternalImports": [
+        37
+      ],
+      "mergeCompiledClientJsImports": [
+        45
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/plan/build-static-array-child-init.ts": {
+      "buildStaticArrayChildInitsPlan": [
+        35
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/reactivity.ts": {
+      "needsEffectWrapperCore": [
+        29
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/rewrite-destructured-props.ts": {
+      "rewriteBodyAliasReads": [
+        39
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/utils.ts": {
+      "collectIrFreeIds": [
+        33
+      ],
+      "rewriteIdentifierReferences/visit": [
+        26
+      ]
+    },
+    "packages/jsx/src/ir-to-client-js/walker.ts": {
+      "walkIR/walk": [
+        31
+      ]
+    },
+    "packages/jsx/src/jsx-to-ir.ts": {
+      "applyRowPortalKeyAttrs/visit": [
+        40
+      ],
+      "attachParsedExpressions": [
+        86
+      ],
+      "buildComponentNamespaces": [
+        28
+      ],
+      "buildIfStatementChain": [
+        57
+      ],
+      "buildPreambleSegments": [
+        29
+      ],
+      "checkBareSignalOrMemoIdentifier/visit": [
+        42
+      ],
+      "extractLoopParamBindings/walk": [
+        37
+      ],
+      "foldMultiReturnBranches": [
+        31
+      ],
+      "getAttributeValue": [
+        46
+      ],
+      "getDestructuredPropNames": [
+        30
+      ],
+      "processAttributes": [
+        36
+      ],
+      "processComponentProps": [
+        40
+      ],
+      "resolveCallbackMethodFunctionReferences/visit": [
+        29
+      ],
+      "transformExpressionInner": [
+        26
+      ],
+      "tryResolveTemplateSpanFromConst": [
+        43
+      ]
+    },
+    "packages/jsx/src/module-exports.ts": {
+      "generateModuleExports": [
+        37
+      ]
+    },
+    "packages/jsx/src/preprocess-inline-jsx-callbacks.ts": {
+      "collectFreeIdentifiers/visit": [
+        82
+      ],
+      "collectModuleScopeNames": [
+        31
+      ]
+    },
+    "packages/jsx/src/profiler.ts": {
+      "analyzeBatchAdvisor": [
+        27
+      ],
+      "buildProfileReport": [
+        55
+      ]
+    },
+    "packages/jsx/src/prop-rewrite.ts": {
+      "scopeFrameOf": [
+        27
+      ]
+    },
+    "packages/jsx/src/relocate.ts": {
+      "buildRelocateEnvFromFields": [
+        36
+      ],
+      "decideAction": [
+        28
+      ],
+      "isCallAcceptedByAdapter": [
+        33
+      ]
+    },
+    "packages/jsx/src/rich-type-refusal.ts": {
+      "checkExpr": [
+        30
+      ],
+      "walkNode": [
+        75
+      ]
+    },
+    "packages/jsx/src/scanner/js-scanner.ts": {
+      "findTopLevelTemplateLiterals": [
+        49
+      ]
+    },
+    "packages/jsx/src/ssr-defaults.ts": {
+      "evalNode": [
+        229
+      ],
+      "evalStatementsForReturn": [
+        39
+      ],
+      "extractSsrDefaults": [
+        79
+      ]
+    },
+    "packages/jsx/src/static-literal.ts": {
+      "evaluateStaticLiteral": [
+        66
+      ]
+    },
+    "packages/jsx/src/strip-types.ts": {
+      "collectTypeRanges": [
+        43
+      ]
+    },
+    "packages/jsx/src/template-position-walk.ts": {
+      "walkNode": [
+        68
+      ]
+    },
+    "packages/jsx/src/to-locale-date-lowering.ts": {
+      "deriveFormat": [
+        52
+      ],
+      "matchToLocaleDateStringCall": [
+        32
+      ]
+    },
+    "packages/jsx/src/value-references.ts": {
+      "isValueReferenceIdentifier": [
+        43
+      ]
+    },
+    "packages/router/src/router.ts": {
+      "navigate": [
+        39
+      ]
+    },
+    "packages/test/src/resolve-constants.ts": {
+      "resolveConstants": [
+        41
+      ]
+    },
+    "packages/xyflow/src/connection.ts": {
+      "attachConnectionHandler/<anonymous>/onMouseMove": [
+        30
+      ]
+    }
+  }
+}
