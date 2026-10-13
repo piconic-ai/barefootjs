@@ -789,3 +789,20 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
     expect(result.template).toContain('$t.label ~ $skipLabel')
   })
 })
+
+describe('XslateAdapter - optional boolean prop default witness (#3443)', () => {
+  const emit = (params: string, types: string) =>
+    compileAndGenerate(`
+export function C({ ${params} }: { ${types} }) {
+  return <p>{String(on && true)}</p>
+}
+`).template
+
+  test('a default reading an earlier boolean prop keeps the boolean stringify', () => {
+    expect(emit('off = false, on = off', 'off?: boolean; on?: boolean')).toContain('bool_str')
+  })
+
+  test('an undefined default does not', () => {
+    expect(emit('on = undefined', 'on?: boolean')).not.toContain('bool_str')
+  })
+})

@@ -1048,21 +1048,6 @@
         "text"
       ]
     },
-    "boolean-logical-stringify-dependent-default": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical"
-      ],
-      "axes": [
-        "literal:boolean",
-        "logical:&&"
-      ],
-      "contexts": [
-        "text"
-      ]
-    },
     "boolean-stringify-positions": {
       "kinds": [
         "binary",

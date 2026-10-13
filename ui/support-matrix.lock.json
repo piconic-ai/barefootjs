@@ -12626,10 +12626,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "boolean-logical-stringify-dependent-default",
-        "description": "A stringified && over a boolean prop defaulted to an earlier boolean prop renders true / false",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-logical-stringify-dependent-default.ts",
-        "code": "on && true"
+        "fixture": "logical-and-chain",
+        "description": "Chained a() && b() && <element/> conditional",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts",
+        "code": "ready() && visible()"
       }
     },
     "logical:??": {
