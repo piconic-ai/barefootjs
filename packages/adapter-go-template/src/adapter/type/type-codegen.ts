@@ -20,9 +20,11 @@ import type { GoEmitContext } from '../emit-context.ts'
  * keep the same representation in caller-provided and compiler-baked rows.
  * `owner` is the struct the field belongs to: an optional scalar field a
  * nullable signal seeds from (`nullableSeedStructFields`, #3323) is
- * `interface{}` so an omitted member stays `nil`. */
+ * `interface{}` so an omitted member stays `nil`, and a `number` field a seed
+ * gives a fraction (`fractionalSeedStructFields`, #3438) is `float64`. */
 export function propertyInfoToGo(ctx: GoEmitContext, property: PropertyInfo, owner?: string): string {
   if (owner !== undefined && ctx.state.nullableSeedStructFields.has(`${owner}.${property.name}`)) return 'interface{}'
+  if (owner !== undefined && ctx.state.fractionalSeedStructFields.has(`${owner}.${property.name}`)) return 'float64'
   const base = typeInfoToGo(ctx, property.type)
   return property.optional && ctx.state.localStructFields.has(base) ? `*${base}` : base
 }
@@ -76,7 +78,7 @@ export function collapseLiteralUnion(typeInfo: TypeInfo): TypeInfo {
  * `value-lowering.ts`/`parsed-literal-to-go.ts`). Returns `null` for anything
  * that isn't (possibly negated) a number literal.
  */
-function literalNumberValue(expr: ParsedExpr): number | null {
+export function literalNumberValue(expr: ParsedExpr): number | null {
   if (expr.kind === 'literal' && expr.literalType === 'number' && typeof expr.value === 'number') {
     return expr.value
   }

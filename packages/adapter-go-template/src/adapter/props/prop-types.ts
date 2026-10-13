@@ -80,6 +80,14 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
     }
   }
 
+  // A caller in the file passes this prop a value that can be fractional
+  // (`collectFractionalChildProps`, #3459): `int` can't hold it either.
+  for (const param of ir.metadata.propsParams) {
+    if (!ctx.state.fractionalChildProps.has(`${ir.metadata.componentName}.${param.sourceName ?? param.name}`)) continue
+    const resolved = overrides.get(param.name) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
+    if (resolved === 'int') overrides.set(param.name, 'float64')
+  }
+
   return overrides
 }
 

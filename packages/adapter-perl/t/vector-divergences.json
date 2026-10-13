@@ -4,14 +4,6 @@
   "runner": "packages/adapter-perl/t/helper_vectors.t",
   "spec": "spec/template-helpers.md",
   "divergences": {
-    "add/beyond the safe-integer edge rounds as a double": {
-      "expect": 9007199254740993,
-      "reason": "Perl IV arithmetic is 64-bit exact, not double-rounded"
-    },
-    "div/zero divisor yields Infinity": {
-      "throws": true,
-      "reason": "Perl native / dies on a zero divisor"
-    },
     "mod/remainder keeps the dividend sign": {
       "expect": 2,
       "reason": "Perl native % takes the divisor sign"

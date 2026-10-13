@@ -946,6 +946,10 @@ import { fixture as booleanLogicalStringifyDefaultAlias } from './boolean-logica
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
+import { fixture as objectSignalFieldMemo } from './object-signal-field-memo'
+import { fixture as objectSignalFieldChildProp } from './object-signal-field-child-prop'
+import { fixture as objectSignalFractionalFieldSeed } from './object-signal-fractional-field-seed'
+import { fixture as childNumberPropFraction } from './child-number-prop-fraction'
 import { fixture as objectLengthPropertyFilter } from './object-length-property-filter'
 // Static text directly adjacent to a conditional: no whitespace of the
 // template's own between them (#3321).
@@ -1568,6 +1572,10 @@ export const jsxFixtures: JSXFixture[] = [
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,
+  objectSignalFieldMemo,
+  objectSignalFieldChildProp,
+  objectSignalFractionalFieldSeed,
+  childNumberPropFraction,
   objectLengthPropertyFilter,
   textThenConditional,
   textThenConditionalStatic,

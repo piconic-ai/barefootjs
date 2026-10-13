@@ -8,7 +8,7 @@
  * comparison-ternary, block-body and object memo shapes.
  */
 
-import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
+import type { MemoInfo, ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 import {
   arithmeticOperandIsUndefined,
   asCallbackMethodCall,
@@ -29,9 +29,11 @@ import {
   getSignalInitialValueAsGo,
   mapJoinChainToGo,
   matchMapJoinChain,
+  unboxToGoScalar,
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
+import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
 import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from './memo-value.ts'
 
@@ -328,12 +330,200 @@ export function computeMemoInitialValue(
     ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
   )
   if (resolved !== null) return resolved
+  const evaluated = memo.parsed
+    ? evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
+    : null
+  const typed = evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
+  if (typed !== null) return typed
   // Zero value for the memo's Go type: `false` for bool, `""` for string,
   // `nil` for reference types, else the int `0`.
   if (goType === 'bool') return 'false'
   if (goType === 'string') return '""'
   if (nillable) return 'nil'
   return '0'
+}
+
+/** String methods with a runtime helper of the same JS semantics. */
+const STRING_METHOD_HELPER: Readonly<Record<string, string>> = {
+  toUpperCase: 'Upper',
+  toLowerCase: 'Lower',
+  trim: 'Trim',
+}
+
+/**
+ * Whether `expr` is an integer whatever its inputs: an integer literal, a
+ * `.length` read, or `+` / `-` / `*` / `%` / unary sign / a ternary over
+ * such operands.
+ */
+function isIntegerValued(expr: ParsedExpr): boolean {
+  switch (expr.kind) {
+    case 'literal':
+      return typeof expr.value === 'number' && Number.isInteger(expr.value)
+    case 'member':
+      return !expr.computed && expr.property === 'length'
+    case 'unary':
+      return (expr.op === '-' || expr.op === '+') && isIntegerValued(expr.argument)
+    case 'binary':
+      return ['+', '-', '*', '%'].includes(expr.op) && isIntegerValued(expr.left) && isIntegerValued(expr.right)
+    case 'conditional':
+      return isIntegerValued(expr.consequent) && isIntegerValued(expr.alternate)
+    default:
+      return false
+  }
+}
+
+/**
+ * Whether a memo's SSR value comes from the evaluator fallback and can be
+ * a fraction: no catalogue shape computes it, {@link evalExprGo} does, and
+ * the body isn't structurally an integer (`items().filter(…).length`). Such
+ * a `number` memo keeps an `interface{}` field instead of the `int` its
+ * declared type infers, which would drop the fraction (`u().age! * 3` over
+ * `2.5` is `7.5`, #3438).
+ */
+export function isEvaluatedMemo(
+  ctx: GoEmitContext,
+  memo: MemoInfo,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+): boolean {
+  if (!memo.parsed || isIntegerValued(memo.parsed)) return false
+  const resolving = new Set([memo.name])
+  if (computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, EMPTY_PROP_FALLBACK_VARS, resolving) !== null) return false
+  return evalExprGo(ctx, memo.parsed, signals, propsParams, EMPTY_PROP_FALLBACK_VARS, resolving) !== null
+}
+
+/**
+ * An `any`-typed Go value (an {@link evalExprGo} result) converted to a
+ * destination of Go type `goType` with JS's coercion: `bf.String` for a
+ * `string`, `bf.Truthy` for a `bool`, `bf.Number` for a `float64`, and an
+ * `int`/`float64` type switch for an `int` (`unboxToGoScalar`). An
+ * `interface{}` or unknown destination takes it as is. Null for any other
+ * type, which the value can't be assigned to.
+ */
+export function evaluatedAsGoType(evaluated: string, goType: string | undefined): string | null {
+  if (goType === undefined || goType === 'any' || goType === 'interface{}') return evaluated
+  if (goType === 'string') return `bf.String(${evaluated})`
+  if (goType === 'bool') return `bf.Truthy(${evaluated})`
+  if (goType === 'float64') return `bf.Number(${evaluated})`
+  if (goType === 'int') return unboxToGoScalar(evaluated, 'int')
+  return null
+}
+
+/**
+ * An expression evaluated at construction by the runtime's JS evaluator
+ * (`bf.EvalExpr`) over the SSR values of the signals, memos and props it
+ * reads: a memo body the shapes in {@link memoInitialFromParsedBody} don't
+ * recognise (#3436), or a child prop value (#3437), such as `u().name ?? 'x'`
+ * or `(u().age ?? 0) + 1` over an object signal. A no-argument `toUpperCase` / `toLowerCase` / `trim` call, which
+ * the evaluator does not run, wraps the evaluated receiver in its runtime
+ * helper. The result is an `any`, so the caller converts it to the memo
+ * field's Go type. Null when the body is outside the evaluator's surface or
+ * reads a name with no SSR value.
+ */
+export function evalExprGo(
+  ctx: GoEmitContext,
+  body: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  resolving: ReadonlySet<string>,
+): string | null {
+  if (body.kind === 'array-method' && body.args.length === 0) {
+    const helper = STRING_METHOD_HELPER[body.method]
+    if (!helper) return null
+    const recv = evalExprGo(ctx, body.object, signals, propsParams, propFallbackVars, resolving)
+    return recv === null ? null : `bf.${helper}(${recv})`
+  }
+  // Env readers are per-request readers the evaluator can't invoke.
+  const knownGetterNames = new Set<string>(
+    ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),
+  )
+  const materialized = materializeGetterCalls(body, knownGetterNames)
+  const json = serializeParsedExpr(materialized)
+  if (json === null) return null
+  const entries: string[] = []
+  for (const name of freeVarsInBody(materialized, new Set())) {
+    if (name === 'undefined') continue
+    let goExpr: string | null = null
+    const signal = signals.find(s => s.getter === name)
+    const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
+    const param = propsParams.find(p => p.name === name)
+    if (signal) {
+      // A literal seed goes in as the JS value itself: an object as a
+      // source-keyed map, so a field the literal omits stays absent for
+      // `??` instead of reading as the Go zero value of a struct field.
+      const literal = signal.parsed ? seedLiteralToEvalGo(ctx, signal.parsed) : null
+      if (literal !== null) {
+        goExpr = literal
+      } else {
+        goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
+        // `0` is also its answer for a seed it can't resolve; the evaluator
+        // would compute over that stand-in instead of the real value.
+        if (goExpr === '0' && signal.initialValue.trim() !== '0') return null
+      }
+    } else if (memo) {
+      if (resolving.has(memo.name)) return null
+      goExpr = memoEnvValueGo(ctx, memo, signals, propsParams, propFallbackVars, new Set([...resolving, memo.name]))
+    } else if (param) {
+      const hoisted = propFallbackVars.get(name)
+      goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
+    }
+    if (goExpr === null) return null
+    entries.push(`${JSON.stringify(name)}: ${goExpr}`)
+  }
+  return `bf.EvalExpr("${escapeGoString(json)}", map[string]any{${entries.join(', ')}})`
+}
+
+/**
+ * A seed literal as the evaluator's JS value: a scalar as its Go literal,
+ * `null` / `undefined` as `nil`, an object as a source-keyed
+ * `map[string]any` and an array as a `[]any`. Null for anything else (a
+ * spread, a shorthand or other identifier, a call).
+ */
+function seedLiteralToEvalGo(ctx: GoEmitContext, expr: ParsedExpr): string | null {
+  if (isNullishLiteral(expr)) return 'nil'
+  if (expr.kind === 'object-literal') {
+    const entries: string[] = []
+    for (const prop of expr.properties) {
+      if (prop.kind === 'spread') return null
+      const value = seedLiteralToEvalGo(ctx, prop.value)
+      if (value === null) return null
+      entries.push(`${JSON.stringify(prop.key)}: ${value}`)
+    }
+    return `map[string]any{${entries.join(', ')}}`
+  }
+  if (expr.kind === 'array-literal') {
+    const elements: string[] = []
+    for (const element of expr.elements) {
+      const value = seedLiteralToEvalGo(ctx, element)
+      if (value === null) return null
+      elements.push(value)
+    }
+    return `[]any{${elements.join(', ')}}`
+  }
+  return parsedLiteralToGo(ctx, expr)
+}
+
+/**
+ * A memo's SSR value as an evaluator environment entry: the same value its
+ * own field takes in {@link computeMemoInitialValue} — `nil` for an identity
+ * chain over a nullish seed, `NaN` for arithmetic over an `undefined` one —
+ * else its hoisted local, a catalogue shape or the evaluator. Null when none
+ * resolves.
+ */
+function memoEnvValueGo(
+  ctx: GoEmitContext,
+  memo: MemoInfo,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  resolving: ReadonlySet<string>,
+): string | null {
+  if (isNullishIdentityMemo(ctx, memo, signals, resolving)) return 'nil'
+  if (memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) return 'bf.Number(nil)'
+  return ctx.state.hoistedMemoLocals.get(memo.name) ??
+    computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, propFallbackVars, resolving) ??
+    (memo.parsed ? evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, resolving) : null)
 }
 
 /**

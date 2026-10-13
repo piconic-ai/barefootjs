@@ -447,6 +447,24 @@ subtest 'equality between an arithmetic result and a literal (#3445)' => sub {
     ok(BarefootJS::Evaluator::evaluate(nincludes(nid('xs'), $sum), { xs => [0.1] }), '[0.1].includes(0.1 + 0)');
 };
 
+subtest 'division by a signed zero (#3454)' => sub {
+    # A -0 from arithmetic underflow (`-1e-300 * 1e-300`) flips the sign of
+    # the infinity, as in JS. The template runtime's `divide` shares the
+    # decision with the evaluator.
+    require BarefootJS;
+    my $bf = bless {}, 'BarefootJS';
+    my $neg_zero = $bf->multiply(-1e-300, 1e-300);
+    is($bf->string($bf->divide(1, $neg_zero)),  '-Infinity', 'runtime: 1 / -0');
+    is($bf->string($bf->divide(-1, $neg_zero)), 'Infinity',  'runtime: -1 / -0');
+    is($bf->string($bf->divide(1, 0)),          'Infinity',  'runtime: 1 / 0');
+    is($bf->string($bf->divide(-1, 0)),         '-Infinity', 'runtime: -1 / 0');
+    is($bf->string($bf->divide(0, $neg_zero)),  'NaN',       'runtime: 0 / -0');
+    my $num = sub { { kind => 'literal', value => $_[0], literalType => 'number' } };
+    my $under = nbin('*', $num->(-1e-300), $num->(1e-300));
+    is(BarefootJS::Evaluator::_format_number(BarefootJS::Evaluator::evaluate(nbin('/', $num->(1), $under), {})),
+        '-Infinity', 'evaluator: 1 / (-1e-300 * 1e-300)');
+};
+
 subtest 'number notation at the 1e-6 / 1e21 boundaries (#3380)' => sub {
     # JS prints decimal within [1e-6, 1e21) and an unpadded lower-case
     # exponent outside it; Perl's own `%.15g` pads the exponent and drops

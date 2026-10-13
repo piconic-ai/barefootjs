@@ -1294,6 +1294,27 @@
         "text"
       ]
     },
+    "child-number-prop-fraction": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "child-primitive-props": {
       "kinds": [
         "identifier",
@@ -6819,6 +6840,28 @@
         "text"
       ]
     },
+    "object-signal-field-child-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "object-signal-field-length": {
       "kinds": [
         "array-literal",
@@ -6835,6 +6878,51 @@
         "literal:number",
         "literal:string",
         "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "object-signal-field-memo": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "object-signal-fractional-field-seed": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "attribute",
