@@ -111,7 +111,10 @@ sub _match {
     # string "42", and the evaluator returning the number 42 must NOT pass.
     my $want_num = _is_real_number($expect);
     return 0 if $want_num != _is_real_number($got);
-    return ($got == $expect ? 1 : 0) if $want_num;
+    # The expected value is decoded at the perl's NV precision; the evaluator
+    # answers a double, so compare both as doubles (#3445).
+    return (BarefootJS::Evaluator::_double($got) == BarefootJS::Evaluator::_double($expect) ? 1 : 0)
+        if $want_num;
     return ($got eq $expect) ? 1 : 0;
 }
 

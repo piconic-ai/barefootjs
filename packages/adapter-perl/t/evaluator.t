@@ -435,22 +435,54 @@ subtest 'array-method join (#2094)' => sub {
         'a,,b', 'a null/undef element joins as empty, not the string "null"');
 };
 
+subtest 'equality between an arithmetic result and a literal (#3445)' => sub {
+    # The literal stays at the perl's NV precision while `0.1 + 0` is
+    # rounded to a double; on a wide-NV perl they must still compare equal,
+    # as they do in JS.
+    my $lit = { kind => 'literal', value => 0.1, literalType => 'number' };
+    my $zero = { kind => 'literal', value => 0, literalType => 'number' };
+    my $sum = nbin('+', $lit, $zero);
+    ok(BarefootJS::Evaluator::evaluate(nbin('===', $sum, $lit), {}), '(0.1 + 0) === 0.1');
+    ok(!BarefootJS::Evaluator::evaluate(nbin('!==', $sum, nid('x')), { x => 0.1 }), '(0.1 + 0) !== x is false for x = 0.1');
+    ok(BarefootJS::Evaluator::evaluate(nincludes(nid('xs'), $sum), { xs => [0.1] }), '[0.1].includes(0.1 + 0)');
+};
+
+subtest 'division by a signed zero (#3454)' => sub {
+    # A -0 from arithmetic underflow (`-1e-300 * 1e-300`) flips the sign of
+    # the infinity, as in JS. The template runtime's `divide` shares the
+    # decision with the evaluator.
+    require BarefootJS;
+    my $bf = bless {}, 'BarefootJS';
+    my $neg_zero = $bf->multiply(-1e-300, 1e-300);
+    is($bf->string($bf->divide(1, $neg_zero)),  '-Infinity', 'runtime: 1 / -0');
+    is($bf->string($bf->divide(-1, $neg_zero)), 'Infinity',  'runtime: -1 / -0');
+    is($bf->string($bf->divide(1, 0)),          'Infinity',  'runtime: 1 / 0');
+    is($bf->string($bf->divide(-1, 0)),         '-Infinity', 'runtime: -1 / 0');
+    is($bf->string($bf->divide(0, $neg_zero)),  'NaN',       'runtime: 0 / -0');
+    my $num = sub { { kind => 'literal', value => $_[0], literalType => 'number' } };
+    my $under = nbin('*', $num->(-1e-300), $num->(1e-300));
+    is(BarefootJS::Evaluator::_format_number(BarefootJS::Evaluator::evaluate(nbin('/', $num->(1), $under), {})),
+        '-Infinity', 'evaluator: 1 / (-1e-300 * 1e-300)');
+};
+
 subtest 'number notation at the 1e-6 / 1e21 boundaries (#3380)' => sub {
     # JS prints decimal within [1e-6, 1e21) and an unpadded lower-case
     # exponent outside it; Perl's own `%.15g` pads the exponent and drops
-    # digits past 15.
+    # digits past 15. Arithmetic goes through the evaluator, which computes
+    # in doubles even on a perl whose NV is wider (#3445).
+    my $calc = \&BarefootJS::Evaluator::_binary;
     my @cases = (
-        [ 1234567890 / 1e15,      '0.00000123456789' ],
-        [ 1234567890 / 1e16,      '1.23456789e-7' ],
-        [ 1234567890 * 1e12,      '1.23456789e+21' ],
-        [ 1e-6,                   '0.000001' ],
-        [ 1e-7,                   '1e-7' ],
-        [ -1.5e-7,                '-1.5e-7' ],
-        [ 1e20,                   '100000000000000000000' ],
-        [ 1e21,                   '1e+21' ],
-        [ 12345678901234567890.0, '12345678901234567000' ],
-        [ 0.1 + 0.2,              '0.30000000000000004' ],
-        [ 5e-324,                 '5e-324' ],
+        [ $calc->('/', 1234567890, 1e15), '0.00000123456789' ],
+        [ $calc->('/', 1234567890, 1e16), '1.23456789e-7' ],
+        [ $calc->('*', 1234567890, 1e12), '1.23456789e+21' ],
+        [ 1e-6,                           '0.000001' ],
+        [ 1e-7,                           '1e-7' ],
+        [ -1.5e-7,                        '-1.5e-7' ],
+        [ 1e20,                           '100000000000000000000' ],
+        [ 1e21,                           '1e+21' ],
+        [ 12345678901234567890.0,         '12345678901234567000' ],
+        [ $calc->('+', 0.1, 0.2),         '0.30000000000000004' ],
+        [ 5e-324,                         '5e-324' ],
     );
     for my $c (@cases) {
         is(BarefootJS::Evaluator::_format_number($c->[0]), $c->[1], "formats $c->[1]");

@@ -46,6 +46,14 @@ import {
   renderMapEval,
 } from './array-method.ts'
 
+/** Runtime helpers for JS arithmetic over numbers (#3454). */
+const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
+  '+': 'add',
+  '-': 'subtract',
+  '*': 'multiply',
+  '/': 'divide',
+}
+
 /**
  * Local shape for the predicate-lowering helpers (`buildPredicateEval` and the
  * Kolon-lambda fallback). Previously these read a `higher-order` ParsedExpr
@@ -207,9 +215,13 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
     // operator at all, so string comparisons stay on `==` / `!=` here.
+    // JS `+ - * /` over numbers goes through the runtime, which computes
+    // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
+    // yields Infinity / NaN for a zero divisor (#3454).
+    const arithmetic = ARITHMETIC_HELPERS[op]
+    if (arithmetic) return `$bf.${arithmetic}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*', '/': '/',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
   }
@@ -493,9 +505,13 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
     // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all
     // equality comparisons — string or numeric — stay on `==` / `!=`.
+    // JS `+ - * /` over numbers goes through the runtime, which computes
+    // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
+    // yields Infinity / NaN for a zero divisor (#3454).
+    const arithmetic = ARITHMETIC_HELPERS[op]
+    if (arithmetic) return `$bf.${arithmetic}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
   }

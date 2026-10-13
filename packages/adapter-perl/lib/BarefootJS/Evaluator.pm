@@ -307,6 +307,14 @@ sub _nan {
 # JS coercion primitives (ToNumber / ToString / ToBoolean).
 # ---------------------------------------------------------------------------
 
+# _double: the IEEE double nearest $n. A JS number is a double, but a perl
+# built with -Duselongdouble or -Dusequadmath keeps a wider NV, so `0.1 + 0.2`
+# is 0.3 there and a round-trip check passes at a precision JS doesn't have
+# (#3445). Rounding where a number enters and after each arithmetic step keeps
+# those perls on JS's values; with an 8-byte NV it is the identity.
+use constant WIDE_NV => length(pack 'F', 0) > 8;
+sub _double ($n) { WIDE_NV ? unpack('d', pack('d', $n)) : $n }
+
 sub _to_number ($v) {
     return 0 if !defined $v;
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 1 : 0 }
@@ -316,9 +324,10 @@ sub _to_number ($v) {
         $t =~ s/\A\s+//;
         $t =~ s/\s+\z//;
         return 0 if $t eq '';
-        return looks_like_number($t) ? ($t + 0) : _nan();
+        return looks_like_number($t) ? _double($t + 0) : _nan();
     }
-    return $v + 0;
+    # Already a number: no `+ 0`, which would turn a -0 into +0.
+    return _double($v);
 }
 
 sub _to_string ($v) {
@@ -332,10 +341,11 @@ sub _to_string ($v) {
 # `%.15g`, which drops digits (`0.1 + 0.2` -> "0.3"), spells the non-finite
 # doubles "Inf" / "NaN", and pads a small exponent (`1.23456789e-06`).
 # Integers below 2**53 print exactly; everything else takes the shortest
-# `%.Ng` that round-trips and re-spells it with ECMA-262's notation rules:
+# `%.Ng` that round-trips as a double and re-spells it with ECMA-262's notation rules:
 # decimal within [1e-6, 1e21), otherwise an unpadded lower-case exponent
 # (`1.23456789e-7`, `1.23456789e+21`) (#3380).
 sub _format_number ($n) {
+    $n = _double($n);
     return 'NaN'       if $n != $n;
     return 'Infinity'  if $n == 9**9**9;
     return '-Infinity' if $n == -(9**9**9);
@@ -344,7 +354,7 @@ sub _format_number ($n) {
     my $s;
     for my $p (1 .. 17) {
         $s = sprintf('%.*g', $p, $n);
-        last if $s + 0 == $n;
+        last if _double($s + 0) == $n;
     }
     return _js_notation($s);
 }
@@ -404,22 +414,12 @@ sub _binary ($op, $l, $r) {
         # JS `+`: string concatenation once either operand is a string,
         # numeric addition otherwise.
         return _to_string($l) . _to_string($r) if _is_string($l) || _is_string($r);
-        return _to_number($l) + _to_number($r);
+        return _double(_to_number($l) + _to_number($r));
     }
-    return _to_number($l) - _to_number($r) if $op eq '-';
-    return _to_number($l) * _to_number($r) if $op eq '*';
+    return _double(_to_number($l) - _to_number($r)) if $op eq '-';
+    return _double(_to_number($l) * _to_number($r)) if $op eq '*';
     if ($op eq '/') {
-        my $ln = _to_number($l);
-        my $rn = _to_number($r);
-        # JS division by zero is finite-valued, not an error: x/0 is ±Infinity
-        # (NaN for 0/0). Perl's native `/` dies on a zero divisor, so guard it
-        # to stay JS-faithful and match the Go evaluator (Go float division
-        # already yields ±Inf / NaN).
-        if ($rn == 0) {
-            return _nan() if $ln == 0 || $ln != $ln;
-            return $ln > 0 ? 9**9**9 : -(9**9**9);
-        }
-        return $ln / $rn;
+        return _divide(_to_number($l), _to_number($r));
     }
     if ($op eq '%') {
         my $rn = _to_number($r);
@@ -431,6 +431,19 @@ sub _binary ($op, $l, $r) {
     return _bool(!_strict_eq($l, $r)) if $op eq '!==';
     # Loose equality / bitwise / shift are out of the subset.
     return undef;
+}
+
+# _divide: JS `/` over two numbers, as a double. Division by zero is
+# finite-valued, not an error: x/0 is ±Infinity, signed by both operands
+# (`1 / -0` is -Infinity), and 0/0 or NaN/0 is NaN. Perl's native `/` dies
+# on a zero divisor. Shared with the template runtime's `divide` (#3454).
+sub _divide ($ln, $rn) {
+    if ($rn == 0) {
+        return _nan() if $ln == 0 || $ln != $ln;
+        my $negative = ($ln < 0) != (POSIX::signbit($rn) ? 1 : 0);
+        return $negative ? -(9**9**9) : 9**9**9;
+    }
+    return _double($ln / $rn);
 }
 
 sub _relational ($op, $l, $r) {
@@ -458,7 +471,9 @@ sub _strict_eq ($l, $r) {
     my $ln = _is_number($l);
     my $rn = _is_number($r);
     if ($ln && $rn) {
-        my ($lf, $rf) = ($l + 0, $r + 0);
+        # Compared as doubles: an arithmetic result is already rounded to
+        # one, but a literal or env value on a wide-NV perl is not (#3445).
+        my ($lf, $rf) = (_double($l + 0), _double($r + 0));
         return 0 if $lf != $lf || $rf != $rf;    # NaN
         return $lf == $rf ? 1 : 0;
     }

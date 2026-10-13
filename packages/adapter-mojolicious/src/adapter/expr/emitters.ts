@@ -48,6 +48,14 @@ import {
   renderMapEval,
 } from './array-method.ts'
 
+/** Runtime helpers for JS arithmetic over numbers (#3454). */
+const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
+  '+': 'add',
+  '-': 'subtract',
+  '*': 'multiply',
+  '/': 'divide',
+}
+
 /**
  * Local shape for the predicate-method fallback chain (#2018 P5). The
  * higher-order callback arrives as a generic `call`; `callbackMethod` recovers
@@ -260,9 +268,13 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
       return `${l} . ${r}`
     }
+    // JS `+ - * /` over numbers goes through the runtime, which computes
+    // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
+    // yields Infinity / NaN for a zero divisor (#3454).
+    const arithmetic = ARITHMETIC_HELPERS[op]
+    if (arithmetic) return `bf->${arithmetic}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*', '/': '/',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
   }
@@ -602,9 +614,13 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))) {
       return `${l} . ${r}`
     }
+    // JS `+ - * /` over numbers goes through the runtime, which computes
+    // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
+    // yields Infinity / NaN for a zero divisor (#3454).
+    const arithmetic = ARITHMETIC_HELPERS[op]
+    if (arithmetic) return `bf->${arithmetic}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
   }

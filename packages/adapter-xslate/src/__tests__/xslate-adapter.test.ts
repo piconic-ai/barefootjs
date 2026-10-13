@@ -170,7 +170,7 @@ export function Child(props: { value: number }) {
   return <span>{displayValue()}</span>
 }
 `)
-    expect(template).toContain(': my $displayValue = $value * 10;')
+    expect(template).toContain(': my $displayValue = $bf.multiply($value, 10);')
   })
 
   test('seeds a memo over a destructured prop', () => {
@@ -182,7 +182,7 @@ export function Child({ value }: { value: number }) {
   return <span>{displayValue()}</span>
 }
 `)
-    expect(template).toContain(': my $displayValue = $value * 10;')
+    expect(template).toContain(': my $displayValue = $bf.multiply($value, 10);')
   })
 })
 
@@ -475,9 +475,9 @@ function Widget() {
 }
 `)
     // The loop body must reference the per-iteration loop var...
-    expect(template).toContain('1 + $label')
+    expect(template).toContain('$bf.add(1, $label)')
     // ...never the outer const's hard-coded value.
-    expect(template).not.toContain("1 + 'x'")
+    expect(template).not.toContain("$bf.add(1, 'x')")
   })
 
   test('a numeric const shadowed by a loop param emits the identifier too', () => {
@@ -487,8 +487,8 @@ function Widget() {
   return <ul>{[2, 5].map((count) => <li key={count}>{1 + count}</li>)}</ul>
 }
 `)
-    expect(template).toContain('1 + $count')
-    expect(template).not.toContain('1 + 7')
+    expect(template).toContain('$bf.add(1, $count)')
+    expect(template).not.toContain('$bf.add(1, 7)')
   })
 
   test('a literal const NOT shadowed by any loop still inlines (#1897 pin)', () => {
@@ -501,7 +501,7 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain('1 + 5')
+    expect(template).toContain('$bf.add(1, 5)')
   })
 
   // Position-accurate scope (#2482 Stage 2): a name that is loop-bound
@@ -518,8 +518,8 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("1 + 'x'")
-    expect(template).toContain('2 + $label')
+    expect(template).toContain("$bf.add(1, 'x')")
+    expect(template).toContain('$bf.add(2, $label)')
   })
 })
 
