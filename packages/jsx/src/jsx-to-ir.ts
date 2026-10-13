@@ -85,7 +85,8 @@ interface ReactivityPatterns {
   constants: { name: string; value: string | undefined; pattern: RegExp }[]
 }
 
-interface TransformContext {
+/** @internal exported for the per-decision loop tests (`map-call-decisions.test.ts`). */
+export interface TransformContext {
   analyzer: AnalyzerContext
   sourceFile: ts.SourceFile
   filePath: string
@@ -793,7 +794,8 @@ function getDestructuredPropAliases(ctx: TransformContext): Map<string, string> 
   return ctx._destructuredPropAliases ?? null
 }
 
-function createTransformContext(analyzer: AnalyzerContext): TransformContext {
+/** @internal exported for the per-decision loop tests (`map-call-decisions.test.ts`). */
+export function createTransformContext(analyzer: AnalyzerContext): TransformContext {
   // Shared by `patterns.props` (regex matching) and `boundPropNames`
   // (exact-name binding checks, #2835) so both agree on which prop
   // params are in play — `children` excluded from both the same way.
@@ -4711,6 +4713,1259 @@ function extractItemConditionalKey(cond: IRConditional): string | null {
   return a ?? b
 }
 
+// =============================================================================
+// `.map()` / `.flatMap()` lowering (#3424)
+//
+// `transformMapCall` is a coordinator over one function per decision the
+// loop lowering makes, in the order the IR needs them:
+//
+//   1. `resolveLoopSource`        — which array is iterated, and what the
+//                                   receiver chain lifted out of it
+//   2. `resolveLoopRowParams`     — the names a row binds (item / index /
+//                                   destructure paths)
+//   3. `transformLoopCallbackBody` — the row's children, preamble and
+//                                   flatMap carrier, under the row's scope
+//   4. `refuseUnloweredJsxCallback` — the sound-or-loud structural net
+//   5. `resolveLoopKey`           — the keyFn and the key attribute stamp
+//   6. `applyPreambleBuilderPasses` / `markPreambleReactivity` — the
+//                                   preamble's after-the-fact wiring
+//   7. `classifyLoopArray`        — static vs. reconciled rendering
+//
+// Every helper keeps the exact statement order of the single function it was
+// carved from, so diagnostics, slot ids and marker ids are emitted in the
+// same sequence as before. The helpers are exported for their unit tests
+// (`__tests__/map-call-decisions.test.ts`) and are not part of the package's
+// public surface.
+// =============================================================================
+
+/** The `/* @client *\/` escape every DSL-only refusal below offers, for an expression position. */
+const CLIENT_ONLY_EXPRESSION_SUGGESTION = 'Add /* @client */ to evaluate this expression on the client only'
+/** The same escape, worded for a whole loop. */
+const CLIENT_ONLY_LOOP_SUGGESTION = 'Add /* @client */ to render this loop on the client only'
+
+/**
+ * The loop's SOURCE after the receiver chain is recognised: the array
+ * expression the loop iterates (`array`, its `_p.`-rewritten `templateArray`
+ * twin, and the AST node it was read from), plus whatever the chain lifted
+ * out of it — the filter predicate, the sort comparator, their order, and
+ * the `.entries()` / `Object.entries()` iteration shape.
+ */
+export interface LoopSourcePlan {
+  array: string
+  templateArray: string | undefined
+  /**
+   * AST node `array` was read from, so the static-array decision can run
+   * `exprHasFunctionCalls` on it. Starts as the full map source, which
+   * matches the plain-`.map()` fallback.
+   */
+  arrayExpr: ts.Expression
+  filterPredicate: FilterPredicateResult | undefined
+  sortComparator: IRLoopSort | undefined
+  chainOrder: 'filter-sort' | 'sort-filter' | undefined
+  iterationShape: 'entries' | 'keys' | undefined
+  objectIteration: 'entries' | 'keys' | 'values' | undefined
+}
+
+/**
+ * Strip an iterator wrapper off the map source and record its shape.
+ *
+ * `.entries()` / `.keys()` / `.values()` (the array instance-method form) is
+ * stripped so adapters emit the right loop variable bindings; `.values()` is
+ * a no-op (same as plain `.map()`) so it's stripped but not recorded. The
+ * STATIC `Object.entries(x)` / `.keys(x)` / `.values(x)` form (#2168
+ * object-entries-map) is a SEPARATE shape — see `isObjectIteratorCall`'s and
+ * `IRLoop.objectIteration`'s docstrings — and there `'values'` DOES need
+ * recording (`x` itself isn't iterable as a plain object). The inner
+ * expression feeds the filter/sort chain detection. It is widened to
+ * `ts.Expression` since `isObjectIteratorCall`'s stripped argument can be
+ * any expression (`x ?? {}`, not just a `LeftHandSideExpression`).
+ */
+function stripIteratorWrapper(mapSource: ts.LeftHandSideExpression): {
+  chainSource: ts.Expression
+  iterationShape: LoopSourcePlan['iterationShape']
+  objectIteration: LoopSourcePlan['objectIteration']
+} {
+  const iteratorInfo = isIteratorShapeCall(mapSource)
+  if (iteratorInfo) {
+    const iterationShape =
+      iteratorInfo.shape === 'entries' ? 'entries'
+      : iteratorInfo.shape === 'keys' ? 'keys'
+      : undefined
+    return { chainSource: iteratorInfo.array, iterationShape, objectIteration: undefined }
+  }
+  const objectIteratorInfo = isObjectIteratorCall(mapSource)
+  if (objectIteratorInfo) {
+    return {
+      chainSource: objectIteratorInfo.object,
+      iterationShape: undefined,
+      objectIteration: objectIteratorInfo.shape,
+    }
+  }
+  return { chainSource: mapSource, iterationShape: undefined, objectIteration: undefined }
+}
+
+/**
+ * An off-subset comparator / predicate stays in the array string for client
+ * / SSR evaluation. The diagnostic is raised only when the target adapter's
+ * runtime can't run the callback body verbatim (DSL); a JS-runtime adapter
+ * runs it, so rejecting it would be a universal error for a DSL-only limit.
+ * See spec/callback-fidelity.md.
+ */
+function refuseOffSubsetCallback(
+  kind: 'sort' | 'filter',
+  callback: ts.Expression,
+  unsupportedReason: string | undefined,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): void {
+  if (isClientOnly || !unsupportedReason) return
+  if (ctx.analyzer.acceptsCallbackBody?.(kind) ?? false) return
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+      getSourceLocation(callback, ctx.sourceFile, ctx.filePath),
+      {
+        message: `Expression cannot be compiled to marked template: ${unsupportedReason}`,
+        suggestion: {
+          message: CLIENT_ONLY_EXPRESSION_SUGGESTION,
+        },
+      }
+    )
+  )
+}
+
+/** Binds `array` / `templateArray` / `arrayExpr` on the plan from one AST node. */
+type SetLoopArray = (expr: ts.Expression) => void
+
+/**
+ * Outermost call is a sort: `sort().map()` or `filter().sort().map()`.
+ * A comparator the catalogue can't model keeps the whole chain (sort and
+ * filter alike) in the array string for client evaluation.
+ */
+function resolveSortOuterChain(
+  sortInfo: NonNullable<ReturnType<typeof isSortCall>>,
+  mapSource: ts.Expression,
+  plan: LoopSourcePlan,
+  setArray: SetLoopArray,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): void {
+  const innerFilter = isFilterCall(sortInfo.array)
+  const sortExtraction = extractSortComparator(sortInfo.callback, sortInfo.method, ctx)
+  if (isClientOnly || !sortExtraction.result) {
+    refuseOffSubsetCallback('sort', sortInfo.callback, sortExtraction.unsupportedReason, ctx, isClientOnly)
+    // Keep sort (and filter if present) in array string for client evaluation
+    setArray(mapSource)
+    return
+  }
+  plan.sortComparator = sortExtraction.result
+  if (!innerFilter) {
+    // Simple sort().map()
+    setArray(sortInfo.array)
+    return
+  }
+  // filter().sort().map() pattern
+  plan.chainOrder = 'filter-sort'
+  const filterExtraction = extractFilterPredicate(innerFilter.callback, ctx)
+  if (isClientOnly || !filterExtraction.result) {
+    refuseOffSubsetCallback('filter', innerFilter.callback, filterExtraction.unsupportedReason, ctx, isClientOnly)
+    // Keep entire chain in array for client evaluation
+    setArray(mapSource)
+    plan.sortComparator = undefined
+    plan.chainOrder = undefined
+    return
+  }
+  setArray(innerFilter.array)
+  plan.filterPredicate = filterExtraction.result
+}
+
+/**
+ * Outermost call is a filter: `filter().map()` or `sort().filter().map()`.
+ * An off-subset predicate keeps the whole chain in the array string; an
+ * off-subset INNER sort keeps only the sort there and still lifts the filter.
+ */
+function resolveFilterOuterChain(
+  filterInfo: NonNullable<ReturnType<typeof isFilterCall>>,
+  mapSource: ts.Expression,
+  plan: LoopSourcePlan,
+  setArray: SetLoopArray,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): void {
+  const innerSort = isSortCall(filterInfo.array)
+  const filterExtraction = extractFilterPredicate(filterInfo.callback, ctx)
+  if (isClientOnly || !filterExtraction.result) {
+    refuseOffSubsetCallback('filter', filterInfo.callback, filterExtraction.unsupportedReason, ctx, isClientOnly)
+    // Keep filter (and sort if present) in array for client evaluation
+    setArray(mapSource)
+    return
+  }
+  plan.filterPredicate = filterExtraction.result
+  if (!innerSort) {
+    // Simple filter().map(). `setArray` (not a bare `array =` assignment) so
+    // `templateArray` carries the `_p.`-rewritten form — the module-scope
+    // `template:` lambda can't see init's destructured prop locals, and a
+    // bare destructured name there threw `ReferenceError` at runtime (#2222).
+    setArray(filterInfo.array)
+    return
+  }
+  // sort().filter().map() pattern
+  plan.chainOrder = 'sort-filter'
+  const sortExtraction = extractSortComparator(innerSort.callback, innerSort.method, ctx)
+  if (isClientOnly || !sortExtraction.result) {
+    refuseOffSubsetCallback('sort', innerSort.callback, sortExtraction.unsupportedReason, ctx, isClientOnly)
+    // Keep sort in array for client evaluation, but keep filter extracted
+    setArray(filterInfo.array)
+    return
+  }
+  plan.sortComparator = sortExtraction.result
+  setArray(innerSort.array)
+}
+
+/**
+ * Decision 1 — recognise the receiver of `.map()` and decide what the loop
+ * iterates. Chaining patterns on the map source:
+ *
+ * 1. `sort().map()` / `toSorted().map()`
+ * 2. `filter().map()`
+ * 3. `filter().sort().map()` (outermost = sort, inner = filter)
+ * 4. `sort().filter().map()` (outermost = filter, inner = sort)
+ * 5. `entries().map()` / `keys().map()` / `values().map()`, and the static
+ *    `Object.entries(x).map()` family
+ *
+ * Every branch binds the array through `setArray` so `templateArray`
+ * carries the `_p.`-rewritten form (#2222): the plain `.map()` fallback is
+ * the most common loop shape and was the primary repro for the
+ * bare-destructured-name ReferenceError.
+ *
+ * @internal exported for unit tests
+ */
+export function resolveLoopSource(
+  node: ts.CallExpression,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): LoopSourcePlan {
+  const propAccess = node.expression as ts.PropertyAccessExpression
+  const mapSource = propAccess.expression
+  const iteration = stripIteratorWrapper(mapSource)
+  const plan: LoopSourcePlan = {
+    array: '',
+    templateArray: undefined,
+    arrayExpr: mapSource,
+    filterPredicate: undefined,
+    sortComparator: undefined,
+    chainOrder: undefined,
+    iterationShape: iteration.iterationShape,
+    objectIteration: iteration.objectIteration,
+  }
+  const setArray: SetLoopArray = (expr) => {
+    plan.array = ctx.getJS(expr)
+    plan.templateArray = rewriteBarePropRefs(plan.array, expr, ctx)
+    plan.arrayExpr = expr
+  }
+
+  const filterInfo = isFilterCall(iteration.chainSource)
+  const sortInfo = isSortCall(iteration.chainSource)
+  if (sortInfo) {
+    resolveSortOuterChain(sortInfo, mapSource, plan, setArray, ctx, isClientOnly)
+  } else if (filterInfo) {
+    resolveFilterOuterChain(filterInfo, mapSource, plan, setArray, ctx, isClientOnly)
+  } else {
+    setArray(iteration.chainSource)
+  }
+  return plan
+}
+
+/** The names one loop row binds, read off the callback's parameter list. */
+export interface LoopRowParams {
+  param: string
+  paramType: string | undefined
+  index: string | null
+  indexType: string | undefined
+  paramBindings: LoopParamBinding[] | undefined
+  /** Node whose checker type is the scalar item-type evidence (`IRLoop.itemType`). */
+  itemTypeNode: ts.Node | undefined
+}
+
+/**
+ * `.entries()` synthesises `[index, value]` — when the callback destructures
+ * exactly two array elements, the names go straight into `index` and
+ * `param` so the loop renders with proper bindings and the BF104
+ * destructure-param refusal doesn't fire. `Object.entries(x)` synthesises
+ * the SAME `[key, value]` 2-tuple shape (`index` just holds a string key
+ * instead of a numeric position), so it reuses this exact extraction.
+ * Returns `null` for any other pattern, which falls through to the standard
+ * destructure handling (and BF104 on template adapters).
+ */
+function entriesTupleBindings(
+  pattern: ts.ArrayBindingPattern,
+): { index: string; param: string; itemTypeNode: ts.Node } | null {
+  const elements = pattern.elements.filter(el => !ts.isOmittedExpression(el))
+  if (elements.length !== 2) return null
+  const [first, second] = elements
+  if (!ts.isBindingElement(first) || !ts.isIdentifier(first.name)) return null
+  if (!ts.isBindingElement(second) || !ts.isIdentifier(second.name)) return null
+  return { index: first.name.text, param: second.name.text, itemTypeNode: second.name }
+}
+
+/**
+ * Destructured param (`([, cfg]) => ...`, `({ x, y }) => ...`): walk the
+ * binding pattern into per-binding accessor paths so the client JS emitter
+ * can rewrite references to `__bfItem().path` (#951). Rest elements
+ * (`{ a, ...rest }`, `[first, ...tail]`) lower into a residual-object /
+ * `.slice(n)` accessor at each reference. Only computed property keys remain
+ * unsupported — those raise `BF025` and the emitter falls back to the #950
+ * body-entry unwrap.
+ */
+function loopParamBindingsOrRefuse(
+  firstParam: ts.ParameterDeclaration,
+  ctx: TransformContext,
+): LoopParamBinding[] | undefined {
+  const bindingResult = extractLoopParamBindings(firstParam.name)
+  if (bindingResult && !Array.isArray(bindingResult)) {
+    ctx.analyzer.errors.push(
+      createError(ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST,
+        getSourceLocation(firstParam, ctx.sourceFile, ctx.filePath),
+      )
+    )
+    return undefined
+  }
+  return Array.isArray(bindingResult) ? bindingResult : undefined
+}
+
+/**
+ * Decision 2 — the names a row binds: the item param (and its type text),
+ * the index param, and the destructure accessor paths. An `.entries()`
+ * shape takes its index from the 2-tuple destructure instead of a second
+ * parameter.
+ *
+ * @internal exported for unit tests
+ */
+export function resolveLoopRowParams(
+  callback: ts.ArrowFunction,
+  source: Pick<LoopSourcePlan, 'iterationShape' | 'objectIteration'>,
+  ctx: TransformContext,
+): LoopRowParams {
+  const row: LoopRowParams = {
+    param: 'item',
+    paramType: undefined,
+    index: null,
+    indexType: undefined,
+    paramBindings: undefined,
+    itemTypeNode: undefined,
+  }
+  const isEntriesShape = source.iterationShape === 'entries' || source.objectIteration === 'entries'
+  if (callback.parameters.length > 0) {
+    const firstParam = callback.parameters[0]
+    row.itemTypeNode = firstParam
+    row.param = firstParam.name.getText(ctx.sourceFile)
+    if (firstParam.type) {
+      row.paramType = firstParam.type.getText(ctx.sourceFile)
+    }
+    const tuple = isEntriesShape && ts.isArrayBindingPattern(firstParam.name)
+      ? entriesTupleBindings(firstParam.name)
+      : null
+    if (tuple) {
+      // Fully resolved into index + param by the iteration shape — no
+      // paramBindings.
+      row.index = tuple.index
+      row.param = tuple.param
+      row.itemTypeNode = tuple.itemTypeNode
+    } else {
+      row.paramBindings = loopParamBindingsOrRefuse(firstParam, ctx)
+    }
+  }
+  if (callback.parameters.length > 1 && !isEntriesShape) {
+    const secondParam = callback.parameters[1]
+    row.index = secondParam.name.getText(ctx.sourceFile)
+    if (secondParam.type) {
+      row.indexType = secondParam.type.getText(ctx.sourceFile)
+    }
+  }
+  return row
+}
+
+/** What one `.map()` callback body lowers to. */
+export interface LoopBodyLowering {
+  children: IRNode[]
+  /**
+   * Structured pre-return statements of a block-body callback (Stage 3 root
+   * cure): JS text + compiled JSX leaves as segments, plus the raw TSX for
+   * JSX-runtime SSR and the declared names (D5 key guard, {out} join).
+   */
+  preamble: MapCallbackPreamble | undefined
+  flatMapCallback: FlatMapCallback | undefined
+}
+
+/**
+ * Logical control flow (`cond && <X/>`, `a ?? themeLogo()`) as the map
+ * body. This is not a JSX literal, ternary, or block, so without this the
+ * dispatch would leave `children` empty and the whole `.map(...)` would fall
+ * through to the reactive-text path — emitting the callback verbatim. That
+ * left inline JSX uncompiled and module-level JSX helpers undeclared
+ * (ReferenceError at hydration, #1665). Route the logical body through the
+ * shared JSX expression transformer, which lowers it into an IRConditional
+ * and inlines any JSX helper, exactly like the ternary form.
+ *
+ * Scoped deliberately to logical operators that actually render JSX (inline
+ * literal or a tracked helper call): a bare call body (`map(t =>
+ * renderItem(t))`) stays on the existing reactive-text path that #546 owns,
+ * and a scalar logical body (`t.active && t.label`) keeps rendering its
+ * value.
+ */
+function transformRenderableLogicalBody(
+  expr: ts.Expression,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): IRNode[] {
+  if (!ts.isBinaryExpression(expr)) return []
+  const op = expr.operatorToken.kind
+  if (
+    op !== ts.SyntaxKind.AmpersandAmpersandToken &&
+    op !== ts.SyntaxKind.BarBarToken &&
+    op !== ts.SyntaxKind.QuestionQuestionToken
+  ) {
+    return []
+  }
+  if (!containsJsxInExpression(expr) && !callsJsxHelper(expr, ctx)) return []
+  const transformed = transformJsxExpression(expr, ctx, isClientOnly)
+  return transformed ? [transformed] : []
+}
+
+/**
+ * An expression-bodied callback (parentheses stripped): a JSX literal, a
+ * ternary (`items.map(item => cond ? <A/> : <B/>)`), a flatMap array
+ * literal (`items.flatMap(item => [<A/>, <B/>])`), or a renderable logical
+ * expression.
+ */
+function transformLoopExpressionBody(
+  body: ts.Expression,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+  method: 'map' | 'flatMap',
+): IRNode[] {
+  let inner = body
+  while (ts.isParenthesizedExpression(inner)) {
+    inner = inner.expression
+  }
+  if (ts.isJsxElement(inner) || ts.isJsxSelfClosingElement(inner) || ts.isJsxFragment(inner)) {
+    const transformed = transformNode(inner, ctx)
+    return transformed ? [transformed] : []
+  }
+  if (ts.isConditionalExpression(inner)) {
+    return [transformConditional(inner, ctx)]
+  }
+  if (method === 'flatMap' && ts.isArrayLiteralExpression(inner)) {
+    return transformArrayLiteralChildren(inner, ctx)
+  }
+  return transformRenderableLogicalBody(inner, ctx, isClientOnly)
+}
+
+/**
+ * #2447 — a DSL adapter cannot execute `preamble.segments` (JS text), so it
+ * lowers `declarations` (one per-row local each) and the row markup reads
+ * them as locals. When the preamble isn't fully declarable there is nothing
+ * to lower, and the adapter used to emit the row anyway, reading names it
+ * never assigned: the class rendered empty, on every DSL backend, with no
+ * diagnostic. Refuse loudly instead, with the same `/* @client *\/` escape as
+ * the array-builder and flatMap gates.
+ */
+function refuseUndeclarablePreamble(
+  preamble: MapCallbackPreamble,
+  loc: SourceLocation,
+  message: string,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): void {
+  if (preamble.declarations) return
+  if (isClientOnly) return
+  if (ctx.analyzer.acceptsCallbackBody?.('map') ?? false) return
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, loc, {
+      message,
+      suggestion: {
+        message: CLIENT_ONLY_EXPRESSION_SUGGESTION,
+      },
+    })
+  )
+}
+
+/**
+ * Multi-return JSX block body (if/else-if chain or a `switch`, including
+ * fallthrough case labels, optionally preceded by a `const`/`let` preamble)
+ * — fold to a nested IRConditional so the loop renders each branch's
+ * compiled template. Tried BEFORE the single-return path: otherwise the
+ * trailing `return <fallback/>` would claim the single-return arm and the
+ * leading `if (...) return <A/>` would leak verbatim into the map preamble
+ * (the silent-verbatim-leak this fixes). Stage 2 of
+ * spec/callback-fidelity.md. A branch-local `const` (inside a branch
+ * block/case) or a statement-level nested loop is not folded
+ * (`extractMultiReturnJsxBranches` returns null) and falls through to the
+ * single-return path.
+ *
+ * The leading const/let preamble is emitted once per iteration, ahead of
+ * the conditional — the same carrier the single-return path uses. A
+ * JS-runtime adapter (and the browser under /* @client *\/) runs it
+ * verbatim. The DSL refusal was narrowed by #2447: it used to refuse EVERY
+ * branch preamble on a DSL target, on the premise that a loop-local can't
+ * be carried into a conditional branch template. That premise stopped
+ * holding once `declarations` lower to a per-row local — the fold emits the
+ * conditional INSIDE the loop body, so a local declared ahead of it is in
+ * scope in both arms (`{{$label := bf_upper .Kind}}{{if .On}}…{{$label}}…
+ * {{else}}…`). What remains is the hazard for a preamble that CANNOT be
+ * declared: nothing lowers, both branches read an unassigned name. So the
+ * refusal keys off the same condition as the single-return gate.
+ */
+function lowerMultiReturnLoopBody(
+  body: ts.Block,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): Pick<LoopBodyLowering, 'children' | 'preamble'> | null {
+  const multiReturn = extractMultiReturnJsxBranches(body, true)
+  if (!multiReturn || multiReturn.branches.length === 0) return null
+  const loc = getSourceLocation(body, ctx.sourceFile, ctx.filePath)
+  const children = [foldMultiReturnBranches(multiReturn, ctx, loc, ctx.getJS)]
+  const pre = multiReturn.preamble ?? []
+  if (pre.length === 0) return { children, preamble: undefined }
+  const preamble = preambleFromValueStatements(pre, ctx, body.statements)
+  refuseUndeclarablePreamble(
+    preamble,
+    loc,
+    'A .map() callback body with a preamble before its branches cannot be ' +
+      'lowered to a template: the preamble is not a sequence of value ' +
+      'declarations, so this backend has no per-row local to carry into the ' +
+      'branches.',
+    ctx,
+    isClientOnly,
+  )
+  return { children, preamble }
+}
+
+/**
+ * #2482 Stage 1a Commit 2 — the preamble-shadow scope window. The STRUCTURED
+ * preamble (`MapCallbackPreamble`, built by `preambleFromValueStatements` /
+ * `buildPreambleSegments` inside `run`) isn't known until well after the
+ * return expression is transformed. But `transformNode(returnExpr, ctx)`
+ * walks the return expression's own child expressions RIGHT THEN, so a
+ * preamble-declared local shadowing an outer const/prop must already be
+ * bound in `ctx.scope`, or `tryResolveTemplateSpanFromConst` /
+ * `tryResolveIdentifierAsTemplateLiteral` / `rewriteBarePropRefs` bake the
+ * OUTER value into every row instead of leaving the row-local unresolved
+ * (#2222-family, the const/prop-shadow bug class).
+ *
+ * Fix: a lightweight declared-names-only pre-scan — the exact same
+ * "statements before the return" shape the preamble collectors scan —
+ * re-enters the row's `BindingScope` frame (off `savedScope`, the pre-loop
+ * parent, so this REPLACES the param/index-only frame rather than stacking
+ * a second one) with the preamble included, for the duration of `run`.
+ * Restored to the preamble-less row scope right after: everything past this
+ * window (the flatMap fallbacks and the rest of the loop lowering) must keep
+ * observing EXACTLY the old (Commit 1) membership, since slotId-allocation
+ * classifiers there read `ctx.scope.valueBoundNames()`, which never included
+ * preamble names to begin with — only shadow guards need the widened view,
+ * and only for this window.
+ */
+function withPreambleRowScope<T>(
+  ctx: TransformContext,
+  savedScope: BindingScope,
+  row: LoopRowParams,
+  body: ts.Block,
+  returnStmt: ts.ReturnStatement,
+  run: () => T,
+): T {
+  const preambleNames = new Set<string>()
+  for (const stmt of body.statements) {
+    if (stmt === returnStmt) break
+    collectPreambleDeclaredNames(stmt, preambleNames)
+  }
+  if (preambleNames.size === 0) return run()
+  const rowScopeBeforePreamble = ctx.scope
+  ctx.scope = savedScope.enterLoopRow({
+    param: row.param,
+    index: row.index,
+    paramBindings: row.paramBindings,
+    preamble: { declaredNames: [...preambleNames] },
+  })
+  try {
+    return run()
+  } finally {
+    // Window closed — restore the preamble-less row scope.
+    ctx.scope = rowScopeBeforePreamble
+  }
+}
+
+/**
+ * Stage 3 of spec/callback-fidelity.md — the first statement before the
+ * `return` that *constructs* JSX (the classic `const out = []; for (const c
+ * of it.cells) out.push(<td>{c}</td>); return <tr>{out}</tr>` array-builder).
+ * Scans only statements the preamble collector would reach — those *before*
+ * `returnStmt` (it `break`s at the return). JSX in unreachable post-return
+ * dead code is never spliced into the preamble, so it is not part of the
+ * leak and must not trip the refusal.
+ */
+function findJsxBuildingPreambleStatement(
+  body: ts.Block,
+  returnStmt: ts.ReturnStatement,
+): ts.Statement | undefined {
+  for (const stmt of body.statements) {
+    if (stmt === returnStmt) break
+    if (containsJsxInExpression(stmt)) return stmt
+  }
+  return undefined
+}
+
+/**
+ * Stage 3 / D4 (spec/callback-fidelity.md) — a `.map()` body that builds
+ * JSX in a statement before its `return`. The preamble collector
+ * reconstructs each statement with `ctx.getJS`, which strips *types* but not
+ * JSX, so the raw `<td>{c}</td>` would splice verbatim into the emitted
+ * client bundle — invalid JS, a silent syntax-error leak with no diagnostic.
+ *
+ * A JS-runtime adapter runs the callback body verbatim — each JSX leaf
+ * lowers to a template-literal HTML string, the imperative control flow runs
+ * as-is, and the element-array child ({out}) is joined into the row. A DSL
+ * template runtime can't do this, so it refuses with the /* @client *\/
+ * escape (which renders the loop client-only, where the browser — always JS
+ * — runs the same body). Mirrors the const-preamble gate and the Stage-1
+ * filter/sort sites (all consult `acceptsCallbackBody`).
+ */
+function lowerJsxBuildingPreamble(
+  body: ts.Block,
+  returnStmt: ts.ReturnStatement,
+  jsxPreambleStmt: ts.Statement,
+  children: IRNode[],
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): MapCallbackPreamble | undefined {
+  const jsRuntime = isClientOnly || (ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
+  if (children.length === 0) {
+    // The return shape produced no loop children (a bare identifier `return
+    // out`, a ternary, any non-element return): there is no single template
+    // root to host the built elements, so the loop IR can't exist and the
+    // fallback would splice the raw callback — JSX included — verbatim into
+    // an expression anchor (a silent leak on EVERY tier, /* @client */
+    // included). Refuse loudly with restructuring guidance; the return-shape
+    // holes pinned by map-body-no-silent-divergence.test.ts close here.
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+        getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
+        {
+          message:
+            'A .map() callback that builds JSX in a statement before its ' +
+            '`return` must return a single JSX element that embeds the ' +
+            'built array — this return shape has no element root to host it.',
+          suggestion: {
+            message:
+              'Wrap the result in one element root, e.g. `return <tr key={item.id}>{out}</tr>`.',
+          },
+        }
+      )
+    )
+    return undefined
+  }
+  if (!jsRuntime) {
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+        getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
+        {
+          message:
+            'A .map() callback that builds JSX in a statement before its ' +
+            '`return` (for example pushing elements into an array in a loop) ' +
+            'cannot be lowered to a template on this backend.',
+          suggestion: {
+            message: CLIENT_ONLY_LOOP_SUGGESTION,
+          },
+        }
+      )
+    )
+    return undefined
+  }
+  const collected = buildPreambleSegments(body.statements, returnStmt, ctx)
+  if (collected.refusalNode) {
+    // A leaf carries wiring the verbatim path can't render (event handler,
+    // component, nested loop, reactive slot, spread), or sits inside a
+    // template literal (a segment boundary there would split the literal's
+    // lexical state for downstream text transforms). Refuse loudly (D-E)
+    // rather than emit a silently-degraded node.
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+        getSourceLocation(collected.refusalNode, ctx.sourceFile, ctx.filePath),
+        {
+          message:
+            'A JSX element built in a .map() callback preamble cannot carry ' +
+            'event handlers, components, nested loops, or reactive expressions, ' +
+            'and cannot sit inside a template literal — the verbatim render ' +
+            'path builds it once, with no reactive wiring.',
+          suggestion: {
+            message:
+              'Return the element directly (not through a preamble variable), ' +
+              'or add /* @client */ to render the loop on the client only.',
+          },
+        }
+      )
+    )
+    return undefined
+  }
+  return collected.preamble
+}
+
+/**
+ * A value-only preamble (`(item) => { const label = ...; return <div>{label}
+ * </div> }`): every statement before the `return`, carried as value
+ * declarations, with the #2447 DSL gate.
+ */
+function lowerValuePreamble(
+  body: ts.Block,
+  returnStmt: ts.ReturnStatement,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): MapCallbackPreamble | undefined {
+  const valueStmts: ts.Statement[] = []
+  for (const stmt of body.statements) {
+    if (stmt === returnStmt) break
+    valueStmts.push(stmt)
+  }
+  if (valueStmts.length === 0) return undefined
+  const preamble = preambleFromValueStatements(valueStmts, ctx, body.statements)
+  refuseUndeclarablePreamble(
+    preamble,
+    getSourceLocation(body, ctx.sourceFile, ctx.filePath),
+    'A .map() callback preamble that is not a sequence of value ' +
+      'declarations cannot be lowered to a template: this backend can ' +
+      'declare a per-row local, but cannot run arbitrary statements per row.',
+    ctx,
+    isClientOnly,
+  )
+  return preamble
+}
+
+/**
+ * Single-return block body: the returned JSX element (parentheses stripped)
+ * becomes the row, and the statements before the `return` become the
+ * preamble — the JSX-building carrier when one of them constructs JSX, the
+ * value-declaration carrier otherwise.
+ */
+function lowerSingleReturnLoopBody(
+  body: ts.Block,
+  returnStmt: ts.ReturnStatement,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+): Pick<LoopBodyLowering, 'children' | 'preamble'> {
+  let returnExpr = returnStmt.expression as ts.Expression
+  while (ts.isParenthesizedExpression(returnExpr)) {
+    returnExpr = returnExpr.expression
+  }
+  let children: IRNode[] = []
+  if (ts.isJsxElement(returnExpr) || ts.isJsxSelfClosingElement(returnExpr) || ts.isJsxFragment(returnExpr)) {
+    const transformed = transformNode(returnExpr, ctx)
+    if (transformed) {
+      children = [transformed]
+    }
+  }
+  const jsxPreambleStmt = findJsxBuildingPreambleStatement(body, returnStmt)
+  const preamble = jsxPreambleStmt
+    ? lowerJsxBuildingPreamble(body, returnStmt, jsxPreambleStmt, children, ctx, isClientOnly)
+    : lowerValuePreamble(body, returnStmt, ctx, isClientOnly)
+  return { children, preamble }
+}
+
+/**
+ * A block-bodied callback: the multi-return fold first, then the
+ * single-return path (under the preamble-shadow scope window), then the
+ * flatMap block fallback. A pure single-`return <call>` projection is NOT
+ * taken by that fallback — it lowers to neutral IR in
+ * `applyFlatMapFallbacks` (nested-loop child), which DSL adapters
+ * templatize.
+ */
+function transformLoopBlockBody(
+  body: ts.Block,
+  callback: ts.ArrowFunction,
+  row: LoopRowParams,
+  savedScope: BindingScope,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+  method: 'map' | 'flatMap',
+): LoopBodyLowering {
+  const out: LoopBodyLowering = { children: [], preamble: undefined, flatMapCallback: undefined }
+  const multi = method !== 'flatMap' ? lowerMultiReturnLoopBody(body, ctx, isClientOnly) : null
+  if (multi) {
+    out.children = multi.children
+    out.preamble = multi.preamble
+  }
+  const returnStmt = out.children.length === 0
+    ? body.statements.find(
+        (s): s is ts.ReturnStatement => ts.isReturnStatement(s) && s.expression != null
+      )
+    : undefined
+  if (returnStmt) {
+    const single = withPreambleRowScope(ctx, savedScope, row, body, returnStmt, () =>
+      lowerSingleReturnLoopBody(body, returnStmt, ctx, isClientOnly),
+    )
+    out.children = single.children
+    out.preamble = single.preamble
+  }
+  // flatMap block body fallback: compile JSX inline when children couldn't
+  // be extracted via the standard single-return path.
+  if (method === 'flatMap' && out.children.length === 0 && !flatMapProjectionCall(body)) {
+    out.flatMapCallback = buildFlatMapCallback(callback, body, ctx)
+  }
+  return out
+}
+
+/**
+ * The flatMap-only fallbacks, in order:
+ *
+ * - PROJECTION body — the canonical `flatMap(it => it.tags.map(tag => <li
+ *   key={...}/>))`, as an expression body or a single-`return` block. This is
+ *   a pure nested-loop projection, so it lowers to NEUTRAL IR — an inner
+ *   IRLoop as the loop's only child — which every SSR adapter can templatize
+ *   (nested `{{range}}` on DSL backends), per spec/callback-fidelity.md's
+ *   fidelity table ("single expr" row) and the array-literal flatMap
+ *   precedent. Only bodies carrying STATEMENTS (early returns, consts) fall
+ *   through to the segments carrier and its DSL gate. The client reconciles
+ *   the flattened leaves through the descriptor mapArray path, synthesized
+ *   from this same neutral IR (`renderFlatMapProjectionClientBody`); the
+ *   leaf `key` renders as the usual nested-loop `data-key-1` on both the SSR
+ *   and client string sides, and the flattened reconciliation identity
+ *   (`data-key`) is stamped by mapArray from the inner loop's `key` field.
+ * - EXPRESSION body containing JSX in a non-projection shape — e.g. a call
+ *   wrapping JSX. The block-body form already rides the structured-segments
+ *   carrier; an unbraced body is the same shape minus the braces, so it goes
+ *   through the same door. Without this the dispatch falls to the
+ *   IRExpression scalar path, which splices the raw callback — JSX included
+ *   — verbatim into the client bundle: a silent SyntaxError that kills the
+ *   whole component's hydration.
+ * - A flatMapCallback carries the WHOLE body (statements included) as
+ *   structured segments — the generic statements-before-return `preamble`
+ *   the block-body path may have collected is a duplicate carrier. Worse, it
+ *   isn't one: spliced into a mapArray renderItem it re-runs the body's
+ *   control flow against the wrong binding shape (the audited `if
+ *   (t().tags.length > maxTags) return [];` renderItem residue). The
+ *   segments carrier is the single door; the shadow copy is dropped.
+ * - Adapter gate (spec/callback-fidelity.md fidelity model): a flatMap body
+ *   carried as structured segments runs verbatim on a JS runtime; a DSL
+ *   template runtime cannot execute it at SSR — pre-gate, e.g. the Go
+ *   adapter emitted `{{range …}}{{end}}` with an EMPTY body (silent
+ *   divergence, the exact failure class the sound-or-loud invariant
+ *   forbids). Refuse loudly with the /* @client *\/ escape, mirroring the
+ *   const-preamble and array-builder gates.
+ */
+function applyFlatMapFallbacks(
+  out: LoopBodyLowering,
+  callback: ts.ArrowFunction,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+  method: 'map' | 'flatMap',
+): void {
+  if (method !== 'flatMap') return
+  const body = callback.body
+  if (out.children.length === 0 && !out.flatMapCallback) {
+    const projection = flatMapProjectionCall(body)
+    if (projection) {
+      const transformed = transformJsxExpression(projection, ctx, isClientOnly)
+      if (transformed && transformed.type === 'loop') {
+        out.children = [transformed]
+      }
+    }
+  }
+  if (out.children.length === 0 && !out.flatMapCallback && !ts.isBlock(body)) {
+    out.flatMapCallback = buildFlatMapCallback(callback, body, ctx)
+  }
+  if (!out.flatMapCallback) return
+  out.preamble = undefined
+  if (isClientOnly || (ctx.analyzer.acceptsCallbackBody?.('flatMap') ?? false)) return
+  ctx.analyzer.errors.push(
+    createError(
+      ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+      getSourceLocation(body, ctx.sourceFile, ctx.filePath),
+      {
+        message:
+          'A .flatMap() callback body with statements or a nested projection ' +
+          'cannot be lowered to a template on this backend.',
+        suggestion: {
+          message: CLIENT_ONLY_LOOP_SUGGESTION,
+        },
+      }
+    )
+  )
+}
+
+/**
+ * Run `fn` under the row's `BindingScope` frame. Registers the loop-bound
+ * names so expressions referencing them get a slotId (#2482 Stage 1a): for
+ * destructured patterns the frame binds the individual binding names —
+ * `\b${param}\b` never matches a bare name like `cfg` when `param` is
+ * `[, cfg]`, which would otherwise leave reactive-expression detection
+ * silently broken for destructured callbacks. `fn` receives the pre-loop
+ * parent scope (the frame the preamble-shadow window re-enters from). The
+ * parent is restored by reference, not deleted-from, so a nested loop
+ * reusing a param name can never corrupt the outer scope — the BindingScope
+ * twin of the old "unregister loop params" delete block, which can never
+ * miss an entry the add-site added.
+ *
+ * @internal exported for unit tests
+ */
+export function withLoopRowScope<T>(
+  ctx: TransformContext,
+  row: Pick<LoopRowParams, 'param' | 'index' | 'paramBindings'>,
+  fn: (savedScope: BindingScope) => T,
+): T {
+  const savedScope = ctx.scope
+  ctx.scope = ctx.scope.enterLoopRow({ param: row.param, index: row.index, paramBindings: row.paramBindings })
+  ctx.loopDepth++
+  try {
+    return fn(savedScope)
+  } finally {
+    ctx.scope = savedScope
+    ctx.loopDepth--
+  }
+}
+
+/**
+ * Decision 3 — lower the callback body into the row's children, preamble
+ * and flatMap carrier. The caller has already entered the row's
+ * `BindingScope` frame (`ctx.scope`, see `withLoopRowScope`) and bumped
+ * `ctx.loopDepth`; `savedScope` is the pre-loop parent the preamble-shadow
+ * window re-enters from.
+ *
+ * @internal exported for unit tests
+ */
+export function transformLoopCallbackBody(
+  callback: ts.ArrowFunction,
+  row: LoopRowParams,
+  savedScope: BindingScope,
+  ctx: TransformContext,
+  isClientOnly: boolean,
+  method: 'map' | 'flatMap',
+): LoopBodyLowering {
+  const body = callback.body
+  const out: LoopBodyLowering = ts.isBlock(body)
+    ? transformLoopBlockBody(body, callback, row, savedScope, ctx, isClientOnly, method)
+    : { children: transformLoopExpressionBody(body, ctx, isClientOnly, method), preamble: undefined, flatMapCallback: undefined }
+  applyFlatMapFallbacks(out, callback, ctx, isClientOnly, method)
+  return out
+}
+
+/**
+ * Decision 4 — the structural net (sound-or-loud, spec/callback-fidelity.md):
+ * a callback body that carries an INLINE JSX literal but produced no loop
+ * lowering must never fall through to the IRExpression scalar path —
+ * `ctx.getJS` strips types, not JSX, so the raw `<li …>` would splice
+ * verbatim into the emitted client bundle as a silent SyntaxError. Any
+ * recognizer gap for a JSX-bearing shape becomes a loud diagnostic here
+ * instead of a leak. (A JSX-helper CALL — `map(t => renderItem(t))` —
+ * carries no inline JSX literal and legitimately stays on the reactive-text
+ * path.)
+ *
+ * Entry-count gate: a more specific refusal already fired for THIS call
+ * (e.g. the flatMap leaf-wiring check) — don't stack the generic message on
+ * top of it. Comparing against the count captured at entry (not `=== 0`)
+ * keeps the net armed when an unrelated diagnostic was recorded earlier in
+ * the file — a warning elsewhere must never silence the leak guard for this
+ * callback.
+ *
+ * @internal exported for unit tests
+ */
+export function refuseUnloweredJsxCallback(
+  node: ts.CallExpression,
+  ctx: TransformContext,
+  method: 'map' | 'flatMap',
+  diagCountAtEntry: number,
+): void {
+  const cb = node.arguments[0]
+  const cbBody = cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) ? cb.body : undefined
+  if (!cbBody || !containsJsxInExpression(cbBody)) return
+  if (ctx.analyzer.errors.length !== diagCountAtEntry) return
+  ctx.analyzer.errors.push(
+    createError(
+      ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+      getSourceLocation(cbBody, ctx.sourceFile, ctx.filePath),
+      {
+        message:
+          `A .${method}() callback that builds JSX in this shape cannot be ` +
+          'compiled — the JSX would leak verbatim into the client bundle. ' +
+          'Recognized bodies: a JSX element/fragment, a ternary or ' +
+          '&& / || / ?? expression, an array literal (flatMap), or a block ' +
+          'body whose return the compiler can lower.',
+        suggestion: {
+          message:
+            'Restructure the callback to return the JSX element directly ' +
+            '(or via a block body with a plain `return`).',
+        },
+      }
+    )
+  )
+}
+
+/** The loop's keyFn source and whether the body is a whole-item conditional. */
+export interface LoopKeyPlan {
+  key: string | null
+  bodyIsItemConditional: boolean
+}
+
+/**
+ * Decision 5 — the row key. Emits BF023 / BF024 if the loop root element
+ * lacks a valid key attribute, then looks for the loop's keyFn source on the
+ * first child. `extractLoopKey` handles direct elements, child components,
+ * and — crucially — ternary bodies (#1098): when every branch of an
+ * `IRConditional` declares the same `key={EXPR}`, that EXPR is lifted out to
+ * mapArray's keyFn so a shape change (e.g. `<polygon>` ↔ `<circle>`)
+ * replaces the DOM node instead of mutating attributes on the wrong tag.
+ * Whole-item conditional bodies (#1665): the loop item is a single
+ * conditional whose at-least-one branch renders nothing, so an item shows
+ * 0-or-1 element. The key lives inside the rendering branch, so it is
+ * hoisted from there; the flag routes the loop through anchored emission
+ * downstream.
+ *
+ * #2753: the row's key ATTRIBUTE (name + value) is resolved here, once, and
+ * stamped onto the element(s) that render it — `null` (unkeyed) means no
+ * `IRElement.keyAttr` at all, which is the correct final answer for every
+ * adapter and the client runtime alike, not a hint they still have to gate.
+ * See `IRElement.keyAttr` / `applyLoopKeyAttr`'s docstrings.
+ *
+ * @internal exported for unit tests
+ */
+export function resolveLoopKey(
+  callback: ts.ArrowFunction,
+  children: IRNode[],
+  ctx: TransformContext,
+  isNested: boolean,
+  depth: number,
+): LoopKeyPlan {
+  if (children.length > 0) {
+    checkLoopKey(callback, ctx, isNested)
+  }
+  const itemConditional = children.length > 0 ? loopBodyItemConditional(children) : null
+  const bodyIsItemConditional = itemConditional !== null
+  const key = itemConditional
+    ? extractItemConditionalKey(itemConditional)
+    : (children.length > 0 ? extractLoopKey(children[0]) : null)
+  if (key !== null) {
+    const resolvedKeyAttrName = keyAttrName(depth)
+    if (itemConditional) {
+      applyLoopKeyAttr(itemConditional, resolvedKeyAttrName, key)
+    } else if (children.length > 0) {
+      applyLoopKeyAttr(children[0], resolvedKeyAttrName, key)
+    }
+  }
+  applyRowPortalKeyAttrs(children, key, depth, ctx)
+  return { key, bodyIsItemConditional }
+}
+
+/**
+ * Stage 3 / D5 (spec/callback-fidelity.md) — the keyFn is hoisted: `mapArray`
+ * computes it from the raw item BEFORE the callback body runs, so the key
+ * must be derivable from the item (and index), never from a value the
+ * preamble computes. A key that reads a preamble-declared local would
+ * compile to an unbound keyFn; refuse instead.
+ */
+function refusePreambleDerivedKey(
+  node: ts.CallExpression,
+  key: string | null,
+  preamble: MapCallbackPreamble | undefined,
+  ctx: TransformContext,
+): void {
+  if (!key || !preamble || preamble.declaredNames.length === 0) return
+  const declaredNameSet = new Set(preamble.declaredNames)
+  const keyRefs = extractFreeIdentifiersFromText(key)
+  const usesLocal = [...keyRefs].some((r) => declaredNameSet.has(r))
+  if (!usesLocal) return
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
+      message:
+        'A .map() loop key must be derivable from the loop item — it is ' +
+        'evaluated before the callback body runs, so it cannot reference a ' +
+        'value computed in the callback preamble.',
+      suggestion: {
+        message: 'Derive the key directly from the loop item (e.g. key={item.id}).',
+      },
+    })
+  )
+}
+
+/**
+ * Decision 6a — the JSX-building preamble's element-array children.
+ *
+ * Stage 3 / D4 — flag element-array children ({out}) built by the preamble
+ * so Phase-2 string emission joins them instead of `String([])`-collapsing
+ * them. Scoped to builderNames (leaf accumulators), NOT all declared locals
+ * — a value-only `{label}` keeps its historical plain interpolation.
+ *
+ * Stage 3 root cure — a JSX-building preamble feeding a COMPONENT root is
+ * refused: the component loop's rows are createComponent-driven ('dom-ops'
+ * row construction), and a lowered HTML-string leaf passed as a prop would
+ * silently diverge from SSR, where the same prop is a real JSX element.
+ * Refused = not carried (the old "do NOT collect" principle): codegen still
+ * runs on an errored compile, and the dom-ops backstop invariant must stay
+ * a FUTURE-variant tripwire, not re-fire on shapes Phase 1 already refused
+ * loudly. Returns the preamble to carry (`undefined` once refused).
+ *
+ * @internal exported for unit tests
+ */
+export function applyPreambleBuilderPasses(
+  node: ts.CallExpression,
+  children: IRNode[],
+  preamble: MapCallbackPreamble | undefined,
+  ctx: TransformContext,
+): MapCallbackPreamble | undefined {
+  if (!preamble || preamble.builderNames.length === 0) return preamble
+  flagArrayChildExpressions(children, new Set(preamble.builderNames))
+  if (children.length !== 1 || children[0].type !== 'component') return preamble
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
+      message:
+        'A .map() callback that builds JSX in its preamble cannot return a ' +
+        'component: the built elements would reach the component as raw HTML ' +
+        'strings on the client but as JSX elements at SSR (a silent divergence).',
+      suggestion: {
+        message:
+          'Return a plain element root that embeds the array, or move the ' +
+          'building logic inside the component.',
+      },
+    })
+  )
+  return undefined
+}
+
+/**
+ * Extract childComponent info if the loop body is a single component. This
+ * enables createComponent-based rendering with proper prop passing.
+ */
+function loopChildComponentOf(children: IRNode[]): IRLoopChildComponent | undefined {
+  if (children.length !== 1 || children[0].type !== 'component') return undefined
+  const comp = children[0] as IRComponent
+  return {
+    name: comp.name,
+    slotId: comp.slotId,
+    props: comp.props
+      .filter((p) => p.name !== 'key') // key is handled separately
+      .map((p) => ({
+        name: p.name,
+        value: p.value,
+        isEventHandler: isEventHandlerName(p.name),
+      })),
+    children: comp.children,
+  }
+}
+
+/** How the loop's array renders: static (prop) or reconciled (signal/memo/call). */
+export interface LoopArrayClassification {
+  callsReactive: boolean
+  hasCalls: boolean
+  isDirectPropArray: boolean
+  isStaticArray: boolean
+}
+
+/**
+ * Decision 7 — is the array static (prop) or dynamic (signal/memo)? Static
+ * arrays don't need mapArray/mapArrayAnchored — SSR elements are hydrated
+ * directly. Signal / memo arrays need mapArray for dynamic DOM updates.
+ *
+ * Solid-style wrap-by-default fallback (#943, follow-up to
+ * #937/#939/#940/#941/#942): if the array expression AST contains a function
+ * call but the analyzer can't recognise the callee as a signal / memo, we
+ * still force reconciliation. `getItems().map(...)` where `getItems` is an
+ * imported helper previously silent-dropped into the static-render path,
+ * freezing the SSR-time list on the client. Over-reconciling an array that
+ * happens to contain a pure call costs one extra `mapArray` per loop;
+ * under-reconciling is the silent-drop bug this closes.
+ *
+ * Destructured map params (`([, cfg]) => ...`, `({ a, b }) => ...`, typed
+ * forms) used to be excluded from the widening to avoid a latent crash in
+ * the `mapArray` renderItem emitter — see #949 and the emitter-side
+ * `destructureLoopParam` helper, which now unwraps the signal accessor at
+ * renderItem body entry. No more skip.
+ *
+ * `objectIteration` (#2168 object-entries-map): `array` here is the STRIPPED
+ * object expression (`Object.entries(x)`'s `x`), which can itself be a
+ * static module-scope const object literal and would otherwise satisfy
+ * every check — but a plain OBJECT has no `.forEach()`/`.map()` (the
+ * static-array client codegen's own methods), unlike an actual array
+ * literal. Force the dynamic `mapArray()` path instead, which this shape's
+ * client-JS array-expr reconstruction (`applyObjectIterationWrap`,
+ * `ir-to-client-js/utils.ts`) already handles correctly.
+ *
+ * @internal exported for unit tests
+ */
+export function classifyLoopArray(
+  source: Pick<LoopSourcePlan, 'array' | 'arrayExpr' | 'objectIteration'>,
+  method: 'map' | 'flatMap',
+  ctx: TransformContext,
+): LoopArrayClassification {
+  const callsReactive = exprCallsReactiveGetters(source.arrayExpr, ctx)
+  const hasCalls = exprHasFunctionCalls(source.arrayExpr)
+  const isDirectPropArray = method !== 'flatMap' && isArrayExprDirectPropRef(source.arrayExpr, ctx)
+  const isStaticArray =
+    !isSignalOrMemoArray(source.array, ctx)
+    && !isDirectPropArray
+    && !hasCalls
+    && !source.objectIteration
+  return { callsReactive, hasCalls, isDirectPropArray, isStaticArray }
+}
+
+/**
+ * Decision 6b — the preamble's after-the-fact reactivity wiring on a
+ * signal-backed (non-static) loop. Static arrays are never recreated via
+ * signals, so there is nothing to patch; they are skipped entirely.
+ *
+ * #2389 patch-on-update — a loop body with a preamble may reference a
+ * preamble-declared local directly as a child expression (`{cells}`,
+ * `{stateLabel}`). `mapArray` reuses the same DOM node on a same-key update,
+ * re-running only the wired text/attr slots — this child has neither, so
+ * without a dedicated region-patch effect it freezes at its mount-time
+ * value.
+ *
+ * #2447 follow-up — the ATTRIBUTE twin of the regions. `class={cls}` where
+ * the preamble declares `cls` froze at its row-construction value for the
+ * same reason `{cells}` did, and for one extra reason on top: an attribute
+ * only gets wired at all if its element carries a slot id, and
+ * `hasReactiveAttributes` (which decides that at element-build time, before
+ * any loop preamble is known) scores a bare local as non-reactive. So the
+ * slot has to be granted HERE, in the same after-the-fact pass the regions
+ * use — after which `collectLoopChildReactiveAttrs` classifies the attr and
+ * the row effect re-runs the preamble ahead of the write.
+ *
+ * #2596 — the CONDITION-position twin. See
+ * `markPreambleConditionalReactivity`'s docstring for why that one is gated
+ * on `reactiveNames` (genuinely signal-derived) rather than the blanket
+ * `declaredNames` the region/attr passes use.
+ *
+ * @internal exported for unit tests
+ */
+export function markPreambleReactivity(
+  children: IRNode[],
+  preamble: MapCallbackPreamble | undefined,
+  isStaticArray: boolean,
+  ctx: TransformContext,
+): PreambleRegionSource[] | undefined {
+  if (!preamble || isStaticArray) return undefined
+  const declared = new Set(preamble.declaredNames)
+  const preambleRegions = collectPreambleRegions(children, declared, ctx)
+  markPreambleAttrSlots(children, declared, ctx)
+  if (preamble.reactiveNames && preamble.reactiveNames.length > 0) {
+    markPreambleConditionalReactivity(children, new Set(preamble.reactiveNames), ctx)
+  }
+  return preambleRegions
+}
+
+/**
+ * Scalar operand evidence only. Inferring object rows here would bypass
+ * adapters' existing row-structure capability checks and their diagnostics.
+ */
+function scalarLoopItemType(itemTypeNode: ts.Node | undefined, ctx: TransformContext): TypeInfo | null {
+  const callbackType = itemTypeNode && ctx.analyzer.checker
+    ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(itemTypeNode), ctx.analyzer.checker)
+    : null
+  if (!callbackType) return null
+  if (callbackType.kind === 'primitive') return callbackType
+  if (callbackType.kind === 'union' && callbackType.unionTypes?.every(t => t.kind === 'primitive')) {
+    return callbackType
+  }
+  return null
+}
+
 function transformMapCall(
   node: ts.CallExpression,
   ctx: TransformContext,
@@ -4734,878 +5989,34 @@ function transformMapCall(
   // bumped for THIS loop's own descendants.
   const depth = ctx.loopDepth
 
-  const propAccess = node.expression as ts.PropertyAccessExpression
-  const mapSource = propAccess.expression
+  const source = resolveLoopSource(node, ctx, isClientOnly)
 
-  // Detect chaining patterns on .map()'s source expression:
-  // 1. sort().map() or toSorted().map()
-  // 2. filter().map()
-  // 3. filter().sort().map()  (outermost = sort, inner = filter)
-  // 4. sort().filter().map()  (outermost = filter, inner = sort)
-  // 5. entries().map() / keys().map() / values().map()
-
-  let array: string = ''
-  let templateArray: string | undefined
-  // Track the AST node that corresponds to `array` so the isStaticArray
-  // decision below can run `exprHasFunctionCalls` on it. Updated every
-  // time `array` is assigned; initial value is the full mapSource, which
-  // matches the fallback path at the bottom of this if/else chain.
-  let arrayExpr: ts.Expression = mapSource
-  let filterPredicate: FilterPredicateResult | undefined
-  let sortComparator: IRLoopSort | undefined
-  let chainOrder: 'filter-sort' | 'sort-filter' | undefined
-  // Structured pre-return statements of a block-body callback (Stage 3 root
-  // cure): JS text + compiled JSX leaves as segments, plus the raw TSX for
-  // JSX-runtime SSR and the declared names (D5 key guard, {out} join).
-  let preamble: MapCallbackPreamble | undefined
-  let iterationShape: 'entries' | 'keys' | undefined
-  let objectIteration: 'entries' | 'keys' | 'values' | undefined
-
-  // Helper to set both array and templateArray
-  const setArray = (node: ts.Expression) => {
-    array = ctx.getJS(node)
-    templateArray = rewriteBarePropRefs(array, node, ctx)
-    arrayExpr = node
-  }
-
-  // Detect `.entries()`, `.keys()`, `.values()` as the outermost wrapper
-  // on the map source. Strip the iterator method and record the shape so
-  // adapters emit the right loop variable bindings. `.values()` is a
-  // no-op (same as plain `.map()`) so it's stripped but not recorded.
-  // The inner expression (after stripping) feeds into the standard
-  // filter/sort chain detection below. Widened to `ts.Expression` (not
-  // narrowed to `mapSource`'s own `LeftHandSideExpression` type) since
-  // `isObjectIteratorCall`'s stripped argument can be any expression
-  // (`x ?? {}`, not just a `LeftHandSideExpression`).
-  let chainSource: ts.Expression = mapSource
-  const iteratorInfo = isIteratorShapeCall(mapSource)
-  if (iteratorInfo) {
-    chainSource = iteratorInfo.array
-    if (iteratorInfo.shape === 'entries') {
-      iterationShape = 'entries'
-    } else if (iteratorInfo.shape === 'keys') {
-      iterationShape = 'keys'
-    }
-    // 'values' is a no-op — same as plain .map()
-  } else {
-    // Detect the STATIC `Object.entries(x)` / `.keys(x)` / `.values(x)`
-    // form (#2168 object-entries-map) — see `isObjectIteratorCall`'s and
-    // `IRLoop.objectIteration`'s docstrings for why this is a SEPARATE
-    // shape from the array-instance-method case above, not a shared one.
-    // Unlike that case, `'values'` DOES need recording here (it isn't a
-    // no-op: `x` itself isn't iterable as a plain object).
-    const objectIteratorInfo = isObjectIteratorCall(mapSource)
-    if (objectIteratorInfo) {
-      chainSource = objectIteratorInfo.object
-      objectIteration = objectIteratorInfo.shape
-    }
-  }
-
-  const filterInfo = isFilterCall(chainSource)
-  const sortInfo = isSortCall(chainSource)
-
-  if (sortInfo) {
-    // Outermost is sort: could be sort().map() or filter().sort().map()
-    const innerFilter = isFilterCall(sortInfo.array)
-
-    // Handle sort comparator extraction
-    const sortExtraction = extractSortComparator(sortInfo.callback, sortInfo.method, ctx)
-    if (isClientOnly || !sortExtraction.result) {
-      // Off-subset comparator: keep it in the array string for client / SSR
-      // evaluation. Only raise the diagnostic when the target adapter's runtime
-      // can't run the comparator body verbatim (DSL); a JS-runtime adapter runs
-      // it, so rejecting it would be a universal error for a DSL-only limit.
-      // See spec/callback-fidelity.md.
-      if (!isClientOnly && sortExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('sort') ?? false)) {
-        ctx.analyzer.errors.push(
-          createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-            getSourceLocation(sortInfo.callback, ctx.sourceFile, ctx.filePath),
-            {
-              message: `Expression cannot be compiled to marked template: ${sortExtraction.unsupportedReason}`,
-              suggestion: {
-                message: 'Add /* @client */ to evaluate this expression on the client only',
-              },
-            }
-          )
-        )
-      }
-      // Keep sort (and filter if present) in array string for client evaluation
-      setArray(mapSource)
-    } else {
-      sortComparator = sortExtraction.result
-
-      if (innerFilter) {
-        // filter().sort().map() pattern
-        chainOrder = 'filter-sort'
-        const filterExtraction = extractFilterPredicate(innerFilter.callback, ctx)
-        if (isClientOnly || !filterExtraction.result) {
-          // Off-subset predicate: keep it in the array string for client / SSR
-          // evaluation. Only raise the diagnostic when the target adapter's runtime
-          // can't run the predicate body verbatim (DSL); a JS-runtime adapter runs
-          // it. See spec/callback-fidelity.md.
-          if (!isClientOnly && filterExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('filter') ?? false)) {
-            ctx.analyzer.errors.push(
-              createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-                getSourceLocation(innerFilter.callback, ctx.sourceFile, ctx.filePath),
-                {
-                  message: `Expression cannot be compiled to marked template: ${filterExtraction.unsupportedReason}`,
-                  suggestion: {
-                    message: 'Add /* @client */ to evaluate this expression on the client only',
-                  },
-                }
-              )
-            )
-          }
-          // Keep entire chain in array for client evaluation
-          setArray(mapSource)
-          sortComparator = undefined
-          chainOrder = undefined
-        } else {
-          setArray(innerFilter.array)
-          filterPredicate = filterExtraction.result
-        }
-      } else {
-        // Simple sort().map()
-        setArray(sortInfo.array)
-      }
-    }
-  } else if (filterInfo) {
-    // Outermost is filter: could be filter().map() or sort().filter().map()
-    const innerSort = isSortCall(filterInfo.array)
-
-    // Handle filter predicate extraction
-    const filterExtraction = extractFilterPredicate(filterInfo.callback, ctx)
-
-    if (isClientOnly || !filterExtraction.result) {
-      // Off-subset predicate: keep it in the array string for client / SSR
-      // evaluation. Only raise the diagnostic when the target adapter's runtime
-      // can't run the predicate body verbatim (DSL); a JS-runtime adapter runs
-      // it. See spec/callback-fidelity.md.
-      if (!isClientOnly && filterExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('filter') ?? false)) {
-        ctx.analyzer.errors.push(
-          createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-            getSourceLocation(filterInfo.callback, ctx.sourceFile, ctx.filePath),
-            {
-              message: `Expression cannot be compiled to marked template: ${filterExtraction.unsupportedReason}`,
-              suggestion: {
-                message: 'Add /* @client */ to evaluate this expression on the client only',
-              },
-            }
-          )
-        )
-      }
-      // Keep filter (and sort if present) in array for client evaluation
-      setArray(mapSource)
-    } else {
-      filterPredicate = filterExtraction.result
-
-      if (innerSort) {
-        // sort().filter().map() pattern
-        chainOrder = 'sort-filter'
-        const sortExtraction = extractSortComparator(innerSort.callback, innerSort.method, ctx)
-        if (isClientOnly || !sortExtraction.result) {
-          // Off-subset comparator: keep it in the array string for client / SSR
-          // evaluation. Only raise the diagnostic when the target adapter's runtime
-          // can't run the comparator body verbatim (DSL); a JS-runtime adapter runs
-          // it, so rejecting it would be a universal error for a DSL-only limit.
-          // See spec/callback-fidelity.md.
-          if (!isClientOnly && sortExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('sort') ?? false)) {
-            ctx.analyzer.errors.push(
-              createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-                getSourceLocation(innerSort.callback, ctx.sourceFile, ctx.filePath),
-                {
-                  message: `Expression cannot be compiled to marked template: ${sortExtraction.unsupportedReason}`,
-                  suggestion: {
-                    message: 'Add /* @client */ to evaluate this expression on the client only',
-                  },
-                }
-              )
-            )
-          }
-          // Keep sort in array for client evaluation, but keep filter extracted
-          setArray(filterInfo.array)
-        } else {
-          sortComparator = sortExtraction.result
-          setArray(innerSort.array)
-        }
-      } else {
-        // Simple filter().map(). `setArray` (not a bare `array =`
-        // assignment) so `templateArray` carries the `_p.`-rewritten form —
-        // the module-scope `template:` lambda can't see init's destructured
-        // prop locals, and a bare destructured name there threw
-        // `ReferenceError` at runtime (#2222).
-        setArray(filterInfo.array)
-      }
-    }
-  } else {
-    // Plain `.map()` fallback — same `setArray` requirement as above
-    // (#2222): this is the most common loop shape and was the primary
-    // repro for the bare-destructured-name ReferenceError.
-    setArray(chainSource)
-  }
-
-  // Get callback function
+  // Only an arrow callback lowers to a loop; anything else (a function
+  // reference, a function expression) falls through to the structural net
+  // and the IRExpression scalar path.
   const callback = node.arguments[0]
-  let param = 'item'
-  let paramType: string | undefined
-  let index: string | null = null
-  let indexType: string | undefined
-  let children: IRNode[] = []
-  let paramBindings: LoopParamBinding[] | undefined
-  let flatMapCallback: FlatMapCallback | undefined
-  let itemTypeNode: ts.Node | undefined
-
-  if (ts.isArrowFunction(callback)) {
-    // Extract parameter names and type annotations
-    if (callback.parameters.length > 0) {
-      const firstParam = callback.parameters[0]
-      itemTypeNode = firstParam
-      param = firstParam.name.getText(ctx.sourceFile)
-      if (firstParam.type) {
-        paramType = firstParam.type.getText(ctx.sourceFile)
-      }
-      // Destructured param (`([, cfg]) => ...`, `({ x, y }) => ...`): walk
-      // the binding pattern into per-binding accessor paths so the client
-      // JS emitter can rewrite references to `__bfItem().path` (#951).
-      // Rest elements (`{ a, ...rest }`, `[first, ...tail]`) lower into a
-      // residual-object / `.slice(n)` accessor at each reference. Only
-      // computed property keys remain unsupported — those raise `BF025`
-      // and the emitter falls back to the #950 body-entry unwrap.
-      // `.entries()` synthesises `[index, value]` — when the callback
-      // destructures exactly two array elements, extract the names into
-      // `index` and `param` so the loop renders with proper bindings and
-      // the BF104 destructure-param refusal doesn't fire. `Object.entries(x)`
-      // (`objectIteration === 'entries'`) synthesises the SAME `[key,
-      // value]` 2-tuple shape — `index` just holds a string key instead
-      // of a numeric position — so it reuses this exact extraction.
-      const isEntriesShape = iterationShape === 'entries' || objectIteration === 'entries'
-      if (isEntriesShape && ts.isArrayBindingPattern(firstParam.name)) {
-        const elements = firstParam.name.elements.filter(
-          el => !ts.isOmittedExpression(el),
-        )
-        if (elements.length === 2 &&
-            ts.isBindingElement(elements[0]) && ts.isIdentifier(elements[0].name) &&
-            ts.isBindingElement(elements[1]) && ts.isIdentifier(elements[1].name)) {
-          index = elements[0].name.text
-          param = elements[1].name.text
-          itemTypeNode = elements[1].name
-          // Don't populate paramBindings — the destructure is fully
-          // resolved into index + param by the iteration shape.
-        } else {
-          // Non-2-element destructure with .entries() — fall through to
-          // standard destructure handling (will trigger BF104 on
-          // template adapters).
-          const bindingResult = extractLoopParamBindings(firstParam.name)
-          if (bindingResult && !Array.isArray(bindingResult)) {
-            ctx.analyzer.errors.push(
-              createError(ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST,
-                getSourceLocation(firstParam, ctx.sourceFile, ctx.filePath),
-              )
-            )
-          } else if (Array.isArray(bindingResult)) {
-            paramBindings = bindingResult
-          }
-        }
-      } else {
-        const bindingResult = extractLoopParamBindings(firstParam.name)
-        if (bindingResult && !Array.isArray(bindingResult)) {
-          ctx.analyzer.errors.push(
-            createError(ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST,
-              getSourceLocation(firstParam, ctx.sourceFile, ctx.filePath),
-            )
-          )
-        } else if (Array.isArray(bindingResult)) {
-          paramBindings = bindingResult
-        }
-      }
-    }
-    if (callback.parameters.length > 1 && iterationShape !== 'entries' && objectIteration !== 'entries') {
-      const secondParam = callback.parameters[1]
-      index = secondParam.name.getText(ctx.sourceFile)
-      if (secondParam.type) {
-        indexType = secondParam.type.getText(ctx.sourceFile)
-      }
-    }
-
-    // Register loop-bound names so expressions referencing them get slotId,
-    // by entering a new BindingScope frame for this row (#2482 Stage 1a).
-    // For destructured patterns, the frame binds the individual binding
-    // names — `\b${param}\b` never matches a bare name like `cfg` when
-    // `param` is `[, cfg]`, which would otherwise leave reactive-expression
-    // detection silently broken for destructured callbacks.
-    // `savedScope` is restored (not deleted-from) at the matching exit site
-    // below, so a nested loop reusing a param name can never corrupt the
-    // outer scope.
-    const savedScope = ctx.scope
-    ctx.scope = ctx.scope.enterLoopRow({ param, index, paramBindings })
-    ctx.loopDepth++
-
-    // Logical control flow (`cond && <X/>`, `a ?? themeLogo()`) as the map
-    // body. This is not a JSX literal, ternary, or block, so without this
-    // the dispatch below leaves `children` empty and the whole `.map(...)`
-    // falls through to the reactive-text path — emitting the callback
-    // verbatim. That left inline JSX uncompiled and module-level JSX
-    // helpers undeclared (ReferenceError at hydration, #1665). Route the
-    // logical body through the shared JSX expression transformer, which
-    // lowers it into an IRConditional and inlines any JSX helper, exactly
-    // like the ternary form.
-    //
-    // Scoped deliberately to logical operators that actually render JSX
-    // (inline literal or a tracked helper call): a bare call body
-    // (`map(t => renderItem(t))`) stays on the existing reactive-text path
-    // that #546 owns, and a scalar logical body (`t.active && t.label`)
-    // keeps rendering its value.
-    const tryTransformRenderableBody = (expr: ts.Expression): void => {
-      if (!ts.isBinaryExpression(expr)) return
-      const op = expr.operatorToken.kind
-      if (
-        op !== ts.SyntaxKind.AmpersandAmpersandToken &&
-        op !== ts.SyntaxKind.BarBarToken &&
-        op !== ts.SyntaxKind.QuestionQuestionToken
-      ) {
-        return
-      }
-      if (!containsJsxInExpression(expr) && !callsJsxHelper(expr, ctx)) return
-      const transformed = transformJsxExpression(expr, ctx, isClientOnly)
-      if (transformed) children = [transformed]
-    }
-
-    // Transform callback body
-    const body = callback.body
-    if (ts.isJsxElement(body) || ts.isJsxSelfClosingElement(body) || ts.isJsxFragment(body)) {
-      const transformed = transformNode(body, ctx)
-      if (transformed) {
-        children = [transformed]
-      }
-    } else if (ts.isConditionalExpression(body)) {
-      // Ternary directly in callback: items.map(item => cond ? <A/> : <B/>)
-      children = [transformConditional(body, ctx)]
-    } else if (ts.isParenthesizedExpression(body)) {
-      let inner = body.expression
-      while (ts.isParenthesizedExpression(inner)) {
-        inner = inner.expression
-      }
-      if (ts.isJsxElement(inner) || ts.isJsxSelfClosingElement(inner) || ts.isJsxFragment(inner)) {
-        const transformed = transformNode(inner, ctx)
-        if (transformed) {
-          children = [transformed]
-        }
-      } else if (ts.isConditionalExpression(inner)) {
-        // Parenthesized ternary: items.map(item => (cond ? <A/> : <B/>))
-        children = [transformConditional(inner, ctx)]
-      } else if (method === 'flatMap' && ts.isArrayLiteralExpression(inner)) {
-        // flatMap arrow with array literal: items.flatMap(item => ([<A/>, <B/>]))
-        children = transformArrayLiteralChildren(inner, ctx)
-      } else {
-        tryTransformRenderableBody(inner)
-      }
-    } else if (method === 'flatMap' && ts.isArrayLiteralExpression(body)) {
-      // flatMap arrow with array literal: items.flatMap(item => [<A/>, <B/>])
-      children = transformArrayLiteralChildren(body, ctx)
-    } else if (ts.isBlock(body)) {
-      // Multi-return JSX block body (if/else-if chain or a `switch`, including
-      // fallthrough case labels, optionally preceded by a `const`/`let`
-      // preamble) — fold to a nested IRConditional so the loop renders each
-      // branch's compiled template. Tried BEFORE the single-return path:
-      // otherwise the trailing `return <fallback/>` would claim the
-      // single-return arm and the leading `if (...) return <A/>` would leak
-      // verbatim into the map preamble (the silent-verbatim-leak this fixes).
-      // Stage 2 of spec/callback-fidelity.md. A branch-local `const` (inside a
-      // branch block/case) or a statement-level nested loop is not folded
-      // (extractMultiReturnJsxBranches returns null) and falls through below.
-      const multiReturn = method !== 'flatMap' ? extractMultiReturnJsxBranches(body, true) : null
-      if (multiReturn && multiReturn.branches.length > 0) {
-        const loc = getSourceLocation(body, ctx.sourceFile, ctx.filePath)
-        children = [foldMultiReturnBranches(multiReturn, ctx, loc, ctx.getJS)]
-
-        const pre = multiReturn.preamble ?? []
-        if (pre.length > 0) {
-          // Emit the leading const/let preamble once per iteration, ahead of
-          // the conditional — the same carrier the single-return path uses. A
-          // JS-runtime adapter (and the browser under /* @client */) runs it
-          // verbatim.
-          preamble = preambleFromValueStatements(pre, ctx, body.statements)
-
-          // Stage 2 of spec/callback-fidelity.md, narrowed by #2447. This used
-          // to refuse EVERY branch preamble on a DSL target, on the premise
-          // that a loop-local can't be carried into a conditional branch
-          // template. That premise stopped holding once `declarations` lower
-          // to a per-row local: the fold emits the conditional INSIDE the loop
-          // body, so a local declared ahead of it is in scope in both arms —
-          // `{{$label := bf_upper .Kind}}{{if .On}}…{{$label}}…{{else}}…`. What
-          // remains true is the original hazard for a preamble that CANNOT be
-          // declared: nothing lowers, both branches read an unassigned name.
-          // So the refusal now keys off the same condition as the single-return
-          // gate below, not off the presence of branches.
-          if (
-            !preamble.declarations &&
-            !isClientOnly &&
-            !(ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
-          ) {
-            ctx.analyzer.errors.push(
-              createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, loc, {
-                message:
-                  'A .map() callback body with a preamble before its branches cannot be ' +
-                  'lowered to a template: the preamble is not a sequence of value ' +
-                  'declarations, so this backend has no per-row local to carry into the ' +
-                  'branches.',
-                suggestion: {
-                  message: 'Add /* @client */ to evaluate this expression on the client only',
-                },
-              })
-            )
-          }
-        }
-      }
-
-      // Block body: (item) => { const label = ...; return <div>{label}</div> }
-      const returnStmt = children.length === 0
-        ? body.statements.find(
-            (s): s is ts.ReturnStatement => ts.isReturnStatement(s) && s.expression != null
-          )
-        : undefined
-
-      // #2482 Stage 1a Commit 2 — ordering note: the STRUCTURED preamble
-      // (`MapCallbackPreamble`, built further down by
-      // `preambleFromValueStatements` / `buildPreambleSegments`, whichever
-      // branch below the return-expression shape takes) isn't known until
-      // well AFTER this point. But `transformNode(returnExpr, ctx)` just
-      // below walks the return expression's own child expressions RIGHT
-      // NOW — before that happens — so a preamble-declared local shadowing
-      // an outer const/prop must already be bound in `ctx.scope`, or
-      // `tryResolveTemplateSpanFromConst` / `tryResolveIdentifierAsTemplateLiteral`
-      // / `rewriteBarePropRefs` bake the OUTER value into every row instead
-      // of leaving the row-local unresolved (#2222-family, the const/prop-
-      // shadow bug class). Fix: a lightweight declared-names-only pre-scan
-      // — the exact same "statements before the return" shape
-      // `preambleFromValueStatements`/`buildPreambleSegments` scan below —
-      // re-enters the row's `BindingScope` frame (off `savedScope`, the
-      // pre-loop parent, so this REPLACES the param/index-only frame
-      // rather than stacking a second one) with the preamble included, for
-      // the duration of the return-expression transform. Restored back to
-      // the preamble-less row scope right after that window closes (see
-      // `rowScopeBeforePreamble` below) — everything past this window
-      // (the flatMap fallbacks, and the whole rest of `transformMapCall`
-      // after this `if (ts.isBlock(body))` branch) must keep observing
-      // EXACTLY the old (Commit 1) membership, since slotId-allocation
-      // classifiers there read `ctx.scope.valueBoundNames()`, which never
-      // included preamble names to begin with — only shadow guards need
-      // the widened view, and only for this window.
-      let rowScopeBeforePreamble: BindingScope | null = null
-      if (returnStmt) {
-        const preambleNames = new Set<string>()
-        for (const stmt of body.statements) {
-          if (stmt === returnStmt) break
-          collectPreambleDeclaredNames(stmt, preambleNames)
-        }
-        if (preambleNames.size > 0) {
-          rowScopeBeforePreamble = ctx.scope
-          ctx.scope = savedScope.enterLoopRow({
-            param,
-            index,
-            paramBindings,
-            preamble: { declaredNames: [...preambleNames] },
-          })
-        }
-      }
-
-      if (returnStmt && returnStmt.expression) {
-        let returnExpr = returnStmt.expression
-        while (ts.isParenthesizedExpression(returnExpr)) {
-          returnExpr = returnExpr.expression
-        }
-        if (ts.isJsxElement(returnExpr) || ts.isJsxSelfClosingElement(returnExpr) || ts.isJsxFragment(returnExpr)) {
-          const transformed = transformNode(returnExpr, ctx)
-          if (transformed) {
-            children = [transformed]
-          }
-        }
-        // Stage 3 of spec/callback-fidelity.md — an arbitrary `.map()` body that
-        // *constructs* JSX in a statement before its `return` (the classic
-        // `const out = []; for (const c of it.cells) out.push(<td>{c}</td>);
-        // return <tr>{out}</tr>` array-builder) cannot be lowered to a template.
-        // The preamble collector below reconstructs each statement with
-        // `ctx.getJS`, which strips *types* but not JSX, so the raw `<td>{c}</td>`
-        // would splice verbatim into the emitted client bundle — invalid JS, a
-        // silent syntax-error leak with no diagnostic. Refuse loudly instead of
-        // leaking. (A later Stage-3 PR renders such bodies verbatim on JS
-        // runtimes; until then it is a build error on every backend.)
-        // Scan only statements the preamble collector below would reach — i.e.
-        // those *before* `returnStmt` (it `break`s at the return). JSX in
-        // unreachable post-return dead code is never spliced into the preamble,
-        // so it is not part of the leak and must not trip the refusal.
-        let jsxPreambleStmt: ts.Statement | undefined
-        for (const stmt of body.statements) {
-          if (stmt === returnStmt) break
-          if (containsJsxInExpression(stmt)) {
-            jsxPreambleStmt = stmt
-            break
-          }
-        }
-        if (jsxPreambleStmt) {
-          // Stage 3 / D4 (spec/callback-fidelity.md). A JS-runtime adapter runs
-          // the callback body verbatim — each JSX leaf lowers to a template-
-          // literal HTML string, the imperative control flow runs as-is, and the
-          // element-array child ({out}) is joined into the row. A DSL template
-          // runtime can't do this, so it refuses with the /* @client */ escape
-          // (which renders the loop client-only, where the browser — always JS —
-          // runs the same body). Mirrors the const-preamble gate above and the
-          // Stage-1 filter/sort sites (all consult `acceptsCallbackBody`).
-          const jsRuntime = isClientOnly || (ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
-          if (children.length === 0) {
-            // The return shape produced no loop children (a bare identifier
-            // `return out`, a ternary, any non-element return): there is no
-            // single template root to host the built elements, so the loop IR
-            // can't exist and the fallback would splice the raw callback —
-            // JSX included — verbatim into an expression anchor (a silent
-            // leak on EVERY tier, /* @client */ included). Refuse loudly with
-            // restructuring guidance; the return-shape holes pinned by
-            // map-body-no-silent-divergence.test.ts close here.
-            ctx.analyzer.errors.push(
-              createError(
-                ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-                getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
-                {
-                  message:
-                    'A .map() callback that builds JSX in a statement before its ' +
-                    '`return` must return a single JSX element that embeds the ' +
-                    'built array — this return shape has no element root to host it.',
-                  suggestion: {
-                    message:
-                      'Wrap the result in one element root, e.g. `return <tr key={item.id}>{out}</tr>`.',
-                  },
-                }
-              )
-            )
-          } else if (!jsRuntime) {
-            ctx.analyzer.errors.push(
-              createError(
-                ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-                getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
-                {
-                  message:
-                    'A .map() callback that builds JSX in a statement before its ' +
-                    '`return` (for example pushing elements into an array in a loop) ' +
-                    'cannot be lowered to a template on this backend.',
-                  suggestion: {
-                    message: 'Add /* @client */ to render this loop on the client only',
-                  },
-                }
-              )
-            )
-          } else {
-            const collected = buildPreambleSegments(body.statements, returnStmt, ctx)
-            if (collected.refusalNode) {
-              // A leaf carries wiring the verbatim path can't render (event
-              // handler, component, nested loop, reactive slot, spread), or
-              // sits inside a template literal (a segment boundary there would
-              // split the literal's lexical state for downstream text
-              // transforms). Refuse loudly (D-E) rather than emit a
-              // silently-degraded node.
-              ctx.analyzer.errors.push(
-                createError(
-                  ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-                  getSourceLocation(collected.refusalNode, ctx.sourceFile, ctx.filePath),
-                  {
-                    message:
-                      'A JSX element built in a .map() callback preamble cannot carry ' +
-                      'event handlers, components, nested loops, or reactive expressions, ' +
-                      'and cannot sit inside a template literal — the verbatim render ' +
-                      'path builds it once, with no reactive wiring.',
-                    suggestion: {
-                      message:
-                        'Return the element directly (not through a preamble variable), ' +
-                        'or add /* @client */ to render the loop on the client only.',
-                    },
-                  }
-                )
-              )
-            } else {
-              preamble = collected.preamble
-            }
-          }
-        } else {
-          const valueStmts: ts.Statement[] = []
-          for (const stmt of body.statements) {
-            if (stmt === returnStmt) break
-            valueStmts.push(stmt)
-          }
-          if (valueStmts.length > 0) {
-            preamble = preambleFromValueStatements(valueStmts, ctx, body.statements)
-
-            // #2447. A DSL adapter cannot execute `preamble.segments` (JS
-            // text), so it lowers `declarations` — one per-row local each —
-            // and the row markup reads them as locals. When the preamble
-            // isn't fully declarable there is nothing to lower, and the
-            // adapter used to emit the row anyway, reading names it never
-            // assigned: the class rendered empty, on every DSL backend, with
-            // no diagnostic. Refuse loudly instead, with the same
-            // `/* @client */` escape as the branch-preamble, array-builder
-            // and flatMap gates above.
-            if (
-              !preamble.declarations &&
-              !isClientOnly &&
-              !(ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
-            ) {
-              ctx.analyzer.errors.push(
-                createError(
-                  ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-                  getSourceLocation(body, ctx.sourceFile, ctx.filePath),
-                  {
-                    message:
-                      'A .map() callback preamble that is not a sequence of value ' +
-                      'declarations cannot be lowered to a template: this backend can ' +
-                      'declare a per-row local, but cannot run arbitrary statements per row.',
-                    suggestion: {
-                      message: 'Add /* @client */ to evaluate this expression on the client only',
-                    },
-                  },
-                )
-              )
-            }
-          }
-        }
-      }
-
-      // Window closed — restore the preamble-less row scope so every
-      // consumer past this point (the flatMap fallbacks immediately
-      // below, and the rest of `transformMapCall` after this branch)
-      // keeps observing EXACTLY the pre-rework membership.
-      if (rowScopeBeforePreamble) {
-        ctx.scope = rowScopeBeforePreamble
-      }
-
-      // flatMap block body fallback: compile JSX inline when children
-      // couldn't be extracted via the standard single-return path. A pure
-      // single-`return <call>` projection is NOT taken here — it lowers to
-      // neutral IR below (nested-loop child), which DSL adapters templatize.
-      if (method === 'flatMap' && children.length === 0 && !flatMapProjectionCall(body)) {
-        flatMapCallback = buildFlatMapCallback(callback, body, ctx)
-      }
-    } else {
-      tryTransformRenderableBody(body)
-    }
-
-    // flatMap PROJECTION body — the canonical `flatMap(it => it.tags.map(tag
-    // => <li key={...}/>))`, as an expression body or a single-`return` block
-    // (parenthesized or not). This is a pure nested-loop projection, so it
-    // lowers to NEUTRAL IR — an inner IRLoop as the loop's only child — which
-    // every SSR adapter can templatize (nested `{{range}}` on DSL backends),
-    // per spec/callback-fidelity.md's fidelity table ("single expr" row) and
-    // the array-literal flatMap precedent. Only bodies carrying STATEMENTS
-    // (early returns, consts) fall through to the segments carrier below and
-    // its DSL gate. The client reconciles the flattened leaves through the
-    // descriptor mapArray path, synthesized from this same neutral IR
-    // (`renderFlatMapProjectionClientBody`); the leaf `key` renders as the
-    // usual nested-loop `data-key-1` on both the SSR and client string
-    // sides, and the flattened reconciliation identity (`data-key`) is
-    // stamped by mapArray from the inner loop's `key` field.
-    if (method === 'flatMap' && children.length === 0 && !flatMapCallback) {
-      const projection = flatMapProjectionCall(body)
-      if (projection) {
-        const transformed = transformJsxExpression(projection, ctx, isClientOnly)
-        if (transformed && transformed.type === 'loop') {
-          children = [transformed]
-        }
-      }
-    }
-
-    // flatMap EXPRESSION body containing JSX in a non-projection shape —
-    // e.g. a call wrapping JSX. The block-body form already rides the
-    // structured-segments carrier in the isBlock branch above; an unbraced
-    // body is the same shape minus the braces, so route it through the same
-    // door. Without this the dispatch falls to the IRExpression scalar path,
-    // which splices the raw callback — JSX included — verbatim into the
-    // client bundle: a silent SyntaxError that kills the whole component's
-    // hydration.
-    if (method === 'flatMap' && children.length === 0 && !flatMapCallback && !ts.isBlock(body)) {
-      flatMapCallback = buildFlatMapCallback(callback, body, ctx)
-    }
-
-    // A flatMapCallback carries the WHOLE body (statements included) as
-    // structured segments — the generic statements-before-return `preamble`
-    // the block-body path may have collected above is a duplicate carrier.
-    // Worse, it isn't one: spliced into a mapArray renderItem it re-runs the
-    // body's control flow against the wrong binding shape (the audited
-    // `if (t().tags.length > maxTags) return [];` renderItem residue).
-    // The segments carrier is the single door; drop the shadow copy.
-    if (flatMapCallback) preamble = undefined
-
-    // Adapter gate (spec/callback-fidelity.md fidelity model): a flatMap body
-    // carried as structured segments runs verbatim on a JS runtime; a DSL
-    // template runtime cannot execute it at SSR — pre-gate, e.g. the Go
-    // adapter emitted `{{range …}}{{end}}` with an EMPTY body (silent
-    // divergence, the exact failure class the sound-or-loud invariant
-    // forbids). Refuse loudly with the /* @client */ escape, mirroring the
-    // const-preamble and array-builder gates above.
-    if (flatMapCallback && !isClientOnly && !(ctx.analyzer.acceptsCallbackBody?.('flatMap') ?? false)) {
-      ctx.analyzer.errors.push(
-        createError(
-          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-          getSourceLocation(body, ctx.sourceFile, ctx.filePath),
-          {
-            message:
-              'A .flatMap() callback body with statements or a nested projection ' +
-              'cannot be lowered to a template on this backend.',
-            suggestion: {
-              message: 'Add /* @client */ to render this loop on the client only',
-            },
-          }
-        )
-      )
-    }
-
-    // Restore the parent scope — the BindingScope twin of the old
-    // "unregister loop params" delete block, but by reference rather than
-    // by name, so it can never miss an entry the add-site added.
-    ctx.scope = savedScope
-    ctx.loopDepth--
+  if (!ts.isArrowFunction(callback)) {
+    refuseUnloweredJsxCallback(node, ctx, method, diagCountAtEntry)
+    return null
   }
 
+  const row = resolveLoopRowParams(callback, source, ctx)
+  const body = withLoopRowScope(ctx, row, (savedScope) =>
+    transformLoopCallbackBody(callback, row, savedScope, ctx, isClientOnly, method),
+  )
+
+  const { children, flatMapCallback } = body
   // If no JSX children were found (e.g., callback returns a function call),
   // fall back to treating the entire expression as an IRExpression — unless
   // flatMap already built a compiled callback (flatMapCallback).
   if (children.length === 0 && !flatMapCallback) {
-    // Structural net (sound-or-loud, spec/callback-fidelity.md): a callback
-    // body that carries an INLINE JSX literal but produced no loop lowering
-    // must never fall through to the IRExpression scalar path — `ctx.getJS`
-    // strips types, not JSX, so the raw `<li …>` would splice verbatim into
-    // the emitted client bundle as a silent SyntaxError. Any recognizer gap
-    // for a JSX-bearing shape becomes a loud diagnostic here instead of a
-    // leak. (A JSX-helper CALL — `map(t => renderItem(t))` — carries no
-    // inline JSX literal and legitimately stays on the reactive-text path.)
-    const cb = node.arguments[0]
-    const cbBody = cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) ? cb.body : undefined
-    // Entry-count gate: a more specific refusal already fired for THIS call
-    // (e.g. the flatMap leaf-wiring check) — don't stack the generic message
-    // on top of it. Comparing against the count captured at entry (not
-    // `=== 0`) keeps the net armed when an unrelated diagnostic was recorded
-    // earlier in the file — a warning elsewhere must never silence the leak
-    // guard for this callback.
-    if (cbBody && containsJsxInExpression(cbBody) && ctx.analyzer.errors.length === diagCountAtEntry) {
-      ctx.analyzer.errors.push(
-        createError(
-          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
-          getSourceLocation(cbBody, ctx.sourceFile, ctx.filePath),
-          {
-            message:
-              `A .${method}() callback that builds JSX in this shape cannot be ` +
-              'compiled — the JSX would leak verbatim into the client bundle. ' +
-              'Recognized bodies: a JSX element/fragment, a ternary or ' +
-              '&& / || / ?? expression, an array literal (flatMap), or a block ' +
-              'body whose return the compiler can lower.',
-            suggestion: {
-              message:
-                'Restructure the callback to return the JSX element directly ' +
-                '(or via a block body with a plain `return`).',
-            },
-          }
-        )
-      )
-    }
+    refuseUnloweredJsxCallback(node, ctx, method, diagCountAtEntry)
     return null
   }
 
-  // Emit BF023 / BF024 if the loop root element lacks a valid key attribute.
-  // Call whenever children were produced (the callback returned JSX).
-  if (ts.isArrowFunction(node.arguments[0]) && children.length > 0) {
-    checkLoopKey(node.arguments[0], ctx, isNested)
-  }
-
-  // Look for the loop's keyFn source on the first child. `extractLoopKey`
-  // handles direct elements, child components, and — crucially — ternary
-  // bodies (#1098): when every branch of an `IRConditional` declares the
-  // same `key={EXPR}`, that EXPR is lifted out to mapArray's keyFn so a
-  // shape change (e.g. `<polygon>` ↔ `<circle>`) replaces the DOM node
-  // instead of mutating attributes on the wrong tag.
-  // Whole-item conditional bodies (#1665): the loop item is a single
-  // conditional whose at-least-one branch renders nothing, so an item shows
-  // 0-or-1 element. The key lives inside the rendering branch, so hoist it
-  // from there; a flag routes the loop through anchored emission downstream.
-  const itemConditional = children.length > 0 ? loopBodyItemConditional(children) : null
-  const bodyIsItemConditional = itemConditional !== null
-  const key = bodyIsItemConditional
-    ? extractItemConditionalKey(itemConditional!)
-    : (children.length > 0 ? extractLoopKey(children[0]) : null)
-
-  // #2753: resolve this row's key ATTRIBUTE (name + value) here, once, and
-  // stamp it onto the element(s) that render it — `null` (unkeyed) means no
-  // `IRElement.keyAttr` at all, which is the correct final answer for every
-  // adapter and the client runtime alike, not a hint they still have to
-  // gate. See `IRElement.keyAttr` / `applyLoopKeyAttr`'s docstrings.
-  if (key !== null) {
-    const resolvedKeyAttrName = keyAttrName(depth)
-    if (bodyIsItemConditional) {
-      applyLoopKeyAttr(itemConditional!, resolvedKeyAttrName, key)
-    } else if (children.length > 0) {
-      applyLoopKeyAttr(children[0], resolvedKeyAttrName, key)
-    }
-  }
-  applyRowPortalKeyAttrs(children, key, depth, ctx)
-
-  // Stage 3 / D5 (spec/callback-fidelity.md) — the keyFn is hoisted: `mapArray`
-  // computes it from the raw item BEFORE the callback body runs, so the key must
-  // be derivable from the item (and index), never from a value the preamble
-  // computes. A key that reads a preamble-declared local would compile to an
-  // unbound keyFn; refuse instead.
-  const declaredNameSet = preamble && preamble.declaredNames.length > 0
-    ? new Set(preamble.declaredNames)
-    : undefined
-  if (key && declaredNameSet) {
-    const keyRefs = extractFreeIdentifiersFromText(key)
-    const usesLocal = [...keyRefs].some((r) => declaredNameSet.has(r))
-    if (usesLocal) {
-      ctx.analyzer.errors.push(
-        createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
-          message:
-            'A .map() loop key must be derivable from the loop item — it is ' +
-            'evaluated before the callback body runs, so it cannot reference a ' +
-            'value computed in the callback preamble.',
-          suggestion: {
-            message: 'Derive the key directly from the loop item (e.g. key={item.id}).',
-          },
-        })
-      )
-    }
-  }
-
-  // Stage 3 / D4 — flag element-array children ({out}) built by the preamble so
-  // Phase-2 string emission joins them instead of `String([])`-collapsing them.
-  // Scoped to builderNames (leaf accumulators), NOT all declared locals — a
-  // value-only `{label}` keeps its historical plain interpolation.
-  if (preamble && preamble.builderNames.length > 0) {
-    flagArrayChildExpressions(children, new Set(preamble.builderNames))
-  }
-
-  // Stage 3 root cure — a JSX-building preamble feeding a COMPONENT root is
-  // refused: the component loop's rows are createComponent-driven ('dom-ops'
-  // row construction), and a lowered HTML-string leaf passed as a prop would
-  // silently diverge from SSR, where the same prop is a real JSX element.
-  if (
-    preamble &&
-    preamble.builderNames.length > 0 &&
-    children.length === 1 &&
-    children[0].type === 'component'
-  ) {
-    ctx.analyzer.errors.push(
-      createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
-        message:
-          'A .map() callback that builds JSX in its preamble cannot return a ' +
-          'component: the built elements would reach the component as raw HTML ' +
-          'strings on the client but as JSX elements at SSR (a silent divergence).',
-        suggestion: {
-          message:
-            'Return a plain element root that embeds the array, or move the ' +
-            'building logic inside the component.',
-        },
-      })
-    )
-    // Refused = not carried (the old "do NOT collect" principle): codegen
-    // still runs on an errored compile, and the dom-ops backstop invariant
-    // must stay a FUTURE-variant tripwire, not re-fire on shapes Phase 1
-    // already refused loudly.
-    preamble = undefined
-  }
+  const { key, bodyIsItemConditional } = resolveLoopKey(callback, children, ctx, isNested, depth)
+  refusePreambleDerivedKey(node, key, body.preamble, ctx)
+  const preamble = applyPreambleBuilderPasses(node, children, body.preamble, ctx)
 
   // A component that is a DIRECT member of the loop body (the row root, or
   // one of several flatMap-sibling roots) owns its own per-row identity and
@@ -5616,95 +6027,10 @@ function transformMapCall(
   // "am I inside a loop" flag.
   tagLoopItemRootComponents(children)
 
-  // Extract childComponent info if the loop body is a single component
-  // This enables createComponent-based rendering with proper prop passing
-  let childComponent: IRLoopChildComponent | undefined
-  if (children.length === 1 && children[0].type === 'component') {
-    const comp = children[0] as IRComponent
-    childComponent = {
-      name: comp.name,
-      slotId: comp.slotId,
-      props: comp.props
-        .filter((p) => p.name !== 'key') // key is handled separately
-        .map((p) => ({
-          name: p.name,
-          value: p.value,
-          isEventHandler: isEventHandlerName(p.name),
-        })),
-      children: comp.children,
-    }
-  }
-
+  const childComponent = loopChildComponentOf(children)
   const bodyIsMultiRoot = loopBodyIsMultiRoot(children)
-
-  // Determine if array is static (prop) or dynamic (signal/memo).
-  // Static arrays don't need mapArray/mapArrayAnchored — SSR elements are
-  // hydrated directly. Signal / memo arrays need mapArray for dynamic DOM
-  // updates.
-  //
-  // Solid-style wrap-by-default fallback (#943, follow-up to
-  // #937/#939/#940/#941/#942): if the array expression AST contains a
-  // function call but the analyzer can't recognise the callee as a
-  // signal / memo, we still force reconciliation. `getItems().map(...)`
-  // where `getItems` is an imported helper previously silent-dropped
-  // into the static-render path, freezing the SSR-time list on the
-  // client. Over-reconciling an array that happens to contain a pure
-  // call costs one extra `mapArray` per loop; under-reconciling
-  // is the silent-drop bug this closes.
-  //
-  // Destructured map params (`([, cfg]) => ...`, `({ a, b }) => ...`,
-  // typed forms) used to be excluded from the widening to avoid a
-  // latent crash in the `mapArray` renderItem emitter — see #949 and
-  // the emitter-side `destructureLoopParam` helper, which now unwraps
-  // the signal accessor at renderItem body entry. No more skip.
-  const callsReactive = exprCallsReactiveGetters(arrayExpr, ctx)
-  const hasCalls = exprHasFunctionCalls(arrayExpr)
-  const isDirectPropArray = method !== 'flatMap' && isArrayExprDirectPropRef(arrayExpr, ctx)
-  const isStaticArray =
-    !isSignalOrMemoArray(array, ctx)
-    && !isDirectPropArray
-    && !hasCalls
-    // `objectIteration` (#2168 object-entries-map): `array` here is the
-    // STRIPPED object expression (`Object.entries(x)`'s `x`), which can
-    // itself be a static module-scope const object literal and would
-    // otherwise satisfy every check above — but a plain OBJECT has no
-    // `.forEach()`/`.map()` (the static-array client codegen's own
-    // methods), unlike an actual array literal. Force the dynamic
-    // `mapArray()` path instead, which this shape's client-JS array-expr
-    // reconstruction (`applyObjectIterationWrap`, `ir-to-client-js/utils.ts`)
-    // already handles correctly.
-    && !objectIteration
-
-  // #2389 patch-on-update — a signal-backed (non-static) loop whose body has
-  // a preamble may reference a preamble-declared local directly as a child
-  // expression (`{cells}`, `{stateLabel}`). `mapArray` reuses the same DOM
-  // node on a same-key update, re-running only the wired text/attr slots —
-  // this child has neither, so without a dedicated region-patch effect it
-  // freezes at its mount-time value. Static arrays are never recreated via
-  // signals, so there is nothing to patch; skip them entirely.
-  const preambleRegions = preamble && !isStaticArray
-    ? collectPreambleRegions(children, new Set(preamble.declaredNames), ctx)
-    : undefined
-
-  // #2447 follow-up — the ATTRIBUTE twin of the regions above. `class={cls}`
-  // where the preamble declares `cls` froze at its row-construction value for
-  // the same reason `{cells}` did, and for one extra reason on top: an
-  // attribute only gets wired at all if its element carries a slot id, and
-  // `hasReactiveAttributes` (which decides that at element-build time, before
-  // any loop preamble is known) scores a bare local as non-reactive. So the
-  // slot has to be granted HERE, in the same after-the-fact pass the regions
-  // use — after which `collectLoopChildReactiveAttrs` classifies the attr and
-  // the row effect re-runs the preamble ahead of the write.
-  if (preamble && !isStaticArray) {
-    markPreambleAttrSlots(children, new Set(preamble.declaredNames), ctx)
-    // #2596 follow-up to the two passes above — the CONDITION-position twin.
-    // See `markPreambleConditionalReactivity`'s docstring for why this one is
-    // gated on `reactiveNames` (genuinely signal-derived) rather than the
-    // blanket `declaredNames` the region/attr passes use.
-    if (preamble.reactiveNames && preamble.reactiveNames.length > 0) {
-      markPreambleConditionalReactivity(children, new Set(preamble.reactiveNames), ctx)
-    }
-  }
+  const arrayKind = classifyLoopArray(source, method, ctx)
+  const preambleRegions = markPreambleReactivity(children, preamble, arrayKind.isStaticArray, ctx)
 
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
@@ -5713,24 +6039,15 @@ function transformMapCall(
   // createComponent replacement).
   const nestedComponents = collectNestedComponents(children).filter(c => c.name !== childComponent?.name)
 
-  // Scalar operand evidence only. Inferring object rows here would bypass
-  // adapters' existing row-structure capability checks and their diagnostics.
-  const callbackType = itemTypeNode && ctx.analyzer.checker
-    ? tsTypeToTypeInfo(ctx.analyzer.checker.getTypeAtLocation(itemTypeNode), ctx.analyzer.checker)
-    : null
-  const scalarItemType = callbackType?.kind === 'primitive' ||
-    (callbackType?.kind === 'union' && callbackType.unionTypes?.every(t => t.kind === 'primitive'))
-    ? callbackType : null
-
   return {
     type: 'loop',
     method: method === 'flatMap' ? 'flatMap' : undefined,
-    array,
-    templateArray,
+    array: source.array,
+    templateArray: source.templateArray,
     arrayType: null,
-    itemType: scalarItemType,
-    param,
-    index,
+    itemType: scalarLoopItemType(row.itemTypeNode, ctx),
+    param: row.param,
+    index: row.index,
     key,
     children,
     // Loops don't generate their own slotId; they inherit from parent element
@@ -5742,27 +6059,27 @@ function transformMapCall(
     // `l1`, ...) so element bf="sN" numbering stays stable across versions
     // and ssr-hydration-contract assertions don't shift when loops are added.
     markerId: `l${ctx.loopMarkerCounter++}`,
-    isStaticArray,
-    isPropDerivedArray: isDirectPropArray || undefined,
-    callsReactiveGetters: callsReactive || undefined,
-    hasFunctionCalls: hasCalls || undefined,
+    isStaticArray: arrayKind.isStaticArray,
+    isPropDerivedArray: arrayKind.isDirectPropArray || undefined,
+    callsReactiveGetters: arrayKind.callsReactive || undefined,
+    hasFunctionCalls: arrayKind.hasCalls || undefined,
     bodyIsMultiRoot: bodyIsMultiRoot || undefined,
     bodyIsItemConditional: bodyIsItemConditional || undefined,
     childComponent,
     nestedComponents,
-    filterPredicate,
-    sortComparator,
-    chainOrder,
-    iterationShape,
-    objectIteration,
+    filterPredicate: source.filterPredicate,
+    sortComparator: source.sortComparator,
+    chainOrder: source.chainOrder,
+    iterationShape: source.iterationShape,
+    objectIteration: source.objectIteration,
     depth,
     clientOnly: isClientOnly || undefined,
     preamble,
     preambleRegions: preambleRegions && preambleRegions.length > 0 ? preambleRegions : undefined,
-    paramType,
-    indexType,
-    paramBindings,
-    arrayFreeIdentifiers: extractFreeIdentifiersFromNode(arrayExpr),
+    paramType: row.paramType,
+    indexType: row.indexType,
+    paramBindings: row.paramBindings,
+    arrayFreeIdentifiers: extractFreeIdentifiersFromNode(source.arrayExpr),
     flatMapCallback,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
