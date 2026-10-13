@@ -209,7 +209,7 @@ export function propMemberSeedGoType(
  * type definition, or an anonymous object type the synth-struct pre-pass
  * names. Null for any other type.
  */
-function structOwnerResolver(
+export function structOwnerResolver(
   metadata: Pick<IRMetadata, 'propsParams' | 'typeDefinitions' | 'componentName'>,
 ): (type: TypeInfo) => { name: string; properties: PropertyInfo[] } | null {
   const propsParams = metadata.propsParams ?? []
@@ -394,4 +394,114 @@ function tsPropMemberChain(
     return { propName: path[0], path: path.slice(1) }
   }
   return null
+}
+
+/**
+ * `Child.prop` keys of child component props a caller in this component
+ * passes a value that can be fractional (#3459): a fractional literal
+ * (`age={2.5}`), a signal seeded with one (`age={n()}`), a field of an
+ * object signal a seed gives a fraction (`fractionalStructFields`, #3438),
+ * a prop whose default is one, a division, or a memo / arithmetic over
+ * these. A child's `number` prop otherwise defaults to `int`, which can't
+ * hold the value: a literal fails `go run` and an evaluated one truncates.
+ * Keyed by the name written at the call site; a child imported from
+ * another file is typed by its own compile, which this pass doesn't reach.
+ */
+export function collectFractionalChildProps(
+  metadata: Pick<IRMetadata, 'signals' | 'memos' | 'propsParams' | 'typeDefinitions' | 'componentName' | 'propsObjectName'>,
+  root: unknown,
+  fractionalStructFields: ReadonlySet<string>,
+  /** `Component.prop` keys already known fractional, so a component that
+   *  forwards its own fractional prop (`<Price value={value} />`) passes
+   *  the fraction on; the caller iterates to a fixed point. */
+  fractionalProps: ReadonlySet<string> = new Set(),
+): Set<string> {
+  const keys = new Set<string>()
+  const ownerOf = structOwnerResolver(metadata)
+  const isFraction = (e: ParsedExpr | undefined): boolean => {
+    const n = e ? literalNumberValue(e) : null
+    return n !== null && !Number.isInteger(n)
+  }
+  // One of this component's own props: fractional by its default or by a
+  // caller passing it a fraction.
+  const isFractionalOwnProp = (key: string): boolean => {
+    const param = (metadata.propsParams ?? []).find(p => (p.sourceName ?? p.name) === key || p.name === key)
+    if (!param) return false
+    return isFraction(param.parsed) || fractionalProps.has(`${metadata.componentName}.${param.sourceName ?? param.name}`)
+  }
+  // The declared type an expression's value has, for following a member
+  // chain off an object signal (`u().address.zip`); null when untracked.
+  const typeOf = (e: ParsedExpr, rows: ReadonlyMap<string, TypeInfo>): TypeInfo | null => {
+    if (e.kind === 'identifier') return rows.get(e.name) ?? null
+    if (e.kind === 'call' && e.callee.kind === 'identifier' && e.args.length === 0) {
+      return (metadata.signals ?? []).find(s => s.getter === (e.callee as { name: string }).name)?.type ?? null
+    }
+    if (e.kind === 'member' && !e.computed) {
+      const objType = typeOf(e.object, rows)
+      const owner = objType ? ownerOf(unwrapNullableUnion(collapseLiteralUnion(objType))) : null
+      return owner?.properties.find(p => p.name === e.property)?.type ?? null
+    }
+    return null
+  }
+  const mayBeFractional = (e: ParsedExpr, seen: ReadonlySet<string>, rows: ReadonlyMap<string, TypeInfo>): boolean => {
+    switch (e.kind) {
+      case 'literal':
+        return isFraction(e)
+      case 'unary':
+        return isFraction(e) || mayBeFractional(e.argument, seen, rows)
+      case 'binary':
+        return e.op === '/' || (['+', '-', '*', '%'].includes(e.op) && (mayBeFractional(e.left, seen, rows) || mayBeFractional(e.right, seen, rows)))
+      case 'logical':
+        return mayBeFractional(e.left, seen, rows) || mayBeFractional(e.right, seen, rows)
+      case 'conditional':
+        return mayBeFractional(e.consequent, seen, rows) || mayBeFractional(e.alternate, seen, rows)
+      case 'call': {
+        if (e.callee.kind !== 'identifier' || e.args.length !== 0) return false
+        const name = e.callee.name
+        const signal = (metadata.signals ?? []).find(s => s.getter === name)
+        if (signal) return isFraction(signal.parsed)
+        const memo = (metadata.memos ?? []).find(m => m.name === name)
+        if (!memo?.parsed || seen.has(name)) return false
+        return mayBeFractional(memo.parsed, new Set([...seen, name]), new Map())
+      }
+      case 'member': {
+        if (e.computed) return false
+        if (metadata.propsObjectName && e.object.kind === 'identifier' && e.object.name === metadata.propsObjectName) {
+          return isFractionalOwnProp(e.property)
+        }
+        const objType = typeOf(e.object, rows)
+        const owner = objType ? ownerOf(unwrapNullableUnion(collapseLiteralUnion(objType))) : null
+        return !!owner && fractionalStructFields.has(`${owner.name}.${e.property}`)
+      }
+      case 'identifier':
+        return !rows.has(e.name) && (metadata.propsParams ?? []).some(p => p.name === e.name) && isFractionalOwnProp(e.name)
+      default:
+        return false
+    }
+  }
+  // `rows` maps a loop's item binding to its element type, so a row
+  // field (`items().map(i => <Price value={i.price} />)`) resolves too.
+  const visit = (node: unknown, rows: ReadonlyMap<string, TypeInfo>): void => {
+    if (Array.isArray(node)) {
+      for (const child of node) visit(child, rows)
+      return
+    }
+    if (node === null || typeof node !== 'object') return
+    const n = node as { type?: unknown; name?: unknown; props?: unknown; param?: unknown; arrayParsed?: ParsedExpr; itemType?: TypeInfo | null }
+    let inner = rows
+    if (n.type === 'loop' && typeof n.param === 'string') {
+      const arrayType = n.arrayParsed ? typeOf(n.arrayParsed, rows) : null
+      const element = arrayType?.kind === 'array' ? arrayType.elementType : n.itemType ?? undefined
+      if (element) inner = new Map([...rows, [n.param, element]])
+    }
+    if (n.type === 'component' && typeof n.name === 'string' && Array.isArray(n.props)) {
+      for (const prop of n.props as Array<{ name: string; value: { kind: string; parsed?: ParsedExpr } }>) {
+        const parsed = prop.value.kind === 'expression' ? prop.value.parsed : undefined
+        if (parsed && mayBeFractional(parsed, new Set(), inner)) keys.add(`${n.name}.${prop.name}`)
+      }
+    }
+    for (const value of Object.values(node)) visit(value, inner)
+  }
+  visit(root, new Map())
+  return keys
 }
