@@ -43,6 +43,13 @@ describe('collectBooleanValueNames props (#3443)', () => {
     expect([...props].sort()).toEqual(['a', 'b', 'c'])
   })
 
+  test('a default reading an earlier proven-boolean param is boolean', () => {
+    // `{ off = false, on = off }`: `off` is in scope and boolean. A later or
+    // unproven binding (`{ a = c, c = false }`, `{ b, d = b }`) is not.
+    const { names } = collect([prop('off', true, 'false'), prop('on', true, 'off'), prop('a', true, 'c'), prop('c', true, 'false'), prop('b', true), prop('d', true, 'b')])
+    expect([...names].sort()).toEqual(['c', 'off', 'on'])
+  })
+
   test('an optional prop without a boolean default is not', () => {
     // `{ on = undefined }` still renders `undefined` when omitted; so does a
     // default of any other non-boolean expression.

@@ -144,8 +144,14 @@ export function collectBooleanValueNames(
   for (const memo of metadata.memos ?? []) {
     if (isBoolean(memo.type)) names.add(memo.name)
   }
+  // A destructure default sees only the bindings before it, so one that
+  // reads an earlier proven-boolean param (`{ off = false, on = off }`) is
+  // boolean too.
+  const provenParams = new Set<string>()
   for (const param of metadata.propsParams) {
-    if (!isBoolean(param.type) || (param.optional && !(param.parsed && isBooleanResultParsed(param.parsed)))) continue
+    if (!isBoolean(param.type)) continue
+    if (param.optional && !(param.parsed && isBooleanResultParsed(param.parsed, (n, member) => !member && provenParams.has(n)))) continue
+    provenParams.add(param.name)
     props.add(param.sourceName ?? param.name)
     if (!metadata.propsObjectName) names.add(param.name)
   }
