@@ -13,7 +13,7 @@ import {
 } from '../adapter-registry'
 
 function fakeLoaded(id: string): LoadedCompatAdapter {
-  return { id, pkg: `@barefootjs/${id}`, factory: () => { throw new Error('unused in this test') }, pins: {}, renderDivergences: {} }
+  return { id, pkg: `@barefootjs/${id}`, factory: () => { throw new Error('unused in this test') }, pins: {}, renderDivergences: {}, dataPointDivergences: {} }
 }
 
 describe('requireAllCompatAdapters (#2785)', () => {

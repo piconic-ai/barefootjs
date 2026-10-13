@@ -8,4 +8,4 @@
 export { PebbleAdapter, pebbleAdapter } from './adapter/index.ts'
 export type { PebbleAdapterOptions } from './adapter/index.ts'
 export { conformancePins } from './conformance-pins.ts'
-export { renderDivergences } from './render-divergences.ts'
+export { renderDivergences, dataPointDivergences } from './render-divergences.ts'

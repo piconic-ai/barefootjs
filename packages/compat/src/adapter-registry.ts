@@ -74,6 +74,12 @@ export interface LoadedCompatAdapter {
    * `@barefootjs/jsx`), or `{}` when it exports none.
    */
   renderDivergences: RenderDivergences
+  /**
+   * The package's exported `dataPointDivergences` (`<fixture>:<point>` →
+   * limitation: data points that diverge while the fixture's primary render
+   * matches), or `{}` when it exports none.
+   */
+  dataPointDivergences: Readonly<Record<string, { limitation: string }>>
 }
 
 export interface SkippedCompatAdapter {
@@ -112,6 +118,8 @@ export async function loadCompatAdapters(): Promise<{
 
     const pins = (mod.conformancePins as ConformancePins | undefined) ?? {}
     const renderDivergences = (mod.renderDivergences as RenderDivergences | undefined) ?? {}
+    const dataPointDivergences =
+      (mod.dataPointDivergences as Readonly<Record<string, { limitation: string }>> | undefined) ?? {}
     // One throwaway instance just to read `.name` — the real per-compile
     // instances always come from `factory()` below.
     const probe = new AdapterClass()
@@ -121,6 +129,7 @@ export async function loadCompatAdapters(): Promise<{
       factory: () => new AdapterClass(),
       pins,
       renderDivergences,
+      dataPointDivergences,
     })
   }
 

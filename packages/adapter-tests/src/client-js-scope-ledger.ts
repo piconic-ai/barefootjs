@@ -15,6 +15,10 @@ export interface KnownHole {
 }
 
 export const KNOWN_UNDECLARED: Record<string, KnownHole> = {
+  'boolean-logical-stringify-dependent-default': {
+    names: ['off'],
+    limitation: 'destructure-default-reads-earlier-param',
+  },
   // #2654 (env-signal getter referenced at module scope by the template
   // lambda) is FIXED — `buildTemplateDefPart` in `emit-registration.ts`
   // now gives the template lambda its own `const [<getter>] =

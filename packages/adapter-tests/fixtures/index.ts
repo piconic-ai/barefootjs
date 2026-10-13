@@ -943,6 +943,7 @@ import { fixture as falsyRowClicks } from './falsy-row-clicks'
 import { fixture as booleanStringifyPositions } from './boolean-stringify-positions'
 import { fixture as booleanLogicalStringify } from './boolean-logical-stringify'
 import { fixture as booleanLogicalStringifyDefaultAlias } from './boolean-logical-stringify-default-alias'
+import { fixture as booleanLogicalStringifyDependentDefault } from './boolean-logical-stringify-dependent-default'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1569,6 +1570,7 @@ export const jsxFixtures: JSXFixture[] = [
   booleanStringifyPositions,
   booleanLogicalStringify,
   booleanLogicalStringifyDefaultAlias,
+  booleanLogicalStringifyDependentDefault,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,

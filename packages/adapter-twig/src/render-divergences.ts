@@ -70,3 +70,17 @@ export const renderDivergences: RenderDivergences = {
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
 }
+
+/**
+ * Data points (`<fixture>:<point>`) that render divergent from the Hono
+ * reference on this adapter while the fixture's primary render matches,
+ * so the fixture itself is not in `renderDivergences`. The conformance
+ * `skipDataPoints` set derives from the keys, and each entry cites the
+ * limitation it is an instance of — same pattern as
+ * `@barefootjs/go-template`'s `dataPointDivergences`.
+ */
+export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  'boolean-logical-stringify-dependent-default:gen:on:absent': {
+    limitation: 'destructure-default-reads-earlier-param',
+  },
+}

@@ -7,4 +7,4 @@
 export { TwigAdapter, twigAdapter } from './adapter/index.ts'
 export type { TwigAdapterOptions } from './adapter/index.ts'
 export { conformancePins } from './conformance-pins.ts'
-export { renderDivergences } from './render-divergences.ts'
+export { renderDivergences, dataPointDivergences } from './render-divergences.ts'
