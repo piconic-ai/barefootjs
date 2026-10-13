@@ -727,6 +727,39 @@ sub number ($self, $value) {
     return 0 + 'nan';
 }
 
+# JS `+` / `-` / `*` / `/` over numbers (#3454). The adapters emit these
+# instead of Perl's native operators so the result is the IEEE double JS
+# computes: a 64-bit IV sum past 2**53 rounds as a double, a perl with a
+# wider NV (-Duselongdouble / -Dusequadmath) rounds to the double JS has,
+# and division by zero yields +/-Infinity or NaN instead of dying. Operand
+# coercion stays Perl's (`undef` is 0), as with the native operator.
+sub _as_double { unpack('d', pack('d', $_[0])) }
+
+sub add ($self, $l, $r) {
+    no warnings qw(numeric uninitialized);
+    return _as_double(_as_double($l) + _as_double($r));
+}
+
+sub subtract ($self, $l, $r) {
+    no warnings qw(numeric uninitialized);
+    return _as_double(_as_double($l) - _as_double($r));
+}
+
+sub multiply ($self, $l, $r) {
+    no warnings qw(numeric uninitialized);
+    return _as_double(_as_double($l) * _as_double($r));
+}
+
+sub divide ($self, $l, $r) {
+    no warnings qw(numeric uninitialized);
+    my ($n, $d) = (_as_double($l), _as_double($r));
+    if ($d == 0) {
+        return 0 + 'nan' if $n == 0 || $n != $n;
+        return $n > 0 ? 9**9**9 : -(9**9**9);
+    }
+    return _as_double($n / $d);
+}
+
 # NaN is the only float for which `$x != $x` holds. Used as the
 # portable sentinel check in floor/ceil/round.
 sub _is_nan { my $n = shift; return $n != $n }
@@ -1444,7 +1477,9 @@ sub to_fixed ($self, $value, $digits = 0) {
     return $n < 0 ? '-Infinity' : 'Infinity' if _is_inf($n);
     $digits = 0 if !defined $digits || $digits < 0;
     my $factor  = 10 ** $digits;
-    my $rounded = POSIX::floor($n * $factor + 0.5);
+    # Scaled as doubles, so `(1.005).toFixed(2)` sees JS's 100.49999… on a
+    # perl whose NV is wider than a double (#3454).
+    my $rounded = POSIX::floor(_as_double(_as_double($n) * $factor) + 0.5);
     return sprintf('%.*f', $digits, $rounded / $factor);
 }
 

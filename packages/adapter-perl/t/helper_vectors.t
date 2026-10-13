@@ -69,15 +69,16 @@ my %UNSUPPORTED = %{ $divergences_doc->{unsupported} };
 # One binding per canonical helper id in the spec catalogue, bound to
 # the exact code shape compiled templates execute on the Perl backends.
 # Where the adapters lower an operation to a native Perl operator
-# (mojo-adapter.ts maps JSX `+` straight to Perl `+`), the binding IS
-# that operator rather than a BarefootJS.pm method. Per the spec, a
+# (`%`, unary `-`), the binding IS that operator rather than a
+# BarefootJS.pm method; `+ - * /` go through `add` / `subtract` /
+# `multiply` / `divide` (#3454). Per the spec, a
 # vector with no binding here fails the test — the Perl backend must
 # not silently fall behind the catalogue.
 my %bindings = (
-    add => sub { $_[0] + $_[1] },
-    sub => sub { $_[0] - $_[1] },
-    mul => sub { $_[0] * $_[1] },
-    div => sub { $_[0] / $_[1] },
+    add => sub { $bf->add($_[0], $_[1]) },
+    sub => sub { $bf->subtract($_[0], $_[1]) },
+    mul => sub { $bf->multiply($_[0], $_[1]) },
+    div => sub { $bf->divide($_[0], $_[1]) },
     mod => sub { $_[0] % $_[1] },
     neg => sub { -$_[0] },
 
@@ -312,7 +313,10 @@ sub _match {
         return 1;
     }
     return 0 if !defined $got || ref $got;
-    return ($got == $expect ? 1 : 0) if looks_like_number($expect) && looks_like_number($got);
+    # Compared as doubles: the expectation is decoded at the perl's NV
+    # precision, which is wider than JS's on a long-double perl (#3454).
+    return (unpack('d', pack('d', $got)) == unpack('d', pack('d', $expect)) ? 1 : 0)
+        if looks_like_number($expect) && looks_like_number($got);
     return ($got eq $expect) ? 1 : 0;
 }
 
