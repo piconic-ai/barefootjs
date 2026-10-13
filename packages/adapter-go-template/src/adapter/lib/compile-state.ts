@@ -300,6 +300,13 @@ export class CompileState {
   nullableSeedStructFields: Set<string> = new Set()
 
   /**
+   * `Struct.field` keys of `number` struct fields a signal seed gives a
+   * fractional literal (#3438); `propertyInfoToGo` types them `float64`.
+   * File-wide like `nullableSeedStructFields`.
+   */
+  fractionalSeedStructFields: Set<string> = new Set()
+
+  /**
    * OPTIONAL no-default prop names consumed as a BARE TEXT-position
    * expression value (`{size}`) — #2267. Same `resolvePropGoType` flip and
    * same populate-before-first-resolve ordering as

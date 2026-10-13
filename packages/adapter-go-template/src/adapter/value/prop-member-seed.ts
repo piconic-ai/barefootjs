@@ -25,7 +25,8 @@ import { isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { resolvePropGoType } from '../props/prop-types.ts'
-import { propertyInfoToGo } from '../type/type-codegen.ts'
+import { collapseLiteralUnion, literalNumberValue, propertyInfoToGo } from '../type/type-codegen.ts'
+import { unwrapNullableUnion } from './value-lowering.ts'
 import { planSynthPropStructs } from '../type/synth-prop-structs.ts'
 
 export type PropMemberSeed =
@@ -204,6 +205,73 @@ export function propMemberSeedGoType(
 }
 
 /**
+ * The Go struct a `TypeInfo` is emitted as, with its properties: a named
+ * type definition, or an anonymous object type the synth-struct pre-pass
+ * names. Null for any other type.
+ */
+function structOwnerResolver(
+  metadata: Pick<IRMetadata, 'propsParams' | 'typeDefinitions' | 'componentName'>,
+): (type: TypeInfo) => { name: string; properties: PropertyInfo[] } | null {
+  const propsParams = metadata.propsParams ?? []
+  const typeDefinitions = metadata.typeDefinitions ?? []
+  let synthNames: Map<TypeInfo, string> | null = null
+  return (type) => {
+    if (type.kind === 'object') {
+      synthNames ??= new Map(
+        planSynthPropStructs({ typeDefinitions, propsParams }, metadata.componentName).map(e => [e.typeInfo, e.name]),
+      )
+      const name = synthNames.get(type)
+      return name && type.properties ? { name, properties: type.properties } : null
+    }
+    const td = type.raw ? typeDefinitions.find(t => t.name === type.raw) : undefined
+    return td?.properties ? { name: td.name, properties: td.properties } : null
+  }
+}
+
+/**
+ * `Struct.field` keys of `number` struct fields a signal seed gives a
+ * fractional literal (`createSignal<User>({ age: 2.5 })`, #3438), walking
+ * nested object and array literals through the declared types.
+ * `propertyInfoToGo` types them `float64`: the `number` default is `int`,
+ * which can't hold the seed. A later `set` never reaches the Go struct,
+ * which only carries SSR state, so seeds are the whole evidence.
+ */
+export function collectFractionalSeedStructFields(
+  metadata: Pick<IRMetadata, 'signals' | 'propsParams' | 'typeDefinitions' | 'componentName'>,
+): Set<string> {
+  const keys = new Set<string>()
+  const ownerOf = structOwnerResolver(metadata)
+  const visit = (value: ParsedExpr, type: TypeInfo | undefined): void => {
+    if (!type) return
+    const scalar = unwrapNullableUnion(collapseLiteralUnion(type))
+    if (value.kind === 'array-literal') {
+      if (scalar.kind !== 'array') return
+      for (const element of value.elements) visit(element, scalar.elementType)
+      return
+    }
+    if (value.kind !== 'object-literal') return
+    const owner = ownerOf(scalar)
+    if (!owner) return
+    for (const prop of value.properties) {
+      if (prop.kind === 'spread') continue
+      const property = owner.properties.find(p => p.name === prop.key)
+      if (!property) continue
+      const fieldType = unwrapNullableUnion(collapseLiteralUnion(property.type))
+      const n = literalNumberValue(prop.value)
+      if (fieldType.kind === 'primitive' && fieldType.primitive === 'number' && n !== null && !Number.isInteger(n)) {
+        keys.add(`${owner.name}.${property.name}`)
+      } else {
+        visit(prop.value, property.type)
+      }
+    }
+  }
+  for (const signal of metadata.signals ?? []) {
+    if (signal.parsed) visit(signal.parsed, signal.type)
+  }
+  return keys
+}
+
+/**
  * `Struct.field` keys of OPTIONAL scalar struct fields that a nullable
  * signal seeds from whole (`createSignal<string | undefined>(initial.label)`)
  * — #3323. Such a field must hold `nil` for a member the caller left out:
@@ -224,19 +292,7 @@ export function collectNullableSeedStructFields(
 ): Set<string> {
   const keys = new Set<string>()
   const propsParams = metadata.propsParams ?? []
-  const typeDefinitions = metadata.typeDefinitions ?? []
-  let synthNames: Map<TypeInfo, string> | null = null
-  const ownerOf = (type: TypeInfo): { name: string; properties: PropertyInfo[] } | null => {
-    if (type.kind === 'object') {
-      synthNames ??= new Map(
-        planSynthPropStructs({ typeDefinitions, propsParams }, metadata.componentName).map(e => [e.typeInfo, e.name]),
-      )
-      const name = synthNames.get(type)
-      return name && type.properties ? { name, properties: type.properties } : null
-    }
-    const td = type.raw ? typeDefinitions.find(t => t.name === type.raw) : undefined
-    return td?.properties ? { name: td.name, properties: td.properties } : null
-  }
+  const ownerOf = structOwnerResolver(metadata)
   for (const signal of metadata.signals ?? []) {
     if (!isNullableSignal(signal)) continue
     const chain = tsPropMemberChain(signal.parsed, propsParams, metadata.propsObjectName ?? null)
