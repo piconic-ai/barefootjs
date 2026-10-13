@@ -121,7 +121,9 @@ function stringifyBooleanBranch(branch: ParsedExpr): ParsedExpr {
  * - `props`, read as `props.X`: the `boolean` props by their source key.
  *
  * A prop counts only when it can't be `undefined` (required, or carrying a
- * default); an omitted one stringifies as `undefined`, not `false`. A loop
+ * default proven boolean); an omitted one stringifies as `undefined`, not
+ * `false`, and so does one defaulted to `undefined` or any other non-boolean
+ * expression. A loop
  * or callback binding of the same name shadows a bare name, which the
  * caller's scope decides.
  */
@@ -143,7 +145,7 @@ export function collectBooleanValueNames(
     if (isBoolean(memo.type)) names.add(memo.name)
   }
   for (const param of metadata.propsParams) {
-    if (!isBoolean(param.type) || (param.optional && param.defaultValue === undefined)) continue
+    if (!isBoolean(param.type) || (param.optional && !(param.parsed && isBooleanResultParsed(param.parsed)))) continue
     props.add(param.sourceName ?? param.name)
     if (!metadata.propsObjectName) names.add(param.name)
   }
