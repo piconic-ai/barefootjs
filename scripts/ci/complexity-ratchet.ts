@@ -6,9 +6,11 @@
  *   bun scripts/ci/complexity-ratchet.ts            # check the tree against cccc-baseline.json
  *   bun scripts/ci/complexity-ratchet.ts --update   # regenerate cccc-baseline.json
  *   bun scripts/ci/complexity-ratchet.ts --update --force
- *     # also when a file's above-threshold sum went up, or the installed cccc
- *     # differs from the baseline's: both are refused without --force so a
- *     # regeneration can't quietly accept growth or a scorer change
+ *     # also when the tree is more complex than the committed baseline (a
+ *     # function above the threshold grew, a new one entered, or a file's
+ *     # above-threshold sum went up), or the installed cccc differs from the
+ *     # baseline's: all refused without --force, so a regeneration can only
+ *     # lower the baseline unless someone says otherwise
  *
  * Needs `cccc` on PATH (a GitHub release binary, `cargo install cccc-cli`,
  * or moznion/cccc-action in CI). Runs from the repository root whatever the
@@ -23,11 +25,11 @@ import {
   REGENERATE_COMMAND,
   type CcccReport,
   type ComplexityBaseline,
-  baselineGrowth,
   buildBaseline,
   compareToBaseline,
   formatVerdict,
   parseCcccVersion,
+  regenerationGrowth,
   serializeBaseline,
 } from '../lib/complexity-ratchet'
 
@@ -90,12 +92,23 @@ if (update) {
           `install ${previous.cccc}, or bump the pin in ci-complexity.yml and AGENTS.md and pass --force`,
       )
     }
-    const growth = baselineGrowth(previous, baseline)
-    if (growth.length > 0) {
+    // A regeneration may only LOWER the baseline: the same per-function
+    // check CI runs (a function that grew, a new one above the threshold)
+    // plus the per-file total, which catches a hotspot renamed while it grew
+    // and a function growing behind a sibling that got simpler.
+    const growth = regenerationGrowth(report, previous, baseline)
+    if (growth.functions.length > 0 || growth.files.length > 0) {
       refusals.push(
-        'the above-threshold complexity of these files went UP — a regenerated baseline would accept it. ' +
+        'the tree is more complex than the committed baseline — a regenerated baseline would accept it. ' +
           'Lower the functions instead, or pass --force and say why in the PR:',
-        ...growth.map((g) => `  ${g.path}: ${g.from} -> ${g.to}`),
+        ...growth.functions.map((v) =>
+          v.kind === 'grew'
+            ? `  ${v.path} ${v.name}: ${v.from} -> ${v.to}`
+            : v.kind === 'entered'
+              ? `  ${v.path} ${v.name}: new above cognitive ${previous.threshold} (${v.cognitive})`
+              : '',
+        ).filter(Boolean),
+        ...growth.files.map((g) => `  ${g.path}: file total ${g.from} -> ${g.to}`),
       )
     }
     if (refusals.length > 0 && !force) {

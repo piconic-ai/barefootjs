@@ -10,6 +10,7 @@ import {
   flattenFunctions,
   formatVerdict,
   parseCcccVersion,
+  regenerationGrowth,
   serializeBaseline,
 } from '../complexity-ratchet'
 
@@ -192,6 +193,41 @@ describe('baselineGrowth (the --update guard)', () => {
   test('a split that lowers the total is not growth even though it adds names', () => {
     const previous = baseline({ 'a.ts': { big: [100] } })
     expect(baselineGrowth(previous, baseline({ 'a.ts': { a: [30], b: [30], c: [30] } }))).toEqual([])
+  })
+})
+
+describe('regenerationGrowth (everything --update refuses)', () => {
+  test('a function that grew behind a sibling that got simpler by more is still growth', () => {
+    const previous = baseline({ 'a.ts': { f: [60], g: [40] } })
+    const r = report({ 'a.ts': [fn('f', 61), fn('g', 30)] })
+    const next = buildBaseline(r, 25, '1.8.0')
+    expect(baselineGrowth(previous, next)).toEqual([])
+    expect(regenerationGrowth(r, previous, next)).toEqual({
+      functions: [{ kind: 'grew', path: 'a.ts', name: 'f', from: 60, to: 61 }],
+      files: [],
+    })
+  })
+
+  test('a new function above the threshold is growth', () => {
+    const previous = baseline({ 'a.ts': { f: [60] } })
+    const r = report({ 'a.ts': [fn('f', 60), fn('h', 26)] })
+    expect(regenerationGrowth(r, previous, buildBaseline(r, 25, '1.8.0')).functions).toEqual([
+      { kind: 'entered', path: 'a.ts', name: 'h', cognitive: 26 },
+    ])
+  })
+
+  test('a renamed hotspot that grew is caught by the file total even though names do not pair', () => {
+    const previous = baseline({ 'a.ts': { foo: [40] } })
+    const r = report({ 'a.ts': [fn('bar', 60)] })
+    const growth = regenerationGrowth(r, previous, buildBaseline(r, 25, '1.8.0'))
+    expect(growth.functions.map((v) => v.kind)).toEqual(['entered'])
+    expect(growth.files).toEqual([{ path: 'a.ts', from: 40, to: 60 }])
+  })
+
+  test('a plain lowering (stale entries only) is not growth, so regeneration proceeds', () => {
+    const previous = baseline({ 'a.ts': { f: [60], g: [40] } })
+    const r = report({ 'a.ts': [fn('f', 59), fn('g', 20)] })
+    expect(regenerationGrowth(r, previous, buildBaseline(r, 25, '1.8.0'))).toEqual({ functions: [], files: [] })
   })
 })
 

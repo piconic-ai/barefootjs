@@ -112,10 +112,11 @@ fixtures and build output `cccc.toml` excludes). Install the pinned version (`v1
 - `bun run complexity:baseline` — regenerate the baseline. This is the only way to change
   it: a PR that lowers a hotspot regenerates it and commits the result; nobody edits it by
   hand, and a function is never added to it to get a PR green. Keep new functions under 25
-  and split the ones you touch instead. The command refuses to write a baseline in which a
-  file's above-threshold total went up (a hotspot renamed while it grew reads as a new entry
-  plus a stale one, and the file total is what catches it), or one measured with a cccc other
-  than the baseline's; `--force` overrides both, and the PR says why.
+  and split the ones you touch instead. The command only ever lowers the baseline: it refuses
+  to write one in which a function above 25 grew or a new one entered (the same test CI runs),
+  or in which a file's above-threshold total went up (a hotspot renamed while it grew reads as a
+  new entry plus a stale one, and the file total is what catches it), or one measured with a
+  cccc other than the baseline's; `--force` overrides all of these, and the PR says why.
 
 The logic and its rationale are in `scripts/lib/complexity-ratchet.ts`.
 

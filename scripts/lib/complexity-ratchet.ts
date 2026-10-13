@@ -226,9 +226,12 @@ export interface FileGrowth {
  * committed baseline and a regenerated one. Pairing by name cannot see a
  * hotspot that was renamed while it grew (it reads as "entered" + "stale"),
  * or two same-named closures where one left the threshold while the other
- * grew; the per-file sum can. `--update` refuses to write a baseline that
- * raised any file's sum unless `--force` is passed, so growth is a
- * deliberate, visible decision rather than a side effect of regenerating.
+ * grew; the per-file sum can. The sum alone is not enough either: a function
+ * can grow behind a sibling in the same file that got simpler by more. So
+ * `--update` refuses on BOTH signals — any per-function `grew` / `entered`
+ * from {@link compareToBaseline} against the committed baseline, and any
+ * file whose sum rose — unless `--force` is passed. A regeneration can only
+ * lower the baseline; growth is a deliberate, visible decision.
  */
 export function baselineGrowth(previous: ComplexityBaseline, next: ComplexityBaseline): FileGrowth[] {
   const sumOf = (byName: Record<string, number[]> | undefined): number =>
@@ -241,6 +244,32 @@ export function baselineGrowth(previous: ComplexityBaseline, next: ComplexityBas
     if (to > from) growth.push({ path, from, to })
   }
   return growth
+}
+
+/** What a regeneration would accept that the committed baseline does not. */
+export interface RegenerationGrowth {
+  /** Per-function: a matched function that grew, or a new one above the threshold. */
+  functions: Violation[]
+  /** Per-file totals that rose (catches a hotspot renamed while it grew). */
+  files: FileGrowth[]
+}
+
+/**
+ * Everything `--update` refuses without `--force`: the per-function
+ * `grew` / `entered` violations of the tree against the COMMITTED baseline
+ * (so a function cannot grow behind a sibling in the same file that got
+ * simpler by more), plus {@link baselineGrowth}'s per-file totals. Stale
+ * entries — the legitimate reason to regenerate — are not growth.
+ */
+export function regenerationGrowth(
+  report: CcccReport,
+  previous: ComplexityBaseline,
+  next: ComplexityBaseline,
+): RegenerationGrowth {
+  return {
+    functions: compareToBaseline(report, previous).violations.filter((v) => v.kind !== 'stale'),
+    files: baselineGrowth(previous, next),
+  }
 }
 
 /** Parse `cccc --version` ("cccc 1.8.0") to the bare version. */
