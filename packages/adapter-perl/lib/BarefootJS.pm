@@ -752,12 +752,7 @@ sub multiply ($self, $l, $r) {
 
 sub divide ($self, $l, $r) {
     no warnings qw(numeric uninitialized);
-    my ($n, $d) = (_as_double($l), _as_double($r));
-    if ($d == 0) {
-        return 0 + 'nan' if $n == 0 || $n != $n;
-        return $n > 0 ? 9**9**9 : -(9**9**9);
-    }
-    return _as_double($n / $d);
+    return BarefootJS::Evaluator::_divide(_as_double($l), _as_double($r));
 }
 
 # NaN is the only float for which `$x != $x` holds. Used as the

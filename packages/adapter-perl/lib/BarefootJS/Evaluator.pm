@@ -326,7 +326,8 @@ sub _to_number ($v) {
         return 0 if $t eq '';
         return looks_like_number($t) ? _double($t + 0) : _nan();
     }
-    return _double($v + 0);
+    # Already a number: no `+ 0`, which would turn a -0 into +0.
+    return _double($v);
 }
 
 sub _to_string ($v) {
@@ -418,17 +419,7 @@ sub _binary ($op, $l, $r) {
     return _double(_to_number($l) - _to_number($r)) if $op eq '-';
     return _double(_to_number($l) * _to_number($r)) if $op eq '*';
     if ($op eq '/') {
-        my $ln = _to_number($l);
-        my $rn = _to_number($r);
-        # JS division by zero is finite-valued, not an error: x/0 is ±Infinity
-        # (NaN for 0/0). Perl's native `/` dies on a zero divisor, so guard it
-        # to stay JS-faithful and match the Go evaluator (Go float division
-        # already yields ±Inf / NaN).
-        if ($rn == 0) {
-            return _nan() if $ln == 0 || $ln != $ln;
-            return $ln > 0 ? 9**9**9 : -(9**9**9);
-        }
-        return _double($ln / $rn);
+        return _divide(_to_number($l), _to_number($r));
     }
     if ($op eq '%') {
         my $rn = _to_number($r);
@@ -440,6 +431,19 @@ sub _binary ($op, $l, $r) {
     return _bool(!_strict_eq($l, $r)) if $op eq '!==';
     # Loose equality / bitwise / shift are out of the subset.
     return undef;
+}
+
+# _divide: JS `/` over two numbers, as a double. Division by zero is
+# finite-valued, not an error: x/0 is ±Infinity, signed by both operands
+# (`1 / -0` is -Infinity), and 0/0 or NaN/0 is NaN. Perl's native `/` dies
+# on a zero divisor. Shared with the template runtime's `divide` (#3454).
+sub _divide ($ln, $rn) {
+    if ($rn == 0) {
+        return _nan() if $ln == 0 || $ln != $ln;
+        my $negative = ($ln < 0) != (POSIX::signbit($rn) ? 1 : 0);
+        return $negative ? -(9**9**9) : 9**9**9;
+    }
+    return _double($ln / $rn);
 }
 
 sub _relational ($op, $l, $r) {
