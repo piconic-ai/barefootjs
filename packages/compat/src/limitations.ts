@@ -41,6 +41,8 @@ export interface LimitationsAdapterInput {
   id: string
   pins: ConformancePins
   renderDivergences: RenderDivergences
+  /** `<fixture>:<point>` → limitation, for data points that diverge while the primary render matches. */
+  dataPointDivergences?: Readonly<Record<string, { limitation: string }>>
 }
 
 /**
@@ -84,8 +86,8 @@ export async function e2eQuarantineCitations(): Promise<E2eCitation[]> {
 }
 
 /**
- * Adapter ids affected by `limitationId`: every adapter whose pins or render
- * divergences cite it, plus, for each e2e quarantine row citing it, the
+ * Adapter ids affected by `limitationId`: every adapter whose pins, render
+ * divergences or data-point divergences cite it, plus, for each e2e quarantine row citing it, the
  * run's SSR adapter. A row keyed by a corpus fixture also covers every
  * adapter that renders that fixture exactly as the reference does (no pin
  * and no render divergence on it): that adapter serves the same markup and
@@ -105,7 +107,8 @@ export function adaptersCiting(
   for (const adapter of adapters) {
     const pinned = Object.values(adapter.pins).some(pins => pins.some(p => p.limitation === limitationId))
     const divergent = Object.values(adapter.renderDivergences).some(d => d.limitation === limitationId)
-    if (pinned || divergent) ids.add(adapter.id)
+    const pointDivergent = Object.values(adapter.dataPointDivergences ?? {}).some(d => d.limitation === limitationId)
+    if (pinned || divergent || pointDivergent) ids.add(adapter.id)
   }
   for (const citation of e2eCitations) {
     if (citation.limitation !== limitationId) continue

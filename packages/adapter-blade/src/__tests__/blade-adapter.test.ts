@@ -11,11 +11,12 @@
  * engine genuinely differs. Every divergence carries a one-line rationale.
  */
 
-import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
+import { describe, test, expect } from 'bun:test'
+import { runAdapterConformanceTests, findLimitation } from '@barefootjs/adapter-tests'
 import { BladeAdapter } from '../adapter'
 import { renderBladeComponent, BladeNotAvailableError } from '../test-render'
 import { conformancePins } from '../conformance-pins'
-import { renderDivergences } from '../render-divergences'
+import { renderDivergences, dataPointDivergences } from '../render-divergences'
 
 runAdapterConformanceTests({
   name: 'blade',
@@ -50,7 +51,7 @@ runAdapterConformanceTests({
     // Same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>(),
+  skipDataPoints: new Set(Object.keys(dataPointDivergences)),
   onRenderError: (err, id) => {
     if (err instanceof BladeNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -58,4 +59,16 @@ runAdapterConformanceTests({
     }
     return false
   },
+})
+
+describe('dataPointDivergences', () => {
+  for (const [point, { limitation }] of Object.entries(dataPointDivergences)) {
+    test(`[${point}] cites an existing limitation`, () => {
+      expect(
+        findLimitation(limitation),
+        `'${point}' cites limitation '${limitation}', which is not in the registry: ` +
+          'if it graduated, the data point renders like Hono now, so delete this skip too',
+      ).toBeDefined()
+    })
+  }
 })

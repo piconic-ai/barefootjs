@@ -735,6 +735,32 @@
       }
     }
   ],
+  "boolean-logical-stringify-dependent-default": [
+    {
+      "name": "gen:off:true",
+      "props": {
+        "on": true,
+        "off": true
+      }
+    },
+    {
+      "name": "gen:off:false",
+      "props": {
+        "on": true,
+        "off": false
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
   "boolean-stringify-positions": [
     {
       "name": "gen:on:false",

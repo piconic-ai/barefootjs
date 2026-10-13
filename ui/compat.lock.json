@@ -6006,6 +6006,24 @@
         "BF101"
       ]
     },
+    "destructure-default-reads-earlier-param": {
+      "title": "A destructure default that reads an earlier param",
+      "kind": "silent",
+      "given": "a props destructure whose default reads an earlier param of the same pattern (`{ off = false, on = off }`), with the later prop omitted",
+      "expected": "the omitted prop takes the earlier param's value",
+      "actual": "emits the default verbatim into the client JS (`_p.on ?? off`), where the earlier param is undeclared, and renders the omitted prop empty on the server",
+      "fixtures": [
+        "boolean-logical-stringify-dependent-default"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "pebble",
+        "twig"
+      ]
+    },
     "fragment-wrapped-conditional-return-branch-scope": {
       "title": "Fragment-wrapped branch of a conditional return is never hydrated",
       "kind": "refusal",
