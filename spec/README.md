@@ -14,6 +14,9 @@ normative documents for contributors and adapter authors; user-facing docs live 
 - [`testing.md`](./testing.md) — the testing specification: layers, APIs, and patterns.
 - [`adapter-architecture.md`](./adapter-architecture.md) — the target architecture for SSR
   adapters, and the reference shape every adapter implements.
+- [`dsl-adapter-shared-lowering.md`](./dsl-adapter-shared-lowering.md) — design note (#3426):
+  which functions the eight DSL template adapters duplicate, which of them are one
+  semantic decision spelled eight times, and the follow-up work to share them.
 - [`callback-fidelity.md`](./callback-fidelity.md) — callback-body fidelity across backends.
 - [`template-helpers.md`](./template-helpers.md) — the language-independent, JS-normative
   spec for the pure template helpers every adapter ships.
