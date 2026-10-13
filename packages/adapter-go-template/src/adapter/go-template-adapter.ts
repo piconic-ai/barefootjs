@@ -172,14 +172,14 @@ import {
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
+import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
-import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, memoArithmeticYieldsNaN, evalExprGo, evaluatedAsGoType, isEvaluatedMemo } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, bareSeedPropName, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -751,7 +751,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return new Set(
       ir.metadata.signals
         .filter(signal => nullable.has(signal.getter))
-        .filter(signal => this.isNillableSeedSignal(signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}' || (
+        .filter(signal => isNillableSeedSignal(this.emitCtx, signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}' || (
           !propNames.has(signal.initialValue) &&
           !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
           !propMemberSeedGoType(this.emitCtx, signal) &&
@@ -761,11 +761,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /** A nullable signal seeded whole from a prop flipped to `interface{}` for it (#3323). */
-  private isNillableSeedSignal(signal: { parsed?: ParsedExpr }): boolean {
-    const name = bareSeedPropName(this.emitCtx, signal.parsed)
-    return name !== null && this.state.nullableSignalSeedPropNames.has(name)
-  }
-
   /** Generate template output for a component. */
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.state.componentName = ir.metadata.componentName
@@ -2556,7 +2551,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // local so the signal, any derived memo, and the prop field share one
     // fallback-applied value. Go zero values can't tell an explicit `Initial: 0`
     // from an omitted field, so it also fires on the type's zero value.
-    const propFallbackVars = this.collectPropFallbackVars(ir)
+    const propFallbackVars = collectPropFallbackVars(this.emitCtx, ir)
     for (const [, info] of propFallbackVars) {
       if (info.assertType) {
         // Nillable-lowered prop (#2248): the `interface{}` field makes
@@ -2615,7 +2610,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (hoistNames.size > 0) {
       for (const memo of ir.metadata.memos) {
         if (!hoistNames.has(memo.name)) continue
-        const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
+        const goType = inferMemoType(this.emitCtx, memo, ir.metadata.signals, memoPropsParamMap)
         const value = computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
         let localName = `memo${capitalizeFieldName(memo.name)}`
         while (GO_KEYWORDS.has(localName)) localName += '_'
@@ -2737,9 +2732,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Bake against the synthesised struct type if one was inferred for this
       // untyped object-array signal, else the signal's own type.
       const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-      const initialValue = this.signalSeedGo(signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
+      const initialValue = signalSeedGo(this.emitCtx, signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
       lines.push(`\t\t${fieldName}: ${initialValue},`)
-      const resolvedParsed = this.resolvedSignalParsed(signal)
+      const resolvedParsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
       if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
         const step = this.state.ssrSeedPlan.steps.find(s => s.kind === 'derived' && s.origin === 'signal' && s.name === signal.getter)
         if (step?.kind === 'derived') this.refuseUnbakeableDerivedObjectLiteral(signal.getter, signal.loc, step.frees)
@@ -2771,7 +2766,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       // Pass the inferred Go type so an unresolved computation zeroes to that
       // type (`false` for a boolean memo), not the int `0`.
-      const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
+      const goType = inferMemoType(this.emitCtx, memo, ir.metadata.signals, memoPropsParamMap)
       const memoValue = computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
       lines.push(`\t\t${fieldName}: ${memoValue},`)
       // No #2700 refusal check here (unlike the signal loop above): the
@@ -3775,7 +3770,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const memo = ir.metadata.memos.find(m => m.name === memoName)
       if (!memo) continue
 
-      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
+      const goType = inferMemoType(this.emitCtx, memo, ir.metadata.signals, propsParamMap)
       const bakedValue = computeMemoInitialValue(this.emitCtx, 
         memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType,
       )
@@ -4250,7 +4245,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } else {
       return null
     }
-    if (!withBody && this.sourceRowChildInputFields(ir, nested, source.shape, this.collectPropFallbackVars(ir), false) === null) {
+    if (!withBody && this.sourceRowChildInputFields(ir, nested, source.shape, collectPropFallbackVars(this.emitCtx, ir), false) === null) {
       return null
     }
     return source
@@ -4740,58 +4735,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // it from co-boarding into `bf-p` while leaving `{{.Field}}` SSR access
       // untouched — Go template field access doesn't consult json tags.
       const jsonTag = '-'
-      // A synthesised struct type wins outright — the signal is an untyped
-      // object array we gave a concrete element type.
-      const synthType = this.state.synthStructTypes.get(signal.getter)
-      if (synthType) {
-        lines.push(`\t${fieldName} ${typeInfoToGo(this.emitCtx, synthType)} \`json:"${jsonTag}"\``)
-        continue
-      }
-      // A signal seeded from a member of an object-typed prop
-      // (`createSignal(initial.items)`) takes the Go type of the Input field
-      // path its seed reads (`in.Initial.Items`), so the baked value is
-      // always assignable to it.
-      const memberSeedType = propMemberSeedGoType(this.emitCtx, signal)
-      if (memberSeedType) {
-        lines.push(`\t${fieldName} ${memberSeedType} \`json:"${jsonTag}"\``)
-        continue
-      }
-      let goType: string
-      let referencedProp = propsParamMap.get(signal.initialValue)
-      if (!referencedProp) {
-        const propName = this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
-        if (propName) referencedProp = propsParamMap.get(propName)
-      }
-      if (this.isNillableSeedSignal(signal)) {
-        // Seeded whole from an optional prop flipped to `interface{}` so the
-        // signal stays nil when the caller omits it (#3323).
-        goType = 'interface{}'
-      } else if (referencedProp) {
-        const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue, referencedProp.parsed)
-        const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
-        // The "prop type wins" heuristic helps when the signal infer is less
-        // specific than the prop (e.g. `createSignal(props.todos)` wants
-        // `[]Todo`, not `interface{}`). It HURTS when the initial expression
-        // transforms the prop type — `createSignal((props.todos ?? []).length)`
-        // is a `number`, not the prop's `[]Todo`. Let a specific signal type
-        // override a less-specific prop type in either direction so
-        // `.length` / `.some()` / `.every()` chains land on their actual Go type.
-        if (propGoType.includes('interface{}')) {
-          goType = signalGoType
-        } else if (
-          !signalGoType.includes('interface{}') &&
-          signalGoType !== propGoType
-        ) {
-          // Both sides resolved but disagree — trust the signal's inferred shape
-          // (based on the literal expression text, including the trailing
-          // accessor).
-          goType = signalGoType
-        } else {
-          goType = propGoType
-        }
-      } else {
-        goType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
-      }
+      // The field type decision lives with the seed decision in
+      // `type/state-fields.ts`, so the two can never disagree (#3425).
+      const goType = signalFieldGoType(this.emitCtx, signal, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
 
@@ -4806,7 +4752,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // reads the memo body itself performs — never read as `_p.<memoName>`
       // (#2672). Same rationale as the signal fields above.
       const jsonTag = '-'
-      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
+      const goType = inferMemoType(this.emitCtx, memo, ir.metadata.signals, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
   }
@@ -5659,250 +5605,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /** Infer the Go type for a memo from its computation and dependencies. */
-  private inferMemoType(
-    memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
-    signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr; optional?: boolean }>
-  ): string {
-    // A LIST-valued `.filter(arrow)` memo (#2075 — the blog PostList `visible`
-    // shape) is a slice of the receiver's boxed elements, not a scalar.
-    // Decided FIRST, ahead of the memo's declared `type` and every other
-    // heuristic below: the analyzer's simple per-memo type inference doesn't
-    // model `.filter`'s predicate shape and can land on a bogus primitive
-    // (observed: `boolean`, from the predicate's own `!`/`||` structure),
-    // which would otherwise sail through the `typeInfoToGo(memo.type) ===
-    // 'interface{}'` gates below unchallenged. `bf.FilterEval` (the SSR
-    // constructor lowering, memo-compute.ts) returns `[]any`; the template's
-    // `range` / reflective field access handle the boxed elements the same
-    // way it already handles other `interface{}`-typed slices.
-    if (isListFilterMemo(memo)) return '[]any'
-
-    // A template-literal memo always produces a string. Decide this first so a
-    // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
-    // heuristic below into `int`. The analyzer classified the body shape from
-    // the arrow AST (`MemoInfo.bodyIsTemplateLiteral`).
-    if (memo.bodyIsTemplateLiteral) return 'string'
-
-    // Arithmetic whose SSR result is `NaN` (#3390) needs a field that can hold
-    // a float64 NaN, whatever the declared `number` type would infer (`int`).
-    if (memo.parsed && memoArithmeticYieldsNaN(this.emitCtx, memo.parsed)) return 'interface{}'
-
-    // The shared arithmetic runtime returns an integer or float as needed;
-    // keep its boxed result rather than truncating it to an int field.
-    if (isBoxedNumericMemoBody(this.emitCtx, memo.parsed, signals, [...propsParamMap.values()])) return 'interface{}'
-
-    // Arithmetic operators → likely a number.
-    if (memo.computation.includes('*') || memo.computation.includes('/') ||
-        memo.computation.includes('+') || memo.computation.includes('-')) {
-      // Number-typed dependency signals confirm it.
-      for (const dep of memo.deps) {
-        const signal = signals.find(s => s.getter === dep)
-        if (signal) {
-          let referencedProp = propsParamMap.get(signal.initialValue)
-          if (!referencedProp) {
-            const propName = this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
-            if (propName) referencedProp = propsParamMap.get(propName)
-          }
-          if (referencedProp) {
-            const propType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue, referencedProp.parsed)
-            if (propType === 'int' || propType === 'float64') {
-              return 'int'
-            }
-          }
-          const signalType = propMemberSeedGoType(this.emitCtx, signal) ??
-            typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
-          if (signalType === 'int' || signalType === 'float64') {
-            return 'int'
-          }
-        }
-      }
-    }
-
-    // Boolean memo: a comparison/negation/ternary whose dependency signals are
-    // all boolean (`isChecked = isControlled() ? controlledChecked() :
-    // internalChecked()`). Inferring `bool` makes the field render `false` (not
-    // the int `0`) for `aria-checked={isChecked()}`. Only fires when the declared
-    // memo type is unknown so an explicitly-typed memo still wins.
-    // A string-literal-branch ternary memo (`directionClasses`) is a string even
-    // though its condition has `===`. Decide before the boolean heuristic so it's
-    // typed `string` (zero value `""`), not `interface{}` (whose nil zero renders
-    // `<nil>`).
-    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isStringTernaryMemo(this.emitCtx, memo.parsed)) {
-      return 'string'
-    }
-    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isBooleanMemo(this.emitCtx, memo, signals, propsParamMap)) {
-      return 'bool'
-    }
-
-    // Block-body memo returning a module-const array: use the constant's array
-    // type instead of the memo's generic `object`.
-    const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx, memo, signals)
-    if (blockReturn?.constType?.kind === 'array') {
-      return typeInfoToGo(this.emitCtx, blockReturn.constType)
-    }
-
-    // Default to the memo's declared type. A `number` memo the evaluator
-    // computes holds a boxed JS number, which an `int` field would truncate.
-    const declared = typeInfoToGo(this.emitCtx, memo.type)
-    if (declared === 'int' && isEvaluatedMemo(this.emitCtx, memo as MemoInfo, signals, [...propsParamMap.values()])) {
-      return 'interface{}'
-    }
-    return declared
-  }
-
-  /**
-   * Walk signals to collect prop fallbacks. Skips props that already have a
-   * destructure-side default (`{ X = N }`) or signals whose fallback resolves to
-   * the type's Go zero value (no-op).
-   */
-  private collectPropFallbackVars(ir: ComponentIR): Map<string, PropFallbackVar> {
-    const result = new Map<string, PropFallbackVar>()
-    const localTaken = new Set(['scopeID'])
-    for (const nested of findNestedComponents(ir.root)) {
-      localTaken.add(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
-    }
-
-    const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
-    for (const signal of ir.metadata.signals) {
-      let match = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
-      // #2683: the idempotent fold above declines a non-idempotent
-      // derivation (`(props.count ?? 1) * 2`) at the top level. When that
-      // signal's Go field name COLLIDES with the prop's own field — the
-      // exact condition under which the props-field loop below would
-      // otherwise silently drop the derivation and emit the raw prop
-      // instead — fall back to the collision-derivation matcher so the
-      // coalesced value still gets hoisted; the props-field loop composes
-      // the surrounding arithmetic back on top of it (`collisionWrap`).
-      // Gated strictly on the collision so a differently-named signal
-      // deriving from the same prop (not colliding) is untouched — that
-      // path's own dedicated field keeps today's behavior byte-for-byte.
-      let collisionWrap: { operator: string; operand: string } | undefined
-      if (!match) {
-        const collision = this.extractCollisionDerivation(this.resolvedSignalParsed(signal))
-        if (collision) {
-          const collisionParam = ir.metadata.propsParams.find(p => p.name === collision.propName)
-          const collisionField = collisionParam
-            ? capitalizeFieldName(collisionParam.sourceName ?? collision.propName)
-            : null
-          if (collisionField && capitalizeFieldName(signal.getter) === collisionField) {
-            match = { propName: collision.propName, goFallback: collision.goFallback }
-            collisionWrap = { operator: collision.operator, operand: collision.operand }
-          }
-        }
-      }
-      if (!match) continue
-      if (result.has(match.propName)) continue
-      const param = ir.metadata.propsParams.find(p => p.name === match.propName)
-      if (!param) continue
-      // A destructure default already wins via applyGoFallback below.
-      if (goPropDefault(param.defaultValue) !== null) continue
-      // `PropFallbackVar.fieldName` is read off the INPUT struct (every
-      // consumer does `in.${fieldName}`, #2525) — caller-facing, not
-      // `match.propName`'s local binding.
-      const fieldName = capitalizeFieldName(param.sourceName ?? match.propName)
-      // A `??`-consumed optional scalar lowered to `interface{}` (#2248) —
-      // detected off the SAME `resolvePropGoType` pipeline the struct
-      // generators use, so this can't drift from the emitted field type. The
-      // concrete pre-flip type is what the hoisted local materializes as.
-      const concreteType = propTypeOverrides.get(param.name) ?? typeInfoToGo(this.emitCtx, param.type, param.defaultValue, param.parsed)
-      const nullishLowered =
-        NULLISH_SCALAR_GO_TYPES.has(concreteType) &&
-        resolvePropGoType(this.emitCtx, param, propTypeOverrides) === 'interface{}'
-      // Pick the zero literal based on the fallback's literal shape. Bool
-      // fallbacks (`?? true`) hoist against the `false` zero — the same Go-zero
-      // conflation the int / string cases accept: the caller can't distinguish
-      // "explicit false" from "unset", the documented SSR-default trade-off.
-      let zeroLiteral: string
-      if (match.goFallback === 'true' || match.goFallback === 'false') {
-        zeroLiteral = 'false'
-      } else if (/^-?\d+(\.\d+)?$/.test(match.goFallback)) {
-        zeroLiteral = '0'
-      } else if (match.goFallback.startsWith('"')) {
-        zeroLiteral = '""'
-      } else {
-        continue
-      }
-      // Zero-equivalent fallback is a no-op against the Go zero value
-      // (`?? 0`, `?? ''`, `?? false`, `?? 0.0`). Compare against the computed
-      // zeroLiteral so spelling variants like `0.0` collapse to the same skip
-      // as `0`.
-      //
-      // NOT a no-op for a nillable-lowered prop (#2248): its `interface{}`
-      // field can be nil, and the typed hoisted local is what downstream
-      // consumers (`Count: size`, memo env maps) assign from — a nil
-      // interface into a concrete field is a compile error, so the local
-      // must exist even when the fallback equals the zero value.
-      if (!nullishLowered) {
-        if (match.goFallback === zeroLiteral) continue
-        if (zeroLiteral === '0' && Number(match.goFallback) === 0) continue
-      }
-      // The JSX-side identifier is the natural local name; suffix with `_` if it
-      // collides with a Go keyword or a local we already emit.
-      let varName = match.propName
-      while (localTaken.has(varName) || GO_KEYWORDS.has(varName)) {
-        varName += '_'
-      }
-      localTaken.add(varName)
-      result.set(match.propName, {
-        varName,
-        fieldName,
-        goFallback: match.goFallback,
-        zeroLiteral,
-        ...(nullishLowered ? { assertType: concreteType } : {}),
-        ...(collisionWrap ? { collisionWrap } : {}),
-      })
-    }
-    return result
-  }
-
-  /**
-   * Resolve a signal's initializer through the SSR seed plan's const-hop
-   * inlining (#2685) before prop-fallback extraction — see
-   * {@link resolveSignalParsedThroughSeedPlan} (shared with
-   * `collectNullishConsumedPropNames`'s signal-seed loop, the single door
-   * both consumers of this resolution go through).
-   */
-  private resolvedSignalParsed(signal: { getter: string; parsed?: ParsedExpr }): ParsedExpr | undefined {
-    return resolveSignalParsedThroughSeedPlan(this.state, signal)
-  }
-
-  /**
-   * The ONE "seed this signal at constructor time" decision — a hoisted
-   * `props.X ?? N` fallback var when one applies, else `convertInitialValue`
-   * against `bakeType` (default: the signal's own type). Shared by the
-   * top-level signal-field loop (this component's OWN field) and
-   * `resolveLocalGetterAsGo` (#2925 — a local getter forwarded as a NESTED
-   * child's prop): both answer "what Go value does this signal's getter
-   * evaluate to at SSR constructor time," and must agree, or a signal passed
-   * bare to a child prop could bake a different value than the signal's own
-   * field bakes for itself. `bakeType` is a separate parameter (not always
-   * `signal.type`) because the two call sites have different DESTINATIONS:
-   * the signal's own field may be typed against a synthesized array-of-
-   * objects struct (`this.state.synthStructTypes`), which isn't assignable
-   * into an unrelated child's `Input` field — the child-prop caller keeps
-   * `signal.type`.
-   */
-  private signalSeedGo(
-    signal: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr },
-    propsParams: { name: string; sourceName?: string }[],
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-    bakeType: TypeInfo = signal.type,
-    nillableDest = false,
-  ): string {
-    // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
-    // one value.
-    const fallbackMatch = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
-    const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
-    if (hoisted) return hoisted.varName
-    // A nillable seed (#3323) stays whole only into an `interface{}`
-    // destination: the signal's own field, or a child Input the child itself
-    // made nillable (`ChildComponentShape.nillableParamNames`). A concrete
-    // child Input keeps the asserted form.
-    const ownNillableField = nillableDest && (
-      this.isNillableSeedSignal(signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}')
-    return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField)
-  }
-
   /**
    * Resolve a BARE getter name (a local signal or memo, e.g. `count` in
    * `<Display value={count} />`) against this component's own constructor-
@@ -5927,7 +5629,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     nillableDest = false,
   ): string | null {
     const signal = signals.find(s => s.getter === name)
-    if (signal) return this.signalSeedGo(signal, propsParams, propFallbackVars, signal.type, nillableDest)
+    if (signal) return signalSeedGo(this.emitCtx, signal, propsParams, propFallbackVars, signal.type, nillableDest)
 
     const memo = memos.find(m => m.name === name)
     if (memo) {
