@@ -54,6 +54,7 @@ concurrency:
 
 jobs:
   adapter-builders:
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     name: adapter-builders (vite ${{ matrix.vite }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -99,6 +100,7 @@ jobs:
           fi
 
   e2e-csr:
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     name: e2e-csr (vite ${{ matrix.vite }})
     runs-on: ubuntu-latest
     timeout-minutes: 15

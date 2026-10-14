@@ -177,7 +177,7 @@ jobs:
   e2e-site-core:
     # Heavy set: skipped on a stacked PR (base != main). See the trigger
     # comment above.
-    if: github.event_name != 'pull_request' || github.base_ref == 'main'
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -223,7 +223,7 @@ jobs:
 
   fixture-hydrate:
     # Heavy set: see the `e2e-site-core` job.
-    if: github.event_name != 'pull_request' || github.base_ref == 'main'
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -276,7 +276,7 @@ jobs:
 
   e2e-site-ui:
     # Heavy set: see the `e2e-site-core` job.
-    if: github.event_name != 'pull_request' || github.base_ref == 'main'
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:

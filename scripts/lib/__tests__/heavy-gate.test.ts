@@ -4,12 +4,14 @@ import { join } from 'node:path'
 import {
   GATE_RUN_NAME,
   GATE_WORKFLOW_FILE,
+  HEAVY_JOB_IF,
   MISSING_MESSAGE,
   decide,
   notMainMessage,
   lintWorkflows,
   parseGateRunTitle,
   pollForVerdict,
+  stackLayerRole,
 } from '../heavy-gate'
 
 // What GitHub renders GATE_RUN_NAME to, for a given PR / activity type / title.
@@ -92,6 +94,40 @@ describe('decide: the event base and GitHub stacks (#3480)', () => {
     expect(decide({ action: 'edited', baseRef: 'claude/lower-layer', stackBaseRef: null, prNumber: 2, runs: [] }).ok).toBe(
       false,
     )
+  })
+})
+
+describe('stack layers (#3480): heavy CI on the bottom and top layers only', () => {
+  test('stackLayerRole: position 1 is the bottom, position == size the top, anything between the middle', () => {
+    expect(stackLayerRole(1, 4)).toBe('bottom')
+    expect(stackLayerRole(2, 4)).toBe('middle')
+    expect(stackLayerRole(3, 4)).toBe('middle')
+    expect(stackLayerRole(4, 4)).toBe('top')
+    expect(stackLayerRole(1, 1)).toBe('bottom')
+  })
+
+  test('stackLayerRole: a stack without position / size reads as a layer that runs heavy CI', () => {
+    expect(stackLayerRole(null, null)).toBe('bottom')
+    expect(stackLayerRole(3, null)).toBe('top')
+  })
+
+  test('the gate passes every layer of a stack based on main and names its role', () => {
+    const verdict = (stackPosition: number) =>
+      decide({
+        action: 'edited',
+        baseRef: stackPosition === 1 ? 'main' : 'claude/lower',
+        stackBaseRef: 'main',
+        stackPosition,
+        stackSize: 3,
+        prNumber: 9,
+        runs: [],
+      })
+    expect(verdict(1).ok).toBe(true)
+    expect(verdict(1).reason).toContain('layer 1 of 3')
+    expect(verdict(2).ok).toBe(true)
+    expect(verdict(2).reason).toContain("top layer's heavy run covers it")
+    expect(verdict(3).ok).toBe(true)
+    expect(verdict(3).reason).toContain('layer 3 of 3')
   })
 })
 
@@ -201,6 +237,20 @@ describe('lintWorkflows', () => {
     const workflows = new Map(real)
     workflows.set('ci-newlang.yml', { on: { pull_request: { branches: ['main'], types: ['opened'] } } })
     expect(lintWorkflows(workflows)).toEqual([expect.stringContaining('must fire on opened, synchronize, reopened')])
+  })
+
+  test('every heavy job must carry HEAVY_JOB_IF', () => {
+    const workflows = new Map(real)
+    workflows.set('ci-newlang.yml', {
+      on: { pull_request: { branches: ['main'] } },
+      jobs: { test: { 'runs-on': 'ubuntu-latest' }, gated: { if: HEAVY_JOB_IF } },
+    })
+    expect(lintWorkflows(workflows)).toEqual([expect.stringContaining('ci-newlang.yml: heavy job `test` needs `if:')])
+  })
+
+  test("changeset-check stays ungated: it checks every layer's own diff", () => {
+    const changeset = real.get('changeset-check.yml') as { jobs: Record<string, { if?: string }> }
+    expect(Object.values(changeset.jobs).every((job) => job.if !== HEAVY_JOB_IF)).toBe(true)
   })
 
   test('the gate job may not be skippable', () => {

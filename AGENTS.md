@@ -189,14 +189,17 @@ stack queued 120+ workflow runs and saturated the shared runner pool.
   `ci-*.yml`, the integration e2e workflows, `ci-cli`, `ci-form`, `ci-jsr-check`,
   `ci-smoke-publish`, `benchmark.yml`, …) via `branches: [main]` on the trigger with the
   **default** activity types, plus `ci.yml`'s browser jobs (`e2e-site-core`,
-  `fixture-hydrate`, `e2e-site-ui`) via a job-level
-  `if: github.event_name != 'pull_request' || github.base_ref == 'main'`, because `ci.yml`
-  also carries light jobs. `changeset-check.yml` was main-only already, for its own reason
-  (see its trigger comment). `pkg-pr-new.yml` is outside both sets: it is opt-in by label.
+  `fixture-hydrate`, `e2e-site-ui`), because `ci.yml` also carries light jobs. Every heavy
+  job carries the same job-level `if` (`HEAVY_JOB_IF` in `scripts/lib/heavy-gate.ts`): it
+  runs for a main-based PR and, in a GitHub native stack, for the bottom and top layers only
+  (below). `changeset-check.yml` was main-only already, for its own reason (see its trigger
+  comment), and carries no such `if`. `pkg-pr-new.yml` is outside both sets: it is opt-in by
+  label.
 - The classification lives in `scripts/lib/heavy-gate.ts` (`EVERY_PR_WORKFLOWS`,
-  `CI_YML_LIGHT_JOBS`). The lint in `scripts/lib/__tests__/heavy-gate.test.ts` fails on a
-  `pull_request` workflow that is neither listed as light nor main-only. So a new adapter's
-  `ci-<name>.yml` must carry `branches: [main]`. The lint runs as `heavy-set-lint` in
+  `CI_YML_LIGHT_JOBS`, `HEAVY_JOB_IF`, `MAIN_ONLY_UNGATED`). The lint in
+  `scripts/lib/__tests__/heavy-gate.test.ts` fails on a `pull_request` workflow that is
+  neither listed as light nor main-only, and on a heavy job without `if: <HEAVY_JOB_IF>`. So a
+  new adapter's `ci-<name>.yml` must carry `branches: [main]` and that `if` on each job. The lint runs as `heavy-set-lint` in
   `ci-heavy-gate.yml` and in `ci.yml`'s `rest` group.
 
 **Retargeting is the dangerous edge, and `ci-heavy-gate.yml` makes it loud.** When the
@@ -223,14 +226,29 @@ does not mean heavy CI is missing on that head, and the same push clears it.
 **GitHub's native stacked pull requests are not branch-based stacks.** A PR that belongs to a
 GitHub stack (the stack UI or `gh stack`) runs every `pull_request` workflow as if it targeted the
 stack's base, so `branches: [main]` matches every layer, and the checkout is the stack applied onto
-`main` (a chain of merge refs). The heavy set therefore runs on every layer of a native stack, not
-only the light set. When a PR joins a stack GitHub fires the `stacked` action: the heavy workflows
-(default types) run on it, `ci-heavy-gate.yml` (explicit `types`) does not. So the gate counts a PR
-whose payload carries `pull_request.stack.base.ref == main` as evidence on its own, and refuses
-any event whose effective base (the stack base, else the PR base) is not `main` (#3480). A
+`main` (a chain of merge refs). `github.base_ref` is still the PR's own base. When a PR joins a
+stack GitHub fires the `stacked` action: the heavy workflows (default types) run on it,
+`ci-heavy-gate.yml` (explicit `types`) does not (#3480).
+
+Left alone, that runs the heavy set on every layer, which is the cost the light/heavy split
+exists to avoid. `HEAVY_JOB_IF` keeps it to two runs per stack:
+
+- **Bottom layer** (`pull_request.stack.position == 1`, base `main`): its own changes against
+  `main`, the next thing to merge. When it merges, GitHub rebases the layers above onto `main`
+  (a push), so the new bottom gets its own heavy run without a manual push.
+- **Top layer** (`position == size`): the whole stack applied onto `main`, which is what lands
+  when the stack is merged from the top, and which covers every middle layer.
+- **Middle layers**: the light set only.
+
+`heavy-ci-ran` passes on any layer of a stack based on `main`, saying which of the three it is
+(it cannot see the `stacked` event that ran the heavy set), and refuses any event whose effective
+base (the stack base, else the PR base) is not `main`. A middle layer merged on its own (not as
+part of the stack) was covered only by the top layer's run, against the layers above it too. A
 branch-based stack (base is another PR's branch, no `stack` field) behaves as described above.
 
-**Do not add `edited` to heavy workflows, or a job-level `if` that skips edits.** Title and
+**Do not add `edited` to heavy workflows, or a job-level `if` that skips edits** (the stack
+position `if` above is not one: it never depends on the activity type, and a layer it skips is
+a middle layer, which the top layer's run covers). Title and
 body edits must not re-run the heavy set, and a skip-on-edit `if` is worse: a skipped job
 posts a check run under the job's name that counts as success, and GitHub keeps the most
 recent check run per name on a commit. So an edit after a failed run would replace the red

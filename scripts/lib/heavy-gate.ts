@@ -91,7 +91,35 @@ export const EVERY_PR_WORKFLOWS: ReadonlySet<string> = new Set([
 
 /** `ci.yml` jobs in the light set. Every other `ci.yml` job carries HEAVY_JOB_IF. */
 export const CI_YML_LIGHT_JOBS: ReadonlySet<string> = new Set(['test', 'test-ui'])
-export const HEAVY_JOB_IF = "github.event_name != 'pull_request' || github.base_ref == 'main'"
+
+/**
+ * The job-level `if` every heavy job carries: `ci.yml`'s browser jobs and
+ * every job of a main-only workflow (except MAIN_ONLY_UNGATED). A heavy job
+ * runs for anything that is not a `pull_request` event, and for a PR when:
+ *
+ * - its base is `main` and it is not in a GitHub stack, or is the stack's
+ *   bottom layer (position 1), whose own changes are what merges next; or
+ * - it is the top layer of a GitHub stack based on `main`: its checkout is
+ *   the whole stack applied onto `main`, so one run covers every layer
+ *   below it, which is what lands when the stack is merged from the top.
+ *
+ * A middle layer runs the light set only (#3480). A branch-based stack
+ * (base is another PR's branch, no `stack` field) fails both clauses. When
+ * the payload carries a `stack` without `position` / `size`, both
+ * comparisons read `null` as 0 and the job runs: an unknown shape costs CI,
+ * it never skips it.
+ */
+export const HEAVY_JOB_IF =
+  "github.event_name != 'pull_request' || " +
+  "(github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || " +
+  "(github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)"
+
+/**
+ * Main-only workflows whose jobs do not carry HEAVY_JOB_IF. `changeset-check`
+ * is main-only for its own reason (its trigger comment) and costs seconds;
+ * it checks every layer's own diff.
+ */
+export const MAIN_ONLY_UNGATED: ReadonlySet<string> = new Set(['changeset-check.yml'])
 
 export interface GateRun {
   display_title: string
@@ -110,6 +138,16 @@ export interface GateEvent {
   prNumber: number
   baseRef: string
   stackBaseRef?: string | null
+  /** `pull_request.stack.position` (1 = bottom) and `.size`, when in a stack. */
+  stackPosition?: number | null
+  stackSize?: number | null
+}
+
+/** Which layer of a GitHub stack runs the heavy set for itself (HEAVY_JOB_IF). */
+export function stackLayerRole(position: number | null | undefined, size: number | null | undefined): 'bottom' | 'top' | 'middle' {
+  if (!position || position <= 1) return 'bottom'
+  if (!size || position >= size) return 'top'
+  return 'middle'
 }
 
 const isHeavyTrigger = (action: string): boolean =>
@@ -132,11 +170,20 @@ export function decide(input: GateEvent & { runs: readonly GateRun[] }): GateVer
     return { ok: true, reason: `this ${input.action} event (base ${base}) is itself the heavy-CI trigger` }
   }
   if (input.stackBaseRef === HEAVY_BASE) {
+    const layer = `layer ${input.stackPosition ?? '?'} of ${input.stackSize ?? '?'} in a GitHub stack based on ${HEAVY_BASE}`
+    if (stackLayerRole(input.stackPosition, input.stackSize) === 'middle') {
+      return {
+        ok: true,
+        reason:
+          `${layer}: a middle layer runs the light set only; the top layer's heavy run covers it, ` +
+          'against the whole stack applied onto main, and this layer runs the heavy set itself once it becomes the bottom',
+      }
+    }
     return {
       ok: true,
       reason:
-        `this PR is in a GitHub stack based on ${HEAVY_BASE}: the heavy set ran for this layer against the stack ` +
-        "when it joined the stack (the `stacked` action) or on its last push, both of which every heavy workflow fires on",
+        `${layer}: the heavy set ran for this layer when it joined the stack (the \`stacked\` action) ` +
+        'or on its last push, both of which every heavy workflow fires on',
     }
   }
   const evidence = input.runs
@@ -163,6 +210,8 @@ export async function pollForVerdict(opts: GateEvent & {
     prNumber: opts.prNumber,
     baseRef: opts.baseRef,
     stackBaseRef: opts.stackBaseRef,
+    stackPosition: opts.stackPosition,
+    stackSize: opts.stackSize,
   }
   // Decided without the runs: the event itself is the answer (a heavy
   // trigger, a stack based on main, or a base that is not main).
@@ -218,6 +267,13 @@ export function lintWorkflows(workflows: ReadonlyMap<string, unknown>): string[]
       }
       if (types?.includes('edited')) {
         problems.push(`${file}: a main-only workflow must not list \`edited\`; ${GATE_WORKFLOW_FILE} covers retargeting`)
+      }
+      if (!MAIN_ONLY_UNGATED.has(file)) {
+        for (const [job, rawJob] of Object.entries(asObj(workflow.jobs) ?? {})) {
+          if (asObj(rawJob)?.if !== HEAVY_JOB_IF) {
+            problems.push(`${file}: heavy job \`${job}\` needs \`if: ${HEAVY_JOB_IF}\` (it limits a GitHub stack to its bottom and top layers)`)
+          }
+        }
       }
     } else if (branches !== undefined || trigger['branches-ignore'] !== undefined) {
       problems.push(`${file}: pull_request branch filter must be exactly \`branches: [main]\` or absent`)

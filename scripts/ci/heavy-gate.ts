@@ -22,6 +22,8 @@ const headSha: string = event.pull_request.head.sha
 const baseRef: string = event.pull_request.base.ref
 // Present only when the PR belongs to a GitHub stack (scripts/lib/heavy-gate.ts).
 const stackBaseRef: string | null = event.pull_request.stack?.base?.ref ?? null
+const stackPosition: number | null = event.pull_request.stack?.position ?? null
+const stackSize: number | null = event.pull_request.stack?.size ?? null
 const api = process.env.GITHUB_API_URL ?? 'https://api.github.com'
 
 async function fetchRuns(): Promise<readonly GateRun[]> {
@@ -44,6 +46,8 @@ const verdict = await pollForVerdict({
   prNumber,
   baseRef,
   stackBaseRef,
+  stackPosition,
+  stackSize,
   fetchRuns,
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   attempts: 12,
@@ -51,7 +55,7 @@ const verdict = await pollForVerdict({
 })
 
 if (verdict.ok) {
-  const stack = stackBaseRef ? `, stack base ${stackBaseRef}` : ''
+  const stack = stackBaseRef ? `, stack base ${stackBaseRef}, layer ${stackPosition ?? '?'}/${stackSize ?? '?'}` : ''
   console.log(`PR #${prNumber} @ ${headSha} (${action}, base ${baseRef}${stack}): ${verdict.reason}`)
 } else {
   console.log(`::error title=Heavy CI missing::${verdict.reason}`)
