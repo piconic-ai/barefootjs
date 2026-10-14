@@ -127,11 +127,21 @@ pure dedupe:
 `collectImportedLoopChildComponentErrors` (0.93: the diagnostic names the adapter),
 `refuseUnsupportedAttrExpression` (0.92: same), `renderElement` (0.90),
 `renderDangerousInnerHtml` (0.87), `generate` (0.88), `generateContextConsumerSeed`
-(0.83), `renderPredicateEval` / `renderSortEval` / `renderMapEval` /
-`renderFlatMapEval` (0.80–0.83: the runtime helper's name differs).
+(0.83).
 
 Where the only difference is the adapter's display name in a diagnostic or the
 runtime helper's spelling, the shared function takes it as a parameter.
+
+The four evaluator emitters (`renderPredicateEval` / `renderSortEval` /
+`renderMapEval` / `renderFlatMapEval`, 0.80–0.83) look like members of this
+list but are not. The eligibility test (`serializeParsedExpr` refusing what the
+evaluator cannot run), the captured free variables and the `forward` flag are
+shared decisions; what each copy renders around them is backend syntax. Jinja
+emits `true` / `false`, `bf.find_eval(…)`, `escapeJinjaSingleQuoted` and a
+`{key: value}` environment; Mojolicious emits `1` / `0`, `bf->find_eval(…)`,
+`escapePerlSingleQuote` and `{ 'key' => value }`. They belong to the
+callback-method chain in the next section, with the boolean literal, the
+string escape, the environment literal and the invocation spelling as hooks.
 
 ### One decision, eight spellings — the shared layer
 
@@ -176,8 +186,9 @@ spells.
 BF101 chain for `sort`/`toSorted`, `reduce`/`reduceRight`, `flatMap`, `map`
 and the predicate family. The order of the checks differs between copies
 (Jinja tests predicates first, ERB last) without changing the outcome, and
-the BF101 messages differ in wording. Syntax: nothing — the helper names come
-from `renderSortEval` & co.
+the BF101 messages differ in wording. Syntax: the evaluator call that
+`renderSortEval` & co. render — the boolean literal, the string escape, the
+environment literal and the invocation spelling (`bf.` vs `bf->`).
 
 **`renderArrayMethod`** (132 lines, 61 identical). Semantic: the catalogue
 (`join`, `includes`, `indexOf`, `at`, `concat`, `slice`, `reverse`, `trim`,
@@ -290,7 +301,8 @@ sets for the Go adapter.
 ## Follow-up issues
 
 Ordered by how many of the recent multi-adapter fixes each group would have
-collapsed into one change.
+collapsed into one change. Groups 1 and 2 are the ones with fixes in the window
+to point at; the rest have none and are ordered by expected risk, lowest first.
 
 1. **Loop binding plan** (`renderLoop`'s name decisions: item/index/key,
    destructure, preamble, filter captures, shadow restore). Would have
@@ -305,10 +317,16 @@ collapsed into one change.
    `@barefootjs/jsx/adapters`. No recent fix to collapse, but zero semantic
    risk and it removes about 500 lines per adapter from review.
 4. **Array/string method catalogue** (`renderArrayMethod` as a table keyed by
-   helper id). Would have collapsed the `?.length` / own-`length` family
-   (#3332 → #3422: 5 commits over erb/jinja/pebble/rust, perl, php, go).
+   helper id). No recent multi-adapter fix to collapse: the `?.length` /
+   own-`length` family (#3332 → #3422) was fixed in the runtimes' `length`
+   helpers and in the member arm of each expression emitter
+   (`optionalLength`), not in `renderArrayMethod`, and the catalogue has no
+   `length` entry. A member-expression plan (optional chaining, `length`
+   routing) is where that family would have collapsed; it belongs with
+   group 2's emitter work.
 5. **Callback-method chain** (`callbackMethod`: eval → structured → refuse,
-   one BF101 wording).
+   one BF101 wording, and the evaluator emitters' literal / escape /
+   environment / invocation hooks).
 6. **Attribute emission plan** (`elementAttrEmitter`): nullable omission,
    presence, `bool_str`, conditional, spread.
 7. **Component prop assembly** (`renderComponent` and the spread segments
