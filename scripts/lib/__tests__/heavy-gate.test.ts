@@ -4,11 +4,14 @@ import { join } from 'node:path'
 import {
   GATE_RUN_NAME,
   GATE_WORKFLOW_FILE,
+  HEAVY_JOB_IF,
   MISSING_MESSAGE,
   decide,
+  notMainMessage,
   lintWorkflows,
   parseGateRunTitle,
   pollForVerdict,
+  stackLayerRole,
 } from '../heavy-gate'
 
 // What GitHub renders GATE_RUN_NAME to, for a given PR / activity type / title.
@@ -30,26 +33,101 @@ describe('parseGateRunTitle', () => {
 
 describe('decide', () => {
   test.each(['opened', 'synchronize', 'reopened'])('a %s event is itself the heavy trigger', (action) => {
-    expect(decide({ action, prNumber: 1, runs: [] }).ok).toBe(true)
+    expect(decide({ action, baseRef: 'main', prNumber: 1, runs: [] }).ok).toBe(true)
   })
 
   test('retarget with no push: only edited runs on this head, so it fails with the push instruction', () => {
-    const verdict = decide({ action: 'edited', prNumber: 7, runs: [{ display_title: title(7, 'edited') }] })
+    const verdict = decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs: [{ display_title: title(7, 'edited') }] })
     expect(verdict).toEqual({ ok: false, reason: MISSING_MESSAGE })
   })
 
   test('a title/body edit after heavy CI ran re-derives the same pass', () => {
     const runs = [{ display_title: title(7, 'edited') }, { display_title: title(7, 'synchronize') }]
-    expect(decide({ action: 'edited', prNumber: 7, runs }).ok).toBe(true)
+    expect(decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs }).ok).toBe(true)
   })
 
   test("another PR's heavy trigger on the same SHA is not evidence for this PR", () => {
-    expect(decide({ action: 'edited', prNumber: 7, runs: [{ display_title: title(8, 'opened') }] }).ok).toBe(false)
+    expect(decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs: [{ display_title: title(8, 'opened') }] }).ok).toBe(false)
   })
 
   test('the gate stays red across repeated no-op edits until a heavy trigger lands', () => {
     const runs = [{ display_title: title(7, 'edited') }, { display_title: title(7, 'edited') }]
-    expect(decide({ action: 'edited', prNumber: 7, runs }).ok).toBe(false)
+    expect(decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs }).ok).toBe(false)
+  })
+})
+
+describe('decide: the event base and GitHub stacks (#3480)', () => {
+  test('a heavy-trigger event that does not target main is not evidence', () => {
+    expect(decide({ action: 'synchronize', baseRef: 'release/1.x', prNumber: 1, runs: [] })).toEqual({
+      ok: false,
+      reason: notMainMessage('release/1.x'),
+    })
+  })
+
+  test("earlier evidence does not rescue an event whose base is not main", () => {
+    const runs = [{ display_title: title(7, 'synchronize') }]
+    expect(decide({ action: 'edited', baseRef: 'release/1.x', prNumber: 7, runs }).ok).toBe(false)
+  })
+
+  test('a PR in a stack based on main passes on edited without an earlier gate run (the `stacked` event ran heavy CI)', () => {
+    const verdict = decide({
+      action: 'edited',
+      baseRef: 'claude/3425-go-state-fields',
+      stackBaseRef: 'main',
+      prNumber: 3471,
+      runs: [{ display_title: title(3471, 'edited') }],
+    })
+    expect(verdict.ok).toBe(true)
+    expect(verdict.reason).toContain('GitHub stack')
+  })
+
+  test("a stack's base, not the PR branch below, decides the target", () => {
+    expect(
+      decide({ action: 'synchronize', baseRef: 'claude/lower-layer', stackBaseRef: 'main', prNumber: 2, runs: [] }).ok,
+    ).toBe(true)
+    expect(
+      decide({ action: 'synchronize', baseRef: 'main', stackBaseRef: 'release/1.x', prNumber: 2, runs: [] }),
+    ).toEqual({ ok: false, reason: notMainMessage('release/1.x') })
+  })
+
+  test('outside a stack, a base other than main is refused (a branch-based stack never reaches the gate)', () => {
+    expect(decide({ action: 'edited', baseRef: 'claude/lower-layer', stackBaseRef: null, prNumber: 2, runs: [] }).ok).toBe(
+      false,
+    )
+  })
+})
+
+describe('stack layers (#3480): heavy CI on the bottom and top layers only', () => {
+  test('stackLayerRole: position 1 is the bottom, position == size the top, anything between the middle', () => {
+    expect(stackLayerRole(1, 4)).toBe('bottom')
+    expect(stackLayerRole(2, 4)).toBe('middle')
+    expect(stackLayerRole(3, 4)).toBe('middle')
+    expect(stackLayerRole(4, 4)).toBe('top')
+    expect(stackLayerRole(1, 1)).toBe('bottom')
+  })
+
+  test('stackLayerRole: a stack without position / size reads as a layer that runs heavy CI', () => {
+    expect(stackLayerRole(null, null)).toBe('bottom')
+    expect(stackLayerRole(3, null)).toBe('top')
+  })
+
+  test('the gate passes every layer of a stack based on main and names its role', () => {
+    const verdict = (stackPosition: number) =>
+      decide({
+        action: 'edited',
+        baseRef: stackPosition === 1 ? 'main' : 'claude/lower',
+        stackBaseRef: 'main',
+        stackPosition,
+        stackSize: 3,
+        prNumber: 9,
+        runs: [],
+      })
+    expect(verdict(1).ok).toBe(true)
+    expect(verdict(1).reason).toContain('layer 1 of 3')
+    expect(verdict(2).ok).toBe(true)
+    expect(verdict(2).reason).toContain("top layer's heavy run covers it")
+    expect(verdict(3).ok).toBe(true)
+    expect(verdict(3).reason).toContain('layer 3 of 3')
   })
 })
 
@@ -61,6 +139,7 @@ describe('pollForVerdict', () => {
     const verdict = await pollForVerdict({
       action: 'synchronize',
       prNumber: 1,
+      baseRef: 'main',
       fetchRuns: async () => (calls++, []),
       sleep: noSleep,
       attempts: 3,
@@ -70,11 +149,39 @@ describe('pollForVerdict', () => {
     expect(calls).toBe(0)
   })
 
+  test('answers a stacked PR and a non-main base from the event alone, without the API', async () => {
+    let calls = 0
+    const fetchRuns = async () => (calls++, [])
+    const stacked = await pollForVerdict({
+      action: 'edited',
+      prNumber: 3471,
+      baseRef: 'claude/3425-go-state-fields',
+      stackBaseRef: 'main',
+      fetchRuns,
+      sleep: noSleep,
+      attempts: 3,
+      intervalMs: 0,
+    })
+    const elsewhere = await pollForVerdict({
+      action: 'edited',
+      prNumber: 9,
+      baseRef: 'release/1.x',
+      fetchRuns,
+      sleep: noSleep,
+      attempts: 3,
+      intervalMs: 0,
+    })
+    expect(stacked.ok).toBe(true)
+    expect(elsewhere).toEqual({ ok: false, reason: notMainMessage('release/1.x') })
+    expect(calls).toBe(0)
+  })
+
   test('picks up a gate run that registers late', async () => {
     let calls = 0
     const verdict = await pollForVerdict({
       action: 'edited',
       prNumber: 5,
+      baseRef: 'main',
       fetchRuns: async () => (++calls < 3 ? [] : [{ display_title: title(5, 'synchronize') }]),
       sleep: noSleep,
       attempts: 12,
@@ -89,6 +196,7 @@ describe('pollForVerdict', () => {
     const verdict = await pollForVerdict({
       action: 'edited',
       prNumber: 5,
+      baseRef: 'main',
       fetchRuns: async () => (calls++, []),
       sleep: noSleep,
       attempts: 4,
@@ -129,6 +237,20 @@ describe('lintWorkflows', () => {
     const workflows = new Map(real)
     workflows.set('ci-newlang.yml', { on: { pull_request: { branches: ['main'], types: ['opened'] } } })
     expect(lintWorkflows(workflows)).toEqual([expect.stringContaining('must fire on opened, synchronize, reopened')])
+  })
+
+  test('every heavy job must carry HEAVY_JOB_IF', () => {
+    const workflows = new Map(real)
+    workflows.set('ci-newlang.yml', {
+      on: { pull_request: { branches: ['main'] } },
+      jobs: { test: { 'runs-on': 'ubuntu-latest' }, gated: { if: HEAVY_JOB_IF } },
+    })
+    expect(lintWorkflows(workflows)).toEqual([expect.stringContaining('ci-newlang.yml: heavy job `test` needs `if:')])
+  })
+
+  test("changeset-check stays ungated: it checks every layer's own diff", () => {
+    const changeset = real.get('changeset-check.yml') as { jobs: Record<string, { if?: string }> }
+    expect(Object.values(changeset.jobs).every((job) => job.if !== HEAVY_JOB_IF)).toBe(true)
   })
 
   test('the gate job may not be skippable', () => {
