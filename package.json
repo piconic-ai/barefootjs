@@ -34,6 +34,9 @@
     "docs:adapters": "bun run scripts/generate-adapter-docs.ts",
     "bf": "bun run packages/cli/src/index.ts",
     "lint": "biome check",
+    "complexity": "cccc packages/*/src --table --top-cognitive 20",
+    "complexity:check": "bun scripts/ci/complexity-ratchet.ts",
+    "complexity:baseline": "bun scripts/ci/complexity-ratchet.ts --update",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {

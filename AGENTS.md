@@ -93,6 +93,33 @@ Required usage:
 - Before editing a stateful component (`"use client"`): run `bf debug graph <component>` to understand its reactive structure.
 - Reading the source is only acceptable when CLI output is insufficient (e.g. class-composition patterns, internal helpers, `...props` spread behavior).
 
+## Complexity
+
+[cccc](https://github.com/moznion/cccc) measures every function's cognitive and cyclomatic
+complexity (the scope is the shipping TypeScript, `packages/*/src`, minus the tests,
+fixtures and build output `cccc.toml` excludes). Install the pinned version (`v1.8.0`, the one
+`cccc-baseline.json` records) from a GitHub release binary or with
+`cargo install cccc-cli --version 1.8.0`.
+
+- `bun run complexity` — the 20 most complex functions, as a table. Read it before a
+  refactoring to find where the next fix would be shortest, and report its before/after
+  figures for the touched functions in the PR.
+- `bun run complexity:check` — the **ratchet**, run by `ci-complexity.yml` on every PR.
+  `cccc-baseline.json` records every function above cognitive 25 with its value. The check
+  fails when one of them got more complex, when a new function enters above 25, or when the
+  baseline is above the tree (a refactoring lowered a function). It never fails on the
+  existing hotspots as they are, so it is a floor that only moves down.
+- `bun run complexity:baseline` — regenerate the baseline. This is the only way to change
+  it: a PR that lowers a hotspot regenerates it and commits the result; nobody edits it by
+  hand, and a function is never added to it to get a PR green. Keep new functions under 25
+  and split the ones you touch instead. The command only ever lowers the baseline: it refuses
+  to write one in which a function above 25 grew or a new one entered (the same test CI runs),
+  or in which a file's above-threshold total went up (a hotspot renamed while it grew reads as a
+  new entry plus a stale one, and the file total is what catches it), or one measured with a
+  cccc other than the baseline's; `--force` overrides all of these, and the PR says why.
+
+The logic and its rationale are in `scripts/lib/complexity-ratchet.ts`.
+
 ## Reference Adapter
 
 `packages/adapter-hono/` is the **reference adapter**. Every fixture's `expectedHtml` is
@@ -156,7 +183,8 @@ stack queued 120+ workflow runs and saturated the shared runner pool.
 - **Light set** (every PR, stacked or not): the generated-artifact drift gates
   (`update-fixtures.yml`, `update-meta.yml`, `update-doc-snapshots.yml`,
   `update-api-reference.yml`, `update-adapter-docs.yml`), `ci-lint.yml`, `ci-docs.yml`,
-  `ci-compat.yml`, and the unit/IR jobs of `ci.yml` (`test (*)`, `test-ui`).
+  `ci-compat.yml`, `ci-complexity.yml`, and the unit/IR jobs of `ci.yml` (`test (*)`,
+  `test-ui`).
 - **Heavy set** (main-based PRs only): every other `pull_request` workflow (the per-adapter
   `ci-*.yml`, the integration e2e workflows, `ci-cli`, `ci-form`, `ci-jsr-check`,
   `ci-smoke-publish`, `benchmark.yml`, …) via `branches: [main]` on the trigger with the
