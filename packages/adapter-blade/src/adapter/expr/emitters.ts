@@ -99,7 +99,6 @@ import {
   type LoweringNode,
   queryHrefArgs,
   isValidHelperId,
-  NULL_COERCING_ARITHMETIC_OPS,
   isBooleanResultParsed,
   lowerCallbackMethod,
   emitCallbackEval,
@@ -523,20 +522,20 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return emit(argument)
   }
 
-  /** An arithmetic operand whose SSR value is certainly `undefined` goes
-   * through `$bf->number`, which maps the engine's nil to `NaN` as JS
-   * `ToNumber(undefined)` does; the native operator reads nil as `0`
-   * (#3390). */
-  private coerceUndefinedOperand(op: string, expr: ParsedExpr, operand: string): string {
-    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isUndefinedOperand(expr) ? `$bf->number(${operand})` : operand
+  /** Spell `arithmeticOperandCoercion` (#3474): an `undefined` operand goes
+   * through the runtime's JS `Number()`, which maps nil to `NaN` as
+   * `ToNumber(undefined)` does (#3390). The native operator already reads a
+   * `null` operand as `0`, so that coercion needs no spelling. */
+  private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+    return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf->number(${operand})` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = this.coerceUndefinedOperand(op, left, groupBinaryOperand(left, emit(left)))
-    const r = this.coerceUndefinedOperand(op, right, groupBinaryOperand(right, emit(right)))
+    const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
+    const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     // See the file header, divergence 8: PHP's `==`/`!=`/`===`/`!==` are
     // NEVER emitted for JS `===`/`!==`.
     if (op === '===') return `$bf->eq(${l}, ${r})`

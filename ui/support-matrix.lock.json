@@ -2647,6 +2647,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2714,6 +2720,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -2817,6 +2829,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2890,6 +2908,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -2969,6 +2993,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3036,6 +3066,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -3115,6 +3151,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3191,6 +3233,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3264,6 +3312,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -5440,6 +5494,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5645,6 +5705,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -5889,6 +5955,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -6136,6 +6208,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6356,6 +6434,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6561,6 +6645,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -6784,6 +6874,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7004,6 +7100,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7215,6 +7317,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -7452,6 +7560,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7597,6 +7711,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -7790,6 +7910,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7974,6 +8100,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8128,6 +8260,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8273,6 +8411,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -8442,6 +8586,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8596,6 +8746,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8741,6 +8897,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -9131,6 +9293,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -9294,6 +9462,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -9478,6 +9652,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -9683,6 +9863,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -9861,6 +10047,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -10024,6 +10216,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -10205,6 +10403,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -10383,6 +10587,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -10552,6 +10762,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -13244,15 +13460,96 @@
     "binary:*": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -13272,6 +13569,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13287,6 +13590,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
             {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
@@ -13322,6 +13631,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13337,6 +13652,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
             {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
@@ -13354,6 +13675,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13369,6 +13696,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
             {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
@@ -13386,6 +13719,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13402,6 +13741,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13417,6 +13762,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
             {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
@@ -14519,6 +14870,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -14598,6 +14955,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -14695,6 +15058,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -14789,6 +15158,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -14871,6 +15246,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -14950,6 +15331,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {
@@ -15047,6 +15434,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -15129,6 +15522,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -15208,6 +15607,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-number-arithmetic",
+              "limitations": [
+                "omitted-optional-number-arithmetic"
               ]
             },
             {

@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // Arithmetic over an omitted optional number prop: the engine reads the
+  // nil as `0`, JS reads `undefined` as `NaN` (#3474).
+  'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },
   // `boolean-logical-stringify` used to sit here: a stringified `&&` / `||`
   // over a boolean prop and a computed boolean rendered the native `1` its
   // last operand evaluates to. A name declared `boolean` now counts as a

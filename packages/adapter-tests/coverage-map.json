@@ -6710,6 +6710,27 @@
         "attribute"
       ]
     },
+    "nullish-operand-arithmetic-matrix": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:/",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nullish-optional-member-attr": {
       "kinds": [
         "call",
@@ -7137,6 +7158,23 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "omitted-optional-number-arithmetic": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

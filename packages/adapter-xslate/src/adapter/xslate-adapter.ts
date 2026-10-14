@@ -87,7 +87,6 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -99,6 +98,7 @@ import {
   collectNullableOptionalProps,
   lowerCallbackMethod,
   emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -1900,7 +1900,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _rowLocalName: (name) => this.rowLocalName(name),

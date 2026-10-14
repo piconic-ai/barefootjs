@@ -170,6 +170,7 @@ export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } 
 export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,
+  arithmeticOperandCoercion,
   bareGetterCallName,
   attrValueMayBeNullish,
   collectNullableSignalGetters,
@@ -179,6 +180,7 @@ export {
   NULL_COERCING_ARITHMETIC_OPS,
   nullableSignalAttrGetter,
   type NullishAttrContext,
+  type ArithmeticCoercion,
 } from './nullable-signal-attr.ts'
 export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export type { EnvSignalReader } from './adapters/env-signal.ts'

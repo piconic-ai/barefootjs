@@ -180,8 +180,6 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
-  arithmeticOperandIsNull,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -194,6 +192,7 @@ import {
   collectNullableOptionalProps,
   lowerCallbackMethod,
   emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -1909,8 +1908,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }

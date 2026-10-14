@@ -4691,6 +4691,62 @@
           ]
         }
       },
+      "omitted-optional-number-arithmetic": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-number-arithmetic"
+          ]
+        }
+      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -6465,6 +6521,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "omitted-optional-number-arithmetic": {
+        "description": "Arithmetic over an omitted optional number prop (undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-arithmetic.ts"
+      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -7103,6 +7163,27 @@
       "diagnostics": [
         "BF021",
         "BF101"
+      ]
+    },
+    "omitted-optional-number-arithmetic": {
+      "title": "Arithmetic over an omitted optional number prop",
+      "kind": "silent",
+      "given": "arithmetic over an optional number prop (`n?: number`) that the caller omits",
+      "expected": "the omitted prop reads as `undefined`, so the result is `NaN`",
+      "actual": "renders a number: the omitted prop reads as `0`, as a `null` one does",
+      "fixtures": [
+        "omitted-optional-number-arithmetic"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "opaque-local-accessor-call": {

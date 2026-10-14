@@ -41,6 +41,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // Arithmetic over an omitted optional number prop: the engine reads the
+  // nil as `0`, JS reads `undefined` as `NaN` (#3474).
+  'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },
   // `number-arithmetic-attr-exponent-boundaries` used to sit here: a number
   // at the 1e-6 / 1e21 boundary kept the host spelling. The runtime number
   // formatter now applies JavaScript's notation rules (#3380).

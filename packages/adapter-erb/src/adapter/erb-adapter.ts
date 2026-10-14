@@ -99,8 +99,6 @@ import {
   buildImportAliasMap,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
-  arithmeticOperandIsNull,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -112,6 +110,7 @@ import {
   collectNullableOptionalProps,
   lowerCallbackMethod,
   emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import { isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
@@ -2047,8 +2046,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       isLoopBoundName: (name) => this.isLoopBoundName(name),
       _isStringValueName: (name) => this._isStringValueName(name),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
     }

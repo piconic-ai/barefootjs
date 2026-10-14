@@ -49,7 +49,6 @@ import {
   type LoweringNode,
   queryHrefArgs,
   isValidHelperId,
-  NULL_COERCING_ARITHMETIC_OPS,
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
@@ -549,19 +548,18 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return arg
   }
 
-  /** A `null` arithmetic operand reads as `0`, as JS `ToNumber(null)` does
-   * (#3350, `NULL_COERCING_ARITHMETIC_OPS`). An `undefined` one goes through
-   * `bf.number`, which maps the engine's nil to `NaN` as JS
+  /** Spell `arithmeticOperandCoercion` (#3474): a `null` operand reads as
+   * `0`, as JS `ToNumber(null)` does (#3350); an `undefined` one as `NaN`, as
    * `ToNumber(undefined)` does (#3390). */
-  private coerceNullishOperand(op: string, expr: ParsedExpr, operand: string): string {
-    if (!NULL_COERCING_ARITHMETIC_OPS.has(op)) return operand
-    if (this.ctx._isUndefinedOperand(expr)) return `bf.number(${operand})`
-    return this.ctx._isNullOperand(expr) ? `(${operand} || 0)` : operand
+  private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+    const coercion = this.ctx._arithmeticCoercion(op, expr, other)
+    if (coercion === 'undefined') return `bf.number(${operand})`
+    return coercion === 'null' ? `(${operand} || 0)` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = this.coerceNullishOperand(op, left, emit(left))
-    const r = this.coerceNullishOperand(op, right, emit(right))
+    const l = this.coerceNullishOperand(op, left, right, emit(left))
+    const r = this.coerceNullishOperand(op, right, left, emit(right))
     // Ruby `/` on two Integers is integer division; JS `/` keeps the
     // fractional quotient (#3328).
     if (op === '/') return `bf.div(${l}, ${r})`

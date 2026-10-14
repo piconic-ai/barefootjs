@@ -4464,6 +4464,26 @@
       }
     }
   ],
+  "omitted-optional-number-arithmetic": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "missing": 1234567890
+      }
+    }
+  ],
   "optional-chain-computed-condition": [
     {
       "name": "gen:items:empty",

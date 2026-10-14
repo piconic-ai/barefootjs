@@ -206,6 +206,8 @@ import { fixture as filterPredicatePropsMember } from './filter-predicate-props-
 import { fixture as filterPredicateModulo } from './filter-predicate-modulo'
 import { fixture as fillUnsupported } from './fill-unsupported'
 import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
+import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
+import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
 import { fixture as callbackIndexParam } from './callback-index-param'
 import { fixture as callbackIndexParamClient } from './callback-index-param-client'
 import { fixture as filterIndexParamLoop } from './filter-index-param-loop'
@@ -1092,6 +1094,8 @@ export const jsxFixtures: JSXFixture[] = [
   filterPredicateModulo,
   fillUnsupported,
   fillUnsupportedClient,
+  nullishOperandArithmeticMatrix,
+  omittedOptionalNumberArithmetic,
   callbackIndexParam,
   callbackIndexParamClient,
   filterIndexParamLoop,
