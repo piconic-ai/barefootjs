@@ -81,14 +81,22 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# Each job asks for what it needs, so a job that only reads (e.g. the
+# Packagist mirrors) can neither push to this repository nor mint an OIDC
+# token for a registry.
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    # contents/pull-requests: Changesets pushes the "Version Packages" branch,
+    # opens its PR, and tags and creates the GitHub Releases on publish.
+    # id-token: npm Trusted Publishing and `--provenance`.
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     # Backstop so a hung step (e.g. a stalled JSR/npm publish) can't keep the
     # job — and with it the `release-main` concurrency slot — open for the
     # default 6h, blocking every queued release run behind it.
@@ -142,6 +150,9 @@ jobs:
     runs-on: ubuntu-latest
     # Same backstop: a stalled CPAN upload shouldn't hold the run open for 6h.
     timeout-minutes: 30
+    # contents: the Perl version sync below pushes to main.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
