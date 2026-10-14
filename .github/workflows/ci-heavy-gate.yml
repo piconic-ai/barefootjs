@@ -13,6 +13,14 @@ name: CI — Heavy gate
 # Logic, rationale and tests: scripts/lib/heavy-gate.ts and
 # scripts/lib/__tests__/heavy-gate.test.ts.
 #
+# GitHub's native stacked pull requests do not fit "stacked PR = base is
+# another branch": a PR in a GitHub stack runs every main-only workflow as if
+# it targeted the stack's base, against the stack applied onto main, and the
+# heavy workflows (default types) also run on the `stacked` action when the PR
+# joins a stack, which this workflow's explicit `types` cannot list. The gate
+# therefore takes `pull_request.stack.base.ref == main` as evidence by itself,
+# and never takes an event whose effective base is not main (#3480).
+#
 # `edited` is listed so a retarget re-evaluates the gate. A title/body edit
 # also re-evaluates it and gets the same answer from the API as before. The
 # job has no job-level `if` and never posts a skipped placeholder. Its

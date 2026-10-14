@@ -220,6 +220,16 @@ also goes red on the first title or body edit of a main-based PR whose heavy CI 
 the gate existed, or whose gate runs have aged out of Actions run retention. There the red
 does not mean heavy CI is missing on that head, and the same push clears it.
 
+**GitHub's native stacked pull requests are not branch-based stacks.** A PR that belongs to a
+GitHub stack (the stack UI or `gh stack`) runs every `pull_request` workflow as if it targeted the
+stack's base, so `branches: [main]` matches every layer, and the checkout is the stack applied onto
+`main` (a chain of merge refs). The heavy set therefore runs on every layer of a native stack, not
+only the light set. When a PR joins a stack GitHub fires the `stacked` action: the heavy workflows
+(default types) run on it, `ci-heavy-gate.yml` (explicit `types`) does not. So the gate counts a PR
+whose payload carries `pull_request.stack.base.ref == main` as evidence on its own, and refuses
+any event whose effective base (the stack base, else the PR base) is not `main` (#3480). A
+branch-based stack (base is another PR's branch, no `stack` field) behaves as described above.
+
 **Do not add `edited` to heavy workflows, or a job-level `if` that skips edits.** Title and
 body edits must not re-run the heavy set, and a skip-on-edit `if` is worse: a skipped job
 posts a check run under the job's name that counts as success, and GitHub keeps the most

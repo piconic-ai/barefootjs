@@ -27,6 +27,24 @@
  * The gate asserts that heavy CI *ran*, not that it passed. Heavy workflows
  * report their own results under their own check names. The gate never
  * posts a placeholder over them.
+ *
+ * GitHub's native stacked pull requests (#3480). A PR that belongs to a
+ * GitHub stack is not filtered by its own base: every `pull_request`
+ * workflow runs for every layer as if the PR targeted the stack's base (the
+ * payload's `pull_request.stack.base.ref`), and checks out the stack applied
+ * onto that base (a chain of merge refs down to `main`). When a PR joins a
+ * stack, GitHub fires `pull_request` with the `stacked` action: the heavy
+ * workflows, which keep the default activity types, run on it, but this
+ * gate, whose `types` must be explicit to add `edited`, does not. So on a
+ * natively stacked PR the gate can miss the very event that ran heavy CI
+ * (#3471: red on its first `edited`, while #3470's heavy jobs had run on
+ * `stacked`). A stack whose base is `main` therefore counts as evidence by
+ * itself; a branch-based stack (base is a PR branch, no `stack` field) is
+ * still filtered out by `branches: [main]` and handled as before.
+ *
+ * The evidence is also tied to the event's effective base (the stack base,
+ * else the PR base): an event that does not target `main` is never taken as
+ * proof that heavy CI ran against `main`.
  */
 
 export const HEAVY_TRIGGER_ACTIONS = ['opened', 'synchronize', 'reopened'] as const
@@ -40,6 +58,12 @@ export const GATE_RUN_NAME =
 
 export const MISSING_MESSAGE =
   'Heavy CI has not run on this head against main — push (e.g. merge main into this branch) to trigger it.'
+
+/** The branch every heavy workflow filters on (`branches: [main]`). */
+export const HEAVY_BASE = 'main'
+
+export const notMainMessage = (base: string): string =>
+  `This event targets ${base}, not ${HEAVY_BASE}, so it is no evidence that heavy CI ran against ${HEAVY_BASE}.`
 
 /**
  * Workflows that run on every PR, stacked or not (the light set). Every other
@@ -75,6 +99,19 @@ export interface GateRun {
 
 export type GateVerdict = { ok: boolean; reason: string }
 
+/**
+ * What the gate knows about the event, besides the runs it fetches.
+ * `baseRef` is `pull_request.base.ref`; `stackBaseRef` is
+ * `pull_request.stack.base.ref`, present only when the PR is in a GitHub
+ * stack.
+ */
+export interface GateEvent {
+  action: string
+  prNumber: number
+  baseRef: string
+  stackBaseRef?: string | null
+}
+
 const isHeavyTrigger = (action: string): boolean =>
   (HEAVY_TRIGGER_ACTIONS as readonly string[]).includes(action)
 
@@ -88,9 +125,19 @@ export function parseGateRunTitle(displayTitle: string): { pr: number; action: s
  * `runs`: this workflow's `pull_request` runs on the PR's head SHA. The
  * current run is among them, which is harmless because its action is `edited`.
  */
-export function decide(input: { action: string; prNumber: number; runs: readonly GateRun[] }): GateVerdict {
+export function decide(input: GateEvent & { runs: readonly GateRun[] }): GateVerdict {
+  const base = input.stackBaseRef || input.baseRef
+  if (base !== HEAVY_BASE) return { ok: false, reason: notMainMessage(base) }
   if (isHeavyTrigger(input.action)) {
-    return { ok: true, reason: `this ${input.action} event (base main) is itself the heavy-CI trigger` }
+    return { ok: true, reason: `this ${input.action} event (base ${base}) is itself the heavy-CI trigger` }
+  }
+  if (input.stackBaseRef === HEAVY_BASE) {
+    return {
+      ok: true,
+      reason:
+        `this PR is in a GitHub stack based on ${HEAVY_BASE}: the heavy set ran for this layer against the stack ` +
+        "when it joined the stack (the `stacked` action) or on its last push, both of which every heavy workflow fires on",
+    }
   }
   const evidence = input.runs
     .map((run) => parseGateRunTitle(run.display_title))
@@ -105,18 +152,25 @@ export function decide(input: { action: string; prNumber: number; runs: readonly
  * the short window where an `edited` event is processed before the gate run
  * of a just-pushed `synchronize` is registered.
  */
-export async function pollForVerdict(opts: {
-  action: string
-  prNumber: number
+export async function pollForVerdict(opts: GateEvent & {
   fetchRuns: () => Promise<readonly GateRun[]>
   sleep: (ms: number) => Promise<void>
   attempts: number
   intervalMs: number
 }): Promise<GateVerdict> {
-  if (isHeavyTrigger(opts.action)) return decide({ action: opts.action, prNumber: opts.prNumber, runs: [] })
-  let verdict: GateVerdict = { ok: false, reason: MISSING_MESSAGE }
+  const event: GateEvent = {
+    action: opts.action,
+    prNumber: opts.prNumber,
+    baseRef: opts.baseRef,
+    stackBaseRef: opts.stackBaseRef,
+  }
+  // Decided without the runs: the event itself is the answer (a heavy
+  // trigger, a stack based on main, or a base that is not main).
+  const immediate = decide({ ...event, runs: [] })
+  if (immediate.ok || immediate.reason !== MISSING_MESSAGE) return immediate
+  let verdict: GateVerdict = immediate
   for (let attempt = 1; attempt <= opts.attempts; attempt++) {
-    verdict = decide({ action: opts.action, prNumber: opts.prNumber, runs: await opts.fetchRuns() })
+    verdict = decide({ ...event, runs: await opts.fetchRuns() })
     if (verdict.ok || attempt === opts.attempts) break
     await opts.sleep(opts.intervalMs)
   }

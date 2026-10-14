@@ -6,6 +6,7 @@ import {
   GATE_WORKFLOW_FILE,
   MISSING_MESSAGE,
   decide,
+  notMainMessage,
   lintWorkflows,
   parseGateRunTitle,
   pollForVerdict,
@@ -30,26 +31,67 @@ describe('parseGateRunTitle', () => {
 
 describe('decide', () => {
   test.each(['opened', 'synchronize', 'reopened'])('a %s event is itself the heavy trigger', (action) => {
-    expect(decide({ action, prNumber: 1, runs: [] }).ok).toBe(true)
+    expect(decide({ action, baseRef: 'main', prNumber: 1, runs: [] }).ok).toBe(true)
   })
 
   test('retarget with no push: only edited runs on this head, so it fails with the push instruction', () => {
-    const verdict = decide({ action: 'edited', prNumber: 7, runs: [{ display_title: title(7, 'edited') }] })
+    const verdict = decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs: [{ display_title: title(7, 'edited') }] })
     expect(verdict).toEqual({ ok: false, reason: MISSING_MESSAGE })
   })
 
   test('a title/body edit after heavy CI ran re-derives the same pass', () => {
     const runs = [{ display_title: title(7, 'edited') }, { display_title: title(7, 'synchronize') }]
-    expect(decide({ action: 'edited', prNumber: 7, runs }).ok).toBe(true)
+    expect(decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs }).ok).toBe(true)
   })
 
   test("another PR's heavy trigger on the same SHA is not evidence for this PR", () => {
-    expect(decide({ action: 'edited', prNumber: 7, runs: [{ display_title: title(8, 'opened') }] }).ok).toBe(false)
+    expect(decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs: [{ display_title: title(8, 'opened') }] }).ok).toBe(false)
   })
 
   test('the gate stays red across repeated no-op edits until a heavy trigger lands', () => {
     const runs = [{ display_title: title(7, 'edited') }, { display_title: title(7, 'edited') }]
-    expect(decide({ action: 'edited', prNumber: 7, runs }).ok).toBe(false)
+    expect(decide({ action: 'edited', baseRef: 'main', prNumber: 7, runs }).ok).toBe(false)
+  })
+})
+
+describe('decide: the event base and GitHub stacks (#3480)', () => {
+  test('a heavy-trigger event that does not target main is not evidence', () => {
+    expect(decide({ action: 'synchronize', baseRef: 'release/1.x', prNumber: 1, runs: [] })).toEqual({
+      ok: false,
+      reason: notMainMessage('release/1.x'),
+    })
+  })
+
+  test("earlier evidence does not rescue an event whose base is not main", () => {
+    const runs = [{ display_title: title(7, 'synchronize') }]
+    expect(decide({ action: 'edited', baseRef: 'release/1.x', prNumber: 7, runs }).ok).toBe(false)
+  })
+
+  test('a PR in a stack based on main passes on edited without an earlier gate run (the `stacked` event ran heavy CI)', () => {
+    const verdict = decide({
+      action: 'edited',
+      baseRef: 'claude/3425-go-state-fields',
+      stackBaseRef: 'main',
+      prNumber: 3471,
+      runs: [{ display_title: title(3471, 'edited') }],
+    })
+    expect(verdict.ok).toBe(true)
+    expect(verdict.reason).toContain('GitHub stack')
+  })
+
+  test("a stack's base, not the PR branch below, decides the target", () => {
+    expect(
+      decide({ action: 'synchronize', baseRef: 'claude/lower-layer', stackBaseRef: 'main', prNumber: 2, runs: [] }).ok,
+    ).toBe(true)
+    expect(
+      decide({ action: 'synchronize', baseRef: 'main', stackBaseRef: 'release/1.x', prNumber: 2, runs: [] }),
+    ).toEqual({ ok: false, reason: notMainMessage('release/1.x') })
+  })
+
+  test('outside a stack, a base other than main is refused (a branch-based stack never reaches the gate)', () => {
+    expect(decide({ action: 'edited', baseRef: 'claude/lower-layer', stackBaseRef: null, prNumber: 2, runs: [] }).ok).toBe(
+      false,
+    )
   })
 })
 
@@ -61,6 +103,7 @@ describe('pollForVerdict', () => {
     const verdict = await pollForVerdict({
       action: 'synchronize',
       prNumber: 1,
+      baseRef: 'main',
       fetchRuns: async () => (calls++, []),
       sleep: noSleep,
       attempts: 3,
@@ -70,11 +113,39 @@ describe('pollForVerdict', () => {
     expect(calls).toBe(0)
   })
 
+  test('answers a stacked PR and a non-main base from the event alone, without the API', async () => {
+    let calls = 0
+    const fetchRuns = async () => (calls++, [])
+    const stacked = await pollForVerdict({
+      action: 'edited',
+      prNumber: 3471,
+      baseRef: 'claude/3425-go-state-fields',
+      stackBaseRef: 'main',
+      fetchRuns,
+      sleep: noSleep,
+      attempts: 3,
+      intervalMs: 0,
+    })
+    const elsewhere = await pollForVerdict({
+      action: 'edited',
+      prNumber: 9,
+      baseRef: 'release/1.x',
+      fetchRuns,
+      sleep: noSleep,
+      attempts: 3,
+      intervalMs: 0,
+    })
+    expect(stacked.ok).toBe(true)
+    expect(elsewhere).toEqual({ ok: false, reason: notMainMessage('release/1.x') })
+    expect(calls).toBe(0)
+  })
+
   test('picks up a gate run that registers late', async () => {
     let calls = 0
     const verdict = await pollForVerdict({
       action: 'edited',
       prNumber: 5,
+      baseRef: 'main',
       fetchRuns: async () => (++calls < 3 ? [] : [{ display_title: title(5, 'synchronize') }]),
       sleep: noSleep,
       attempts: 12,
@@ -89,6 +160,7 @@ describe('pollForVerdict', () => {
     const verdict = await pollForVerdict({
       action: 'edited',
       prNumber: 5,
+      baseRef: 'main',
       fetchRuns: async () => (calls++, []),
       sleep: noSleep,
       attempts: 4,
