@@ -13,6 +13,9 @@
 import {
   serializeParsedExpr,
   freeVarsInBody,
+  emitArrayMethod,
+  lowerArrayMethod,
+  prefixedArrayMethodSpelling,
 } from '@barefootjs/jsx'
 import type {
   ParsedExpr,
@@ -22,155 +25,21 @@ import type {
 } from '@barefootjs/jsx'
 import { escapeTwigSingleQuoted, twigHashKey } from '../lib/twig-naming.ts'
 
+// The undefined literal is the `slice` end the source left out; Twig reads `null`.
+const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('bf.', 'null')
+
+/**
+ * Lower `object.method(...args)` through the shared catalogue
+ * (`@barefootjs/jsx`'s `adapters/array-method.ts`). This adapter only spells
+ * the helper call.
+ */
 export function renderArrayMethod(
   method: ArrayMethod,
   object: ParsedExpr,
   args: ParsedExpr[],
   emit: (e: ParsedExpr) => string,
 ): string {
-  switch (method) {
-    case 'join': {
-      // Route through the runtime (`bf.join`) rather than a Twig builtin, so
-      // the JS-compat element handling (undef → empty, default separator) is
-      // applied consistently.
-      const obj = emit(object)
-      const sep = args.length >= 1 ? emit(args[0]) : `','`
-      return `bf.join(${obj}, ${sep})`
-    }
-    case 'includes': {
-      const obj = emit(object)
-      const needle = emit(args[0])
-      return `bf.includes(${obj}, ${needle})`
-    }
-    case 'indexOf':
-    case 'lastIndexOf': {
-      const fn = method === 'indexOf' ? 'index_of' : 'last_index_of'
-      const obj = emit(object)
-      const needle = emit(args[0])
-      return `bf.${fn}(${obj}, ${needle})`
-    }
-    case 'at': {
-      const obj = emit(object)
-      const idx = args.length >= 1 ? emit(args[0]) : '0'
-      return `bf.at(${obj}, ${idx})`
-    }
-    case 'concat': {
-      if (args.length === 0) {
-        return emit(object)
-      }
-      const a = emit(object)
-      const b = emit(args[0])
-      return `bf.concat(${a}, ${b})`
-    }
-    case 'slice': {
-      const recv = emit(object)
-      const start = args.length >= 1 ? emit(args[0]) : '0'
-      // Twig's undefined-literal is `null`, not Kolon's `nil` or Jinja's
-      // `none` — the runtime `slice` treats it as "to end".
-      const end = args.length >= 2 ? emit(args[1]) : 'null'
-      return `bf.slice(${recv}, ${start}, ${end})`
-    }
-    case 'reverse':
-    case 'toReversed': {
-      const recv = emit(object)
-      return `bf.reverse(${recv})`
-    }
-    case 'toLowerCase': {
-      // Route through the runtime (consistent with bf.includes / bf.slice /
-      // etc.) rather than a bare `|lower` filter, so a non-string operand
-      // still gets JS-compatible coercion first.
-      const recv = emit(object)
-      return `bf.lc(${recv})`
-    }
-    case 'toUpperCase': {
-      const recv = emit(object)
-      return `bf.uc(${recv})`
-    }
-    case 'trim': {
-      const recv = emit(object)
-      return `bf.trim(${recv})`
-    }
-    case 'trimStart':
-    case 'trimEnd': {
-      // `.trimStart()` / `.trimEnd()` — the one-sided siblings of
-      // `.trim()` (#2183 follow-up). Dedicated `bf.trim_start` /
-      // `bf.trim_end` helpers, not `bf.trim` with a flag.
-      const fn = method === 'trimStart' ? 'trim_start' : 'trim_end'
-      const recv = emit(object)
-      return `bf.${fn}(${recv})`
-    }
-    case 'toFixed': {
-      // `.toFixed(digits?)` — `bf.to_fixed` mirrors JS rounding +
-      // zero-padding (default 0 digits). #1897.
-      const recv = emit(object)
-      const digits = args.length >= 1 ? emit(args[0]) : '0'
-      return `bf.to_fixed(${recv}, ${digits})`
-    }
-    case 'split': {
-      const recv = emit(object)
-      if (args.length === 0) {
-        return `bf.split(${recv})`
-      }
-      const sep = emit(args[0])
-      if (args.length === 1) {
-        return `bf.split(${recv}, ${sep})`
-      }
-      const limit = emit(args[1])
-      return `bf.split(${recv}, ${sep}, ${limit})`
-    }
-    case 'startsWith':
-    case 'endsWith': {
-      const fn = method === 'startsWith' ? 'starts_with' : 'ends_with'
-      const recv = emit(object)
-      const arg = emit(args[0])
-      if (args.length >= 2) {
-        return `bf.${fn}(${recv}, ${arg}, ${emit(args[1])})`
-      }
-      return `bf.${fn}(${recv}, ${arg})`
-    }
-    case 'replace': {
-      const recv = emit(object)
-      const oldS = emit(args[0])
-      const newS = emit(args[1])
-      return `bf.replace(${recv}, ${oldS}, ${newS})`
-    }
-    case 'replaceAll': {
-      // `.replaceAll(old, new)` — string-pattern form, EVERY occurrence,
-      // via the dedicated `bf.replace_all` helper (not `bf.replace` with
-      // a flag) — the regex-pattern form is refused upstream at the
-      // parser, same as `.replace`. See #2182.
-      const recv = emit(object)
-      const oldS = emit(args[0])
-      const newS = emit(args[1])
-      return `bf.replace_all(${recv}, ${oldS}, ${newS})`
-    }
-    case 'repeat': {
-      const recv = emit(object)
-      const count = args.length === 0 ? '0' : emit(args[0])
-      return `bf.repeat(${recv}, ${count})`
-    }
-    case 'padStart':
-    case 'padEnd': {
-      const fn = method === 'padStart' ? 'pad_start' : 'pad_end'
-      const recv = emit(object)
-      if (args.length === 0) {
-        return `bf.${fn}(${recv}, 0)`
-      }
-      const target = emit(args[0])
-      if (args.length === 1) {
-        return `bf.${fn}(${recv}, ${target})`
-      }
-      const pad = emit(args[1])
-      return `bf.${fn}(${recv}, ${target}, ${pad})`
-    }
-    default: {
-      // TS-level exhaustiveness guard.
-      const _exhaustive: never = method
-      throw new Error(
-        `renderArrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`,
-      )
-    }
-  }
+  return emitArrayMethod(lowerArrayMethod(method, object, args), emit, ARRAY_METHOD_SPELLING)
 }
 
 /**

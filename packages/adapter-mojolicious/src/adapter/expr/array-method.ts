@@ -10,22 +10,36 @@
 import {
   serializeParsedExpr,
   freeVarsInBody,
+  emitArrayMethod,
+  lowerArrayMethod,
+  prefixedArrayMethodSpelling,
 } from '@barefootjs/jsx'
 import type {
   ParsedExpr,
   ArrayMethod,
   SortComparator,
   FlatDepth,
+  ArrayMethodSpelling,
 } from '@barefootjs/jsx'
 
+const helperCall = prefixedArrayMethodSpelling('bf->', 'undef')
+
+// The undefined literal is the `slice` end the source left out; Perl reads `undef`.
+// Perl's native `lc` / `uc` need no runtime helper.
+const ARRAY_METHOD_SPELLING: ArrayMethodSpelling = {
+  ...helperCall,
+  call: (helper, operands) =>
+    helper === 'lc'
+      ? `lc(${operands[0]})`
+      : helper === 'uc'
+        ? `uc(${operands[0]})`
+        : helperCall.call(helper, operands),
+}
+
 /**
- * Lower an `arr.<method>(...)` / `str.<method>(...)` value-builtin call to
- * its Perl form. The IR lifts these into the dedicated `array-method` kind at
- * parse time (see the `arrayMethod` emitter arms), so this is the single
- * place every adapter-supported array/string method is mapped. An unhandled
- * `ArrayMethod` variant throws rather than emitting a silent no-op — the
- * drift defence we already apply to `ParsedExpr.kind` extended to its
- * sub-discriminator.
+ * Lower `object.method(...args)` through the shared catalogue
+ * (`@barefootjs/jsx`'s `adapters/array-method.ts`). This adapter only spells
+ * the helper call.
  */
 export function renderArrayMethod(
   method: ArrayMethod,
@@ -33,235 +47,7 @@ export function renderArrayMethod(
   args: ParsedExpr[],
   emit: (e: ParsedExpr) => string,
 ): string {
-  switch (method) {
-    case 'join': {
-      // arr.join(sep) → bf->join(arr, sep), NOT Perl's native `join`
-      // builtin directly on `@{arr}` — a nested-array element (e.g.
-      // `.flat(0)`'s shallow copy) would stringify to its Perl memory
-      // address ("ARRAY(0x...)") under native `join`'s scalar coercion
-      // instead of JS's recursive comma-join (#2262/#2272). `bf->join`
-      // (BarefootJS.pm) routes each element through `string()` first.
-      // The default `${obj}->{join}` hash-lookup fallback would emit
-      // invalid Perl, which is why the IR carves out a dedicated method
-      // node instead of routing through the generic call dispatcher.
-      // `.join()` defaults the separator to `,` (JS) and ignores any
-      // extra argument.
-      const obj = emit(object)
-      const sep = args.length >= 1 ? emit(args[0]) : `','`
-      return `bf->join(${obj}, ${sep})`
-    }
-    case 'includes': {
-      // Both `arr.includes(x)` and `str.includes(sub)` route here —
-      // the parser can't disambiguate the receiver type. The Mojo
-      // runtime's `bf->includes($recv, $elem)` inspects `ref($recv)`
-      // and dispatches: ARRAY ref scans the list with `eq`, scalar
-      // falls back to `index(..., ...) != -1`. Helper lives in
-      // packages/adapter-perl/lib/BarefootJS.pm.
-      //
-      // The `bf->` (no `$`) form matches every other helper emit —
-      // in real Mojolicious `bf` is a controller helper; the
-      // standalone test-render in test-render.ts rewrites the bare
-      // `bf->` to `$bf->` so both render paths stay consistent.
-      const obj = emit(object)
-      const needle = emit(args[0])
-      return `bf->includes(${obj}, ${needle})`
-    }
-    case 'indexOf':
-    case 'lastIndexOf': {
-      // Array `.indexOf(x)` / `.lastIndexOf(x)` value-equality
-      // search. The Perl helpers (`bf->index_of`, `bf->last_index_of`)
-      // walk the array forward / backward and compare with `eq`
-      // (with defined/undef parity). The existing `.find` lowering
-      // uses Perl `grep` for struct-field find — disjoint surface,
-      // disjoint helpers.
-      const fn = method === 'indexOf' ? 'index_of' : 'last_index_of'
-      const obj = emit(object)
-      const needle = emit(args[0])
-      return `bf->${fn}(${obj}, ${needle})`
-    }
-    case 'at': {
-      // `.at(i)` with negative-index support — `.at(-1)` is the
-      // last element. The Mojo helper wraps the same `length + i`
-      // arithmetic the Go `bf_at` does so the lowering stays
-      // symmetric across adapters. `.at()` with no argument is `.at(0)`
-      // (the first element); extra arguments are ignored.
-      const obj = emit(object)
-      const idx = args.length >= 1 ? emit(args[0]) : '0'
-      return `bf->at(${obj}, ${idx})`
-    }
-    case 'concat': {
-      // `.concat(other)` merges two arrays. Returns a new ARRAY
-      // ref so the result composes with `.join(...)` / other
-      // array-shape methods downstream (the canonical Tier A
-      // conformance fixture chains `.concat(...).join(' ')`).
-      // `.concat()` with no argument is a shallow copy — indistinguishable
-      // from the receiver in an SSR snapshot, so it lowers to the receiver.
-      if (args.length === 0) {
-        return emit(object)
-      }
-      const a = emit(object)
-      const b = emit(args[0])
-      return `bf->concat(${a}, ${b})`
-    }
-    case 'slice': {
-      // `.slice()` / `.slice(start)` / `.slice(start, end)`. The Mojo
-      // helper mirrors the Go arithmetic (negative-index normalisation,
-      // out-of-bounds clamping, empty result on start >= end). A
-      // missing `start` defaults to 0 (full copy); an absent `end`
-      // lowers as `undef`, which the helper treats as "to length". JS
-      // ignores a third+ argument. Returns a new ARRAY ref so the
-      // result composes with `.join(...)` downstream.
-      const recv = emit(object)
-      const start = args.length >= 1 ? emit(args[0]) : '0'
-      const end = args.length >= 2 ? emit(args[1]) : 'undef'
-      return `bf->slice(${recv}, ${start}, ${end})`
-    }
-    case 'reverse':
-    case 'toReversed': {
-      // Both shapes share a lowering — see the parser arm + Go
-      // emit for the SSR-mutation-rationale. Returns a new ARRAY
-      // ref so the result composes with `.join(...)` downstream.
-      const recv = emit(object)
-      return `bf->reverse(${recv})`
-    }
-    case 'toLowerCase': {
-      // Perl's native `lc` is the obvious lowering — no helper
-      // method needed. The receiver flows through `emit` so any
-      // upstream coercion (`$value`, `$bf->string(...)`, etc.)
-      // composes naturally.
-      const recv = emit(object)
-      return `lc(${recv})`
-    }
-    case 'toUpperCase': {
-      // Perl's native `uc` — mirrors `toLowerCase` exactly.
-      const recv = emit(object)
-      return `uc(${recv})`
-    }
-    case 'trim': {
-      // No Perl native `trim`; route through the `bf->trim`
-      // helper so the regex stays in one place (and so an undef
-      // receiver doesn't trigger a warning about applying `s///`
-      // to undef).
-      const recv = emit(object)
-      return `bf->trim(${recv})`
-    }
-    case 'trimStart':
-    case 'trimEnd': {
-      // `.trimStart()` / `.trimEnd()` — the one-sided siblings of
-      // `.trim()` (#2183 follow-up). Dedicated `bf->trim_start` /
-      // `bf->trim_end` helpers, not `bf->trim` with a flag.
-      const fn = method === 'trimStart' ? 'trim_start' : 'trim_end'
-      const recv = emit(object)
-      return `bf->${fn}(${recv})`
-    }
-    case 'toFixed': {
-      // `.toFixed(digits?)` — Number → fixed-decimal string. `bf->to_fixed`
-      // mirrors JS rounding + zero-padding (default 0 digits). #1897.
-      const recv = emit(object)
-      const digits = args.length >= 1 ? emit(args[0]) : '0'
-      return `bf->to_fixed(${recv}, ${digits})`
-    }
-    case 'split': {
-      // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
-      // ARRAY ref via `bf->split`. With no separator the helper returns
-      // the whole string as a single element; otherwise it quotemetas
-      // the separator (literal match, not regex) and keeps trailing
-      // empties (`-1`), staying byte-equal with Go's `bf_split`. The
-      // optional `limit` caps the pieces; JS ignores a third+ argument.
-      // See #1448 Tier B.
-      const recv = emit(object)
-      if (args.length === 0) {
-        return `bf->split(${recv})`
-      }
-      const sep = emit(args[0])
-      if (args.length === 1) {
-        return `bf->split(${recv}, ${sep})`
-      }
-      const limit = emit(args[1])
-      return `bf->split(${recv}, ${sep}, ${limit})`
-    }
-    case 'startsWith':
-    case 'endsWith': {
-      // `.startsWith(prefix, position?)` / `.endsWith(suffix,
-      // endPosition?)` — string → boolean. The Perl helpers
-      // (`bf->starts_with` / `bf->ends_with`) do a `substr`-anchored
-      // comparison so the search string is matched literally (no regex
-      // metachar surprises) and undef receivers stay quiet. The optional
-      // second argument re-anchors the test; JS ignores a third+
-      // argument. See #1448 Tier B.
-      const fn = method === 'startsWith' ? 'starts_with' : 'ends_with'
-      const recv = emit(object)
-      const arg = emit(args[0])
-      if (args.length >= 2) {
-        return `bf->${fn}(${recv}, ${arg}, ${emit(args[1])})`
-      }
-      return `bf->${fn}(${recv}, ${arg})`
-    }
-    case 'replace': {
-      // `.replace(old, new)` — string-pattern form, first occurrence.
-      // The `bf->replace` helper splices via index/substr (not `s///`)
-      // so both the pattern and the replacement are literal — no Perl
-      // regex metacharacters and no `$1` / `$&` interpolation in the
-      // replacement, keeping it byte-equal with Go's `bf_replace`. The
-      // regex-pattern form is refused upstream at the parser. See
-      // #1448 Tier B.
-      const recv = emit(object)
-      const oldS = emit(args[0])
-      const newS = emit(args[1])
-      return `bf->replace(${recv}, ${oldS}, ${newS})`
-    }
-    case 'replaceAll': {
-      // `.replaceAll(old, new)` — string-pattern form, EVERY occurrence,
-      // via the dedicated `bf->replace_all` helper (not `bf->replace`
-      // with a flag) — the regex-pattern form is refused upstream at
-      // the parser, same as `.replace`. See #2182.
-      const recv = emit(object)
-      const oldS = emit(args[0])
-      const newS = emit(args[1])
-      return `bf->replace_all(${recv}, ${oldS}, ${newS})`
-    }
-    case 'repeat': {
-      // `.repeat(n)` — string repeated `n` times. The `bf->repeat`
-      // helper wraps Perl's `x` operator with the same negative-count
-      // → "" clamp and integer truncation Go's `bf_repeat` applies, so
-      // the two adapters stay byte-equal. Full JS arity: the no-argument
-      // form is `repeat(0)` → ""; a second+ argument is ignored.
-      // See #1448 Tier B.
-      const recv = emit(object)
-      const count = args.length === 0 ? '0' : emit(args[0])
-      return `bf->repeat(${recv}, ${count})`
-    }
-    case 'padStart':
-    case 'padEnd': {
-      // `.padStart(target, pad?)` / `.padEnd(target, pad?)`. The
-      // `bf->pad_*` helpers default the pad to a single space when the
-      // arg is omitted and measure length in characters, matching Go's
-      // rune-based `bf_pad_*`. Full JS arity: the no-argument form is
-      // `padStart(0)` → the receiver unchanged; a third+ argument is
-      // ignored. See #1448 Tier B.
-      const fn = method === 'padStart' ? 'pad_start' : 'pad_end'
-      const recv = emit(object)
-      if (args.length === 0) {
-        return `bf->${fn}(${recv}, 0)`
-      }
-      const target = emit(args[0])
-      if (args.length === 1) {
-        return `bf->${fn}(${recv}, ${target})`
-      }
-      const pad = emit(args[1])
-      return `bf->${fn}(${recv}, ${target}, ${pad})`
-    }
-    default: {
-      // TS-level exhaustiveness guard. If this throws at runtime, the
-      // IR was constructed against a newer `ArrayMethod` variant that
-      // this adapter hasn't been updated for — loud failure is better
-      // than emitting a silent empty string downstream.
-      const _exhaustive: never = method
-      throw new Error(
-        `renderArrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`,
-      )
-    }
-  }
+  return emitArrayMethod(lowerArrayMethod(method, object, args), emit, ARRAY_METHOD_SPELLING)
 }
 
 /** Escape a string for embedding in a Perl single-quoted literal. */

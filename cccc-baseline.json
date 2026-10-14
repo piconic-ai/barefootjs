@@ -11,11 +11,6 @@
         63
       ]
     },
-    "packages/adapter-blade/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-blade/src/test-render.ts": {
       "buildBladeProps": [
         57
@@ -27,11 +22,6 @@
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "renderLoop": [
         76
-      ]
-    },
-    "packages/adapter-erb/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
       ]
     },
     "packages/adapter-erb/src/test-render.ts": {
@@ -242,11 +232,6 @@
         56
       ]
     },
-    "packages/adapter-jinja/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
       "renderLoop": [
         60
@@ -258,11 +243,6 @@
       ],
       "renderJinjaComponent": [
         48
-      ]
-    },
-    "packages/adapter-mojolicious/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
       ]
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
@@ -284,11 +264,6 @@
         39
       ]
     },
-    "packages/adapter-pebble/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
       "renderLoop": [
         75
@@ -300,11 +275,6 @@
       ],
       "renderPebbleComponent": [
         56
-      ]
-    },
-    "packages/adapter-rust/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
       ]
     },
     "packages/adapter-rust/src/adapter/minijinja-adapter.ts": {
@@ -356,11 +326,6 @@
         40
       ]
     },
-    "packages/adapter-twig/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-twig/src/adapter/twig-adapter.ts": {
       "renderLoop": [
         68
@@ -372,11 +337,6 @@
       ],
       "renderTwigComponent": [
         48
-      ]
-    },
-    "packages/adapter-xslate/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
       ]
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {

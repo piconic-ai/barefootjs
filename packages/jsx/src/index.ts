@@ -133,6 +133,21 @@ export {
 export { isBareStringLiteral, isLiteralIndex, isStringTypeInfo } from './adapters/literal-value.ts'
 export { collectBooleanTypedProps, collectNullableOptionalProps } from './adapters/prop-classes.ts'
 export { collectImportedLoopChildComponentErrors, hasClientInteractivity } from './adapters/component-tree.ts'
+export {
+  ARRAY_METHOD_CATALOGUE,
+  emitArrayMethod,
+  lowerArrayMethod,
+  prefixedArrayMethodSpelling,
+} from './adapters/array-method.ts'
+export type {
+  ArrayMethodArg,
+  ArrayMethodDefault,
+  ArrayMethodEntry,
+  ArrayMethodHelper,
+  ArrayMethodParam,
+  ArrayMethodPlan,
+  ArrayMethodSpelling,
+} from './adapters/array-method.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
