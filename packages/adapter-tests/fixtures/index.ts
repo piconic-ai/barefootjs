@@ -206,6 +206,20 @@ import { fixture as filterPredicatePropsMember } from './filter-predicate-props-
 import { fixture as filterPredicateModulo } from './filter-predicate-modulo'
 import { fixture as fillUnsupported } from './fill-unsupported'
 import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
+import { fixture as callbackIndexParam } from './callback-index-param'
+import { fixture as callbackIndexParamClient } from './callback-index-param-client'
+import { fixture as filterIndexParamLoop } from './filter-index-param-loop'
+import { fixture as filterIndexParamLoopClient } from './filter-index-param-loop-client'
+import { fixture as sortOpaqueComparator } from './sort-opaque-comparator'
+import { fixture as sortOpaqueComparatorClient } from './sort-opaque-comparator-client'
+import { fixture as mapOpaqueProjection } from './map-opaque-projection'
+import { fixture as mapOpaqueProjectionClient } from './map-opaque-projection-client'
+import { fixture as reduceNonliteralSeed } from './reduce-nonliteral-seed'
+import { fixture as reduceNonliteralSeedClient } from './reduce-nonliteral-seed-client'
+import { fixture as filterOpaquePredicate } from './filter-opaque-predicate'
+import { fixture as filterOpaquePredicateClient } from './filter-opaque-predicate-client'
+import { fixture as filterArrayMethodPredicate } from './filter-array-method-predicate'
+import { fixture as filterArrayMethodPredicateClient } from './filter-array-method-predicate-client'
 import { fixture as findTypeofPredicate } from './find-typeof-predicate'
 import { fixture as findTypeofPredicateClient } from './find-typeof-predicate-client'
 import { fixture as someTypeofPredicate } from './some-typeof-predicate'
@@ -1078,6 +1092,20 @@ export const jsxFixtures: JSXFixture[] = [
   filterPredicateModulo,
   fillUnsupported,
   fillUnsupportedClient,
+  callbackIndexParam,
+  callbackIndexParamClient,
+  filterIndexParamLoop,
+  filterIndexParamLoopClient,
+  sortOpaqueComparator,
+  sortOpaqueComparatorClient,
+  mapOpaqueProjection,
+  mapOpaqueProjectionClient,
+  reduceNonliteralSeed,
+  reduceNonliteralSeedClient,
+  filterOpaquePredicate,
+  filterOpaquePredicateClient,
+  filterArrayMethodPredicate,
+  filterArrayMethodPredicateClient,
   findTypeofPredicate,
   findTypeofPredicateClient,
   someTypeofPredicate,

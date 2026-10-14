@@ -19,6 +19,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -28,6 +34,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -43,6 +61,12 @@
               ]
             },
             {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -61,9 +85,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -82,6 +118,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -95,6 +137,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -107,9 +155,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -131,9 +191,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -155,6 +227,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -164,6 +242,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -189,6 +273,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -198,6 +294,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -237,9 +339,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -258,6 +372,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -289,6 +409,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -301,6 +427,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -310,6 +448,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -331,9 +475,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -352,6 +508,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -365,6 +527,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -374,6 +542,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -389,6 +569,12 @@
               ]
             },
             {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -407,9 +593,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -428,6 +626,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -441,6 +645,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -453,9 +663,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -477,9 +699,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -498,6 +732,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -523,6 +763,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -535,6 +781,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -544,6 +802,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -565,9 +829,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -586,6 +862,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -599,6 +881,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -611,6 +899,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -620,6 +920,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -641,9 +947,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -662,6 +980,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -675,6 +999,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -687,6 +1017,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -696,6 +1032,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -717,9 +1059,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -738,6 +1092,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -779,9 +1139,27 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -791,9 +1169,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -807,9 +1197,21 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -819,9 +1221,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -835,9 +1249,27 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -847,9 +1279,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -863,9 +1307,27 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -875,9 +1337,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -891,9 +1365,27 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -903,9 +1395,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -919,9 +1423,21 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -931,9 +1447,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -947,9 +1475,27 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -959,9 +1505,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -975,9 +1533,27 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -987,9 +1563,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1003,9 +1591,21 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1015,9 +1615,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1047,9 +1659,27 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1062,6 +1692,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1083,6 +1719,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1095,9 +1737,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1111,15 +1765,33 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1141,6 +1813,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1153,9 +1831,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1169,9 +1859,27 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1184,6 +1892,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1205,6 +1919,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1217,9 +1937,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1233,9 +1965,27 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1248,6 +1998,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1269,6 +2025,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1281,9 +2043,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1297,9 +2071,27 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1312,6 +2104,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1333,6 +2131,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1345,9 +2149,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1361,15 +2177,33 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1391,6 +2225,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1403,9 +2243,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1419,9 +2271,27 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1434,6 +2304,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1455,6 +2331,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1467,9 +2349,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1483,9 +2377,27 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1498,6 +2410,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1519,6 +2437,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1531,9 +2455,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1547,9 +2483,21 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -1562,6 +2510,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1583,6 +2537,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -1595,9 +2555,21 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1633,6 +2605,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1642,6 +2620,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1666,6 +2650,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1691,9 +2681,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1718,6 +2720,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1761,6 +2769,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1770,6 +2784,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1803,6 +2823,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1825,6 +2851,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1834,6 +2866,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1858,6 +2896,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1883,6 +2927,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1892,6 +2942,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1916,6 +2972,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1941,9 +3003,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1968,6 +3042,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1993,6 +3073,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2002,6 +3088,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2026,6 +3118,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2051,6 +3149,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2060,6 +3164,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2084,6 +3194,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2109,6 +3225,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2118,6 +3240,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2142,6 +3270,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2204,6 +3338,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -2228,6 +3368,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2237,6 +3389,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2261,6 +3419,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2306,6 +3470,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -2321,6 +3491,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2346,6 +3522,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -2370,9 +3552,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2397,6 +3591,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2442,6 +3642,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -2457,6 +3663,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2481,6 +3693,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -2524,6 +3742,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2533,6 +3763,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2563,6 +3799,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2620,6 +3862,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -2641,6 +3889,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2672,6 +3926,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -2696,6 +3956,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2705,6 +3977,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2729,6 +4007,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2774,6 +4058,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -2789,6 +4079,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2814,6 +4110,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -2838,6 +4140,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2847,6 +4161,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2871,6 +4191,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2916,6 +4242,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -2931,6 +4263,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2956,6 +4294,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -2980,9 +4324,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3007,6 +4363,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3052,6 +4414,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -3067,6 +4435,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3092,6 +4466,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3116,6 +4496,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3125,6 +4517,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3149,6 +4547,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3194,6 +4598,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -3209,6 +4619,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3234,6 +4650,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3258,6 +4680,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3267,6 +4701,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3291,6 +4731,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3336,6 +4782,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -3351,6 +4803,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3376,6 +4834,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3400,6 +4864,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3409,6 +4879,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3433,6 +4909,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3478,6 +4960,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -3493,6 +4981,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3802,6 +5296,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3826,6 +5326,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3835,6 +5347,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3886,6 +5404,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -3925,6 +5449,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3958,6 +5488,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -3979,6 +5515,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -4004,9 +5546,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4058,6 +5612,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4100,6 +5660,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -4115,6 +5681,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4139,6 +5711,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -4182,6 +5760,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4191,6 +5781,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4260,6 +5856,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4314,6 +5916,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -4335,6 +5943,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4378,6 +5992,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4402,6 +6022,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4411,6 +6043,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4462,6 +6100,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4504,6 +6148,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -4531,6 +6181,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4556,6 +6212,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4580,6 +6242,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4589,6 +6263,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4640,6 +6320,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4679,6 +6365,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4712,6 +6404,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -4733,6 +6431,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -4758,9 +6462,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4812,6 +6528,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4854,6 +6576,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -4869,6 +6597,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4906,6 +6640,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4930,6 +6670,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4939,6 +6691,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4990,6 +6748,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5032,6 +6796,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -5059,6 +6829,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5084,6 +6860,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5108,6 +6890,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5117,6 +6911,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5168,6 +6968,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5207,6 +7013,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5240,6 +7052,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -5261,6 +7079,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -5286,6 +7110,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5295,6 +7125,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5346,6 +7182,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5388,6 +7230,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -5403,6 +7251,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5502,6 +7356,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5517,6 +7377,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5550,6 +7428,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5580,6 +7464,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -5595,6 +7485,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5614,6 +7510,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5629,6 +7531,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5662,6 +7576,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5692,6 +7612,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -5710,6 +7636,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -5725,6 +7657,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -5759,6 +7697,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5810,6 +7766,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5846,6 +7808,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -5867,6 +7835,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5904,6 +7878,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5919,6 +7899,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5952,6 +7950,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5982,6 +7986,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -5997,6 +8007,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6016,6 +8032,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6031,6 +8053,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6064,6 +8104,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6094,6 +8140,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -6109,6 +8161,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6128,6 +8186,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6143,6 +8207,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6176,6 +8252,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6206,6 +8288,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -6221,6 +8309,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6252,6 +8346,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6267,6 +8367,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6300,6 +8418,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6330,6 +8454,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -6345,6 +8475,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6364,6 +8500,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6379,6 +8521,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6412,6 +8572,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6442,6 +8608,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -6457,6 +8629,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6476,6 +8654,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6491,6 +8675,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6524,6 +8720,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6554,6 +8756,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -6569,6 +8777,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6809,6 +9023,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6833,6 +9053,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -6842,6 +9074,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6887,9 +9125,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6923,6 +9173,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -6944,6 +9200,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -6969,9 +9231,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7017,9 +9291,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7038,6 +9324,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7062,6 +9354,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7093,6 +9391,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7102,6 +9412,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7159,6 +9475,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -7174,6 +9496,12 @@
               "fixture": "prop-member-length-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7198,6 +9526,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7241,6 +9575,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7265,6 +9605,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7274,6 +9626,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7319,9 +9677,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7352,6 +9722,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7377,6 +9753,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7401,6 +9783,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7410,6 +9804,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7455,9 +9855,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7491,6 +9903,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7512,6 +9930,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7537,9 +9961,21 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7585,9 +10021,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7606,6 +10054,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7643,6 +10097,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7667,6 +10127,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7676,6 +10148,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7721,9 +10199,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7754,6 +10244,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7779,6 +10275,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7803,6 +10305,18 @@
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7812,6 +10326,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7857,9 +10377,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7893,6 +10425,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -7914,6 +10452,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -7939,6 +10483,12 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7948,6 +10498,12 @@
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7993,9 +10549,21 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -8014,6 +10582,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -8354,6 +10928,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8364,6 +10944,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8373,6 +10959,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -8402,6 +10994,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8411,6 +11009,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -8422,6 +11026,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8431,6 +11041,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -8442,6 +11058,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8451,6 +11073,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9438,15 +12066,45 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9454,15 +12112,39 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9470,15 +12152,45 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9486,15 +12198,45 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9502,15 +12244,45 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9518,15 +12290,39 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9534,15 +12330,45 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9550,15 +12376,45 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9566,15 +12422,39 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
               ]
             },
             {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             }
           ]
@@ -9901,14 +12781,68 @@
     "array-method:startsWith": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
         "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
         "mojolicious": {},
-        "pebble": {},
-        "twig": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
         "xslate": {}
       },
       "source": {
@@ -10338,6 +13272,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -10347,6 +13287,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -10376,6 +13322,12 @@
               ]
             },
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -10385,6 +13337,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -10396,6 +13354,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -10405,6 +13369,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -10416,6 +13386,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -10426,6 +13402,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -10435,6 +13417,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -11024,15 +14012,150 @@
     "binary:>": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -11366,6 +14489,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11393,6 +14528,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11430,6 +14571,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11457,6 +14610,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11500,6 +14659,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -11533,6 +14704,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11582,6 +14759,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11609,6 +14798,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11646,6 +14841,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11673,6 +14880,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11710,6 +14923,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11737,6 +14962,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11786,6 +15017,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11813,6 +15056,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11850,6 +15099,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11877,6 +15138,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -11914,6 +15181,18 @@
               ]
             },
             {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11941,6 +15220,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12003,6 +15288,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12012,6 +15303,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12039,6 +15348,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12048,6 +15363,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12061,6 +15382,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12070,6 +15397,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12097,6 +15436,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12109,6 +15454,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -12118,6 +15469,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -12140,6 +15497,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12185,6 +15560,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -12209,6 +15590,12 @@
               ]
             },
             {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -12225,6 +15612,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12234,6 +15627,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12261,6 +15672,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12270,6 +15687,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12283,6 +15706,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12292,6 +15721,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12319,6 +15766,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12328,6 +15781,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12341,6 +15800,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12350,6 +15815,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12377,6 +15854,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12386,6 +15869,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12411,6 +15900,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12420,6 +15915,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12447,6 +15960,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12456,6 +15975,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12469,6 +15994,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12478,6 +16009,24 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12505,6 +16054,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12514,6 +16069,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12527,6 +16088,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12536,6 +16103,18 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12563,6 +16142,12 @@
               ]
             },
             {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12572,6 +16157,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {

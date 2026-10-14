@@ -12,8 +12,6 @@
  */
 
 import {
-  serializeParsedExpr,
-  freeVarsInBody,
   emitArrayMethod,
   lowerArrayMethod,
   prefixedArrayMethodSpelling,
@@ -24,6 +22,7 @@ import type {
   SortComparator,
   FlatDepth,
   ArrayMethodSpelling,
+  CallbackEvalSpelling,
 } from '@barefootjs/jsx'
 import { rubySymbolKey, escapeRubySingleQuoted } from '../lib/ruby-naming.ts'
 
@@ -56,148 +55,16 @@ export function renderArrayMethod(
 }
 
 /**
- * Build the `base_env` Hash-literal argument for an evaluator call: the
- * comparator / reducer body's free variables (body idents minus the
- * callback params), each materialised to its SSR value via `emit`, under a
- * SYMBOL key (the Ruby evaluator's env is symbol-keyed — see
- * `Evaluator.evaluate`'s `identifier` arm). An empty capture set yields
- * `{}` — the runtime's seed-once env.
+ * How this adapter spells a runtime-evaluator call. What to call, with which
+ * operands and captured names, is decided by `@barefootjs/jsx`'s
+ * `adapters/callback-method.ts`.
  */
-function emitEvalEnvArg(
-  body: ParsedExpr,
-  params: string[],
-  emit: (e: ParsedExpr) => string,
-): string {
-  const free = freeVarsInBody(body, new Set(params))
-  if (free.length === 0) return '{}'
-  const pairs = free.map(
-    n => `${rubySymbolKey(n)} ${emit({ kind: 'identifier', name: n })}`,
-  )
-  return `{ ${pairs.join(', ')} }`
-}
-
-/**
- * Emit a `.sort(cmp)` / `.toSorted(cmp)` via the runtime evaluator: the
- * comparator body travels as serialized-ParsedExpr JSON, evaluated per
- * comparison against `{paramA, paramB, …captured}`. Returns null when the
- * body can't be evaluated (e.g. a `localeCompare` comparator —
- * `serializeParsedExpr` refuses it), so the caller falls back to the
- * structured `bf.sort`. A `||`-chained multi-key comparator needs no
- * special handling — JS `0 || next` is exactly the tie-break semantics.
- */
-export function renderSortEval(
-  recv: string,
-  body: ParsedExpr,
-  params: string[],
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  if (params.length < 2) return null
-  const [paramA, paramB] = params
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [paramA, paramB], emit)
-  return `bf.sort_eval(${recv}, '${escapeRubySingleQuoted(json)}', '${paramA}', '${paramB}', ${env})`
-}
-
-/**
- * Emit a `.reduce(fn, init)` / `.reduceRight(fn, init)` via the runtime
- * evaluator: the reducer body travels as serialized-ParsedExpr JSON, folded
- * over the receiver from `init` in `direction` order. Returns null when the
- * body can't be evaluated (→ caller falls back to BF101). A numeric seed
- * passes through as a bare Ruby number; a concat seed as a single-quoted
- * string.
- */
-export function renderReduceEval(
-  recv: string,
-  body: ParsedExpr,
-  params: string[],
-  init: ParsedExpr,
-  direction: 'left' | 'right',
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  if (params.length < 2) return null
-  const [paramAcc, paramItem] = params
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  // Only literal seeds round-trip to a Ruby scalar here: a string literal
-  // as a single-quoted Ruby string, a number literal as a bare numeric.
-  // Anything else (an expression seed, an omitted seed) can't be
-  // materialised → null, and the caller records BF101.
-  let initRuby: string
-  if (init.kind === 'literal' && init.literalType === 'string') {
-    initRuby = `'${escapeRubySingleQuoted(String(init.value))}'`
-  } else if (init.kind === 'literal' && init.literalType === 'number') {
-    initRuby = String(init.value)
-  } else {
-    return null
-  }
-  const env = emitEvalEnvArg(body, [paramAcc, paramItem], emit)
-  return `bf.reduce_eval(${recv}, '${escapeRubySingleQuoted(json)}', '${paramAcc}', '${paramItem}', ${initRuby}, '${direction}', ${env})`
-}
-
-/**
- * Emit a higher-order predicate call via the runtime evaluator:
- * `bf.filter_eval` / `bf.every_eval` / `bf.some_eval` / `bf.find_eval` /
- * `bf.find_index_eval`, carrying the serialized predicate body + captured
- * env Hash. Generalizes the inline predicate lowering to the same
- * JS-faithful evaluator the Go adapter uses (cross-adapter isomorphism).
- * Returns null when the predicate is outside the evaluator surface (e.g. a
- * method-call predicate — `serializeParsedExpr` refuses it), so the caller
- * falls back to the inline form. `forward` (find / findIndex family only)
- * selects the search direction — `false` = findLast / findLastIndex.
- */
-export function renderPredicateEval(
-  funcName: string,
-  recv: string,
-  predicate: ParsedExpr,
-  param: string,
-  emit: (e: ParsedExpr) => string,
-  forward?: boolean,
-): string | null {
-  const json = serializeParsedExpr(predicate)
-  if (json === null) return null
-  const env = emitEvalEnvArg(predicate, [param], emit)
-  const fwd = forward === undefined ? '' : `, ${forward ? 'true' : 'false'}`
-  return `bf.${funcName}(${recv}, '${escapeRubySingleQuoted(json)}', '${param}'${fwd}, ${env})`
-}
-
-/**
- * Emit a `.flatMap(proj)` via the runtime evaluator: the projection `body`
- * serializes to JSON and `bf.flat_map_eval` projects + flattens one level.
- * Returns null when the projection is outside the evaluator surface, and
- * the caller records BF101.
- */
-export function renderFlatMapEval(
-  recv: string,
-  body: ParsedExpr,
-  param: string,
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [param], emit)
-  return `bf.flat_map_eval(${recv}, '${escapeRubySingleQuoted(json)}', '${param}', ${env})`
-}
-
-/**
- * Emit a value-producing `.map(cb)` via the runtime evaluator: the
- * projection `body` serializes to JSON and `bf.map_eval` projects each
- * element, one result per element (no flatten — the JS `.map` contract).
- * Composes through the array-method chain (`.map(cb).join(' ')`). Returns
- * null when the projection is outside the evaluator surface, and the caller
- * records BF101. The JSX-returning `.map` is an IRLoop upstream and never
- * reaches this emit.
- */
-export function renderMapEval(
-  recv: string,
-  body: ParsedExpr,
-  param: string,
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [param], emit)
-  return `bf.map_eval(${recv}, '${escapeRubySingleQuoted(json)}', '${param}', ${env})`
+export const EVAL_SPELLING: CallbackEvalSpelling = {
+  call: (helper, operands) => `bf.${helper}(${operands.join(', ')})`,
+  string: (value) => `'${escapeRubySingleQuoted(value)}'`,
+  boolean: (value) => (value ? 'true' : 'false'),
+  env: (entries) =>
+    entries.length === 0 ? '{}' : `{ ${entries.map(([name, value]) => `${rubySymbolKey(name)} ${value}`).join(', ')} }`,
 }
 
 /**

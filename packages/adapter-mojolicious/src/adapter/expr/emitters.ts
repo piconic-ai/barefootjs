@@ -17,7 +17,6 @@ import { groupBinaryOperand,
   isStringTypedOperand,
   isStringConcatBinary,
   type ParsedExprEmitter,
-  type HigherOrderMethod,
   type ArrayMethod,
   type LiteralType,
   type ParsedExpr,
@@ -27,11 +26,16 @@ import { groupBinaryOperand,
   emitParsedExpr,
   identifierPath,
   matchSearchParamsMethodCall,
-  sortComparatorFromArrow,
   type LoweringEmitter,
   type LoweringNode,
   queryHrefArgs,
-  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS } from '@barefootjs/jsx'
+  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS,
+  lowerCallbackMethod,
+  emitCallbackEval,
+  nestedCallbackRefusal,
+  type CallbackLoweringOptions,
+  type PredicateMethod,
+} from '@barefootjs/jsx'
 
 import type { MojoEmitContext } from '../emit-context.ts'
 import { MOJO_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
@@ -40,13 +44,12 @@ import { emitIndexAccessPerl } from './operand.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
-  renderSortEval,
-  renderReduceEval,
-  renderPredicateEval,
   renderFlatMethod,
-  renderFlatMapEval,
-  renderMapEval,
+  EVAL_SPELLING,
 } from './array-method.ts'
+
+// The display name BF101 uses; a native predicate form exists here.
+export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Mojo', nativePredicate: true }
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */
 const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
@@ -54,19 +57,6 @@ const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
   '-': 'subtract',
   '*': 'multiply',
   '/': 'divide',
-}
-
-/**
- * Local shape for the predicate-method fallback chain (#2018 P5). The
- * higher-order callback arrives as a generic `call`; `callbackMethod` recovers
- * `{ method, object, param, predicate }` from it before threading it through
- * the inline `grep` / `bf->find` lowering the old `higher-order` node fed.
- */
-type PredicateCall = {
-  method: HigherOrderMethod
-  object: ParsedExpr
-  param: string
-  predicate: ParsedExpr
 }
 
 /**
@@ -300,10 +290,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // `default` arm degraded them to the truthy sentinel, silently rewriting
     // the predicate, so surface BF101 instead (#2038).
     if (!PREDICATE_METHODS.has(method)) {
-      this.onUnsupported?.(
-        `Filter predicate contains a nested '.${method}(...)' callback, which has no Perl scalar form`,
-        `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
-      )
+      const refusal = nestedCallbackRefusal(method, CALLBACK_LOWERING.adapterName)
+      this.onUnsupported?.(refusal.message, refusal.suggestion)
       return '1'
     }
     // The predicate body is also a filter context, but with this
@@ -320,10 +308,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // `find` / `findIndex` / `findLast` / `findLastIndex` return an element
     // (or index), not a boolean — there is no inline grep form. Degrading to
     // the receiver silently changes predicate semantics, so be loud (#2038).
-    this.onUnsupported?.(
-      `Filter predicate contains a nested '.${method}(...)' callback, which has no Perl scalar form`,
-      `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
-    )
+    const refusal = nestedCallbackRefusal(method, CALLBACK_LOWERING.adapterName)
+    this.onUnsupported?.(refusal.message, refusal.suggestion)
     return arrayExpr
   }
 
@@ -644,123 +630,41 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
+    // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`)
+    // decides; this emitter only spells the result.
     const recv = emit(object)
-    const body = arrow.body
-    const params = arrow.params
-
-    // sort / toSorted: eval-first, then the structured `bf->sort` fallback
-    // (recovered from the arrow by `sortComparatorFromArrow`, e.g. a
-    // `localeCompare` comparator), then BF101.
-    if (method === 'sort' || method === 'toSorted') {
-      const evalForm = renderSortEval(recv, body, params, emit)
-      if (evalForm !== null) return evalForm
-      const c = sortComparatorFromArrow(arrow)
-      if (c !== null) return renderSortMethod(recv, c)
-      this.ctx._recordExprBF101(
-        `.${method}(...) comparator is not lowerable to a template sort`,
-        `Pre-sort the array in the route handler, or mark the loop @client-only.`,
-      )
-      return "''"
+    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING)
+    switch (plan.kind) {
+      case 'eval':
+        return emitCallbackEval(plan, recv, emit, EVAL_SPELLING)
+      case 'structured-sort':
+        return renderSortMethod(recv, plan.comparator)
+      case 'native-predicate':
+        return this._nativePredicate(plan.method, plan.param, plan.predicate, recv)
+      case 'refuse':
+        this.ctx._recordExprBF101(plan.message, plan.suggestion)
+        return "''"
+      default:
+        // Unreachable: a method outside `CALLBACK_METHODS`.
+        return recv
     }
-
-    // reduce / reduceRight: eval-only (the arithmetic catalogue always
-    // serializes); BF101 when the body is outside the evaluator surface or the
-    // seed isn't a literal.
-    if (method === 'reduce' || method === 'reduceRight') {
-      const direction = method === 'reduceRight' ? 'right' : 'left'
-      const init = restArgs[0]
-      const evalForm =
-        init !== undefined ? renderReduceEval(recv, body, params, init, direction, emit) : null
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `.${method}(...) is not lowerable to a template fold`,
-        `Pre-compute the fold in the route handler, or mark the loop @client-only.`,
-      )
-      return "''"
-    }
-
-    // flatMap: eval-only; BF101 when the projection is outside the surface.
-    if (method === 'flatMap') {
-      const evalForm = renderFlatMapEval(recv, body, params[0], emit)
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `.flatMap(...) projection is not lowerable to a template flat-map`,
-        `Pre-compute the projection in the route handler, or mark the loop @client-only.`,
-      )
-      return "''"
-    }
-
-    // Value-producing map (#2073): eval-only; BF101 when the projection is
-    // outside the surface. (The JSX-returning `.map` is an IRLoop upstream.)
-    if (method === 'map') {
-      const evalForm = renderMapEval(recv, body, params[0], emit)
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `.map(...) projection is not lowerable to a template map`,
-        `Pre-compute the projection in the route handler, or mark the position @client-only.`,
-      )
-      return "''"
-    }
-
-    // Predicate methods: filter / find / every / some / findIndex / findLast /
-    // findLastIndex. Eval-first (#2018 P2), then the inline `grep` / `bf->find`
-    // fallback for a predicate the evaluator can't model.
-    const cb: PredicateCall = {
-      method: method as HigherOrderMethod,
-      object,
-      param: params[0],
-      predicate: body,
-    }
-    return this.renderPredicate(cb, recv, emit)
   }
 
-  private renderPredicate(
-    cb: PredicateCall,
-    arrayExpr: string,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const { method, param, predicate } = cb
-    // Evaluator path (#2018 P2): serialize the predicate body + emit the
-    // matching `bf->*_eval` helper (isomorphic with the Go adapter). Falls
-    // back to the inline `grep` / `bf->find` lowering below for a predicate
-    // the evaluator can't model (e.g. a method-call predicate).
-    const evalFn: Record<string, [string, boolean?]> = {
-      filter: ['filter_eval'], every: ['every_eval'], some: ['some_eval'],
-      find: ['find_eval', true], findLast: ['find_eval', false],
-      findIndex: ['find_index_eval', true], findLastIndex: ['find_index_eval', false],
-    }
-    // `.filter(Boolean)` (identity predicate `_t => _t`) keeps the inline
-    // `grep { $_ }` form — it composes through the array-method chain
-    // (`.filter(Boolean).join(' ')` in the registry Slot) and renders
-    // identically to a truthiness filter.
-    const isIdentity =
-      method === 'filter' && predicate.kind === 'identifier' && predicate.name === param
-    const spec = evalFn[method]
-    if (spec && !isIdentity) {
-      const evalForm = renderPredicateEval(spec[0], arrayExpr, predicate, param, emit, spec[1])
-      if (evalForm !== null) return evalForm
-    }
-
+  /**
+   * The native form of a predicate: an inline `grep` for `filter` / `every` /
+   * `some`, and the runtime's `bf->find*` helpers with a per-element coderef.
+   * The shared chain picks it for a predicate the evaluator can't model (a
+   * method-call predicate) and for the identity `.filter(x => x)`, which
+   * composes through the array-method chain.
+   */
+  private _nativePredicate(method: PredicateMethod, param: string, predicate: ParsedExpr, arrayExpr: string): string {
     const predBody = this.ctx._renderPerlFilterExprPublic(predicate, param)
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
     if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
     if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
     if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
-    // `.find` / `.findIndex` / `.findLast` / `.findLastIndex` → the runtime
-    // helpers (`bf->find` / `find_index` / `find_last` / `find_last_index`),
-    // which call the predicate as a per-element coderef — same shape Xslate
-    // emits via a Kolon lambda. The JS camelCase names map to the snake_case
-    // helpers (like index_of / last_index_of).
-    const findHelper: Record<string, string> = {
-      find: 'find',
-      findIndex: 'find_index',
-      findLast: 'find_last',
-      findLastIndex: 'find_last_index',
-    }
-    if (findHelper[method]) {
-      return `bf->${findHelper[method]}(${arrayExpr}, sub { my $${param} = $_[0]; ${predBody} })`
-    }
-    return arrayExpr
+    const findHelper = { find: 'find', findIndex: 'find_index', findLast: 'find_last', findLastIndex: 'find_last_index' }
+    return `bf->${findHelper[method]}(${arrayExpr}, sub { my $${param} = $_[0]; ${predBody} })`
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

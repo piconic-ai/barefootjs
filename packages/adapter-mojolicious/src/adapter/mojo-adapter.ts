@@ -58,7 +58,6 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  sortComparatorFromArrow,
   isLowerableLoopDestructure,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
@@ -85,6 +84,8 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
+  lowerCallbackMethod,
+  emitCallbackEval,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
@@ -99,9 +100,9 @@ import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChi
 import type { MojoRenderCtx } from './lib/types.ts'
 import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { perlHashKey, perlIdentifierFromMarkerId } from './lib/perl-naming.ts'
-import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPerl } from './lib/static-value.ts'
-import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
+import { MojoFilterEmitter, MojoTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
 import type { MojoEmitContext, MojoSpreadContext, MojoMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToPerl,
@@ -1048,8 +1049,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
     const rawArray = staticArray ?? this.convertExpressionToPerl(loop.array)
     // Apply sort if present (#1448 Tier B): wrap the loop array in the
-    // shared sort helper. The same `renderSortEval` / `renderSortMethod`
-    // pair feeds both this loop-chain hoist and the emitter's
+    // shared sort helper. The same shared chain (`lowerCallbackMethod`) and
+    // `renderSortMethod` feed both this loop-chain hoist and the emitter's
     // `callbackMethod` sort arm, so a regression in either path surfaces
     // with the identical emit shape.
     //
@@ -1135,28 +1136,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // since `prevScope` already carries them).
       this.scope = prevScope
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPerl('', e)
-      // `loop.sortComparator` is the generic `IRLoopSort` (#2018 P5): serialize
-      // the arrow body for the evaluator (eval-first), recover the structured
-      // comparator from the arrow for the `localeCompare` fallback.
-      const sortArrow = loop.sortComparator.arrow
-      let sorted: string | null = null
-      if (sortArrow.kind === 'arrow') {
-        sorted = renderSortEval(rawArray, sortArrow.body, sortArrow.params, sortEmit)
-      }
-      if (sorted === null) {
-        const structured = sortComparatorFromArrow(sortArrow)
-        if (structured !== null) sorted = renderSortMethod(rawArray, structured)
-      }
-      if (sorted === null) {
-        // Neither the evaluator nor the structured fallback can model this
-        // comparator — record BF101 and fall through with the unsorted array
-        // so the hoist line stays syntactically valid.
-        this._recordExprBF101(
-          `.sort(...) loop comparator is not lowerable to a template sort`,
-          `Pre-sort the array in the route handler, or mark the loop @client-only.`,
-        )
-        sorted = rawArray
-      }
+      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
+      // the same as `.sort(cmp)` at an expression position: the evaluator,
+      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
+      // comparator the descriptor models, so the refusal arm is defensive; it
+      // keeps the array unsorted so the template stays valid.
+      const plan = lowerCallbackMethod('sort', loop.sortComparator.arrow, [], CALLBACK_LOWERING)
+      let sorted = rawArray
+      if (plan.kind === 'eval') sorted = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
+      else if (plan.kind === 'structured-sort') sorted = renderSortMethod(rawArray, plan.comparator)
+      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
       this.scope = prevScope.enterLoopRow(loop)
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }

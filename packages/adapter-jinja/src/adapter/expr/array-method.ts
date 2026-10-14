@@ -12,8 +12,6 @@
  */
 
 import {
-  serializeParsedExpr,
-  freeVarsInBody,
   emitArrayMethod,
   lowerArrayMethod,
   prefixedArrayMethodSpelling,
@@ -23,6 +21,7 @@ import type {
   ArrayMethod,
   SortComparator,
   FlatDepth,
+  CallbackEvalSpelling,
 } from '@barefootjs/jsx'
 import { escapeJinjaSingleQuoted, jinjaHashKey } from '../lib/jinja-naming.ts'
 
@@ -44,150 +43,16 @@ export function renderArrayMethod(
 }
 
 /**
- * Build the `base_env` dict argument for an evaluator call: the
- * comparator / reducer body's free variables (body idents minus the
- * callback params), each materialised to its SSR value via `emit`. An
- * empty capture set yields `{}` — the runtime's seed-once env.
+ * How this adapter spells a runtime-evaluator call. What to call, with which
+ * operands and captured names, is decided by `@barefootjs/jsx`'s
+ * `adapters/callback-method.ts`.
  */
-function emitEvalEnvArg(
-  body: ParsedExpr,
-  params: string[],
-  emit: (e: ParsedExpr) => string,
-): string {
-  const free = freeVarsInBody(body, new Set(params))
-  if (free.length === 0) return '{}'
-  const pairs = free.map(
-    n => `${jinjaHashKey(n)}: ${emit({ kind: 'identifier', name: n })}`,
-  )
-  return `{${pairs.join(', ')}}`
-}
-
-/**
- * Emit a `.sort(cmp)` / `.toSorted(cmp)` via the runtime evaluator (#2018):
- * the comparator body travels as serialized-ParsedExpr JSON, evaluated per
- * comparison against `{paramA, paramB, …captured}`. Returns null when the
- * body is outside the evaluator surface (e.g. a `localeCompare` comparator —
- * `serializeParsedExpr` refuses it), so the caller falls back to the
- * structured `bf.sort`. `params` are the comparator arrow's two params
- * (`[paramA, paramB]`).
- */
-export function renderSortEval(
-  recv: string,
-  body: ParsedExpr,
-  params: string[],
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  // A comparator needs both params; a wrong-arity arrow would emit an
-  // 'undefined' param name, so fail over to the structured fallback / BF101
-  // (mirrors the Go / Xslate guards).
-  if (params.length < 2) return null
-  const [paramA, paramB] = params
-  const env = emitEvalEnvArg(body, params, emit)
-  return `bf.sort_eval(${recv}, '${escapeJinjaSingleQuoted(json)}', '${paramA}', '${paramB}', ${env})`
-}
-
-/**
- * Emit a `.reduce(fn, init)` / `.reduceRight(fn, init)` via the runtime
- * evaluator (#2018): the reducer body travels as serialized-ParsedExpr JSON,
- * folded over the receiver from `init` in `direction` order. `params` are the
- * reducer arrow's params (`[paramAcc, paramItem]`); `init` is the initial-value
- * `ParsedExpr` from the call's trailing argument. Returns null when the body is
- * outside the evaluator surface, or when `init` is not a literal string/number
- * (→ caller refuses with BF101). A numeric seed passes through as a bare
- * Jinja number; a string seed as a single-quoted literal.
- */
-export function renderReduceEval(
-  recv: string,
-  body: ParsedExpr,
-  params: string[],
-  init: ParsedExpr,
-  direction: 'left' | 'right',
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  if (init.kind !== 'literal') return null
-  const initOut =
-    init.literalType === 'string'
-      ? `'${escapeJinjaSingleQuoted(String(init.value))}'`
-      : init.literalType === 'number'
-        ? String(init.value)
-        : null
-  if (initOut === null) return null
-  // A reducer needs both the accumulator and element param; refuse a
-  // wrong-arity arrow cleanly (→ BF101) rather than emitting an 'undefined'
-  // param name (mirrors the Go / Xslate guards).
-  if (params.length < 2) return null
-  const [paramAcc, paramItem] = params
-  const env = emitEvalEnvArg(body, params, emit)
-  return `bf.reduce_eval(${recv}, '${escapeJinjaSingleQuoted(json)}', '${paramAcc}', '${paramItem}', ${initOut}, '${direction}', ${env})`
-}
-
-/**
- * Emit a higher-order predicate call via the runtime evaluator (#2018, P2):
- * `bf.filter_eval` / `bf.every_eval` / `bf.some_eval` / `bf.find_eval` /
- * `bf.find_index_eval`, carrying the serialized predicate body + captured env
- * dict. Generalizes the lambda lowering to the same JS-faithful evaluator
- * the Go/Xslate adapters use. Returns null when the predicate is outside the
- * evaluator surface (e.g. a method-call predicate — `serializeParsedExpr`
- * refuses it), so the caller falls back to the lambda form. `forward`
- * (find / findIndex family only) selects the search direction — `false` =
- * findLast / findLastIndex.
- */
-export function renderPredicateEval(
-  funcName: string,
-  recv: string,
-  predicate: ParsedExpr,
-  param: string,
-  emit: (e: ParsedExpr) => string,
-  forward?: boolean,
-): string | null {
-  const json = serializeParsedExpr(predicate)
-  if (json === null) return null
-  const env = emitEvalEnvArg(predicate, [param], emit)
-  const fwd = forward === undefined ? '' : `, ${forward ? 'true' : 'false'}`
-  return `bf.${funcName}(${recv}, '${escapeJinjaSingleQuoted(json)}', '${param}'${fwd}, ${env})`
-}
-
-/**
- * Emit a `.flatMap(proj)` via the runtime evaluator (#2018, P3): the projection
- * body serializes to JSON and `bf.flat_map_eval` projects + flattens one
- * level. `param` is the projection arrow's single param. Returns null when the
- * projection is outside the evaluator surface (→ caller refuses with BF101).
- */
-export function renderFlatMapEval(
-  recv: string,
-  body: ParsedExpr,
-  param: string,
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [param], emit)
-  return `bf.flat_map_eval(${recv}, '${escapeJinjaSingleQuoted(json)}', '${param}', ${env})`
-}
-
-/**
- * Emit a value-producing `.map(cb)` via the runtime evaluator (#2073): the
- * projection body serializes to JSON and `bf.map_eval` projects each element,
- * one result per element (no flatten — the JS `.map` contract). Composes
- * through the array-method chain (`.map(cb).join(' ')`). Returns null when
- * the projection is outside the evaluator surface (→ caller refuses with
- * BF101). The JSX-returning `.map` is an IRLoop upstream and never reaches
- * this emit.
- */
-export function renderMapEval(
-  recv: string,
-  body: ParsedExpr,
-  param: string,
-  emit: (e: ParsedExpr) => string,
-): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [param], emit)
-  return `bf.map_eval(${recv}, '${escapeJinjaSingleQuoted(json)}', '${param}', ${env})`
+export const EVAL_SPELLING: CallbackEvalSpelling = {
+  call: (helper, operands) => `bf.${helper}(${operands.join(', ')})`,
+  string: (value) => `'${escapeJinjaSingleQuoted(value)}'`,
+  boolean: (value) => (value ? 'true' : 'false'),
+  env: (entries) =>
+    `{${entries.map(([name, value]) => `${jinjaHashKey(name)}: ${value}`).join(', ')}}`,
 }
 
 /**

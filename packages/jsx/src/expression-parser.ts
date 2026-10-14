@@ -869,6 +869,40 @@ export const CALLBACK_METHODS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * How many leading callback params the template evaluators bind, per
+ * {@link CALLBACK_METHODS} member: a comparator's `(a, b)`, a reducer's
+ * `(acc, item)`, every other callback's element. The params after them (the
+ * element index, the array itself) have no binding in any DSL runtime.
+ */
+function evaluatorBoundParamCount(method: string): number {
+  return method === 'sort' || method === 'toSorted' || method === 'reduce' || method === 'reduceRight' ? 2 : 1
+}
+
+/**
+ * The first callback param past {@link evaluatorBoundParamCount} that the
+ * callback body reads (`items.map((x, i) => i)` → `'i'`), or `null` when the
+ * body reads none of them. A DSL adapter would otherwise resolve such a name
+ * from the enclosing SSR scope, or leave it undefined, instead of the index /
+ * array the JS reference binds. A body this walk cannot analyze counts as
+ * reading the first extra param, so the check fails safe.
+ */
+export function unboundCallbackParamRead(
+  method: string,
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+): string | null {
+  const extra = arrow.params.slice(evaluatorBoundParamCount(method))
+  if (extra.length === 0) return null
+  const free = freeIdentifiers(arrow.body)
+  if (free === null) return extra[0]!
+  return extra.find(name => free.has(name)) ?? null
+}
+
+/** The refusal reason for {@link unboundCallbackParamRead}'s finding. */
+export function unboundCallbackParamReason(method: string, name: string): string {
+  return `'.${method}()' callback reads '${name}', its index or array parameter, which a template evaluator does not bind. Pre-compute the value, or add /* @client */ for client-only (no SSR).`
+}
+
+/**
  * A recognised higher-order callback method call: `<object>.<method>(<arrow>,
  * …rest)` where `method ∈` {@link CALLBACK_METHODS} and the first argument is a
  * generic `arrow`. Returns the receiver, the callback arrow, and any trailing
@@ -2157,6 +2191,42 @@ export function isSupportedValue(
 }
 
 /**
+ * {@link checkSupport} for a higher-order callback method call (`<recv>.<m>(arrow,
+ * …rest)`): the receiver, the callback's params (an index or array param it
+ * reads has no binding in any DSL runtime), its body, and the trailing args.
+ */
+function checkCallbackMethodSupport(
+  cb: NonNullable<ReturnType<typeof asCallbackMethodCall>>,
+  pos: ExprPos,
+  matchers: readonly LoweringMatcher[],
+): SupportResult {
+  const objSupport = checkSupport(cb.object, pos, matchers)
+  if (!objSupport.supported) return objSupport
+  const unbound = unboundCallbackParamRead(cb.method, cb.arrow)
+  if (unbound !== null) {
+    return {
+      supported: false,
+      level: 'L5_UNSUPPORTED',
+      selfContained: true,
+      reason: unboundCallbackParamReason(cb.method, unbound),
+    }
+  }
+  const bodySupport = checkSupport(cb.arrow.body, pos, matchers)
+  if (!bodySupport.supported) {
+    return {
+      supported: false,
+      level: 'L5_UNSUPPORTED',
+      reason: `Higher-order method '.${cb.method}()' with complex callback. ${bodySupport.reason || 'Simplify the callback.'}`,
+    }
+  }
+  for (const rest of cb.args) {
+    const restSupport = checkSupport(rest, pos, matchers)
+    if (!restSupport.supported) return restSupport
+  }
+  return { supported: true, level: 'L5' }
+}
+
+/**
  * Where in the expression tree a node sits, for the ONE shape whose support
  * depends on it: `object-literal` (refused at `rendered`, admitted at `value`
  * when every property value is itself supported — see the `object-literal`
@@ -2296,23 +2366,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // (the body value is what ends up rendered), while a VALUE-entered
       // one (a signal/memo initializer) admits it.
       const cb = asCallbackMethodCall(expr)
-      if (cb) {
-        const objSupport = checkSupport(cb.object, pos, matchers)
-        if (!objSupport.supported) return objSupport
-        const bodySupport = checkSupport(cb.arrow.body, pos, matchers)
-        if (!bodySupport.supported) {
-          return {
-            supported: false,
-            level: 'L5_UNSUPPORTED',
-            reason: `Higher-order method '.${cb.method}()' with complex callback. ${bodySupport.reason || 'Simplify the callback.'}`,
-          }
-        }
-        for (const rest of cb.args) {
-          const restSupport = checkSupport(rest, pos, matchers)
-          if (!restSupport.supported) return restSupport
-        }
-        return { supported: true, level: 'L5' }
-      }
+      if (cb) return checkCallbackMethodSupport(cb, pos, matchers)
 
       // Check if callee is supported. Not container contents — inherits
       // the CURRENT `pos` (see `ExprPos`'s doc).
@@ -3638,6 +3692,45 @@ function evalBuiltinCalleeName(callee: ParsedExpr): string | null {
     return `Math.${callee.property}`
   }
   return null
+}
+
+/**
+ * Whether `expr` calls something a DSL predicate emitter has no lowering for:
+ * a call that is neither an evaluator builtin (`String(x)`, `Math.abs(x)`), a
+ * zero-arg signal getter (`limit()`), nor a higher-order callback method. A
+ * filter emitter lowers such a call to a read of its callee
+ * (`x.localeCompare('m')` → `x.localeCompare`, `isOk(x)` → `isOk`), so the
+ * native predicate fallback must not take it (#3477).
+ */
+export function hasOpaqueCall(expr: ParsedExpr): boolean {
+  let found = false
+  const visit = (node: unknown): void => {
+    if (found || node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const e = node as ParsedExpr
+    if (e.kind === 'call') {
+      const cb = asCallbackMethodCall(e)
+      if (cb) {
+        visit(cb.object)
+        visit(cb.arrow.body)
+        cb.args.forEach(visit)
+        return
+      }
+      const getter = e.callee.kind === 'identifier' && e.args.length === 0
+      if (!getter && evalBuiltinCalleeName(e.callee) === null) {
+        found = true
+        return
+      }
+      e.args.forEach(visit)
+      return
+    }
+    for (const value of Object.values(e)) visit(value)
+  }
+  visit(expr)
+  return found
 }
 
 /** Build the evaluator's minimal node object, or null for an out-of-surface kind. */

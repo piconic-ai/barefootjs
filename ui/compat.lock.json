@@ -2001,6 +2001,125 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
+      "callback-index-param": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "callback-index-param-client"
+          }
+        }
+      },
       "conditional-nested-loop-signal-reactivity": {
         "go-template": {
           "kind": "refusal",
@@ -2467,6 +2586,205 @@
           }
         }
       },
+      "filter-array-method-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-array-method-predicate-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-array-method-predicate-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-array-method-predicate-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-array-method-predicate-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-array-method-predicate-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-array-method-predicate-client"
+          }
+        }
+      },
+      "filter-index-param-loop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "callback-index-param"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-index-param-loop-client"
+          }
+        }
+      },
       "filter-nested-callback-predicate": {
         "blade": {
           "kind": "refusal",
@@ -2676,6 +2994,125 @@
           "escape": {
             "state": "escapable",
             "twin": "filter-nested-find-predicate-client"
+          }
+        }
+      },
+      "filter-opaque-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-opaque-predicate-client"
           }
         }
       },
@@ -3594,6 +4031,125 @@
           }
         }
       },
+      "map-opaque-projection": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-opaque-projection-client"
+          }
+        }
+      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -4401,6 +4957,125 @@
           }
         }
       },
+      "reduce-nonliteral-seed": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-nonliteral-seed-client"
+          }
+        }
+      },
       "reduce-right-typeof-body": {
         "blade": {
           "kind": "refusal",
@@ -5091,6 +5766,125 @@
           }
         }
       },
+      "sort-opaque-comparator": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "sort-opaque-comparator-client"
+          }
+        }
+      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",
@@ -5551,6 +6345,10 @@
       }
     },
     "docs": {
+      "callback-index-param": {
+        "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
+      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -5579,6 +6377,14 @@
         "description": "Off-subset array method `.fill()` — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fill-unsupported.ts"
       },
+      "filter-array-method-predicate": {
+        "description": "A `.filter()` predicate on a string method — native on Xslate / ERB / Mojolicious, refused elsewhere",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-array-method-predicate.ts"
+      },
+      "filter-index-param-loop": {
+        "description": "A loop `.filter()` predicate reading its index — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-index-param-loop.ts"
+      },
       "filter-nested-callback-predicate": {
         "description": "Filter predicate containing a nested .some() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate.ts"
@@ -5586,6 +6392,10 @@
       "filter-nested-find-predicate": {
         "description": "Filter predicate containing a nested .find() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate.ts"
+      },
+      "filter-opaque-predicate": {
+        "description": "A `.filter()` predicate calling an unlowered method — DSL diagnostic on every adapter",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-opaque-predicate.ts"
       },
       "filter-typeof-predicate": {
         "description": "Off-subset filter predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -5631,6 +6441,10 @@
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
       },
+      "map-opaque-projection": {
+        "description": "A `.map()` projection calling an unlowered method — DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection.ts"
+      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -5667,6 +6481,10 @@
         "description": "a signal seeded from `.length` of an array member of an object prop renders its seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/prop-member-length-signal-seed.ts"
       },
+      "reduce-nonliteral-seed": {
+        "description": "A `.reduce()` seeded with a non-literal value — DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-nonliteral-seed.ts"
+      },
       "reduce-right-typeof-body": {
         "description": "Off-subset `.reduceRight()` body (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-right-typeof-body.ts"
@@ -5698,6 +6516,10 @@
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
+      },
+      "sort-opaque-comparator": {
+        "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
@@ -5731,6 +6553,10 @@
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
       },
+      "callback-index-param-client": {
+        "description": "A `.map()` callback reading its index, deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param-client.ts"
+      },
       "conditional-nested-loop-precomputed-reactivity": {
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-precomputed-reactivity.ts"
@@ -5743,6 +6569,14 @@
         "description": "Off-subset array method `.fill()` deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fill-unsupported-client.ts"
       },
+      "filter-array-method-predicate-client": {
+        "description": "A `.filter()` predicate on a string method, deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-array-method-predicate-client.ts"
+      },
+      "filter-index-param-loop-client": {
+        "description": "A loop `.filter()` predicate reading its index, deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-index-param-loop-client.ts"
+      },
       "filter-nested-callback-predicate-client": {
         "description": "Nested-callback filter predicate + /* @client */ suppresses BF101 (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate-client.ts"
@@ -5750,6 +6584,10 @@
       "filter-nested-find-predicate-client": {
         "description": "Nested-callback (.find()) filter predicate + /* @client */ suppresses BF101 (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate-client.ts"
+      },
+      "filter-opaque-predicate-client": {
+        "description": "A `.filter()` predicate calling an unlowered method, deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-opaque-predicate-client.ts"
       },
       "filter-typeof-predicate-client": {
         "description": "Off-subset filter predicate deferred to the client via /* @client */",
@@ -5775,6 +6613,10 @@
         "description": "Array-builder .map() body deferred to the client via /* @client */ — DSL BF021 suppressed",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body-client.ts"
       },
+      "map-opaque-projection-client": {
+        "description": "A `.map()` projection calling an unlowered method, deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection-client.ts"
+      },
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
@@ -5782,6 +6624,10 @@
       "opaque-local-accessor-call-client": {
         "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call-client.ts"
+      },
+      "reduce-nonliteral-seed-client": {
+        "description": "A `.reduce()` seeded with a non-literal value, deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-nonliteral-seed-client.ts"
       },
       "reduce-right-typeof-body-client": {
         "description": "Off-subset `.reduceRight()` body deferred to the client via /* @client */",
@@ -5806,6 +6652,10 @@
       "some-typeof-predicate-client": {
         "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate-client.ts"
+      },
+      "sort-opaque-comparator-client": {
+        "description": "A `.toSorted()` comparator outside the evaluator and the descriptor, deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator-client.ts"
       },
       "static-array-from-props-precomputed": {
         "description": "prop-precompute twin of static-array-from-props — computation moved to the caller, full SSR (#2321)",
@@ -5925,6 +6775,60 @@
       ],
       "adapters": [
         "mojolicious",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "callback-index-param": {
+      "title": "A higher-order callback reading its index or array parameter",
+      "kind": "refusal",
+      "given": "a template expression whose `.map` / `.filter` / `.reduce` (or other higher-order) callback reads its index or array parameter",
+      "expected": "the callback sees each element's index (and the array) and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF021 / BF101",
+      "fixtures": [
+        "callback-index-param",
+        "filter-index-param-loop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021",
+        "BF101"
+      ]
+    },
+    "callback-outside-evaluator": {
+      "title": "A higher-order callback outside the template evaluator",
+      "kind": "refusal",
+      "given": "a `.sort` / `.map` / `.filter` / `.reduce` callback (or reduce seed) the template evaluator cannot model: an unlowered method call, a string-method predicate, a comparator outside the sort descriptor, a non-literal seed",
+      "expected": "the callback runs and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "filter-array-method-predicate",
+        "filter-opaque-predicate",
+        "map-opaque-projection",
+        "reduce-nonliteral-seed",
+        "sort-opaque-comparator"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
         "xslate"
       ],
       "diagnostics": [

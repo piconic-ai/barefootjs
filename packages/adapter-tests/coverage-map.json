@@ -1179,6 +1179,44 @@
         "text"
       ]
     },
+    "callback-index-param": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "callback-index-param-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "callback-param-shadows-prop": {
       "kinds": [
         "array-literal",
@@ -3142,6 +3180,44 @@
         "text"
       ]
     },
+    "filter-array-method-predicate": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-array-method-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "filter-capture-keeps-same-name-literal": {
       "kinds": [
         "binary",
@@ -3200,6 +3276,47 @@
       "contexts": [
         "attribute",
         "loop"
+      ]
+    },
+    "filter-index-param-loop": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-index-param-loop-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "filter-nested-callback-predicate": {
@@ -3275,6 +3392,48 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "filter-opaque-predicate": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-opaque-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -5419,6 +5578,42 @@
       "axes": [
         "array-method:join",
         "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "map-opaque-projection": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "map-opaque-projection-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
         "literal:string"
       ],
       "contexts": [
@@ -7748,6 +7943,42 @@
         "text"
       ]
     },
+    "reduce-nonliteral-seed": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-nonliteral-seed-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "reduce-product": {
       "kinds": [
         "arrow",
@@ -8834,6 +9065,42 @@
       ],
       "axes": [
         "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "sort-opaque-comparator": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "sort-opaque-comparator-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
         "literal:string"
       ],
       "contexts": [

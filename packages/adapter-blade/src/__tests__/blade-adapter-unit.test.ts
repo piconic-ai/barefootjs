@@ -10,9 +10,9 @@
  * workstream C and are NOT ported here (they live in this same package,
  * but as their own files).
  *
- * One divergence from the byte-for-byte Twig port: `emitEvalEnvArg`'s empty
+ * One divergence from the byte-for-byte Twig port: the evaluator env's empty
  * capture set is PHP's empty ARRAY `[]`, not Twig's empty HASH `{}` (see
- * `expr/array-method.ts`'s docstring) — every `", true, {})"` / `", false,
+ * `EVAL_SPELLING` in `expr/array-method.ts`) — every `", true, {})"` / `", false,
  * {})"` / `"{'tag': tag}"` expectation below becomes `", true, [])"` / `",
  * false, [])"` / `"['tag' => $tag]"`.
  *

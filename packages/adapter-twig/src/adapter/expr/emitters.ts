@@ -65,7 +65,6 @@ import {
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
-  type HigherOrderMethod,
   type ArrayMethod,
   type LiteralType,
   type ParsedExpr,
@@ -74,13 +73,16 @@ import {
   type TemplatePart,
   identifierPath,
   matchSearchParamsMethodCall,
-  sortComparatorFromArrow,
   type LoweringEmitter,
   type LoweringNode,
   queryHrefArgs,
   isValidHelperId,
   NULL_COERCING_ARITHMETIC_OPS,
   isBooleanResultParsed,
+  lowerCallbackMethod,
+  emitCallbackEval,
+  nestedCallbackRefusal,
+  type CallbackLoweringOptions,
 } from '@barefootjs/jsx'
 
 import type { TwigEmitContext } from '../emit-context.ts'
@@ -89,29 +91,12 @@ import { twigIdent, escapeTwigSingleQuoted, twigHashKey } from '../lib/twig-nami
 import {
   renderArrayMethod,
   renderSortMethod,
-  renderSortEval,
-  renderReduceEval,
-  renderPredicateEval,
   renderFlatMethod,
-  renderFlatMapEval,
-  renderMapEval,
+  EVAL_SPELLING,
 } from './array-method.ts'
 
-/**
- * Local shape for the predicate-lowering helper. Mirrors the Jinja port's
- * `PredicateCall`.
- */
-type PredicateCall = {
-  method: HigherOrderMethod
-  object: ParsedExpr
-  param: string
-  predicate: ParsedExpr
-}
-
-// Methods whose callback is a boolean predicate (`<recv>.<m>(x => …)`).
-const PREDICATE_METHODS = new Set<HigherOrderMethod>([
-  'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
-])
+// The display name BF101 uses; a native predicate form does not exist here.
+export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Twig' }
 
 /**
  * Route a condition-TEST position through `bf.truthy(...)` unless the node
@@ -326,10 +311,8 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     // A nested callback method inside a filter predicate has no Twig scalar
     // form. Surface BF101 instead of silently changing predicate semantics
     // (`!other.some(r => …)` collapsing to `!other`).
-    this.onUnsupported?.(
-      `Filter predicate contains a nested '.${method}(...)' callback, which has no Twig scalar form`,
-      `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
-    )
+    const refusal = nestedCallbackRefusal(method, CALLBACK_LOWERING.adapterName)
+    this.onUnsupported?.(refusal.message, refusal.suggestion)
     return emit(object)
   }
 
@@ -613,115 +596,23 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
+    // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`)
+    // decides; this emitter only spells the result.
     const recv = emit(object)
-    const body = arrow.body
-    const params = arrow.params
-
-    // Predicate family (#2018 P2/P5): `filter` / `find*` / `every` / `some`.
-    if (PREDICATE_METHODS.has(method as HigherOrderMethod)) {
-      return this._emitPredicateCallback(
-        { method: method as HigherOrderMethod, object, param: params[0], predicate: body },
-        recv,
-        emit,
-      )
+    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING)
+    switch (plan.kind) {
+      case 'eval':
+        return emitCallbackEval(plan, recv, emit, EVAL_SPELLING)
+      case 'structured-sort':
+        return renderSortMethod(recv, plan.comparator)
+      case 'refuse':
+        this.ctx._recordExprBF101(plan.message, plan.suggestion)
+        return "''"
+      default:
+        // Unreachable: `receiver` needs a method outside `CALLBACK_METHODS`,
+        // `native-predicate` an adapter with `nativePredicate`.
+        return recv
     }
-
-    // `.sort(cmp)` / `.toSorted(cmp)` (#2018): serialize the comparator body +
-    // emit `bf.sort_eval`; fall back to the structured `bf.sort` when the
-    // body is outside the evaluator surface (e.g. `localeCompare`). This
-    // structured fallback is data (a `{keys: […]}` descriptor), never a
-    // lambda, so it ports unchanged — see the file header, divergence 5.
-    if (method === 'sort' || method === 'toSorted') {
-      const evalForm = renderSortEval(recv, body, params, emit)
-      if (evalForm !== null) return evalForm
-      const structured = sortComparatorFromArrow(arrow)
-      if (structured !== null) return renderSortMethod(recv, structured)
-      this.ctx._recordExprBF101(
-        `'.${method}(...)' comparator is outside the Twig adapter's evaluable / structured surface`,
-        `Pre-compute the sorted array, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // `.reduce(fn, init)` / `.reduceRight(fn, init)` (#2018): serialize the
-    // reducer body + emit `bf.reduce_eval`. The init is the trailing arg.
-    if (method === 'reduce' || method === 'reduceRight') {
-      const direction = method === 'reduceRight' ? 'right' : 'left'
-      const init = restArgs[0]
-      const evalForm =
-        init !== undefined
-          ? renderReduceEval(recv, body, params, init, direction, emit)
-          : null
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `'.${method}(...)' is outside the Twig adapter's evaluable surface (needs a literal initial value and an evaluable reducer body)`,
-        `Pre-compute the reduced value, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // `.flatMap(proj)` (#2018 P3): serialize the projection body + emit
-    // `bf.flat_map_eval`.
-    if (method === 'flatMap') {
-      const evalForm = renderFlatMapEval(recv, body, params[0], emit)
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `'.flatMap(...)' projection is outside the Twig adapter's evaluable surface`,
-        `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // Value-producing `.map(cb)` (#2073): serialize the projection body +
-    // emit `bf.map_eval`. (The JSX-returning `.map` is an IRLoop upstream.)
-    if (method === 'map') {
-      const evalForm = renderMapEval(recv, body, params[0], emit)
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `'.map(...)' projection is outside the Twig adapter's evaluable surface`,
-        `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // Unknown callback method (should not arrive — CALLBACK_METHODS is closed).
-    void object
-    return recv
-  }
-
-  /**
-   * Lower a boolean-predicate callback (`filter` / `find*` / `every` /
-   * `some`). See the file header, divergence 5: Twig has no lambda
-   * expression, so — unlike Kolon — there is no non-evaluator fallback here.
-   * A predicate the evaluator can't model surfaces `BF101`.
-   */
-  private _emitPredicateCallback(
-    call: PredicateCall,
-    arrayExpr: string,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const { method, param, predicate } = call
-
-    const evalFn: Record<string, [string, boolean?]> = {
-      filter: ['filter_eval'], every: ['every_eval'], some: ['some_eval'],
-      find: ['find_eval', true], findLast: ['find_eval', false],
-      findIndex: ['find_index_eval', true], findLastIndex: ['find_index_eval', false],
-    }
-    // `.filter(Boolean)` (identity predicate `_t => _t`) still needs the
-    // evaluator path on Twig (no lambda fallback) — the identity predicate
-    // serializes fine (`{"kind":"identifier","name":"_t"}`), so this isn't a
-    // special case here the way it is for Kolon's lambda form.
-    const spec = evalFn[method]
-    if (spec) {
-      const evalForm = renderPredicateEval(spec[0], arrayExpr, predicate, param, emit, spec[1])
-      if (evalForm !== null) return evalForm
-    }
-
-    this.ctx._recordExprBF101(
-      `'.${method}(...)' predicate is outside the Twig adapter's evaluable surface — Twig has no lambda-expression form to fall back to`,
-      `Rewrite the predicate as a pure expression the evaluator can serialize (no nested method-call callbacks), or move this position to a '/* @client */' boundary.`,
-    )
-    return "''"
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

@@ -288,7 +288,6 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  sortComparatorFromArrow,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
@@ -316,6 +315,8 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
+  lowerCallbackMethod,
+  emitCallbackEval,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -330,9 +331,9 @@ import {
   escapeBladeSingleQuoted,
   bladeLoopBindingAccessor,
 } from './lib/blade-naming.ts'
-import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToBlade } from './lib/static-value.ts'
-import { BladeFilterEmitter, BladeTopLevelEmitter, truthyTest } from './expr/emitters.ts'
+import { BladeFilterEmitter, BladeTopLevelEmitter, truthyTest, CALLBACK_LOWERING } from './expr/emitters.ts'
 import type { BladeEmitContext, BladeSpreadContext, BladeMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToBlade,
@@ -1115,20 +1116,16 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // helper runs once.
     let array = rawArray
     if (loop.sortComparator) {
-      // Evaluator-first (#2018 P3): serialize the comparator arrow body + emit
-      // `$bf->sort_eval`; fall back to the structured `$bf->sort` for a
-      // comparator the evaluator can't model (e.g. `localeCompare`). The
-      // comparator now arrives as an `IRLoopSort` carrying the generic
-      // `arrow` + its params.
-      const sort = loop.sortComparator
+      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
+      // the same as `.sort(cmp)` at an expression position: the evaluator,
+      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
+      // comparator the descriptor models, so the refusal arm is defensive; it
+      // keeps the array unsorted so the template stays valid.
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToBlade('', e)
-      const arrow = sort.arrow
-      const params =
-        arrow.kind === 'arrow' ? arrow.params : [sort.paramA, sort.paramB]
-      const structured = sortComparatorFromArrow(arrow)
-      array =
-        renderSortEval(rawArray, arrow.kind === 'arrow' ? arrow.body : arrow, params, sortEmit) ??
-        (structured !== null ? renderSortMethod(rawArray, structured) : rawArray)
+      const plan = lowerCallbackMethod('sort', loop.sortComparator.arrow, [], CALLBACK_LOWERING)
+      if (plan.kind === 'eval') array = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
+      else if (plan.kind === 'structured-sort') array = renderSortMethod(rawArray, plan.comparator)
+      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
     }
     const param = loop.param
     // Blade's `@foreach(array as item)` binds the item directly (with the
