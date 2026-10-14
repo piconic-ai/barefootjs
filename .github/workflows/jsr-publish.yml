@@ -63,9 +63,7 @@ jobs:
 
       # deno publish type-checks each package's src; packages that import an
       # npm dep directly (e.g. jsx → `typescript`) need it in node_modules.
-      # Frozen: a publish installs exactly the reviewed bun.lock, never a
-      # re-resolution of it.
-      - run: bun install --frozen-lockfile
+      - run: bun install
 
       - name: Publish to JSR
         # jsr-publish.ts now bounds each `deno publish` itself (it caps Deno's
