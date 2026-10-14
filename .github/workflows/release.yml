@@ -319,6 +319,9 @@ jobs:
         uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1
         with:
           ruby-version: '3.3'
+          # Ruby 3.3 ships RubyGems 3.5, whose `gem push` has no
+          # --attestation; 4.0 takes the sigstore bundle signed below.
+          rubygems: '4.0.22'
           bundler-cache: false
 
       - name: Authenticate with RubyGems
@@ -343,7 +346,14 @@ jobs:
           test -n "$gemspec"
           bundle exec ruby -Ilib -Itest -e 'Dir["test/**/*_test.rb"].sort.each { |f| require_relative f }'
           gem build "$gemspec"
-          gem push ./*.gem
+          gems=(*.gem)
+          test "${#gems[@]}" -eq 1
+          # Sigstore attestation of the gem, signed with this job's OIDC
+          # identity (the same mechanism as rubygems/release-gem, which runs
+          # `rake release` and would push a git tag this monorepo doesn't use).
+          # RubyGems.org shows and checks it against the trusted publisher.
+          gem exec sigstore-cli:0.2.3 sign "${gems[0]}" --bundle "${gems[0]}.sigstore.json"
+          gem push "${gems[0]}" --attestation "${gems[0]}.sigstore.json"
 
   crates-release:
     needs: release
