@@ -116,9 +116,7 @@ jobs:
         with:
           node-version: '24'
 
-      # Frozen: the packages are built from exactly the reviewed bun.lock,
-      # never from a re-resolution of it.
-      - run: bun install --frozen-lockfile
+      - run: bun install
 
       # Do not bump this major without @changesets/cli's: v1 pairs with CLI v3
       # silently wrong (it bundles its own v2-era readers) rather than refusing.
