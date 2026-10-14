@@ -92,8 +92,13 @@ import {
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
@@ -113,10 +118,6 @@ import { staticValueToKolon } from './lib/static-value.ts'
 import { XslateFilterEmitter, XslateTopLevelEmitter } from './expr/emitters.ts'
 import type { XslateEmitContext, XslateSpreadContext, XslateMemoContext } from './emit-context.ts'
 import {
-  hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-} from './analysis/component-tree.ts'
-import {
   conditionalSpreadToKolon,
   objectLiteralExprToKolonHashref,
 } from './spread/spread-codegen.ts'
@@ -125,11 +126,7 @@ import {
   generateDerivedMemoSeed,
   collectMemoKolonRenames,
 } from './memo/seed.ts'
-import {
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
-  collectStringValueNames,
-} from './props/prop-classes.ts'
+import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { XslateAdapterOptions } from './lib/types.ts'
 import type { XslateAdapterOptions } from './lib/types.ts'
@@ -361,7 +358,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Surface it loudly here. Suppressed when the caller guarantees that all
     // sibling templates are registered on the same instance at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Xslate'))
     }
 
     const templateBody = ir.root.type === 'if-statement'

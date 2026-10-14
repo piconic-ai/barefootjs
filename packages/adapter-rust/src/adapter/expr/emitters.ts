@@ -48,7 +48,8 @@
  *      entry point `_renderJinjaFilterExprPublic`.
  */
 
-import { groupBinaryOperand,
+import {
+  groupBinaryOperand,
   literalMemberIndex,
   type ParsedExprEmitter,
   type HigherOrderMethod,
@@ -66,12 +67,12 @@ import { groupBinaryOperand,
   queryHrefArgs,
   isValidHelperId,
   NULL_COERCING_ARITHMETIC_OPS,
+  isBooleanResultParsed,
 } from '@barefootjs/jsx'
 
 import type { JinjaEmitContext } from '../emit-context.ts'
 import { JINJA_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
 import { minijinjaIdent, escapeMinijinjaSingleQuoted, minijinjaHashKey, RESERVED_WORDS as MINIJINJA_KWARG_RESERVED } from '../lib/minijinja-naming.ts'
-import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
   renderSortMethod,

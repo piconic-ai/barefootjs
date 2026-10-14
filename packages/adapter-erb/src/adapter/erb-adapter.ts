@@ -105,8 +105,14 @@ import {
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
+import { isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -125,10 +131,6 @@ import { staticValueToRuby } from './lib/static-value.ts'
 import { ErbFilterEmitter, ErbTopLevelEmitter } from './expr/emitters.ts'
 import type { ErbEmitContext, ErbSpreadContext, ErbMemoContext } from './emit-context.ts'
 import {
-  hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-} from './analysis/component-tree.ts'
-import {
   conditionalSpreadToRuby,
   objectLiteralExprToRubyHash,
 } from './spread/spread-codegen.ts'
@@ -136,12 +138,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import {
-  collectProviderDataNames,
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
-  collectStringValueNames,
-} from './props/prop-classes.ts'
+import { collectProviderDataNames, collectStringValueNames } from './props/prop-classes.ts'
 
 export type { ErbAdapterOptions } from './lib/types.ts'
 import type { ErbAdapterOptions } from './lib/types.ts'
@@ -347,7 +344,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // guarantees that all sibling templates are registered on the same
     // template instance at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'ERB'))
     }
 
     const templateBody = ir.root.type === 'if-statement'

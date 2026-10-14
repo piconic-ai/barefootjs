@@ -61,7 +61,7 @@
  * Divergences beyond the syntax table above (all uniform, not per-fixture —
  * see the individual definition sites for the full rationale):
  *
- *   1. **JS truthiness** (`boolean-result.ts`, `expr/emitters.ts`'s
+ *   1. **JS truthiness** (`@barefootjs/jsx`'s `adapters/boolean-result.ts`, `expr/emitters.ts`'s
  *      `truthyTest`, this file's `convertConditionToTwig`). PHP's `''` /
  *      `'0'` / `0` / `[]` / `null` are falsy; JS's `'0'` and `[]`/`{}` are
  *      truthy. Every condition-TEST position (an `{% if %}` / `{% elseif %}`
@@ -215,8 +215,14 @@ import {
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  isExplicitStringCall,
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -229,10 +235,6 @@ import { staticValueToTwig } from './lib/static-value.ts'
 import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest } from './expr/emitters.ts'
 import type { TwigEmitContext, TwigSpreadContext, TwigMemoContext } from './emit-context.ts'
 import {
-  hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-} from './analysis/component-tree.ts'
-import {
   conditionalSpreadToTwig,
   objectLiteralExprToTwigDict,
 } from './spread/spread-codegen.ts'
@@ -240,11 +242,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import {
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
-  collectStringValueNames,
-} from './props/prop-classes.ts'
+import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { TwigAdapterOptions } from './lib/types.ts'
 import type { TwigAdapterOptions } from './lib/types.ts'
@@ -437,7 +435,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // Surface it loudly here. Suppressed when the caller guarantees that all
     // sibling templates are registered on the same instance at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Twig'))
     }
 
     const templateBody = ir.root.type === 'if-statement'
@@ -2130,7 +2128,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
    * runtime's `string()` helper's bool branch), so layering `bf.bool_str`
    * on top would run PHP truthiness over the ALREADY-STRINGIFIED text
    * instead of the original boolean. See `isExplicitStringCall`'s docstring
-   * in `boolean-result.ts` for the full double-wrap failure mode this
+   * in `@barefootjs/jsx`'s `adapters/boolean-result.ts` for the full double-wrap failure mode this
    * guards against.
    */
   private shouldBoolStr(expr: string, name: string): boolean {

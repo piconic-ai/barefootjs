@@ -122,7 +122,17 @@ export type { ParsedExprEmitter, LoweringEmitter, HigherOrderMethod, ArrayMethod
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
 export { filterCaptureCollisions } from './adapters/filter-capture-collisions.ts'
 export { templateNameCollisionErrors } from './adapters/template-name-collisions.ts'
-export { collectBooleanValueNames, isBooleanResultParsed, stringifyBooleanTernaryBranches } from './adapters/boolean-result.ts'
+export {
+  collectBooleanValueNames,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  isBooleanResultParsed,
+  isExplicitStringCall,
+  stringifyBooleanTernaryBranches,
+} from './adapters/boolean-result.ts'
+export { isBareStringLiteral, isLiteralIndex, isStringTypeInfo } from './adapters/literal-value.ts'
+export { collectBooleanTypedProps, collectNullableOptionalProps } from './adapters/prop-classes.ts'
+export { collectImportedLoopChildComponentErrors, hasClientInteractivity } from './adapters/component-tree.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {

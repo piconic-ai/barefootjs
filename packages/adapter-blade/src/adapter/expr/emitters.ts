@@ -82,7 +82,8 @@
  *      entry point `_renderBladeFilterExprPublic`.
  */
 
-import { groupBinaryOperand,
+import {
+  groupBinaryOperand,
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
@@ -99,12 +100,14 @@ import { groupBinaryOperand,
   type LoweringEmitter,
   type LoweringNode,
   queryHrefArgs,
-  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS } from '@barefootjs/jsx'
+  isValidHelperId,
+  NULL_COERCING_ARITHMETIC_OPS,
+  isBooleanResultParsed,
+} from '@barefootjs/jsx'
 
 import type { BladeEmitContext } from '../emit-context.ts'
 import { BLADE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
 import { bladeVar, escapeBladeSingleQuoted, bladeMemberAccess, bladeIndexAccess, bladeHashKey } from '../lib/blade-naming.ts'
-import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
   renderSortMethod,

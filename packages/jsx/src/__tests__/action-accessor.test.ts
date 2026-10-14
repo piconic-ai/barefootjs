@@ -20,14 +20,7 @@ import {
 import { parseExpression } from '../expression-parser.ts'
 import type { TemplatePositionRole } from '../template-position-walk.ts'
 import type { SignalInfo } from '../types.ts'
-import { isAriaBooleanAttr as bladeIsAriaBooleanAttr } from '../../../adapter-blade/src/adapter/boolean-result'
-import { isAriaBooleanAttr as erbIsAriaBooleanAttr } from '../../../adapter-erb/src/adapter/boolean-result'
-import { isAriaBooleanAttr as jinjaIsAriaBooleanAttr } from '../../../adapter-jinja/src/adapter/boolean-result'
-import { isAriaBooleanAttr as mojoIsAriaBooleanAttr } from '../../../adapter-mojolicious/src/adapter/boolean-result'
-import { isAriaBooleanAttr as pebbleIsAriaBooleanAttr } from '../../../adapter-pebble/src/adapter/boolean-result'
-import { isAriaBooleanAttr as rustIsAriaBooleanAttr } from '../../../adapter-rust/src/adapter/boolean-result'
-import { isAriaBooleanAttr as twigIsAriaBooleanAttr } from '../../../adapter-twig/src/adapter/boolean-result'
-import { isAriaBooleanAttr as xslateIsAriaBooleanAttr } from '../../../adapter-xslate/src/adapter/boolean-result'
+import { isAriaBooleanAttr } from '../adapters/boolean-result.ts'
 
 function factorySignal(action: string): Pick<SignalInfo, 'factory'> {
   return { factory: { kind: 'query', callee: 'createQuery', argsText: '', requestText: '', requestFreeIdentifiers: new Set(), action } }
@@ -145,22 +138,11 @@ describe('seedableActionAccessorRead — the one gate for the BF117 lift and the
 
 describe('ARIA_BOOLEAN_STATE_ATTRS agrees with every DSL adapter', () => {
   // The seed renders `aria-x={false}` as `aria-x="false"` (Hono's output) only
-  // where the adapter stringifies a boolean JS-style; outside its own
+  // where the adapter stringifies a boolean JS-style; outside the
   // `isAriaBooleanAttr` set, Mojolicious / Xslate render the literal as `0`.
   // Go renders `{{false}}` as `false` on every attribute, so it has no set.
-  const adapters: Array<[string, (name: string) => boolean]> = [
-    ['blade', bladeIsAriaBooleanAttr],
-    ['erb', erbIsAriaBooleanAttr],
-    ['jinja', jinjaIsAriaBooleanAttr],
-    ['mojolicious', mojoIsAriaBooleanAttr],
-    ['pebble', pebbleIsAriaBooleanAttr],
-    ['rust', rustIsAriaBooleanAttr],
-    ['twig', twigIsAriaBooleanAttr],
-    ['xslate', xslateIsAriaBooleanAttr],
-  ]
-  for (const [adapter, isAriaBooleanAttr] of adapters) {
-    test(`${adapter} stringifies every gated attribute as a boolean`, () => {
-      expect([...ARIA_BOOLEAN_STATE_ATTRS].filter((name) => !isAriaBooleanAttr(name))).toEqual([])
-    })
-  }
+  // Every DSL adapter imports the one shared `isAriaBooleanAttr` (#3475).
+  test('every gated attribute is stringified as a boolean', () => {
+    expect([...ARIA_BOOLEAN_STATE_ATTRS].filter((name) => !isAriaBooleanAttr(name))).toEqual([])
+  })
 })
