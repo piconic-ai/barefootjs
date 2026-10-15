@@ -12,7 +12,7 @@
 import {
   type ComponentIR,
   type ContextConsumer,
-  collectContextConsumers,
+  contextConsumerSeed,
   collectLoopBoundNames,
   computeSsrSeedPlan,
 } from '@barefootjs/jsx'
@@ -34,15 +34,9 @@ export function contextDefaultKolon(c: ContextConsumer): string {
  * provider value (or the `createContext` default). (#1297)
  */
 export function generateContextConsumerSeed(ir: ComponentIR): string {
-  const consumers = collectContextConsumers(ir.metadata)
-  if (consumers.length === 0) return ''
-  return (
-    consumers
-      .map(
-        c =>
-          `: my $${c.localName} = $bf.use_context('${c.contextName}', ${contextDefaultKolon(c)});`,
-      )
-      .join('\n') + '\n'
+  return contextConsumerSeed(
+    ir.metadata,
+    c => `: my $${c.localName} = $bf.use_context('${c.contextName}', ${contextDefaultKolon(c)});`,
   )
 }
 

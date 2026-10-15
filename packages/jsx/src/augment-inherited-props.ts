@@ -90,6 +90,18 @@ export function collectContextConsumers(metadata: IRMetadata): ContextConsumer[]
   return consumers
 }
 
+/**
+ * The SSR seed of a component's context consumers: one `line` per consumer,
+ * each binding the local to the active provider value (or the
+ * `createContext` default), newline-terminated; `''` when it consumes no
+ * context (#1297).
+ */
+export function contextConsumerSeed(metadata: IRMetadata, line: (consumer: ContextConsumer) => string): string {
+  const consumers = collectContextConsumers(metadata)
+  if (consumers.length === 0) return ''
+  return consumers.map(line).join('\n') + '\n'
+}
+
 /** Parse `useContext(Ident)` → `Ident`, else `null`. */
 function parseUseContextArg(source: string): string | null {
   const expr = parseSingleExpression(source)

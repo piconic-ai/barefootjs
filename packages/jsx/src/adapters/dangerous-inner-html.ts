@@ -243,3 +243,36 @@ export function dangerousInnerHtmlDiagnostic(
     },
   }
 }
+
+/**
+ * The children `element`'s `dangerouslySetInnerHTML` renders in place of
+ * its own, or `null` when it has none. A refusal is pushed onto `errors`
+ * and renders as `''`. `rawSink` writes a dynamic value through the
+ * adapter's raw-output sink; the runtime evaluates the expression, so no
+ * template-metachar guard applies, and the element already carries its
+ * hydration slot marker (#2319). A static literal is spliced as trusted
+ * template text after the `adapterId` metachar guard.
+ */
+export function renderDangerousInnerHtml(
+  element: IRElement,
+  errors: CompilerError[],
+  adapterId: string,
+  rawSink: (valueExpr: string, valueParsed: ParsedExpr, loc: SourceLocation) => string,
+): string | null {
+  const resolution = resolveDangerousInnerHtml(element)
+  if (!resolution) return null
+  if (resolution.kind === 'unlowerable') {
+    errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
+    return ''
+  }
+  if (resolution.kind === 'dynamic') {
+    return rawSink(resolution.valueExpr, resolution.valueParsed, resolution.loc)
+  }
+  const violation = dangerousInnerHtmlMetacharViolation(resolution.html, adapterId)
+  if (violation) {
+    const attr = element.attrs.find(isDangerousInnerHtmlAttr)!
+    errors.push(dangerousInnerHtmlDiagnostic(`{ __html: ${JSON.stringify(resolution.html)} }`, attr.loc, violation))
+    return ''
+  }
+  return resolution.html
+}

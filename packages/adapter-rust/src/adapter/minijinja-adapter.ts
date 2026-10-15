@@ -163,15 +163,10 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  isDangerousInnerHtmlAttr,
-  resolveDangerousInnerHtml,
-  dangerousInnerHtmlMetacharViolation,
-  dangerousInnerHtmlDiagnostic,
   childTemplateName,
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  unsupportedAttrExpression,
   planLoop,
   planSpreadAttr,
   planComponentProps,
@@ -196,10 +191,15 @@ import {
   collectNullableOptionalProps,
   emitCallbackEval,
   arithmeticOperandCoercion,
+  renderElementShell,
+  renderFragmentScope,
+  renderDangerousInnerHtml,
+  unsupportedAttrExpressionError,
+  type ElementShellSpelling,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
 import { JINJA_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -574,7 +574,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   }
 
   emitFragment(node: IRFragment, _ctx: JinjaRenderCtx, _emit: EmitIRNode<JinjaRenderCtx>): string {
-    return this.renderFragment(node)
+    return renderFragmentScope(node, children => this.renderChildren(children), rendered => this.wrapComponentRootScopeComment(rendered))
   }
 
   emitSlot(node: IRSlot): string {
@@ -661,77 +661,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   // ===========================================================================
 
   renderElement(element: IRElement): string {
-    const tag = element.tag
-    const attrs = this.renderAttributes(element)
-    const dangerousHtml = this.renderDangerousInnerHtml(element)
-    const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
-
-    let hydrationAttrs = ''
-    if (element.needsScope) {
-      hydrationAttrs += ` ${this.renderScopeMarker('')}`
-    }
-    // #2753: `element.keyAttr` is the ONE IR-resolved decision for this
-    // element's row-key attribute — replacing both the `carriesDataKey`
-    // boolean and this adapter's own `rootScopeNodes`/`needsScope` check
-    // (mechanism 2: a render-root relay, including the #2732 fragment-root
-    // case) and the separate `currentLoopKeyDepth`-driven rewrite of a
-    // literal `key` attribute this adapter used to do in `renderAttributes`
-    // (mechanism 1: a `.map()` row root compiled inline here).
-    if (element.keyAttr) {
-      if (element.keyAttr.value !== undefined) {
-        const lowered = emitAttrValue(
-          { kind: 'expression', expr: element.keyAttr.value },
-          this.elementAttrEmitter,
-          element.keyAttr.name,
-        )
-        if (lowered) hydrationAttrs += ` ${lowered}`
-      } else {
-        // Relay: this element is one of THIS component's own render roots,
-        // carrying whatever key its OWN caller supplies at runtime (the `bf`
-        // instance's `data_key` field) when this component is itself
-        // invoked as a caller's keyed loop row. Mirrors Hono stamping
-        // data-key on each loop item's root, including early-return
-        // (if-statement) roots (#1297), and #2732's fragment-root case.
-        hydrationAttrs += ` {{ bf.data_key_attr() | safe }}`
-      }
-    }
-    if (element.slotId) {
-      hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
-    }
-    // Page-lifecycle boundary lowered from `<Region>` (spec/router.md). The id
-    // is a deterministic static string (`<file scope>:<index>`), so it emits as
-    // a plain literal attribute — no Jinja template tag.
-    if (element.regionId) {
-      hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
-    }
-    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
-    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) — the overlay/content
-    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
-    // this element's own tag, matching exactly what the client
-    // `createPortal(el, document.body, { ownerScope })` stamps onto the
-    // SAME element at hydrate time (`packages/client/src/runtime/
-    // portal.ts`), mirroring the Hono reference adapter's identical
-    // `BF_PORTAL_OWNER` stamp. The element itself is then routed through
-    // `wrapSsrPortalElement` below instead of returned for inline
-    // placement, so it renders at the `bf.portals()` outlet the app's own
-    // layout places near `</body>` — see that method's docstring.
-    if (element.ssrPortalOwnerScope) {
-      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{ bf.scope_attr() }}"`
-    }
-
-    const voidElements = [
-      'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-      'link', 'meta', 'param', 'source', 'track', 'wbr',
-    ]
-
-    const rendered = voidElements.includes(tag.toLowerCase())
-      ? `<${tag}${attrs}${hydrationAttrs}>`
-      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
-
-    if (element.ssrPortalOwnerScope) {
-      return this.wrapSsrPortalElement(rendered)
-    }
-    return rendered
+    return renderElementShell(element, this.elementShell)
   }
 
   /**
@@ -756,35 +686,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     const captureName = `bf_po_${this.childrenCaptureCounter++}`
     const sinkName = `bf_po_sink_${this.childrenCaptureCounter++}`
     return `{% set ${captureName} %}${rendered}{% endset %}{% set ${sinkName} = bf.register_portal_element(${captureName}) %}`
-  }
-
-  /**
-   * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — see the Blade
-   * adapter's identical helper for the full rationale. `null` means the
-   * attribute is absent (caller falls through to normal `renderChildren`);
-   * a non-`null` string (possibly `''`) replaces the children outright.
-   */
-  private renderDangerousInnerHtml(element: IRElement): string | null {
-    const resolution = resolveDangerousInnerHtml(element)
-    if (!resolution) return null
-    if (resolution.kind === 'unlowerable') {
-      this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
-      return ''
-    }
-    if (resolution.kind === 'dynamic') {
-      // Lower the `__html` expression and emit it through MiniJinja's `| safe`
-      // filter, which suppresses autoescape for this one value. The runtime
-      // evaluates the expression, so no template-metachar guard applies; the
-      // element already carries its hydration slot marker. #2319.
-      return `{{ ${this.convertExpressionToJinja(resolution.valueExpr, resolution.valueParsed)} | safe }}`
-    }
-    const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
-    if (violation) {
-      const attr = element.attrs.find(isDangerousInnerHtmlAttr)!
-      this.errors.push(dangerousInnerHtmlDiagnostic(`{ __html: ${JSON.stringify(resolution.html)} }`, attr.loc, violation))
-      return ''
-    }
-    return resolution.html
   }
 
   // ===========================================================================
@@ -873,13 +774,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     }
 
     return result
-  }
-
-  private renderNodeOrNull(node: IRNode): string | null {
-    if (node.type === 'expression' && (node.expr === 'null' || node.expr === 'undefined')) {
-      return null
-    }
-    return this.renderNode(node)
   }
 
   /**
@@ -1366,17 +1260,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   // Fragment & Slot Rendering
   // ===========================================================================
 
-  private renderFragment(fragment: IRFragment): string {
-    const children = this.renderChildren(fragment.children)
-    if (fragment.needsScopeComment) {
-      // End marker bounds the scope's sibling range -- without it, queries
-      // from the fragment scope leak onto later siblings owned by the
-      // parent (#2289).
-      return this.wrapComponentRootScopeComment(children)
-    }
-    return children
-  }
-
   /**
    * Wrap already-rendered output in the comment-based scope marker pair.
    * Shared by a `needsScopeComment` fragment root and a `needsScopeComment`
@@ -1511,6 +1394,25 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     emitJsxChildren: () => '',
   }
 
+  /** How this adapter spells the parts of an element `renderElementShell` writes. */
+  private readonly elementShell: ElementShellSpelling = {
+    attrEmitter: this.elementAttrEmitter,
+    renderDangerousInnerHtml: element =>
+      renderDangerousInnerHtml(element, this.errors, this.name, (expr, parsed) =>
+        // Lower the `__html` expression and emit it through MiniJinja's `| safe`
+        // filter, which suppresses autoescape for this one value. The runtime
+        // evaluates the expression, so no template-metachar guard applies; the
+        // element already carries its hydration slot marker. #2319.
+        `{{ ${this.convertExpressionToJinja(expr, parsed)} | safe }}`,
+      ),
+    renderChildren: children => this.renderChildren(children),
+    renderScopeMarker: instanceIdExpr => this.renderScopeMarker(instanceIdExpr),
+    renderSlotMarker: slotId => this.renderSlotMarker(slotId),
+    dataKeyRelay: `{{ bf.data_key_attr() | safe }}`,
+    scopeIdValue: `{{ bf.scope_attr() }}`,
+    wrapSsrPortalElement: rendered => this.wrapSsrPortalElement(rendered),
+  }
+
   /**
    * Lower a `style={{ … }}` object literal to a `bf.style_object(...)` call,
    * e.g. `{ backgroundColor: color }` → `{{ bf.style_object("background-color",
@@ -1532,39 +1434,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       e.kind === 'literal' ? JSON.stringify(e.value) : this.convertExpressionToJinja(e.expr),
     ])
     return `{{ bf.style_object(${args.join(', ')}) }}`
-  }
-
-  private renderAttributes(element: IRElement): string {
-    const parts: string[] = []
-
-    for (const attr of element.attrs) {
-      // `/* @client */` attribute bindings are deferred to hydrate: the
-      // client runtime sets/patches the attribute in a mount effect (the
-      // CSR template omits it; ir-to-client-js emits the setAttribute
-      // effect). Skip SSR emission so the server omits the attribute and
-      // the unsupported-expression lowering is never reached for a deferred
-      // predicate (no BF101 / BF102). #1966
-      if (attr.clientOnly) continue
-      // `dangerouslySetInnerHTML` never renders as an HTML attribute — it's
-      // handled by `renderDangerousInnerHtml` instead, which replaces the
-      // element's children. Skip it here so its `{ __html: ... }` object
-      // literal never reaches the generic object-literal BF101 refusal
-      // (which would double-report alongside the purpose-built one).
-      if (isDangerousInnerHtmlAttr(attr)) continue
-      // `key` never renders as a literal HTML attribute — #2753 resolves it
-      // onto `element.keyAttr` (name AND value) at IR-build time, emitted
-      // separately in `renderElement`. A stray `key` that jsx-to-ir.ts did
-      // NOT recognize as a loop row root (so `keyAttr` was never set) has no
-      // defined rendering outside a `.map()` anyway; drop it rather than
-      // leak an invalid `key="..."` HTML attribute.
-      if (attr.name === 'key') continue
-      // Rewrite JSX special-prop names to their HTML-attribute counterparts.
-      const attrName = attr.name === 'className' ? 'class' : attr.name
-      const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attrName)
-      if (lowered) parts.push(lowered)
-    }
-
-    return parts.length > 0 ? ' ' + parts.join(' ') : ''
   }
 
   // ===========================================================================
@@ -1686,19 +1555,9 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * when the shape was rejected (caller should drop the attribute).
    */
   private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    const refusal = unsupportedAttrExpression(expr, this._loweringMatchers)
-    if (!refusal) return false
-    const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
-    this.errors.push({
-      code: 'BF101',
-      severity: 'error',
-      message: `Expression not supported on attribute '${attrName}': ${expr.trim()}${reasonLine}`,
-      loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-      suggestion: {
-        message: 'The Jinja adapter cannot lower JS object literals or tagged-template-literal expressions into Jinja. Move the expression into a `\'use client\'` component (so hydration computes it), or expand it into discrete attributes whose values are values the adapter can lower.',
-      },
-    })
-    return true
+    const error = unsupportedAttrExpressionError(expr, attrName, this._loweringMatchers, this.componentName, 'Jinja', 'Jinja')
+    if (error) this.errors.push(error)
+    return error !== null
   }
 
   /**

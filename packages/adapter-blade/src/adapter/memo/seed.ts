@@ -29,7 +29,7 @@
 import {
   type ComponentIR,
   type ContextConsumer,
-  collectContextConsumers,
+  contextConsumerSeed,
   computeSsrSeedPlan,
   materializeGetterCalls,
 } from '@barefootjs/jsx'
@@ -53,15 +53,9 @@ export function contextDefaultBlade(c: ContextConsumer): string {
  * value (or the `createContext` default). (#1297)
  */
 export function generateContextConsumerSeed(ir: ComponentIR): string {
-  const consumers = collectContextConsumers(ir.metadata)
-  if (consumers.length === 0) return ''
-  return (
-    consumers
-      .map(
-        c =>
-          `@php(${bladeVar(c.localName)} = $bf->use_context('${c.contextName}', ${contextDefaultBlade(c)}))`,
-      )
-      .join('\n') + '\n'
+  return contextConsumerSeed(
+    ir.metadata,
+    c => `@php(${bladeVar(c.localName)} = $bf->use_context('${c.contextName}', ${contextDefaultBlade(c)}))`,
   )
 }
 

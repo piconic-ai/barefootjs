@@ -13,7 +13,7 @@
 import {
   type ComponentIR,
   type ContextConsumer,
-  collectContextConsumers,
+  contextConsumerSeed,
   computeSsrSeedPlan,
 } from '@barefootjs/jsx'
 
@@ -35,15 +35,9 @@ export function contextDefaultRuby(c: ContextConsumer): string {
  * provider value (or the `createContext` default).
  */
 export function generateContextConsumerSeed(ir: ComponentIR): string {
-  const consumers = collectContextConsumers(ir.metadata)
-  if (consumers.length === 0) return ''
-  return (
-    consumers
-      .map(
-        c =>
-          `<% v[:${c.localName}] = bf.use_context('${c.contextName}', ${contextDefaultRuby(c)}) %>`,
-      )
-      .join('\n') + '\n'
+  return contextConsumerSeed(
+    ir.metadata,
+    c => `<% v[:${c.localName}] = bf.use_context('${c.contextName}', ${contextDefaultRuby(c)}) %>`,
   )
 }
 
