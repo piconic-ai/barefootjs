@@ -1,5 +1,33 @@
 # @barefootjs/jsx
 
+## 0.39.6
+
+### Patch Changes
+
+- 4058a10: The DSL template adapters lower array and string methods (`join`, `slice`, `padStart`, …) through one shared catalogue, `ARRAY_METHOD_CATALOGUE` in `@barefootjs/jsx`, and only spell the runtime helper call. Compiled templates are unchanged.
+- 7745080: The DSL adapters plan an intrinsic element's attribute through one shared decision in `@barefootjs/jsx` (`planAttrExpression`, `planSpreadAttr`). The compiled templates are unchanged.
+- 722fb34: A template expression whose `.map` / `.filter` / `.reduce` (or other higher-order) callback reads its index or array parameter, such as `items.map((x, i) => i)`, now fails with BF101 on the DSL adapters. Before, the index was read from an unrelated template variable of the same name, or left undefined. Add `/* @client */` to evaluate it on the client. A `.map` / `.filter` nested inside another callback keeps its index where the runtime evaluator runs that callback (`rows.map(r => r.map((x, i) => i).join(','))`).
+  
+  The DSL adapters lower higher-order callbacks through one shared chain in `@barefootjs/jsx` (`lowerCallbackMethod`). Its BF101 messages now read the same on every adapter apart from the adapter's name. ERB and Mojolicious used different wording, and the Rust adapter called itself "Jinja".
+- 7a2efb0: The ERB and Mojolicious adapters now forward `{...props}` onto a child component (`<Child {...props} tone="x" />`). Before, they dropped the spread, because their templates hold no `props` value. On every DSL adapter, a prop that both the spread and an explicit prop set is now passed once.
+  
+  The DSL adapters assemble a child component's props through one shared plan in `@barefootjs/jsx` (`planComponentProps`).
+- 6b8c031: A delegated loop-row event now reaches its handler when the row item is falsy (`0`, `''`, `false`). The compiled lookup guarded the handler on the item's truthiness; it now tests for a missed lookup (`undefined`) only.
+- 84fd851: `isBooleanTypedPropRef`, `parseUndefinedAlternateTernary`, the child-template naming (`childTemplateName`) and the unsupported-attribute gate (`unsupportedAttrExpression`) live once in `@barefootjs/jsx` instead of in each DSL adapter. The compiled templates are unchanged.
+- 6a5cc5b: The DSL adapters decide a loop's destructure gate, static source, computed-const refusal, sort lowering and filter-capture aliases through one shared plan in `@barefootjs/jsx` (`planLoop`). The compiled templates are unchanged.
+- fb45d18: A parenthesized computed-const loop source (`(entries).map(…)`) is refused with BF101 like the bare one. The computed-const gate now reads the loop source from its parsed tree, so the parentheses no longer hide the const, and Go Template and ERB stop compiling a loop over a variable the template never binds. The BF101 message names the const rather than the source text.
+- 30e209f: Arithmetic over a `null` operand renders like JavaScript on every DSL adapter: `null + 1` is `1`. The Jinja, MiniJinja and ERB templates raised on a nil operand under `+`, and on any prop declared `number | null` or optional, instead of reading it as `0`. The DSL adapters now take that decision from one place in `@barefootjs/jsx` (`arithmeticOperandCoercion`).
+- bce54f2: Only treat an optional `boolean` prop as always-boolean when its destructure default is itself proven boolean, so `{ on = undefined }` keeps rendering `undefined` (not `false`) on the Perl adapters when stringified.
+- 4bb31ff: An optional-chained method call (`props.n?.toFixed(2)`, `props.s?.toUpperCase()`) on an absent value now renders empty on every adapter, alone and under a `??` fallback. A present `0` or `''` still calls the method, and `''` survives the `??`.
+  
+  - The parser lowers the call to a `recv === null || recv === undefined ? undefined : recv.m(...)` guard.
+  - Mojolicious emits `x === null` / `x === undefined` as `!defined(x)`; the numeric `== undef` it emitted before also matched `0`.
+  - Twig tests a conditional left operand of `??` with `is null`, because its native `??` only accepts a variable.
+  - Go: an optional prop that is the receiver of such a call becomes nillable, an equality against `undefined` lowers to a nil test, the guard under `??` goes through `bf_nullish`, and a `.toFixed()` receiver written `props.x` is typed `float64`. The runtime's string helpers (`bf_upper`, `bf_trim`, …) accept any receiver, because a template pipeline also evaluates the discarded branch on a nil receiver.
+- c3bb5b9: A stringified `&&` / `||` whose operands are each a name declared `boolean` (a prop, signal or memo) or a boolean-shaped expression (`String(props.on && !props.off)`, `` `${props.off || props.on === true}` ``) now prints `true` / `false` on Mojolicious and Xslate instead of the native `1` Perl's last evaluated operand carries. `isBooleanResultParsed` takes an optional declared-`boolean` lookup, and the new `collectBooleanValueNames` builds it from a component's metadata; an operand that is not boolean (`props.name || 'x'`) keeps its value.
+- c0bd32e: The DSL template adapters share one copy of their boolean-result, literal-value, prop-class and component-tree helpers, now exported from `@barefootjs/jsx`. Compiled templates and diagnostics are unchanged.
+- @barefootjs/shared@0.39.6
+
 ## 0.39.5
 
 ### Patch Changes
