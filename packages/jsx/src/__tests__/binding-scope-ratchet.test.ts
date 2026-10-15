@@ -102,12 +102,6 @@ type Pattern = (typeof PATTERNS)[number]
  * ===============================================================================
  */
 const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
-  // FLOOR (shape 1, already guarded): `expandDynamicPropValue`'s
-  // `this.scope`-mirroring shadow guard (`erb-adapter.ts`'s own
-  // `!this.scope.isBound(trimmed)` check, #2489) precedes this `.find(` —
-  // the lookup itself is the legitimate const-resolution step once the
-  // shadow question is already answered by `scope`.
-  'packages/adapter-erb/src/adapter/erb-adapter.ts': { 'localConstants.find(': 1 },
   // FLOOR (shape 2/3 boundary): `inlineLocalHelperCall` resolves a call's
   // CALLEE name against module/component consts to inline a local
   // arrow-helper's body (`sortClass(k)` → its substituted expression) — a
@@ -168,12 +162,12 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // FLOOR (shape 1): `packageModuleConst` — same `NewXxxProps` ctor-context
   // bucket as `ctor-lowering.ts`.
   'packages/adapter-go-template/src/adapter/memo/memo-value.ts': { 'localConstants.find(': 1 },
-  // FLOOR (shape 1, already guarded): same `this.scope.isBound(trimmed)`
-  // shadow guard as `erb-adapter.ts` (#2221 — `resolveLiteralConst` /
-  // `resolveStaticRecordLiteral`'s established pattern).
-  'packages/adapter-mojolicious/src/adapter/mojo-adapter.ts': {
-    'localConstants.find(': 1,
-  },
+  // FLOOR (shape 1, already guarded): `planSpreadAttr`'s spread-const
+  // resolution (#3478, moved out of the ERB and Mojolicious adapters). The
+  // `ctx.isBound(name)` shadow guard (#2489, the caller's `this.scope`)
+  // precedes this `.find(` — the lookup itself is the const-resolution step
+  // once `scope` has answered the shadow question.
+  'packages/jsx/src/adapters/attr-plan.ts': { 'localConstants.find(': 1 },
   // FLOOR (shape 2): `generateSignalInitializers`'s reachability analysis
   // for SSR no-op initializer dead-code elimination — module/component-level
   // declaration reachability, unrelated to loop-row shadowing entirely.
