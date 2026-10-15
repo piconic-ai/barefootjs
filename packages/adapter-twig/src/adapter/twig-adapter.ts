@@ -939,6 +939,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       localConstants: this.localConstants ?? [],
       resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToTwig,
     })
     const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
@@ -989,11 +990,10 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // conservative refusal, not a silent wrong value). Canonical,
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
-    const staticItems = loopPlan.staticItems
-    const staticArray = staticItems !== null ? staticValueToTwig(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
     const arrayName = loop.array.trim()
-    const arrayConst = staticArray === null ? loopPlan.unresolvableConst : null
+    const arrayConst = loopPlan.unresolvableConst
     if (arrayConst) {
       this.errors.push({
         code: 'BF101',

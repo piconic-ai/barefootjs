@@ -985,6 +985,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       localConstants: this.localConstants ?? [],
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToPerl,
     })
     const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
@@ -1030,11 +1031,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // this identifier (fable review) — reuses the same threaded,
     // position-accurate `this.scope` `resolveModuleStringConst` already
     // consults for this hazard class (#1749/#2482 Stage 2).
-    const staticItems = loopPlan.staticItems
-    const staticArray = staticItems !== null ? staticValueToPerl(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
     const arrayName = loop.array.trim()
-    const arrayConst = staticArray === null ? loopPlan.unresolvableConst : null
+    const arrayConst = loopPlan.unresolvableConst
     if (arrayConst) {
       this.errors.push({
         code: 'BF101',

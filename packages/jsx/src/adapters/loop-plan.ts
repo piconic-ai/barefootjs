@@ -20,28 +20,32 @@ import { filterCaptureCollisions } from './filter-capture-collisions.ts'
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
 
-export interface LoopPlanContext {
+export interface LoopPlanContext<Spelled> {
   /** The scope outside the loop. */
   scope: BindingScope
   localConstants: readonly ConstantInfo[]
   /** The adapter's literal-const resolution: a literal const inlines at its use site. */
   resolveLiteralConst(name: string): unknown
   callbackLowering: CallbackLoweringOptions
+  /** The adapter's spelling of a static source's items, or `null` when the backend cannot represent one. */
+  spellStatic(items: unknown[]): Spelled | null
 }
 
-export interface LoopPlan {
+export interface LoopPlan<Spelled> {
   /**
    * The loop param's destructure pattern: none, one the adapter lowers to
    * per-binding accessors, or one no template binds (BF104).
    */
   destructure: 'none' | 'lowerable' | 'unlowerable'
-  /** The source's items when it is an inline literal or an unshadowed static const. */
-  staticItems: unknown[] | null
   /**
-   * The const the source names when no template binds it as a literal. The
-   * adapter refuses the loop with BF101 unless it spells the source
-   * statically (`staticItems`, which a backend may not represent). A loop
-   * binding that shadows the name is the row's value, not the const (#3473).
+   * The source spelled as a template literal, when it is an inline literal or
+   * an unshadowed static const whose items the backend can represent.
+   */
+  staticSource: Spelled | null
+  /**
+   * The const the source names when it is not spelled statically and no
+   * template binds it as a literal (BF101). A loop binding that shadows the
+   * name is the row's value, not the const (#3473).
    */
   unresolvableConst: ConstantInfo | null
   /** The `.sort` / `.toSorted` comparator's lowering, or `null` without one. */
@@ -51,25 +55,26 @@ export interface LoopPlan {
 }
 
 /** Plan a loop against the scope outside it. */
-export function planLoop(loop: IRLoop, ctx: LoopPlanContext): LoopPlan {
+export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): LoopPlan<Spelled> {
   const staticItems = resolveStaticLoopSource(loop.arrayParsed, ctx.localConstants, {
     isNameShadowed: ctx.scope.asShadowPredicate(),
   })
+  const staticSource = staticItems !== null ? ctx.spellStatic(staticItems) : null
   return {
     destructure: destructureKind(loop),
-    staticItems,
-    unresolvableConst: unresolvableConst(loop.array.trim(), ctx),
+    staticSource,
+    unresolvableConst: staticSource === null ? unresolvableConst(loop.array.trim(), ctx) : null,
     sort: loop.sortComparator ? lowerCallbackMethod('sort', loop.sortComparator.arrow, [], ctx.callbackLowering) : null,
     captureAliases: filterCaptureCollisions(loop).map((name) => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` })),
   }
 }
 
-function destructureKind(loop: IRLoop): LoopPlan['destructure'] {
+function destructureKind(loop: IRLoop): LoopPlan<unknown>['destructure'] {
   if (!loop.paramBindings || loop.paramBindings.length === 0) return 'none'
   return isLowerableLoopDestructure(loop) ? 'lowerable' : 'unlowerable'
 }
 
-function unresolvableConst(name: string, ctx: LoopPlanContext): ConstantInfo | null {
+function unresolvableConst(name: string, ctx: LoopPlanContext<unknown>): ConstantInfo | null {
   if (!IDENTIFIER.test(name) || ctx.scope.isBound(name)) return null
   const constant = ctx.localConstants.find((c) => c.name === name)
   return constant && ctx.resolveLiteralConst(name) === null ? constant : null

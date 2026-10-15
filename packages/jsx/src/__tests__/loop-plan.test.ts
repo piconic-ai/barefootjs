@@ -24,7 +24,7 @@ function firstLoop(node: IRNode | null): IRLoop {
   return loop
 }
 
-function plan(source: string, overrides: Partial<LoopPlanContext> = {}) {
+function plan(source: string, overrides: Partial<LoopPlanContext<unknown[]>> = {}) {
   const ctx = analyzeComponent(source, 'Test.tsx')
   const loop = firstLoop(jsxToIR(ctx))
   const literals = new Set(['LIMITS'])
@@ -33,6 +33,7 @@ function plan(source: string, overrides: Partial<LoopPlanContext> = {}) {
     localConstants: ctx.localConstants,
     resolveLiteralConst: (name) => (literals.has(name) ? name : null),
     callbackLowering: { adapterName: 'Test' },
+    spellStatic: (items) => items,
     ...overrides,
   })
 }
@@ -41,15 +42,26 @@ describe('planLoop', () => {
   test('a plain loop: no destructure, no static source, no sort, no captures', () => {
     expect(plan(`export function Test(props: { items: string[] }) { return <ul>{props.items.map(x => <li key={x}>{x}</li>)}</ul> }`)).toEqual({
       destructure: 'none',
-      staticItems: null,
+      staticSource: null,
       unresolvableConst: null,
       sort: null,
       captureAliases: [],
     })
   })
 
-  test('an inline literal source is static', () => {
-    expect(plan(`export function Test() { return <ul>{['a', 'b'].map(x => <li key={x}>{x}</li>)}</ul> }`).staticItems).toEqual(['a', 'b'])
+  test('an inline literal source is spelled statically', () => {
+    expect(plan(`export function Test() { return <ul>{['a', 'b'].map(x => <li key={x}>{x}</li>)}</ul> }`).staticSource).toEqual(['a', 'b'])
+  })
+
+  test('a static const source the backend cannot spell is BF101 instead', () => {
+    const source = `export function Test() {
+      const items = [{ id: 1, on: true }]
+      return <ul>{items.map(x => <li key={x.id}>{String(x.on)}</li>)}</ul>
+    }`
+    expect(plan(source)).toMatchObject({ staticSource: [{ id: 1, on: true }], unresolvableConst: null })
+    const perl = plan(source, { spellStatic: (items) => (JSON.stringify(items).includes('true') ? null : items) })
+    expect(perl.staticSource).toBeNull()
+    expect(perl.unresolvableConst?.name).toBe('items')
   })
 
   test('a computed const source no template binds is BF101, unless a loop binding shadows it', () => {

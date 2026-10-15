@@ -1025,6 +1025,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       localConstants: this.localConstants ?? [],
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToRuby,
     })
     const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
@@ -1071,10 +1072,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // check now also does deliberately, up front, for both shapes.
     // Canonical, position-accurate predicate (#2482 Stage 2) — the
     // enclosing loop scope's own membership.
-    const staticItems = loopPlan.staticItems
-    const staticArray = staticItems !== null ? staticValueToRuby(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
-    if (staticArray === null && loopPlan.unresolvableConst) {
+    if (loopPlan.unresolvableConst) {
       const arrayName = loopPlan.unresolvableConst.name
       this._recordExprBF101(
         `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,

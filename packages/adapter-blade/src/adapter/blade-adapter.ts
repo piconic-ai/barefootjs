@@ -1042,6 +1042,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       localConstants: this.localConstants ?? [],
       resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToBlade,
     })
     const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
@@ -1092,11 +1093,10 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // conservative refusal, not a silent wrong value). Canonical,
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
-    const staticItems = loopPlan.staticItems
-    const staticArray = staticItems !== null ? staticValueToBlade(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
     const arrayName = loop.array.trim()
-    const arrayConst = staticArray === null ? loopPlan.unresolvableConst : null
+    const arrayConst = loopPlan.unresolvableConst
     if (arrayConst) {
       this.errors.push({
         code: 'BF101',
