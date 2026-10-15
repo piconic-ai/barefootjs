@@ -4782,9 +4782,7 @@
         "identifier",
         "member"
       ],
-      "axes": [
-        "member:computed"
-      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",
