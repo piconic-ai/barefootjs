@@ -3614,6 +3614,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3804,6 +3810,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3979,6 +3991,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -4220,6 +4238,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4407,6 +4431,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -4600,6 +4630,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4775,6 +4811,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -4968,6 +5010,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5155,6 +5203,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -5632,6 +5686,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5870,6 +5930,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6093,6 +6159,12 @@
               "fixture": "component-spread-rest",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -6394,6 +6466,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6629,6 +6707,12 @@
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -6870,6 +6954,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7093,6 +7183,12 @@
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -7334,6 +7430,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7569,6 +7671,12 @@
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -9695,6 +9803,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9891,6 +10005,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10072,6 +10192,12 @@
               "fixture": "component-spread-rest",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -10313,6 +10439,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10506,6 +10638,12 @@
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -10705,6 +10843,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10886,6 +11030,12 @@
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -11085,6 +11235,12 @@
               ]
             },
             {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11278,6 +11434,12 @@
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "computed-const-loop-source-parenthesized",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {

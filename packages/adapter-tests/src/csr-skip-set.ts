@@ -31,6 +31,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // `module-const-loop-source-child-component` (the fully-static-literal
   // shapes #2946 fixed) are NOT skipped here — those inline fine.
   'module-const-loop-source-computed',
+  // #3473: the same function-scope computed const as `static-array-from-props`,
+  // parenthesized; the template array is `[]` there too.
+  'computed-const-loop-source-parenthesized',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',

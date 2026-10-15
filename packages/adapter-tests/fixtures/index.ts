@@ -677,6 +677,9 @@ import { fixture as nestedLoopTailContent } from './nested-loop-tail-content'
 import { fixture as loopParamShadowsBoolProp } from './loop-param-shadows-bool-prop'
 import { fixture as loopParamShadowsSpreadConst } from './loop-param-shadows-spread-const'
 import { fixture as loopParamShadowsArrayConst } from './loop-param-shadows-array-const'
+import { fixture as computedConstLoopSourceParenthesized } from './computed-const-loop-source-parenthesized'
+import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './computed-const-loop-source-parenthesized-precomputed'
+import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateClientRevival } from './date-client-revival'
 import { fixture as dateClientCatalogued } from './date-client-catalogued'
@@ -1466,6 +1469,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsBoolProp,
   loopParamShadowsSpreadConst,
   loopParamShadowsArrayConst,
+  computedConstLoopSourceParenthesized,
+  computedConstLoopSourceParenthesizedPrecomputed,
+  computedConstLoopSourceParenthesizedClient,
   dateMethodUncatalogued,
   dateClientRevival,
   dateClientCatalogued,

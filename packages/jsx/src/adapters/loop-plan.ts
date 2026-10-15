@@ -11,14 +11,13 @@
  * emits them in.
  */
 
+import { parseExpression } from '../expression-parser.ts'
 import { isLowerableLoopDestructure } from '../loop-destructure.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveStaticLoopSource } from '../static-literal.ts'
 import type { ConstantInfo, IRLoop } from '../types.ts'
 import { type CallbackLoweringOptions, type CallbackPlan, lowerCallbackMethod } from './callback-method.ts'
 import { filterCaptureCollisions } from './filter-capture-collisions.ts'
-
-const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
 
 export interface LoopPlanContext<Spelled> {
   /** The scope outside the loop. */
@@ -63,7 +62,7 @@ export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): 
   return {
     destructure: destructureKind(loop),
     staticSource,
-    unresolvableConst: staticSource === null ? unresolvableConst(loop.array.trim(), ctx) : null,
+    unresolvableConst: staticSource === null ? unresolvableConst(loop, ctx) : null,
     sort: loop.sortComparator ? lowerCallbackMethod('sort', loop.sortComparator.arrow, [], ctx.callbackLowering) : null,
     captureAliases: filterCaptureCollisions(loop).map((name) => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` })),
   }
@@ -74,8 +73,16 @@ function destructureKind(loop: IRLoop): LoopPlan<unknown>['destructure'] {
   return isLowerableLoopDestructure(loop) ? 'lowerable' : 'unlowerable'
 }
 
-function unresolvableConst(name: string, ctx: LoopPlanContext<unknown>): ConstantInfo | null {
-  if (!IDENTIFIER.test(name) || ctx.scope.isBound(name)) return null
+/**
+ * The source is read from its parsed tree, which unwraps parentheses: the
+ * raw text of `(entries).map(…)` is no bare identifier, yet it names the
+ * same const.
+ */
+function unresolvableConst(loop: IRLoop, ctx: LoopPlanContext<unknown>): ConstantInfo | null {
+  const source = loop.arrayParsed ?? parseExpression(loop.array.trim())
+  if (source?.kind !== 'identifier') return null
+  const name = source.name
+  if (ctx.scope.isBound(name)) return null
   const constant = ctx.localConstants.find((c) => c.name === name)
   return constant && ctx.resolveLiteralConst(name) === null ? constant : null
 }

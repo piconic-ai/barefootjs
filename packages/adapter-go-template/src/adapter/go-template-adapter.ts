@@ -9259,6 +9259,41 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return result
   }
 
+  /**
+   * BF101 for a loop over a computed const no template binds. The source is
+   * read from its parsed tree, which unwraps parentheses: `(items).map(…)`
+   * names the same const as `items.map(…)` (#3473).
+   */
+  private refuseComputedConstLoopSource(loop: IRLoop): void {
+    const arraySource = loop.arrayParsed ?? parseExpression(loop.array.trim())
+    const arrayName = arraySource.kind === 'identifier' ? arraySource.name : null
+    // #2482 Stage 4: guard against an ENCLOSING loop's own item param
+    // shadowing a same-named module/component const (`items.map(items =>
+    // items.map(...))`) — without this, a bare-identifier array reference
+    // that resolves to the outer loop's per-row value could misresolve to
+    // the shadowed const below and raise a false BF101. `this.scope` here
+    // is the position-accurate ancestor scope (see the comment above
+    // `bakedElementLoop`) — same shadow-guard shape as
+    // `prop-handling.ts`'s `expandDynamicPropValue`.
+    if (arrayName !== null && !this.scope.isBound(arrayName)) {
+      const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
+      if (arrayConst && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
+        this.state.refusedLoopArrayConsts.add(arrayName)
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Go template adapter cannot bind as a template variable — only a string-derived local resolves to a generated struct field.`,
+          loc: loop.loc ?? this.makeLoc(),
+          suggestion: {
+            message:
+              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+          },
+        })
+      }
+    }
+  }
+
   renderLoop(loop: IRLoop): string {
     // clientOnly loops: emit SSR markers so the client can insert DOM nodes. The
     // marker id disambiguates sibling `.map()` calls under the same parent.
@@ -9361,32 +9396,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.renderUnrolledStaticElementLoop(loop, bakedElementLoop.items)
     }
 
-    const arrayName = loop.array.trim()
-    // #2482 Stage 4: guard against an ENCLOSING loop's own item param
-    // shadowing a same-named module/component const (`items.map(items =>
-    // items.map(...))`) — without this, a bare-identifier array reference
-    // that resolves to the outer loop's per-row value could misresolve to
-    // the shadowed const below and raise a false BF101. `this.scope` here
-    // is the position-accurate ancestor scope (see the comment above
-    // `bakedElementLoop`) — same shadow-guard shape as
-    // `prop-handling.ts`'s `expandDynamicPropValue`.
-    if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
-      const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
-      if (arrayConst && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
-        this.state.refusedLoopArrayConsts.add(arrayName)
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Go template adapter cannot bind as a template variable — only a string-derived local resolves to a generated struct field.`,
-          loc: loop.loc ?? this.makeLoc(),
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
-    }
+    if (bakedChildLoop === null) this.refuseComputedConstLoopSource(loop)
 
     // #2224 shape 2: when the body IS a child component, `goArray` gets
     // unconditionally overwritten to `.${componentName}s` below regardless

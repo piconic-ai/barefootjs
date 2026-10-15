@@ -68,6 +68,15 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // The same computed-const source, parenthesized (`(keys).map(…)`): the
+  // gate reads the parsed tree, so the parentheses do not hide it (#3473).
+  'computed-const-loop-source-parenthesized': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      limitation: 'computed-const-loop-source',
+    },
+  ],
   // A loop over a static LITERAL array (module- or function-scope `const`)
   // whose row renders a child component anywhere but as the row root
   // (inside an element, a conditional branch or a nested loop) refuses with

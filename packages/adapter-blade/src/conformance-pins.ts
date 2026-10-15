@@ -69,6 +69,15 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // The same computed-const source, parenthesized (`(keys).map(…)`): the
+  // gate reads the parsed tree, so the parentheses do not hide it (#3473).
+  'computed-const-loop-source-parenthesized': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      limitation: 'computed-const-loop-source',
+    },
+  ],
   // No inline nested-callback form exists in the evaluator-JSON `*_eval`
   // mechanism (this adapter's only higher-order lowering path — see
   // blade-adapter.ts's header, divergence 3): loud BF101 instead of the
