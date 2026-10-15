@@ -44,6 +44,13 @@ const WEIGHT_OVERRIDES: Record<string, number> = {
   // 2 full-corpus loops (plus a nested per-child-component pass) —
   // ~115s alone vs. a 9.4KB file size.
   'packages/adapter-tests/src/__tests__/client-js-scope.test.ts': 115_000,
+  // The cross-adapter files compile each fixture of a family once per DSL
+  // adapter (eight compiles per case). Measured alone: loop ~317s (67
+  // fixtures), callback-chain ~86s, array-method ~68s, attr-plan ~49s.
+  'packages/adapter-tests/src/__tests__/loop-cross-adapter.test.ts': 317_000,
+  'packages/adapter-tests/src/__tests__/callback-chain-cross-adapter.test.ts': 86_000,
+  'packages/adapter-tests/src/__tests__/array-method-cross-adapter.test.ts': 68_000,
+  'packages/adapter-tests/src/__tests__/attr-plan-cross-adapter.test.ts': 49_000,
 }
 
 function findTestFiles(dir: string): string[] {
