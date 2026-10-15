@@ -869,6 +869,52 @@ export const CALLBACK_METHODS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * Who binds a callback's params. `'template'`: the adapter lowers the call to
+ * an evaluator helper (`map_eval`, `sort_eval`, …) or a native form. In
+ * `'evaluator'`: the call sits inside such a callback's body, and the runtime
+ * evaluator runs it itself, binding a nested `.map` / `.filter` callback's
+ * `(item, index)` (`eval-reference.ts`, #2094).
+ */
+export type CallbackScope = 'template' | 'evaluator'
+
+/**
+ * How many leading callback params the DSL runtimes bind, per
+ * {@link CALLBACK_METHODS} member and {@link CallbackScope}: a comparator's
+ * `(a, b)`, a reducer's `(acc, item)`, a nested `.map` / `.filter`'s
+ * `(item, index)`, every other callback's element. The params after them (the
+ * element index, the array itself) have no binding.
+ */
+function evaluatorBoundParamCount(method: string, scope: CallbackScope): number {
+  if (method === 'sort' || method === 'toSorted' || method === 'reduce' || method === 'reduceRight') return 2
+  return scope === 'evaluator' && (method === 'map' || method === 'filter') ? 2 : 1
+}
+
+/**
+ * The first callback param past {@link evaluatorBoundParamCount} that the
+ * callback body reads (`items.map((x, i) => i)` → `'i'`), or `null` when the
+ * body reads none of them. A DSL adapter would otherwise resolve such a name
+ * from the enclosing SSR scope, or leave it undefined, instead of the index /
+ * array the JS reference binds. A body this walk cannot analyze counts as
+ * reading the first extra param, so the check fails safe.
+ */
+export function unboundCallbackParamRead(
+  method: string,
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+  scope: CallbackScope = 'template',
+): string | null {
+  const extra = arrow.params.slice(evaluatorBoundParamCount(method, scope))
+  if (extra.length === 0) return null
+  const free = freeIdentifiers(arrow.body)
+  if (free === null) return extra[0]!
+  return extra.find(name => free.has(name)) ?? null
+}
+
+/** The refusal reason for {@link unboundCallbackParamRead}'s finding. */
+export function unboundCallbackParamReason(method: string, name: string): string {
+  return `'.${method}()' callback reads '${name}', its index or array parameter, which a template evaluator does not bind. Pre-compute the value, or add /* @client */ for client-only (no SSR).`
+}
+
+/**
  * A recognised higher-order callback method call: `<object>.<method>(<arrow>,
  * …rest)` where `method ∈` {@link CALLBACK_METHODS} and the first argument is a
  * generic `arrow`. Returns the receiver, the callback arrow, and any trailing
@@ -2157,6 +2203,45 @@ export function isSupportedValue(
 }
 
 /**
+ * {@link checkSupport} for a higher-order callback method call (`<recv>.<m>(arrow,
+ * …rest)`): the receiver, the callback's params (an index or array param it
+ * reads has no binding in the {@link CallbackScope} it runs in), its body, and
+ * the trailing args. The body runs in the evaluator, so a callback nested in
+ * it is checked in `'evaluator'` scope.
+ */
+function checkCallbackMethodSupport(
+  cb: NonNullable<ReturnType<typeof asCallbackMethodCall>>,
+  pos: ExprPos,
+  matchers: readonly LoweringMatcher[],
+  scope: CallbackScope,
+): SupportResult {
+  const objSupport = checkSupport(cb.object, pos, matchers, scope)
+  if (!objSupport.supported) return objSupport
+  const unbound = unboundCallbackParamRead(cb.method, cb.arrow, scope)
+  if (unbound !== null) {
+    return {
+      supported: false,
+      level: 'L5_UNSUPPORTED',
+      selfContained: true,
+      reason: unboundCallbackParamReason(cb.method, unbound),
+    }
+  }
+  const bodySupport = checkSupport(cb.arrow.body, pos, matchers, 'evaluator')
+  if (!bodySupport.supported) {
+    return {
+      supported: false,
+      level: 'L5_UNSUPPORTED',
+      reason: `Higher-order method '.${cb.method}()' with complex callback. ${bodySupport.reason || 'Simplify the callback.'}`,
+    }
+  }
+  for (const rest of cb.args) {
+    const restSupport = checkSupport(rest, pos, matchers, scope)
+    if (!restSupport.supported) return restSupport
+  }
+  return { supported: true, level: 'L5' }
+}
+
+/**
  * Where in the expression tree a node sits, for the ONE shape whose support
  * depends on it: `object-literal` (refused at `rendered`, admitted at `value`
  * when every property value is itself supported — see the `object-literal`
@@ -2173,7 +2258,12 @@ export function isSupportedValue(
  */
 type ExprPos = 'rendered' | 'value'
 
-function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly LoweringMatcher[]): SupportResult {
+function checkSupport(
+  expr: ParsedExpr,
+  pos: ExprPos,
+  matchers: readonly LoweringMatcher[],
+  scope: CallbackScope = 'template',
+): SupportResult {
   switch (expr.kind) {
     case 'unsupported':
       return { supported: false, reason: expr.reason }
@@ -2191,7 +2281,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
         // A spread entry's SOURCE must itself be supported at `value`
         // position — the same criterion as an explicit property's value,
         // since the spread source is read (not rendered) at merge time.
-        const propSupport = checkSupport(prop.kind === 'spread' ? prop.expr : prop.value, pos, matchers)
+        const propSupport = checkSupport(prop.kind === 'spread' ? prop.expr : prop.value, pos, matchers, scope)
         if (!propSupport.supported) return propSupport
       }
       return { supported: true, level: 'L2' }
@@ -2218,7 +2308,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // method, not here, because we can't see which adapter is consuming
       // the IR at this point.
       for (const el of expr.elements) {
-        const elSupport = checkSupport(el, pos, matchers)
+        const elSupport = checkSupport(el, pos, matchers, scope)
         if (!elSupport.supported) return elSupport
       }
       return { supported: true, level: 'L2' }
@@ -2238,10 +2328,10 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
         }
       }
       // Receiver/args inherit `pos` (see `ExprPos`'s doc).
-      const objSupport = checkSupport(expr.object, pos, matchers)
+      const objSupport = checkSupport(expr.object, pos, matchers, scope)
       if (!objSupport.supported) return objSupport
       for (const arg of expr.args) {
-        const argSupport = checkSupport(arg, pos, matchers)
+        const argSupport = checkSupport(arg, pos, matchers, scope)
         if (!argSupport.supported) return argSupport
       }
       // A dynamic `.flat(depth)` carries its depth expression outside
@@ -2252,7 +2342,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // any `array-method`/`flat` node regardless of how it was constructed
       // (e.g. by a rewrite walker).
       if (expr.method === 'flat' && expr.depthExpr) {
-        const depthSupport = checkSupport(expr.depthExpr, pos, matchers)
+        const depthSupport = checkSupport(expr.depthExpr, pos, matchers, scope)
         if (!depthSupport.supported) return depthSupport
       }
       return { supported: true, level: 'L2' }
@@ -2274,7 +2364,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
         const node = matcher(expr.callee, expr.args)
         if (!node) continue
         for (const child of loweringNodeChildren(node)) {
-          const childSupport = checkSupport(child, pos, matchers)
+          const childSupport = checkSupport(child, pos, matchers, scope)
           if (!childSupport.supported) return childSupport
         }
         return { supported: true, level: 'L2' }
@@ -2296,27 +2386,11 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // (the body value is what ends up rendered), while a VALUE-entered
       // one (a signal/memo initializer) admits it.
       const cb = asCallbackMethodCall(expr)
-      if (cb) {
-        const objSupport = checkSupport(cb.object, pos, matchers)
-        if (!objSupport.supported) return objSupport
-        const bodySupport = checkSupport(cb.arrow.body, pos, matchers)
-        if (!bodySupport.supported) {
-          return {
-            supported: false,
-            level: 'L5_UNSUPPORTED',
-            reason: `Higher-order method '.${cb.method}()' with complex callback. ${bodySupport.reason || 'Simplify the callback.'}`,
-          }
-        }
-        for (const rest of cb.args) {
-          const restSupport = checkSupport(rest, pos, matchers)
-          if (!restSupport.supported) return restSupport
-        }
-        return { supported: true, level: 'L5' }
-      }
+      if (cb) return checkCallbackMethodSupport(cb, pos, matchers, scope)
 
       // Check if callee is supported. Not container contents — inherits
       // the CURRENT `pos` (see `ExprPos`'s doc).
-      const calleeSupport = checkSupport(expr.callee, pos, matchers)
+      const calleeSupport = checkSupport(expr.callee, pos, matchers, scope)
       if (!calleeSupport.supported) {
         return calleeSupport
       }
@@ -2349,7 +2423,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // recognised callback/array-method (that path returned above) —
       // inherits the CURRENT `pos` (see `ExprPos`'s doc).
       for (const arg of expr.args) {
-        const argSupport = checkSupport(arg, pos, matchers)
+        const argSupport = checkSupport(arg, pos, matchers, scope)
         if (!argSupport.supported) {
           return argSupport
         }
@@ -2359,7 +2433,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
 
     case 'member': {
       // Not container contents — inherits the CURRENT `pos`.
-      const objSupport = checkSupport(expr.object, pos, matchers)
+      const objSupport = checkSupport(expr.object, pos, matchers, scope)
       if (!objSupport.supported) {
         return objSupport
       }
@@ -2375,9 +2449,9 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // expression are themselves supported (the index is typically a
       // loop variable or arithmetic over one). #1897 (data-table). Neither
       // is container contents — both inherit the CURRENT `pos`.
-      const objSupport = checkSupport(expr.object, pos, matchers)
+      const objSupport = checkSupport(expr.object, pos, matchers, scope)
       if (!objSupport.supported) return objSupport
-      const indexSupport = checkSupport(expr.index, pos, matchers)
+      const indexSupport = checkSupport(expr.index, pos, matchers, scope)
       if (!indexSupport.supported) return indexSupport
       return { supported: true, level: 'L2' }
     }
@@ -2385,9 +2459,9 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
     case 'binary': {
       // Operands inherit the CURRENT `pos` (see `ExprPos`'s doc) — a binary
       // operand isn't container contents.
-      const leftSupport = checkSupport(expr.left, pos, matchers)
+      const leftSupport = checkSupport(expr.left, pos, matchers, scope)
       if (!leftSupport.supported) return leftSupport
-      const rightSupport = checkSupport(expr.right, pos, matchers)
+      const rightSupport = checkSupport(expr.right, pos, matchers, scope)
       if (!rightSupport.supported) return rightSupport
 
       // Comparison operators are L3
@@ -2405,7 +2479,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
 
     case 'unary': {
       // Inherits the CURRENT `pos` — not container contents.
-      const argSupport = checkSupport(expr.argument, pos, matchers)
+      const argSupport = checkSupport(expr.argument, pos, matchers, scope)
       if (!argSupport.supported) return argSupport
 
       // Negation is L4
@@ -2422,7 +2496,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
 
     case 'logical': {
       // Operands inherit the CURRENT `pos` — not container contents.
-      const leftSupport = checkSupport(expr.left, pos, matchers)
+      const leftSupport = checkSupport(expr.left, pos, matchers, scope)
       if (!leftSupport.supported) return leftSupport
 
       // `x ?? {}` — admit an EMPTY object-literal fallback as the right
@@ -2449,7 +2523,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
         return { supported: true, level: 'L4' }
       }
 
-      const rightSupport = checkSupport(expr.right, pos, matchers)
+      const rightSupport = checkSupport(expr.right, pos, matchers, scope)
       if (!rightSupport.supported) return rightSupport
 
       return { supported: true, level: 'L4' }
@@ -2461,11 +2535,11 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // position both branches are themselves rendered — `cond ? {a:1} :
       // {b:2}` stays refused there, not admitted just for being a
       // sub-expression.
-      const testSupport = checkSupport(expr.test, pos, matchers)
+      const testSupport = checkSupport(expr.test, pos, matchers, scope)
       if (!testSupport.supported) return testSupport
-      const consSupport = checkSupport(expr.consequent, pos, matchers)
+      const consSupport = checkSupport(expr.consequent, pos, matchers, scope)
       if (!consSupport.supported) return consSupport
-      const altSupport = checkSupport(expr.alternate, pos, matchers)
+      const altSupport = checkSupport(expr.alternate, pos, matchers, scope)
       if (!altSupport.supported) return altSupport
 
       return { supported: true, level: 'L4' }
@@ -2477,7 +2551,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly Lowerin
       // object-literal hole has no sensible rendering either way).
       for (const part of expr.parts) {
         if (part.type === 'expression') {
-          const partSupport = checkSupport(part.expr, pos, matchers)
+          const partSupport = checkSupport(part.expr, pos, matchers, scope)
           if (!partSupport.supported) return partSupport
         }
       }
@@ -3638,6 +3712,71 @@ function evalBuiltinCalleeName(callee: ParsedExpr): string | null {
     return `Math.${callee.property}`
   }
   return null
+}
+
+/**
+ * Whether `expr` calls something a DSL predicate emitter has no lowering for:
+ * a call that is neither an evaluator builtin (`String(x)`, `Math.abs(x)`), a
+ * zero-arg signal getter (`limit()`), nor a higher-order callback method. A
+ * filter emitter lowers such a call to a read of its callee
+ * (`x.localeCompare('m')` → `x.localeCompare`, `isOk(x)` → `isOk`), so the
+ * native predicate fallback must not take it (#3477).
+ */
+export function hasOpaqueCall(expr: ParsedExpr): boolean {
+  let found = false
+  const visit = (node: unknown): void => {
+    if (found || node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const e = node as ParsedExpr
+    if (e.kind === 'call') {
+      const cb = asCallbackMethodCall(e)
+      if (cb) {
+        visit(cb.object)
+        visit(cb.arrow.body)
+        cb.args.forEach(visit)
+        return
+      }
+      const getter = e.callee.kind === 'identifier' && e.args.length === 0
+      if (!getter && evalBuiltinCalleeName(e.callee) === null) {
+        found = true
+        return
+      }
+      e.args.forEach(visit)
+      return
+    }
+    for (const value of Object.values(e)) visit(value)
+  }
+  visit(expr)
+  return found
+}
+
+/**
+ * Whether a callback nested anywhere in `expr` reads a param past the one a
+ * native form binds (`row.filter((x, i) => i > 0)`): Ruby blocks and Perl
+ * `grep` bind the element only, while the runtime evaluator also binds a
+ * nested `.map` / `.filter` index (`CallbackScope`). A predicate that does
+ * must not take a native form.
+ */
+export function readsNestedCallbackIndex(expr: ParsedExpr): boolean {
+  let found = false
+  const visit = (node: unknown): void => {
+    if (found || node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const cb = (node as ParsedExpr).kind === 'call' ? asCallbackMethodCall(node as ParsedExpr) : null
+    if (cb && unboundCallbackParamRead(cb.method, cb.arrow) !== null) {
+      found = true
+      return
+    }
+    for (const value of Object.values(node)) visit(value)
+  }
+  visit(expr)
+  return found
 }
 
 /** Build the evaluator's minimal node object, or null for an out-of-surface kind. */

@@ -10,7 +10,8 @@ import { TestAdapter } from '../adapters/test-adapter'
 import { isExplicitStringCall } from '../adapters/boolean-result'
 import { collectImportedLoopChildComponentErrors, hasClientInteractivity } from '../adapters/component-tree'
 import { isBareStringLiteral, isLiteralIndex, isStringTypeInfo } from '../adapters/literal-value'
-import { collectBooleanTypedProps, collectNullableOptionalProps } from '../adapters/prop-classes'
+import { collectBooleanTypedProps, collectNullableOptionalProps, isBooleanTypedPropRef } from '../adapters/prop-classes'
+import { childTemplateName } from '../adapters/component-props'
 import { parseExpression } from '../expression-parser'
 import type { ComponentIR } from '../types'
 
@@ -137,5 +138,29 @@ export function List({ items }: { items: string[] }) {
 }
 `, 'list.tsx')
     expect(collectImportedLoopChildComponentErrors(ir, 'List', 'Twig')).toEqual([])
+  })
+})
+
+describe('isBooleanTypedPropRef', () => {
+  const ctx = { propsObjectName: 'props', booleanTypedProps: new Set(['open']), isBound: (n: string) => n === 'row' }
+
+  test('a bare or props-object read of a boolean prop', () => {
+    expect(isBooleanTypedPropRef('open', ctx)).toBe(true)
+    expect(isBooleanTypedPropRef(' props.open ', ctx)).toBe(true)
+    expect(isBooleanTypedPropRef('label', ctx)).toBe(false)
+    expect(isBooleanTypedPropRef('open()', ctx)).toBe(false)
+    expect(isBooleanTypedPropRef('open.value', ctx)).toBe(false)
+  })
+
+  test('a loop binding that shares the name is the row, not the prop (#2488)', () => {
+    expect(isBooleanTypedPropRef('open', { ...ctx, isBound: (n) => n === 'open' })).toBe(false)
+  })
+})
+
+describe('childTemplateName', () => {
+  test('snake_cases the declared name, through an import alias (#2822)', () => {
+    expect(childTemplateName('TodoItem', new Map())).toBe('todo_item')
+    expect(childTemplateName('Item', new Map([['Item', 'TodoItem']]))).toBe('todo_item')
+    expect(childTemplateName('Button', new Map())).toBe('button')
   })
 })

@@ -19,7 +19,6 @@ import { groupBinaryOperand,
   type ParsedExprEmitter,
   type LoweringEmitter,
   type LoweringNode,
-  type HigherOrderMethod,
   type ArrayMethod,
   type LiteralType,
   type ParsedExpr,
@@ -28,9 +27,14 @@ import { groupBinaryOperand,
   type TemplatePart,
   identifierPath,
   matchSearchParamsMethodCall,
-  sortComparatorFromArrow,
   queryHrefArgs,
-  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS } from '@barefootjs/jsx'
+  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS,
+  lowerCallbackMethod,
+  emitCallbackEval,
+  nestedCallbackRefusal,
+  type CallbackLoweringOptions,
+  type PredicateMethod,
+} from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
 import { XSLATE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
@@ -38,13 +42,12 @@ import { escapeKolonSingleQuoted } from '../lib/kolon-naming.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
-  renderSortEval,
-  renderReduceEval,
-  renderPredicateEval,
   renderFlatMethod,
-  renderFlatMapEval,
-  renderMapEval,
+  EVAL_SPELLING,
 } from './array-method.ts'
+
+// The display name BF101 uses; a native predicate form exists here.
+export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Xslate', nativePredicate: true }
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */
 const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
@@ -53,25 +56,6 @@ const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
   '*': 'multiply',
   '/': 'divide',
 }
-
-/**
- * Local shape for the predicate-lowering helpers (`buildPredicateEval` and the
- * Kolon-lambda fallback). Previously these read a `higher-order` ParsedExpr
- * node directly; after the #2018 P5 collapse the callback arrives as a generic
- * `call` and is destructured by `asCallbackMethodCall` / `callbackMethod`, so
- * the helpers take this narrow record instead.
- */
-type PredicateCall = {
-  method: HigherOrderMethod
-  object: ParsedExpr
-  param: string
-  predicate: ParsedExpr
-}
-
-// Methods whose callback is a boolean predicate (`<recv>.<m>(x => …)`).
-const PREDICATE_METHODS = new Set<HigherOrderMethod>([
-  'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
-])
 
 /**
  * `props.x` on a bare-props-form component flattens to the bare `$x` the
@@ -246,10 +230,8 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // changes predicate semantics (`!other.some(r => …)` collapses to
     // `!other`), so surface BF101 instead. The receiver emit is kept only so
     // the template stays syntactically valid while the build fails.
-    this.onUnsupported?.(
-      `Filter predicate contains a nested '.${method}(...)' callback, which has no Kolon scalar form`,
-      `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
-    )
+    const refusal = nestedCallbackRefusal(method, CALLBACK_LOWERING.adapterName)
+    this.onUnsupported?.(refusal.message, refusal.suggestion)
     return emit(object)
   }
 
@@ -483,20 +465,20 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return arg
   }
 
-  /** An arithmetic operand whose SSR value is certainly `undefined` goes
-   * through `$bf.number`, which maps the engine's nil to `NaN` as JS
-   * `ToNumber(undefined)` does; the native operator reads nil as `0`
-   * (#3390). */
-  private coerceUndefinedOperand(op: string, expr: ParsedExpr, operand: string): string {
-    return NULL_COERCING_ARITHMETIC_OPS.has(op) && this.ctx._isUndefinedOperand(expr) ? `$bf.number(${operand})` : operand
+  /** Spell `arithmeticOperandCoercion` (#3474): an `undefined` operand goes
+   * through the runtime's JS `Number()`, which maps nil to `NaN` as
+   * `ToNumber(undefined)` does (#3390). The native operator already reads a
+   * `null` operand as `0`, so that coercion needs no spelling. */
+  private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+    return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf.number(${operand})` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = this.coerceUndefinedOperand(op, left, groupBinaryOperand(left, emit(left)))
-    const r = this.coerceUndefinedOperand(op, right, groupBinaryOperand(right, emit(right)))
+    const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
+    const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
     // (#2176). Lower to Kolon's `~` concat operator. The adapter's
@@ -535,121 +517,35 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
+    // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`)
+    // decides; this emitter only spells the result.
     const recv = emit(object)
-    const body = arrow.body
-    const params = arrow.params
-
-    // Predicate family (#2018 P2/P5): `filter` / `find*` / `every` / `some`.
-    if (PREDICATE_METHODS.has(method as HigherOrderMethod)) {
-      return this._emitPredicateCallback(
-        { method: method as HigherOrderMethod, object, param: params[0], predicate: body },
-        recv,
-        emit,
-      )
+    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING)
+    switch (plan.kind) {
+      case 'eval':
+        return emitCallbackEval(plan, recv, emit, EVAL_SPELLING)
+      case 'structured-sort':
+        return renderSortMethod(recv, plan.comparator)
+      case 'native-predicate':
+        return this._nativePredicate(plan.method, plan.param, plan.predicate, recv)
+      case 'refuse':
+        this.ctx._recordExprBF101(plan.message, plan.suggestion)
+        return "''"
+      default:
+        // Unreachable: a method outside `CALLBACK_METHODS`.
+        return recv
     }
-
-    // `.sort(cmp)` / `.toSorted(cmp)` (#2018): serialize the comparator body +
-    // emit `$bf.sort_eval`; fall back to the structured `$bf.sort` when the
-    // body is outside the evaluator surface (e.g. `localeCompare`). A
-    // comparator that neither serializes nor classifies → BF101.
-    if (method === 'sort' || method === 'toSorted') {
-      const evalForm = renderSortEval(recv, body, params, emit)
-      if (evalForm !== null) return evalForm
-      const structured = sortComparatorFromArrow(arrow)
-      if (structured !== null) return renderSortMethod(recv, structured)
-      this.ctx._recordExprBF101(
-        `'.${method}(...)' comparator is outside the Xslate adapter's evaluable / structured surface`,
-        `Pre-compute the sorted array, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // `.reduce(fn, init)` / `.reduceRight(fn, init)` (#2018): serialize the
-    // reducer body + emit `$bf.reduce_eval`. The init is the trailing arg.
-    if (method === 'reduce' || method === 'reduceRight') {
-      const direction = method === 'reduceRight' ? 'right' : 'left'
-      const init = restArgs[0]
-      const evalForm =
-        init !== undefined
-          ? renderReduceEval(recv, body, params, init, direction, emit)
-          : null
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `'.${method}(...)' is outside the Xslate adapter's evaluable surface (needs a literal initial value and an evaluable reducer body)`,
-        `Pre-compute the reduced value, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // `.flatMap(proj)` (#2018 P3): serialize the projection body + emit
-    // `$bf.flat_map_eval`.
-    if (method === 'flatMap') {
-      const evalForm = renderFlatMapEval(recv, body, params[0], emit)
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `'.flatMap(...)' projection is outside the Xslate adapter's evaluable surface`,
-        `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // Value-producing `.map(cb)` (#2073): serialize the projection body +
-    // emit `$bf.map_eval`. (The JSX-returning `.map` is an IRLoop upstream.)
-    if (method === 'map') {
-      const evalForm = renderMapEval(recv, body, params[0], emit)
-      if (evalForm !== null) return evalForm
-      this.ctx._recordExprBF101(
-        `'.map(...)' projection is outside the Xslate adapter's evaluable surface`,
-        `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
-      )
-      return "''"
-    }
-
-    // Unknown callback method (should not arrive — CALLBACK_METHODS is closed).
-    void object
-    return recv
   }
 
   /**
-   * Lower a boolean-predicate callback (`filter` / `find*` / `every` / `some`),
-   * extracted from the pre-#2018-P5 `higherOrder` arm. Higher-order array
-   * methods all take a JS arrow predicate, lowered to a Kolon lambda
-   * `-> $param { PRED }` (callable from Perl as a code ref), and go through the
-   * runtime object — consistent with the other array helpers ($bf.includes /
-   * $bf.slice / ...). `.find*` map to snake_case runtime methods. The
-   * `.filter(...).map(...)` *loop* form is handled separately by renderLoop's
-   * inline predicate.
+   * The native form of a predicate: a Kolon lambda `-> $param { PRED }`
+   * passed to the runtime's `filter` / `every` / `some` / `find*` helper.
+   * The shared chain picks it for a predicate the evaluator can't model (a
+   * method-call predicate) and for the identity `.filter(x => x)`, which
+   * composes through the array-method chain.
    */
-  private _emitPredicateCallback(
-    call: PredicateCall,
-    arrayExpr: string,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const { method, object, param, predicate } = call
-
-    // Evaluator path (#2018 P2): serialize the predicate body + emit the
-    // matching `$bf.*_eval` helper (isomorphic with the Go adapter). Falls
-    // back to the Kolon-lambda runtime call below for a predicate the
-    // evaluator can't model (e.g. a method-call predicate).
-    const evalFn: Record<string, [string, boolean?]> = {
-      filter: ['filter_eval'], every: ['every_eval'], some: ['some_eval'],
-      find: ['find_eval', true], findLast: ['find_eval', false],
-      findIndex: ['find_index_eval', true], findLastIndex: ['find_index_eval', false],
-    }
-    // `.filter(Boolean)` (identity predicate `_t => _t`) keeps the lambda
-    // form — it composes through the array-method chain and renders
-    // identically to a truthiness filter.
-    const isIdentity =
-      method === 'filter' && predicate.kind === 'identifier' && predicate.name === param
-    const spec = evalFn[method]
-    if (spec && !isIdentity) {
-      const evalForm = renderPredicateEval(spec[0], arrayExpr, predicate, param, emit, spec[1])
-      if (evalForm !== null) return evalForm
-    }
-
-    const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param)
-    const lambda = `-> $${param} { ${predBody} }`
-    const fn: Record<string, string> = {
+  private _nativePredicate(method: PredicateMethod, param: string, predicate: ParsedExpr, arrayExpr: string): string {
+    const helper: Record<PredicateMethod, string> = {
       filter: 'filter',
       every: 'every',
       some: 'some',
@@ -658,8 +554,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       findLast: 'find_last',
       findLastIndex: 'find_last_index',
     }
-    if (fn[method]) return `$bf.${fn[method]}(${arrayExpr}, ${lambda})`
-    return emit(object)
+    const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param)
+    return `$bf.${helper[method]}(${arrayExpr}, -> $${param} { ${predBody} })`
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

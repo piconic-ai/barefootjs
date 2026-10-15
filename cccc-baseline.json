@@ -4,16 +4,8 @@
   "threshold": 25,
   "files": {
     "packages/adapter-blade/src/adapter/blade-adapter.ts": {
-      "emitExpression": [
-        27
-      ],
       "renderLoop": [
-        63
-      ]
-    },
-    "packages/adapter-blade/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
+        52
       ]
     },
     "packages/adapter-blade/src/test-render.ts": {
@@ -26,12 +18,7 @@
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "renderLoop": [
-        76
-      ]
-    },
-    "packages/adapter-erb/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
+        64
       ]
     },
     "packages/adapter-erb/src/test-render.ts": {
@@ -114,7 +101,7 @@
         86
       ],
       "renderLoop": [
-        75
+        70
       ],
       "resolveDynamicPropValue": [
         40
@@ -242,14 +229,9 @@
         56
       ]
     },
-    "packages/adapter-jinja/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
       "renderLoop": [
-        60
+        49
       ]
     },
     "packages/adapter-jinja/src/test-render.ts": {
@@ -260,17 +242,9 @@
         48
       ]
     },
-    "packages/adapter-mojolicious/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
-      "emitExpression": [
-        33
-      ],
       "renderLoop": [
-        73
+        60
       ]
     },
     "packages/adapter-mojolicious/src/test-render.ts": {
@@ -284,14 +258,9 @@
         39
       ]
     },
-    "packages/adapter-pebble/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
       "renderLoop": [
-        75
+        64
       ]
     },
     "packages/adapter-pebble/src/test-render.ts": {
@@ -302,14 +271,9 @@
         56
       ]
     },
-    "packages/adapter-rust/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-rust/src/adapter/minijinja-adapter.ts": {
       "renderLoop": [
-        60
+        49
       ]
     },
     "packages/adapter-rust/src/test-render.ts": {
@@ -356,14 +320,9 @@
         40
       ]
     },
-    "packages/adapter-twig/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-twig/src/adapter/twig-adapter.ts": {
       "renderLoop": [
-        68
+        57
       ]
     },
     "packages/adapter-twig/src/test-render.ts": {
@@ -374,17 +333,9 @@
         48
       ]
     },
-    "packages/adapter-xslate/src/adapter/expr/array-method.ts": {
-      "renderArrayMethod": [
-        33
-      ]
-    },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
-      "emitExpression": [
-        33
-      ],
       "renderLoop": [
-        88
+        77
       ]
     },
     "packages/adapter-xslate/src/test-render.ts": {
@@ -677,7 +628,7 @@
     },
     "packages/jsx/src/expression-parser.ts": {
       "checkSupport": [
-        145
+        128
       ],
       "collectDestructureBindings": [
         49

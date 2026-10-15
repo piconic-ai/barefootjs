@@ -131,13 +131,53 @@ export {
   stringifyBooleanTernaryBranches,
 } from './adapters/boolean-result.ts'
 export { isBareStringLiteral, isLiteralIndex, isStringTypeInfo } from './adapters/literal-value.ts'
-export { collectBooleanTypedProps, collectNullableOptionalProps } from './adapters/prop-classes.ts'
+export { collectBooleanTypedProps, collectNullableOptionalProps, isBooleanTypedPropRef } from './adapters/prop-classes.ts'
+export type { BooleanTypedPropContext } from './adapters/prop-classes.ts'
 export { collectImportedLoopChildComponentErrors, hasClientInteractivity } from './adapters/component-tree.ts'
+export {
+  ARRAY_METHOD_CATALOGUE,
+  emitArrayMethod,
+  lowerArrayMethod,
+  prefixedArrayMethodSpelling,
+} from './adapters/array-method.ts'
+export {
+  emitCallbackEval,
+  isPredicateMethod,
+  lowerCallbackMethod,
+  nestedCallbackRefusal,
+  sortEvalPlan,
+  sortRefusal,
+} from './adapters/callback-method.ts'
+export type {
+  CallbackEvalHelper,
+  CallbackEvalOperand,
+  CallbackEvalPlan,
+  CallbackEvalSpelling,
+  CallbackLoweringOptions,
+  CallbackPlan,
+  PredicateMethod,
+} from './adapters/callback-method.ts'
+export type {
+  ArrayMethodArg,
+  ArrayMethodDefault,
+  ArrayMethodEntry,
+  ArrayMethodHelper,
+  ArrayMethodParam,
+  ArrayMethodPlan,
+  ArrayMethodSpelling,
+} from './adapters/array-method.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
+export { childTemplateName, componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
+export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
+export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression } from './adapters/attr-plan.ts'
+export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
+export { planLoop } from './adapters/loop-plan.ts'
+export type { LoopPlan, LoopPlanContext } from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,
+  arithmeticOperandCoercion,
   bareGetterCallName,
   attrValueMayBeNullish,
   collectNullableSignalGetters,
@@ -147,6 +187,7 @@ export {
   NULL_COERCING_ARITHMETIC_OPS,
   nullableSignalAttrGetter,
   type NullishAttrContext,
+  type ArithmeticCoercion,
 } from './nullable-signal-attr.ts'
 export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export type { EnvSignalReader } from './adapters/env-signal.ts'
@@ -263,7 +304,7 @@ export { ErrorCodes, createError, formatError, generateCodeFrame } from './error
 export { isValueReferenceIdentifier, collectValueReferencedNames } from './value-references.ts'
 
 // Expression Parser
-export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, renameFreeIdentifiers, materializeGetterCalls, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, hasUnsafeStyleValue, parseProviderObjectLiteral, isFunctionShapedExpression, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
+export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, hasOpaqueCall, unboundCallbackParamRead, unboundCallbackParamReason, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, renameFreeIdentifiers, materializeGetterCalls, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, hasUnsafeStyleValue, parseProviderObjectLiteral, isFunctionShapedExpression, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
 export type { StyleObjectEntry } from './expression-parser.ts'
 export { literalMemberIndex } from './literal-member-index.ts'
 export { PARSED_EXPR_KINDS, ARRAY_METHOD_NAMES, SORT_KEY_TYPES, SORT_KEY_TARGETS, SORT_KEY_DIRECTIONS } from './expression-parser.ts'

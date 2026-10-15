@@ -975,6 +975,192 @@
       }
     }
   ],
+  "component-spread-explicit-then-props": [
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": "",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:size:empty",
+      "props": {
+        "tone": "warm",
+        "label": "hi",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:size:markup",
+      "props": {
+        "tone": "warm",
+        "label": "hi",
+        "size": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:size:multibyte",
+      "props": {
+        "tone": "warm",
+        "label": "hi",
+        "size": "日本語"
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "tone": "warm",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "tone": "warm",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "tone": "warm",
+        "label": "日本語"
+      }
+    }
+  ],
+  "component-spread-props-then-explicit": [
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": "",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:size:empty",
+      "props": {
+        "tone": "warm",
+        "label": "hi",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:size:markup",
+      "props": {
+        "tone": "warm",
+        "label": "hi",
+        "size": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:size:multibyte",
+      "props": {
+        "tone": "warm",
+        "label": "hi",
+        "size": "日本語"
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "tone": "warm",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "tone": "warm",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "tone": "warm",
+        "label": "日本語"
+      }
+    }
+  ],
+  "component-spread-rest": [
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "tone": "warm",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "tone": "warm",
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "tone": "warm",
+        "label": "hi"
+      }
+    }
+  ],
   "composite-row-child-aliased-prop": [
     {
       "name": "gen:rows:empty",
@@ -1012,6 +1198,14 @@
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "computed-const-loop-source-parenthesized-precomputed": [
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "keys": []
       }
     }
   ],
@@ -2928,6 +3122,17 @@
       }
     }
   ],
+  "loop-param-shadows-array-const": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "labels": {
+          "x": "1"
+        }
+      }
+    }
+  ],
   "loop-param-shadows-bool-prop": [
     {
       "name": "gen:active:false",
@@ -4461,6 +4666,26 @@
           "id": 0,
           "label": ""
         }
+      }
+    }
+  ],
+  "omitted-optional-number-arithmetic": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "missing": 1234567890
       }
     }
   ],

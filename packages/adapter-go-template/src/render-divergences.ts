@@ -93,6 +93,13 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
+  // A props spread onto a child component: this adapter drops the spread (#3479).
+  'component-spread-rest': { limitation: 'component-prop-spread' },
+  'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
+  'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
+  // Arithmetic over an omitted optional number prop: the engine reads the
+  // nil as `0`, JS reads `undefined` as `NaN` (#3474).
+  'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },
   // `object-signal-field-length` used to sit here: `.length` on a loop
   // item's field inside a `.filter()` predicate never matched. It now reads
   // through `bf_length` inline and the evaluator counts a typed slice (#3447).

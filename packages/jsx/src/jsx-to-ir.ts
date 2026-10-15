@@ -41,7 +41,7 @@ import {
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
-import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
+import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
@@ -3883,6 +3883,8 @@ function extractFilterPredicate(
     if (!support.supported) {
       return { result: null, unsupportedReason: support.reason }
     }
+    const unbound = unboundFilterParamReason(callback, predicate, ctx)
+    if (unbound) return { result: null, unsupportedReason: unbound }
     return { result: { param, predicate, raw } }
   }
 
@@ -3895,8 +3897,26 @@ function extractFilterPredicate(
   if (!support.supported) {
     return { result: null, unsupportedReason: support.reason }
   }
+  const unbound = unboundFilterParamReason(callback, predicate, ctx)
+  if (unbound) return { result: null, unsupportedReason: unbound }
 
   return { result: { param, predicate, raw } }
+}
+
+/**
+ * A loop filter's predicate is evaluated per element with only the element
+ * bound, so `filter((x, i) => i > 0)` cannot lift into `IRLoop.filterPredicate`:
+ * the index would resolve from the enclosing scope instead (see
+ * `unboundCallbackParamRead`).
+ */
+function unboundFilterParamReason(
+  callback: ts.ArrowFunction,
+  predicate: ParsedExpr,
+  ctx: TransformContext,
+): string | undefined {
+  const params = callback.parameters.map(p => p.name.getText(ctx.sourceFile))
+  const unbound = unboundCallbackParamRead('filter', { kind: 'arrow', params, body: predicate })
+  return unbound === null ? undefined : unboundCallbackParamReason('filter', unbound)
 }
 
 /**

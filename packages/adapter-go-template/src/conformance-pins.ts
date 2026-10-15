@@ -18,6 +18,14 @@ export const conformancePins: ConformancePins = {
   'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
+  'callback-index-param': [{ code: 'BF101', severity: 'error', limitation: 'callback-index-param' }],
+  'filter-index-param-loop': [{ code: 'BF021', severity: 'error', limitation: 'callback-index-param' }],
+  'sort-opaque-comparator': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
+  'map-opaque-projection': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
+  'reduce-nonliteral-seed': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
+  'filter-opaque-predicate': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
+  'filter-native-nested-index': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
+  'filter-array-method-predicate': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
   'find-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
   'some-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
   'every-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
@@ -54,6 +62,15 @@ export const conformancePins: ConformancePins = {
   // the STATIC-literal module-scope case; this is the still-open
   // computed-const case). Escape twin: `module-const-loop-source-computed-client`.
   'module-const-loop-source-computed': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      limitation: 'computed-const-loop-source',
+    },
+  ],
+  // The same computed-const source, parenthesized (`(keys).map(…)`): the
+  // gate reads the parsed tree, so the parentheses do not hide it (#3473).
+  'computed-const-loop-source-parenthesized': [
     {
       code: 'BF101',
       severity: 'error',

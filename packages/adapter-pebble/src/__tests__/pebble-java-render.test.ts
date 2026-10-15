@@ -67,7 +67,7 @@ describe('Pebble Java runtime (Phase 3a smoke tests)', () => {
 
   test.skipIf(!isJavaToolchainAvailable())('bf.*_eval evaluator for a .map() callback body', async () => {
     // Mirrors the exact call shape `bf.map_eval` emits (see
-    // `adapter/expr/array-method.ts`'s `renderMapEval`): a serialized
+    // `@barefootjs/jsx`'s `adapters/callback-method.ts`): a serialized
     // ParsedExpr JSON string for `n => n * 2`, the arrow's single param
     // name, and a captured-free-vars env map (empty here).
     const bodyJson = JSON.stringify({

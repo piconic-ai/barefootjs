@@ -218,7 +218,6 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   exprToString,
@@ -240,14 +239,19 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  sortComparatorFromArrow,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
-  derivesScopeFromSlot,
-  filterCaptureCollisions,
+  childTemplateName,
+  isEmptyComponentProps,
+  isBooleanTypedPropRef,
+  planAttrExpression,
+  unsupportedAttrExpression,
+  planLoop,
+  planSpreadAttr,
+  planComponentProps,
+  spellComponentProps,
   templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
@@ -256,9 +260,6 @@ import {
   rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
-  arithmeticOperandIsNull,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -269,10 +270,12 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
+  emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { PebbleRenderCtx } from './lib/types.ts'
 import { PEBBLE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -282,9 +285,9 @@ import {
   escapePebbleSingleQuoted,
   pebbleAccessorFromSegments,
 } from './lib/pebble-naming.ts'
-import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPebble } from './lib/static-value.ts'
-import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest } from './expr/emitters.ts'
+import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest, CALLBACK_LOWERING } from './expr/emitters.ts'
 import type { PebbleEmitContext, PebbleSpreadContext, PebbleMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToPebble,
@@ -421,7 +424,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * the child's own declared name (`Foo`, what `foo.tsx` registers its
    * Pebble partial as) — never the caller-local binding. Built once per
    * compile from `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   * (`@barefootjs/jsx`) and read by `childTemplateName`.
    */
   private importAliases: Map<string, string> = new Map()
 
@@ -978,9 +981,15 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // a rest spread onto a component/provider, `.filter().map(destructure)`,
     // and `__bf_`-prefixed binding names (would collide with the synthetic
     // per-item var).
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToPebble,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -1024,27 +1033,21 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // a silent wrong value). Canonical, position-accurate predicate (#2482
     // Stage 2) — the enclosing loop scope's own membership, not a coarse
     // whole-component union.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
-    const staticArray = staticItems !== null ? staticValueToPebble(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
-    const arrayName = loop.array.trim()
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
-      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && this._resolveLiteralConst(arrayName) === null) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Pebble adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
+    const arrayConst = loopPlan.unresolvableConst
+    if (arrayConst) {
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Pebble adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        },
+      })
     }
 
     const rawArray = staticArray ?? this.convertExpressionToPebble(loop.array)
@@ -1053,20 +1056,16 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // helper runs once.
     let array = rawArray
     if (loop.sortComparator) {
-      // Evaluator-first: serialize the comparator arrow body + emit
-      // `bf.sort_eval`; fall back to the structured `bf.sort` for a
-      // comparator the evaluator can't model (e.g. `localeCompare`). The
-      // comparator now arrives as an `IRLoopSort` carrying the generic
-      // `arrow` + its params.
-      const sort = loop.sortComparator
+      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
+      // the same as `.sort(cmp)` at an expression position: the evaluator,
+      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
+      // comparator the descriptor models, so the refusal arm is defensive; it
+      // keeps the array unsorted so the template stays valid.
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPebble('', e)
-      const arrow = sort.arrow
-      const params =
-        arrow.kind === 'arrow' ? arrow.params : [sort.paramA, sort.paramB]
-      const structured = sortComparatorFromArrow(arrow)
-      array =
-        renderSortEval(rawArray, arrow.kind === 'arrow' ? arrow.body : arrow, params, sortEmit) ??
-        (structured !== null ? renderSortMethod(rawArray, structured) : rawArray)
+      const plan = loopPlan.sort!
+      if (plan.kind === 'eval') array = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
+      else if (plan.kind === 'structured-sort') array = renderSortMethod(rawArray, plan.comparator)
+      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
     }
     const param = loop.param
     // Pebble's `{% for item in array %}` binds the item directly. The
@@ -1075,7 +1074,6 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // ITSELF 0-based on Pebble (see this file's header syntax table: this
     // is Pebble-specific, matching neither Jinja's `loop.index0` nor
     // Twig's).
-    const renderedChildren = this.renderChildren(loop.children)
 
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
@@ -1133,9 +1131,8 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
 
     const prevInLoop = this.inLoop
     this.inLoop = true
-    // Re-render children now that inLoop is set (so nested components use the
-    // loop-child naming convention). renderedChildren above was computed with
-    // the previous flag; recompute under the loop flag.
+    // The children render once, under the loop flag (so nested components use
+    // the loop-child naming convention) and the row scope below.
 
     // This loop's row scope, for the position-accurate shadow guard
     // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
@@ -1171,7 +1168,6 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.inLoop = prevInLoop
-    void renderedChildren
 
     // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
     // anchor before each item's (possibly empty) conditional content so the
@@ -1189,7 +1185,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
-    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureAliases = loopPlan.captureAliases
     const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
@@ -1345,27 +1341,6 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     emitJsxChildren: () => '',
   }
 
-  /**
-   * A `renderComponent` props map, built as an ORDERED sequence of
-   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
-   * (later entries win) survive the trip through Pebble. Each `'entries'`
-   * segment is a literal Pebble map `{'k': v, ...}`; each `'spread'`
-   * segment is an arbitrary expression lowered from a `{...expr}` prop.
-   * `combineComponentPropSegments` folds the sequence into ONE expression
-   * via nested `bf.merge(base, top)` calls (later segment wins on key
-   * conflict, matching `Object.assign`/JSX order) — see
-   * `combineComponentPropSegments`'s own docstring for why `bf.merge` was
-   * chosen over Jinja's `dict(base, **top)` or Twig's `|merge` filter.
-   */
-  private componentPropSegmentEntries(
-    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
-  ): string[] {
-    const last = segments[segments.length - 1]
-    if (last && last.kind === 'entries') return last.parts
-    const seg = { kind: 'entries' as const, parts: [] as string[] }
-    segments.push(seg)
-    return seg.parts
-  }
 
   /**
    * Fold ordered prop segments into a single Pebble expression via nested
@@ -1404,98 +1379,42 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
   }
 
   renderComponent(comp: IRComponent): string {
-    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
-    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
-    const currentEntries = () => this.componentPropSegmentEntries(segments)
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own `{% set %}` capture, prepended to the final returned
-    // string below — same mechanism as the reserved children capture,
-    // just keyed by the prop's own name instead of `children`. See the
-    // file header, divergence 6 — this capture form requires the Phase 3
-    // custom Pebble extension.
-    const namedSlotSetBlocks: string[] = []
-
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't a
-        // valid Pebble `{% set %}` target, and `comp.slotId` alone would
-        // collide across two named-slot props on the same component
-        // invocation (unlike the reserved children slot, there's only ever
-        // one of those per invocation).
-        const captureName = `bf_prop_${this.childrenCaptureCounter++}`
-        namedSlotSetBlocks.push(`{% set ${captureName} %}${slotBody}{% endset %}`)
-        currentEntries().push(`${pebbleHashKey(p.name)}: ${captureName}`)
-        continue
-      }
-      if (p.value.kind === 'spread') {
-        const trimmed = p.value.expr.trim()
-        // SolidJS-style props identifier (`function(props: P)`) has no
-        // matching runtime map in Pebble scope — props arrive as a flat
-        // set of top-level template vars, so enumerate the
-        // analyzer-extracted props params into map entries instead of
-        // treating it as a runtime spread expression.
-        if (this.propsObjectName && this.propsObjectName === trimmed) {
-          for (const pp of this.propsParams) {
-            currentEntries().push(`${pebbleHashKey(pp.name)}: ${pebbleIdent(pp.name)}`)
-          }
-          continue
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with a set-block, evaluated in
+    // the parent's template scope (signals, conditionals), and passed by
+    // name; `render_child` materializes the children through the backend
+    // before handing them to the child. See the file header, divergence 4,
+    // for why a set-block (not a macro) is the uniform mechanism. A named
+    // slot's capture name is counter-based: a prop name can contain
+    // characters (`data-slot`) that are no valid `{% set %}` target.
+    const tplName = childTemplateName(comp.name, this.importAliases)
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const captured = name()
+      captures.push(`{% set ${captured} %}${body}{% endset %}`)
+      return captured
+    }
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${pebbleHashKey(entry.name)}: ${capture(entry.children, () => `bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${pebbleHashKey(entry.name)}: ${pebbleIdent(entry.name)}`
+          case 'slot-id':
+            return `${pebbleHashKey('_bf_slot')}: '${entry.slotId}'`
+          case 'children':
+            return `${pebbleHashKey('children')}: ${capture(entry.children, () => `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
         }
-        // Every other spread shape (a destructure rest-bag `props`, a
-        // member-access bag like `children.props`, an intrinsic-element
-        // spread helper's own operand, …) — Pebble map literals can't
-        // splat a runtime map into named entries at a call site, but a
-        // nested `bf.merge(base, top)` call can fold it into the
-        // accumulated map at the right ordinal position. No compile-time
-        // filtering of onXxx/ref keys out of the runtime bag (the render
-        // contract tolerates them, same as the other spread-lowering
-        // adapters).
-        segments.push({ kind: 'spread', expr: this.convertExpressionToPebble(p.value.expr) })
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) currentEntries().push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444). Appended to whatever the trailing entries segment is
-    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
-    // these compiler-controlled entries.
-    if (derivesScopeFromSlot(comp)) {
-      currentEntries().push(`${pebbleHashKey('_bf_slot')}: '${comp.slotId}'`)
-    }
-    const tplName = this.toTemplateName(comp.name)
-
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />` lands in
-    // a `jsx-children` AttrValue on the corresponding prop.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via a Pebble set-block (see the file header,
-      // divergence 6 — this requires the Phase 3 custom extension). The
-      // block body is evaluated in the parent's template scope (signals,
-      // conditionals) and produces the children HTML as a captured string;
-      // the captured name is passed as the `children` entry of the
-      // render_child map. `render_child` materializes it through the
-      // backend before handing it to the child.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const captureName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      currentEntries().push(`${pebbleHashKey('children')}: ${captureName}`)
-      const dict = this.combineComponentPropSegments(segments)
-      return `${namedSlotSetBlocks.join('')}{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | raw }}`
-    }
-
-    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
-    const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `${namedSlotSetBlocks.join('')}{{ bf.render_child('${tplName}'${dictEntries}) | raw }}`
+      },
+      spread: (value) => this.convertExpressionToPebble(value.expr),
+    })
+    const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
+    return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`
   }
 
   private childrenCaptureCounter = 0
@@ -1503,19 +1422,6 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
   /** Uniquifies the `presenceOrUndefined` temp binding (`bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
   private presenceVarCounter = 0
-
-  private toTemplateName(componentName: string): string {
-    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
-    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
-    // has no `foo.tsx`-registered partial; only `Foo` does.
-    const declaredName = this.importAliases.get(componentName) ?? componentName
-    // Convert PascalCase to snake_case for template naming.
-    return declaredName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .replace(/^_/, '')
-  }
-
   // ===========================================================================
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
@@ -1614,114 +1520,50 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish omission: a bare reference to an optional,
-      // no-default prop (`nullableOptionalProps`) is guarded so the
-      // attribute drops instead of rendering `attr=""`. Narrowly scoped to
-      // bare identifiers — member exprs, calls, and concrete/defaulted
-      // props are unaffected.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches the
-      // SolidJS props-object pattern, not just destructured params. Same for
-      // a closed-type rest-expanded key's `rest.tag`-shaped expression
-      // (#3057) — see `restPropsName`'s docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `!= null` guard (#2488).
-          !this.isLoopBoundName(normalizedBareId)) ||
-          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
-      ) {
-        const pebble = this.convertExpressionToPebble(value.expr)
-        const body = this.shouldBoolStr(value.expr, name)
-            ? `${name}="{{ bf.bool_str(${pebble}) }}"`
-            : `${name}="{{ bf.string(${pebble}) }}"`
-        // `pebble` is a bare identifier reference for this narrowly-gated
-        // shape, so it doubles as both the guard test and the display
-        // value. Simpler than the Jinja port's `is defined and is not
-        // none` pair — this adapter assumes a missing context var already
-        // normalizes to `null` under a non-strict-variables config (see
-        // this file's header, "Pebble variable/null handling"), so a
-        // single `!= null` test covers both "never bound" and "explicitly
-        // null".
-        return `\n{% if ${pebble} != null %}\n${body}\n{% endif %}\n`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        // Pebble's symbolic ternary (see the file header syntax table) —
-        // `(test ? a : b)`, not Jinja's word-based `(a if test else b)`.
-        const pebble = this.convertExpressionToPebble(value.expr, value.parsed)
-        return `{{ (${this.wrapConditionExpr(value.expr, pebble)} ? '${name}' : '') }}`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge.
-        // Route through `bool_str` when the name/shape witnesses a
-        // boolean value, same as the unconditional path below (#1897).
-        // Bind to a temp first so the expression evaluates once, not in
-        // both the guard and the value.
-        const pebble = this.convertExpressionToPebble(value.expr)
-        const tmp = `bf_pu${this.presenceVarCounter++}`
-        const body = this.shouldBoolStr(value.expr, name)
-            ? `${name}="{{ bf.bool_str(${tmp}) }}"`
-            : `${name}="{{ bf.string(${tmp}) }}"`
-        return `\n{% set ${tmp} = ${pebble} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp)} %}\n${body}\n{% endif %}\n`
-      }
-      // `attr={cond ? value : undefined}` OMITS the attribute on the
-      // falsy branch (Hono drops undefined-valued attributes) — wrap the
-      // whole attribute in the condition instead of rendering `attr=""`
-      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
-      // undefined}`). Same parity rule the Go adapter applies.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
-          // Pass the PARSED sub-trees through as `preParsed` (#2843 review)
-          // rather than re-parsing `m.condition`/`m.consequent` — those are
-          // `exprToString` debug text, which renders any nested
-          // `object-literal` (e.g. a registered call's params, `queryHref`'s
-          // `{ tag }`) as a non-reparseable `[UNSUPPORTED: …]` placeholder.
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.isLoopBoundName(n),
+        boolStr: (expr, attr) => this.shouldBoolStr(expr, attr),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="{{ bf.bool_str(${v}) }}"` : `${name}="{{ bf.string(${v}) }}"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToPebble(value.expr)
+          return `\n{% if ${v} != null %}\n${attr(v, plan.boolStr)}\n{% endif %}\n`
+        }
+        case 'boolean-attr': {
+          const v = this.convertExpressionToPebble(value.expr, value.parsed)
+          return `{{ (${this.wrapConditionExpr(value.expr, v)} ? '${name}' : '') }}`
+        }
+        case 'presence': {
+          const v = this.convertExpressionToPebble(value.expr)
+          const tmp = `bf_pu${this.presenceVarCounter++}`
+          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+        }
+        case 'undefined-alternate': {
+          // Pass the parsed sub-trees through (#2843 review): the string forms
+          // are `exprToString` debug text, which renders a nested object
+          // literal as a non-reparseable placeholder.
+          const m = plan.ternary
           const cond = this.convertConditionToPebble(m.condition, m.testParsed)
           const val = this.convertExpressionToPebble(m.consequent, m.consequentParsed)
           return `\n{% if ${cond} %}\n${name}="{{ bf.string(${val}) }}"\n{% endif %}\n`
         }
+        case 'omit-nil': {
+          const v = this.convertExpressionToPebble(value.expr, value.parsed)
+          const tmp = `bf_pu${this.presenceVarCounter++}`
+          return `\n{% set ${tmp} = ${v} %}\n{% if ${tmp} != null %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+        }
+        case 'plain':
+          return attr(this.convertExpressionToPebble(value.expr, value.parsed), plan.boolStr)
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const v = this.convertExpressionToPebble(value.expr, value.parsed)
-        const tmp = `bf_pu${this.presenceVarCounter++}`
-        const body = this.shouldBoolStr(value.expr, name)
-            ? `${name}="{{ bf.bool_str(${tmp}) }}"`
-            : `${name}="{{ bf.string(${tmp}) }}"`
-        return `\n{% set ${tmp} = ${v} %}\n{% if ${tmp} != null %}\n${body}\n{% endif %}\n`
-      }
-      // Boolean-result handling: route boolean-shaped values through
-      // `bf.bool_str` so the wire bytes match JS `String(boolean)`. Every
-      // other value is a text-position interpolation — route through
-      // `bf.string` (see the file header, divergence 2).
-      // #3166: thread `value.parsed` through (same reason as
-      // `renderConditional`'s matching comment).
-      const pebble = this.convertExpressionToPebble(value.expr, value.parsed)
-      if (this.shouldBoolStr(value.expr, name)) {
-        return `${name}="{{ bf.bool_str(${pebble}) }}"`
-      }
-      return `${name}="{{ bf.string(${pebble}) }}"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1732,64 +1574,24 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`) has
-      // no matching context map in Pebble scope — props arrive as a flat set
-      // of top-level context vars. Emit an inline map literal enumerating
-      // the analyzer-extracted props params.
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${pebbleHashKey(p.name)}: ${pebbleIdent(p.name)}`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${pebbleHashKey(p)}: ${pebbleIdent(p)}`)
         return `{{ bf.spread_attrs({${entries.join(', ')}}) | raw }}`
       }
-      // Conditional inline-object spread (#textarea):
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Pebble inline ternary of maps — the falsy `{}` branch OMITS
-      // the key (`spread_attrs` does NOT emit empty-map entries).
-      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
-      // re-parsing `trimmed`.
-      const ternaryDict = conditionalSpreadToPebble(this.spreadCtx, value.parsed)
-      if (ternaryDict !== null) {
-        return `{{ bf.spread_attrs(${ternaryDict}) | raw }}`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToPebble(this.spreadCtx, candidate)
+        if (lowered !== null) return `{{ bf.spread_attrs(${lowered}) | raw }}`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its initializer text
-      // and route through the same conditional-spread lowering. Only
-      // function-scope (`!isModule`) consts whose value is NOT itself a bare
-      // identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((attrs) => <p
-      // {...attrs} />)`) — without the guard this forwarded the OUTER
-      // const's value at every iteration instead of the per-item value.
-      // Must be the threaded, position-accurate scope — the same name
-      // spread at ROOT (no enclosing loop) must still resolve the const.
-      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = (this.localConstants ?? []).find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
-            // The local const's initializer text isn't carried as a structured
-            // tree on the spread attr, so parse it once via the shared
-            // `parseExpression` (the analyzer's own entry) — not
-            // `ts.createSourceFile` — mirroring go-template's same local-const
-            // resolution path.
-            const resolved = conditionalSpreadToPebble(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `{{ bf.spread_attrs(${resolved}) | raw }}`
-            }
-          }
-        }
-      }
-      const pebbleExpr = this.convertExpressionToPebble(value.expr)
-      return `{{ bf.spread_attrs(${pebbleExpr}) | raw }}`
+      return `{{ bf.spread_attrs(${this.convertExpressionToPebble(value.expr)}) | raw }}`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
@@ -1984,16 +1786,9 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * when the shape was rejected (caller should drop the attribute).
    */
   private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    let probe = expr.trim()
-    while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
-    const startsAsObjectLiteral = probe.startsWith('{')
-    const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
-    if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
-    const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
-    if (parsed.kind !== 'unsupported' && support.supported) return false
-    const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
-    const reasonLine = reason ? `\n${reason}` : ''
+    const refusal = unsupportedAttrExpression(expr, this._loweringMatchers)
+    if (!refusal) return false
+    const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -2024,8 +1819,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPebbleFilterExprPublic: (e, p) => this._renderPebbleFilterExprPublic(e, p),
       _isStringValueName: (name) => this._isStringValueName(name),
@@ -2173,43 +1967,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * consulted at any nesting depth (#2843) — ever sees them. Kept for any
    * caller that only needs the string form; the parsed trees are the
    * correct input wherever the caller can accept `preParsed`.
-   */
-  parseUndefinedAlternateTernary(
-    expr: string,
-  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
-    const parsed = parseExpression(expr.trim())
-    if (parsed?.kind !== 'conditional') return null
-    const alt = parsed.alternate
-    const isUndef =
-      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
-      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
-    if (!isUndef) return null
-    // Serialise the parsed sub-expressions back to JS source rather than
-    // slicing `expr` text — `indexOf('?')` / `lastIndexOf(':')` would
-    // mis-split when the consequent itself contains `?` / `:` inside a
-    // string or nested ternary (`cond ? 'a:b' : undefined`).
-    return {
-      condition: exprToString(parsed.test),
-      consequent: exprToString(parsed.consequent),
-      testParsed: parsed.test,
-      consequentParsed: parsed.consequent,
-    }
-  }
-
-  isBooleanTypedPropRef(expr: string): boolean {
-    let bare = expr.trim()
-    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
-      bare = bare.slice(this.propsObjectName.length + 1)
-    }
-    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
-    // Inside a `.map()` callback, a param that shares a boolean prop's name
-    // is the ROW binding, not the prop — route it through plain string
-    // emission instead of `bf.bool_str` (#2488).
-    if (this.isLoopBoundName(bare)) return false
-    return this.booleanTypedProps.has(bare)
-  }
-
-  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
+   */  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
   private isLoopBoundName(name: string): boolean {
     return this.scope.isBound(name)
   }
@@ -2227,7 +1985,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    */
   private shouldBoolStr(expr: string, name: string): boolean {
     if (isExplicitStringCall(expr)) return false
-    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(expr)
+    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) })
   }
 
   /**

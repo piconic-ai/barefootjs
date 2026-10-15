@@ -65,13 +65,11 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   parseStyleObjectEntries,
   isSupported,
   isSupportedValue,
-  exprToString,
   parseProviderObjectLiteral,
   emitParsedExpr,
   emitIRNode,
@@ -87,21 +85,23 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  sortComparatorFromArrow,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  childTemplateName,
+  isEmptyComponentProps,
+  isBooleanTypedPropRef,
+  planAttrExpression,
+  unsupportedAttrExpression,
+  planLoop,
+  planSpreadAttr,
+  planComponentProps,
+  spellComponentProps,
   BindingScope,
-  filterCaptureCollisions,
   renameFreeIdentifiers,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
-  arithmeticOperandIsNull,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -111,11 +111,13 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
+  emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import { isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
 import { ERB_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -126,9 +128,9 @@ import {
   rubySymbolLiteral,
   rubyIdentifierFromMarkerId,
 } from './lib/ruby-naming.ts'
-import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToRuby } from './lib/static-value.ts'
-import { ErbFilterEmitter, ErbTopLevelEmitter } from './expr/emitters.ts'
+import { ErbFilterEmitter, ErbTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
 import type { ErbEmitContext, ErbSpreadContext, ErbMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToRuby,
@@ -293,7 +295,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * the child's own declared name (`Foo`, what `foo.tsx` registers its ERB
    * partial as) — never the caller-local binding. Built once per compile
    * from `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   * (`@barefootjs/jsx`) and read by `childTemplateName`.
    */
   private importAliases: Map<string, string> = new Map()
 
@@ -400,21 +402,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * (`props.isActive` / destructured `isActive`) — used to route the
    * binding through `bool_str` even though the expression itself is
    * structurally opaque.
-   */
-  isBooleanTypedPropRef(expr: string): boolean {
-    let bare = expr.trim()
-    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
-      bare = bare.slice(this.propsObjectName.length + 1)
-    }
-    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
-    // Inside a `.map()` callback, a param that shares a boolean prop's name
-    // is the ROW binding, not the prop — route it through plain string
-    // emission instead of `bf.bool_str` (#2488).
-    if (this.isLoopBoundName(bare)) return false
-    return this.booleanTypedProps.has(bare)
-  }
-
-  /**
+   */  /**
    * Whether an attribute-value expression should route through
    * `bf.bool_str` (single source of truth for all three attribute-emission
    * call sites that make this decision). Three witnesses (any one
@@ -435,38 +423,14 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    */
   private shouldWrapBoolStr(expr: string, name: string): boolean {
     if (isExplicitStringCall(expr)) return false
-    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(expr)
+    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) })
   }
 
   /**
    * Parse `cond ? value : undefined` (or `: null`), returning the
    * condition/consequent source spans, else `null`. Used for the
    * attribute-omission rule; mirrors the Mojo/Xslate adapters.
-   */
-  parseUndefinedAlternateTernary(
-    expr: string,
-  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
-    const parsed = parseExpression(expr.trim())
-    if (parsed?.kind !== 'conditional') return null
-    const alt = parsed.alternate
-    const isUndef =
-      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
-      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
-    if (!isUndef) return null
-    // `condition`/`consequent` are DEBUG text only (`exprToString` renders an
-    // unsupported nested shape like an object literal as non-reparseable
-    // `[UNSUPPORTED: …]` text) — callers that need to re-lower the
-    // sub-expression must use `testParsed`/`consequentParsed` (the actual
-    // parsed trees) as `preParsed`, not re-parse these strings.
-    return {
-      condition: exprToString(parsed.test),
-      consequent: exprToString(parsed.consequent),
-      testParsed: parsed.test,
-      consequentParsed: parsed.consequent,
-    }
-  }
-
-  /**
+   */  /**
    * Inline a const (any scope) whose initializer is a pure numeric or
    * quoted string literal (`const totalPages = 5`) — function-scope
    * consts never reach the per-render vars Hash, so a bare `v[:totalPages]`
@@ -1020,9 +984,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // read (`rest.flag`) or a `{...rest}` spread onto an intrinsic element.
     // Bare-value rest uses, a spread onto a component/provider, and
     // `.filter().map(destructure)` still have no Ruby scalar form → BF104.
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this.resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToRuby,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -1066,25 +1036,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // check now also does deliberately, up front, for both shapes.
     // Canonical, position-accurate predicate (#2482 Stage 2) — the
     // enclosing loop scope's own membership.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
-    const staticArray = staticItems !== null ? staticValueToRuby(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
-    if (staticArray === null && loop.arrayParsed?.kind === 'identifier') {
-      const arrayName = loop.arrayParsed.name
-      const isUnresolvableLocalConst =
-        !this.scope.isBound(arrayName) &&
-        this.resolveModuleStringConst(arrayName) === null &&
-        this.resolveLiteralConst(arrayName) === null &&
-        this.localConstants.some(c => c.name === arrayName)
-      if (isUnresolvableLocalConst) {
-        this._recordExprBF101(
-          `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
-          `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
-          [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        )
-      }
+    if (loopPlan.unresolvableConst) {
+      const arrayName = loopPlan.unresolvableConst.name
+      this._recordExprBF101(
+        `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
+        `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
+        [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+      )
     }
 
     const rawArray = staticArray ?? this.convertExpressionToRuby(loop.array)
@@ -1188,7 +1148,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // A name the filter predicate captures from an enclosing row that this
     // loop's own block binds again would read the block param inside the
     // loop; keep the enclosing value under a loop-scoped local (#3402).
-    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureAliases = loopPlan.captureAliases
     const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same
@@ -1211,25 +1171,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // carries them).
       this.scope = prevScope
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToRuby('', e)
-      const sortArrow = loop.sortComparator.arrow
-      let sorted: string | null = null
-      if (sortArrow.kind === 'arrow') {
-        sorted = renderSortEval(rawArray, sortArrow.body, sortArrow.params, sortEmit)
-      }
-      if (sorted === null) {
-        const structured = sortComparatorFromArrow(sortArrow)
-        if (structured !== null) sorted = renderSortMethod(rawArray, structured)
-      }
-      if (sorted === null) {
-        // Neither the evaluator nor the structured fallback can model this
-        // comparator — record BF101 and fall through with the unsorted
-        // array so the hoist line stays syntactically valid.
-        this._recordExprBF101(
-          `.sort(...) loop comparator is not lowerable to a template sort`,
-          `Pre-sort the array in the route handler, or mark the loop @client-only.`,
-        )
-        sorted = rawArray
-      }
+      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
+      // the same as `.sort(cmp)` at an expression position: the evaluator,
+      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
+      // comparator the descriptor models, so the refusal arm is defensive; it
+      // keeps the array unsorted so the template stays valid.
+      const plan = loopPlan.sort!
+      let sorted = rawArray
+      if (plan.kind === 'eval') sorted = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
+      else if (plan.kind === 'structured-sort') sorted = renderSortMethod(rawArray, plan.comparator)
+      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
       this.scope = prevScope.enterLoopRow(loop)
       lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
     }
@@ -1415,100 +1366,61 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   }
 
   renderComponent(comp: IRComponent): string {
-    const propParts: string[] = []
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own buffer-slice capture, prepended to the final returned
-    // string below — same mechanism as the reserved children capture,
-    // just keyed by the prop's own name instead of `children`. Unlike the
-    // reserved `children` value (which the child template reads back
-    // through a structural bypass, `isChildrenValueExpr`), a named slot
-    // is read by the child through the GENERIC `bf.h(v[:name])`
-    // text-expression path — there's no name to special-case there, since
-    // any prop name is possible. So the captured HTML is wrapped in
-    // `bf.backend.mark_raw(...)` here (`BarefootJS::SafeString`,
-    // `barefoot_js.rb`) and `Context#h` unwraps it to skip re-escaping —
-    // giving ERB the same "value carries its own safety" bypass Twig's
-    // `Markup` / Kolon's `mark_raw` get from their auto-escaping `{{ }}`.
-    const namedSlotCaptures: string[] = []
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't
-        // valid in a Ruby local variable name, and `comp.slotId` alone
-        // would collide across two named-slot props on the same component
-        // invocation (unlike the reserved children slot, there's only ever
-        // one of those per invocation).
-        const suffix = `${this.childrenCaptureCounter++}`
-        const lenVar = `__bf_len_${suffix}`
-        const rawVar = `__bf_praw_${suffix}`
-        const capVar = `__bf_prop_${suffix}`
-        namedSlotCaptures.push(
-          `<% ${lenVar} = _erbout.length %>${slotBody}<% ${rawVar} = _erbout.slice!(${lenVar}..); ${capVar} = bf.backend.mark_raw(${rawVar}) %>`,
-        )
-        propParts.push(`${rubySymbolKey(p.name)} ${capVar}`)
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) propParts.push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses the
-    // ComponentName_random pattern instead (#2444).
-    if (derivesScopeFromSlot(comp)) {
-      propParts.push(`${rubySymbolKey('_bf_slot')} '${comp.slotId}'`)
-    }
-    const tplName = this.toTemplateName(comp.name)
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />`
-    // lands in a `jsx-children` AttrValue on the corresponding prop. The
-    // parent's scope marker is already attached to each hoisted root by
-    // the IR collector (`needsScope: true`), so the adapter just needs to
-    // render the IR through the same children pipeline as the nested form.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via an ERB output-buffer slice so dynamic
-      // segments inside the children (signals, conditionals) get evaluated
-      // in the parent's template scope before reaching the child renderer.
-      // Mark the buffer position, render the children inline (they append
-      // straight to `_erbout`, the same buffer the surrounding template
-      // uses — `ERB.new(src, eoutvar: '_erbout')`), then slice everything
-      // appended since the mark back OUT of the buffer into a local. No
-      // literal text (not even a newline) may sit between the mark/slice
-      // tags and the children — the slice captures byte-for-byte whatever
-      // `_erbout` gained in between, so any interposed template text would
-      // leak into (or out of) the capture.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
-      const lenVar = `__bf_len_${suffix}`
-      const capVar = `__bf_children_${suffix}`
-      const propsHash = `{ ${[...propParts, `children: ${capVar}`].join(', ')} }`
-      return `${namedSlotCaptures.join('')}<% ${lenVar} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(${lenVar}..) %><%= bf.render_child('${tplName}', ${propsHash}) %>`
-    }
-    const propsHash = propParts.length > 0 ? `{ ${propParts.join(', ')} }` : '{}'
-    return `${namedSlotCaptures.join('')}<%= bf.render_child('${tplName}', ${propsHash}) %>`
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with an ERB output-buffer
+    // slice, so dynamic segments inside them (signals, conditionals) are
+    // evaluated in the parent's template scope: mark the buffer position,
+    // render the children inline (they append straight to `_erbout`, the
+    // buffer the surrounding template uses — `ERB.new(src, eoutvar:
+    // '_erbout')`), then slice everything appended since the mark back out
+    // into a local. No literal text (not even a newline) may sit between
+    // the mark/slice tags and the children, or it would leak into (or out
+    // of) the capture. Unlike the reserved `children` value, which the
+    // child reads through a structural bypass (`isChildrenValueExpr`), a
+    // named slot is read through the generic `bf.h(v[:name])` path, so its
+    // HTML is wrapped in `bf.backend.mark_raw(...)` (`BarefootJS::
+    // SafeString`), which `Context#h` passes through unescaped. A named
+    // slot's locals are counter-based: a prop name can contain characters
+    // (`data-slot`) that are no valid Ruby local name.
+    const tplName = childTemplateName(comp.name, this.importAliases)
+    const captures: string[] = []
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot': {
+            const slotBody = this.renderChildren(entry.children)
+            const suffix = `${this.childrenCaptureCounter++}`
+            const capVar = `__bf_prop_${suffix}`
+            captures.push(
+              `<% __bf_len_${suffix} = _erbout.length %>${slotBody}<% __bf_praw_${suffix} = _erbout.slice!(__bf_len_${suffix}..); ${capVar} = bf.backend.mark_raw(__bf_praw_${suffix}) %>`,
+            )
+            return `${rubySymbolKey(entry.name)} ${capVar}`
+          }
+          case 'props-param':
+            return `${rubySymbolKey(entry.name)} v[${rubySymbolLiteral(entry.name)}]`
+          case 'slot-id':
+            return `${rubySymbolKey('_bf_slot')} '${entry.slotId}'`
+          case 'children': {
+            const childrenBody = this.renderChildren(entry.children)
+            const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
+            const capVar = `__bf_children_${suffix}`
+            captures.push(`<% __bf_len_${suffix} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(__bf_len_${suffix}..) %>`)
+            return `children: ${capVar}`
+          }
+        }
+      },
+      // Ruby's `**hash` double-splat folds a spread in place (`emitSpread`).
+      spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+    })
+    const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
+    const propsHash = parts.length > 0 ? `{ ${parts.join(', ')} }` : '{}'
+    return `${captures.join('')}<%= bf.render_child('${tplName}', ${propsHash}) %>`
   }
 
   private childrenCaptureCounter = 0
-
-  private toTemplateName(componentName: string): string {
-    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
-    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
-    // has no `foo.tsx`-registered partial; only `Foo` does.
-    const declaredName = this.importAliases.get(componentName) ?? componentName
-    // Convert PascalCase to snake_case for ERB template naming
-    return declaredName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .replace(/^_/, '')
-  }
-
   // ===========================================================================
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
@@ -1611,108 +1523,45 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish-attribute omission (#textarea rows): when the
-      // attribute value is a BARE reference to an optional, no-default
-      // prop (which reads `nil` when the caller omits it), guard the
-      // attribute with a Ruby nil-check so it DROPS rather than rendering
-      // `attr=""`. The guarded body reuses the exact normal emission, so
-      // value escaping is unchanged; only the presence is conditional.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches
-      // the SolidJS props-object pattern, not just destructured params
-      // (#checkbox `id={props.id}`). Same for a closed-type rest-expanded
-      // key's `rest.tag`-shaped expression (#3057) — see `restPropsName`'s
-      // docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `.nil?` guard (#2488).
-          !this.isLoopBoundName(normalizedBareId)) ||
-          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
-      ) {
-        const ruby = this.convertExpressionToRuby(value.expr)
-        const body =
-          this.shouldWrapBoolStr(value.expr, name)
-            ? `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
-            : `${name}="<%= bf.h(${ruby}) %>"`
-        return `<% if !(${ruby}).nil? %>${body}<% end %>`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        // Thread the IR-carried `.parsed` tree (#3210): a recognised
-        // `<action>.isPending()` read has already been substituted with its
-        // seed literal there; re-parsing `value.expr` would lower it as a
-        // member read (`NoMethodError` on `nil`).
-        return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr, value.parsed)}) ? '${name}' : '' %>`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge. Route
-        // through `bool_str` when the name/shape witnesses a boolean
-        // value, same as the unconditional path below. Bind to a temp
-        // first so the expression evaluates once, not in both the guard
-        // and the value.
-        const ruby = this.convertExpressionToRuby(value.expr)
-        const tmp = `__bf_pu${this.presenceVarCounter++}`
-        const body =
-          this.shouldWrapBoolStr(value.expr, name)
-            ? `${name}="<%= bf.h(bf.bool_str(${tmp})) %>"`
-            : `${name}="<%= bf.h(${tmp}) %>"`
-        return `<% ${tmp} = ${ruby}; if bf.truthy?(${tmp}) %>${body}<% end %>`
-      }
-      // Boolean-result handling: see `shouldWrapBoolStr`'s docstring for
-      // the three wrap witnesses and the `String(...)`-call exception.
-      //
-      // `attr={cond ? value : undefined}` OMITS the attribute on the falsy
-      // branch (Hono drops undefined-valued attributes) — wrap the whole
-      // attribute in the condition instead of rendering `attr=""`.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.isLoopBoundName(n),
+        boolStr: (expr, attr) => this.shouldWrapBoolStr(expr, attr),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="<%= bf.h(bf.bool_str(${v})) %>"` : `${name}="<%= bf.h(${v}) %>"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToRuby(value.expr)
+          return `<% if !(${v}).nil? %>${attr(v, plan.boolStr)}<% end %>`
+        }
+        case 'boolean-attr':
+          return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr, value.parsed)}) ? '${name}' : '' %>`
+        case 'presence': {
+          const v = this.convertExpressionToRuby(value.expr)
+          const tmp = `__bf_pu${this.presenceVarCounter++}`
+          return `<% ${tmp} = ${v}; if bf.truthy?(${tmp}) %>${attr(tmp, plan.boolStr)}<% end %>`
+        }
+        case 'undefined-alternate': {
+          const m = plan.ternary
           const cond = this.convertExpressionToRuby('', m.testParsed)
           const val = this.convertExpressionToRuby('', m.consequentParsed)
           return `<% if bf.truthy?(${cond}) %>${name}="<%= bf.h(${val}) %>"<% end %>`
         }
+        case 'omit-nil': {
+          const v = this.convertExpressionToRuby(value.expr, value.parsed)
+          const tmp = `__bf_pu${this.presenceVarCounter++}`
+          return `<% ${tmp} = ${v}; if !${tmp}.nil? %>${attr(tmp, plan.boolStr)}<% end %>`
+        }
+        case 'plain':
+          return attr(this.convertExpressionToRuby(value.expr, value.parsed), plan.boolStr)
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const ruby = this.convertExpressionToRuby(value.expr, value.parsed)
-        const tmp = `__bf_pu${this.presenceVarCounter++}`
-        const body =
-          this.shouldWrapBoolStr(value.expr, name)
-            ? `${name}="<%= bf.h(bf.bool_str(${tmp})) %>"`
-            : `${name}="<%= bf.h(${tmp}) %>"`
-        return `<% ${tmp} = ${ruby}; if !${tmp}.nil? %>${body}<% end %>`
-      }
-      // #3166: thread the IR-carried `.parsed` tree through (same reason as
-      // `renderExpression`'s `expr.parsed` above) — a recognised
-      // `<action>.isPending()` / `.error()` read has already been
-      // substituted with its seed literal there; re-parsing `value.expr`
-      // fresh here would lose that and fall into the generic member-access
-      // lowering (`v[:fetchPosts][:isPending]`, `NoMethodError` on `nil`).
-      const ruby = this.convertExpressionToRuby(value.expr, value.parsed)
-      if (this.shouldWrapBoolStr(value.expr, name)) {
-        return `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
-      }
-      return `${name}="<%= bf.h(${ruby}) %>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1732,63 +1581,24 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`)
-      // has no matching `v[:props]` entry in the ERB vars Hash — props
-      // arrive as one vars-Hash key per `propsParams` entry, not as a
-      // single nested Hash. Emit an inline Hash literal that enumerates
-      // the analyzer-extracted props params so `bf.spread_attrs(...)` gets
-      // a real Hash (matches the Go adapter's same-shape map-literal
-      // path). For `restPropsName` and other identifier shapes, the
-      // standard `convertExpressionToRuby` translation handles it (rest
-      // binding name → `v[:<name>]` resolves against the Hash the caller /
-      // harness placed under that key).
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${rubySymbolKey(p.name)} v[${rubySymbolLiteral(p.name)}]`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${rubySymbolKey(p)} v[${rubySymbolLiteral(p)}]`)
         return `<%= bf.spread_attrs({${entries.join(', ')}}) %>`
       }
-      // Conditional inline-object spread:
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Ruby inline ternary of Hashes — the falsy `{}` branch OMITS
-      // the key (`bf.spread_attrs` does NOT filter empty strings, so we
-      // cannot always-include it). Mirrors the Go adapter's IIFE-of-maps
-      // lowering (#textarea).
-      const ternaryHash = conditionalSpreadToRuby(this.spreadCtx, value.parsed)
-      if (ternaryHash !== null) {
-        return `<%= bf.spread_attrs(${ternaryHash}) %>`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToRuby(this.spreadCtx, candidate)
+        if (lowered !== null) return `<%= bf.spread_attrs(${lowered}) %>`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its initializer
-      // text and route through the same conditional-spread lowering. Only
-      // function-scope (`!isModule`) consts whose value is NOT itself a
-      // bare identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((attrs) => <p
-      // {...attrs} />)`) — without the guard this forwarded the OUTER
-      // const's value at every iteration instead of the per-item value.
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = this.localConstants.find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            const resolved = conditionalSpreadToRuby(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `<%= bf.spread_attrs(${resolved}) %>`
-            }
-          }
-        }
-      }
-      const rubyExpr = this.convertExpressionToRuby(value.expr)
-      return `<%= bf.spread_attrs(${rubyExpr}) %>`
+      return `<%= bf.spread_attrs(${this.convertExpressionToRuby(value.expr)}) %>`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
@@ -2015,16 +1825,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * shape was rejected (caller should drop the attribute / skip the emit).
    */
   private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    let probe = expr.trim()
-    while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
-    const startsAsObjectLiteral = probe.startsWith('{')
-    const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
-    if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
-    const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
-    if (parsed.kind !== 'unsupported' && support.supported) return false
-    const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
-    const reasonLine = reason ? `\n${reason}` : ''
+    const refusal = unsupportedAttrExpression(expr, this._loweringMatchers)
+    if (!refusal) return false
+    const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -2055,8 +1858,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       isLoopBoundName: (name) => this.isLoopBoundName(name),
       _isStringValueName: (name) => this._isStringValueName(name),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _isNullOperand: (expr) => arithmeticOperandIsNull(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
     }

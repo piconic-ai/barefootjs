@@ -206,6 +206,28 @@ import { fixture as filterPredicatePropsMember } from './filter-predicate-props-
 import { fixture as filterPredicateModulo } from './filter-predicate-modulo'
 import { fixture as fillUnsupported } from './fill-unsupported'
 import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
+import { fixture as componentSpreadRest } from './component-spread-rest'
+import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
+import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
+import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
+import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
+import { fixture as callbackIndexParam } from './callback-index-param'
+import { fixture as callbackIndexParamClient } from './callback-index-param-client'
+import { fixture as callbackNestedIndexParam } from './callback-nested-index-param'
+import { fixture as filterIndexParamLoop } from './filter-index-param-loop'
+import { fixture as filterIndexParamLoopClient } from './filter-index-param-loop-client'
+import { fixture as sortOpaqueComparator } from './sort-opaque-comparator'
+import { fixture as sortOpaqueComparatorClient } from './sort-opaque-comparator-client'
+import { fixture as mapOpaqueProjection } from './map-opaque-projection'
+import { fixture as mapOpaqueProjectionClient } from './map-opaque-projection-client'
+import { fixture as reduceNonliteralSeed } from './reduce-nonliteral-seed'
+import { fixture as reduceNonliteralSeedClient } from './reduce-nonliteral-seed-client'
+import { fixture as filterOpaquePredicate } from './filter-opaque-predicate'
+import { fixture as filterOpaquePredicateClient } from './filter-opaque-predicate-client'
+import { fixture as filterNativeNestedIndex } from './filter-native-nested-index'
+import { fixture as filterNativeNestedIndexClient } from './filter-native-nested-index-client'
+import { fixture as filterArrayMethodPredicate } from './filter-array-method-predicate'
+import { fixture as filterArrayMethodPredicateClient } from './filter-array-method-predicate-client'
 import { fixture as findTypeofPredicate } from './find-typeof-predicate'
 import { fixture as findTypeofPredicateClient } from './find-typeof-predicate-client'
 import { fixture as someTypeofPredicate } from './some-typeof-predicate'
@@ -654,6 +676,10 @@ import { fixture as loopDestructuredParamCondition } from './loop-destructured-p
 import { fixture as nestedLoopTailContent } from './nested-loop-tail-content'
 import { fixture as loopParamShadowsBoolProp } from './loop-param-shadows-bool-prop'
 import { fixture as loopParamShadowsSpreadConst } from './loop-param-shadows-spread-const'
+import { fixture as loopParamShadowsArrayConst } from './loop-param-shadows-array-const'
+import { fixture as computedConstLoopSourceParenthesized } from './computed-const-loop-source-parenthesized'
+import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './computed-const-loop-source-parenthesized-precomputed'
+import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateClientRevival } from './date-client-revival'
 import { fixture as dateClientCatalogued } from './date-client-catalogued'
@@ -1078,6 +1104,28 @@ export const jsxFixtures: JSXFixture[] = [
   filterPredicateModulo,
   fillUnsupported,
   fillUnsupportedClient,
+  componentSpreadRest,
+  componentSpreadPropsThenExplicit,
+  componentSpreadExplicitThenProps,
+  nullishOperandArithmeticMatrix,
+  omittedOptionalNumberArithmetic,
+  callbackIndexParam,
+  callbackIndexParamClient,
+  callbackNestedIndexParam,
+  filterIndexParamLoop,
+  filterIndexParamLoopClient,
+  sortOpaqueComparator,
+  sortOpaqueComparatorClient,
+  mapOpaqueProjection,
+  mapOpaqueProjectionClient,
+  reduceNonliteralSeed,
+  reduceNonliteralSeedClient,
+  filterOpaquePredicate,
+  filterOpaquePredicateClient,
+  filterNativeNestedIndex,
+  filterNativeNestedIndexClient,
+  filterArrayMethodPredicate,
+  filterArrayMethodPredicateClient,
   findTypeofPredicate,
   findTypeofPredicateClient,
   someTypeofPredicate,
@@ -1420,6 +1468,10 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopTailContent,
   loopParamShadowsBoolProp,
   loopParamShadowsSpreadConst,
+  loopParamShadowsArrayConst,
+  computedConstLoopSourceParenthesized,
+  computedConstLoopSourceParenthesizedPrecomputed,
+  computedConstLoopSourceParenthesizedClient,
   dateMethodUncatalogued,
   dateClientRevival,
   dateClientCatalogued,

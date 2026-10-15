@@ -6,5 +6,5 @@ export default defineLimitation({
   given: 'a `.map()` whose array is a component- or module-scope `const` computed from props or a function call',
   expected: 'the rows render in the server HTML',
   diagnostic: 'BF101',
-  fixtures: ['static-array-from-props', 'static-array-from-props-with-component', 'module-const-loop-source-computed'],
+  fixtures: ['static-array-from-props', 'static-array-from-props-with-component', 'module-const-loop-source-computed', 'computed-const-loop-source-parenthesized'],
 })

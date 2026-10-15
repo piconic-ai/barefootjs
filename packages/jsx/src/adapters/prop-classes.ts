@@ -46,3 +46,28 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
     ...ir.metadata.restPropsExpandedKeys,
   ])
 }
+
+export interface BooleanTypedPropContext {
+  /** The SolidJS-style props identifier (`function C(props: P)`), if any. */
+  propsObjectName: string | null
+  /** Props typed `boolean` (`collectBooleanTypedProps`). */
+  booleanTypedProps: ReadonlySet<string>
+  /** A binding at the read site shadows `name`. */
+  isBound(name: string): boolean
+}
+
+/**
+ * Whether `expr` is a bare read of a boolean-typed prop (`open`,
+ * `props.open`), which renders through `bool_str`. Inside a `.map()`
+ * callback, a param that shares the prop's name is the row binding, not the
+ * prop (#2488).
+ */
+export function isBooleanTypedPropRef(expr: string, ctx: BooleanTypedPropContext): boolean {
+  let bare = expr.trim()
+  if (ctx.propsObjectName && bare.startsWith(`${ctx.propsObjectName}.`)) {
+    bare = bare.slice(ctx.propsObjectName.length + 1)
+  }
+  if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
+  if (ctx.isBound(bare)) return false
+  return ctx.booleanTypedProps.has(bare)
+}

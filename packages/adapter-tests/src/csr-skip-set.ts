@@ -4,6 +4,10 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
+  // `component-prop-spread` (#3479): the CSR template drops a props spread
+  // onto a child component when the call also passes explicit props.
+  'component-spread-props-then-explicit',
+  'component-spread-explicit-then-props',
   // The client-directive escape intentionally elides the outer loop's
   // SSR rows. Its native-element CSR template eagerly creates those rows,
   // so comparing it with the empty SSR placeholder is not its contract.
@@ -27,6 +31,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // `module-const-loop-source-child-component` (the fully-static-literal
   // shapes #2946 fixed) are NOT skipped here — those inline fine.
   'module-const-loop-source-computed',
+  // #3473: the same function-scope computed const as `static-array-from-props`,
+  // parenthesized; the template array is `[]` there too.
+  'computed-const-loop-source-parenthesized',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',

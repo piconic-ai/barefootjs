@@ -1179,6 +1179,65 @@
         "text"
       ]
     },
+    "callback-index-param": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "callback-index-param-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "callback-nested-index-param": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "callback-param-shadows-prop": {
       "kinds": [
         "array-literal",
@@ -1651,6 +1710,39 @@
         "text"
       ]
     },
+    "component-spread-explicit-then-props": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "component-spread-props-then-explicit": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "component-spread-rest": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-with-jsx-children": {
       "kinds": [
         "call",
@@ -1726,6 +1818,44 @@
     "composite-row-child-rest-bag-prop-hoisted": {
       "kinds": [
         "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "computed-const-loop-source-parenthesized": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "computed-const-loop-source-parenthesized-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "computed-const-loop-source-parenthesized-precomputed": {
+      "kinds": [
         "identifier",
         "member"
       ],
@@ -3142,6 +3272,44 @@
         "text"
       ]
     },
+    "filter-array-method-predicate": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-array-method-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "filter-capture-keeps-same-name-literal": {
       "kinds": [
         "binary",
@@ -3200,6 +3368,95 @@
       "contexts": [
         "attribute",
         "loop"
+      ]
+    },
+    "filter-index-param-loop": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-index-param-loop-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-native-nested-index": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-native-nested-index-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "text"
       ]
     },
     "filter-nested-callback-predicate": {
@@ -3275,6 +3532,48 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "filter-opaque-predicate": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-opaque-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -4515,6 +4814,19 @@
         "loop"
       ]
     },
+    "loop-param-shadows-array-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-shadows-bool-prop": {
       "kinds": [
         "call",
@@ -5419,6 +5731,42 @@
       "axes": [
         "array-method:join",
         "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "map-opaque-projection": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "map-opaque-projection-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
         "literal:string"
       ],
       "contexts": [
@@ -6515,6 +6863,27 @@
         "attribute"
       ]
     },
+    "nullish-operand-arithmetic-matrix": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:/",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nullish-optional-member-attr": {
       "kinds": [
         "call",
@@ -6942,6 +7311,23 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "omitted-optional-number-arithmetic": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -7743,6 +8129,42 @@
       "axes": [
         "binary:+",
         "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-nonliteral-seed": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-nonliteral-seed-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
       ],
       "contexts": [
         "text"
@@ -8834,6 +9256,42 @@
       ],
       "axes": [
         "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "sort-opaque-comparator": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "sort-opaque-comparator-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
         "literal:string"
       ],
       "contexts": [

@@ -51,10 +51,8 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
-  exprToString,
   parseProviderObjectLiteral,
   parseStyleObjectEntries,
   isSupported,
@@ -72,14 +70,20 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  sortComparatorFromArrow,
   isLowerableLoopDestructure,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  childTemplateName,
+  isEmptyComponentProps,
+  isBooleanTypedPropRef,
+  planAttrExpression,
+  unsupportedAttrExpression,
+  planLoop,
+  planSpreadAttr,
+  planComponentProps,
+  spellComponentProps,
   BindingScope,
   type ScopeFrame,
   rootPropAliasNames,
@@ -87,8 +91,6 @@ import {
   rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -98,6 +100,8 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
+  emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -108,14 +112,14 @@ import {
   isOpaqueLocalAccessorName,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
 import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { kolonHashKey, escapeKolonSingleQuoted } from './lib/kolon-naming.ts'
-import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToKolon } from './lib/static-value.ts'
-import { XslateFilterEmitter, XslateTopLevelEmitter } from './expr/emitters.ts'
+import { XslateFilterEmitter, XslateTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
 import type { XslateEmitContext, XslateSpreadContext, XslateMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToKolon,
@@ -306,7 +310,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * silently drops the child rather than raising, so this was the worst
    * variant of the bug class. Built once per compile from
    * `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   * (`@barefootjs/jsx`) and read by `childTemplateName`.
    */
   private importAliases: Map<string, string> = new Map()
 
@@ -883,9 +887,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // gate's own jsdoc for the full list); a `.filter().map(destructure)`
     // chain (the filter-param rewrite is out of scope here); and a
     // computed property key (`{ [k]: v }`, refused earlier as BF025).
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToKolon,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -932,27 +942,21 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // conservative refusal, not a silent wrong value). Canonical,
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
-    const staticArray = staticItems !== null ? staticValueToKolon(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
-    const arrayName = loop.array.trim()
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
-      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && this._resolveLiteralConst(arrayName) === null) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Xslate adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
+    const arrayConst = loopPlan.unresolvableConst
+    if (arrayConst) {
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Xslate adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        },
+      })
     }
 
     const rawArray = staticArray ?? this.convertExpressionToKolon(loop.array)
@@ -961,26 +965,21 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // helper runs once.
     let array = rawArray
     if (loop.sortComparator) {
-      // Evaluator-first (#2018 P3): serialize the comparator arrow body + emit
-      // `$bf.sort_eval`; fall back to the structured `$bf.sort` for a
-      // comparator the evaluator can't model (e.g. `localeCompare`). The
-      // comparator now arrives as an `IRLoopSort` carrying the generic
-      // `arrow` + its params.
-      const sort = loop.sortComparator
+      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
+      // the same as `.sort(cmp)` at an expression position: the evaluator,
+      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
+      // comparator the descriptor models, so the refusal arm is defensive; it
+      // keeps the array unsorted so the template stays valid.
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToKolon('', e)
-      const arrow = sort.arrow
-      const params =
-        arrow.kind === 'arrow' ? arrow.params : [sort.paramA, sort.paramB]
-      const structured = sortComparatorFromArrow(arrow)
-      array =
-        renderSortEval(rawArray, arrow.kind === 'arrow' ? arrow.body : arrow, params, sortEmit) ??
-        (structured !== null ? renderSortMethod(rawArray, structured) : rawArray)
+      const plan = loopPlan.sort!
+      if (plan.kind === 'eval') array = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
+      else if (plan.kind === 'structured-sort') array = renderSortMethod(rawArray, plan.comparator)
+      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
     }
     const param = loop.param
     // Kolon binds the item directly via `for LIST -> $item`. The index, when
     // needed (`.keys().map(k => ...)` or an explicit `index` param), comes
     // from Text::Xslate's loop variable `$~param.index`.
-    const renderedChildren = this.renderChildren(loop.children)
 
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
@@ -1062,9 +1061,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
     const prevInLoop = this.inLoop
     this.inLoop = true
-    // Re-render children now that inLoop is set (so nested components use the
-    // loop-child naming convention). renderedChildren above was computed with
-    // the previous flag; recompute under the loop flag.
+    // The children render once, under the loop flag (so nested components use
+    // the loop-child naming convention) and the row scope below.
 
     // This loop's row scope, for the position-accurate shadow guard
     // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
@@ -1111,7 +1109,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.inLoop = prevInLoop
-    void renderedChildren
 
     // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
     // anchor before each item's (possibly empty) conditional content so the
@@ -1239,27 +1236,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     emitJsxChildren: () => '',
   }
 
-  /**
-   * A `renderComponent` props hashref, built as an ORDERED sequence of
-   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
-   * (later entries win) survive the trip through Kolon, which has no
-   * hash-splat syntax (no `%$h`-into-hashref-literal form — verified: parse
-   * error). Each `'entries'` segment is a literal Kolon hashref
-   * `{ k => v, ... }`; each `'spread'` segment is an arbitrary expression
-   * lowered from a `{...expr}` prop. `combineComponentPropSegments` folds
-   * the sequence into ONE expression via chained `.merge(...)` calls
-   * (Kolon's builtin hash method, later argument wins on key conflict,
-   * matching `Object.assign`/JSX order).
-   */
-  private componentPropSegmentEntries(
-    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
-  ): string[] {
-    const last = segments[segments.length - 1]
-    if (last && last.kind === 'entries') return last.parts
-    const seg = { kind: 'entries' as const, parts: [] as string[] }
-    segments.push(seg)
-    return seg.parts
-  }
 
   /**
    * Fold ordered prop segments into a single Kolon expression via chained
@@ -1295,95 +1271,41 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   renderComponent(comp: IRComponent): string {
-    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
-    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
-    const currentEntries = () => this.componentPropSegmentEntries(segments)
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own macro, prepended to the final returned string below —
-    // same mechanism as the reserved children macro, just keyed by the
-    // prop's own name instead of `children`.
-    const namedSlotMacros: string[] = []
-
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't a
-        // valid Kolon macro identifier, and `comp.slotId` alone would
-        // collide across two named-slot props on the same component
-        // invocation (unlike the reserved children slot, there's only ever
-        // one of those per invocation).
-        const macroName = `bf_prop_${this.childrenCaptureCounter++}`
-        namedSlotMacros.push(`<: macro ${macroName} -> () { :>${slotBody}<: } :>`)
-        currentEntries().push(`${kolonHashKey(p.name)} => ${macroName}()`)
-        continue
-      }
-      if (p.value.kind === 'spread') {
-        const trimmed = p.value.expr.trim()
-        // SolidJS-style props identifier (`function(props: P)`) has no
-        // matching runtime hash in Kolon scope — props arrive as a flat
-        // set of top-level template vars, so enumerate the
-        // analyzer-extracted props params into hashref entries instead of
-        // treating it as a runtime spread expression.
-        if (this.propsObjectName && this.propsObjectName === trimmed) {
-          for (const pp of this.propsParams) {
-            currentEntries().push(`${pp.name} => $${pp.name}`)
-          }
-          continue
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with a Kolon macro, evaluated
+    // in the parent's template scope (signals, conditionals), and passed as
+    // the macro call's result; `render_child` materializes a CODE-ref
+    // children value through the backend before handing it to the child. A
+    // named slot's macro name is counter-based: a prop name can contain
+    // characters (`data-slot`) that are no valid macro name.
+    const tplName = childTemplateName(comp.name, this.importAliases)
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const macroName = name()
+      captures.push(`<: macro ${macroName} -> () { :>${body}<: } :>`)
+      return `${macroName}()`
+    }
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${kolonHashKey(entry.name)} => ${capture(entry.children, () => `bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${entry.name} => $${entry.name}`
+          case 'slot-id':
+            return `_bf_slot => '${entry.slotId}'`
+          case 'children':
+            return `children => ${capture(entry.children, () => `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
         }
-        // Every other spread shape (a destructure rest-bag `props`, a
-        // member-access bag like `children.props`, an intrinsic-element
-        // spread helper's own operand, …) — Kolon hashref literals can't
-        // splat a runtime hash into named entries at a call site, but the
-        // builtin `.merge` method can fold it into the accumulated
-        // hashref at the right ordinal position, mirroring Twig's
-        // `|merge` / Jinja's `dict(base, **top)`: no compile-time
-        // filtering of onXxx/ref keys out of the runtime bag (the render
-        // contract tolerates them, same as the other spread-lowering
-        // adapters).
-        segments.push({ kind: 'spread', expr: this.convertExpressionToKolon(p.value.expr) })
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) currentEntries().push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444). Appended to whatever the trailing entries segment is
-    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
-    // these compiler-controlled entries.
-    if (derivesScopeFromSlot(comp)) {
-      currentEntries().push(`_bf_slot => '${comp.slotId}'`)
-    }
-    const tplName = this.toTemplateName(comp.name)
-
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />` lands in
-    // a `jsx-children` AttrValue on the corresponding prop.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via a Kolon macro. The macro body is evaluated in
-      // the parent's template scope (signals, conditionals) and produces the
-      // children HTML; the macro call result is passed as the `children` entry
-      // of the render_child hashref. `render_child` materializes a CODE-ref
-      // children value through the backend before handing it to the child.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const macroName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      currentEntries().push(`children => ${macroName}()`)
-      const dict = this.combineComponentPropSegments(segments)
-      return `${namedSlotMacros.join('')}<: macro ${macroName} -> () { :>${childrenBody}<: } :><: $bf.render_child('${tplName}', ${dict}) | mark_raw :>`
-    }
-
-    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
-    const hashEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `${namedSlotMacros.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
+      },
+      spread: (value) => this.convertExpressionToKolon(value.expr),
+    })
+    const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
+    return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
   }
 
   private childrenCaptureCounter = 0
@@ -1400,21 +1322,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
   private presenceVarCounter = 0
-
-  private toTemplateName(componentName: string): string {
-    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
-    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
-    // has no `foo.tsx`-registered partial; only `Foo` does. Xslate's
-    // unresolved-reference case silently drops the child rather than
-    // raising, so this mismatch was the worst variant of the bug class.
-    const declaredName = this.importAliases.get(componentName) ?? componentName
-    // Convert PascalCase to snake_case for template naming.
-    return declaredName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .replace(/^_/, '')
-  }
-
   // ===========================================================================
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
@@ -1509,120 +1416,53 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish omission: a bare reference to an optional,
-      // no-default prop (`nullableOptionalProps`) is `defined`-guarded so the
-      // attribute drops instead of rendering `attr=""`. Narrowly scoped to bare
-      // identifiers — member exprs, calls, and concrete/defaulted props are
-      // unaffected.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches the
-      // SolidJS props-object pattern, not just destructured params. Same for
-      // a closed-type rest-expanded key's `rest.tag`-shaped expression
-      // (#3057) — see `restPropsName`'s docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `defined` guard (#2488).
-          !this.isLoopBoundName(normalizedBareId)) ||
-          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
-      ) {
-        const perl = this.convertExpressionToKolon(value.expr)
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<: $bf.bool_str(${perl}) :>"`
-            : `${name}="<: ${perl} :>"`
-        // Kolon `:` line directives must each stand alone on their own line, so
-        // wrap in newlines (`normalizeHTML` collapses the surrounding space).
-        return `\n: if (defined ${perl}) {\n${body}\n: }\n`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge.
-        // Route through `bool_str` when the name/shape witnesses a
-        // boolean value, same as the unconditional path below (#1897).
-        // Bind to a temp first so the expression evaluates once, not in
-        // both the guard and the value.
-        const perl = this.convertExpressionToKolon(value.expr)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<: $bf.bool_str(${tmp}) :>"`
-            : `${name}="<: ${tmp} :>"`
-        return `\n: my ${tmp} = ${perl};\n: if (${tmp}) {\n${body}\n: }\n`
-      }
-      // `attr={cond ? value : undefined}` OMITS the attribute on the
-      // falsy branch (Hono drops undefined-valued attributes) — wrap the
-      // whole attribute in the condition instead of rendering `attr=""`
-      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
-      // undefined}`). Same parity rule the Go adapter applies.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
-          // Pass the PARSED sub-trees through as `preParsed` (#2843 review)
-          // rather than re-parsing `m.condition`/`m.consequent` — those are
-          // `exprToString` debug text, which renders any nested
-          // `object-literal` (e.g. a registered call's params, `queryHref`'s
-          // `{ tag }`) as a non-reparseable `[UNSUPPORTED: …]` placeholder.
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.isLoopBoundName(n),
+        boolStr: (expr, attr) => isBooleanResultExpr(expr) || isAriaBooleanAttr(attr) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) }),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="<: $bf.bool_str(${v}) :>"` : `${name}="<: ${v} :>"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToKolon(value.expr)
+          return `\n: if (defined ${v}) {\n${attr(v, plan.boolStr)}\n: }\n`
+        }
+        case 'boolean-attr':
+          return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
+        case 'presence': {
+          const v = this.convertExpressionToKolon(value.expr)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `\n: my ${tmp} = ${v};\n: if (${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
+        }
+        case 'undefined-alternate': {
+          // A mixed boolean / string branch renders its boolean as JS does.
+          const m = plan.ternary
           const cond = this.convertExpressionToKolon('', m.testParsed)
           const val = this.convertExpressionToKolon('', stringifyBooleanTernaryBranches(m.consequentParsed))
-          // A boolean-result consequent (`c ? false : undefined`) still
-          // renders JS `String(boolean)` (#3349).
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `$bf.bool_str(${val})`
             : this.jsNumberOutput(m.consequentParsed, val)
           return `\n: if (${cond}) {\n${name}="<: ${shown} :>"\n: }\n`
         }
+        case 'omit-nil':
+        case 'plain': {
+          // A ternary with a boolean and a string branch renders its boolean
+          // as JS does, unless the whole value goes through `bool_str`.
+          const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+          const v = this.convertExpressionToKolon(value.expr, mixedParsed)
+          if (plan.kind === 'plain') return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `\n: my ${tmp} = ${v};\n: if (defined ${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
+        }
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      // A ternary mixing a boolean branch with another kind
-      // (`yes() ? false : s()`) spells its boolean branch as JS does (#3349).
-      // Not when the whole value is serialized by `bool_str` below (an ARIA
-      // boolean name, a boolean-typed prop): it reads the branch's truth,
-      // and a stringified `'false'` is truthy in Perl.
-      const wrapsBoolStr =
-        isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
-      const mixedParsed = valueParsed && !wrapsBoolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          wrapsBoolStr
-            ? `${name}="<: $bf.bool_str(${tmp}) :>"`
-            : `${name}="<: ${tmp} :>"`
-        return `\n: my ${tmp} = ${perl};\n: if (defined ${tmp}) {\n${body}\n: }\n`
-      }
-      // Boolean-result handling: route boolean-shaped values through
-      // `$bf.bool_str` so the wire bytes match JS `String(boolean)`.
-      // #3166: thread `value.parsed` through (same reason as
-      // `renderConditional`'s matching comment).
-      const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
-      if (wrapsBoolStr) {
-        return `${name}="<: $bf.bool_str(${perl}) :>"`
-      }
-      return `${name}="<: ${this.jsNumberOutput(mixedParsed, perl)} :>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1633,65 +1473,24 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`) has
-      // no matching `$props` variable in Kolon's scope — props arrive as a
-      // flat set of top-level vars. Emit an inline hashref literal enumerating
-      // the analyzer-extracted props params.
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${JSON.stringify(p.name)} => $${p.name}`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${JSON.stringify(p)} => $${p}`)
         return `<: $bf.spread_attrs({${entries.join(', ')}}) | mark_raw :>`
       }
-      // Conditional inline-object spread (#textarea):
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Kolon inline ternary of hashrefs — Perl truthiness handles the
-      // condition for free, and the falsy `{}` branch OMITS the key
-      // (`spread_attrs` does NOT emit empty hashref entries).
-      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
-      // re-parsing `trimmed` with `ts.createSourceFile`.
-      const ternaryHashref = conditionalSpreadToKolon(this.spreadCtx, value.parsed)
-      if (ternaryHashref !== null) {
-        return `<: $bf.spread_attrs(${ternaryHashref}) | mark_raw :>`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToKolon(this.spreadCtx, candidate)
+        if (lowered !== null) return `<: $bf.spread_attrs(${lowered}) | mark_raw :>`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its initializer text
-      // and route through the same conditional-spread lowering. Only
-      // function-scope (`!isModule`) consts whose value is NOT itself a bare
-      // identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((attrs) => <p
-      // {...attrs} />)`) — without the guard this forwarded the OUTER
-      // const's value at every iteration instead of the per-item value.
-      // Must be the threaded, position-accurate scope — the same name
-      // spread at ROOT (no enclosing loop) must still resolve the const.
-      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = (this.localConstants ?? []).find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
-            // The local const's initializer text isn't carried as a structured
-            // tree on the spread attr, so parse it once via the shared
-            // `parseExpression` (the analyzer's own entry) — not
-            // `ts.createSourceFile` — mirroring go-template's same local-const
-            // resolution path.
-            const resolved = conditionalSpreadToKolon(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `<: $bf.spread_attrs(${resolved}) | mark_raw :>`
-            }
-          }
-        }
-      }
-      const perlExpr = this.convertExpressionToKolon(value.expr)
-      return `<: $bf.spread_attrs(${perlExpr}) | mark_raw :>`
+      return `<: $bf.spread_attrs(${this.convertExpressionToKolon(value.expr)}) | mark_raw :>`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
@@ -1863,16 +1662,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * when the shape was rejected (caller should drop the attribute).
    */
   private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    let probe = expr.trim()
-    while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
-    const startsAsObjectLiteral = probe.startsWith('{')
-    const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
-    if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
-    const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
-    if (parsed.kind !== 'unsupported' && support.supported) return false
-    const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
-    const reasonLine = reason ? `\n${reason}` : ''
+    const refusal = unsupportedAttrExpression(expr, this._loweringMatchers)
+    if (!refusal) return false
+    const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -1903,7 +1695,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _rowLocalName: (name) => this.rowLocalName(name),
@@ -2042,44 +1834,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * Parse `cond ? value : undefined` (or `: null`), returning the
    * condition/consequent source spans, else `null`. Used for the
    * attribute-omission rule (#1897).
-   */
-  parseUndefinedAlternateTernary(
-    expr: string,
-  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
-    const parsed = parseExpression(expr.trim())
-    if (parsed?.kind !== 'conditional') return null
-    const alt = parsed.alternate
-    const isUndef =
-      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
-      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
-    if (!isUndef) return null
-    // `condition`/`consequent` are DEBUG text only (`exprToString` renders an
-    // unsupported nested shape like an object literal as non-reparseable
-    // `[UNSUPPORTED: …]` text) — callers that need to re-lower the
-    // sub-expression must use `testParsed`/`consequentParsed` (the actual
-    // parsed trees) as `preParsed`, not re-parse these strings.
-    return {
-      condition: exprToString(parsed.test),
-      consequent: exprToString(parsed.consequent),
-      testParsed: parsed.test,
-      consequentParsed: parsed.consequent,
-    }
-  }
-
-  isBooleanTypedPropRef(expr: string): boolean {
-    let bare = expr.trim()
-    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
-      bare = bare.slice(this.propsObjectName.length + 1)
-    }
-    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
-    // Inside a `.map()` callback, a param that shares a boolean prop's name
-    // is the ROW binding, not the prop — route it through plain string
-    // emission instead of `$bf.bool_str` (#2488).
-    if (this.isLoopBoundName(bare)) return false
-    return this.booleanTypedProps.has(bare)
-  }
-
-  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
+   */  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
   /** The Kolon local the nearest binding of `name` in `scope` uses (#3392). */
   private rowLocalName(name: string): string {
     const hit = this.scope.lookup(name)

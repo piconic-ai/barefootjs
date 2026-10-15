@@ -55,6 +55,8 @@ describe('compileForCompat', () => {
         severity: 'error',
         limitations: [
           'array-fill',
+          'callback-index-param',
+          'callback-outside-evaluator',
           'client-only-loop-in-static-loop',
           'computed-const-loop-source',
           'conditional-nested-const-loop-source',

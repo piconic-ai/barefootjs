@@ -18,7 +18,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion } from '@barefootjs/jsx'
 
 export interface BladeEmitContext {
   /**
@@ -61,10 +61,10 @@ export interface BladeEmitContext {
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean): boolean
-  /** Whether an arithmetic operand's SSR value is certainly `undefined`
-   * (`arithmeticOperandIsUndefined`), so the emitter coerces it with the
-   * runtime's JS `Number()` helper, which gives `NaN` (#3390). */
-  _isUndefinedOperand(expr: ParsedExpr): boolean
+  /** How the emitter coerces an arithmetic operand over a nullish value
+   * (`arithmeticOperandCoercion`, #3474): `'null'` reads nil as `0`,
+   * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. */
+  _arithmeticCoercion(op: string, operand: ParsedExpr, other: ParsedExpr): ArithmeticCoercion
 
   /**
    * #3144: whether `name` is a component-body local bound to an opaque

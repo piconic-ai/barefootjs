@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { parseExpression } from '../expression-parser'
 import {
+  arithmeticOperandCoercion,
   attrValueMayBeNullish,
   collectNullableSignalGetters,
   collectNullishAttrContext,
@@ -120,5 +121,49 @@ describe('attrValueMayBeNullish (#3322)', () => {
   test("a memo's body reads its getters where the memo is declared, not where it is read", () => {
     expect(mayBe('label()', ['s'])).toBe(true)
     expect(mayBe('nested()', ['s', 'label'])).toBe(true)
+  })
+})
+
+describe('arithmeticOperandCoercion (#3474)', () => {
+  function ctxOf(signature: string, decls = ''): ReturnType<typeof collectNullishAttrContext> {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function C(${signature}) {
+        ${decls}
+        return <p>x</p>
+      }
+    `
+    const metadata = analyzeComponent(source, 'C.tsx')
+    return collectNullishAttrContext({ metadata } as unknown as ComponentIR)
+  }
+  const coercion = (ctx: ReturnType<typeof collectNullishAttrContext>, op: string, operand: string, other: string) =>
+    arithmeticOperandCoercion(op, parseExpression(operand), parseExpression(other), ctx)
+
+  test('a nullable number prop reads as null under every arithmetic operator, + with a number included', () => {
+    const ctx = ctxOf('props: { a: number | null; b?: number; c: number; d: string | null }')
+    for (const op of ['-', '*', '/', '%', '**']) expect(coercion(ctx, op, 'props.a', 'x')).toBe('null')
+    expect(coercion(ctx, '+', 'props.a', '1')).toBe('null')
+    expect(coercion(ctx, '+', 'props.b', '-2')).toBe('null')
+    expect(coercion(ctx, '*', 'props.c', '2')).toBeNull()
+    expect(coercion(ctx, '*', 'props.d', '2')).toBeNull()
+  })
+
+  test('+ is left alone unless the other operand is a number: it may concatenate', () => {
+    const ctx = ctxOf('props: { a: number | null }', 'const [n] = createSignal<number | null>(null)')
+    expect(coercion(ctx, '+', 'props.a', 'label')).toBeNull()
+    expect(coercion(ctx, '+', "props.a", "'px'")).toBeNull()
+    expect(coercion(ctx, '+', 'n()', '1')).toBe('null')
+  })
+
+  test('a destructured nullable number prop, and a shadowed one', () => {
+    const ctx = ctxOf('{ a }: { a?: number }')
+    expect(coercion(ctx, '*', 'a', '2')).toBe('null')
+    expect(arithmeticOperandCoercion('*', parseExpression('a'), parseExpression('2'), ctx, n => n === 'a')).toBeNull()
+  })
+
+  test('a defaulted prop is not nullable; an undefined-seeded signal keeps its NaN coercion', () => {
+    expect(coercion(ctxOf('{ a = 1 }: { a?: number }'), '*', 'a', '2')).toBeNull()
+    expect(coercion(ctxOf('', 'const [t] = createSignal<number>()'), '+', 't()', '1')).toBe('undefined')
   })
 })

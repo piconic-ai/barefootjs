@@ -37,13 +37,11 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   parseStyleObjectEntries,
   isSupported,
   isSupportedValue,
-  exprToString,
   parseProviderObjectLiteral,
   emitParsedExpr,
   emitIRNode,
@@ -58,15 +56,20 @@ import {
   lookupLiteralConst,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  sortComparatorFromArrow,
   isLowerableLoopDestructure,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
-  derivesScopeFromSlot,
-  filterCaptureCollisions,
+  childTemplateName,
+  isEmptyComponentProps,
+  isBooleanTypedPropRef,
+  planAttrExpression,
+  unsupportedAttrExpression,
+  planLoop,
+  planSpreadAttr,
+  planComponentProps,
+  spellComponentProps,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -74,8 +77,6 @@ import {
   rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
-  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -85,6 +86,9 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
+  lowerCallbackMethod,
+  emitCallbackEval,
+  arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
@@ -94,14 +98,14 @@ import {
   isOpaqueLocalAccessorName,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
 import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { perlHashKey, perlIdentifierFromMarkerId } from './lib/perl-naming.ts'
-import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPerl } from './lib/static-value.ts'
-import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
+import { MojoFilterEmitter, MojoTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
 import type { MojoEmitContext, MojoSpreadContext, MojoMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToPerl,
@@ -301,7 +305,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * declared name (`Foo`, what `foo.tsx` registers its Mojo partial as) —
    * never the caller-local binding. Built once per compile from
    * `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   * (`@barefootjs/jsx`) and read by `childTemplateName`.
    */
   private importAliases: Map<string, string> = new Map()
 
@@ -424,49 +428,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * (`props.isActive` / destructured `isActive`) — used to route the
    * binding through `bool_str` even though the expression itself is
    * structurally opaque (#1897).
-   */
-  isBooleanTypedPropRef(expr: string): boolean {
-    let bare = expr.trim()
-    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
-      bare = bare.slice(this.propsObjectName.length + 1)
-    }
-    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
-    // Inside a `.map()` callback, a param that shares a boolean prop's name
-    // is the ROW binding, not the prop — route it through plain string
-    // emission instead of `bf->bool_str` (#2488).
-    if (this.scope.isBound(bare)) return false
-    return this.booleanTypedProps.has(bare)
-  }
-
-  /**
+   */  /**
    * Parse `cond ? value : undefined` (or `: null`), returning the
    * condition/consequent source spans, else `null`. Used for the
    * attribute-omission rule (#1897); mirrors the Xslate adapter.
-   */
-  parseUndefinedAlternateTernary(
-    expr: string,
-  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
-    const parsed = parseExpression(expr.trim())
-    if (parsed?.kind !== 'conditional') return null
-    const alt = parsed.alternate
-    const isUndef =
-      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
-      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
-    if (!isUndef) return null
-    // `condition`/`consequent` are DEBUG text only (`exprToString` renders an
-    // unsupported nested shape like an object literal as non-reparseable
-    // `[UNSUPPORTED: …]` text) — callers that need to re-lower the
-    // sub-expression must use `testParsed`/`consequentParsed` (the actual
-    // parsed trees) as `preParsed`, not re-parse these strings.
-    return {
-      condition: exprToString(parsed.test),
-      consequent: exprToString(parsed.consequent),
-      testParsed: parsed.test,
-      consequentParsed: parsed.consequent,
-    }
-  }
-
-  /**
+   */  /**
    * Inline a const (any scope) whose initializer is a pure numeric or
    * quoted string literal (`const totalPages = 5`, #1897 pagination) —
    * function-scope consts never reach the per-render stash, so a bare
@@ -978,9 +944,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // gate's own jsdoc for the full list); a `.filter().map(destructure)`
     // chain (the filter-param rewrite is out of scope here); and a
     // computed property key (`{ [k]: v }`, refused earlier as BF025).
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this.resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+      spellStatic: staticValueToPerl,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -1023,33 +995,27 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // this identifier (fable review) — reuses the same threaded,
     // position-accurate `this.scope` `resolveModuleStringConst` already
     // consults for this hazard class (#1749/#2482 Stage 2).
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
-    const staticArray = staticItems !== null ? staticValueToPerl(staticItems) : null
+    const staticArray = loopPlan.staticSource
 
-    const arrayName = loop.array.trim()
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
-      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && this.resolveLiteralConst(arrayName) === null) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
+    const arrayConst = loopPlan.unresolvableConst
+    if (arrayConst) {
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        },
+      })
     }
 
     const rawArray = staticArray ?? this.convertExpressionToPerl(loop.array)
     // Apply sort if present (#1448 Tier B): wrap the loop array in the
-    // shared sort helper. The same `renderSortEval` / `renderSortMethod`
-    // pair feeds both this loop-chain hoist and the emitter's
+    // shared sort helper. The same shared chain (`lowerCallbackMethod`) and
+    // `renderSortMethod` feed both this loop-chain hoist and the emitter's
     // `callbackMethod` sort arm, so a regression in either path surfaces
     // with the identical emit shape.
     //
@@ -1109,7 +1075,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
-    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureAliases = loopPlan.captureAliases
     const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
@@ -1135,28 +1101,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // since `prevScope` already carries them).
       this.scope = prevScope
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPerl('', e)
-      // `loop.sortComparator` is the generic `IRLoopSort` (#2018 P5): serialize
-      // the arrow body for the evaluator (eval-first), recover the structured
-      // comparator from the arrow for the `localeCompare` fallback.
-      const sortArrow = loop.sortComparator.arrow
-      let sorted: string | null = null
-      if (sortArrow.kind === 'arrow') {
-        sorted = renderSortEval(rawArray, sortArrow.body, sortArrow.params, sortEmit)
-      }
-      if (sorted === null) {
-        const structured = sortComparatorFromArrow(sortArrow)
-        if (structured !== null) sorted = renderSortMethod(rawArray, structured)
-      }
-      if (sorted === null) {
-        // Neither the evaluator nor the structured fallback can model this
-        // comparator — record BF101 and fall through with the unsorted array
-        // so the hoist line stays syntactically valid.
-        this._recordExprBF101(
-          `.sort(...) loop comparator is not lowerable to a template sort`,
-          `Pre-sort the array in the route handler, or mark the loop @client-only.`,
-        )
-        sorted = rawArray
-      }
+      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
+      // the same as `.sort(cmp)` at an expression position: the evaluator,
+      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
+      // comparator the descriptor models, so the refusal arm is defensive; it
+      // keeps the array unsorted so the template stays valid.
+      const plan = loopPlan.sort!
+      let sorted = rawArray
+      if (plan.kind === 'eval') sorted = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
+      else if (plan.kind === 'structured-sort') sorted = renderSortMethod(rawArray, plan.comparator)
+      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
       this.scope = prevScope.enterLoopRow(loop)
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
@@ -1321,72 +1275,42 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   renderComponent(comp: IRComponent): string {
-    const propParts: string[] = []
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) get the
-    // same `begin %>…<% end` capture as the reserved children slot below,
-    // just keyed by the prop's own name. `render_child` (BarefootJS.pm)
-    // materializes every prop value that's a CODE ref — not only
-    // `children` — into the Mojo::ByteStream the capture block produces,
-    // so the child's read of the slot back out (`<%= $header %>`) sees an
-    // already-safe ByteStream and Mojo::Template's auto-escape passes it
-    // through unescaped, the same way it already does for `children`.
-    const namedSlotCaptures: string[] = []
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't a
-        // valid Perl variable token, and `comp.slotId` alone would collide
-        // across two named-slot props on the same component invocation
-        // (unlike the reserved children slot, there's only ever one of
-        // those per invocation).
-        const varName = `$bf_prop_${this.childrenCaptureCounter++}`
-        namedSlotCaptures.push(`<% my ${varName} = begin %>${slotBody}<% end %>`)
-        propParts.push(`${perlHashKey(p.name)} => ${varName}`)
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) propParts.push(lowered)
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with a `begin … end` block,
+    // evaluated in the parent's template scope (signals, conditionals), and
+    // passed by variable. A named slot's variable is counter-based: a prop
+    // name can contain characters (`data-slot`) that are no valid Perl
+    // variable name.
+    const tplName = childTemplateName(comp.name, this.importAliases)
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const varName = name()
+      captures.push(`<% my ${varName} = begin %>${body}<% end %>`)
+      return varName
     }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444).
-    if (derivesScopeFromSlot(comp)) {
-      propParts.push(`_bf_slot => '${comp.slotId}'`)
-    }
-    const propsStr = propParts.length > 0 ? ', ' + propParts.join(', ') : ''
-    const tplName = this.toTemplateName(comp.name)
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />`
-    // lands in a `jsx-children` AttrValue on the corresponding prop
-    // (#1326). The parent's scope marker is already attached to each
-    // hoisted root by the IR collector (`needsScope: true`), so the
-    // adapter just needs to render the IR through the same children
-    // pipeline as the nested form. Narrow the prop value via the
-    // `kind` discriminator instead of casting to a hand-written shape;
-    // any future change to the `jsx-children` AttrValue surface will
-    // surface here as a TS compile error.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via Mojo's `begin %>...<% end` capture so
-      // dynamic segments inside the children (signals, conditionals)
-      // get evaluated in the parent's template scope before reaching
-      // the child renderer. The capture has to live in a separate
-      // action — embedding it inside the `<%== ... %>` that wraps
-      // `render_child` would let the inner `%>` close the outer tag.
-      // `render_child` materializes the resulting CODE ref into the
-      // captured Mojo::ByteStream.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const varName = `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      return `${namedSlotCaptures.join('')}<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
-    }
-    return `${namedSlotCaptures.join('')}<%== bf->render_child('${tplName}'${propsStr}) %>`
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${perlHashKey(entry.name)} => ${capture(entry.children, () => `$bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${perlHashKey(entry.name)} => $${entry.name}`
+          case 'slot-id':
+            return `_bf_slot => '${entry.slotId}'`
+          case 'children':
+            return `children => ${capture(entry.children, () => `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
+        }
+      },
+      // A `%{…}` hash dereference flattens a spread into the named-arg list (`emitSpread`).
+      spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+    })
+    const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
+    const propsStr = parts.length > 0 ? `, ${parts.join(', ')}` : ''
+    return `${captures.join('')}<%== bf->render_child('${tplName}'${propsStr}) %>`
   }
 
   private childrenCaptureCounter = 0
@@ -1394,19 +1318,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
   private presenceVarCounter = 0
-
-  private toTemplateName(componentName: string): string {
-    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
-    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
-    // has no `foo.tsx`-registered partial; only `Foo` does.
-    const declaredName = this.importAliases.get(componentName) ?? componentName
-    // Convert PascalCase to snake_case for Mojo template naming
-    return declaredName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .replace(/^_/, '')
-  }
-
   // ===========================================================================
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
@@ -1508,141 +1419,53 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish-attribute omission (#textarea rows): when the
-      // attribute value is a BARE reference to an optional, no-default
-      // prop (which is `undef` when the caller omits it), guard the
-      // attribute with Perl `defined` so it DROPS rather than rendering
-      // `attr=""`. The guarded body reuses the exact normal emission, so
-      // value escaping (`<%= ... %>`) is unchanged; only the presence is
-      // conditional. The `% if`/`% end` line directives surround the
-      // attribute inline — the conformance comparator collapses the
-      // resulting whitespace, exactly like the existing boolean-attr and
-      // hydration-marker patterns. Scope is deliberately narrow (bare
-      // identifiers resolving to an optional-no-default prop) so member
-      // exprs, calls, concrete/defaulted props, and boolean attrs are
-      // unaffected and still emit unconditionally.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches the
-      // SolidJS props-object pattern, not just destructured params (#checkbox
-      // `id={props.id}`). Same for a closed-type rest-expanded key's
-      // `rest.tag`-shaped expression (#3057) — see `restPropsName`'s docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `defined` guard (#2488).
-          !this.scope.isBound(normalizedBareId)) ||
-          (nullableSignal !== null && !this.scope.isBound(nullableSignal)))
-      ) {
-        const perl = this.convertExpressionToPerl(value.expr)
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<%= bf->bool_str(${perl}) %>"`
-            : `${name}="<%= ${perl} %>"`
-        return `<% if (defined ${perl}) { %>${body}<% } %>`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        // Thread the IR-carried `.parsed` tree (#3210): a recognised
-        // `<action>.isPending()` read has already been substituted with its
-        // seed literal there; re-parsing `value.expr` would lower it as a
-        // member read of an undeclared `$save`.
-        return `<%= ${this.convertExpressionToPerl(value.expr, value.parsed)} ? '${name}' : '' %>`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge.
-        // Route through `bool_str` when the name/shape witnesses a
-        // boolean value, same as the unconditional path below (#1897).
-        // Bind to a temp first so the expression evaluates once, not in
-        // both the guard and the value.
-        const perl = this.convertExpressionToPerl(value.expr)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
-            : `${name}="<%= ${tmp} %>"`
-        return `<% my ${tmp} = ${perl}; if (${tmp}) { %>${body}<% } %>`
-      }
-      // Boolean-result handling (#1466 follow-up). Two trigger paths:
-      //
-      //   - `isBooleanResultExpr(expr)` — the JS source structurally
-      //     evaluates to a boolean (comparison, `!`, literal,
-      //     both-sides-boolean logical / conditional).
-      //   - `isAriaBooleanAttr(name)` — the attribute is one of the
-      //     ARIA tri-state / boolean-state names whose spec values are
-      //     `"true" | "false" (| "mixed")`. The expression itself can
-      //     be opaque (e.g. `accepted()` — a call expression we can't
-      //     classify from source text), so we lean on the attribute
-      //     name as the type witness.
-      //
-      // Without either, Perl's auto-stringification turns a JS-false
-      // comparison into `''` (and a JS-true comparison into `'1'`),
-      // which renders as `attr=""` / `attr="1"` — diverging from
-      // Hono's / Go's `attr="false"` / `attr="true"`. Routing through
-      // the `bf->bool_str` Perl helper realigns the wire bytes with
-      // JS `String(boolean)` semantics.
-      // `attr={cond ? value : undefined}` OMITS the attribute on the
-      // falsy branch (Hono drops undefined-valued attributes) — wrap the
-      // whole attribute in the condition instead of rendering `attr=""`
-      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
-      // undefined}`). Same parity rule as the Go / Xslate adapters.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.scope.isBound(n),
+        boolStr: (expr, attr) => isBooleanResultExpr(expr) || isAriaBooleanAttr(attr) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) }),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="<%= bf->bool_str(${v}) %>"` : `${name}="<%= ${v} %>"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToPerl(value.expr)
+          return `<% if (defined ${v}) { %>${attr(v, plan.boolStr)}<% } %>`
+        }
+        case 'boolean-attr':
+          return `<%= ${this.convertExpressionToPerl(value.expr, value.parsed)} ? '${name}' : '' %>`
+        case 'presence': {
+          const v = this.convertExpressionToPerl(value.expr)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `<% my ${tmp} = ${v}; if (${tmp}) { %>${attr(tmp, plan.boolStr)}<% } %>`
+        }
+        case 'undefined-alternate': {
+          // A mixed boolean / string branch renders its boolean as JS does.
+          const m = plan.ternary
           const cond = this.convertExpressionToPerl('', m.testParsed)
           const val = this.convertExpressionToPerl('', stringifyBooleanTernaryBranches(m.consequentParsed))
-          // A boolean-result consequent (`c ? false : undefined`) still
-          // renders JS `String(boolean)` (#3349).
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `bf->bool_str(${val})`
             : this.jsNumberOutput(m.consequentParsed, val)
           return `<% if (${cond}) { %>${name}="<%= ${shown} %>"<% } %>`
         }
+        case 'omit-nil':
+        case 'plain': {
+          // A ternary with a boolean and a string branch renders its boolean
+          // as JS does, unless the whole value goes through `bool_str`.
+          const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+          const v = this.convertExpressionToPerl(value.expr, mixedParsed)
+          if (plan.kind === 'plain') return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `<% my ${tmp} = ${v}; if (defined ${tmp}) { %>${attr(tmp, plan.boolStr)}<% } %>`
+        }
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      // A ternary mixing a boolean branch with another kind
-      // (`yes() ? false : s()`) spells its boolean branch as JS does (#3349).
-      // Not when the whole value is serialized by `bool_str` below (an ARIA
-      // boolean name, a boolean-typed prop): it reads the branch's truth,
-      // and a stringified `'false'` is truthy in Perl.
-      const wrapsBoolStr =
-        isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
-      const mixedParsed = valueParsed && !wrapsBoolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.scope.isBound(n))) {
-        const perl = this.convertExpressionToPerl(value.expr, mixedParsed)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          wrapsBoolStr
-            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
-            : `${name}="<%= ${tmp} %>"`
-        return `<% my ${tmp} = ${perl}; if (defined ${tmp}) { %>${body}<% } %>`
-      }
-      // #3166: thread `value.parsed` through — same reason as
-      // `renderConditional`'s matching comment.
-      const perl = this.convertExpressionToPerl(value.expr, mixedParsed)
-      if (wrapsBoolStr) {
-        return `${name}="<%= bf->bool_str(${perl}) %>"`
-      }
-      return `${name}="<%= ${this.jsNumberOutput(mixedParsed, perl)} %>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1671,75 +1494,24 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`)
-      // has no matching `$props` variable in Mojo's template scope —
-      // Perl props arrive as a flat hash with one key per `propsParams`
-      // entry, not as a single nested object. Emit an inline hashref
-      // literal that enumerates the analyzer-extracted props params
-      // so `$bf->spread_attrs(...)` gets a real hashref (#1407
-      // follow-up; matches the Go adapter's same-shape map-literal
-      // path). For `restPropsName` and other identifier shapes, the
-      // standard `convertExpressionToPerl` translation handles it
-      // (rest binding name → `$<name>` resolves against the hashref
-      // the caller / harness placed under that key).
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${JSON.stringify(p.name)} => $${p.name}`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${JSON.stringify(p)} => $${p}`)
         return `<%== bf->spread_attrs({${entries.join(', ')}}) %>`
       }
-      // Conditional inline-object spread:
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Perl inline ternary of hashrefs — Perl truthiness
-      // handles the condition for free, and the falsy `{}` branch
-      // OMITS the key (`bf->spread_attrs` does NOT filter empty
-      // strings, so we cannot always-include it). Mirrors the Go
-      // adapter's IIFE-of-maps lowering (#textarea).
-      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
-      // re-parsing `trimmed` with `ts.createSourceFile`.
-      const ternaryHashref = conditionalSpreadToPerl(this.spreadCtx, value.parsed)
-      if (ternaryHashref !== null) {
-        return `<%== bf->spread_attrs(${ternaryHashref}) %>`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToPerl(this.spreadCtx, candidate)
+        if (lowered !== null) return `<%== bf->spread_attrs(${lowered}) %>`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its
-      // initializer text and route through the same conditional-spread
-      // lowering. Only function-scope (`!isModule`) consts whose value is
-      // NOT itself a bare identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2221): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((sizeAttrs)
-      // => <li {...sizeAttrs} />)`) — without the guard this forwarded
-      // the OUTER const's hashref at every iteration instead of the
-      // per-item `$sizeAttrs` value. Same threaded, position-accurate
-      // scope `resolveLiteralConst` / `resolveStaticRecordLiteral` already
-      // consult for this hazard class (#1749).
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = this.localConstants.find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            // The local const's initializer text isn't carried as a structured
-            // tree on the spread attr, so parse it once via the shared
-            // `parseExpression` (the analyzer's own entry) — not
-            // `ts.createSourceFile` — mirroring go-template's same local-const
-            // resolution path.
-            const resolved = conditionalSpreadToPerl(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `<%== bf->spread_attrs(${resolved}) %>`
-            }
-          }
-        }
-      }
-      const perlExpr = this.convertExpressionToPerl(value.expr)
-      return `<%== bf->spread_attrs(${perlExpr}) %>`
+      return `<%== bf->spread_attrs(${this.convertExpressionToPerl(value.expr)}) %>`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
@@ -1950,19 +1722,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // shape pre-check — `style={({ a: b() })}` and
     // `className={(cn`base ${tone()}`)}` are the same logical shape
     // as their unwrapped variants and should hit the same gate.
-    let probe = expr.trim()
-    while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
-    const startsAsObjectLiteral = probe.startsWith('{')
-    const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
-    if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
-    const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
-    if (parsed.kind !== 'unsupported' && support.supported) return false
-    // Surface the `isSupported` reason so the diagnostic is as
-    // actionable as the Go adapter's BF101 — keeps cross-adapter
-    // diagnostics aligned on the same expression-shape gate.
-    const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
-    const reasonLine = reason ? `\n${reason}` : ''
+    const refusal = unsupportedAttrExpression(expr, this._loweringMatchers)
+    if (!refusal) return false
+    const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -1993,7 +1755,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
-      _isUndefinedOperand: (expr) => arithmeticOperandIsUndefined(expr, this.nullishAttrCtx, n => this.scope.isBound(n)),
+      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPerlFilterExprPublic: (e, p) => this._renderPerlFilterExprPublic(e, p),
