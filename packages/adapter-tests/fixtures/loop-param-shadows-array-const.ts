@@ -9,6 +9,10 @@ import { createFixture } from '../src/types'
  * outer const reaches the template. Every DSL adapter but ERB still tested
  * the loop source against `localConstants` without asking whether a loop
  * binding shadows it, and refused the loop with BF101 (#3473).
+ *
+ * The row key is the index: Go Template lowers `entries[0]` on a
+ * `string[][]` row to a struct field read (`.Field0`), which is a separate
+ * bug this fixture does not cover.
  */
 export const fixture = createFixture({
   id: 'loop-param-shadows-array-const',
@@ -18,8 +22,8 @@ export function ArrayConstShadow({ groups, labels }: { groups: string[][]; label
   const entries = Object.keys(labels)
   return (
     <ul>
-      {groups.map((entries) => (
-        <li key={entries[0]}>{entries.map((e) => <b key={e}>{e}</b>)}</li>
+      {groups.map((entries, i) => (
+        <li key={i}>{entries.map((e) => <b key={e}>{e}</b>)}</li>
       ))}
     </ul>
   )
@@ -28,11 +32,11 @@ export function ArrayConstShadow({ groups, labels }: { groups: string[][]; label
   props: { groups: [['a', 'b'], ['c']], labels: { x: '1' } },
   expectedHtml: `
     <ul bf-s="test" bf="s2">
-      <li bf="s1" data-key="a">
+      <li bf="s1" data-key="0">
         <b data-key-1="a"><!--bf:s0-->a<!--/--></b>
         <b data-key-1="b"><!--bf:s0-->b<!--/--></b>
       </li>
-      <li bf="s1" data-key="c"><b data-key-1="c"><!--bf:s0-->c<!--/--></b></li>
+      <li bf="s1" data-key="1"><b data-key-1="c"><!--bf:s0-->c<!--/--></b></li>
     </ul>
   `,
 })
