@@ -19,6 +19,7 @@
 import {
   freeVarsInBody,
   hasOpaqueCall,
+  readsNestedCallbackIndex,
   serializeParsedExpr,
   sortComparatorFromArrow,
   type ParsedExpr,
@@ -151,9 +152,11 @@ export function lowerCallbackMethod(
 function lowerPredicate(method: PredicateMethod, arrow: Arrow, options: CallbackLoweringOptions): CallbackPlan {
   const param = String(arrow.params[0])
   const native: CallbackPlan = { kind: 'native-predicate', method, param, predicate: arrow.body }
-  // A native form lowers an opaque call to a read of its callee, silently, so
-  // such a predicate takes the evaluator or BF101 on every adapter alike.
-  const nativeOk = options.nativePredicate === true && !hasOpaqueCall(arrow.body)
+  // A native form lowers an opaque call to a read of its callee, silently, and
+  // binds no nested callback's index, so such a predicate takes the
+  // evaluator or BF101 on every adapter alike.
+  const nativeOk =
+    options.nativePredicate === true && !hasOpaqueCall(arrow.body) && !readsNestedCallbackIndex(arrow.body)
   const identity = method === 'filter' && arrow.body.kind === 'identifier' && arrow.body.name === param
   if (nativeOk && identity) return native
   const json = serializeParsedExpr(arrow.body)

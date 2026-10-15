@@ -80,6 +80,7 @@ const REFUSALS: Record<string, string> = {
   'map-opaque-projection': `'.map(...)' projection is outside the {A} adapter's evaluable surface`,
   'reduce-nonliteral-seed': `'.reduce(...)' is outside the {A} adapter's evaluable surface (needs a literal initial value and an evaluable reducer body)`,
   'filter-opaque-predicate': `'.filter(...)' predicate is outside the {A} adapter's evaluable surface`,
+  'filter-native-nested-index': `'.filter(...)' predicate is outside the {A} adapter's evaluable surface`,
   'filter-nested-find-predicate': `Filter predicate contains a nested '.find(...)' callback, which has no {A} scalar form`,
 }
 

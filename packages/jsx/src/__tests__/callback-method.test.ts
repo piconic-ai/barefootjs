@@ -82,6 +82,16 @@ describe('lowerCallbackMethod: predicates', () => {
     expect(lower('items.filter(x => x.n > limit())', kolon)).toMatchObject({ kind: 'native-predicate' })
   })
 
+  test('the native form never takes a nested callback that reads its index: it binds the element only', () => {
+    const nested = `rows.filter(row => row.join(',').startsWith('a') && row.filter((x, i) => i > 0).length > 0)`
+    expect(lower(nested, kolon)).toMatchObject({ kind: 'refuse' })
+    expect(lower(`rows.filter(row => row.join(',').startsWith('a') && row.filter(x => x > 0).length > 0)`, kolon)).toMatchObject({
+      kind: 'native-predicate',
+    })
+    // The evaluator binds the nested index, so a serializable predicate keeps it.
+    expect(lower('rows.filter(row => row.filter((x, i) => i > 0).length > 0)', kolon)).toMatchObject({ kind: 'eval' })
+  })
+
   test('the identity filter goes native only on an adapter with a native form', () => {
     expect(lower('items.filter(x => x)', kolon)).toMatchObject({ kind: 'native-predicate', method: 'filter' })
     expect(lower('items.filter(x => x)')).toMatchObject({ kind: 'eval', helper: 'filter_eval' })
