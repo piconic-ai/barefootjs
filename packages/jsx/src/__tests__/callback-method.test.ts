@@ -140,6 +140,15 @@ describe('unboundCallbackParamRead: the index and array params', () => {
     expect(read('items.reduce((acc, x, i) => acc + i, 0)')).toBe('i')
   })
 
+  test("'evaluator' scope binds a .map / .filter index, nothing more", () => {
+    const call = callOf('items.map((x, i, all) => i)')
+    expect(unboundCallbackParamRead(call.method, call.arrow, 'evaluator')).toBeNull()
+    const arr = callOf('items.filter((x, i, all) => all.length)')
+    expect(unboundCallbackParamRead(arr.method, arr.arrow, 'evaluator')).toBe('all')
+    const some = callOf('items.some((x, i) => i > 0)')
+    expect(unboundCallbackParamRead(some.method, some.arrow, 'evaluator')).toBe('i')
+  })
+
   test('declared but unread, shadowed, or within the bound params: not found', () => {
     expect(read('items.map((x, i) => x)')).toBeNull()
     expect(read('items.reduce((acc, x, i) => acc + x, 0)')).toBeNull()
@@ -154,5 +163,17 @@ describe('unboundCallbackParamRead: the index and array params', () => {
     })
     expect(isSupported(parseExpression('rows.filter(r => r.tags.some((t, j) => j > 1)).length')).supported).toBe(false)
     expect(isSupported(parseExpression('items.map((x, i) => x).join(",")')).supported).toBe(true)
+  })
+
+  test('inside an evaluator body, a nested .map / .filter binds its index', () => {
+    expect(isSupported(parseExpression(`rows.map(r => r.map((x, i) => i).join(',')).join(';')`)).supported).toBe(true)
+    expect(isSupported(parseExpression(`rows.map(r => r.filter((x, i) => i > 0).length)`)).supported).toBe(true)
+    expect(isSupported(parseExpression(`rows.some(r => r.map((x, i) => x + i).join('') === q)`)).supported).toBe(true)
+    // The evaluator binds neither a nested callback's array param nor the index of
+    // a nested callback other than .map / .filter.
+    expect(isSupported(parseExpression('rows.map(r => r.map((x, i, all) => all.length))')).supported).toBe(false)
+    expect(isSupported(parseExpression('rows.map(r => r.some((x, i) => i > 0))')).supported).toBe(false)
+    // The receiver of the outer call is still lowered by the template.
+    expect(isSupported(parseExpression('rows.map((r, i) => r.slice(i)).map(r => r.length)')).supported).toBe(false)
   })
 })

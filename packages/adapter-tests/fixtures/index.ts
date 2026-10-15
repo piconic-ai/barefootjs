@@ -208,6 +208,7 @@ import { fixture as fillUnsupported } from './fill-unsupported'
 import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
 import { fixture as callbackIndexParam } from './callback-index-param'
 import { fixture as callbackIndexParamClient } from './callback-index-param-client'
+import { fixture as callbackNestedIndexParam } from './callback-nested-index-param'
 import { fixture as filterIndexParamLoop } from './filter-index-param-loop'
 import { fixture as filterIndexParamLoopClient } from './filter-index-param-loop-client'
 import { fixture as sortOpaqueComparator } from './sort-opaque-comparator'
@@ -1094,6 +1095,7 @@ export const jsxFixtures: JSXFixture[] = [
   fillUnsupportedClient,
   callbackIndexParam,
   callbackIndexParamClient,
+  callbackNestedIndexParam,
   filterIndexParamLoop,
   filterIndexParamLoopClient,
   sortOpaqueComparator,

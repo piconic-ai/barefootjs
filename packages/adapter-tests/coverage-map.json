@@ -1217,6 +1217,27 @@
         "text"
       ]
     },
+    "callback-nested-index-param": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "callback-param-shadows-prop": {
       "kinds": [
         "array-literal",
