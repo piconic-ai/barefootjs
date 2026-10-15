@@ -23,7 +23,7 @@
  */
 
 import ts from 'typescript'
-import { parseRecordIndexAccess, stringifyParsedExpr } from '@barefootjs/jsx'
+import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@barefootjs/jsx'
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { MojoSpreadContext } from '../emit-context.ts'
@@ -131,14 +131,6 @@ export function objectLiteralToPerlHashref(
     entries.push(`'${escapePerlSingleQuoted(key)}' => ${valPerl}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
-}
-
-/** True when a parsed index is a numeric or string literal (`arr[0]`, `m['k']`). */
-function isLiteralIndex(index: ParsedExpr): boolean {
-  return (
-    index.kind === 'literal' &&
-    (index.literalType === 'number' || index.literalType === 'string')
-  )
 }
 
 /**

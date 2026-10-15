@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { isAriaBooleanAttr, isBooleanResultExpr } from '../boolean-result'
+import { isAriaBooleanAttr, isBooleanResultExpr } from '../adapters/boolean-result.ts'
 
 describe('isBooleanResultExpr', () => {
   describe('detected as boolean-result', () => {

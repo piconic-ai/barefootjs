@@ -47,7 +47,7 @@
  *
  * ## Numbered divergences (uniform, not per-fixture)
  *
- *   1. **JS truthiness** (`boolean-result.ts`, `expr/emitters.ts`'s
+ *   1. **JS truthiness** (`@barefootjs/jsx`'s `adapters/boolean-result.ts`, `expr/emitters.ts`'s
  *      `truthyTest`, this file's `convertConditionToPebble`) — same shape as
  *      Jinja/Twig: Pebble's `{% if %}` truthiness follows the same
  *      empty-container/empty-string-is-falsy convention as Python/PHP,
@@ -262,8 +262,14 @@ import {
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  isExplicitStringCall,
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -281,10 +287,6 @@ import { staticValueToPebble } from './lib/static-value.ts'
 import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest } from './expr/emitters.ts'
 import type { PebbleEmitContext, PebbleSpreadContext, PebbleMemoContext } from './emit-context.ts'
 import {
-  hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-} from './analysis/component-tree.ts'
-import {
   conditionalSpreadToPebble,
   objectLiteralExprToPebbleDict,
 } from './spread/spread-codegen.ts'
@@ -292,11 +294,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import {
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
-  collectStringValueNames,
-} from './props/prop-classes.ts'
+import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { PebbleAdapterOptions } from './lib/types.ts'
 import type { PebbleAdapterOptions } from './lib/types.ts'
@@ -448,7 +446,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), routed explicitly through
     // `bf.bool_str` (#1897, pagination's data-active — see
-    // `boolean-result.ts`'s file header).
+    // `@barefootjs/jsx`'s `adapters/boolean-result.ts`'s file header).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
     this.templateLevelNames = new Set([
@@ -481,7 +479,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // that all sibling templates are registered on the same instance at
     // render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Pebble'))
     }
 
     const templateBody = ir.root.type === 'if-statement'
@@ -2224,7 +2222,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * which correctly stringifies a real boolean on its own, so layering
    * `bf.bool_str` on top would run Pebble truthiness over the
    * ALREADY-STRINGIFIED text instead of the original boolean. See
-   * `isExplicitStringCall`'s docstring in `boolean-result.ts` for the full
+   * `isExplicitStringCall`'s docstring in `@barefootjs/jsx`'s `adapters/boolean-result.ts` for the full
    * double-wrap failure mode this guards against.
    */
   private shouldBoolStr(expr: string, name: string): boolean {

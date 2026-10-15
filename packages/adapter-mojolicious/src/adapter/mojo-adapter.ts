@@ -79,8 +79,13 @@ import {
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
@@ -99,10 +104,6 @@ import { staticValueToPerl } from './lib/static-value.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
 import type { MojoEmitContext, MojoSpreadContext, MojoMemoContext } from './emit-context.ts'
 import {
-  hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-} from './analysis/component-tree.ts'
-import {
   conditionalSpreadToPerl,
   objectLiteralExprToPerlHashref,
 } from './spread/spread-codegen.ts'
@@ -110,12 +111,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import {
-  collectProviderDataNames,
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
-  collectStringValueNames,
-} from './props/prop-classes.ts'
+import { collectProviderDataNames, collectStringValueNames } from './props/prop-classes.ts'
 
 export type { MojoAdapterOptions } from './lib/types.ts'
 import type { MojoAdapterOptions } from './lib/types.ts'
@@ -360,7 +356,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // sibling templates are registered on the same template instance
     // at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Mojo'))
     }
 
     const templateBody = ir.root.type === 'if-statement'

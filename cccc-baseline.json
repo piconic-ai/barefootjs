@@ -3,11 +3,6 @@
   "cccc": "1.8.0",
   "threshold": 25,
   "files": {
-    "packages/adapter-blade/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
-      ]
-    },
     "packages/adapter-blade/src/adapter/blade-adapter.ts": {
       "emitExpression": [
         27
@@ -27,11 +22,6 @@
       ],
       "renderBladeComponent": [
         48
-      ]
-    },
-    "packages/adapter-erb/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
       ]
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
@@ -252,11 +242,6 @@
         56
       ]
     },
-    "packages/adapter-jinja/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
-      ]
-    },
     "packages/adapter-jinja/src/adapter/expr/array-method.ts": {
       "renderArrayMethod": [
         33
@@ -273,11 +258,6 @@
       ],
       "renderJinjaComponent": [
         48
-      ]
-    },
-    "packages/adapter-mojolicious/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
       ]
     },
     "packages/adapter-mojolicious/src/adapter/expr/array-method.ts": {
@@ -304,11 +284,6 @@
         39
       ]
     },
-    "packages/adapter-pebble/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
-      ]
-    },
     "packages/adapter-pebble/src/adapter/expr/array-method.ts": {
       "renderArrayMethod": [
         33
@@ -325,11 +300,6 @@
       ],
       "renderPebbleComponent": [
         56
-      ]
-    },
-    "packages/adapter-rust/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
       ]
     },
     "packages/adapter-rust/src/adapter/expr/array-method.ts": {
@@ -386,11 +356,6 @@
         40
       ]
     },
-    "packages/adapter-twig/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
-      ]
-    },
     "packages/adapter-twig/src/adapter/expr/array-method.ts": {
       "renderArrayMethod": [
         33
@@ -407,11 +372,6 @@
       ],
       "renderTwigComponent": [
         48
-      ]
-    },
-    "packages/adapter-xslate/src/adapter/analysis/component-tree.ts": {
-      "collectImportedLoopChildComponentErrors/visit": [
-        32
       ]
     },
     "packages/adapter-xslate/src/adapter/expr/array-method.ts": {

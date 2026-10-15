@@ -31,7 +31,7 @@
  *      the left operand of `&&`/`||`, a ternary's test) routes through the
  *      shared `bf.truthy(...)` runtime helper unless the operand is
  *      structurally already boolean-shaped (`isBooleanResultParsed`) — see
- *      `boolean-result.ts`'s file header for why Pebble needs this (its
+ *      `@barefootjs/jsx`'s `adapters/boolean-result.ts`'s file header for why Pebble needs this (its
  *      `{% if %}` truthiness follows the same empty-container-is-falsy
  *      convention as Jinja/Twig, diverging from JS). `&&`/`||` still return
  *      the ORIGINAL operand VALUE (not a coerced bool) on the taken branch —
@@ -100,7 +100,8 @@
  *      `pebble-adapter.ts`'s file header).
  */
 
-import { groupBinaryOperand,
+import {
+  groupBinaryOperand,
   literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
@@ -120,12 +121,12 @@ import { groupBinaryOperand,
   queryHrefArgs,
   isValidHelperId,
   NULL_COERCING_ARITHMETIC_OPS,
+  isBooleanResultParsed,
 } from '@barefootjs/jsx'
 
 import type { PebbleEmitContext } from '../emit-context.ts'
 import { PEBBLE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
 import { pebbleIdent, escapePebbleSingleQuoted, pebbleHashKey } from '../lib/pebble-naming.ts'
-import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
   renderSortMethod,

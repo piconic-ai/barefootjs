@@ -59,7 +59,8 @@
  *      entry point `_renderTwigFilterExprPublic`.
  */
 
-import { groupBinaryOperand,
+import {
+  groupBinaryOperand,
   literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
@@ -77,12 +78,14 @@ import { groupBinaryOperand,
   type LoweringEmitter,
   type LoweringNode,
   queryHrefArgs,
-  isValidHelperId, NULL_COERCING_ARITHMETIC_OPS } from '@barefootjs/jsx'
+  isValidHelperId,
+  NULL_COERCING_ARITHMETIC_OPS,
+  isBooleanResultParsed,
+} from '@barefootjs/jsx'
 
 import type { TwigEmitContext } from '../emit-context.ts'
 import { TWIG_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
 import { twigIdent, escapeTwigSingleQuoted, twigHashKey } from '../lib/twig-naming.ts'
-import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
   renderSortMethod,

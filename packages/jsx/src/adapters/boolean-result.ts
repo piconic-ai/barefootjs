@@ -1,10 +1,26 @@
 /**
- * Backend-neutral boolean-result classification shared by the adapters whose
- * host language has no boolean type (Mojolicious, Xslate: Perl renders a
- * comparison as `''` / `1` and the literal `false` as `0`). Both adapters
- * route a boolean-shaped attribute value through their `bool_str` runtime
- * helper; this module decides which `ParsedExpr` shapes are boolean-shaped
- * and rewrites a ternary that only PARTLY is (#3349).
+ * Backend-neutral boolean-result classification shared by every DSL
+ * template adapter (Blade, ERB, Jinja, MiniJinja, Mojolicious, Pebble, Twig,
+ * Xslate; #3475 lifted the per-adapter copies here). It decides which
+ * `ParsedExpr` shapes evaluate to a JS boolean, rewrites a ternary that only
+ * PARTLY does (#3349), and names the ARIA attributes whose binding is
+ * boolean by definition. The adapters use it for two decisions:
+ *
+ * 1. **Stringification.** A boolean-shaped attribute / text binding is routed
+ *    through the runtime's `bool_str` helper so it serialises as JS
+ *    `String(boolean)` ("true" / "false"). No host language gets this for
+ *    free: Perl renders a comparison as `''` / `1` and `false` as `0`;
+ *    Python's `str(True)` is `"True"`; PHP's `(string) true` is `"1"` and
+ *    `(string) false` is `""`; Java's `Boolean.toString()` happens to match,
+ *    but Pebble still routes explicitly so `bf.string` handles every JS value
+ *    shape the same way.
+ * 2. **Condition-position truthiness** (Blade, Jinja, MiniJinja, Pebble,
+ *    Twig). A condition that is already boolean-shaped is emitted as is;
+ *    anything else is wrapped in the runtime's JS-faithful `truthy` before it
+ *    becomes an `if` / ternary test, because those hosts disagree with JS on
+ *    empty containers (`[]` / `{}` are JS-truthy, falsy in Python, PHP and
+ *    Pebble) and PHP also on the string `'0'`. Perl never needed this: an
+ *    array / hash reference is always true there.
  *
  * Detected boolean-result shapes:
  *   - `binary` with a comparison operator (`<`, `>`, `<=`, `>=`, `==`,
@@ -12,12 +28,17 @@
  *   - `unary` with logical `!`
  *   - `literal` with `literalType: 'boolean'`
  *   - `logical` (`&&` / `||` / `??`) when both sides are boolean-result
+ *     (`x > 0 && y < 10`, not `x() || 'fallback'`)
  *   - `conditional` (`?:`) when both branches are boolean-result
  *   - with a caller's `isBooleanName`, a getter call, `props.X` or bare
  *     name declared `boolean`
+ *
+ * Anything else is not boolean-result, including a bare identifier
+ * (`accepted`) or call (`accepted()`) without a witness: its type is not
+ * recoverable from source text.
  */
 
-import type { ParsedExpr } from '../expression-parser.ts'
+import { parseExpression, type ParsedExpr } from '../expression-parser.ts'
 import type { IRMetadata, TypeInfo } from '../types.ts'
 
 const COMPARISON_OPS = new Set([
@@ -182,4 +203,83 @@ export function collectBooleanValueNames(
     else names.delete(constant.name)
   }
   return { names, props }
+}
+
+/**
+ * {@link isBooleanResultParsed} over expression source text: parses `expr`
+ * and classifies the tree structurally (no `isBooleanName` witness). An
+ * unparseable expression is not boolean-result.
+ */
+export function isBooleanResultExpr(expr: string): boolean {
+  const parsed = parseExpression(expr.trim())
+  if (!parsed) return false
+  return isBooleanResultParsed(parsed)
+}
+
+/**
+ * True when `expr`'s top-level shape is an explicit one-argument JS
+ * `String(x)` call (the `EVAL_BUILTIN_IDENTS` builtin the compiler
+ * recognizes structurally; each DSL adapter lowers it to its runtime's
+ * `string` helper).
+ *
+ * Guards the {@link isAriaBooleanAttr}-driven `bool_str` override in the DSL
+ * adapters' attribute emitters: an author who wrote `String(...)` has opted
+ * into JS `String()` semantics, and `bool_str` over that already-stringified
+ * value is a truthiness test of a string (`"false"` is a non-empty, truthy
+ * string in Python, Ruby, PHP and Java), so it must not run on top.
+ */
+export function isExplicitStringCall(expr: string): boolean {
+  const parsed = parseExpression(expr.trim())
+  return (
+    !!parsed &&
+    parsed.kind === 'call' &&
+    parsed.callee.kind === 'identifier' &&
+    parsed.callee.name === 'String' &&
+    parsed.args.length === 1
+  )
+}
+
+/**
+ * ARIA attributes whose spec values are `"true"`, `"false"`, and (for
+ * tri-state members) `"mixed"`. When a fixture binds one of these to an
+ * arbitrary JS expression (`aria-checked={accepted()}`), the expression's
+ * type isn't recoverable from source text, but the attribute name witnesses
+ * that the binding is boolean-shaped, so the DSL adapters route it through
+ * their `bool_str` runtime helper for the spec-canonical `"true"` /
+ * `"false"`.
+ *
+ * Deliberately conservative: only attributes whose spec value set is exactly
+ * `true | false` or `true | false | mixed`. Tokenised ARIA attributes
+ * (`aria-current` is `page | step | …`, `aria-sort` is `ascending | …`) are
+ * excluded so a string-valued binding is never coerced to `"true"` /
+ * `"false"`.
+ */
+const ARIA_BOOLEAN_ATTRS = new Set([
+  // Strict boolean state (true | false; some allow `undefined` = attribute
+  // absent, which the runtime emits as no-attr regardless).
+  'aria-atomic',
+  'aria-busy',
+  'aria-disabled',
+  'aria-hidden',
+  'aria-modal',
+  'aria-multiline',
+  'aria-multiselectable',
+  'aria-readonly',
+  'aria-required',
+  // true | false | undefined (absent): selection / disclosure state (#1897:
+  // tabs' `aria-selected={props.selected ?? false}` rendered Perl's `1` /
+  // `0` without this).
+  'aria-selected',
+  'aria-expanded',
+  // Tri-state (true | false | mixed). `bool_str` only maps truthy / falsy to
+  // true / false; a fixture that wants the literal "mixed" binds a
+  // string-valued JSX attr (`aria-checked="mixed"`), which lowers through
+  // the `literal` emit path and never reaches this set.
+  'aria-checked',
+  'aria-pressed',
+])
+
+/** Whether `name` is one of {@link ARIA_BOOLEAN_ATTRS}. */
+export function isAriaBooleanAttr(name: string): boolean {
+  return ARIA_BOOLEAN_ATTRS.has(name)
 }

@@ -115,7 +115,7 @@ export interface JinjaSpreadContext {
   /**
    * Lower a JS expression to a Jinja CONDITION (routes through `bf.truthy`
    * unless the expression is structurally already boolean-shaped — see
-   * `boolean-result.ts`). Used for the conditional-spread ternary's test,
+   * `@barefootjs/jsx`'s `adapters/boolean-result.ts`). Used for the conditional-spread ternary's test,
    * which is a condition position, not a value position. Same `preParsed`
    * contract as `convertExpressionToJinja`.
    */

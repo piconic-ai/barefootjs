@@ -34,7 +34,7 @@
  * Divergences beyond the syntax table above (all uniform, not per-fixture —
  * see the individual definition sites for the full rationale):
  *
- *   1. **JS truthiness** (`boolean-result.ts`, `expr/emitters.ts`'s
+ *   1. **JS truthiness** (`@barefootjs/jsx`'s `adapters/boolean-result.ts`, `expr/emitters.ts`'s
  *      `truthyTest`, this file's `convertConditionToJinja`). Python's `[]` /
  *      `{}` are falsy; JS's are truthy. Perl doesn't have this problem (a
  *      Perl reference is always true), so Kolon needed no truthy-routing
@@ -161,8 +161,14 @@ import {
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
+  isAriaBooleanAttr,
+  isBooleanResultExpr,
+  isExplicitStringCall,
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -180,10 +186,6 @@ import { staticValueToJinja } from './lib/static-value.ts'
 import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest } from './expr/emitters.ts'
 import type { JinjaEmitContext, JinjaSpreadContext, JinjaMemoContext } from './emit-context.ts'
 import {
-  hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-} from './analysis/component-tree.ts'
-import {
   conditionalSpreadToJinja,
   objectLiteralExprToJinjaDict,
 } from './spread/spread-codegen.ts'
@@ -191,11 +193,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import {
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
-  collectStringValueNames,
-} from './props/prop-classes.ts'
+import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { JinjaAdapterOptions } from './lib/types.ts'
 import type { JinjaAdapterOptions } from './lib/types.ts'
@@ -378,7 +376,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // Surface it loudly here. Suppressed when the caller guarantees that all
     // sibling templates are registered on the same instance at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Jinja'))
     }
 
     const templateBody = ir.root.type === 'if-statement'
@@ -2058,7 +2056,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
    * boolean on its own (see `runtime.js_string`'s bool branch), so
    * layering `bf.bool_str` on top would run Python truthiness over the
    * ALREADY-STRINGIFIED text instead of the original boolean. See
-   * `isExplicitStringCall`'s docstring in `boolean-result.ts` for the full
+   * `isExplicitStringCall`'s docstring in `@barefootjs/jsx`'s `adapters/boolean-result.ts` for the full
    * double-wrap failure mode this guards against.
    */
   private shouldBoolStr(expr: string, name: string): boolean {

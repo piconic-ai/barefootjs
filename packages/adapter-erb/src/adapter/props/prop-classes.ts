@@ -7,8 +7,7 @@
  * adapter instance state.
  */
 
-import type { ComponentIR } from '@barefootjs/jsx'
-import { isStringTypeInfo, isBareStringLiteral } from '../value/parsed-literal.ts'
+import { isBareStringLiteral, isStringTypeInfo, type ComponentIR } from '@barefootjs/jsx'
 
 /**
  * SSR-resolvable context-value names: props, signal getters, memos.
@@ -20,52 +19,6 @@ export function collectProviderDataNames(ir: ComponentIR): Set<string> {
     ...ir.metadata.propsParams.map(p => p.name),
     ...(ir.metadata.signals ?? []).map(s => s.getter),
     ...(ir.metadata.memos ?? []).map(m => m.name),
-  ])
-}
-
-/**
- * Props whose declared TS type is boolean — a bare binding of one
- * (`data-active={props.isActive}`) must stringify as JS `String(boolean)`
- * ("true"/"false"), matching the `bf.bool_str` helper's output.
- */
-export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
-  return new Set(
-    ir.metadata.propsParams
-      .filter(prop => prop.type?.primitive === 'boolean' || prop.type?.raw === 'boolean')
-      .map(prop => prop.name),
-  )
-}
-
-/**
- * No-destructure-default props → `nil` when the caller omits them → guard
- * their bare-reference attribute emission with a Ruby nil-check so the
- * attribute drops instead of rendering `attr=""` (Hono-style nullish
- * omission). A prop WITH a destructure default (`value = ''`) is never
- * `nil` in the body and must stay unconditional, so it is excluded. Mirrors
- * the Go adapter's nillable-field guard: there the witness is the resolved
- * `interface{}` field type; here it is the absence of a default. A REQUIRED
- * concrete-primitive prop (`string`/`number`/`boolean`) is excluded — the
- * caller always supplies it, matching the Go adapter's unconditional
- * concrete fields — but an OPTIONAL primitive is presence-uncertain and
- * stays guarded (#2259).
- */
-export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
-  return new Set([
-    ...ir.metadata.propsParams
-      .filter(
-        p =>
-          p.defaultValue === undefined &&
-          !p.isRest &&
-          (p.type?.kind !== 'primitive' || p.optional),
-      )
-      .map(p => p.name),
-    // A closed-type `{...rest}` key (#3057) is never destructured with its
-    // own default the way `variant = 'a'` is, so it is always presence-
-    // uncertain the same way a no-default optional prop is — guard it the
-    // same way so `<span {...rest}>` omits a caller-omitted key instead of
-    // rendering `key=""`. Harmless for a required (non-optional) rest key
-    // too: the guard's `nil?` check is simply always false for it.
-    ...ir.metadata.restPropsExpandedKeys,
   ])
 }
 
