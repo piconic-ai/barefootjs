@@ -168,6 +168,8 @@ export type {
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
+export { planAttrExpression, planSpreadAttr } from './adapters/attr-plan.ts'
+export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext } from './adapters/attr-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,
