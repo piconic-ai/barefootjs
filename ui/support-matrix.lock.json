@@ -17888,10 +17888,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "loop-param-shadows-array-const",
-        "description": ".map() param shadowing a computed array const iterates the row value, not the outer const",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-shadows-array-const.ts",
-        "code": "entries[0]"
+        "fixture": "optional-nested-object-signal-seed",
+        "description": "A signal seeded from an optional nested object retains its nullable field type",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-nested-object-signal-seed.ts",
+        "code": "meta()?.['active']"
       }
     },
     "member:optional": {
