@@ -168,6 +168,12 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // precedes this `.find(` — the lookup itself is the const-resolution step
   // once `scope` has answered the shadow question.
   'packages/jsx/src/adapters/attr-plan.ts': { 'localConstants.find(': 1 },
+  // FLOOR (shape 1, already guarded): `planLoop`'s computed-const loop-source
+  // gate (#3473, moved out of the eight DSL adapters, which spelled it
+  // `(this.localConstants ?? []).find(` or `.some(`). The `ctx.scope.isBound`
+  // shadow check precedes this `.find(` — the lookup is the const-resolution
+  // step once the scope has answered the shadow question.
+  'packages/jsx/src/adapters/loop-plan.ts': { 'localConstants.find(': 1 },
   // FLOOR (shape 2): `generateSignalInitializers`'s reachability analysis
   // for SSR no-op initializer dead-code elimination — module/component-level
   // declaration reachability, unrelated to loop-row shadowing entirely.

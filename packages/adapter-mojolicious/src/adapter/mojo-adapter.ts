@@ -62,13 +62,12 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
   isEmptyComponentProps,
   planAttrExpression,
+  planLoop,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  filterCaptureCollisions,
   renameFreeIdentifiers,
   BindingScope,
   rootPropAliasNames,
@@ -981,9 +980,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // gate's own jsdoc for the full list); a `.filter().map(destructure)`
     // chain (the filter-param rewrite is out of scope here); and a
     // computed property key (`{ [k]: v }`, refused earlier as BF025).
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this.resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -1026,29 +1030,23 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // this identifier (fable review) — reuses the same threaded,
     // position-accurate `this.scope` `resolveModuleStringConst` already
     // consults for this hazard class (#1749/#2482 Stage 2).
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
+    const staticItems = loopPlan.staticItems
     const staticArray = staticItems !== null ? staticValueToPerl(staticItems) : null
 
     const arrayName = loop.array.trim()
-    // A loop binding that shadows the name is the row's value, not the const
-    // (#3473, as `resolveStaticLoopSource` above already assumes).
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
-      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && this.resolveLiteralConst(arrayName) === null) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
+    const arrayConst = staticArray === null ? loopPlan.unresolvableConst : null
+    if (arrayConst) {
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        },
+      })
     }
 
     const rawArray = staticArray ?? this.convertExpressionToPerl(loop.array)
@@ -1114,7 +1112,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
-    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureAliases = loopPlan.captureAliases
     const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
@@ -1145,7 +1143,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
       // comparator the descriptor models, so the refusal arm is defensive; it
       // keeps the array unsorted so the template stays valid.
-      const plan = lowerCallbackMethod('sort', loop.sortComparator.arrow, [], CALLBACK_LOWERING)
+      const plan = loopPlan.sort!
       let sorted = rawArray
       if (plan.kind === 'eval') sorted = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
       else if (plan.kind === 'structured-sort') sorted = renderSortMethod(rawArray, plan.comparator)

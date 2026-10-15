@@ -90,14 +90,13 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
   isEmptyComponentProps,
   planAttrExpression,
+  planLoop,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
   BindingScope,
-  filterCaptureCollisions,
   renameFreeIdentifiers,
   buildImportAliasMap,
   collectNullableSignalGetters,
@@ -110,7 +109,6 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
-  lowerCallbackMethod,
   emitCallbackEval,
   arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
@@ -1022,9 +1020,14 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // read (`rest.flag`) or a `{...rest}` spread onto an intrinsic element.
     // Bare-value rest uses, a spread onto a component/provider, and
     // `.filter().map(destructure)` still have no Ruby scalar form → BF104.
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this.resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -1068,25 +1071,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // check now also does deliberately, up front, for both shapes.
     // Canonical, position-accurate predicate (#2482 Stage 2) — the
     // enclosing loop scope's own membership.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
+    const staticItems = loopPlan.staticItems
     const staticArray = staticItems !== null ? staticValueToRuby(staticItems) : null
 
-    if (staticArray === null && loop.arrayParsed?.kind === 'identifier') {
-      const arrayName = loop.arrayParsed.name
-      const isUnresolvableLocalConst =
-        !this.scope.isBound(arrayName) &&
-        this.resolveModuleStringConst(arrayName) === null &&
-        this.resolveLiteralConst(arrayName) === null &&
-        this.localConstants.some(c => c.name === arrayName)
-      if (isUnresolvableLocalConst) {
-        this._recordExprBF101(
-          `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
-          `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
-          [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        )
-      }
+    if (staticArray === null && loopPlan.unresolvableConst) {
+      const arrayName = loopPlan.unresolvableConst.name
+      this._recordExprBF101(
+        `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
+        `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
+        [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+      )
     }
 
     const rawArray = staticArray ?? this.convertExpressionToRuby(loop.array)
@@ -1190,7 +1184,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // A name the filter predicate captures from an enclosing row that this
     // loop's own block binds again would read the block param inside the
     // loop; keep the enclosing value under a loop-scoped local (#3402).
-    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureAliases = loopPlan.captureAliases
     const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same
@@ -1218,7 +1212,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
       // comparator the descriptor models, so the refusal arm is defensive; it
       // keeps the array unsorted so the template stays valid.
-      const plan = lowerCallbackMethod('sort', loop.sortComparator.arrow, [], CALLBACK_LOWERING)
+      const plan = loopPlan.sort!
       let sorted = rawArray
       if (plan.kind === 'eval') sorted = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
       else if (plan.kind === 'structured-sort') sorted = renderSortMethod(rawArray, plan.comparator)

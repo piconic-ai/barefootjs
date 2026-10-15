@@ -76,9 +76,9 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
   isEmptyComponentProps,
   planAttrExpression,
+  planLoop,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -98,7 +98,6 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
-  lowerCallbackMethod,
   emitCallbackEval,
   arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
@@ -886,9 +885,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // gate's own jsdoc for the full list); a `.filter().map(destructure)`
     // chain (the filter-param rewrite is out of scope here); and a
     // computed property key (`{ [k]: v }`, refused earlier as BF025).
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -935,29 +939,23 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // conservative refusal, not a silent wrong value). Canonical,
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
+    const staticItems = loopPlan.staticItems
     const staticArray = staticItems !== null ? staticValueToKolon(staticItems) : null
 
     const arrayName = loop.array.trim()
-    // A loop binding that shadows the name is the row's value, not the const
-    // (#3473, as `resolveStaticLoopSource` above already assumes).
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
-      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && this._resolveLiteralConst(arrayName) === null) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Xslate adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
+    const arrayConst = staticArray === null ? loopPlan.unresolvableConst : null
+    if (arrayConst) {
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Xslate adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        },
+      })
     }
 
     const rawArray = staticArray ?? this.convertExpressionToKolon(loop.array)
@@ -972,7 +970,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // comparator the descriptor models, so the refusal arm is defensive; it
       // keeps the array unsorted so the template stays valid.
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToKolon('', e)
-      const plan = lowerCallbackMethod('sort', loop.sortComparator.arrow, [], CALLBACK_LOWERING)
+      const plan = loopPlan.sort!
       if (plan.kind === 'eval') array = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
       else if (plan.kind === 'structured-sort') array = renderSortMethod(rawArray, plan.comparator)
       else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)

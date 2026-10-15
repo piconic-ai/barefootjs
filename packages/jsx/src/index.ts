@@ -170,6 +170,8 @@ export { componentPropKey, isEmptyComponentProps, planComponentProps, spellCompo
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
 export { planAttrExpression, planSpreadAttr } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext } from './adapters/attr-plan.ts'
+export { planLoop } from './adapters/loop-plan.ts'
+export type { LoopPlan, LoopPlanContext } from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,

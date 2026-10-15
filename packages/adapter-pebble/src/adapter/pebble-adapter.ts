@@ -243,13 +243,12 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
-  resolveStaticLoopSource,
   isEmptyComponentProps,
   planAttrExpression,
+  planLoop,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  filterCaptureCollisions,
   templateNameCollisionErrors,
   renameFreeIdentifiers,
   BindingScope,
@@ -268,7 +267,6 @@ import {
   collectImportedLoopChildComponentErrors,
   collectBooleanTypedProps,
   collectNullableOptionalProps,
-  lowerCallbackMethod,
   emitCallbackEval,
   arithmeticOperandCoercion,
 } from '@barefootjs/jsx'
@@ -980,9 +978,14 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // a rest spread onto a component/provider, `.filter().map(destructure)`,
     // and `__bf_`-prefixed binding names (would collide with the synthetic
     // per-item var).
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
+    const loopPlan = planLoop(loop, {
+      scope: this.scope,
+      localConstants: this.localConstants ?? [],
+      resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      callbackLowering: CALLBACK_LOWERING,
+    })
+    const supportableDestructure = loopPlan.destructure === 'lowerable'
+    if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -1026,29 +1029,23 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // a silent wrong value). Canonical, position-accurate predicate (#2482
     // Stage 2) — the enclosing loop scope's own membership, not a coarse
     // whole-component union.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: this.scope.asShadowPredicate(),
-    })
+    const staticItems = loopPlan.staticItems
     const staticArray = staticItems !== null ? staticValueToPebble(staticItems) : null
 
     const arrayName = loop.array.trim()
-    // A loop binding that shadows the name is the row's value, not the const
-    // (#3473, as `resolveStaticLoopSource` above already assumes).
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
-      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && this._resolveLiteralConst(arrayName) === null) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Pebble adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message:
-              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-          },
-        })
-      }
+    const arrayConst = staticArray === null ? loopPlan.unresolvableConst : null
+    if (arrayConst) {
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Pebble adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        },
+      })
     }
 
     const rawArray = staticArray ?? this.convertExpressionToPebble(loop.array)
@@ -1063,7 +1060,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       // comparator the descriptor models, so the refusal arm is defensive; it
       // keeps the array unsorted so the template stays valid.
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPebble('', e)
-      const plan = lowerCallbackMethod('sort', loop.sortComparator.arrow, [], CALLBACK_LOWERING)
+      const plan = loopPlan.sort!
       if (plan.kind === 'eval') array = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
       else if (plan.kind === 'structured-sort') array = renderSortMethod(rawArray, plan.comparator)
       else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
@@ -1186,7 +1183,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
-    const captureAliases = filterCaptureCollisions(loop).map(name => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
+    const captureAliases = loopPlan.captureAliases
     const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
