@@ -266,7 +266,6 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   exprToString,
@@ -294,6 +293,8 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   isEmptyComponentProps,
+  planAttrExpression,
+  planSpreadAttr,
   planComponentProps,
   spellComponentProps,
   filterCaptureCollisions,
@@ -305,7 +306,6 @@ import {
   rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -1589,115 +1589,52 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish omission: a bare reference to an optional,
-      // no-default prop (`nullableOptionalProps`) is guarded so the
-      // attribute drops instead of rendering `attr=""`. Narrowly scoped to
-      // bare identifiers — member exprs, calls, and concrete/defaulted
-      // props are unaffected.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches the
-      // SolidJS props-object pattern, not just destructured params. Same for
-      // a closed-type rest-expanded key's `rest.tag`-shaped expression
-      // (#3057) — see `restPropsName`'s docstring, EXCEPT that a rest key
-      // lowers to a `data_get($rest, 'tag')` call (below), never a bare
-      // `$tag` variable — `isset()` on a function-call result is a PHP
-      // fatal error ("Cannot use isset() on the result of an expression"),
-      // so this case alone needs the `!== null` form instead.
-      const restBareKey =
-        this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-          ? bareId.slice(this.restPropsName.length + 1)
-          : null
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : (restBareKey ?? bareId)
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `isset(...)` guard (#2488).
-          !this.isLoopBoundName(normalizedBareId)) ||
-          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
-      ) {
-        const blade = this.convertExpressionToBlade(value.expr)
-        const body = this.shouldBoolStr(value.expr, name)
-            ? `${name}="{!! e($bf->bool_str(${blade})) !!}"`
-            : `${name}="{!! e($bf->string(${blade})) !!}"`
-        if (restBareKey !== null) {
-          return `\n@if((${blade}) !== null)\n${body}\n@endif\n`
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.isLoopBoundName(n),
+        boolStr: (expr, attr) => this.shouldBoolStr(expr, attr),
+        undefinedAlternateTernary: (expr) => this.parseUndefinedAlternateTernary(expr),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="{!! e($bf->bool_str(${v})) !!}"` : `${name}="{!! e($bf->string(${v})) !!}"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          // A rest-expanded key lowers to a `data_get($rest, 'tag')` call, and
+          // `isset()` on a call result is a PHP fatal error ("Cannot use
+          // isset() on the result of an expression"), so it tests `!== null`.
+          const v = this.convertExpressionToBlade(value.expr)
+          const test = plan.restKey ? `(${v}) !== null` : `isset(${v})`
+          return `\n@if(${test})\n${attr(v, plan.boolStr)}\n@endif\n`
         }
-        // `blade` is a bare `$name` variable reference for this narrowly-
-        // gated shape, so it doubles as both the `isset()` guard test and
-        // the display value — a SINGLE check that covers both "never
-        // extracted into scope" and "extracted as null" (this file's
-        // header, divergence 6 — simpler than Twig's two-part `is defined
-        // and is not null`).
-        return `\n@if(isset(${blade}))\n${body}\n@endif\n`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        const blade = this.convertExpressionToBlade(value.expr, value.parsed)
-        return `{!! e((${this.wrapConditionExpr(value.expr, blade)} ? '${name}' : '')) !!}`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge.
-        // Route through `bool_str` when the name/shape witnesses a
-        // boolean value, same as the unconditional path below (#1897).
-        // Bind to a temp first so the expression evaluates once, not in
-        // both the guard and the value.
-        const blade = this.convertExpressionToBlade(value.expr)
-        const tmpName = `bf_pu${this.presenceVarCounter++}`
-        const tmp = bladeVar(tmpName)
-        const body = this.shouldBoolStr(value.expr, name)
-            ? `${name}="{!! e($bf->bool_str(${tmp})) !!}"`
-            : `${name}="{!! e($bf->string(${tmp})) !!}"`
-        return `\n@php(${tmp} = ${blade})\n@if(${this.wrapConditionExpr(value.expr, tmp)})\n${body}\n@endif\n`
-      }
-      // `attr={cond ? value : undefined}` OMITS the attribute on the
-      // falsy branch (Hono drops undefined-valued attributes) — wrap the
-      // whole attribute in the condition instead of rendering `attr=""`
-      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
-      // undefined}`). Same parity rule the Go adapter applies.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
+        case 'boolean-attr': {
+          const v = this.convertExpressionToBlade(value.expr, value.parsed)
+          return `{!! e((${this.wrapConditionExpr(value.expr, v)} ? '${name}' : '')) !!}`
+        }
+        case 'presence': {
+          const v = this.convertExpressionToBlade(value.expr)
+          const tmp = bladeVar(`bf_pu${this.presenceVarCounter++}`)
+          return `\n@php(${tmp} = ${v})\n@if(${this.wrapConditionExpr(value.expr, tmp)})\n${attr(tmp, plan.boolStr)}\n@endif\n`
+        }
+        case 'undefined-alternate': {
+          const m = plan.ternary
           const cond = this.convertConditionToBlade('', m.testParsed)
           const val = this.convertExpressionToBlade('', m.consequentParsed)
           return `\n@if(${cond})\n${name}="{!! e($bf->string(${val})) !!}"\n@endif\n`
         }
+        case 'omit-nil': {
+          const v = this.convertExpressionToBlade(value.expr, value.parsed)
+          const tmp = bladeVar(`bf_pu${this.presenceVarCounter++}`)
+          return `\n@php(${tmp} = ${v})\n@if(${tmp} !== null)\n${attr(tmp, plan.boolStr)}\n@endif\n`
+        }
+        case 'plain':
+          return attr(this.convertExpressionToBlade(value.expr, value.parsed), plan.boolStr)
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const blade = this.convertExpressionToBlade(value.expr, value.parsed)
-        const tmp = bladeVar(`bf_pu${this.presenceVarCounter++}`)
-        const body = this.shouldBoolStr(value.expr, name)
-            ? `${name}="{!! e($bf->bool_str(${tmp})) !!}"`
-            : `${name}="{!! e($bf->string(${tmp})) !!}"`
-        return `\n@php(${tmp} = ${blade})\n@if(${tmp} !== null)\n${body}\n@endif\n`
-      }
-      // Boolean-result handling: route boolean-shaped values through
-      // `$bf->bool_str` so the wire bytes match JS `String(boolean)`. Every
-      // other value is a text-position interpolation — route through
-      // `$bf->string` (see the file header, "Stringification").
-      // #3166: thread `value.parsed` through (same reason as
-      // `renderConditional`'s matching comment).
-      const blade = this.convertExpressionToBlade(value.expr, value.parsed)
-      if (this.shouldBoolStr(value.expr, name)) {
-        return `${name}="{!! e($bf->bool_str(${blade})) !!}"`
-      }
-      return `${name}="{!! e($bf->string(${blade})) !!}"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1708,64 +1645,24 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`) has
-      // no matching context array in Blade scope — props arrive as a flat set
-      // of top-level template vars. Emit an inline array literal enumerating
-      // the analyzer-extracted props params.
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${bladeHashKey(p.name)} => ${bladeVar(p.name)}`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${bladeHashKey(p)} => ${bladeVar(p)}`)
         return `{!! $bf->spread_attrs([${entries.join(', ')}]) !!}`
       }
-      // Conditional inline-object spread (#textarea):
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a PHP inline ternary of arrays — the falsy `[]` branch OMITS
-      // the key (`spread_attrs` does NOT emit empty-array entries).
-      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
-      // re-parsing `trimmed`.
-      const ternaryDict = conditionalSpreadToBlade(this.spreadCtx, value.parsed)
-      if (ternaryDict !== null) {
-        return `{!! $bf->spread_attrs(${ternaryDict}) !!}`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToBlade(this.spreadCtx, candidate)
+        if (lowered !== null) return `{!! $bf->spread_attrs(${lowered}) !!}`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its initializer text
-      // and route through the same conditional-spread lowering. Only
-      // function-scope (`!isModule`) consts whose value is NOT itself a bare
-      // identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((attrs) => <p
-      // {...attrs} />)`) — without the guard this forwarded the OUTER
-      // const's value at every iteration instead of the per-item value.
-      // Must be the threaded, position-accurate scope — the same name
-      // spread at ROOT (no enclosing loop) must still resolve the const.
-      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = (this.localConstants ?? []).find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
-            // The local const's initializer text isn't carried as a structured
-            // tree on the spread attr, so parse it once via the shared
-            // `parseExpression` (the analyzer's own entry) — not
-            // `ts.createSourceFile` — mirroring go-template's same local-const
-            // resolution path.
-            const resolved = conditionalSpreadToBlade(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `{!! $bf->spread_attrs(${resolved}) !!}`
-            }
-          }
-        }
-      }
-      const bladeExpr = this.convertExpressionToBlade(value.expr)
-      return `{!! $bf->spread_attrs(${bladeExpr}) !!}`
+      return `{!! $bf->spread_attrs(${this.convertExpressionToBlade(value.expr)}) !!}`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',

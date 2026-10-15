@@ -4,9 +4,6 @@
   "threshold": 25,
   "files": {
     "packages/adapter-blade/src/adapter/blade-adapter.ts": {
-      "emitExpression": [
-        27
-      ],
       "renderLoop": [
         60
       ]
@@ -246,9 +243,6 @@
       ]
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
-      "emitExpression": [
-        33
-      ],
       "renderLoop": [
         68
       ]
@@ -340,9 +334,6 @@
       ]
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
-      "emitExpression": [
-        33
-      ],
       "renderLoop": [
         85
       ]

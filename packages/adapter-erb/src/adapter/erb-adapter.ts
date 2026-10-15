@@ -65,7 +65,6 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   parseStyleObjectEntries,
@@ -93,6 +92,8 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   isEmptyComponentProps,
+  planAttrExpression,
+  planSpreadAttr,
   planComponentProps,
   spellComponentProps,
   BindingScope,
@@ -100,7 +101,6 @@ import {
   renameFreeIdentifiers,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -1578,108 +1578,46 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish-attribute omission (#textarea rows): when the
-      // attribute value is a BARE reference to an optional, no-default
-      // prop (which reads `nil` when the caller omits it), guard the
-      // attribute with a Ruby nil-check so it DROPS rather than rendering
-      // `attr=""`. The guarded body reuses the exact normal emission, so
-      // value escaping is unchanged; only the presence is conditional.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches
-      // the SolidJS props-object pattern, not just destructured params
-      // (#checkbox `id={props.id}`). Same for a closed-type rest-expanded
-      // key's `rest.tag`-shaped expression (#3057) — see `restPropsName`'s
-      // docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `.nil?` guard (#2488).
-          !this.isLoopBoundName(normalizedBareId)) ||
-          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
-      ) {
-        const ruby = this.convertExpressionToRuby(value.expr)
-        const body =
-          this.shouldWrapBoolStr(value.expr, name)
-            ? `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
-            : `${name}="<%= bf.h(${ruby}) %>"`
-        return `<% if !(${ruby}).nil? %>${body}<% end %>`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        // Thread the IR-carried `.parsed` tree (#3210): a recognised
-        // `<action>.isPending()` read has already been substituted with its
-        // seed literal there; re-parsing `value.expr` would lower it as a
-        // member read (`NoMethodError` on `nil`).
-        return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr, value.parsed)}) ? '${name}' : '' %>`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge. Route
-        // through `bool_str` when the name/shape witnesses a boolean
-        // value, same as the unconditional path below. Bind to a temp
-        // first so the expression evaluates once, not in both the guard
-        // and the value.
-        const ruby = this.convertExpressionToRuby(value.expr)
-        const tmp = `__bf_pu${this.presenceVarCounter++}`
-        const body =
-          this.shouldWrapBoolStr(value.expr, name)
-            ? `${name}="<%= bf.h(bf.bool_str(${tmp})) %>"`
-            : `${name}="<%= bf.h(${tmp}) %>"`
-        return `<% ${tmp} = ${ruby}; if bf.truthy?(${tmp}) %>${body}<% end %>`
-      }
-      // Boolean-result handling: see `shouldWrapBoolStr`'s docstring for
-      // the three wrap witnesses and the `String(...)`-call exception.
-      //
-      // `attr={cond ? value : undefined}` OMITS the attribute on the falsy
-      // branch (Hono drops undefined-valued attributes) — wrap the whole
-      // attribute in the condition instead of rendering `attr=""`.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.isLoopBoundName(n),
+        boolStr: (expr, attr) => this.shouldWrapBoolStr(expr, attr),
+        undefinedAlternateTernary: (expr) => this.parseUndefinedAlternateTernary(expr),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="<%= bf.h(bf.bool_str(${v})) %>"` : `${name}="<%= bf.h(${v}) %>"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToRuby(value.expr)
+          return `<% if !(${v}).nil? %>${attr(v, plan.boolStr)}<% end %>`
+        }
+        case 'boolean-attr':
+          return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr, value.parsed)}) ? '${name}' : '' %>`
+        case 'presence': {
+          const v = this.convertExpressionToRuby(value.expr)
+          const tmp = `__bf_pu${this.presenceVarCounter++}`
+          return `<% ${tmp} = ${v}; if bf.truthy?(${tmp}) %>${attr(tmp, plan.boolStr)}<% end %>`
+        }
+        case 'undefined-alternate': {
+          const m = plan.ternary
           const cond = this.convertExpressionToRuby('', m.testParsed)
           const val = this.convertExpressionToRuby('', m.consequentParsed)
           return `<% if bf.truthy?(${cond}) %>${name}="<%= bf.h(${val}) %>"<% end %>`
         }
+        case 'omit-nil': {
+          const v = this.convertExpressionToRuby(value.expr, value.parsed)
+          const tmp = `__bf_pu${this.presenceVarCounter++}`
+          return `<% ${tmp} = ${v}; if !${tmp}.nil? %>${attr(tmp, plan.boolStr)}<% end %>`
+        }
+        case 'plain':
+          return attr(this.convertExpressionToRuby(value.expr, value.parsed), plan.boolStr)
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const ruby = this.convertExpressionToRuby(value.expr, value.parsed)
-        const tmp = `__bf_pu${this.presenceVarCounter++}`
-        const body =
-          this.shouldWrapBoolStr(value.expr, name)
-            ? `${name}="<%= bf.h(bf.bool_str(${tmp})) %>"`
-            : `${name}="<%= bf.h(${tmp}) %>"`
-        return `<% ${tmp} = ${ruby}; if !${tmp}.nil? %>${body}<% end %>`
-      }
-      // #3166: thread the IR-carried `.parsed` tree through (same reason as
-      // `renderExpression`'s `expr.parsed` above) — a recognised
-      // `<action>.isPending()` / `.error()` read has already been
-      // substituted with its seed literal there; re-parsing `value.expr`
-      // fresh here would lose that and fall into the generic member-access
-      // lowering (`v[:fetchPosts][:isPending]`, `NoMethodError` on `nil`).
-      const ruby = this.convertExpressionToRuby(value.expr, value.parsed)
-      if (this.shouldWrapBoolStr(value.expr, name)) {
-        return `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
-      }
-      return `${name}="<%= bf.h(${ruby}) %>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1699,63 +1637,24 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`)
-      // has no matching `v[:props]` entry in the ERB vars Hash — props
-      // arrive as one vars-Hash key per `propsParams` entry, not as a
-      // single nested Hash. Emit an inline Hash literal that enumerates
-      // the analyzer-extracted props params so `bf.spread_attrs(...)` gets
-      // a real Hash (matches the Go adapter's same-shape map-literal
-      // path). For `restPropsName` and other identifier shapes, the
-      // standard `convertExpressionToRuby` translation handles it (rest
-      // binding name → `v[:<name>]` resolves against the Hash the caller /
-      // harness placed under that key).
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${rubySymbolKey(p.name)} v[${rubySymbolLiteral(p.name)}]`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${rubySymbolKey(p)} v[${rubySymbolLiteral(p)}]`)
         return `<%= bf.spread_attrs({${entries.join(', ')}}) %>`
       }
-      // Conditional inline-object spread:
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Ruby inline ternary of Hashes — the falsy `{}` branch OMITS
-      // the key (`bf.spread_attrs` does NOT filter empty strings, so we
-      // cannot always-include it). Mirrors the Go adapter's IIFE-of-maps
-      // lowering (#textarea).
-      const ternaryHash = conditionalSpreadToRuby(this.spreadCtx, value.parsed)
-      if (ternaryHash !== null) {
-        return `<%= bf.spread_attrs(${ternaryHash}) %>`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToRuby(this.spreadCtx, candidate)
+        if (lowered !== null) return `<%= bf.spread_attrs(${lowered}) %>`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its initializer
-      // text and route through the same conditional-spread lowering. Only
-      // function-scope (`!isModule`) consts whose value is NOT itself a
-      // bare identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((attrs) => <p
-      // {...attrs} />)`) — without the guard this forwarded the OUTER
-      // const's value at every iteration instead of the per-item value.
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = this.localConstants.find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            const resolved = conditionalSpreadToRuby(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `<%= bf.spread_attrs(${resolved}) %>`
-            }
-          }
-        }
-      }
-      const rubyExpr = this.convertExpressionToRuby(value.expr)
-      return `<%= bf.spread_attrs(${rubyExpr}) %>`
+      return `<%= bf.spread_attrs(${this.convertExpressionToRuby(value.expr)}) %>`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',

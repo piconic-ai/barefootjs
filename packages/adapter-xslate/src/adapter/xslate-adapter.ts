@@ -51,7 +51,6 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   exprToString,
@@ -79,6 +78,8 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   isEmptyComponentProps,
+  planAttrExpression,
+  planSpreadAttr,
   planComponentProps,
   spellComponentProps,
   BindingScope,
@@ -88,7 +89,6 @@ import {
   rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -1433,120 +1433,54 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish omission: a bare reference to an optional,
-      // no-default prop (`nullableOptionalProps`) is `defined`-guarded so the
-      // attribute drops instead of rendering `attr=""`. Narrowly scoped to bare
-      // identifiers — member exprs, calls, and concrete/defaulted props are
-      // unaffected.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches the
-      // SolidJS props-object pattern, not just destructured params. Same for
-      // a closed-type rest-expanded key's `rest.tag`-shaped expression
-      // (#3057) — see `restPropsName`'s docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `defined` guard (#2488).
-          !this.isLoopBoundName(normalizedBareId)) ||
-          (nullableSignal !== null && !this.isLoopBoundName(nullableSignal)))
-      ) {
-        const perl = this.convertExpressionToKolon(value.expr)
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<: $bf.bool_str(${perl}) :>"`
-            : `${name}="<: ${perl} :>"`
-        // Kolon `:` line directives must each stand alone on their own line, so
-        // wrap in newlines (`normalizeHTML` collapses the surrounding space).
-        return `\n: if (defined ${perl}) {\n${body}\n: }\n`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge.
-        // Route through `bool_str` when the name/shape witnesses a
-        // boolean value, same as the unconditional path below (#1897).
-        // Bind to a temp first so the expression evaluates once, not in
-        // both the guard and the value.
-        const perl = this.convertExpressionToKolon(value.expr)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<: $bf.bool_str(${tmp}) :>"`
-            : `${name}="<: ${tmp} :>"`
-        return `\n: my ${tmp} = ${perl};\n: if (${tmp}) {\n${body}\n: }\n`
-      }
-      // `attr={cond ? value : undefined}` OMITS the attribute on the
-      // falsy branch (Hono drops undefined-valued attributes) — wrap the
-      // whole attribute in the condition instead of rendering `attr=""`
-      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
-      // undefined}`). Same parity rule the Go adapter applies.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
-          // Pass the PARSED sub-trees through as `preParsed` (#2843 review)
-          // rather than re-parsing `m.condition`/`m.consequent` — those are
-          // `exprToString` debug text, which renders any nested
-          // `object-literal` (e.g. a registered call's params, `queryHref`'s
-          // `{ tag }`) as a non-reparseable `[UNSUPPORTED: …]` placeholder.
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.isLoopBoundName(n),
+        boolStr: (expr, attr) => isBooleanResultExpr(expr) || isAriaBooleanAttr(attr) || this.isBooleanTypedPropRef(expr),
+        undefinedAlternateTernary: (expr) => this.parseUndefinedAlternateTernary(expr),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="<: $bf.bool_str(${v}) :>"` : `${name}="<: ${v} :>"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToKolon(value.expr)
+          return `\n: if (defined ${v}) {\n${attr(v, plan.boolStr)}\n: }\n`
+        }
+        case 'boolean-attr':
+          return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
+        case 'presence': {
+          const v = this.convertExpressionToKolon(value.expr)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `\n: my ${tmp} = ${v};\n: if (${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
+        }
+        case 'undefined-alternate': {
+          // A mixed boolean / string branch renders its boolean as JS does.
+          const m = plan.ternary
           const cond = this.convertExpressionToKolon('', m.testParsed)
           const val = this.convertExpressionToKolon('', stringifyBooleanTernaryBranches(m.consequentParsed))
-          // A boolean-result consequent (`c ? false : undefined`) still
-          // renders JS `String(boolean)` (#3349).
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `$bf.bool_str(${val})`
             : this.jsNumberOutput(m.consequentParsed, val)
           return `\n: if (${cond}) {\n${name}="<: ${shown} :>"\n: }\n`
         }
+        case 'omit-nil':
+        case 'plain': {
+          // A ternary with a boolean and a string branch renders its boolean
+          // as JS does, unless the whole value goes through `bool_str`.
+          const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+          const v = this.convertExpressionToKolon(value.expr, mixedParsed)
+          if (plan.kind === 'plain') return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `\n: my ${tmp} = ${v};\n: if (defined ${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
+        }
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      // A ternary mixing a boolean branch with another kind
-      // (`yes() ? false : s()`) spells its boolean branch as JS does (#3349).
-      // Not when the whole value is serialized by `bool_str` below (an ARIA
-      // boolean name, a boolean-typed prop): it reads the branch's truth,
-      // and a stringified `'false'` is truthy in Perl.
-      const wrapsBoolStr =
-        isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
-      const mixedParsed = valueParsed && !wrapsBoolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.isLoopBoundName(n))) {
-        const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          wrapsBoolStr
-            ? `${name}="<: $bf.bool_str(${tmp}) :>"`
-            : `${name}="<: ${tmp} :>"`
-        return `\n: my ${tmp} = ${perl};\n: if (defined ${tmp}) {\n${body}\n: }\n`
-      }
-      // Boolean-result handling: route boolean-shaped values through
-      // `$bf.bool_str` so the wire bytes match JS `String(boolean)`.
-      // #3166: thread `value.parsed` through (same reason as
-      // `renderConditional`'s matching comment).
-      const perl = this.convertExpressionToKolon(value.expr, mixedParsed)
-      if (wrapsBoolStr) {
-        return `${name}="<: $bf.bool_str(${perl}) :>"`
-      }
-      return `${name}="<: ${this.jsNumberOutput(mixedParsed, perl)} :>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1557,65 +1491,24 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`) has
-      // no matching `$props` variable in Kolon's scope — props arrive as a
-      // flat set of top-level vars. Emit an inline hashref literal enumerating
-      // the analyzer-extracted props params.
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${JSON.stringify(p.name)} => $${p.name}`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${JSON.stringify(p)} => $${p}`)
         return `<: $bf.spread_attrs({${entries.join(', ')}}) | mark_raw :>`
       }
-      // Conditional inline-object spread (#textarea):
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Kolon inline ternary of hashrefs — Perl truthiness handles the
-      // condition for free, and the falsy `{}` branch OMITS the key
-      // (`spread_attrs` does NOT emit empty hashref entries).
-      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
-      // re-parsing `trimmed` with `ts.createSourceFile`.
-      const ternaryHashref = conditionalSpreadToKolon(this.spreadCtx, value.parsed)
-      if (ternaryHashref !== null) {
-        return `<: $bf.spread_attrs(${ternaryHashref}) | mark_raw :>`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToKolon(this.spreadCtx, candidate)
+        if (lowered !== null) return `<: $bf.spread_attrs(${lowered}) | mark_raw :>`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its initializer text
-      // and route through the same conditional-spread lowering. Only
-      // function-scope (`!isModule`) consts whose value is NOT itself a bare
-      // identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((attrs) => <p
-      // {...attrs} />)`) — without the guard this forwarded the OUTER
-      // const's value at every iteration instead of the per-item value.
-      // Must be the threaded, position-accurate scope — the same name
-      // spread at ROOT (no enclosing loop) must still resolve the const.
-      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = (this.localConstants ?? []).find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
-            // The local const's initializer text isn't carried as a structured
-            // tree on the spread attr, so parse it once via the shared
-            // `parseExpression` (the analyzer's own entry) — not
-            // `ts.createSourceFile` — mirroring go-template's same local-const
-            // resolution path.
-            const resolved = conditionalSpreadToKolon(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `<: $bf.spread_attrs(${resolved}) | mark_raw :>`
-            }
-          }
-        }
-      }
-      const perlExpr = this.convertExpressionToKolon(value.expr)
-      return `<: $bf.spread_attrs(${perlExpr}) | mark_raw :>`
+      return `<: $bf.spread_attrs(${this.convertExpressionToKolon(value.expr)}) | mark_raw :>`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',

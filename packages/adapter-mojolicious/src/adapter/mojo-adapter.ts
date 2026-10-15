@@ -37,7 +37,6 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
-  isBooleanAttr,
   parseExpression,
   stringifyParsedExpr,
   parseStyleObjectEntries,
@@ -65,6 +64,8 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   isEmptyComponentProps,
+  planAttrExpression,
+  planSpreadAttr,
   planComponentProps,
   spellComponentProps,
   filterCaptureCollisions,
@@ -75,7 +76,6 @@ import {
   rootPropReadName,
   buildImportAliasMap,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   type NullishAttrContext,
@@ -1469,141 +1469,54 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish-attribute omission (#textarea rows): when the
-      // attribute value is a BARE reference to an optional, no-default
-      // prop (which is `undef` when the caller omits it), guard the
-      // attribute with Perl `defined` so it DROPS rather than rendering
-      // `attr=""`. The guarded body reuses the exact normal emission, so
-      // value escaping (`<%= ... %>`) is unchanged; only the presence is
-      // conditional. The `% if`/`% end` line directives surround the
-      // attribute inline — the conformance comparator collapses the
-      // resulting whitespace, exactly like the existing boolean-attr and
-      // hydration-marker patterns. Scope is deliberately narrow (bare
-      // identifiers resolving to an optional-no-default prop) so member
-      // exprs, calls, concrete/defaulted props, and boolean attrs are
-      // unaffected and still emit unconditionally.
-      const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nullable-optional set — keyed by bare name — matches the
-      // SolidJS props-object pattern, not just destructured params (#checkbox
-      // `id={props.id}`). Same for a closed-type rest-expanded key's
-      // `rest.tag`-shaped expression (#3057) — see `restPropsName`'s docstring.
-      const normalizedBareId =
-        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
-          ? bareId.slice(this.propsObjectName.length + 1)
-          : this.restPropsName && bareId.startsWith(`${this.restPropsName}.`)
-            ? bareId.slice(this.restPropsName.length + 1)
-            : bareId
-      // The same guard for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined at SSR, #3304) — `collectNullableSignalGetters`.
-      const nullableSignal = nullableSignalAttrGetter(value.parsed, this.nullableSignalGetters)
-      if (
-        !isBooleanAttr(name) &&
-        !value.presenceOrUndefined &&
-        ((/^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-          this.nullableOptionalProps.has(normalizedBareId) &&
-          // Inside a `.map()` callback, a param that shadows a nullable
-          // optional prop's name is the row binding, not the prop — skip the
-          // spurious `defined` guard (#2488).
-          !this.scope.isBound(normalizedBareId)) ||
-          (nullableSignal !== null && !this.scope.isBound(nullableSignal)))
-      ) {
-        const perl = this.convertExpressionToPerl(value.expr)
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<%= bf->bool_str(${perl}) %>"`
-            : `${name}="<%= ${perl} %>"`
-        return `<% if (defined ${perl}) { %>${body}<% } %>`
-      }
-      if (isBooleanAttr(name)) {
-        // Boolean attributes: render conditionally (present or absent).
-        // Thread the IR-carried `.parsed` tree (#3210): a recognised
-        // `<action>.isPending()` read has already been substituted with its
-        // seed literal there; re-parsing `value.expr` would lower it as a
-        // member read of an undeclared `$save`.
-        return `<%= ${this.convertExpressionToPerl(value.expr, value.parsed)} ? '${name}' : '' %>`
-      }
-      if (value.presenceOrUndefined) {
-        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
-        // renders the attr with its stringified value when truthy and
-        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
-        // → `aria-disabled="true"`), so bare presence would diverge.
-        // Route through `bool_str` when the name/shape witnesses a
-        // boolean value, same as the unconditional path below (#1897).
-        // Bind to a temp first so the expression evaluates once, not in
-        // both the guard and the value.
-        const perl = this.convertExpressionToPerl(value.expr)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
-            : `${name}="<%= ${tmp} %>"`
-        return `<% my ${tmp} = ${perl}; if (${tmp}) { %>${body}<% } %>`
-      }
-      // Boolean-result handling (#1466 follow-up). Two trigger paths:
-      //
-      //   - `isBooleanResultExpr(expr)` — the JS source structurally
-      //     evaluates to a boolean (comparison, `!`, literal,
-      //     both-sides-boolean logical / conditional).
-      //   - `isAriaBooleanAttr(name)` — the attribute is one of the
-      //     ARIA tri-state / boolean-state names whose spec values are
-      //     `"true" | "false" (| "mixed")`. The expression itself can
-      //     be opaque (e.g. `accepted()` — a call expression we can't
-      //     classify from source text), so we lean on the attribute
-      //     name as the type witness.
-      //
-      // Without either, Perl's auto-stringification turns a JS-false
-      // comparison into `''` (and a JS-true comparison into `'1'`),
-      // which renders as `attr=""` / `attr="1"` — diverging from
-      // Hono's / Go's `attr="false"` / `attr="true"`. Routing through
-      // the `bf->bool_str` Perl helper realigns the wire bytes with
-      // JS `String(boolean)` semantics.
-      // `attr={cond ? value : undefined}` OMITS the attribute on the
-      // falsy branch (Hono drops undefined-valued attributes) — wrap the
-      // whole attribute in the condition instead of rendering `attr=""`
-      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
-      // undefined}`). Same parity rule as the Go / Xslate adapters.
-      {
-        const m = this.parseUndefinedAlternateTernary(value.expr)
-        if (m) {
+      const plan = planAttrExpression(value, name, {
+        propsObjectName: this.propsObjectName,
+        restPropsName: this.restPropsName,
+        nullableOptionalProps: this.nullableOptionalProps,
+        nullableSignalGetters: this.nullableSignalGetters,
+        nullishAttrCtx: this.nullishAttrCtx,
+        isLoopBound: (n) => this.scope.isBound(n),
+        boolStr: (expr, attr) => isBooleanResultExpr(expr) || isAriaBooleanAttr(attr) || this.isBooleanTypedPropRef(expr),
+        undefinedAlternateTernary: (expr) => this.parseUndefinedAlternateTernary(expr),
+      })
+      const attr = (v: string, boolStr: boolean) =>
+        boolStr ? `${name}="<%= bf->bool_str(${v}) %>"` : `${name}="<%= ${v} %>"`
+      // Each kind is documented on `AttrExpressionPlan`.
+      switch (plan.kind) {
+        case 'omit-nullable': {
+          // A bare read here, so it doubles as the guard test and the value.
+          const v = this.convertExpressionToPerl(value.expr)
+          return `<% if (defined ${v}) { %>${attr(v, plan.boolStr)}<% } %>`
+        }
+        case 'boolean-attr':
+          return `<%= ${this.convertExpressionToPerl(value.expr, value.parsed)} ? '${name}' : '' %>`
+        case 'presence': {
+          const v = this.convertExpressionToPerl(value.expr)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `<% my ${tmp} = ${v}; if (${tmp}) { %>${attr(tmp, plan.boolStr)}<% } %>`
+        }
+        case 'undefined-alternate': {
+          // A mixed boolean / string branch renders its boolean as JS does.
+          const m = plan.ternary
           const cond = this.convertExpressionToPerl('', m.testParsed)
           const val = this.convertExpressionToPerl('', stringifyBooleanTernaryBranches(m.consequentParsed))
-          // A boolean-result consequent (`c ? false : undefined`) still
-          // renders JS `String(boolean)` (#3349).
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `bf->bool_str(${val})`
             : this.jsNumberOutput(m.consequentParsed, val)
           return `<% if (${cond}) { %>${name}="<%= ${shown} %>"<% } %>`
         }
+        case 'omit-nil':
+        case 'plain': {
+          // A ternary with a boolean and a string branch renders its boolean
+          // as JS does, unless the whole value goes through `bool_str`.
+          const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+          const v = this.convertExpressionToPerl(value.expr, mixedParsed)
+          if (plan.kind === 'plain') return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          const tmp = `$bf_pu${this.presenceVarCounter++}`
+          return `<% my ${tmp} = ${v}; if (defined ${tmp}) { %>${attr(tmp, plan.boolStr)}<% } %>`
+        }
       }
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`):
-      // bind it once and omit the attribute on a nil value, as Hono does.
-      // A ternary mixing a boolean branch with another kind
-      // (`yes() ? false : s()`) spells its boolean branch as JS does (#3349).
-      // Not when the whole value is serialized by `bool_str` below (an ARIA
-      // boolean name, a boolean-typed prop): it reads the branch's truth,
-      // and a stringified `'false'` is truthy in Perl.
-      const wrapsBoolStr =
-        isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
-      const mixedParsed = valueParsed && !wrapsBoolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
-      if (attrValueMayBeNullish(value.parsed, this.nullishAttrCtx, n => this.scope.isBound(n))) {
-        const perl = this.convertExpressionToPerl(value.expr, mixedParsed)
-        const tmp = `$bf_pu${this.presenceVarCounter++}`
-        const body =
-          wrapsBoolStr
-            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
-            : `${name}="<%= ${tmp} %>"`
-        return `<% my ${tmp} = ${perl}; if (defined ${tmp}) { %>${body}<% } %>`
-      }
-      // #3166: thread `value.parsed` through — same reason as
-      // `renderConditional`'s matching comment.
-      const perl = this.convertExpressionToPerl(value.expr, mixedParsed)
-      if (wrapsBoolStr) {
-        return `${name}="<%= bf->bool_str(${perl}) %>"`
-      }
-      return `${name}="<%= ${this.jsNumberOutput(mixedParsed, perl)} %>"`
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
@@ -1632,75 +1545,24 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
       }
-      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`)
-      // has no matching `$props` variable in Mojo's template scope —
-      // Perl props arrive as a flat hash with one key per `propsParams`
-      // entry, not as a single nested object. Emit an inline hashref
-      // literal that enumerates the analyzer-extracted props params
-      // so `$bf->spread_attrs(...)` gets a real hashref (#1407
-      // follow-up; matches the Go adapter's same-shape map-literal
-      // path). For `restPropsName` and other identifier shapes, the
-      // standard `convertExpressionToPerl` translation handles it
-      // (rest binding name → `$<name>` resolves against the hashref
-      // the caller / harness placed under that key).
-      const trimmed = value.expr.trim()
-      if (this.propsObjectName && this.propsObjectName === trimmed) {
-        const entries = this.propsParams.map(p =>
-          `${JSON.stringify(p.name)} => $${p.name}`,
-        )
+      const plan = planSpreadAttr(value, {
+        propsObjectName: this.propsObjectName,
+        propsParams: this.propsParams,
+        localConstants: this.localConstants ?? [],
+        isBound: (n) => this.scope.isBound(n),
+      })
+      // `{...props}`: props arrive as separate template vars, so enumerate them.
+      if (plan.kind === 'props-object') {
+        const entries = plan.params.map((p) => `${JSON.stringify(p)} => $${p}`)
         return `<%== bf->spread_attrs({${entries.join(', ')}}) %>`
       }
-      // Conditional inline-object spread:
-      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
-      // Emit a Perl inline ternary of hashrefs — Perl truthiness
-      // handles the condition for free, and the falsy `{}` branch
-      // OMITS the key (`bf->spread_attrs` does NOT filter empty
-      // strings, so we cannot always-include it). Mirrors the Go
-      // adapter's IIFE-of-maps lowering (#textarea).
-      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
-      // re-parsing `trimmed` with `ts.createSourceFile`.
-      const ternaryHashref = conditionalSpreadToPerl(this.spreadCtx, value.parsed)
-      if (ternaryHashref !== null) {
-        return `<%== bf->spread_attrs(${ternaryHashref}) %>`
+      // A conditional inline-object spread (`{...(cond ? {…} : {})}`) lowers to
+      // a ternary of hashes; the falsy `{}` omits the key.
+      for (const candidate of plan.candidates) {
+        const lowered = conditionalSpreadToPerl(this.spreadCtx, candidate)
+        if (lowered !== null) return `<%== bf->spread_attrs(${lowered}) %>`
       }
-      // Function-scope local const holding a conditional inline-object
-      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-      // (#checkbox / icon). Resolve the bare identifier to its
-      // initializer text and route through the same conditional-spread
-      // lowering. Only function-scope (`!isModule`) consts whose value is
-      // NOT itself a bare identifier (loop guard) are considered.
-      //
-      // `this.scope` shadow guard (#2221): an enclosing `.map()` callback's
-      // own param can shadow this outer const's name (`.map((sizeAttrs)
-      // => <li {...sizeAttrs} />)`) — without the guard this forwarded
-      // the OUTER const's hashref at every iteration instead of the
-      // per-item `$sizeAttrs` value. Same threaded, position-accurate
-      // scope `resolveLiteralConst` / `resolveStaticRecordLiteral` already
-      // consult for this hazard class (#1749).
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
-        const localConst = this.localConstants.find(
-          c => c.name === trimmed && !c.isModule,
-        )
-        if (localConst?.value !== undefined) {
-          const initTrimmed = localConst.value.trim()
-          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            // The local const's initializer text isn't carried as a structured
-            // tree on the spread attr, so parse it once via the shared
-            // `parseExpression` (the analyzer's own entry) — not
-            // `ts.createSourceFile` — mirroring go-template's same local-const
-            // resolution path.
-            const resolved = conditionalSpreadToPerl(
-              this.spreadCtx,
-              parseExpression(initTrimmed),
-            )
-            if (resolved !== null) {
-              return `<%== bf->spread_attrs(${resolved}) %>`
-            }
-          }
-        }
-      }
-      const perlExpr = this.convertExpressionToPerl(value.expr)
-      return `<%== bf->spread_attrs(${perlExpr}) %>`
+      return `<%== bf->spread_attrs(${this.convertExpressionToPerl(value.expr)}) %>`
     },
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
