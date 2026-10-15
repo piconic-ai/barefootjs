@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A props spread onto a child component: this adapter drops the spread when the call also passes explicit props (#3479).
+  'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
+  'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
   // Arithmetic over an omitted optional number prop: the engine reads the
   // nil as `0`, JS reads `undefined` as `NaN` (#3474).
   'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },

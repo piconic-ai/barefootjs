@@ -5356,6 +5356,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5582,6 +5588,18 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5781,6 +5799,24 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-rest",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -6070,6 +6106,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6293,6 +6335,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -6522,6 +6570,18 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6733,6 +6793,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -6962,6 +7028,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7185,6 +7257,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -9191,6 +9269,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9375,6 +9459,18 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9532,6 +9628,24 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-rest",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -9761,6 +9875,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9942,6 +10062,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -10129,6 +10255,18 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10298,6 +10436,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -10485,6 +10629,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10666,6 +10816,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {

@@ -2120,6 +2120,90 @@
           }
         }
       },
+      "component-spread-explicit-then-props": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        }
+      },
+      "component-spread-props-then-explicit": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        }
+      },
+      "component-spread-rest": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "component-prop-spread"
+          ]
+        }
+      },
       "conditional-nested-loop-signal-reactivity": {
         "go-template": {
           "kind": "refusal",
@@ -6405,6 +6489,18 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
+      "component-spread-explicit-then-props": {
+        "description": "An explicit prop, then a props spread onto a child component that overrides it",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-then-props.ts"
+      },
+      "component-spread-props-then-explicit": {
+        "description": "A props spread onto a child component, then an explicit prop that overrides it",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-props-then-explicit.ts"
+      },
+      "component-spread-rest": {
+        "description": "A rest spread onto a child component forwards the remaining props",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-rest.ts"
+      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -6909,6 +7005,29 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "component-prop-spread": {
+      "title": "A props spread onto a child component",
+      "kind": "silent",
+      "given": "a child component call that spreads an object (`<Child {...props} />`, `<Child {...rest} />`), alone or next to explicit props",
+      "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
+      "actual": "drops the spread when the call also passes explicit props (or always), or lets a key the spread omits erase an earlier explicit prop",
+      "fixtures": [
+        "component-spread-explicit-then-props",
+        "component-spread-props-then-explicit",
+        "component-spread-rest"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "computed-const-loop-source": {
