@@ -210,6 +210,7 @@ import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-ari
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
 import { fixture as callbackIndexParam } from './callback-index-param'
 import { fixture as callbackIndexParamClient } from './callback-index-param-client'
+import { fixture as callbackNestedIndexParam } from './callback-nested-index-param'
 import { fixture as filterIndexParamLoop } from './filter-index-param-loop'
 import { fixture as filterIndexParamLoopClient } from './filter-index-param-loop-client'
 import { fixture as sortOpaqueComparator } from './sort-opaque-comparator'
@@ -1098,6 +1099,7 @@ export const jsxFixtures: JSXFixture[] = [
   omittedOptionalNumberArithmetic,
   callbackIndexParam,
   callbackIndexParamClient,
+  callbackNestedIndexParam,
   filterIndexParamLoop,
   filterIndexParamLoopClient,
   sortOpaqueComparator,
