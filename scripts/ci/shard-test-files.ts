@@ -34,19 +34,21 @@ import { join, relative } from 'node:path'
 const TEST_FILE_PATTERN = /\.test\.tsx?$/
 
 const WEIGHT_OVERRIDES: Record<string, number> = {
+  // Wall time of each file run alone, all measured on one machine so the
+  // weights compare with each other (October 2026; CI runners are faster).
   // 3 separate `for (const fixture of jsxFixtures)` loops, each compiling
-  // + scanning every fixture — ~300s alone vs. a 12.6KB file size that
-  // would place it as merely mid-sized.
-  'packages/adapter-tests/src/__tests__/ssr-hydration-contract.test.ts': 300_000,
-  // 1 full-corpus loop compiling + CSR-rendering every fixture — ~120s
-  // alone vs. a 2.2KB file size that would place it among the smallest.
-  'packages/adapter-tests/src/__tests__/csr-conformance.test.ts': 120_000,
-  // 2 full-corpus loops (plus a nested per-child-component pass) —
-  // ~115s alone vs. a 9.4KB file size.
-  'packages/adapter-tests/src/__tests__/client-js-scope.test.ts': 115_000,
+  // + scanning every fixture.
+  'packages/adapter-tests/src/__tests__/ssr-hydration-contract.test.ts': 521_000,
+  // 1 full-corpus loop compiling + CSR-rendering every fixture, in a 2.2KB
+  // file that size alone would place among the smallest.
+  'packages/adapter-tests/src/__tests__/csr-conformance.test.ts': 183_000,
+  // 2 full-corpus loops (plus a nested per-child-component pass).
+  'packages/adapter-tests/src/__tests__/client-js-scope.test.ts': 196_000,
+  // Each checks a generated ledger against the whole fixture corpus.
+  'packages/adapter-tests/src/__tests__/coverage-map.test.ts': 190_000,
+  'packages/adapter-tests/src/__tests__/generated-data-points.test.ts': 181_000,
   // The cross-adapter files compile each fixture of a family once per DSL
-  // adapter (eight compiles per case). Measured alone: loop ~317s (67
-  // fixtures), callback-chain ~86s, array-method ~68s, attr-plan ~49s.
+  // adapter (eight compiles per case).
   'packages/adapter-tests/src/__tests__/loop-cross-adapter.test.ts': 317_000,
   'packages/adapter-tests/src/__tests__/callback-chain-cross-adapter.test.ts': 86_000,
   'packages/adapter-tests/src/__tests__/array-method-cross-adapter.test.ts': 68_000,
