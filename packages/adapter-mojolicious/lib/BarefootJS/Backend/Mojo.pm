@@ -1,5 +1,5 @@
 package BarefootJS::Backend::Mojo;
-our $VERSION = "0.39.5";
+our $VERSION = "0.39.6";
 use Mojo::Base -base, -signatures;
 
 use Mojo::ByteStream qw(b);
