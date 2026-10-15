@@ -2192,6 +2192,125 @@
           ]
         }
       },
+      "computed-const-loop-source-parenthesized": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "computed-const-loop-source"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        }
+      },
       "conditional-nested-loop-signal-reactivity": {
         "go-template": {
           "kind": "refusal",
@@ -6608,6 +6727,10 @@
         "description": "A rest spread onto a child component forwards the remaining props",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-rest.ts"
       },
+      "computed-const-loop-source-parenthesized": {
+        "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
+      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -6823,6 +6946,10 @@
       "callback-index-param-client": {
         "description": "A `.map()` callback reading its index, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param-client.ts"
+      },
+      "computed-const-loop-source-parenthesized-precomputed": {
+        "description": "prop-precompute twin of computed-const-loop-source-parenthesized — a parenthesized prop source…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized-precomputed.ts"
       },
       "conditional-nested-loop-precomputed-reactivity": {
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
@@ -7153,6 +7280,7 @@
       "expected": "the rows render in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "computed-const-loop-source-parenthesized",
         "module-const-loop-source-computed",
         "static-array-from-props",
         "static-array-from-props-with-component"

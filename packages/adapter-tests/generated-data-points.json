@@ -1201,6 +1201,14 @@
       }
     }
   ],
+  "computed-const-loop-source-parenthesized-precomputed": [
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "keys": []
+      }
+    }
+  ],
   "conditional-branch-sigil-text": [
     {
       "name": "gen:on:true",

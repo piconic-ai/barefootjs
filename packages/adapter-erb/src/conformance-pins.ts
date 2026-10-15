@@ -68,6 +68,15 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // The same computed-const source, parenthesized (`(keys).map(…)`): the
+  // gate reads the parsed tree, so the parentheses do not hide it (#3473).
+  'computed-const-loop-source-parenthesized': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      limitation: 'computed-const-loop-source',
+    },
+  ],
   // Only the `.find` variant is pinned — `find*` returns an element, not a
   // boolean, so there is no inline predicate form; the nested-`.some` sibling
   // lowers to a real inline Ruby block and must render to Hono parity instead.

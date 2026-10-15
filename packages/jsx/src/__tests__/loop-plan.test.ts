@@ -74,6 +74,14 @@ describe('planLoop', () => {
     expect(plan(source, { scope: shadowed }).unresolvableConst).toBeNull()
   })
 
+  test('a parenthesized computed const source is the same const (#3473)', () => {
+    const source = `export function Test(props: { labels: Record<string, string> }) {
+      const entries = Object.keys(props.labels)
+      return <ul>{(entries).map(x => <li key={x}>{x}</li>)}</ul>
+    }`
+    expect(plan(source).unresolvableConst?.name).toBe('entries')
+  })
+
   test('a lowerable destructure, and one no template binds', () => {
     expect(plan(`export function Test(props: { rows: { a: string }[] }) { return <ul>{props.rows.map(({ a }) => <li key={a}>{a}</li>)}</ul> }`).destructure).toBe('lowerable')
     expect(

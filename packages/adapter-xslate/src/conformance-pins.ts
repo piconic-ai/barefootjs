@@ -68,6 +68,15 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // The same computed-const source, parenthesized (`(keys).map(…)`): the
+  // gate reads the parsed tree, so the parentheses do not hide it (#3473).
+  'computed-const-loop-source-parenthesized': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      limitation: 'computed-const-loop-source',
+    },
+  ],
   // #2038: Kolon has no inline `grep` form (unlike mojo, which lowers a
   // nested `.some` to a real inline Perl `grep`) — loud BF101 instead of the
   // old silent degradation to the receiver.

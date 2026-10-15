@@ -992,13 +992,12 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // scope's own membership, not a coarse whole-component union.
     const staticArray = loopPlan.staticSource
 
-    const arrayName = loop.array.trim()
     const arrayConst = loopPlan.unresolvableConst
     if (arrayConst) {
       this.errors.push({
         code: 'BF101',
         severity: 'error',
-        message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Twig adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Twig adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
         loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message:
