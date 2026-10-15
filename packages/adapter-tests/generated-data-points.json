@@ -3114,6 +3114,17 @@
       }
     }
   ],
+  "loop-param-shadows-array-const": [
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "groups": [],
+        "labels": {
+          "x": "1"
+        }
+      }
+    }
+  ],
   "loop-param-shadows-bool-prop": [
     {
       "name": "gen:active:false",

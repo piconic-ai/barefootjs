@@ -992,7 +992,9 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     const staticArray = staticItems !== null ? staticValueToTwig(staticItems) : null
 
     const arrayName = loop.array.trim()
-    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+    // A loop binding that shadows the name is the row's value, not the const
+    // (#3473, as `resolveStaticLoopSource` above already assumes).
+    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
       const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
       if (arrayConst && this._resolveLiteralConst(arrayName) === null) {
         this.errors.push({
