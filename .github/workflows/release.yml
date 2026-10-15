@@ -463,9 +463,16 @@ jobs:
           split_ref=$(git -C "$split_dir" rev-parse HEAD)
 
           remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_SPLIT_REPOSITORY}.git"
+          # Tags on the mirror are immutable: its "Immutable tags" ruleset rejects
+          # moving or deleting any tag, so a published version keeps pointing at
+          # the commit Packagist first saw. If the tag push fails with "GH013:
+          # Repository rule violations", the version is already published at a
+          # different commit; release a new version instead of removing the
+          # ruleset. main is still force-pushed because the split is regenerated
+          # on every run.
           git push --force "$remote" "${split_ref}:main"
-          git tag -f "v${version}" "$split_ref"
-          git push --force "$remote" "v${version}"
+          git tag "v${version}" "$split_ref"
+          git push "$remote" "v${version}"
           git worktree remove "$split_dir" --force
 
       - name: Notify Packagist
@@ -541,9 +548,16 @@ jobs:
           split_ref=$(git -C "$split_dir" rev-parse HEAD)
 
           remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_BLADE_SPLIT_REPOSITORY}.git"
+          # Tags on the mirror are immutable: its "Immutable tags" ruleset rejects
+          # moving or deleting any tag, so a published version keeps pointing at
+          # the commit Packagist first saw. If the tag push fails with "GH013:
+          # Repository rule violations", the version is already published at a
+          # different commit; release a new version instead of removing the
+          # ruleset. main is still force-pushed because the split is regenerated
+          # on every run.
           git push --force "$remote" "${split_ref}:main"
-          git tag -f "v${version}" "$split_ref"
-          git push --force "$remote" "v${version}"
+          git tag "v${version}" "$split_ref"
+          git push "$remote" "v${version}"
           git worktree remove "$split_dir" --force
 
       - name: Notify Packagist
@@ -609,9 +623,16 @@ jobs:
           git subtree split --prefix=packages/adapter-php -b php-runtime-release-shared
 
           remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_RUNTIME_SPLIT_REPOSITORY}.git"
+          # Tags on the mirror are immutable: its "Immutable tags" ruleset rejects
+          # moving or deleting any tag, so a published version keeps pointing at
+          # the commit Packagist first saw. If the tag push fails with "GH013:
+          # Repository rule violations", the version is already published at a
+          # different commit; release a new version instead of removing the
+          # ruleset. main is still force-pushed because the split is regenerated
+          # on every run.
           git push --force "$remote" php-runtime-release-shared:main
-          git tag -f "v${version}" php-runtime-release-shared
-          git push --force "$remote" "v${version}"
+          git tag "v${version}" php-runtime-release-shared
+          git push "$remote" "v${version}"
 
       - name: Notify Packagist
         env:
