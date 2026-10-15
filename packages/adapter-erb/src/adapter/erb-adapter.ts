@@ -92,7 +92,9 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  isEmptyComponentProps,
+  planComponentProps,
+  spellComponentProps,
   BindingScope,
   filterCaptureCollisions,
   renameFreeIdentifiers,
@@ -115,7 +117,7 @@ import {
 import { isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
 import { ERB_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -1406,84 +1408,58 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   }
 
   renderComponent(comp: IRComponent): string {
-    const propParts: string[] = []
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own buffer-slice capture, prepended to the final returned
-    // string below — same mechanism as the reserved children capture,
-    // just keyed by the prop's own name instead of `children`. Unlike the
-    // reserved `children` value (which the child template reads back
-    // through a structural bypass, `isChildrenValueExpr`), a named slot
-    // is read by the child through the GENERIC `bf.h(v[:name])`
-    // text-expression path — there's no name to special-case there, since
-    // any prop name is possible. So the captured HTML is wrapped in
-    // `bf.backend.mark_raw(...)` here (`BarefootJS::SafeString`,
-    // `barefoot_js.rb`) and `Context#h` unwraps it to skip re-escaping —
-    // giving ERB the same "value carries its own safety" bypass Twig's
-    // `Markup` / Kolon's `mark_raw` get from their auto-escaping `{{ }}`.
-    const namedSlotCaptures: string[] = []
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't
-        // valid in a Ruby local variable name, and `comp.slotId` alone
-        // would collide across two named-slot props on the same component
-        // invocation (unlike the reserved children slot, there's only ever
-        // one of those per invocation).
-        const suffix = `${this.childrenCaptureCounter++}`
-        const lenVar = `__bf_len_${suffix}`
-        const rawVar = `__bf_praw_${suffix}`
-        const capVar = `__bf_prop_${suffix}`
-        namedSlotCaptures.push(
-          `<% ${lenVar} = _erbout.length %>${slotBody}<% ${rawVar} = _erbout.slice!(${lenVar}..); ${capVar} = bf.backend.mark_raw(${rawVar}) %>`,
-        )
-        propParts.push(`${rubySymbolKey(p.name)} ${capVar}`)
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) propParts.push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses the
-    // ComponentName_random pattern instead (#2444).
-    if (derivesScopeFromSlot(comp)) {
-      propParts.push(`${rubySymbolKey('_bf_slot')} '${comp.slotId}'`)
-    }
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with an ERB output-buffer
+    // slice, so dynamic segments inside them (signals, conditionals) are
+    // evaluated in the parent's template scope: mark the buffer position,
+    // render the children inline (they append straight to `_erbout`, the
+    // buffer the surrounding template uses — `ERB.new(src, eoutvar:
+    // '_erbout')`), then slice everything appended since the mark back out
+    // into a local. No literal text (not even a newline) may sit between
+    // the mark/slice tags and the children, or it would leak into (or out
+    // of) the capture. Unlike the reserved `children` value, which the
+    // child reads through a structural bypass (`isChildrenValueExpr`), a
+    // named slot is read through the generic `bf.h(v[:name])` path, so its
+    // HTML is wrapped in `bf.backend.mark_raw(...)` (`BarefootJS::
+    // SafeString`), which `Context#h` passes through unescaped. A named
+    // slot's locals are counter-based: a prop name can contain characters
+    // (`data-slot`) that are no valid Ruby local name.
     const tplName = this.toTemplateName(comp.name)
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />`
-    // lands in a `jsx-children` AttrValue on the corresponding prop. The
-    // parent's scope marker is already attached to each hoisted root by
-    // the IR collector (`needsScope: true`), so the adapter just needs to
-    // render the IR through the same children pipeline as the nested form.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via an ERB output-buffer slice so dynamic
-      // segments inside the children (signals, conditionals) get evaluated
-      // in the parent's template scope before reaching the child renderer.
-      // Mark the buffer position, render the children inline (they append
-      // straight to `_erbout`, the same buffer the surrounding template
-      // uses — `ERB.new(src, eoutvar: '_erbout')`), then slice everything
-      // appended since the mark back OUT of the buffer into a local. No
-      // literal text (not even a newline) may sit between the mark/slice
-      // tags and the children — the slice captures byte-for-byte whatever
-      // `_erbout` gained in between, so any interposed template text would
-      // leak into (or out of) the capture.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
-      const lenVar = `__bf_len_${suffix}`
-      const capVar = `__bf_children_${suffix}`
-      const propsHash = `{ ${[...propParts, `children: ${capVar}`].join(', ')} }`
-      return `${namedSlotCaptures.join('')}<% ${lenVar} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(${lenVar}..) %><%= bf.render_child('${tplName}', ${propsHash}) %>`
-    }
-    const propsHash = propParts.length > 0 ? `{ ${propParts.join(', ')} }` : '{}'
-    return `${namedSlotCaptures.join('')}<%= bf.render_child('${tplName}', ${propsHash}) %>`
+    const captures: string[] = []
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot': {
+            const slotBody = this.renderChildren(entry.children)
+            const suffix = `${this.childrenCaptureCounter++}`
+            const capVar = `__bf_prop_${suffix}`
+            captures.push(
+              `<% __bf_len_${suffix} = _erbout.length %>${slotBody}<% __bf_praw_${suffix} = _erbout.slice!(__bf_len_${suffix}..); ${capVar} = bf.backend.mark_raw(__bf_praw_${suffix}) %>`,
+            )
+            return `${rubySymbolKey(entry.name)} ${capVar}`
+          }
+          case 'props-param':
+            return `${rubySymbolKey(entry.name)} v[${rubySymbolLiteral(entry.name)}]`
+          case 'slot-id':
+            return `${rubySymbolKey('_bf_slot')} '${entry.slotId}'`
+          case 'children': {
+            const childrenBody = this.renderChildren(entry.children)
+            const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
+            const capVar = `__bf_children_${suffix}`
+            captures.push(`<% __bf_len_${suffix} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(__bf_len_${suffix}..) %>`)
+            return `children: ${capVar}`
+          }
+        }
+      },
+      // Ruby's `**hash` double-splat folds a spread in place (`emitSpread`).
+      spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+    })
+    const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
+    const propsHash = parts.length > 0 ? `{ ${parts.join(', ')} }` : '{}'
+    return `${captures.join('')}<%= bf.render_child('${tplName}', ${propsHash}) %>`
   }
 
   private childrenCaptureCounter = 0

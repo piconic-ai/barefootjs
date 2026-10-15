@@ -78,7 +78,9 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  isEmptyComponentProps,
+  planComponentProps,
+  spellComponentProps,
   BindingScope,
   type ScopeFrame,
   rootPropAliasNames,
@@ -109,7 +111,7 @@ import {
   isOpaqueLocalAccessorName,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
 import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -1236,27 +1238,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     emitJsxChildren: () => '',
   }
 
-  /**
-   * A `renderComponent` props hashref, built as an ORDERED sequence of
-   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
-   * (later entries win) survive the trip through Kolon, which has no
-   * hash-splat syntax (no `%$h`-into-hashref-literal form — verified: parse
-   * error). Each `'entries'` segment is a literal Kolon hashref
-   * `{ k => v, ... }`; each `'spread'` segment is an arbitrary expression
-   * lowered from a `{...expr}` prop. `combineComponentPropSegments` folds
-   * the sequence into ONE expression via chained `.merge(...)` calls
-   * (Kolon's builtin hash method, later argument wins on key conflict,
-   * matching `Object.assign`/JSX order).
-   */
-  private componentPropSegmentEntries(
-    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
-  ): string[] {
-    const last = segments[segments.length - 1]
-    if (last && last.kind === 'entries') return last.parts
-    const seg = { kind: 'entries' as const, parts: [] as string[] }
-    segments.push(seg)
-    return seg.parts
-  }
 
   /**
    * Fold ordered prop segments into a single Kolon expression via chained
@@ -1292,95 +1273,41 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   renderComponent(comp: IRComponent): string {
-    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
-    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
-    const currentEntries = () => this.componentPropSegmentEntries(segments)
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own macro, prepended to the final returned string below —
-    // same mechanism as the reserved children macro, just keyed by the
-    // prop's own name instead of `children`.
-    const namedSlotMacros: string[] = []
-
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't a
-        // valid Kolon macro identifier, and `comp.slotId` alone would
-        // collide across two named-slot props on the same component
-        // invocation (unlike the reserved children slot, there's only ever
-        // one of those per invocation).
-        const macroName = `bf_prop_${this.childrenCaptureCounter++}`
-        namedSlotMacros.push(`<: macro ${macroName} -> () { :>${slotBody}<: } :>`)
-        currentEntries().push(`${kolonHashKey(p.name)} => ${macroName}()`)
-        continue
-      }
-      if (p.value.kind === 'spread') {
-        const trimmed = p.value.expr.trim()
-        // SolidJS-style props identifier (`function(props: P)`) has no
-        // matching runtime hash in Kolon scope — props arrive as a flat
-        // set of top-level template vars, so enumerate the
-        // analyzer-extracted props params into hashref entries instead of
-        // treating it as a runtime spread expression.
-        if (this.propsObjectName && this.propsObjectName === trimmed) {
-          for (const pp of this.propsParams) {
-            currentEntries().push(`${pp.name} => $${pp.name}`)
-          }
-          continue
-        }
-        // Every other spread shape (a destructure rest-bag `props`, a
-        // member-access bag like `children.props`, an intrinsic-element
-        // spread helper's own operand, …) — Kolon hashref literals can't
-        // splat a runtime hash into named entries at a call site, but the
-        // builtin `.merge` method can fold it into the accumulated
-        // hashref at the right ordinal position, mirroring Twig's
-        // `|merge` / Jinja's `dict(base, **top)`: no compile-time
-        // filtering of onXxx/ref keys out of the runtime bag (the render
-        // contract tolerates them, same as the other spread-lowering
-        // adapters).
-        segments.push({ kind: 'spread', expr: this.convertExpressionToKolon(p.value.expr) })
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) currentEntries().push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444). Appended to whatever the trailing entries segment is
-    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
-    // these compiler-controlled entries.
-    if (derivesScopeFromSlot(comp)) {
-      currentEntries().push(`_bf_slot => '${comp.slotId}'`)
-    }
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with a Kolon macro, evaluated
+    // in the parent's template scope (signals, conditionals), and passed as
+    // the macro call's result; `render_child` materializes a CODE-ref
+    // children value through the backend before handing it to the child. A
+    // named slot's macro name is counter-based: a prop name can contain
+    // characters (`data-slot`) that are no valid macro name.
     const tplName = this.toTemplateName(comp.name)
-
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />` lands in
-    // a `jsx-children` AttrValue on the corresponding prop.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via a Kolon macro. The macro body is evaluated in
-      // the parent's template scope (signals, conditionals) and produces the
-      // children HTML; the macro call result is passed as the `children` entry
-      // of the render_child hashref. `render_child` materializes a CODE-ref
-      // children value through the backend before handing it to the child.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const macroName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      currentEntries().push(`children => ${macroName}()`)
-      const dict = this.combineComponentPropSegments(segments)
-      return `${namedSlotMacros.join('')}<: macro ${macroName} -> () { :>${childrenBody}<: } :><: $bf.render_child('${tplName}', ${dict}) | mark_raw :>`
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const macroName = name()
+      captures.push(`<: macro ${macroName} -> () { :>${body}<: } :>`)
+      return `${macroName}()`
     }
-
-    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
-    const hashEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `${namedSlotMacros.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${kolonHashKey(entry.name)} => ${capture(entry.children, () => `bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${entry.name} => $${entry.name}`
+          case 'slot-id':
+            return `_bf_slot => '${entry.slotId}'`
+          case 'children':
+            return `children => ${capture(entry.children, () => `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
+        }
+      },
+      spread: (value) => this.convertExpressionToKolon(value.expr),
+    })
+    const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
+    return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
   }
 
   private childrenCaptureCounter = 0

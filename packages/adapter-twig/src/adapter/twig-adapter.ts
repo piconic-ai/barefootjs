@@ -199,7 +199,9 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  isEmptyComponentProps,
+  planComponentProps,
+  spellComponentProps,
   filterCaptureCollisions,
   templateNameCollisionErrors,
   renameFreeIdentifiers,
@@ -226,7 +228,7 @@ import {
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { TwigRenderCtx } from './lib/types.ts'
 import { TWIG_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -1293,25 +1295,6 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     emitJsxChildren: () => '',
   }
 
-  /**
-   * A `renderComponent` props dict, built as an ORDERED sequence of
-   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
-   * (later entries win) survive the trip through Twig, which has no
-   * hash-splat syntax. Each `'entries'` segment is a literal Twig hash
-   * `{k: v, ...}`; each `'spread'` segment is an arbitrary expression
-   * lowered from a `{...expr}` prop. `combineComponentPropSegments` folds
-   * the sequence into ONE expression via Twig's `merge` filter (later
-   * segment wins on key conflict, matching `Object.assign`/JSX order).
-   */
-  private componentPropSegmentEntries(
-    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
-  ): string[] {
-    const last = segments[segments.length - 1]
-    if (last && last.kind === 'entries') return last.parts
-    const seg = { kind: 'entries' as const, parts: [] as string[] }
-    segments.push(seg)
-    return seg.parts
-  }
 
   /**
    * Fold ordered prop segments into a single Twig expression via chained
@@ -1336,110 +1319,42 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   }
 
   renderComponent(comp: IRComponent): string {
-    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
-    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
-    const currentEntries = () => this.componentPropSegmentEntries(segments)
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own `{% set %}` capture, prepended to the final returned
-    // string below — same mechanism as the reserved children capture,
-    // just keyed by the prop's own name instead of `children`.
-    const namedSlotSetBlocks: string[] = []
-
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't a
-        // valid Twig variable name, and `comp.slotId` alone would collide
-        // across two named-slot props on the same component invocation
-        // (unlike the reserved children slot, there's only ever one of
-        // those per invocation).
-        const captureName = `bf_prop_${this.childrenCaptureCounter++}`
-        namedSlotSetBlocks.push(`{% set ${captureName} %}${slotBody}{% endset %}`)
-        currentEntries().push(`${twigHashKey(p.name)}: ${captureName}`)
-        continue
-      }
-      if (p.value.kind === 'spread') {
-        const trimmed = p.value.expr.trim()
-        // SolidJS-style props identifier (`function(props: P)`) has no
-        // matching runtime hash in Twig scope — props arrive as a flat
-        // set of top-level template vars, so enumerate the
-        // analyzer-extracted props params into hash entries instead of
-        // treating it as a runtime spread expression.
-        if (this.propsObjectName && this.propsObjectName === trimmed) {
-          for (const pp of this.propsParams) {
-            currentEntries().push(`${twigHashKey(pp.name)}: ${twigIdent(pp.name)}`)
-          }
-          continue
-        }
-        // Every other spread shape (a destructure rest-bag `props`, a
-        // member-access bag like `children.props`, an intrinsic-element
-        // spread helper's own operand, …) — Twig hash literals can't
-        // splat a runtime hash into named entries at a call site, but
-        // `|merge` can fold it into the accumulated dict at the right
-        // ordinal position, mirroring ERB's `**hash` / Mojolicious's
-        // `%{$props}` blind splat: no compile-time filtering of onXxx/ref
-        // keys out of the runtime bag (the render contract tolerates
-        // them, same as the other two adapters). The operand is routed
-        // through `bf.omit(expr, [])` (the #2087 object-rest residual
-        // helper, called with an empty exclude list) rather than a bare
-        // `?? {}` guard: a request-scoped bag round-trips through
-        // `json_decode` as a `stdClass`, and Twig's `merge` filter throws
-        // `RuntimeError` on anything that isn't an array/Traversable
-        // (verified empirically — `stdClass` is rejected even though
-        // dot-access accepts it). `bf.omit` already normalises BOTH
-        // shapes (`stdClass` → assoc array, `null`/non-object → `[]`)
-        // into a plain PHP array `merge` accepts, exactly like the
-        // `bf.spread_attrs(...)` runtime helper the intrinsic-element
-        // spread path uses (that one tolerates any bag shape itself,
-        // since it's a plain function call rather than a Twig filter).
-        const spreadExpr = this.convertExpressionToTwig(p.value.expr)
-        segments.push({ kind: 'spread', expr: `bf.omit(${spreadExpr}, [])` })
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) currentEntries().push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444). Appended to whatever the trailing entries segment is
-    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
-    // these compiler-controlled entries.
-    if (derivesScopeFromSlot(comp)) {
-      currentEntries().push(`${twigHashKey('_bf_slot')}: '${comp.slotId}'`)
-    }
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with a set-block, evaluated in
+    // the parent's template scope (signals, conditionals), and passed by
+    // name; `render_child` materializes the children through the backend
+    // before handing them to the child. See the file header, divergence 4,
+    // for why a set-block (not a macro) is the uniform mechanism. A named
+    // slot's capture name is counter-based: a prop name can contain
+    // characters (`data-slot`) that are no valid `{% set %}` target.
     const tplName = this.toTemplateName(comp.name)
-
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />` lands in
-    // a `jsx-children` AttrValue on the corresponding prop.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via a Twig set-block. The block body is
-      // evaluated in the parent's template scope (signals, conditionals) and
-      // produces the children HTML as a captured `Markup` string; the
-      // captured name is passed as the `children` entry of the
-      // render_child dict. `render_child` materializes it through the
-      // backend before handing it to the child. See the file header,
-      // divergence 6, for why a set-block (not a macro) is the uniform
-      // mechanism here.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const captureName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      currentEntries().push(`${twigHashKey('children')}: ${captureName}`)
-      const dict = this.combineComponentPropSegments(segments)
-      return `${namedSlotSetBlocks.join('')}{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | raw }}`
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const captured = name()
+      captures.push(`{% set ${captured} %}${body}{% endset %}`)
+      return captured
     }
-
-    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
-    const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `${namedSlotSetBlocks.join('')}{{ bf.render_child('${tplName}'${dictEntries}) | raw }}`
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${twigHashKey(entry.name)}: ${capture(entry.children, () => `bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${twigHashKey(entry.name)}: ${twigIdent(entry.name)}`
+          case 'slot-id':
+            return `${twigHashKey('_bf_slot')}: '${entry.slotId}'`
+          case 'children':
+            return `${twigHashKey('children')}: ${capture(entry.children, () => `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
+        }
+      },
+      spread: (value) => `bf.omit(${this.convertExpressionToTwig(value.expr)}, [])`,
+    })
+    const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
+    return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`
   }
 
   private childrenCaptureCounter = 0

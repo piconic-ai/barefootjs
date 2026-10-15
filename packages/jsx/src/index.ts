@@ -166,6 +166,8 @@ export type {
   ArrayMethodSpelling,
 } from './adapters/array-method.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
+export { componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
+export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,

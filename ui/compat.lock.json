@@ -2177,19 +2177,7 @@
         }
       },
       "component-spread-props-then-explicit": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "mojolicious": {
           "kind": "render",
           "limitations": [
             "component-prop-spread"

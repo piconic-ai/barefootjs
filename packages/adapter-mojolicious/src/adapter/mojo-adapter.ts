@@ -64,7 +64,9 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  isEmptyComponentProps,
+  planComponentProps,
+  spellComponentProps,
   filterCaptureCollisions,
   renameFreeIdentifiers,
   BindingScope,
@@ -95,7 +97,7 @@ import {
   isOpaqueLocalAccessorName,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
 import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -1310,72 +1312,42 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   renderComponent(comp: IRComponent): string {
-    const propParts: string[] = []
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) get the
-    // same `begin %>…<% end` capture as the reserved children slot below,
-    // just keyed by the prop's own name. `render_child` (BarefootJS.pm)
-    // materializes every prop value that's a CODE ref — not only
-    // `children` — into the Mojo::ByteStream the capture block produces,
-    // so the child's read of the slot back out (`<%= $header %>`) sees an
-    // already-safe ByteStream and Mojo::Template's auto-escape passes it
-    // through unescaped, the same way it already does for `children`.
-    const namedSlotCaptures: string[] = []
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) that aren't a
-        // valid Perl variable token, and `comp.slotId` alone would collide
-        // across two named-slot props on the same component invocation
-        // (unlike the reserved children slot, there's only ever one of
-        // those per invocation).
-        const varName = `$bf_prop_${this.childrenCaptureCounter++}`
-        namedSlotCaptures.push(`<% my ${varName} = begin %>${slotBody}<% end %>`)
-        propParts.push(`${perlHashKey(p.name)} => ${varName}`)
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) propParts.push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444).
-    if (derivesScopeFromSlot(comp)) {
-      propParts.push(`_bf_slot => '${comp.slotId}'`)
-    }
-    const propsStr = propParts.length > 0 ? ', ' + propParts.join(', ') : ''
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with a `begin … end` block,
+    // evaluated in the parent's template scope (signals, conditionals), and
+    // passed by variable. A named slot's variable is counter-based: a prop
+    // name can contain characters (`data-slot`) that are no valid Perl
+    // variable name.
     const tplName = this.toTemplateName(comp.name)
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />`
-    // lands in a `jsx-children` AttrValue on the corresponding prop
-    // (#1326). The parent's scope marker is already attached to each
-    // hoisted root by the IR collector (`needsScope: true`), so the
-    // adapter just needs to render the IR through the same children
-    // pipeline as the nested form. Narrow the prop value via the
-    // `kind` discriminator instead of casting to a hand-written shape;
-    // any future change to the `jsx-children` AttrValue surface will
-    // surface here as a TS compile error.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via Mojo's `begin %>...<% end` capture so
-      // dynamic segments inside the children (signals, conditionals)
-      // get evaluated in the parent's template scope before reaching
-      // the child renderer. The capture has to live in a separate
-      // action — embedding it inside the `<%== ... %>` that wraps
-      // `render_child` would let the inner `%>` close the outer tag.
-      // `render_child` materializes the resulting CODE ref into the
-      // captured Mojo::ByteStream.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const varName = `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      return `${namedSlotCaptures.join('')}<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const varName = name()
+      captures.push(`<% my ${varName} = begin %>${body}<% end %>`)
+      return varName
     }
-    return `${namedSlotCaptures.join('')}<%== bf->render_child('${tplName}'${propsStr}) %>`
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${perlHashKey(entry.name)} => ${capture(entry.children, () => `$bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${perlHashKey(entry.name)} => $${entry.name}`
+          case 'slot-id':
+            return `_bf_slot => '${entry.slotId}'`
+          case 'children':
+            return `children => ${capture(entry.children, () => `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
+        }
+      },
+      // A `%{…}` hash dereference flattens a spread into the named-arg list (`emitSpread`).
+      spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+    })
+    const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
+    const propsStr = parts.length > 0 ? `, ${parts.join(', ')}` : ''
+    return `${captures.join('')}<%== bf->render_child('${tplName}'${propsStr}) %>`
   }
 
   private childrenCaptureCounter = 0

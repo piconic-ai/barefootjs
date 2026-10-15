@@ -293,7 +293,9 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
-  derivesScopeFromSlot,
+  isEmptyComponentProps,
+  planComponentProps,
+  spellComponentProps,
   filterCaptureCollisions,
   templateNameCollisionErrors,
   renameFreeIdentifiers,
@@ -320,7 +322,7 @@ import {
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 import type { BladeRenderCtx } from './lib/types.ts'
 import { BLADE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -1402,26 +1404,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     emitJsxChildren: () => '',
   }
 
-  /**
-   * A `renderComponent` props array, built as an ORDERED sequence of
-   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
-   * (later entries win) survive the trip through Blade/PHP, which has no
-   * array-splat call syntax. Each `'entries'` segment is a literal PHP
-   * array `[k => v, ...]`; each `'spread'` segment is an arbitrary
-   * expression lowered from a `{...expr}` prop. `combineComponentPropSegments`
-   * folds the sequence into ONE expression via `array_merge(...)` (later
-   * segment wins on key conflict, matching `Object.assign`/JSX order — see
-   * this file's header, divergence 11).
-   */
-  private componentPropSegmentEntries(
-    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
-  ): string[] {
-    const last = segments[segments.length - 1]
-    if (last && last.kind === 'entries') return last.parts
-    const seg = { kind: 'entries' as const, parts: [] as string[] }
-    segments.push(seg)
-    return seg.parts
-  }
 
   /**
    * Fold ordered prop segments into a single PHP expression via ONE
@@ -1448,118 +1430,45 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   }
 
   renderComponent(comp: IRComponent): string {
-    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
-    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
-    const currentEntries = () => this.componentPropSegmentEntries(segments)
-    // Named JSX-valued props OTHER than the reserved `children`
-    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
-    // their own output-buffering capture, prepended to the final returned
-    // string below — same mechanism as the reserved children capture,
-    // just keyed by the prop's own name instead of `children`.
-    const namedSlotCaptures: string[] = []
-
-    for (const p of comp.props) {
-      // Skip callback props (onXxx) and `ref` — both are client-only for
-      // SSR (Hono renders neither; the client JS wires them at hydration).
-      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const slotBody = this.renderChildren(p.value.children)
-        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
-        // A JSX prop name can contain characters (`data-slot`) `bladeIdent`
-        // doesn't sanitize (it only guards reserved words), producing an
-        // invalid PHP variable name; `comp.slotId` alone would also collide
-        // across two named-slot props on the same component invocation
-        // (unlike the reserved children slot, there's only ever one of
-        // those per invocation).
-        const captureVar = bladeVar(`bf_prop_${this.childrenCaptureCounter++}`)
-        namedSlotCaptures.push(
-          `@php(ob_start())\n${slotBody}\n` +
-          `@php(${captureVar} = $bf->backend->mark_raw(preg_replace('/\\n\\z/', '', ob_get_clean(), 1)))`,
-        )
-        currentEntries().push(`${bladeHashKey(p.name)} => ${captureVar}`)
-        continue
-      }
-      if (p.value.kind === 'spread') {
-        const trimmed = p.value.expr.trim()
-        // SolidJS-style props identifier (`function(props: P)`) has no
-        // matching runtime array in Blade scope — props arrive as a flat
-        // set of top-level template vars, so enumerate the
-        // analyzer-extracted props params into array entries instead of
-        // treating it as a runtime spread expression.
-        if (this.propsObjectName && this.propsObjectName === trimmed) {
-          for (const pp of this.propsParams) {
-            currentEntries().push(`${bladeHashKey(pp.name)} => ${bladeVar(pp.name)}`)
-          }
-          continue
-        }
-        // Every other spread shape (a destructure rest-bag `props`, a
-        // member-access bag like `children.props`, an intrinsic-element
-        // spread helper's own operand, …) — PHP array literals can't
-        // splat a runtime array into named entries at a call site, but
-        // `array_merge` can fold it into the accumulated array at the
-        // right ordinal position, mirroring ERB's `**hash` / Mojolicious's
-        // `%{$props}` blind splat: no compile-time filtering of onXxx/ref
-        // keys out of the runtime bag (the render contract tolerates
-        // them, same as the other two adapters). The operand is routed
-        // through `$bf->omit(expr, [])` (the #2087 object-rest residual
-        // helper, called with an empty exclude list) rather than a bare
-        // `?? []` guard: a request-scoped bag round-trips through
-        // `json_decode` as a `stdClass`, and PHP's `array_merge` raises a
-        // `TypeError` on anything that isn't an array (verified
-        // empirically — `stdClass` is rejected even though `data_get`
-        // accepts it). `$bf->omit` already normalises BOTH shapes
-        // (`stdClass` → assoc array, `null`/non-object → `[]`) into a
-        // plain PHP array `array_merge` accepts, exactly like the
-        // `$bf->spread_attrs(...)` runtime helper the intrinsic-element
-        // spread path uses (that one tolerates any bag shape itself,
-        // since it's a plain function call rather than a language-level
-        // array operator).
-        const spreadExpr = this.convertExpressionToBlade(p.value.expr)
-        segments.push({ kind: 'spread', expr: `$bf->omit(${spreadExpr}, [])` })
-        continue
-      }
-      const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) currentEntries().push(lowered)
-    }
-    // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skipped for a loop item root — it uses ComponentName_random
-    // instead (#2444). Appended to whatever the trailing entries segment is
-    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
-    // these compiler-controlled entries.
-    if (derivesScopeFromSlot(comp)) {
-      currentEntries().push(`${bladeHashKey('_bf_slot')} => '${comp.slotId}'`)
-    }
+    // Each named JSX-valued prop (`header={<strong>Title</strong>}`, #2168)
+    // and the forwarded children are captured with output buffering (this
+    // file's header, divergence 4), evaluated in the parent's template scope
+    // (signals, conditionals) into an `HtmlString`, and passed by variable;
+    // `render_child` materializes the children through the backend before
+    // handing them to the child. A named slot's capture variable is
+    // counter-based: a prop name can contain characters (`data-slot`) that
+    // are no valid PHP variable name.
     const tplName = this.toTemplateName(comp.name)
-
-    // Resolve the effective children: a nested `<Box>…</Box>` populates
-    // `comp.children`; an attribute-form `<Box children={<jsx/>} />` lands in
-    // a `jsx-children` AttrValue on the corresponding prop.
-    const effectiveChildren: IRNode[] = comp.children.length > 0
-      ? comp.children
-      : resolveJsxChildrenProp(comp.props)
-
-    if (effectiveChildren.length > 0) {
-      // Forward JSX children via the output-buffering capture (this file's
-      // header, divergence 4). The block body is evaluated in the parent's
-      // template scope (signals, conditionals) and produces the children
-      // HTML as a captured `HtmlString`; the captured var is passed as the
-      // `children` entry of the render_child array. `render_child`
-      // materializes it through the backend before handing it to the child.
-      const childrenBody = this.renderChildren(effectiveChildren)
-      const captureVar = bladeVar(`bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)
-      currentEntries().push(`${bladeHashKey('children')} => ${captureVar}`)
-      const dict = this.combineComponentPropSegments(segments)
-      return (
-        namedSlotCaptures.join('') +
-        `@php(ob_start())\n${childrenBody}\n` +
-        `@php(${captureVar} = $bf->backend->mark_raw(preg_replace('/\\n\\z/', '', ob_get_clean(), 1)))` +
-        `{!! $bf->render_child('${tplName}', ${dict}) !!}`
+    const captures: string[] = []
+    const capture = (children: IRNode[], name: () => string) => {
+      const body = this.renderChildren(children)
+      const captured = bladeVar(name())
+      captures.push(
+        `@php(ob_start())\n${body}\n` +
+        `@php(${captured} = $bf->backend->mark_raw(preg_replace('/\\n\\z/', '', ob_get_clean(), 1)))`,
       )
+      return captured
     }
-
-    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
-    const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `${namedSlotCaptures.join('')}{!! $bf->render_child('${tplName}'${dictEntries}) !!}`
+    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const segments = spellComponentProps(plan, {
+      entry: (entry) => {
+        switch (entry.kind) {
+          case 'value':
+            return emitAttrValue(entry.value, this.componentPropEmitter, entry.name)
+          case 'named-slot':
+            return `${bladeHashKey(entry.name)} => ${capture(entry.children, () => `bf_prop_${this.childrenCaptureCounter++}`)}`
+          case 'props-param':
+            return `${bladeHashKey(entry.name)} => ${bladeVar(entry.name)}`
+          case 'slot-id':
+            return `${bladeHashKey('_bf_slot')} => '${entry.slotId}'`
+          case 'children':
+            return `${bladeHashKey('children')} => ${capture(entry.children, () => `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)}`
+        }
+      },
+      spread: (value) => `$bf->omit(${this.convertExpressionToBlade(value.expr)}, [])`,
+    })
+    const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
+    return `${captures.join('')}{!! $bf->render_child('${tplName}'${dict}) !!}`
   }
 
   private childrenCaptureCounter = 0
