@@ -10,12 +10,36 @@
  * hash literal.
  */
 
-import { exprToString, parseExpression, type ParsedExpr } from '../expression-parser.ts'
+import { exprToString, isSupported, parseExpression, type ParsedExpr } from '../expression-parser.ts'
+import type { LoweringMatcher } from '../lowering-registry.ts'
 import { attrValueMayBeNullish, nullableSignalAttrGetter, type NullishAttrContext } from '../nullable-signal-attr.ts'
 import type { ConstantInfo, ExpressionAttr, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
+
+/**
+ * Whether an attribute value is a shape no template lowers: a JS object
+ * literal (`style={{…}}` aside, which the adapter lowers first) or a
+ * tagged template literal (`cn\`base ${tone()}\``). Returns the refusal, with
+ * the support gate's reason when it gives one, or `null` when the value
+ * goes on to {@link planAttrExpression}. The adapter reports BF101 in its own
+ * words. A value starting with neither shape is never parsed here.
+ */
+export function unsupportedAttrExpression(
+  expr: string,
+  loweringMatchers: readonly LoweringMatcher[],
+): { reason: string | undefined } | null {
+  let probe = expr.trim()
+  while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
+  const startsAsObjectLiteral = probe.startsWith('{')
+  const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
+  if (!startsAsObjectLiteral && !hasTaggedTemplate) return null
+  const parsed = parseExpression(expr.trim())
+  const support = isSupported(parsed, { loweringMatchers })
+  if (parsed.kind !== 'unsupported' && support.supported) return null
+  return { reason: support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined) }
+}
 
 /**
  * The emission of an `{expr}` attribute value.

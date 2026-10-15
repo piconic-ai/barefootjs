@@ -93,6 +93,7 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
+  unsupportedAttrExpression,
   planLoop,
   planSpreadAttr,
   planComponentProps,
@@ -1824,16 +1825,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * shape was rejected (caller should drop the attribute / skip the emit).
    */
   private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    let probe = expr.trim()
-    while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
-    const startsAsObjectLiteral = probe.startsWith('{')
-    const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
-    if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
-    const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
-    if (parsed.kind !== 'unsupported' && support.supported) return false
-    const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
-    const reasonLine = reason ? `\n${reason}` : ''
+    const refusal = unsupportedAttrExpression(expr, this._loweringMatchers)
+    if (!refusal) return false
+    const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
     this.errors.push({
       code: 'BF101',
       severity: 'error',

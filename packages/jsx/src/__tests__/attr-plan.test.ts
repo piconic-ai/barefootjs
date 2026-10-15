@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { planAttrExpression, planSpreadAttr, type AttrPlanContext, type SpreadPlanContext } from '../adapters/attr-plan'
+import { planAttrExpression, planSpreadAttr, unsupportedAttrExpression, type AttrPlanContext, type SpreadPlanContext } from '../adapters/attr-plan'
 import { parseExpression } from '../expression-parser'
 import type { ExpressionAttr, SpreadAttr } from '../types'
 
@@ -104,5 +104,18 @@ describe('planSpreadAttr', () => {
       const plan = planSpreadAttr(spread(name), c)
       expect({ name, candidates: plan.kind === 'value' ? plan.candidates.length : -1 }).toEqual({ name, candidates: 1 })
     }
+  })
+})
+
+describe('unsupportedAttrExpression', () => {
+  test('an object literal or a tagged template is refused, with the gate reason', () => {
+    expect(unsupportedAttrExpression(`{ a: 1 }`, [])).toEqual({ reason: expect.any(String) })
+    expect(unsupportedAttrExpression(`(( { a: 1 } ))`, [])).not.toBeNull()
+    expect(unsupportedAttrExpression('cn`base ${tone()}`', [])).not.toBeNull()
+  })
+
+  test('anything else goes on to the plan without being parsed here', () => {
+    expect(unsupportedAttrExpression('count()', [])).toBeNull()
+    expect(unsupportedAttrExpression('`plain ${x}`', [])).toBeNull()
   })
 })
