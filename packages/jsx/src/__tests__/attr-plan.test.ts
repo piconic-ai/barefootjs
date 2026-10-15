@@ -16,7 +16,7 @@ const expression = (expr: string, extra: Partial<ExpressionAttr> = {}): Expressi
   ...extra,
 })
 
-function context(overrides: Partial<AttrPlanContext<string>> = {}): AttrPlanContext<string> {
+function context(overrides: Partial<AttrPlanContext> = {}): AttrPlanContext {
   return {
     propsObjectName: 'props',
     restPropsName: 'rest',
@@ -25,7 +25,6 @@ function context(overrides: Partial<AttrPlanContext<string>> = {}): AttrPlanCont
     nullishAttrCtx: { nullableSignals: new Set(['title']), memos: new Map() },
     isLoopBound: () => false,
     boolStr: (expr) => expr === 'open',
-    undefinedAlternateTernary: (expr) => (/^\w+ \? .+ : undefined$/.test(expr) ? 'ternary' : null),
     ...overrides,
   }
 }
@@ -53,8 +52,13 @@ describe('planAttrExpression', () => {
     expect(plan(expression('id', { presenceOrUndefined: true }))).toEqual({ kind: 'presence', boolStr: false })
   })
 
-  test("`cond ? value : undefined` carries the adapter's parse of the ternary", () => {
-    expect(plan(expression(`active ? 'page' : undefined`))).toEqual({ kind: 'undefined-alternate', ternary: 'ternary' })
+  test('`cond ? value : undefined` carries the parsed branches', () => {
+    expect(plan(expression(`active ? 'page' : undefined`))).toMatchObject({
+      kind: 'undefined-alternate',
+      ternary: { condition: 'active', testParsed: { kind: 'identifier', name: 'active' }, consequentParsed: { kind: 'literal' } },
+    })
+    expect(plan(expression(`active ? 'page' : null`))).toMatchObject({ kind: 'undefined-alternate' })
+    expect(plan(expression(`active ? 'page' : 'none'`))).toMatchObject({ kind: 'plain' })
   })
 
   test('a value that may reach nil through a signal is bound and tested', () => {

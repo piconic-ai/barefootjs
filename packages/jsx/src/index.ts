@@ -131,7 +131,8 @@ export {
   stringifyBooleanTernaryBranches,
 } from './adapters/boolean-result.ts'
 export { isBareStringLiteral, isLiteralIndex, isStringTypeInfo } from './adapters/literal-value.ts'
-export { collectBooleanTypedProps, collectNullableOptionalProps } from './adapters/prop-classes.ts'
+export { collectBooleanTypedProps, collectNullableOptionalProps, isBooleanTypedPropRef } from './adapters/prop-classes.ts'
+export type { BooleanTypedPropContext } from './adapters/prop-classes.ts'
 export { collectImportedLoopChildComponentErrors, hasClientInteractivity } from './adapters/component-tree.ts'
 export {
   ARRAY_METHOD_CATALOGUE,
@@ -166,10 +167,10 @@ export type {
   ArrayMethodSpelling,
 } from './adapters/array-method.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
-export { componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
+export { childTemplateName, componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
-export { planAttrExpression, planSpreadAttr } from './adapters/attr-plan.ts'
-export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext } from './adapters/attr-plan.ts'
+export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr } from './adapters/attr-plan.ts'
+export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
 export { planLoop } from './adapters/loop-plan.ts'
 export type { LoopPlan, LoopPlanContext } from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'

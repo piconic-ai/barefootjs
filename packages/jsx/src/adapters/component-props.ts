@@ -129,3 +129,16 @@ export function spellComponentProps(
 export function isEmptyComponentProps(segments: readonly SpelledComponentPropSegment[]): boolean {
   return segments.every((segment) => segment.kind === 'entries' && segment.parts.length === 0)
 }
+
+/**
+ * The template a child component renders from: the component's declared
+ * name, resolved through an import alias (`import { Foo as Bar }`, `<Bar/>`
+ * renders `foo`, #2822), in snake_case.
+ */
+export function childTemplateName(componentName: string, importAliases: ReadonlyMap<string, string>): string {
+  const declaredName = importAliases.get(componentName) ?? componentName
+  return declaredName
+    .replace(/([A-Z])/g, '_$1')
+    .toLowerCase()
+    .replace(/^_/, '')
+}

@@ -167,7 +167,9 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
+  childTemplateName,
   isEmptyComponentProps,
+  isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
   planSpreadAttr,
@@ -374,7 +376,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * declared name (`Foo`, what `foo.tsx` registers its minijinja partial
    * as) — never the caller-local binding. Built once per compile from
    * `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   * (`@barefootjs/jsx`) and read by `childTemplateName`.
    */
   private importAliases: Map<string, string> = new Map()
 
@@ -1299,7 +1301,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // for why a set-block (not a macro) is the uniform mechanism. A named
     // slot's capture name is counter-based: a prop name can contain
     // characters (`data-slot`) that are no valid `{% set %}` target.
-    const tplName = this.toTemplateName(comp.name)
+    const tplName = childTemplateName(comp.name, this.importAliases)
     const captures: string[] = []
     const capture = (children: IRNode[], name: () => string) => {
       const body = this.renderChildren(children)
@@ -1334,19 +1336,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   /** Uniquifies the `presenceOrUndefined` temp binding (`bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
   private presenceVarCounter = 0
-
-  private toTemplateName(componentName: string): string {
-    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
-    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
-    // has no `foo.tsx`-registered partial; only `Foo` does.
-    const declaredName = this.importAliases.get(componentName) ?? componentName
-    // Convert PascalCase to snake_case for template naming.
-    return declaredName
-      .replace(/([A-Z])/g, '_$1')
-      .toLowerCase()
-      .replace(/^_/, '')
-  }
-
   // ===========================================================================
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
@@ -1450,7 +1439,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
         nullishAttrCtx: this.nullishAttrCtx,
         isLoopBound: (n) => this.isLoopBoundName(n),
         boolStr: (expr, attr) => this.shouldBoolStr(expr, attr),
-        undefinedAlternateTernary: (expr) => this.parseUndefinedAlternateTernary(expr),
       })
       const attr = (v: string, boolStr: boolean) =>
         boolStr ? `${name}="{{ bf.bool_str(${v}) }}"` : `${name}="{{ bf.string(${v}) }}"`
@@ -1868,44 +1856,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * Parse `cond ? value : undefined` (or `: null`), returning the
    * condition/consequent source spans, else `null`. Used for the
    * attribute-omission rule (#1897).
-   */
-  parseUndefinedAlternateTernary(
-    expr: string,
-  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
-    const parsed = parseExpression(expr.trim())
-    if (parsed?.kind !== 'conditional') return null
-    const alt = parsed.alternate
-    const isUndef =
-      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
-      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
-    if (!isUndef) return null
-    // `condition`/`consequent` are DEBUG text only (`exprToString` renders an
-    // unsupported nested shape like an object literal as non-reparseable
-    // `[UNSUPPORTED: …]` text) — callers that need to re-lower the
-    // sub-expression must use `testParsed`/`consequentParsed` (the actual
-    // parsed trees) as `preParsed`, not re-parse these strings.
-    return {
-      condition: exprToString(parsed.test),
-      consequent: exprToString(parsed.consequent),
-      testParsed: parsed.test,
-      consequentParsed: parsed.consequent,
-    }
-  }
-
-  isBooleanTypedPropRef(expr: string): boolean {
-    let bare = expr.trim()
-    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
-      bare = bare.slice(this.propsObjectName.length + 1)
-    }
-    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
-    // Inside a `.map()` callback, a param that shares a boolean prop's name
-    // is the ROW binding, not the prop — route it through plain string
-    // emission instead of `bf.bool_str` (#2488).
-    if (this.isLoopBoundName(bare)) return false
-    return this.booleanTypedProps.has(bare)
-  }
-
-  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
+   */  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
   private isLoopBoundName(name: string): boolean {
     return this.scope.isBound(name)
   }
@@ -1924,7 +1875,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    */
   private shouldBoolStr(expr: string, name: string): boolean {
     if (isExplicitStringCall(expr)) return false
-    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(expr)
+    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) })
   }
 
   /**

@@ -10,7 +10,7 @@
  * hash literal.
  */
 
-import { parseExpression, type ParsedExpr } from '../expression-parser.ts'
+import { exprToString, parseExpression, type ParsedExpr } from '../expression-parser.ts'
 import { attrValueMayBeNullish, nullableSignalAttrGetter, type NullishAttrContext } from '../nullable-signal-attr.ts'
 import type { ConstantInfo, ExpressionAttr, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
@@ -28,8 +28,8 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
  *   the value is truthy.
  * - `presence`: `attr={expr || undefined}` (#1897). The value is bound to a
  *   temporary once and rendered when truthy.
- * - `undefined-alternate`: `attr={cond ? value : undefined}`. The attribute
- *   is rendered when `cond` holds.
+ * - `undefined-alternate`: `attr={cond ? value : undefined}` (or `: null`).
+ *   The attribute is rendered when `cond` holds.
  * - `omit-nil`: a value that may reach `null` / `undefined` through a memo,
  *   an optional member read or a ternary branch (#3322). The value is bound
  *   to a temporary once and rendered when not nil.
@@ -38,15 +38,15 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
  * `boolStr`: the value is boolean-shaped and goes through `bool_str`, so the
  * bytes match JS `String(boolean)`.
  */
-export type AttrExpressionPlan<Ternary> =
+export type AttrExpressionPlan =
   | { kind: 'omit-nullable'; boolStr: boolean; restKey: boolean }
   | { kind: 'boolean-attr' }
   | { kind: 'presence'; boolStr: boolean }
-  | { kind: 'undefined-alternate'; ternary: Ternary }
+  | { kind: 'undefined-alternate'; ternary: UndefinedAlternateTernary }
   | { kind: 'omit-nil'; boolStr: boolean }
   | { kind: 'plain'; boolStr: boolean }
 
-export interface AttrPlanContext<Ternary> {
+export interface AttrPlanContext {
   /** The SolidJS-style props identifier (`function C(props: P)`), if any. */
   propsObjectName: string | null
   /** The destructured `...rest` binding (`function C({ ...rest })`), if any. */
@@ -60,16 +60,10 @@ export interface AttrPlanContext<Ternary> {
   isLoopBound(name: string): boolean
   /** The adapter routes this value through `bool_str`. */
   boolStr(expr: string, name: string): boolean
-  /** The adapter's parse of `cond ? value : undefined`, or `null`. */
-  undefinedAlternateTernary(expr: string): Ternary | null
 }
 
 /** Plan an `{expr}` attribute value. */
-export function planAttrExpression<Ternary>(
-  value: ExpressionAttr,
-  name: string,
-  ctx: AttrPlanContext<Ternary>,
-): AttrExpressionPlan<Ternary> {
+export function planAttrExpression(value: ExpressionAttr, name: string, ctx: AttrPlanContext): AttrExpressionPlan {
   const booleanAttr = isBooleanAttr(name)
   if (!booleanAttr && !value.presenceOrUndefined) {
     const nullable = nullableBareRead(value, ctx)
@@ -77,7 +71,7 @@ export function planAttrExpression<Ternary>(
   }
   if (booleanAttr) return { kind: 'boolean-attr' }
   if (value.presenceOrUndefined) return { kind: 'presence', boolStr: ctx.boolStr(value.expr, name) }
-  const ternary = ctx.undefinedAlternateTernary(value.expr)
+  const ternary = parseUndefinedAlternateTernary(value.expr)
   if (ternary) return { kind: 'undefined-alternate', ternary }
   const boolStr = ctx.boolStr(value.expr, name)
   if (attrValueMayBeNullish(value.parsed, ctx.nullishAttrCtx, (n) => ctx.isLoopBound(n))) return { kind: 'omit-nil', boolStr }
@@ -89,7 +83,7 @@ export function planAttrExpression<Ternary>(
  * `props.id`, `rest.id`) or of a nullable signal (`title()`) that no loop
  * binding shadows (#2488). `restKey`: the read names a rest-expanded key.
  */
-function nullableBareRead<Ternary>(value: ExpressionAttr, ctx: AttrPlanContext<Ternary>): { restKey: boolean } | null {
+function nullableBareRead(value: ExpressionAttr, ctx: AttrPlanContext): { restKey: boolean } | null {
   const bare = value.expr.trim()
   const restKey = ctx.restPropsName !== null && bare.startsWith(`${ctx.restPropsName}.`)
   let normalized = bare
@@ -99,6 +93,42 @@ function nullableBareRead<Ternary>(value: ExpressionAttr, ctx: AttrPlanContext<T
   const signal = nullableSignalAttrGetter(value.parsed, ctx.nullableSignalGetters)
   if (prop || (signal !== null && !ctx.isLoopBound(signal))) return { restKey }
   return null
+}
+
+/**
+ * `cond ? value : undefined` (or `: null`), whose falsy branch drops the
+ * attribute (#1897).
+ *
+ * `testParsed` / `consequentParsed` are the parsed sub-trees, for the caller
+ * to lower directly (#2843 review). `condition` / `consequent` are
+ * `exprToString` output, a debug formatter that renders a nested object
+ * literal as a non-reparseable `[UNSUPPORTED: …]` placeholder: re-parsing it
+ * would corrupt a call like `queryHref(base, { tag })` before the lowering
+ * registry sees it. They are serialised from the parsed tree rather than
+ * sliced from the text, which would mis-split `cond ? 'a:b' : undefined`.
+ */
+export interface UndefinedAlternateTernary {
+  condition: string
+  consequent: string
+  testParsed: ParsedExpr
+  consequentParsed: ParsedExpr
+}
+
+/** Parse `cond ? value : undefined` (or `: null`), or `null` for any other shape. */
+export function parseUndefinedAlternateTernary(expr: string): UndefinedAlternateTernary | null {
+  const parsed = parseExpression(expr.trim())
+  if (parsed?.kind !== 'conditional') return null
+  const alt = parsed.alternate
+  const isUndef =
+    (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
+    (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
+  if (!isUndef) return null
+  return {
+    condition: exprToString(parsed.test),
+    consequent: exprToString(parsed.consequent),
+    testParsed: parsed.test,
+    consequentParsed: parsed.consequent,
+  }
 }
 
 /**
