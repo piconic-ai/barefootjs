@@ -979,7 +979,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Kolon binds the item directly via `for LIST -> $item`. The index, when
     // needed (`.keys().map(k => ...)` or an explicit `index` param), comes
     // from Text::Xslate's loop variable `$~param.index`.
-    const renderedChildren = this.renderChildren(loop.children)
 
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
@@ -1061,9 +1060,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
     const prevInLoop = this.inLoop
     this.inLoop = true
-    // Re-render children now that inLoop is set (so nested components use the
-    // loop-child naming convention). renderedChildren above was computed with
-    // the previous flag; recompute under the loop flag.
+    // The children render once, under the loop flag (so nested components use
+    // the loop-child naming convention) and the row scope below.
 
     // This loop's row scope, for the position-accurate shadow guard
     // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
@@ -1110,7 +1108,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.inLoop = prevInLoop
-    void renderedChildren
 
     // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
     // anchor before each item's (possibly empty) conditional content so the

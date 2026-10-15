@@ -1073,7 +1073,6 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // ITSELF 0-based on Pebble (see this file's header syntax table: this
     // is Pebble-specific, matching neither Jinja's `loop.index0` nor
     // Twig's).
-    const renderedChildren = this.renderChildren(loop.children)
 
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
@@ -1131,9 +1130,8 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
 
     const prevInLoop = this.inLoop
     this.inLoop = true
-    // Re-render children now that inLoop is set (so nested components use the
-    // loop-child naming convention). renderedChildren above was computed with
-    // the previous flag; recompute under the loop flag.
+    // The children render once, under the loop flag (so nested components use
+    // the loop-child naming convention) and the row scope below.
 
     // This loop's row scope, for the position-accurate shadow guard
     // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
@@ -1169,7 +1167,6 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.inLoop = prevInLoop
-    void renderedChildren
 
     // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
     // anchor before each item's (possibly empty) conditional content so the
