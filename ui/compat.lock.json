@@ -2785,6 +2785,125 @@
           }
         }
       },
+      "filter-native-nested-index": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "callback-outside-evaluator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-native-nested-index-client"
+          }
+        }
+      },
       "filter-nested-callback-predicate": {
         "blade": {
           "kind": "refusal",
@@ -6441,6 +6560,10 @@
         "description": "A loop `.filter()` predicate reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-index-param-loop.ts"
       },
+      "filter-native-nested-index": {
+        "description": "A native-only `.filter()` predicate whose nested `.filter()` reads its index — DSL diagnostic on…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-native-nested-index.ts"
+      },
       "filter-nested-callback-predicate": {
         "description": "Filter predicate containing a nested .some() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate.ts"
@@ -6636,6 +6759,10 @@
       "filter-index-param-loop-client": {
         "description": "A loop `.filter()` predicate reading its index, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-index-param-loop-client.ts"
+      },
+      "filter-native-nested-index-client": {
+        "description": "A native-only `.filter()` predicate whose nested `.filter()` reads its index, deferred to the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-native-nested-index-client.ts"
       },
       "filter-nested-callback-predicate-client": {
         "description": "Nested-callback filter predicate + /* @client */ suppresses BF101 (#2038)",
@@ -6870,11 +6997,12 @@
     "callback-outside-evaluator": {
       "title": "A higher-order callback outside the template evaluator",
       "kind": "refusal",
-      "given": "a `.sort` / `.map` / `.filter` / `.reduce` callback (or reduce seed) the template evaluator cannot model: an unlowered method call, a string-method predicate, a comparator outside the sort descriptor, a non-literal seed",
+      "given": "a `.sort` / `.map` / `.filter` / `.reduce` callback (or reduce seed) the template evaluator cannot model: an unlowered method call, a string-method predicate, a predicate only a native form lowers whose nested callback reads its index, a comparator outside the sort descriptor, a non-literal seed",
       "expected": "the callback runs and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "filter-array-method-predicate",
+        "filter-native-nested-index",
         "filter-opaque-predicate",
         "map-opaque-projection",
         "reduce-nonliteral-seed",

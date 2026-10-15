@@ -24,6 +24,7 @@ export const conformancePins: ConformancePins = {
   'map-opaque-projection': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
   'reduce-nonliteral-seed': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
   'filter-opaque-predicate': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
+  'filter-native-nested-index': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
   'filter-array-method-predicate': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
   'find-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
   'some-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],

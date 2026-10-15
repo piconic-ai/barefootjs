@@ -11,6 +11,6 @@
 '@barefootjs/xslate': patch
 ---
 
-A template expression whose `.map` / `.filter` / `.reduce` (or other higher-order) callback reads its index or array parameter, such as `items.map((x, i) => i)`, now fails with BF101 on the DSL adapters. Before, the index was read from an unrelated template variable of the same name, or left undefined. Add `/* @client */` to evaluate it on the client.
+A template expression whose `.map` / `.filter` / `.reduce` (or other higher-order) callback reads its index or array parameter, such as `items.map((x, i) => i)`, now fails with BF101 on the DSL adapters. Before, the index was read from an unrelated template variable of the same name, or left undefined. Add `/* @client */` to evaluate it on the client. A `.map` / `.filter` nested inside another callback keeps its index where the runtime evaluator runs that callback (`rows.map(r => r.map((x, i) => i).join(','))`).
 
 The DSL adapters lower higher-order callbacks through one shared chain in `@barefootjs/jsx` (`lowerCallbackMethod`). Its BF101 messages now read the same on every adapter apart from the adapter's name. ERB and Mojolicious used different wording, and the Rust adapter called itself "Jinja".
