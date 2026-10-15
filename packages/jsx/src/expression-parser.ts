@@ -3753,6 +3753,32 @@ export function hasOpaqueCall(expr: ParsedExpr): boolean {
   return found
 }
 
+/**
+ * Whether a callback nested anywhere in `expr` reads a param past the one a
+ * native form binds (`row.filter((x, i) => i > 0)`): Ruby blocks and Perl
+ * `grep` bind the element only, while the runtime evaluator also binds a
+ * nested `.map` / `.filter` index (`CallbackScope`). A predicate that does
+ * must not take a native form.
+ */
+export function readsNestedCallbackIndex(expr: ParsedExpr): boolean {
+  let found = false
+  const visit = (node: unknown): void => {
+    if (found || node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const cb = (node as ParsedExpr).kind === 'call' ? asCallbackMethodCall(node as ParsedExpr) : null
+    if (cb && unboundCallbackParamRead(cb.method, cb.arrow) !== null) {
+      found = true
+      return
+    }
+    for (const value of Object.values(node)) visit(value)
+  }
+  visit(expr)
+  return found
+}
+
 /** Build the evaluator's minimal node object, or null for an out-of-surface kind. */
 function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
   switch (e.kind) {

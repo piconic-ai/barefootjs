@@ -224,6 +224,8 @@ import { fixture as reduceNonliteralSeed } from './reduce-nonliteral-seed'
 import { fixture as reduceNonliteralSeedClient } from './reduce-nonliteral-seed-client'
 import { fixture as filterOpaquePredicate } from './filter-opaque-predicate'
 import { fixture as filterOpaquePredicateClient } from './filter-opaque-predicate-client'
+import { fixture as filterNativeNestedIndex } from './filter-native-nested-index'
+import { fixture as filterNativeNestedIndexClient } from './filter-native-nested-index-client'
 import { fixture as filterArrayMethodPredicate } from './filter-array-method-predicate'
 import { fixture as filterArrayMethodPredicateClient } from './filter-array-method-predicate-client'
 import { fixture as findTypeofPredicate } from './find-typeof-predicate'
@@ -1116,6 +1118,8 @@ export const jsxFixtures: JSXFixture[] = [
   reduceNonliteralSeedClient,
   filterOpaquePredicate,
   filterOpaquePredicateClient,
+  filterNativeNestedIndex,
+  filterNativeNestedIndexClient,
   filterArrayMethodPredicate,
   filterArrayMethodPredicateClient,
   findTypeofPredicate,

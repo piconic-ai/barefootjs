@@ -3373,6 +3373,54 @@
         "text"
       ]
     },
+    "filter-native-nested-index": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-native-nested-index-client": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:startsWith",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "filter-nested-callback-predicate": {
       "kinds": [
         "array-literal",

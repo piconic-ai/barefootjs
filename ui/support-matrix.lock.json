@@ -49,6 +49,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -158,6 +164,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -282,6 +294,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -439,6 +457,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -557,6 +581,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -666,6 +696,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -793,6 +829,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -911,6 +953,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1020,6 +1068,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1157,6 +1211,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1206,6 +1266,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1262,6 +1328,12 @@
             },
             {
               "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
               ]
@@ -1325,6 +1397,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1383,6 +1461,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1432,6 +1516,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1488,6 +1578,12 @@
             },
             {
               "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
               ]
@@ -1551,6 +1647,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1600,6 +1702,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1683,6 +1791,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1783,6 +1897,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -1880,6 +2000,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -1989,6 +2115,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2095,6 +2227,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2195,6 +2333,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2292,6 +2436,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2401,6 +2551,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2498,6 +2654,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2611,6 +2773,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2690,6 +2858,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -2787,6 +2961,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2875,6 +3055,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2954,6 +3140,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3039,6 +3231,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3112,6 +3310,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3197,6 +3401,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3276,6 +3486,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3434,6 +3650,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3609,6 +3831,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -3805,6 +4033,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4022,6 +4256,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4206,6 +4446,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4384,6 +4630,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4559,6 +4811,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -4746,6 +5004,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4921,6 +5185,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5398,6 +5668,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5621,6 +5897,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -5865,6 +6147,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -6142,6 +6430,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -6374,6 +6668,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -6600,6 +6900,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -6823,6 +7129,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7058,6 +7370,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7281,6 +7599,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7566,6 +7890,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -7717,6 +8047,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -7895,6 +8231,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -8106,6 +8448,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8266,6 +8614,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8417,6 +8771,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -8592,6 +8952,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8752,6 +9118,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8903,6 +9275,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -9058,6 +9436,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9074,6 +9458,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9089,6 +9479,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
@@ -9112,6 +9508,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9127,6 +9529,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -9144,6 +9552,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9159,6 +9573,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -9176,6 +9596,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9191,6 +9617,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -9296,6 +9728,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -9480,6 +9918,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -9670,6 +10114,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -9899,6 +10349,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -10089,6 +10545,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -10273,6 +10735,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -10454,6 +10922,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -10647,6 +11121,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -10828,6 +11308,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12432,6 +12918,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12469,6 +12961,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12513,6 +13011,12 @@
             },
             {
               "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
               ]
@@ -12564,6 +13068,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12610,6 +13120,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12647,6 +13163,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -12691,6 +13213,12 @@
             },
             {
               "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
               ]
@@ -12742,6 +13270,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12779,6 +13313,12 @@
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -13136,14 +13676,35 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
             }
           ]
         },
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
               "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
               ]
@@ -13157,6 +13718,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
             }
           ]
         },
@@ -13167,14 +13734,35 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
             }
           ]
         },
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
         "pebble": {
           "gaps": [
             {
               "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
               ]
@@ -13188,10 +13776,25 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
             }
           ]
         },
-        "xslate": {}
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
@@ -14504,6 +15107,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -14517,6 +15126,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -14536,6 +15151,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -14549,6 +15170,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -14568,6 +15195,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -14581,6 +15214,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -14600,6 +15239,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -14616,6 +15261,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -14629,6 +15280,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -14978,6 +15635,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15063,6 +15726,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -15157,6 +15826,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -15266,6 +15941,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15354,6 +16035,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15439,6 +16126,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -15542,6 +16235,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15630,6 +16329,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15715,6 +16420,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -15855,6 +16566,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15940,6 +16657,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -16046,6 +16769,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -16179,6 +16908,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16273,6 +17008,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16358,6 +17099,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -16467,6 +17214,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16561,6 +17314,12 @@
               ]
             },
             {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16646,6 +17405,12 @@
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
               ]
             },
             {
@@ -16738,15 +17503,96 @@
     "logical:&&": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
