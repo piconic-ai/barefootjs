@@ -1,5 +1,29 @@
 # @barefootjs/xslate
 
+## 0.39.6
+
+### Patch Changes
+
+- 4058a10: The DSL template adapters lower array and string methods (`join`, `slice`, `padStart`, …) through one shared catalogue, `ARRAY_METHOD_CATALOGUE` in `@barefootjs/jsx`, and only spell the runtime helper call. Compiled templates are unchanged.
+- 7745080: The DSL adapters plan an intrinsic element's attribute through one shared decision in `@barefootjs/jsx` (`planAttrExpression`, `planSpreadAttr`). The compiled templates are unchanged.
+- 722fb34: A template expression whose `.map` / `.filter` / `.reduce` (or other higher-order) callback reads its index or array parameter, such as `items.map((x, i) => i)`, now fails with BF101 on the DSL adapters. Before, the index was read from an unrelated template variable of the same name, or left undefined. Add `/* @client */` to evaluate it on the client. A `.map` / `.filter` nested inside another callback keeps its index where the runtime evaluator runs that callback (`rows.map(r => r.map((x, i) => i).join(','))`).
+  
+  The DSL adapters lower higher-order callbacks through one shared chain in `@barefootjs/jsx` (`lowerCallbackMethod`). Its BF101 messages now read the same on every adapter apart from the adapter's name. ERB and Mojolicious used different wording, and the Rust adapter called itself "Jinja".
+- 7a2efb0: The ERB and Mojolicious adapters now forward `{...props}` onto a child component (`<Child {...props} tone="x" />`). Before, they dropped the spread, because their templates hold no `props` value. On every DSL adapter, a prop that both the spread and an explicit prop set is now passed once.
+  
+  The DSL adapters assemble a child component's props through one shared plan in `@barefootjs/jsx` (`planComponentProps`).
+- 84fd851: `isBooleanTypedPropRef`, `parseUndefinedAlternateTernary`, the child-template naming (`childTemplateName`) and the unsupported-attribute gate (`unsupportedAttrExpression`) live once in `@barefootjs/jsx` instead of in each DSL adapter. The compiled templates are unchanged.
+- 0265600: The Jinja, MiniJinja, Pebble, Twig, Blade and Xslate adapters render a loop's body once. They used to render it twice and drop the first result, which reported a diagnostic in the body twice and doubled the work at each nesting level.
+- 6a5cc5b: The DSL adapters decide a loop's destructure gate, static source, computed-const refusal, sort lowering and filter-capture aliases through one shared plan in `@barefootjs/jsx` (`planLoop`). The compiled templates are unchanged.
+- 305770b: A nested loop over an enclosing loop's param (`groups.map((entries) => entries.map(…))`) no longer fails with BF101 when a computed component-scope const has the same name (`const entries = Object.keys(labels)`). The loop iterates the row's value, as on ERB.
+- fb45d18: A parenthesized computed-const loop source (`(entries).map(…)`) is refused with BF101 like the bare one. The computed-const gate now reads the loop source from its parsed tree, so the parentheses no longer hide the const, and Go Template and ERB stop compiling a loop over a variable the template never binds. The BF101 message names the const rather than the source text.
+- 30e209f: Arithmetic over a `null` operand renders like JavaScript on every DSL adapter: `null + 1` is `1`. The Jinja, MiniJinja and ERB templates raised on a nil operand under `+`, and on any prop declared `number | null` or optional, instead of reading it as `0`. The DSL adapters now take that decision from one place in `@barefootjs/jsx` (`arithmeticOperandCoercion`).
+- c3bb5b9: A stringified `&&` / `||` whose operands are each a name declared `boolean` (a prop, signal or memo) or a boolean-shaped expression (`String(props.on && !props.off)`, `` `${props.off || props.on === true}` ``) now prints `true` / `false` on Mojolicious and Xslate instead of the native `1` Perl's last evaluated operand carries. `isBooleanResultParsed` takes an optional declared-`boolean` lookup, and the new `collectBooleanValueNames` builds it from a component's metadata; an operand that is not boolean (`props.name || 'x'`) keeps its value.
+- dd5603e: A boolean stringified in a template (`String(flag)`, a template literal, a boolean loop key) now renders `true` / `false` instead of Perl's `1` / `0`. The runtime's `string` helper prints a JSON boolean as JS does, and template-literal substitutions go through it.
+- 555f308: Mojolicious and Xslate templates compute `+ - * /` through new runtime helpers (`bf->add` / `subtract` / `multiply` / `divide`) instead of Perl's native operators, so the result is the IEEE double JS computes: an integer sum past 2**53 rounds as a double, a perl built with `-Duselongdouble` or `-Dusequadmath` no longer keeps extra precision (`0.1 + 0.2` is `0.30000000000000004` there too), and dividing by zero yields `Infinity` / `NaN` instead of dying. `bf->to_fixed` scales at double precision, so `(1.005).toFixed(2)` is `1.00` on such perls as well.
+- c0bd32e: The DSL template adapters share one copy of their boolean-result, literal-value, prop-class and component-tree helpers, now exported from `@barefootjs/jsx`. Compiled templates and diagnostics are unchanged.
+- @barefootjs/shared@0.39.6
+
 ## 0.39.5
 
 ### Patch Changes
