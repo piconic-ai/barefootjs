@@ -22,6 +22,7 @@ import {
   readsNestedCallbackIndex,
   serializeParsedExpr,
   sortComparatorFromArrow,
+  stringifyParsedExpr,
   type ParsedExpr,
   type SortComparator,
 } from '../expression-parser.ts'
@@ -287,6 +288,39 @@ export function emitCallbackEval(
   const env = plan.captured.map((name) => [name, emit({ kind: 'identifier', name })] as const)
   operands.push(spelling.env(env))
   return spelling.call(plan.helper, operands)
+}
+
+/**
+ * Whether a call that reached an adapter's generic fallback has no lowering
+ * (#3493). A zero-arg call reads a getter (`props.value()`, a getter passed
+ * as a prop), and a call to a function-valued prop (`props.renderNode(node)`,
+ * a render prop) names a value a backend caller never passes, so the guard
+ * around it is never taken there; both keep the callee read. Any other call
+ * with arguments (`s().localeCompare('m')`) would lose the call and its
+ * arguments. `propsObjectName` is the undestructured props parameter
+ * (`props`), `null` when the props are destructured: a destructured render
+ * prop is a bare-name call, which the adapters refuse on their own.
+ */
+export function isUnloweredCall(
+  callee: ParsedExpr,
+  args: readonly ParsedExpr[],
+  propsObjectName: string | null,
+): boolean {
+  if (args.length === 0) return false
+  return !(callee.kind === 'member' && callee.object.kind === 'identifier' && callee.object.name === propsObjectName)
+}
+
+/**
+ * The BF101 for a call no template lowers: a method outside the array-method
+ * catalogue (`s().localeCompare('m')`), or any other callee that is not a
+ * getter, a template primitive or a lowering plugin's call. Read as its
+ * callee, the call and its arguments would silently disappear (#3493).
+ */
+export function unloweredCallRefusal(callee: ParsedExpr, adapterName: string): { message: string; suggestion: string } {
+  return {
+    message: `Call '${stringifyParsedExpr(callee)}(...)' has no ${adapterName} template lowering; read as a value it would drop the call and its arguments`,
+    suggestion: 'Pre-compute the value in the backend and pass it as a prop, or add /* @client */ for client-only evaluation (no SSR).',
+  }
 }
 
 /**

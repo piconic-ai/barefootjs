@@ -1603,6 +1603,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private get emitCtx(): MojoEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _propsObjectName: this.propsObjectName,
       _loweringMatchers: this._loweringMatchers,
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),

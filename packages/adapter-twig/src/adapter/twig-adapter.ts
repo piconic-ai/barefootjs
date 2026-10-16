@@ -1590,6 +1590,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   private get emitCtx(): TwigEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _propsObjectName: this.propsObjectName,
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),

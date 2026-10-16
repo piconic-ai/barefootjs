@@ -76,6 +76,11 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A method call no template lowers, outside a callback, refuses rather
+  // than rendering a read of the method name (#3493).
+  'unlowered-method-call': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // #2038: no inline comprehension-with-nested-callback form via the
   // evaluator-JSON `*_eval` mechanism (`pebble-adapter.ts`'s header,
   // divergence 3) — loud BF101 instead of lossy.

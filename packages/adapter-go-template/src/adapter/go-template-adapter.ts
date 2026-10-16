@@ -103,6 +103,9 @@ import {
   renderElementAttributes,
   renderFragmentScope,
   renderDangerousInnerHtml,
+  matchSearchParamsMethodCall,
+  isUnloweredCall,
+  unloweredCallRefusal,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -6686,6 +6689,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         suggestion: {
           message: `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — html/template has no way to invoke it. Pre-compute the value server-side and pass it as a prop, or wrap the position in /* @client */ so it runs in JS on the client.`,
         },
+      })
+      return ''
+    }
+    // A method outside the catalogue has no lowering: as a method call on a
+    // plain data field it fails the render (#3493). A method on the request's
+    // `searchParams()` reader is a real Go method (`.SearchParams.Get "key"`),
+    // and a getter or function-valued prop keeps the callee read.
+    if (isUnloweredCall(callee, args, this.state.propsObjectName) && !matchSearchParamsMethodCall(callee, args, this.state.searchParamsLocals)) {
+      const refusal = unloweredCallRefusal(callee, 'Go')
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: refusal.message,
+        loc: this.makeLoc(),
+        suggestion: { message: refusal.suggestion },
       })
       return ''
     }

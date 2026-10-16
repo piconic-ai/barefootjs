@@ -1710,6 +1710,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   private get emitCtx(): ErbEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _propsObjectName: this.propsObjectName,
       _loweringMatchers: this._loweringMatchers,
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),

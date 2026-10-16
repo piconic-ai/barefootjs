@@ -77,6 +77,11 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A method call no template lowers, outside a callback, refuses rather
+  // than rendering a read of the method name (#3493).
+  'unlowered-method-call': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // Only `.find` is pinned — `find*` returns an element, not a boolean, so
   // there's no inline predicate form; the nested-`.some` sibling lowers to a
   // real inline Perl `grep` and must render to Hono parity instead.

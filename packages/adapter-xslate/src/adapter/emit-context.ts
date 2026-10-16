@@ -27,6 +27,9 @@ export interface XslateEmitContext {
    */
   readonly _searchParamsLocals: Set<string>
 
+  /** The undestructured props parameter's name (`props`), or `null` when the props are destructured. */
+  readonly _propsObjectName: string | null
+
   /**
    * Registered lowering-plugin matchers (#2057), bound to this component's
    * metadata at init. Read by `XslateTopLevelEmitter`'s `lowering` seam

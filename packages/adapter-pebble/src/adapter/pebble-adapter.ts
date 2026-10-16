@@ -1672,6 +1672,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
   private get emitCtx(): PebbleEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _propsObjectName: this.propsObjectName,
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),

@@ -33,6 +33,8 @@ import { groupBinaryOperand,
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
+  isUnloweredCall,
+  unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
 } from '@barefootjs/jsx'
@@ -555,6 +557,14 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
         `Call to '${callee.name}(...)' has no Mojolicious template lowering — '${callee.name}' is not a signal getter, a registered template primitive, or a recognised lowering call, so there is no Perl binding for it in template scope.`,
         `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — Mojo::Template has no way to invoke it.`,
       )
+      return "''"
+    }
+    // A method outside the catalogue (`s().localeCompare(q)`) has no
+    // lowering; read as its callee, the call and its arguments would vanish
+    // (#3493). A getter or function-valued prop keeps the callee read.
+    if (isUnloweredCall(callee, args, this.ctx._propsObjectName)) {
+      const refusal = unloweredCallRefusal(callee, CALLBACK_LOWERING.adapterName)
+      this.ctx._recordExprBF101(refusal.message, refusal.suggestion)
       return "''"
     }
     return emit(callee)

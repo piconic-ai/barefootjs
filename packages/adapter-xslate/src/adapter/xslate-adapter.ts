@@ -1555,6 +1555,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private get emitCtx(): XslateEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _propsObjectName: this.propsObjectName,
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),

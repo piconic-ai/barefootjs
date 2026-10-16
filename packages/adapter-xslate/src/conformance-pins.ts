@@ -77,6 +77,11 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A method call no template lowers, outside a callback, refuses rather
+  // than rendering a read of the method name (#3493).
+  'unlowered-method-call': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // #2038: Kolon has no inline `grep` form (unlike mojo, which lowers a
   // nested `.some` to a real inline Perl `grep`) — loud BF101 instead of the
   // old silent degradation to the receiver.

@@ -77,6 +77,11 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A method call no template lowers, outside a callback, refuses rather
+  // than rendering a read of the method name (#3493).
+  'unlowered-method-call': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // A loop over a static LITERAL array (module- or function-scope `const`)
   // whose row renders a child component anywhere but as the row root
   // (inside an element, a conditional branch or a nested loop) refuses with
