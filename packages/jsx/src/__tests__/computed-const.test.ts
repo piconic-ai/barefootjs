@@ -8,9 +8,9 @@ import { buildMetadata } from '../compiler'
 import { parseExpression, stringifyParsedExpr } from '../expression-parser'
 import { computedConstContext, inlineComputedConsts } from '../adapters/computed-const'
 
-function inliner(source: string, shadowed: readonly string[] = []) {
+function inliner(source: string, shadowed: readonly string[] = [], adapterBound: readonly string[] = []) {
   const metadata = buildMetadata(analyzeComponent(source, 'test.tsx'))
-  const ctx = computedConstContext(metadata, name => shadowed.includes(name))
+  const ctx = computedConstContext(metadata, name => shadowed.includes(name), name => adapterBound.includes(name))
   return (expr: string) => stringifyParsedExpr(inlineComputedConsts(parseExpression(expr), ctx))
 }
 
@@ -63,6 +63,12 @@ describe('inlineComputedConsts (#3494)', () => {
 
   test('an initializer whose free name the read site rebinds is left alone', () => {
     expect(inliner(source, ['props'])('twice')).toBe('twice')
+  })
+
+  test('a const the adapter binds itself stays as read, also inside another initializer', () => {
+    const inline = inliner(source, [], ['cls'])
+    expect(inline('cls')).toBe('cls')
+    expect(inline('wide')).toBe('cls + " w-full"')
   })
 
   test('a callback param shadowing the name keeps the param', () => {
