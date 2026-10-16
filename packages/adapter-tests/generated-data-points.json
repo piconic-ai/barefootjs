@@ -109,6 +109,34 @@
       }
     }
   ],
+  "array-element-index": [
+    {
+      "name": "gen:pair:empty",
+      "props": {
+        "pair": [],
+        "groups": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "pair": [
+          "x",
+          "y"
+        ],
+        "groups": []
+      }
+    }
+  ],
   "array-entries": [
     {
       "name": "gen:items:empty",

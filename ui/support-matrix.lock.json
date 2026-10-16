@@ -18050,10 +18050,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "optional-nested-object-signal-seed",
-        "description": "A signal seeded from an optional nested object retains its nullable field type",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-nested-object-signal-seed.ts",
-        "code": "meta()?.['active']"
+        "fixture": "array-element-index",
+        "description": "numeric index reads on a prop array, a nested array and an array-typed loop row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/array-element-index.ts",
+        "code": "pair[1]"
       }
     },
     "member:optional": {
