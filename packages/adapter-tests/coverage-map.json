@@ -2002,6 +2002,27 @@
         "text"
       ]
     },
+    "computed-const-shadows-prop-positions": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "cond-arm-tag-collision": {
       "kinds": [
         "array-literal",

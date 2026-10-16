@@ -52,6 +52,31 @@ export function propsDestructureBinding(p: ParamInfo): string {
   return p.defaultValue ? `${binding} = ${p.defaultValue}` : binding
 }
 
+
+/**
+ * Whether a component-scope const is the props-object read of its own prop
+ * (`const label = props.label`, or the analyzer's lowering of a body
+ * destructure `const { label = 'Default' } = props` to
+ * `props.label ?? 'Default'`), so a template may read the prop in its place.
+ *
+ * A source-written `const label = props.label ?? 'Default'` has the same
+ * initializer text but is NOT the prop: its default lives only in the
+ * const, and reading the prop instead drops it (#3501). The body
+ * destructure records its default on the prop's `ParamInfo`
+ * (`defaultValue`); the source-written const does not, which is what
+ * tells the two apart.
+ */
+export function isPropsAliasConst(
+  c: Pick<ConstantInfo, 'name' | 'value'>,
+  propsObjectName: string | null,
+  propsParams: readonly Pick<ParamInfo, 'name' | 'defaultValue'>[],
+): boolean {
+  if (propsObjectName === null || typeof c.value !== 'string') return false
+  const read = `${propsObjectName}.${c.name}`
+  if (c.value === read) return true
+  if (!c.value.startsWith(`${read} ??`)) return false
+  return propsParams.some(p => p.name === c.name && p.defaultValue !== undefined)
+}
 /**
  * Local-name → caller-facing-key map for prop-reference rewrites —
  * entries only for `ParamInfo`s that actually rename (`sourceName` set,

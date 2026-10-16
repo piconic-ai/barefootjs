@@ -1401,6 +1401,74 @@
       }
     }
   ],
+  "computed-const-shadows-prop-positions": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "count": 1234567890
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
   "conditional-branch-sigil-text": [
     {
       "name": "gen:on:true",

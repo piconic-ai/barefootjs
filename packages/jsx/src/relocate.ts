@@ -15,7 +15,7 @@ import type { Scope, BindingKind, IRMetadata } from './types.ts'
 import { isVisibleIn } from './types.ts'
 import type { AnalyzerContext } from './analyzer-context.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
-import { buildPropAliasMap } from './props-binding.ts'
+import { buildPropAliasMap, isPropsAliasConst } from './props-binding.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
@@ -841,12 +841,7 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
   const propsObjectName = src.propsObjectName
   for (const c of src.localConstants) {
     if (c.isModule) continue
-    const isPureAlias =
-      typeof c.value === 'string' &&
-      propsObjectName !== null &&
-      (c.value === `${propsObjectName}.${c.name}` ||
-        c.value.startsWith(`${propsObjectName}.${c.name} ??`))
-    bindings.set(c.name, isPureAlias ? 'prop' : 'init-local')
+    bindings.set(c.name, isPropsAliasConst(c, propsObjectName, src.propsParams) ? 'prop' : 'init-local')
   }
 
   // Init-body local functions.
