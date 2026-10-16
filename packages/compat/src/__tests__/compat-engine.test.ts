@@ -69,6 +69,7 @@ describe('compileForCompat', () => {
           'prop-member-chain-signal-seed',
           'signal-read-in-nested-static-loop',
           'static-literal-loop-component-row',
+          'unlowered-method-call',
           'untyped-loop-array-no-row-struct',
         ],
       },
