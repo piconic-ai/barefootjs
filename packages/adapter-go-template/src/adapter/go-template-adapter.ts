@@ -254,6 +254,14 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
 
 /**
+ * Whether a member access is a numeric index (`row[0]`): an element read on
+ * an array, which Go reaches through `bf_get`, never a `.Field0` field.
+ */
+function isElementIndex(computed: boolean, property: string): boolean {
+  return computed && /^(0|[1-9]\d*)$/.test(property)
+}
+
+/**
  * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
  * @since 0.1.0
@@ -6691,7 +6699,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   member(
     object: ParsedExpr,
     property: string,
-    _computed: boolean,
+    computed: boolean,
     optional: boolean,
     emit: (e: ParsedExpr) => string,
   ): string {
@@ -6785,6 +6793,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (staticValue !== null) return staticValue
     }
 
+    // A numeric index (`row[0]`, `pair[1]`, #3497) reads an element, not a
+    // struct field: `.Field0` is no field of a `[]string`, and html/template
+    // fails the render. It takes the `bf_get` arm below (the row itself
+    // rendering as `.`), which indexes a slice and still finds a map key or
+    // a generated struct's JSON-tagged field spelled the same, as JS
+    // `obj[0]` reads `obj["0"]`.
+    const elementIndex = isElementIndex(computed, property)
     // Inside a loop, the loop param variable refers to the current item
     // (dot). e.g. `msg.role` inside `{{range $_, $msg := .Messages}}` → `.Role`
     //
@@ -6795,7 +6810,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // template syntax, let alone a reachable field (PR #2089 review). For
     // identifier keys (snake_case included) the two functions agree, so
     // nothing previously reachable changes shape.
-    if (object.kind === 'identifier' && this.isCurrentLoopItem(object.name)) {
+    if (object.kind === 'identifier' && this.isCurrentLoopItem(object.name) && !elementIndex) {
       return `.${goFieldNameForKey(property)}`
     }
 
@@ -6826,18 +6841,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // single written `?.` hop, not
     // a JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
     // variant's docstring for the multi-hop caveat.
-    if (optional) {
-      return this.renderOptionalMember(obj, property)
-    }
+    //
     // A plain member access rooted in an inline-object-typed prop
     // (`props.cfg.id`, #2299) reads off a `map[string]interface{}` field:
     // route through the case-tolerant `bf_get` with the JS-cased key (the map
     // is baked with source-cased keys), not the exact-case `.Cfg.ID` dot path
     // below that would `MapIndex("ID")` a `"id"` map and render empty. Placed
-    // after the `length`/`optional` special cases so it only intercepts the
-    // otherwise-untyped dot access.
-    if (this.isMapRootedPropChain(object) || this.isMapSeededSignalChain(object)) {
-      return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(property)}`
+    // after the `length` special case so it only intercepts the otherwise-
+    // untyped dot access. A numeric index takes the same getter (see
+    // `elementIndex` above).
+    if (optional || elementIndex || this.isMapRootedPropChain(object) || this.isMapSeededSignalChain(object)) {
+      return this.renderOptionalMember(obj, property)
     }
     return `${obj}.${goFieldNameForKey(property)}`
   }
@@ -8910,7 +8924,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           return plain(this.rootFieldRef(expr.property))
         }
 
-        if (expr.object.kind === 'identifier' && this.isCurrentLoopItem(expr.object.name)) {
+        // A numeric index reads an element, not a field (#3497): it takes the
+        // `bf_get` arm below, the row itself rendering as `.`.
+        const elementIndex = isElementIndex(expr.computed, expr.property)
+        if (expr.object.kind === 'identifier' && this.isCurrentLoopItem(expr.object.name) && !elementIndex) {
           return plain(`.${capitalizeFieldName(expr.property)}`)
         }
 
@@ -8936,7 +8953,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // when the object itself is absent.
         // A member of a source-keyed signal seed map (#3353) uses the same
         // getter, as `member()` does in value position.
-        if (expr.optional || this.isMapSeededSignalChain(expr.object)) {
+        if (expr.optional || elementIndex || this.isMapSeededSignalChain(expr.object)) {
           return {
             preamble: obj.preamble,
             expr: this.renderOptionalMember(obj.expr, expr.property),

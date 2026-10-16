@@ -677,6 +677,7 @@ import { fixture as nestedLoopTailContent } from './nested-loop-tail-content'
 import { fixture as loopParamShadowsBoolProp } from './loop-param-shadows-bool-prop'
 import { fixture as loopParamShadowsSpreadConst } from './loop-param-shadows-spread-const'
 import { fixture as loopParamShadowsArrayConst } from './loop-param-shadows-array-const'
+import { fixture as arrayElementIndex } from './array-element-index'
 import { fixture as computedConstLoopSourceParenthesized } from './computed-const-loop-source-parenthesized'
 import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './computed-const-loop-source-parenthesized-precomputed'
 import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
@@ -1469,6 +1470,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsBoolProp,
   loopParamShadowsSpreadConst,
   loopParamShadowsArrayConst,
+  arrayElementIndex,
   computedConstLoopSourceParenthesized,
   computedConstLoopSourceParenthesizedPrecomputed,
   computedConstLoopSourceParenthesizedClient,

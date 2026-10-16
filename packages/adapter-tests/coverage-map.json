@@ -225,6 +225,30 @@
         "text"
       ]
     },
+    "array-element-index": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "array-entries": {
       "kinds": [
         "identifier"
