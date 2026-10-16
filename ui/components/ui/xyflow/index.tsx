@@ -368,6 +368,9 @@ export interface BackgroundProps {
 export function Background(props: BackgroundProps) {
   const store = useContext(FlowContext) as FlowStore | undefined
 
+  // The fallback id is random, so no server can render the one the browser
+  // will use; the `id` / `fill` reads below are `/* @client */` and the
+  // pattern is wired at hydration.
   const patternId = props.patternId ?? `bf-bg-${Math.random().toString(36).slice(2, 8)}`
 
   const variant = createMemo(() => props.variant ?? 'dots')
@@ -435,7 +438,7 @@ export function Background(props: BackgroundProps) {
     >
       <defs>
         <pattern
-          id={patternId}
+          id={/* @client */ patternId}
           patternUnits="userSpaceOnUse"
           width={patternWidth()}
           height={patternHeight()}
@@ -466,7 +469,7 @@ export function Background(props: BackgroundProps) {
           )}
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+      <rect width="100%" height="100%" fill={/* @client */ `url(#${patternId})`} />
     </svg>
   )
 }

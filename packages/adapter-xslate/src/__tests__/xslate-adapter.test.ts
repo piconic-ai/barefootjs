@@ -786,7 +786,8 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    expect(result.template).toContain('$t.label ~ $skipLabel')
+    // The renamed binding reads as the prop it renames (#3494).
+    expect(result.template).toContain('$t.label ~ $fallbackLabel')
   })
 })
 

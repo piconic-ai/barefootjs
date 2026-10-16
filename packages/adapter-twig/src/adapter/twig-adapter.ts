@@ -226,6 +226,10 @@ import {
   renderDangerousInnerHtml,
   unsupportedAttrExpressionError,
   type ElementShellSpelling,
+  computedConstContext,
+  inlineComputedConstAttr,
+  inlineComputedConsts,
+  type ComputedConstContext,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -327,6 +331,8 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
    * (e.g. `queryHref` → `bf.query`, #2042) — one uniform path, no per-API branch.
    */
   private _loweringMatchers: LoweringMatcher[] = []
+  /** The component's computed consts, inlined where a template reads them (#3494). */
+  private computedConsts: ComputedConstContext | null = null
 
   /**
    * Local + module constants from the IR, used by the conditional-spread and
@@ -425,6 +431,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
+    this.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
     // Two source names that Twig's renaming of reserved names turns into one
@@ -1325,7 +1332,9 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
-    emitExpression: (value, name) => {
+    emitExpression: (source, name) => {
+      // A computed const reads as its initializer (#3494).
+      const value = inlineComputedConstAttr(source, this.computedConsts)
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101 (#1322).
       if (name === 'style') {
@@ -1653,6 +1662,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       if (trimmed === '') return "''"
       parsed = parseExpression(trimmed)
     }
+    parsed = inlineComputedConsts(parsed, this.computedConsts)
 
     // `pos` distinguishes a derived-seed RHS (an assignment, checked via
     // `isSupportedValue`) from every other, genuinely rendered call site —

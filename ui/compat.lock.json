@@ -1970,31 +1970,169 @@
         "ok": true
       },
       "blade": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "erb": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "go-template": {
         "ok": true
       },
       "jinja": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "minijinja": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "mojolicious": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "boolean-in-static-loop-item",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "pebble": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "twig": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       },
       "xslate": {
-        "ok": true
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "limitations": [
+              "array-fill",
+              "boolean-in-static-loop-item",
+              "callback-index-param",
+              "callback-outside-evaluator",
+              "computed-const-loop-source",
+              "module-scope-helper-call",
+              "nested-callback-in-filter-predicate",
+              "off-subset-callback-body",
+              "opaque-local-accessor-call",
+              "unlowered-method-call"
+            ]
+          }
+        ]
       }
     }
   },
@@ -2308,6 +2446,125 @@
           "escape": {
             "state": "escapable",
             "twin": "computed-const-loop-source-parenthesized-precomputed"
+          }
+        }
+      },
+      "computed-const-read-unlowerable": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "computed-const-read-unlowerable-precomputed"
           }
         }
       },
@@ -6850,6 +7107,10 @@
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
       },
+      "computed-const-read-unlowerable": {
+        "description": "A computed const whose initializer has no template lowering refuses (BF101) instead of reading an…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-read-unlowerable.ts"
+      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -7073,6 +7334,10 @@
       "computed-const-loop-source-parenthesized-precomputed": {
         "description": "prop-precompute twin of computed-const-loop-source-parenthesized — a parenthesized prop source…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized-precomputed.ts"
+      },
+      "computed-const-read-unlowerable-precomputed": {
+        "description": "prop-precompute twin of computed-const-read-unlowerable — the keys arrive as a prop (#3494)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-read-unlowerable-precomputed.ts"
       },
       "conditional-nested-loop-precomputed-reactivity": {
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
@@ -7852,10 +8117,11 @@
     "unlowered-method-call": {
       "title": "A method call no template lowers",
       "kind": "refusal",
-      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`) outside any higher-order callback",
+      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`) outside any higher-order callback, directly or through a computed const it reads (`const keys = Object.keys(labels)`)",
       "expected": "the method runs and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "computed-const-read-unlowerable",
         "unlowered-method-call"
       ],
       "adapters": [

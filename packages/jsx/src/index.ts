@@ -174,6 +174,8 @@ export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, C
 export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression, unsupportedAttrExpressionError } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
 export { planLoop } from './adapters/loop-plan.ts'
+export { computedConstContext, inlineComputedConstAttr, inlineComputedConsts } from './adapters/computed-const.ts'
+export type { ComputedConstContext } from './adapters/computed-const.ts'
 export type { LoopPlan, LoopPlanContext } from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {

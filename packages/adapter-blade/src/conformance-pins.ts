@@ -83,6 +83,11 @@ export const conformancePins: ConformancePins = {
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],
+  // The same refusal reached through a computed const read outside a loop:
+  // the const reads as its initializer (#3494).
+  'computed-const-read-unlowerable': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // No inline nested-callback form exists in the evaluator-JSON `*_eval`
   // mechanism (this adapter's only higher-order lowering path — see
   // blade-adapter.ts's header, divergence 3): loud BF101 instead of the

@@ -82,6 +82,11 @@ export const conformancePins: ConformancePins = {
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],
+  // The same refusal reached through a computed const read outside a loop:
+  // the const reads as its initializer (#3494).
+  'computed-const-read-unlowerable': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // Only `.find` is pinned — `find*` returns an element, not a boolean, so
   // there's no inline predicate form; the nested-`.some` sibling lowers to a
   // real inline Perl `grep` and must render to Hono parity instead.

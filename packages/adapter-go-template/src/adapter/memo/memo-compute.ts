@@ -14,6 +14,7 @@ import {
   asCallbackMethodCall,
   bareGetterCallName,
   freeVarsInBody,
+  inlineComputedConsts,
   materializeGetterCalls,
   isNullishLiteral,
   NULL_COERCING_ARITHMETIC_OPS,
@@ -1248,7 +1249,8 @@ export function computeMemoInitialValueOrNull(
   if (memo.parsed) {
     const fromParsed = memoInitialFromParsedBody(
       ctx,
-      memo.parsed,
+      // A computed const the body reads stands for its initializer (#3494).
+      inlineComputedConsts(memo.parsed, ctx.state.computedConsts),
       signals,
       propsParams,
       propFallbackVars,

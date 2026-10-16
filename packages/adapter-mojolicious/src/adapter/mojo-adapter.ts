@@ -89,6 +89,10 @@ import {
   renderDangerousInnerHtml,
   unsupportedAttrExpressionError,
   type ElementShellSpelling,
+  computedConstContext,
+  inlineComputedConstAttr,
+  inlineComputedConsts,
+  type ComputedConstContext,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
@@ -237,6 +241,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * (e.g. `queryHref` → `bf->query`, #2042) — one uniform path, no per-API branch.
    */
   private _loweringMatchers: LoweringMatcher[] = []
+  /** The component's computed consts, inlined where a template reads them (#3494). */
+  private computedConsts: ComputedConstContext | null = null
   /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at
    * file top-level), keyed by name → resolved literal value. Populated at
@@ -341,6 +347,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
+    this.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
     this.localConstants = ir.metadata.localConstants ?? []
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
@@ -1284,7 +1291,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
-    emitExpression: (value, name) => {
+    emitExpression: (source, name) => {
+      // A computed const reads as its initializer (#3494).
+      const value = inlineComputedConstAttr(source, this.computedConsts)
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101 (#1322).
       if (name === 'style') {
@@ -1664,6 +1673,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (trimmed === '') return "''"
       parsed = parseExpression(trimmed)
     }
+    parsed = inlineComputedConsts(parsed, this.computedConsts)
 
     // `pos` distinguishes a derived-seed RHS (an assignment, checked via
     // `isSupportedValue`) from every other, genuinely rendered call site —

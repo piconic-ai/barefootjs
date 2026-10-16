@@ -106,6 +106,9 @@ import {
   matchSearchParamsMethodCall,
   isUnloweredCall,
   unloweredCallRefusal,
+  computedConstContext,
+  inlineComputedConstAttr,
+  inlineComputedConsts,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -643,6 +646,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
+    this.state.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
     // #2813: precompute which local consts are bare alias-hop chains onto a
     // signal/memo getter, so `rootFieldRef` can route a call through the
     // getter's OWN field instead of registering a separate, never-seeded
@@ -8319,7 +8323,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // expression (template literal vs. not) off this single `parseExpression`,
     // with no extra `ts.createSourceFile` on the `bf build` hot path and no
     // parse at all for the early-return shapes.
-    const parsed = preParsed ?? parseExpression(trimmed)
+    // A computed const reads as its initializer (#3494).
+    const parsed = inlineComputedConsts(preParsed ?? parseExpression(trimmed), this.state.computedConsts)
     const support = isSupported(parsed)
 
     if (!support.supported) {
@@ -8780,7 +8785,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     preParsed?: ParsedExpr,
   ): { condition: string; preamble: string } {
     const trimmed = jsCondition.trim()
-    const parsed = preParsed ?? parseExpression(trimmed)
+    const parsed = inlineComputedConsts(preParsed ?? parseExpression(trimmed), this.state.computedConsts)
 
     // #2898: inside a #2224 per-item unrolled static-array loop body there is
     // no `{{range}}` dot-context for an item-bound condition to resolve
@@ -10153,7 +10158,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
-    emitExpression: (value, name) => {
+    emitExpression: (source, name) => {
+      // A computed const reads as its initializer (#3494).
+      const value = inlineComputedConstAttr(source, this.state.computedConsts)
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101.
       if (name === 'style') {

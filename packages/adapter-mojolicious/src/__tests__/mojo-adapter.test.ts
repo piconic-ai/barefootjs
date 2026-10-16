@@ -213,10 +213,11 @@ function Box({ flag }: { flag?: boolean }) {
     )
   })
 
-  // A const that aliases another bare identifier must NOT be forwarded
-  // (loop guard): the resolver bails, so the spread falls through to the
-  // standard `convertExpressionToPerl` path emitting the bare `$attrs`
-  // variable rather than recursively resolving the alias into a hashref.
+  // A const that aliases another bare identifier is NOT forwarded by the
+  // spread resolver (loop guard): it bails, and the spread falls through to
+  // the standard `convertExpressionToPerl` path, which reads the computed
+  // const as its initializer (#3494) — the aliased prop, not an unbound
+  // `$attrs`.
   test('does not forward a const that aliases another identifier (loop guard)', () => {
     const { template } = compileAndGenerate(`
 function Box({ other }: { other?: object }) {
@@ -224,7 +225,7 @@ function Box({ other }: { other?: object }) {
   return <div {...attrs} />
 }
 `)
-    expect(template).toContain('bf->spread_attrs($attrs)')
+    expect(template).toContain('bf->spread_attrs($other)')
   })
 })
 
@@ -326,7 +327,7 @@ function Widget({ items }: { items: object[] }) {
   return <ul>{items.map((attrs) => <li {...attrs} />)}</ul>
 }
 `)
-    expect(template).toContain('bf->spread_attrs($attrs)')
+    expect(template).toContain('bf->spread_attrs($other)')
     expect(template).not.toContain("'data-on' => 'outer'")
   })
 })

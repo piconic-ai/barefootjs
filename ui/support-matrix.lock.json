@@ -1199,6 +1199,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -1263,6 +1269,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -1318,6 +1330,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -1385,6 +1403,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -1446,6 +1470,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -1513,6 +1543,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -1568,6 +1604,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -1635,6 +1677,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -1696,6 +1744,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -3620,6 +3674,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -3822,6 +3882,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4009,6 +4075,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -4262,6 +4334,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4461,6 +4539,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -4666,6 +4750,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -4853,6 +4943,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -5058,6 +5154,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5257,6 +5359,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -5746,6 +5854,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -5996,6 +6110,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6231,6 +6351,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6544,6 +6670,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6791,6 +6923,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -7044,6 +7182,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7279,6 +7423,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -7532,6 +7682,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7779,6 +7935,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -8076,6 +8238,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8248,6 +8416,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8411,6 +8585,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -8652,6 +8832,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8824,6 +9010,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8993,6 +9185,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -9174,6 +9372,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9346,6 +9550,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9515,6 +9725,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -9971,6 +10187,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10179,6 +10401,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10372,6 +10600,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -10625,6 +10859,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10830,6 +11070,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11041,6 +11287,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11234,6 +11486,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11445,6 +11703,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11650,6 +11914,12 @@
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13284,6 +13554,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -13336,6 +13612,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -13379,6 +13661,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13434,6 +13722,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -13483,6 +13777,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13538,6 +13838,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -13581,6 +13887,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13636,6 +13948,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -13685,6 +14003,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -16920,6 +17244,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17026,6 +17356,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17123,6 +17459,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17280,6 +17622,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17386,6 +17734,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17489,6 +17843,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17604,6 +17964,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17710,6 +18076,12 @@
               ]
             },
             {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17813,6 +18185,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {

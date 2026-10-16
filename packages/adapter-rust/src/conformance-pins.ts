@@ -84,6 +84,11 @@ export const conformancePins: ConformancePins = {
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],
+  // The same refusal reached through a computed const read outside a loop:
+  // the const reads as its initializer (#3494).
+  'computed-const-read-unlowerable': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // #2038: no inline comprehension-with-nested-callback form via the
   // evaluator-JSON `*_eval` mechanism (`minijinja-adapter.ts`'s header,
   // divergence 3) — loud BF101 instead of lossy.
