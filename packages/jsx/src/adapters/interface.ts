@@ -388,6 +388,14 @@ export abstract class BaseAdapter implements TemplateAdapter {
     return children.map((child) => this.renderNode(child)).join('')
   }
 
+  /** `null` for a `null` / `undefined` expression, which renders nothing; otherwise the node. */
+  protected renderNodeOrNull(node: IRNode): string | null {
+    if (node.type === 'expression' && (node.expr === 'null' || node.expr === 'undefined')) {
+      return null
+    }
+    return this.renderNode(node)
+  }
+
   /** Default: render fallback + children inline (no streaming). Override for streaming support. */
   renderAsync(node: IRAsync): string {
     return this.renderNode(node.fallback) + this.renderChildren(node.children)

@@ -13,7 +13,7 @@
 import { exprToString, isSupported, parseExpression, type ParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 import { attrValueMayBeNullish, nullableSignalAttrGetter, type NullishAttrContext } from '../nullable-signal-attr.ts'
-import type { ConstantInfo, ExpressionAttr, SpreadAttr } from '../types.ts'
+import type { CompilerError, ConstantInfo, ExpressionAttr, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
@@ -39,6 +39,34 @@ export function unsupportedAttrExpression(
   const support = isSupported(parsed, { loweringMatchers })
   if (parsed.kind !== 'unsupported' && support.supported) return null
   return { reason: support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined) }
+}
+
+/**
+ * The BF101 for an attribute value {@link unsupportedAttrExpression}
+ * refuses, worded for one adapter (`adapterLabel`, e.g. `Mojo`) and its
+ * template language (`languageLabel`, e.g. `Embedded Perl`); `null` when the
+ * value goes on to {@link planAttrExpression}.
+ */
+export function unsupportedAttrExpressionError(
+  expr: string,
+  attrName: string,
+  loweringMatchers: readonly LoweringMatcher[],
+  componentName: string,
+  adapterLabel: string,
+  languageLabel: string,
+): CompilerError | null {
+  const refusal = unsupportedAttrExpression(expr, loweringMatchers)
+  if (!refusal) return null
+  const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
+  return {
+    code: 'BF101',
+    severity: 'error',
+    message: `Expression not supported on attribute '${attrName}': ${expr.trim()}${reasonLine}`,
+    loc: { file: componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+    suggestion: {
+      message: `The ${adapterLabel} adapter cannot lower JS object literals or tagged-template-literal expressions into ${languageLabel}. Move the expression into a \`'use client'\` component (so hydration computes it), or expand it into discrete attributes whose values are values the adapter can lower.`,
+    },
+  }
 }
 
 /**

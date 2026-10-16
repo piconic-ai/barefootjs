@@ -169,7 +169,7 @@ export type {
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { childTemplateName, componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
-export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression } from './adapters/attr-plan.ts'
+export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression, unsupportedAttrExpressionError } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
 export { planLoop } from './adapters/loop-plan.ts'
 export type { LoopPlan, LoopPlanContext } from './adapters/loop-plan.ts'
@@ -225,7 +225,10 @@ export {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
+  renderDangerousInnerHtml,
 } from './adapters/dangerous-inner-html.ts'
+export { renderElementAttributes, renderElementShell, renderFragmentScope } from './adapters/element-shell.ts'
+export type { ElementShellSpelling } from './adapters/element-shell.ts'
 export type { DangerousInnerHtmlResolution } from './adapters/dangerous-inner-html.ts'
 
 // Client JS Generator
@@ -431,7 +434,7 @@ export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 export { USE_CLIENT_DIRECTIVE, CLIENT_EXPRESSION_DIRECTIVE } from './directives.ts'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, lookupLiteralConst, collectContextConsumers } from './augment-inherited-props.ts'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, lookupLiteralConst, collectContextConsumers, contextConsumerSeed } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
 
 // HTML element attribute types

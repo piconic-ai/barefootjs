@@ -82,9 +82,6 @@ import {
   envSignalReaderFor,
   computeSsrSeedPlan,
   isStringConcatBinary,
-  isDangerousInnerHtmlAttr,
-  resolveDangerousInnerHtml,
-  dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   collectLoopBoundNames,
@@ -103,6 +100,9 @@ import {
   listComponentFunctions,
   resolveRelativeImportToFile,
   isOpaqueLocalAccessorName,
+  renderElementAttributes,
+  renderFragmentScope,
+  renderDangerousInnerHtml,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -5916,7 +5916,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   emitFragment(node: IRFragment, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
-    return this.renderFragment(node)
+    return renderFragmentScope(node, children => this.renderChildren(children), rendered => this.wrapComponentRootScopeComment(rendered))
   }
 
   emitSlot(node: IRSlot): string {
@@ -5937,7 +5937,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   renderElement(element: IRElement): string {
     const tag = element.tag
-    const attrs = this.renderAttributes(element)
+    const attrs = renderElementAttributes(element, this.elementAttrEmitter)
     const dangerousHtml = this.renderDangerousInnerHtml(element)
     const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
 
@@ -6075,27 +6075,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
 
   /**
-   * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — see the Blade
-   * adapter's identical helper for the full rationale. `null` means the
+   * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207). `null` means the
    * attribute is absent (caller falls through to normal `renderChildren`);
    * a non-`null` string (possibly `''`) replaces the children outright.
    */
   private renderDangerousInnerHtml(element: IRElement): string | null {
-    const resolution = resolveDangerousInnerHtml(element)
-    if (!resolution) return null
-    if (resolution.kind === 'unlowerable') {
-      this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
-      return ''
-    }
-    if (resolution.kind === 'dynamic') {
+    return renderDangerousInnerHtml(element, this.errors, this.name, (valueExpr, valueParsed, loc) => {
       // Lower the `__html` expression and emit it through the `bf_raw_html`
       // runtime helper, which returns a `template.HTML` value so
       // html/template's contextual escaper emits it verbatim (the one raw
-      // sink Go lacks as bare syntax). The runtime evaluates the expression,
-      // so no template-metachar guard applies; the element already carries
-      // its hydration slot marker. #2319.
+      // sink Go lacks as bare syntax).
       const classify: { parsed?: ParsedExpr } = {}
-      const goExpr = this.convertExpressionToGo(resolution.valueExpr, classify, resolution.valueParsed)
+      const goExpr = this.convertExpressionToGo(valueExpr, classify, valueParsed)
       // A `{{…}}`-leading fragment or a template literal (a nested ternary
       // lowered to `{{with}}`, or `` `<b>${x}</b>` `` lowered to mixed
       // literal+action text) can't be passed as a single argument to
@@ -6109,22 +6100,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // the actual cause.
         this.errors.push(
           dangerousInnerHtmlDiagnostic(
-            `{ __html: ${resolution.valueExpr} }`,
-            resolution.loc,
+            `{ __html: ${valueExpr} }`,
+            loc,
             'a template-literal or conditional __html value has no single-argument raw form on the Go adapter',
           ),
         )
         return ''
       }
       return `{{bf_raw_html ${wrapIfMultiToken(goExpr)}}}`
-    }
-    const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
-    if (violation) {
-      const attr = element.attrs.find(isDangerousInnerHtmlAttr)!
-      this.errors.push(dangerousInnerHtmlDiagnostic(`{ __html: ${JSON.stringify(resolution.html)} }`, attr.loc, violation))
-      return ''
-    }
-    return resolution.html
+    })
   }
 
   renderExpression(expr: IRExpression): string {
@@ -10099,17 +10083,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `{{.Portals.Add .ScopeID "${escapedContent}"}}`
   }
 
-  private renderFragment(fragment: IRFragment): string {
-    const children = this.renderChildren(fragment.children)
-    if (fragment.needsScopeComment) {
-      // Comment-based scope marker for fragment roots. The end marker
-      // bounds the scope range so client-side queries don't leak onto
-      // later siblings (#2289).
-      return this.wrapComponentRootScopeComment(children)
-    }
-    return children
-  }
-
   /**
    * Wrap already-rendered output in the comment-based scope marker pair.
    * Shared by a `needsScopeComment` fragment root and a root component call
@@ -10415,39 +10388,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       e.kind === 'literal' ? JSON.stringify(e.value) : wrapIfMultiToken(this.convertExpressionToGo(e.expr)),
     ])
     return `{{bf_style_object ${args.join(' ')}}}`
-  }
-
-  private renderAttributes(element: IRElement): string {
-    const parts: string[] = []
-
-    for (const attr of element.attrs) {
-      // `/* @client */` attribute bindings are deferred to hydrate: the client
-      // runtime sets/patches the attribute in a mount effect. Skip SSR emission
-      // so the server omits the attribute — and, crucially, so the
-      // unsupported-expression lowering below is never reached for a deferred
-      // predicate (no BF101 / BF102). This keeps the BF102 remediation ("defer
-      // it with /* @client */") accurate for attribute-only state.
-      if (attr.clientOnly) continue
-      // `dangerouslySetInnerHTML` never renders as an HTML attribute — it's
-      // handled by `renderDangerousInnerHtml` instead, which replaces the
-      // element's children. Skip it here so its `{ __html: ... }` object
-      // literal never reaches the generic object-literal BF101 refusal
-      // (which would double-report alongside the purpose-built one).
-      if (isDangerousInnerHtmlAttr(attr)) continue
-      // `key` never renders as a literal HTML attribute — #2753 resolves it
-      // onto `element.keyAttr` (name AND value) at IR-build time, emitted
-      // separately in `renderElement`. A stray `key` that jsx-to-ir.ts did
-      // NOT recognize as a loop row root (so `keyAttr` was never set) has no
-      // defined rendering outside a `.map()` anyway; drop it rather than
-      // leak an invalid `key="..."` HTML attribute.
-      if (attr.name === 'key') continue
-      // Rewrite JSX special-prop names to their HTML-attribute counterparts.
-      const attrName = attr.name === 'className' ? 'class' : attr.name
-      const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attrName)
-      if (lowered) parts.push(lowered)
-    }
-
-    return parts.length > 0 ? ' ' + parts.join(' ') : ''
   }
 
   /**
