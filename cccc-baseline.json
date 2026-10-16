@@ -880,7 +880,7 @@
         46
       ],
       "getDestructuredPropNames": [
-        30
+        28
       ],
       "processAttributes": [
         36
@@ -926,7 +926,7 @@
     },
     "packages/jsx/src/relocate.ts": {
       "buildRelocateEnvFromFields": [
-        36
+        34
       ],
       "decideAction": [
         28

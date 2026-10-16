@@ -841,7 +841,7 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
   const propsObjectName = src.propsObjectName
   for (const c of src.localConstants) {
     if (c.isModule) continue
-    bindings.set(c.name, isPropsAliasConst(c, propsObjectName, src.propsParams) ? 'prop' : 'init-local')
+    bindings.set(c.name, isPropsAliasConst(c, propsObjectName) ? 'prop' : 'init-local')
   }
 
   // Init-body local functions.

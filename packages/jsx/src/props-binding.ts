@@ -54,28 +54,27 @@ export function propsDestructureBinding(p: ParamInfo): string {
 
 
 /**
- * Whether a component-scope const is the props-object read of its own prop
- * (`const label = props.label`, or the analyzer's lowering of a body
- * destructure `const { label = 'Default' } = props` to
- * `props.label ?? 'Default'`), so a template may read the prop in its place.
+ * Whether a component-scope const is the props-object read of its own prop,
+ * so a template may read the prop in its place: a bare alias
+ * (`const label = props.label`, read from its parsed initializer), or an un-renamed
+ * binding of a body destructure (`const { label = 'Default' } = props`,
+ * whose default the analyzer also records on the prop's `ParamInfo`).
  *
- * A source-written `const label = props.label ?? 'Default'` has the same
- * initializer text but is NOT the prop: its default lives only in the
- * const, and reading the prop instead drops it (#3501). The body
- * destructure records its default on the prop's `ParamInfo`
- * (`defaultValue`); the source-written const does not, which is what
- * tells the two apart.
+ * A hand-written `const label = props.label ?? 'Default'` has the same
+ * `value` text as that destructure but is NOT the prop: its default lives
+ * only in the const, and reading the prop instead drops it (#3501). The
+ * analyzer marks the destructure on `ConstantInfo.propsDestructure`, so the
+ * two are told apart by that field, not by the text.
  */
 export function isPropsAliasConst(
-  c: Pick<ConstantInfo, 'name' | 'value'>,
+  c: Pick<ConstantInfo, 'name' | 'parsed' | 'propsDestructure'>,
   propsObjectName: string | null,
-  propsParams: readonly Pick<ParamInfo, 'name' | 'defaultValue'>[],
 ): boolean {
-  if (propsObjectName === null || typeof c.value !== 'string') return false
-  const read = `${propsObjectName}.${c.name}`
-  if (c.value === read) return true
-  if (!c.value.startsWith(`${read} ??`)) return false
-  return propsParams.some(p => p.name === c.name && p.defaultValue !== undefined)
+  if (propsObjectName === null) return false
+  if (c.propsDestructure) return c.propsDestructure.sourceKey === c.name
+  const read = c.parsed
+  return read?.kind === 'member' && !read.computed && !read.optional && read.property === c.name &&
+    read.object.kind === 'identifier' && read.object.name === propsObjectName
 }
 /**
  * Local-name → caller-facing-key map for prop-reference rewrites —

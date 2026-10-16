@@ -4,16 +4,22 @@ import { isPropsAliasConst } from '../props-binding.ts'
 
 /**
  * Whether a const reads as its own prop (#3501): a bare `props.X` read, or
- * a body destructure with a default, but not a source-written
- * `const X = props.X ?? d`, whose default the prop does not carry.
+ * an un-renamed body destructure (with or without a default), but not a
+ * hand-written `const X = props.X ?? d`, whose default the prop does not
+ * carry. The destructure is told apart by the analyzer's
+ * `ConstantInfo.propsDestructure`, not by the initializer text.
  */
-function aliasOf(body: string): boolean {
+function constOf(body: string, name = 'label') {
   const ctx = analyzeComponent(
-    `'use client'\nexport function S(props: { label?: string }) {\n  ${body}\n  return <p>{label}</p>\n}`,
+    `'use client'\nexport function S(props: { label?: string }) {\n  ${body}\n  return <p>{${name}}</p>\n}`,
     'S.tsx',
   )
-  const c = ctx.localConstants.find(x => x.name === 'label')!
-  return isPropsAliasConst(c, ctx.propsObjectName, ctx.propsParams)
+  return { c: ctx.localConstants.find(x => x.name === name)!, propsObjectName: ctx.propsObjectName }
+}
+
+function aliasOf(body: string, name = 'label'): boolean {
+  const { c, propsObjectName } = constOf(body, name)
+  return isPropsAliasConst(c, propsObjectName)
 }
 
 describe('isPropsAliasConst', () => {
@@ -26,8 +32,18 @@ describe('isPropsAliasConst', () => {
     expect(aliasOf("const { label = 'Default' } = props")).toBe(true)
   })
 
-  test('a source-written `?? default` const is not the prop', () => {
+  test('a hand-written `?? default` const is not the prop', () => {
     expect(aliasOf("const label = props.label ?? 'Default'")).toBe(false)
+  })
+
+  test('a renamed destructure binding is not an alias of a prop of its own name', () => {
+    expect(aliasOf('const { label: text } = props', 'text')).toBe(false)
+  })
+
+  test('the analyzer records a body destructure on the const, and only that', () => {
+    expect(constOf("const { label = 'Default' } = props").c.propsDestructure).toEqual({ sourceKey: 'label' })
+    expect(constOf('const { label: text } = props', 'text').c.propsDestructure).toEqual({ sourceKey: 'label' })
+    expect(constOf("const label = props.label ?? 'Default'").c.propsDestructure).toBeUndefined()
   })
 
   test('a read of another prop or a derived value is not the prop', () => {
@@ -35,6 +51,6 @@ describe('isPropsAliasConst', () => {
   })
 
   test('no props object means no alias', () => {
-    expect(isPropsAliasConst({ name: 'label', value: 'props.label' }, null, [])).toBe(false)
+    expect(isPropsAliasConst(constOf('const label = props.label').c, null)).toBe(false)
   })
 })

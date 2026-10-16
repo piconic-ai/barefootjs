@@ -750,7 +750,7 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
       }
       for (const m of ctx.analyzer.memos) shadowed.add(m.name)
       for (const c of ctx.analyzer.localConstants) {
-        if (!isPropsAliasConst(c, ctx.analyzer.propsObjectName, ctx.analyzer.propsParams)) shadowed.add(c.name)
+        if (!isPropsAliasConst(c, ctx.analyzer.propsObjectName)) shadowed.add(c.name)
       }
     }
     const eligible = ctx.analyzer.propsParams.filter(p => !shadowed.has(p.name))
