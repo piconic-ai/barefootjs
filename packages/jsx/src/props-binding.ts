@@ -144,10 +144,11 @@ export function resolveBodyDestructuredPropAliases(
  * Foo(props: Props)`) whose value is a PURE alias of a single caller-facing
  * prop — either a body destructure (`const { value } = props`, `const {
  * label = 'none' } = props`) or an equivalent bare member read (`const label
- * = props.label ?? 'fallback'`); the analyzer's IR can't distinguish the two
- * shapes (both parse to the same `ConstantInfo`), and neither can this
- * resolver — see `resolveBodyAliasReads`'s (`rewrite-destructured-props.ts`)
- * docstring for why that's the right call.
+ * = props.label ?? 'fallback'`). Both shapes share the same `value` text;
+ * the IR tells them apart via `ConstantInfo.propsDestructure` (#3501), but
+ * this resolver deliberately treats them alike — see
+ * `rewriteBodyAliasReads`'s (`rewrite-destructured-props.ts`) docstring for
+ * why that's the right call.
  */
 export interface BodyPropAlias {
   /** Caller-facing prop key (`props.<key>`). */
