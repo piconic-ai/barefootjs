@@ -1,5 +1,14 @@
 # @barefootjs/perl
 
+## 0.39.6
+
+### Patch Changes
+
+- dd5603e: A boolean stringified in a template (`String(flag)`, a template literal, a boolean loop key) now renders `true` / `false` instead of Perl's `1` / `0`. The runtime's `string` helper prints a JSON boolean as JS does, and template-literal substitutions go through it.
+- 0be5498: `bf->length` on a hash ref now returns its own `length` property (undef when it has none) instead of `0`, so an object row's `length` field read in a filter predicate (`rows().filter(r => r.length > 2)`) keeps the matching rows.
+- f7beddf: The evaluator computes and prints numbers as IEEE doubles on a perl built with `-Duselongdouble` or `-Dusequadmath`. Such a perl keeps a wider NV, so `0.1 + 0.2` printed `0.3` instead of JS's `0.30000000000000004` and `t/evaluator.t` failed there (#3445). Numbers are now rounded to a double where they enter the evaluator, after each arithmetic step, and before formatting; with an 8-byte NV this changes nothing.
+- 555f308: Mojolicious and Xslate templates compute `+ - * /` through new runtime helpers (`bf->add` / `subtract` / `multiply` / `divide`) instead of Perl's native operators, so the result is the IEEE double JS computes: an integer sum past 2**53 rounds as a double, a perl built with `-Duselongdouble` or `-Dusequadmath` no longer keeps extra precision (`0.1 + 0.2` is `0.30000000000000004` there too), and dividing by zero yields `Infinity` / `NaN` instead of dying. `bf->to_fixed` scales at double precision, so `(1.005).toFixed(2)` is `1.00` on such perls as well.
+
 ## 0.39.5
 
 ### Patch Changes
