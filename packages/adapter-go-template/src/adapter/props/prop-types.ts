@@ -162,6 +162,11 @@ function collectToFixedPropNames(root: IRNode, propsObject: string | null | unde
  */
 export const NULLISH_SCALAR_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
 
+/** The parsed initializers of a component's own (non-module) consts. */
+function computedConstInitializers(ir: ComponentIR): unknown[] {
+  return (ir.metadata.localConstants ?? []).filter(c => !c.isModule).map(c => c.parsed)
+}
+
 /**
  * Names of OPTIONAL props consumed nullish-sensitively — the left operand of
  * a `??` anywhere in the component's parsed expression trees, or a signal's
@@ -240,9 +245,7 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   walk(ir.root)
   // A computed const reads as its initializer in the template (#3494), so a
   // `props.X ?? d` there is consumed like one written in place.
-  for (const constant of ir.metadata.localConstants ?? []) {
-    if (!constant.isModule) walk(constant.parsed)
-  }
+  walk(computedConstInitializers(ir))
 
   // Signal seeds (`createSignal(props.X ?? 1)`) live in metadata, not the
   // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
