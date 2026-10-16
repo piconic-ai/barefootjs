@@ -1,5 +1,29 @@
 # @barefootjs/go-template
 
+## 0.39.6
+
+### Patch Changes
+
+- 722fb34: A template expression whose `.map` / `.filter` / `.reduce` (or other higher-order) callback reads its index or array parameter, such as `items.map((x, i) => i)`, now fails with BF101 on the DSL adapters. Before, the index was read from an unrelated template variable of the same name, or left undefined. Add `/* @client */` to evaluate it on the client. A `.map` / `.filter` nested inside another callback keeps its index where the runtime evaluator runs that callback (`rows.map(r => r.map((x, i) => i).join(','))`).
+  
+  The DSL adapters lower higher-order callbacks through one shared chain in `@barefootjs/jsx` (`lowerCallbackMethod`). Its BF101 messages now read the same on every adapter apart from the adapter's name. ERB and Mojolicious used different wording, and the Rust adapter called itself "Jinja".
+- b0de815: `.length` on a loop item's field inside a `.filter()` predicate (`items().filter(i => i.name.length > 2)`, `i.tags.length > 0`) now reads the field's length instead of matching nothing. A signal seeded with an object literal that holds an empty array field (`{ name: 'a', tags: [] }`) is no longer baked as `nil` as a whole.
+- 307e8e4: A child component's `number` prop that a caller in the same file passes a fractional value (a literal `value={2.25}`, a signal seeded with a fraction, an object signal's fractional field, a division, a loop row's fractional field) is now typed `float64`. It defaulted to `int`, so a literal failed `go run` and an evaluated value truncated (`2.5` rendered `2`). A prop that only receives integers keeps `int`.
+- b9a3da2: A `number` field of a named object type that a signal seed gives a fractional literal (`createSignal<User>({ age: 2.5 })`, an array element's `price: 1.25`) is now typed `float64`, so the generated constructor compiles and renders `2.5`. The field defaulted to `int`; integer-only fields keep it. A `number` memo computed by the runtime evaluator over such a field (`u().age! * 3`) now keeps its fraction (`7.5`) instead of truncating into an `int` field; a memo whose body is structurally an integer (a `.length` read) stays `int`.
+- 8771f1d: A `ref`-callback portal element inside a loop row now renders at the `{{.Portals.Render}}` outlet with `bf-po` and its row key, matching the other adapters, instead of inline in its row. The element renders through a companion define (`bf_tmpl` + `bf_portal_scope`) that receives the row, the loop variables it reads and the root.
+- 7f27c57: A child prop bound to an object signal's field (`<Child name={u().name!} age={u().age!} />`) now receives the field's SSR value instead of being left out of the child's Input. A child prop value inside the evaluator's surface is computed by `bf.EvalExpr` over the parent's seeds and converted to the child field's Go type, which unboxes a field typed `interface{}` for a concrete child prop. The same conversion now gives an `int`-typed memo its evaluated value.
+- 71d82c4: A memo computed from an object signal's field (`createMemo(() => u().name ?? 'x')`, `(u().age ?? 0) + 1`, `u().name!.toUpperCase()`) now bakes its SSR value. The constructor matched memo bodies against a fixed set of shapes and baked `nil` for any other; a body inside the evaluator's surface is now computed by `bf.EvalExpr` over the seeds of the signals, memos and props it reads.
+- c5e87b7: An object signal's missing optional field read where `undefined` is observable (`data-name={user()?.name}`, `user().name ?? 'x'`) now omits the attribute or takes the fallback, instead of rendering the field's zero value. Such fields are now `interface{}` with `omitempty`.
+- fc58732: An omitted optional scalar prop read through an optional chain (`props.text?.length`) now renders empty instead of `0`, and the hydration payload omits it. Such props are now typed `interface{}`, so the nil guard sees the absent value.
+- fb45d18: A parenthesized computed-const loop source (`(entries).map(…)`) is refused with BF101 like the bare one. The computed-const gate now reads the loop source from its parsed tree, so the parentheses no longer hide the const, and Go Template and ERB stop compiling a loop over a variable the template never binds. The BF101 message names the const rather than the source text.
+- 4bb31ff: An optional-chained method call (`props.n?.toFixed(2)`, `props.s?.toUpperCase()`) on an absent value now renders empty on every adapter, alone and under a `??` fallback. A present `0` or `''` still calls the method, and `''` survives the `??`.
+  
+  - The parser lowers the call to a `recv === null || recv === undefined ? undefined : recv.m(...)` guard.
+  - Mojolicious emits `x === null` / `x === undefined` as `!defined(x)`; the numeric `== undef` it emitted before also matched `0`.
+  - Twig tests a conditional left operand of `??` with `is null`, because its native `??` only accepts a variable.
+  - Go: an optional prop that is the receiver of such a call becomes nillable, an equality against `undefined` lowers to a nil test, the guard under `??` goes through `bf_nullish`, and a `.toFixed()` receiver written `props.x` is typed `float64`. The runtime's string helpers (`bf_upper`, `bf_trim`, …) accept any receiver, because a template pipeline also evaluates the discarded branch on a nil receiver.
+- @barefootjs/shared@0.39.6
+
 ## 0.39.5
 
 ### Patch Changes
