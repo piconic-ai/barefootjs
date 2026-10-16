@@ -64,7 +64,11 @@ export function PostList(props: PostListProps) {
   // Normalize a trailing slash so a caller passing `/blog/` can't produce
   // `//posts/...`. `root` is the index path (`/` when mounted at the site root),
   // so query-only links stay absolute (`/?sort=...`) rather than relative.
-  const base = (props.base ?? '').replace(/\/+$/, '')
+  // Spelled with `endsWith`/`slice` rather than a regex `.replace`: the
+  // template adapters read these consts as their initializers (#3494), and
+  // only the string-pattern form of `.replace` lowers there.
+  const mount = props.base ?? ''
+  const base = mount.endsWith('/') ? mount.slice(0, -1) : mount
   const root = base || '/'
   // Inlined as ternaries at each call site (rather than a local
   // `sortClass`/`tagClass` helper closure) so the class expression is a
