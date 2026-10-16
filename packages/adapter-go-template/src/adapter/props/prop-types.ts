@@ -238,6 +238,11 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
     for (const value of Object.values(rec)) walk(value)
   }
   walk(ir.root)
+  // A computed const reads as its initializer in the template (#3494), so a
+  // `props.X ?? d` there is consumed like one written in place.
+  for (const constant of ir.metadata.localConstants ?? []) {
+    if (!constant.isModule) walk(constant.parsed)
+  }
 
   // Signal seeds (`createSignal(props.X ?? 1)`) live in metadata, not the
   // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
