@@ -29,12 +29,15 @@ export interface ComputedConstContext {
   propsBindings: ReadonlySet<string>
   /** Whether a loop row or callback binds `name` where the expression is read. */
   isShadowed(name: string): boolean
+  /** Whether the adapter binds the const `name` itself, so a read of it stays as written. */
+  isAdapterBound(name: string): boolean
 }
 
 /** The {@link ComputedConstContext} fields that come from the component's metadata. */
 export function computedConstContext(
   metadata: IRMetadata,
   isShadowed: (name: string) => boolean,
+  isAdapterBound: (name: string) => boolean = () => false,
 ): ComputedConstContext {
   return {
     constants: metadata.localConstants,
@@ -42,6 +45,7 @@ export function computedConstContext(
     contextConsumers: new Set(collectContextConsumers(metadata).map(c => c.localName)),
     propsBindings: propsBindingNames(metadata),
     isShadowed,
+    isAdapterBound,
   }
 }
 
@@ -116,6 +120,7 @@ export function inlineComputedConstAttr(value: ExpressionAttr, ctx: ComputedCons
 /** The initializer of a const read `name` stands for, or `null` when the read stays as it is. */
 function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedExpr | null {
   if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
+  if (ctx.isAdapterBound(name)) return null
   const constant = ctx.constants?.find(c => c.name === name)
   const init = constant?.parsed
   if (!constant || !init || !isPlainComputedConst(constant, init)) return null

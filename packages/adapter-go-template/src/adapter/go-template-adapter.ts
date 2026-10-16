@@ -259,6 +259,15 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
  * a string concat, which `bf_string` passes through unchanged). */
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
 
+/** Go field names a derived-const field must not take: props, signals and memos already own them. */
+function derivedConstTakenFieldNames(ir: ComponentIR): Set<string> {
+  return new Set<string>([
+    ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+    ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
+    ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
+  ])
+}
+
 /**
  * Whether a member access is a numeric index (`row[0]`): an element read on
  * an array, which Go reaches through `bf_get`, never a `.Field0` field.
@@ -646,7 +655,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
-    this.state.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
+    this.state.computedConsts = computedConstContext(
+      ir.metadata,
+      name => this.scope.isBound(name),
+      name => this.bakesDerivedConstField(name, ir),
+    )
     // #2813: precompute which local consts are bare alias-hop chains onto a
     // signal/memo getter, so `rootFieldRef` can route a call through the
     // getter's OWN field instead of registering a separate, never-seeded
@@ -2799,11 +2812,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Computed derived-const fields (`Root: func() string { … }()`), matching
     // `generatePropsStruct`.
-    const takenDerivedInit = new Set<string>([
-      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
-      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
-      ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
-    ])
+    const takenDerivedInit = derivedConstTakenFieldNames(ir)
     for (const f of this.computeDerivedConstFields(takenDerivedInit)) {
       lines.push(`\t\t${f.name}: ${f.init},`)
     }
@@ -4783,11 +4792,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Computed fields for component-scope derived string consts the template
     // references (e.g. `root = base || '/'`). Not serialised — the route handler
     // doesn't supply them; `NewXxxProps` computes them.
-    const takenForDerivedConsts = new Set<string>([
-      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
-      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
-      ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
-    ])
+    const takenForDerivedConsts = derivedConstTakenFieldNames(ir)
     for (const f of this.computeDerivedConstFields(takenForDerivedConsts)) {
       lines.push(`\t${f.name} string \`json:"-"\``)
     }
@@ -6309,6 +6314,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     // Env-signal binding (incl. an alias) → canonical `.SearchParams`.
     return this.searchParamsFieldRef(name) ?? this.rootFieldRef(name)
+  }
+
+  /**
+   * Whether `NewXxxProps` computes the derived string const `name` into its
+   * own field (`computeDerivedConstFields`), so the template reads `.Root`
+   * instead of the const's initializer (#1945, #3494). A const whose field
+   * name a prop, signal or memo field already takes is inlined instead.
+   */
+  private bakesDerivedConstField(name: string, ir: ComponentIR): boolean {
+    if (derivedConstTakenFieldNames(ir).has(capitalizeFieldName(name))) return false
+    const c = this.findValuedLocalConst(name)
+    if (!c?.value || !c.parsed || c.isModule || c.containsArrow) return false
+    if (!this.isStringExpr(c.parsed, new Set())) return false
+    const init = lowerCtorExpr(this.emitCtx, c.parsed, { searchParamsVars: new Set(), params: new Map(), consts: new Set([name]) })
+    return init !== null
   }
 
   /**
