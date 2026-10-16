@@ -140,8 +140,9 @@ function collectNullableNumberProps(ir: ComponentIR): ReadonlySet<string> {
  *
  * - a read of a nullable signal or of a memo whose type or body can be
  *   nullish (`label()` with `label = createMemo(() => s())`);
- * - an optional member read (`user()?.name`), or a member read of a value
- *   that can itself be nullish;
+ * - an optional member read (`user()?.name`), an index or computed-key read
+ *   (`pair[1]`, `row[key]`), or a member read of a value that can itself be
+ *   nullish;
  * - a ternary branch, or an `??` / `||` / `&&` operand the result can be;
  * - a literal `undefined` / `null`.
  *
@@ -178,10 +179,12 @@ export function attrValueMayBeNullish(
         visiting.delete(getter)
         return result
       }
+      // A computed key or an index (`pair[1]`, `row[key]`) reads `undefined`
+      // when it is out of range or absent (#3497).
       case 'member':
-        return expr.optional || walk(expr.object, shadowed)
+        return expr.optional || expr.computed || walk(expr.object, shadowed)
       case 'index-access':
-        return walk(expr.object, shadowed)
+        return true
       case 'conditional':
         return walk(expr.consequent, shadowed) || walk(expr.alternate, shadowed)
       case 'logical':

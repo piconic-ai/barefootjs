@@ -8,7 +8,9 @@ import { createFixture } from '../src/types'
  *
  * Go Template lowered every such read to a struct field (`.Field0`), which
  * is no field of a `[]string`, so html/template failed the render; a
- * condition emitted `.Groups.0.0`, which does not parse (#3497).
+ * condition emitted `.Groups.0.0`, which does not parse (#3497). An
+ * out-of-range index reads `undefined`, so the attribute it fills is
+ * omitted, as Hono does (the generated `gen:pair:empty` point).
  */
 export const fixture = createFixture({
   id: 'array-element-index',
@@ -17,8 +19,8 @@ export const fixture = createFixture({
 export function ArrayElementIndex({ pair, groups }: { pair: string[]; groups: string[][] }) {
   return (
     <div>
-      <p data-second={pair[1]}>{pair[0]}-{groups[0][1]}</p>
-      {groups[1][0] === 'c' ? <i>third</i> : <i>other</i>}
+      <p data-second={pair[1]}>{pair[0]}-{groups.length > 0 ? groups[0][1] : ''}</p>
+      {groups.length > 1 && groups[1][0] === 'c' ? <i>third</i> : <i>other</i>}
       <ul>
         {groups.map((entries) => (
           <li key={entries[0]} data-last={entries[1]}>
@@ -34,22 +36,22 @@ export function ArrayElementIndex({ pair, groups }: { pair: string[]; groups: st
 `,
   props: { pair: ['x', 'y'], groups: [['a', 'b'], ['c', 'd']] },
   expectedHtml: `
-    <div bf-s="test" bf="s10">
-      <p bf="s2" data-second="y"><!--bf:s0-->x<!--/-->-<!--bf:s1-->b<!--/--></p>
-      <i bf-c="s3">third</i>
-      <ul bf="s9">
-        <li bf="s8" data-key="a" data-last="b">
-          <!--bf:s4-->a<!--/-->
-          <u bf-c="s5">b</u>
-          <b bf="s7" data-key-1="a" title="a"><!--bf:s6-->a<!--/--></b>
-          <b bf="s7" data-key-1="b" title="a"><!--bf:s6-->b<!--/--></b>
+    <div bf-s="test" bf="s11">
+      <p bf="s3" data-second="y"><!--bf:s0-->x<!--/-->-<!--bf-cond-start:s1--><!--bf:s2-->b<!--/--><!--bf-cond-end:s1--></p>
+      <i bf-c="s4">third</i>
+      <ul bf="s10">
+        <li bf="s9" data-key="a" data-last="b">
+          <!--bf:s5-->a<!--/-->
+          <u bf-c="s6">b</u>
+          <b bf="s8" data-key-1="a" title="a"><!--bf:s7-->a<!--/--></b>
+          <b bf="s8" data-key-1="b" title="a"><!--bf:s7-->b<!--/--></b>
         </li>
-        <li bf="s8" data-key="c" data-last="d">
-          <!--bf:s4-->c<!--/-->
-          <!--bf-cond-start:s5-->
-          <!--bf-cond-end:s5-->
-          <b bf="s7" data-key-1="c" title="c"><!--bf:s6-->c<!--/--></b>
-          <b bf="s7" data-key-1="d" title="c"><!--bf:s6-->d<!--/--></b>
+        <li bf="s9" data-key="c" data-last="d">
+          <!--bf:s5-->c<!--/-->
+          <!--bf-cond-start:s6-->
+          <!--bf-cond-end:s6-->
+          <b bf="s8" data-key-1="c" title="c"><!--bf:s7-->c<!--/--></b>
+          <b bf="s8" data-key-1="d" title="c"><!--bf:s7-->d<!--/--></b>
         </li>
       </ul>
     </div>

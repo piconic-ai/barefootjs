@@ -180,6 +180,9 @@ function kolonStringLiteral(s: string): string {
   return `'${escapeKolonSingleQuoted(s)}'`
 }
 
+/** A Kolon string or number literal, the whole of a lowered value. */
+const KOLON_LITERAL = /^(?:'(?:[^'\\]|\\.)*'|-?\d+(?:\.\d+)?)$/
+
 /**
  * The `XslateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
@@ -1349,7 +1352,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
           const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
           const v = this.convertExpressionToKolon(value.expr, mixedParsed)
-          if (plan.kind === 'plain') return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          // A literal is never nil, and Text::Xslate folds `defined` of a
+          // local bound to a string literal to false, which would drop the
+          // attribute (a computed-key read resolved at compile time, #3497).
+          if (plan.kind === 'plain' || KOLON_LITERAL.test(v)) {
+            return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          }
           const tmp = `$bf_pu${this.presenceVarCounter++}`
           return `\n: my ${tmp} = ${v};\n: if (defined ${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
         }
