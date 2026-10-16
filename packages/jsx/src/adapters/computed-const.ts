@@ -114,16 +114,19 @@ export function inlineComputedConstAttr(value: ExpressionAttr, ctx: ComputedCons
   if (!ctx) return value
   const parsed = value.parsed ?? parseExpression(value.expr.trim())
   const inlined = inlineComputedConsts(parsed, ctx)
-  return inlined === parsed ? value : { ...value, expr: stringifyParsedExpr(inlined), parsed: inlined }
+  if (inlined === parsed) return value
+  // `templateExpr` and `parts` are derived from the original `expr`; dropped
+  // so no consumer reads the const's name through them.
+  return { ...value, expr: stringifyParsedExpr(inlined), parsed: inlined, templateExpr: undefined, parts: undefined }
 }
 
 /** The initializer of a const read `name` stands for, or `null` when the read stays as it is. */
 function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedExpr | null {
-  if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
-  if (ctx.isAdapterBound(name)) return null
   const constant = ctx.constants?.find(c => c.name === name)
   const init = constant?.parsed
   if (!constant || !init || !isPlainComputedConst(constant, init)) return null
+  if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
+  if (ctx.isAdapterBound(name)) return null
   // An adapter already inlines a literal const in its own syntax.
   if (lookupLiteralConst(name, ctx.constants, ctx.isShadowed) !== null) return null
   // A free name the read site rebinds would be captured by the substitution.

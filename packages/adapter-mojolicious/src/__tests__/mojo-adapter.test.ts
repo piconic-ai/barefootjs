@@ -327,7 +327,7 @@ function Widget({ items }: { items: object[] }) {
   return <ul>{items.map((attrs) => <li {...attrs} />)}</ul>
 }
 `)
-    expect(template).toContain('bf->spread_attrs($other)')
+    expect(template).toContain('bf->spread_attrs($attrs)')
     expect(template).not.toContain("'data-on' => 'outer'")
   })
 })

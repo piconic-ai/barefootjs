@@ -162,9 +162,15 @@ function collectToFixedPropNames(root: IRNode, propsObject: string | null | unde
  */
 export const NULLISH_SCALAR_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
 
-/** The parsed initializers of a component's own (non-module) consts. */
+/**
+ * The parsed initializers of a component's own (non-module) value consts,
+ * the ones a template reads as their initializer (#3494); a function or JSX
+ * const is never inlined, so a `??` in its body consumes nothing here.
+ */
 function computedConstInitializers(ir: ComponentIR): unknown[] {
-  return (ir.metadata.localConstants ?? []).filter(c => !c.isModule).map(c => c.parsed)
+  return (ir.metadata.localConstants ?? [])
+    .filter(c => !c.isModule && !c.containsArrow && !c.isFunctionValue && !c.isJsx && !c.isJsxFunction)
+    .map(c => c.parsed)
 }
 
 /**

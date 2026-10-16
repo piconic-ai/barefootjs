@@ -655,10 +655,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
+    const bakedFields = new Map<string, boolean>()
     this.state.computedConsts = computedConstContext(
       ir.metadata,
       name => this.scope.isBound(name),
-      name => this.bakesDerivedConstField(name, ir),
+      name => {
+        if (!bakedFields.has(name)) bakedFields.set(name, this.bakesDerivedConstField(name, ir))
+        return bakedFields.get(name) === true
+      },
     )
     // #2813: precompute which local consts are bare alias-hop chains onto a
     // signal/memo getter, so `rootFieldRef` can route a call through the
