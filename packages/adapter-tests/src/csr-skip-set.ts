@@ -34,6 +34,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // #3473: the same function-scope computed const as `static-array-from-props`,
   // parenthesized; the template array is `[]` there too.
   'computed-const-loop-source-parenthesized',
+  // #3494: the same computed const (`Object.keys(labels)`) read outside a
+  // loop; SSR refuses it on the template adapters and the CSR template has
+  // no value for it either.
+  'computed-const-read-unlowerable',
+  // #3501: the CSR template reads a const that shadows a prop of the same
+  // name as the prop, so the const's `?? 'Default'` never applies.
+  'computed-const-shadows-prop',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',

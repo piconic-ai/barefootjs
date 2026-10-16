@@ -82,6 +82,11 @@ export const conformancePins: ConformancePins = {
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],
+  // The same refusal reached through a computed const read outside a loop:
+  // the const reads as its initializer (#3494).
+  'computed-const-read-unlowerable': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // A loop over a static LITERAL array (module- or function-scope `const`)
   // whose row renders a child component anywhere but as the row root
   // (inside an element, a conditional branch or a nested loop) refuses with

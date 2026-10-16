@@ -16,6 +16,7 @@
 
 import type {
   CompilerError,
+  ComputedConstContext,
   ContextConsumer,
   EnvSignalReader,
   IRMetadata,
@@ -226,6 +227,8 @@ export class CompileState {
    * reads its `steps` directly instead of re-deriving from `metadata`.
    */
   ssrSeedPlan: SsrSeedPlan = { baseScope: [], steps: [] }
+  /** The component's computed consts, inlined where a template or a memo body reads them (#3494). */
+  computedConsts: ComputedConstContext | null = null
 
   /**
    * Memo name → the hoisted Go local variable name the constructor assigned

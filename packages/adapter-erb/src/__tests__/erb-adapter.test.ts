@@ -722,7 +722,8 @@ export function IndexAccessRenamedProp(props: { fallbackKey: string }) {
 }
 `)
     const { template } = new ErbAdapter().generate(ir)
-    expect(template).toContain('bf.get(v[:labels], v[:skipKey])')
+    // The renamed binding reads as the prop it renames (#3494).
+    expect(template).toContain('bf.get(v[:labels], v[:fallbackKey])')
   })
 })
 

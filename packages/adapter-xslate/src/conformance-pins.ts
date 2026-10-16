@@ -82,6 +82,11 @@ export const conformancePins: ConformancePins = {
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],
+  // The same refusal reached through a computed const read outside a loop:
+  // the const reads as its initializer (#3494).
+  'computed-const-read-unlowerable': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // #2038: Kolon has no inline `grep` form (unlike mojo, which lowers a
   // nested `.some` to a real inline Perl `grep`) — loud BF101 instead of the
   // old silent degradation to the receiver.

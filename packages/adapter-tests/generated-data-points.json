@@ -1237,6 +1237,170 @@
       }
     }
   ],
+  "computed-const-nullish-memo-arithmetic": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "computed-const-read": [
+    {
+      "name": "gen:variant:empty",
+      "props": {
+        "variant": "",
+        "n": 3,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:variant:markup",
+      "props": {
+        "variant": "<b>&\"'</b>",
+        "n": 3,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:variant:multibyte",
+      "props": {
+        "variant": "日本語",
+        "n": 3,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "variant": "primary",
+        "n": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "variant": "primary",
+        "n": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "variant": "primary",
+        "n": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "variant": "primary",
+        "n": 3,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "variant": "primary",
+        "n": 3,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "variant": "primary",
+        "n": 3,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "variant": "primary",
+        "n": 3,
+        "items": []
+      }
+    }
+  ],
+  "computed-const-read-unlowerable-precomputed": [
+    {
+      "name": "gen:entries:empty",
+      "props": {
+        "entries": []
+      }
+    }
+  ],
+  "computed-const-shadows-prop": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "conditional-branch-sigil-text": [
     {
       "name": "gen:on:true",

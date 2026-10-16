@@ -1890,6 +1890,118 @@
         "text"
       ]
     },
+    "computed-const-nullish-memo-arithmetic": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:*",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "computed-const-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "computed-const-read-unlowerable": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "computed-const-read-unlowerable-client": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "computed-const-read-unlowerable-precomputed": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "computed-const-shadows-prop": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "cond-arm-tag-collision": {
       "kinds": [
         "array-literal",

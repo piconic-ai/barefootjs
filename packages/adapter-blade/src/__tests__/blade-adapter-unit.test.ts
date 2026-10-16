@@ -785,7 +785,7 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    expect(result.template).toContain("data_get($t, 'label') . $skipLabel")
+    expect(result.template).toContain("data_get($t, 'label') . $fallbackLabel")
   })
 })
 

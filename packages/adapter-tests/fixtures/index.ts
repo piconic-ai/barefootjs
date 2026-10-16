@@ -681,6 +681,12 @@ import { fixture as arrayElementIndex } from './array-element-index'
 import { fixture as unloweredMethodCall } from './unlowered-method-call'
 import { fixture as unloweredMethodCallPrecomputed } from './unlowered-method-call-precomputed'
 import { fixture as unloweredMethodCallClient } from './unlowered-method-call-client'
+import { fixture as computedConstRead } from './computed-const-read'
+import { fixture as computedConstShadowsProp } from './computed-const-shadows-prop'
+import { fixture as computedConstNullishMemoArithmetic } from './computed-const-nullish-memo-arithmetic'
+import { fixture as computedConstReadUnlowerable } from './computed-const-read-unlowerable'
+import { fixture as computedConstReadUnlowerablePrecomputed } from './computed-const-read-unlowerable-precomputed'
+import { fixture as computedConstReadUnlowerableClient } from './computed-const-read-unlowerable-client'
 import { fixture as computedConstLoopSourceParenthesized } from './computed-const-loop-source-parenthesized'
 import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './computed-const-loop-source-parenthesized-precomputed'
 import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
@@ -1477,6 +1483,12 @@ export const jsxFixtures: JSXFixture[] = [
   unloweredMethodCall,
   unloweredMethodCallPrecomputed,
   unloweredMethodCallClient,
+  computedConstRead,
+  computedConstShadowsProp,
+  computedConstNullishMemoArithmetic,
+  computedConstReadUnlowerable,
+  computedConstReadUnlowerablePrecomputed,
+  computedConstReadUnlowerableClient,
   computedConstLoopSourceParenthesized,
   computedConstLoopSourceParenthesizedPrecomputed,
   computedConstLoopSourceParenthesizedClient,

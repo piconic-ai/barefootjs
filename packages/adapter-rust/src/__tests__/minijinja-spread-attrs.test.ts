@@ -108,7 +108,8 @@ function Box({ other }: { other?: object }) {
   return <div {...attrs} />
 }
 `)
-    expect(template).toContain('bf.spread_attrs(attrs)')
+    // The fallthrough reads the computed const as its initializer (#3494).
+    expect(template).toContain('bf.spread_attrs(other)')
   })
 })
 

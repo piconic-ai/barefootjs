@@ -4,7 +4,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 
 	bf "github.com/barefootjs/runtime/bf"
 )
@@ -816,7 +815,6 @@ type PostListProps struct {
 	Base string `json:"base"`
 	Params map[string]interface{} `json:"-"`
 	Visible []Item `json:"-"`
-	Root string `json:"-"`
 	PostListItems []PostListItemProps `json:"-"`
 }
 
@@ -1740,7 +1738,6 @@ func NewPostListProps(in PostListInput) PostListProps {
 		"Tag": in.SearchParams.Get("tag"),
 	},
 		Visible: nil,
-		Root: func() string { v := strings.TrimRight(in.Base, "/"); if v != "" { return v }; return "/" }(),
 	}
 }
 
