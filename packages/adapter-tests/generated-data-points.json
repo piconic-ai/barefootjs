@@ -7267,5 +7267,25 @@
         "placement": "bottom"
       }
     }
+  ],
+  "unlowered-method-call-precomputed": [
+    {
+      "name": "gen:order:zero",
+      "props": {
+        "order": 0
+      }
+    },
+    {
+      "name": "gen:order:negative",
+      "props": {
+        "order": -7
+      }
+    },
+    {
+      "name": "gen:order:large",
+      "props": {
+        "order": 1234567890
+      }
+    }
   ]
 }

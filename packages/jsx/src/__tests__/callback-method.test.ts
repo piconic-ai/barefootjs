@@ -8,6 +8,8 @@ import { describe, test, expect } from 'bun:test'
 import {
   emitCallbackEval,
   lowerCallbackMethod,
+  isUnloweredCall,
+  unloweredCallRefusal,
   type CallbackEvalSpelling,
   type CallbackLoweringOptions,
 } from '../adapters/callback-method'
@@ -185,5 +187,44 @@ describe('unboundCallbackParamRead: the index and array params', () => {
     expect(isSupported(parseExpression('rows.map(r => r.some((x, i) => i > 0))')).supported).toBe(false)
     // The receiver of the outer call is still lowered by the template.
     expect(isSupported(parseExpression('rows.map((r, i) => r.slice(i)).map(r => r.length)')).supported).toBe(false)
+  })
+})
+
+describe('isUnloweredCall (#3493)', () => {
+  function call(source: string): Extract<ParsedExpr, { kind: 'call' }> {
+    const parsed = parseExpression(source)
+    if (parsed.kind !== 'call') throw new Error(`expected a call: ${source}`)
+    return parsed
+  }
+
+  test('a method call with arguments outside the catalogue has no lowering', () => {
+    for (const source of ["s().localeCompare('m')", "props.label.localeCompare('m')", 'label.codePointAt(0)']) {
+      const c = call(source)
+      expect(isUnloweredCall(c.callee, c.args, 'props')).toBe(true)
+    }
+  })
+
+  test('a getter read or a function-valued prop keeps the callee read', () => {
+    for (const source of ['props.value()', 'props.value.v()', 'props.renderNode(node)']) {
+      const c = call(source)
+      expect(isUnloweredCall(c.callee, c.args, 'props')).toBe(false)
+    }
+    // The props parameter's own name, whatever it is.
+    const named = call('p.renderNode(node)')
+    expect(isUnloweredCall(named.callee, named.args, 'p')).toBe(false)
+    expect(isUnloweredCall(named.callee, named.args, null)).toBe(true)
+  })
+})
+
+describe('unloweredCallRefusal (#3493)', () => {
+  test('names the whole call and the adapter, and offers both escapes', () => {
+    const call = parseExpression("s().localeCompare('m')")
+    if (call.kind !== 'call') throw new Error('expected a call')
+    const refusal = unloweredCallRefusal(call.callee, 'Jinja')
+    expect(refusal.message).toBe(
+      "Call 's().localeCompare(...)' has no Jinja template lowering; read as a value it would drop the call and its arguments",
+    )
+    expect(refusal.suggestion).toContain('/* @client */')
+    expect(refusal.suggestion).toContain('pass it as a prop')
   })
 })

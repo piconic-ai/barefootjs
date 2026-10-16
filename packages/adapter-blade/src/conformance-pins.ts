@@ -78,6 +78,11 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A method call no template lowers, outside a callback, refuses rather
+  // than rendering a read of the method name (#3493).
+  'unlowered-method-call': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
+  ],
   // No inline nested-callback form exists in the evaluator-JSON `*_eval`
   // mechanism (this adapter's only higher-order lowering path — see
   // blade-adapter.ts's header, divergence 3): loud BF101 instead of the

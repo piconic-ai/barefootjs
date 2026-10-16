@@ -678,6 +678,9 @@ import { fixture as loopParamShadowsBoolProp } from './loop-param-shadows-bool-p
 import { fixture as loopParamShadowsSpreadConst } from './loop-param-shadows-spread-const'
 import { fixture as loopParamShadowsArrayConst } from './loop-param-shadows-array-const'
 import { fixture as arrayElementIndex } from './array-element-index'
+import { fixture as unloweredMethodCall } from './unlowered-method-call'
+import { fixture as unloweredMethodCallPrecomputed } from './unlowered-method-call-precomputed'
+import { fixture as unloweredMethodCallClient } from './unlowered-method-call-client'
 import { fixture as computedConstLoopSourceParenthesized } from './computed-const-loop-source-parenthesized'
 import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './computed-const-loop-source-parenthesized-precomputed'
 import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
@@ -1471,6 +1474,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsSpreadConst,
   loopParamShadowsArrayConst,
   arrayElementIndex,
+  unloweredMethodCall,
+  unloweredMethodCallPrecomputed,
+  unloweredMethodCallClient,
   computedConstLoopSourceParenthesized,
   computedConstLoopSourceParenthesizedPrecomputed,
   computedConstLoopSourceParenthesizedClient,

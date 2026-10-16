@@ -6708,6 +6708,125 @@
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
           }
         }
+      },
+      "unlowered-method-call": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-method-call-precomputed"
+          }
+        }
       }
     },
     "docs": {
@@ -6943,6 +7062,10 @@
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
       },
+      "unlowered-method-call": {
+        "description": "A method call outside the catalogue, outside a callback, refuses (BF101) instead of rendering a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-method-call.ts"
+      },
       "callback-index-param-client": {
         "description": "A `.map()` callback reading its index, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param-client.ts"
@@ -7082,6 +7205,10 @@
       "static-nested-loop-ref-precomputed": {
         "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
+      },
+      "unlowered-method-call-precomputed": {
+        "description": "prop-precompute twin of unlowered-method-call — the comparison arrives as a prop (#3493)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-method-call-precomputed.ts"
       }
     }
   },
@@ -7717,6 +7844,30 @@
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "unlowered-method-call": {
+      "title": "A method call no template lowers",
+      "kind": "refusal",
+      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`) outside any higher-order callback",
+      "expected": "the method runs and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "unlowered-method-call"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ],
       "diagnostics": [
         "BF101"

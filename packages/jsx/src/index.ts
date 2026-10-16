@@ -145,6 +145,8 @@ export {
   isPredicateMethod,
   lowerCallbackMethod,
   nestedCallbackRefusal,
+  isUnloweredCall,
+  unloweredCallRefusal,
   sortEvalPlan,
   sortRefusal,
 } from './adapters/callback-method.ts'

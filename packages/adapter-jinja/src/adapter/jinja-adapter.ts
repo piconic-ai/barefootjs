@@ -1511,6 +1511,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   private get emitCtx(): JinjaEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _propsObjectName: this.propsObjectName,
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),

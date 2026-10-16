@@ -3798,6 +3798,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -3981,6 +3987,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -4226,6 +4238,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -4421,6 +4439,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -4618,6 +4642,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -4801,6 +4831,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -4998,6 +5034,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -5194,6 +5236,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -5383,6 +5431,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -5912,6 +5966,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -6131,6 +6191,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -6448,6 +6514,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -6691,6 +6763,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -6936,6 +7014,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -7167,6 +7251,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -7412,6 +7502,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -7656,6 +7752,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -7894,6 +7996,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         }
@@ -8122,6 +8230,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -8281,6 +8395,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -8514,6 +8634,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -8680,6 +8806,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -8845,6 +8977,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -9018,6 +9156,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -9184,6 +9328,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -9349,6 +9499,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -9521,6 +9677,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -9987,6 +10149,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -10164,6 +10332,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -10421,6 +10595,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -10622,6 +10802,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -10825,6 +11011,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -11014,6 +11206,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -11217,6 +11415,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -11419,6 +11623,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -11614,6 +11824,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -16792,6 +17008,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -16885,6 +17107,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -17034,6 +17262,12 @@
               "limitations": [
                 "static-literal-loop-component-row"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -17134,6 +17368,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -17233,6 +17473,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -17340,6 +17586,12 @@
               "limitations": [
                 "boolean-in-static-loop-item"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -17440,6 +17692,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
             }
           ]
         },
@@ -17539,6 +17797,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
@@ -17645,6 +17909,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             }
           ]
