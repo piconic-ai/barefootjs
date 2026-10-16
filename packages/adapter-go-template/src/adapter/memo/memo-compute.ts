@@ -624,9 +624,51 @@ function boxedLiteralArithmeticDep(
 }
 
 /**
+ * The prop a `props.X <+|-|*> N` or `<destructured prop> <+|-|*> N` memo body
+ * reads (`N` a non-negative integer literal), when that prop's input field is
+ * nillable only because of how the component consumes it (a `??`, a bare
+ * attribute, …; `collectNillablePropNames`), not its declared type. Its field
+ * is then `interface{}`, which Go cannot multiply by an int, so the body goes
+ * through the shared runtime helper (`bf.Mul(in.N, 2)`). A prop whose declared
+ * type already lowers to `interface{}` keeps its `.(int)` assertion.
+ */
+function nillablePropArithmeticOperand(
+  ctx: GoEmitContext,
+  body: ParsedExpr | undefined,
+  propsParams: { name: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
+): string | null {
+  if (!body || body.kind !== 'binary' || !['+', '-', '*'].includes(body.op)) return null
+  const right = body.right
+  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
+  if (!Number.isInteger(right.value) || right.value < 0) return null
+  const name = propsMemberName(body.left) ?? (body.left.kind === 'identifier' ? body.left.name : null)
+  const param = name ? propsParams.find(p => p.name === name) : undefined
+  if (!param?.type || !ctx.state.nillablePropNames.has(param.name)) return null
+  return typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed) === 'interface{}' ? null : param.name
+}
+
+/**
+ * `bf.<Op>(in.Field, N)` for a body {@link nillablePropArithmeticOperand}
+ * matches, else null. A hoisted fallback var is a concrete number, so a
+ * prop that has one keeps the plain arithmetic.
+ */
+function boxedNillablePropArithmetic(
+  ctx: GoEmitContext,
+  body: ParsedExpr,
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  const name = nillablePropArithmeticOperand(ctx, body, propsParams)
+  if (name === null || propFallbackVars.has(name) || body.kind !== 'binary') return null
+  const param = propsParams.find(p => p.name === name)
+  const field = capitalizeFieldName(propsMemberName(body.left) ?? param?.sourceName ?? name)
+  return `bf.${BOXED_ARITHMETIC_HELPER[body.op]}(in.${field}, ${String((body.right as { value: number }).value)})`
+}
+
+/**
  * Whether a memo body's constructor value is the shared arithmetic runtime's
  * boxed `any` (`bf.Add` / `bf.Sub` / `bf.Mul` / `bf.Div`) rather than a Go
- * number. Four shapes:
+ * number. Five shapes:
  *
  * - two numeric operands ({@link numericMemoOperands}: `list().length +
  *   count()` → `bf.Add(…)`);
@@ -634,7 +676,9 @@ function boxedLiteralArithmeticDep(
  *   `bf.Mul(<total>, 2)`), recursively along the memo chain;
  * - division of a number read by a positive integer literal
  *   ({@link literalDivisionDividend}: `props.value / 8` → `bf.Div(…)`);
- * - an identity read of a boxed memo (`() => eighth()`), recursively.
+ * - an identity read of a boxed memo (`() => eighth()`), recursively;
+ * - literal arithmetic on a prop whose field is nillable
+ *   ({@link nillablePropArithmeticOperand}: `props.n * 2` → `bf.Mul(in.N, 2)`).
  *
  * The one decision both the memo field's Go type (`interface{}`, so the
  * boxed value assigns) and the constructor emission
@@ -649,6 +693,7 @@ export function isBoxedNumericMemoBody(
 ): boolean {
   if (numericMemoOperands(ctx, body, signals, propsParams)) return true
   if (literalDivisionDividend(ctx, body, propsParams)) return true
+  if (nillablePropArithmeticOperand(ctx, body, propsParams)) return true
   // An identity memo (`() => eighth()`) passes its dependency's boxed value
   // through unchanged, so it is boxed exactly when that memo is.
   const identityDep = body ? getterCallName(body) : null
@@ -1247,16 +1292,10 @@ export function computeMemoInitialValueOrNull(
 
   // Expression-bodied memo shapes, matched structurally on `parsed`.
   if (memo.parsed) {
-    const fromParsed = memoInitialFromParsedBody(
-      ctx,
-      // A computed const the body reads stands for its initializer (#3494).
-      inlineComputedConsts(memo.parsed, ctx.state.computedConsts),
-      signals,
-      propsParams,
-      propFallbackVars,
-      memo.name,
-      resolving,
-    )
+    // A computed const the body reads stands for its initializer (#3494).
+    const body = inlineComputedConsts(memo.parsed, ctx.state.computedConsts)
+    const fromParsed = boxedNillablePropArithmetic(ctx, body, propsParams, propFallbackVars)
+      ?? memoInitialFromParsedBody(ctx, body, signals, propsParams, propFallbackVars, memo.name, resolving)
     if (fromParsed !== null) return fromParsed
   }
 

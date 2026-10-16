@@ -1237,6 +1237,30 @@
       }
     }
   ],
+  "computed-const-nullish-memo-arithmetic": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
   "computed-const-read": [
     {
       "name": "gen:variant:empty",

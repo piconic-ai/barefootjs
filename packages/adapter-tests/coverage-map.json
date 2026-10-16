@@ -1890,6 +1890,28 @@
         "text"
       ]
     },
+    "computed-const-nullish-memo-arithmetic": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:*",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "computed-const-read": {
       "kinds": [
         "binary",
