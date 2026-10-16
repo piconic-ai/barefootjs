@@ -14,7 +14,6 @@ import {
   asCallbackMethodCall,
   bareGetterCallName,
   freeVarsInBody,
-  inlineComputedConsts,
   materializeGetterCalls,
   isNullishLiteral,
   NULL_COERCING_ARITHMETIC_OPS,
@@ -1292,10 +1291,8 @@ export function computeMemoInitialValueOrNull(
 
   // Expression-bodied memo shapes, matched structurally on `parsed`.
   if (memo.parsed) {
-    // A computed const the body reads stands for its initializer (#3494).
-    const body = inlineComputedConsts(memo.parsed, ctx.state.computedConsts)
-    const fromParsed = boxedNillablePropArithmetic(ctx, body, propsParams, propFallbackVars)
-      ?? memoInitialFromParsedBody(ctx, body, signals, propsParams, propFallbackVars, memo.name, resolving)
+    const fromParsed = boxedNillablePropArithmetic(ctx, memo.parsed, propsParams, propFallbackVars)
+      ?? memoInitialFromParsedBody(ctx, memo.parsed, signals, propsParams, propFallbackVars, memo.name, resolving)
     if (fromParsed !== null) return fromParsed
   }
 

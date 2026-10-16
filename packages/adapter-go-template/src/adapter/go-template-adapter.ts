@@ -277,6 +277,26 @@ function isElementIndex(computed: boolean, property: string): boolean {
 }
 
 /**
+ * `ir` with each memo body's computed-const reads replaced by their
+ * initializers (#3494). Applied once, with every other compile state primed,
+ * so the memo field's type, its boxed-arithmetic classification and its
+ * constructor value all read the same body. A memo body is component scope:
+ * no loop binding shadows a const there. A module-scope const stays a name:
+ * the constructor lowering already resolves one (`checkbox`'s
+ * `stateClasses = [...].join(' ')` inside a template-literal memo). `ir`
+ * itself is returned when no memo body reads one.
+ */
+function withInlinedMemoBodies(ir: ComponentIR, isAdapterBound: (name: string) => boolean): ComponentIR {
+  const moduleConsts = new Set((ir.metadata.localConstants ?? []).filter(c => c.isModule).map(c => c.name))
+  const memoConsts = computedConstContext(ir.metadata, () => false, name => moduleConsts.has(name) || isAdapterBound(name))
+  const memos = (ir.metadata.memos ?? []).map(m =>
+    m.parsed ? { ...m, parsed: inlineComputedConsts(m.parsed, memoConsts) } : m,
+  )
+  if (!memos.some((m, i) => m.parsed !== ir.metadata.memos[i].parsed)) return ir
+  return { ...ir, metadata: { ...ir.metadata, memos } }
+}
+
+/**
  * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
  * @since 0.1.0
@@ -623,7 +643,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * drift (`generateTypes` runs on a separately round-tripped IR).
    * `propsObjectName` is set first because the inherited-attr scan keys off it.
    */
-  private primeCompileState(ir: ComponentIR): void {
+  private primeCompileState(ir: ComponentIR): ComponentIR {
     this.state.propsObjectName = ir.metadata.propsObjectName
     this.state.restPropsName = ir.metadata.restPropsName ?? null
     // #2822: this component's OWN import-alias map (local alias -> declared
@@ -655,15 +675,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
-    const bakedFields = new Map<string, boolean>()
-    this.state.computedConsts = computedConstContext(
-      ir.metadata,
-      name => this.scope.isBound(name),
-      name => {
-        if (!bakedFields.has(name)) bakedFields.set(name, this.bakesDerivedConstField(name, ir))
-        return bakedFields.get(name) === true
-      },
-    )
+    const bakesField = this.derivedConstFieldBaker(ir)
+    this.state.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name), bakesField)
     // #2813: precompute which local consts are bare alias-hop chains onto a
     // signal/memo getter, so `rootFieldRef` can route a call through the
     // getter's OWN field instead of registering a separate, never-seeded
@@ -766,7 +779,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.propagateFractionalChildProps(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
+    ir = withInlinedMemoBodies(ir, bakesField)
+    this.state.currentMemos = ir.metadata.memos
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
+    return ir
   }
 
   /**
@@ -803,7 +819,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
-    this.primeCompileState(ir)
+    ir = this.primeCompileState(ir)
     this.state.stringValueNames = collectStringValueNames(ir)
     // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
     // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
@@ -1603,7 +1619,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     // Prime identically to `generate()` so the standalone `generateTypes` entry
     // can't drift the structs (e.g. a `{...props}` bag field in one entry only).
-    this.primeCompileState(ir)
+    ir = this.primeCompileState(ir)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -6318,6 +6334,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     // Env-signal binding (incl. an alias) → canonical `.SearchParams`.
     return this.searchParamsFieldRef(name) ?? this.rootFieldRef(name)
+  }
+
+  /** {@link bakesDerivedConstField} for `ir`, memoized per const name. */
+  private derivedConstFieldBaker(ir: ComponentIR): (name: string) => boolean {
+    const baked = new Map<string, boolean>()
+    return name => {
+      if (!baked.has(name)) baked.set(name, this.bakesDerivedConstField(name, ir))
+      return baked.get(name) === true
+    }
   }
 
   /**
