@@ -2157,8 +2157,13 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
       : new Set(),
   }
   ctx.memos.push(memo)
+  markBlockMemo(memo, blockTyped, body?.node, ctx)
+}
+
+/** Record what `foldBlockMemos` needs to know about a block memo (#3523). */
+function markBlockMemo(memo: MemoInfo, blockTyped: boolean, bodyNode: ts.Node | undefined, ctx: AnalyzerContext): void {
   if (blockTyped) blockTextTypedMemos.add(memo)
-  if (body && containsClientDirective(body.node, ctx.sourceFile)) clientDirectiveMemos.add(memo)
+  if (bodyNode && containsClientDirective(bodyNode, ctx.sourceFile)) clientDirectiveMemos.add(memo)
 }
 
 /**
