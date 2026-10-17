@@ -1956,6 +1956,17 @@ function isFunctionScopeFree(fn: ts.ArrowFunction | ts.FunctionExpression): bool
 }
 
 /**
+ * Whether calling the callback yields its body's value in the callback's
+ * absence: not async (a Promise), not a generator (an iterator), and not
+ * bound to its own scope (`isFunctionScopeFree`).
+ */
+function isValueReturningCallback(fn: ts.ArrowFunction | ts.FunctionExpression): boolean {
+  if (ts.isFunctionExpression(fn) && fn.asteriskToken) return false
+  if (fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return false
+  return isFunctionScopeFree(fn)
+}
+
+/**
  * The expression a memo's callback evaluates to, as the analyzer reads it from
  * the callback node (#3510). A zero-parameter arrow or `function` expression
  * yields its body: the expression body, or the operand of a block that is a
@@ -1969,11 +1980,7 @@ function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean }
   let fn: ts.Expression = callback
   while (ts.isParenthesizedExpression(fn)) fn = fn.expression
   if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return { node: callback, call: true }
-  const plain = fn.parameters.length === 0 &&
-    !(ts.isFunctionExpression(fn) && fn.asteriskToken) &&
-    !fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) &&
-    isFunctionScopeFree(fn)
-  if (!plain) return { node: callback, call: true }
+  if (fn.parameters.length > 0 || !isValueReturningCallback(fn)) return { node: callback, call: true }
   if (!ts.isBlock(fn.body)) return { node: fn.body, call: false }
   const [only] = fn.body.statements
   if (fn.body.statements.length === 1 && ts.isReturnStatement(only) && only.expression) {
@@ -2002,7 +2009,7 @@ function memoStructuredBody(
   // callback are unwrapped (#3510).
   let memoFn: ts.Node | undefined = callback
   while (memoFn && ts.isParenthesizedExpression(memoFn)) memoFn = memoFn.expression
-  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || !isFunctionScopeFree(memoFn))) {
+  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || !isValueReturningCallback(memoFn))) {
     memoFn = undefined
   }
   const parsedBody =

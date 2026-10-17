@@ -39,6 +39,7 @@ import {
   inlineBinding,
   isSupportedValue,
   parseExpression,
+  stringifyParsedExpr,
   type ParsedExpr,
 } from './expression-parser.ts'
 import type { IRMetadata } from './types.ts'
@@ -173,11 +174,11 @@ function resolveThroughLocalConsts(
 
 /**
  * Compute the component's SSR seed plan from its metadata. See the module
- * doc for the contract. Memo steps are gated to memos whose callback returns
- * one expression (`MemoInfo.bodyExpr` is not a call of the whole callback):
- * an arrow expression body, or a block or `function` body that is a single
- * `return`. Any other block-bodied memo is `opaque` even when the analyzer
- * folded it to a `parsed` expression.
+ * doc for the contract. A memo step reads the expression its callback
+ * returns (`MemoInfo.bodyExpr`): an arrow expression body, or a block or
+ * `function` body that is a single `return`. A multi-statement body seeds
+ * from the analyzer's fold of its statements (`MemoInfo.parsed`, #2040,
+ * #3523), and is `opaque` when the fold failed.
  */
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const baseScope: string[] = metadata.propsParams.map(p => p.name)
@@ -238,8 +239,12 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
 
   for (const memo of metadata.memos) {
     // The returned expression, as the analyzer read it from the callback
-    // node (#3510). A body that must be called as a whole is opaque.
-    const expr = memo.bodyExprIsCall ? '' : (memo.bodyExpr?.trim() ?? '')
+    // node (#3510). A body that must be called as a whole seeds from the
+    // analyzer's fold of its statements into one expression when there is
+    // one (#3523), and is opaque otherwise.
+    const expr = memo.bodyExprIsCall
+      ? (memo.parsed ? stringifyParsedExpr(memo.parsed) : '')
+      : (memo.bodyExpr?.trim() ?? '')
     steps.push(
       expr === ''
         ? { kind: 'opaque', name: memo.name, origin: 'memo' }
