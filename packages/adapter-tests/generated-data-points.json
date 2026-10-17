@@ -7524,6 +7524,20 @@
       }
     }
   ],
+  "unlowered-global-call-precomputed": [
+    {
+      "name": "gen:stamp:negative",
+      "props": {
+        "stamp": -7
+      }
+    },
+    {
+      "name": "gen:stamp:large",
+      "props": {
+        "stamp": 1234567890
+      }
+    }
+  ],
   "unlowered-method-call-precomputed": [
     {
       "name": "gen:order:zero",

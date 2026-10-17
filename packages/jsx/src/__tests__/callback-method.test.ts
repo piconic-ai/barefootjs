@@ -197,30 +197,56 @@ describe('isUnloweredCall (#3493)', () => {
     return parsed
   }
 
+  const noGlobals = () => false
+
   test('a method call with arguments outside the catalogue has no lowering', () => {
     for (const source of ["s().localeCompare('m')", "props.label.localeCompare('m')", 'label.codePointAt(0)']) {
       const c = call(source)
-      expect(isUnloweredCall(c.callee, c.args, 'props')).toBe(true)
+      expect(isUnloweredCall(c.callee, c.args, 'props', noGlobals)).toBe(true)
     }
   })
 
   test('a getter read or a function-valued prop keeps the callee read', () => {
     for (const source of ['props.value()', 'props.value.v()', 'props.renderNode(node)']) {
       const c = call(source)
-      expect(isUnloweredCall(c.callee, c.args, 'props')).toBe(false)
+      expect(isUnloweredCall(c.callee, c.args, 'props', noGlobals)).toBe(false)
     }
     // The props parameter's own name, whatever it is.
     const named = call('p.renderNode(node)')
-    expect(isUnloweredCall(named.callee, named.args, 'p')).toBe(false)
-    expect(isUnloweredCall(named.callee, named.args, null)).toBe(true)
+    expect(isUnloweredCall(named.callee, named.args, 'p', noGlobals)).toBe(false)
+    expect(isUnloweredCall(named.callee, named.args, null, noGlobals)).toBe(true)
+  })
+
+  test('a zero-arg call rooted at a global has no lowering (#3505)', () => {
+    const isGlobal = (name: string) => ['Date', 'Math', 'window', 'location'].includes(name)
+    for (const source of ['Date.now()', 'Math.random()', 'window.performance.now()', 'location.toString()', 'Date.now.call()']) {
+      const c = call(source)
+      expect(isUnloweredCall(c.callee, c.args, 'props', isGlobal)).toBe(true)
+    }
+  })
+
+  test('a zero-arg call on a bound name keeps the callee read, even when it is named like a global', () => {
+    // `isGlobal` is false for a prop, a local (`const navigator = useContext(Nav)`) or a loop binding.
+    for (const source of ['ctx.open()', 'navigator.current()', 'document.title()', 'item.label()']) {
+      const c = call(source)
+      expect(isUnloweredCall(c.callee, c.args, 'props', noGlobals)).toBe(false)
+    }
   })
 })
 
 describe('unloweredCallRefusal (#3493)', () => {
+  test('a zero-arg call on a global names the global, not missing arguments (#3505)', () => {
+    const call = parseExpression('Date.now()')
+    if (call.kind !== 'call') throw new Error('expected a call')
+    expect(unloweredCallRefusal(call.callee, call.args, 'Jinja').message).toBe(
+      "Call 'Date.now()' reads a JavaScript global, which has no Jinja template binding; read as a value it would drop the call",
+    )
+  })
+
   test('names the whole call and the adapter, and offers both escapes', () => {
     const call = parseExpression("s().localeCompare('m')")
     if (call.kind !== 'call') throw new Error('expected a call')
-    const refusal = unloweredCallRefusal(call.callee, 'Jinja')
+    const refusal = unloweredCallRefusal(call.callee, call.args, 'Jinja')
     expect(refusal.message).toBe(
       "Call 's().localeCompare(...)' has no Jinja template lowering; read as a value it would drop the call and its arguments",
     )

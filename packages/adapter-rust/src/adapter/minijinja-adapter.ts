@@ -1581,6 +1581,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     return {
       _searchParamsLocals: this._searchParamsLocals,
       _propsObjectName: this.propsObjectName,
+      _isGlobalName: (name: string) => this.computedConsts?.isGlobal(name) ?? false,
       _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
