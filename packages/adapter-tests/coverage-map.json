@@ -6238,11 +6238,11 @@
         "conditional",
         "identifier",
         "literal",
-        "member",
         "unary"
       ],
       "axes": [
         "binary:*",
+        "binary:>",
         "literal:number",
         "literal:string",
         "unary:!"

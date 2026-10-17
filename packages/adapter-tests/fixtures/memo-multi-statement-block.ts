@@ -40,9 +40,10 @@ export function MultiStatementMemo({ label }: { label?: string }) {
 `,
   props: {},
   expectedHtml: `
-    <button bf-s="test" bf="s4">
+    <button bf-s="test" bf="s6">
       <span bf="s1"><!--bf:s0-->6<!--/--></span>
       <span bf="s3"><!--bf:s2-->none<!--/--></span>
+      <span bf="s5"><!--bf:s4-->small<!--/--></span>
     </button>
   `,
   dataPoints: [
