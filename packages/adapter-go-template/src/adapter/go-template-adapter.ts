@@ -10245,13 +10245,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           (e.kind === 'literal' && (e.value === null || e.value === undefined))
         const test = parsed.test
         if (undef(parsed.alternate) && !undef(parsed.consequent)) {
+          // Lower the parsed test. If it renders as a self-contained action
+          // block, lower the whole ternary instead, as before. Never re-read
+          // the test from `value.expr`: slicing at the first `?` cuts a
+          // `?.`, `??` or `'?'` in the test short (#3511).
+          const condTree = this.isTemplateFragment(this.renderParsedExpr(test), test.kind) ? parsed : test
           const { condition: goCond, preamble } = this.convertConditionToGo(
-            // Re-render the test from its source span via the parsed tree. If it
-            // lowered to a self-contained action block, re-parse the whole
-            // ternary source; otherwise slice off the test portion.
-            this.isTemplateFragment(this.renderParsedExpr(test), test.kind)
-              ? value.expr
-              : value.expr.slice(0, value.expr.indexOf('?')).trim(),
+            stringifyParsedExpr(condTree),
+            condTree,
           )
           // #2842 / #2743: a `query` guard-list consequent (queryHref) takes
           // the whole-attribute `bf_attr` route INSIDE the `{{if}}`, so
