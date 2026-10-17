@@ -9383,6 +9383,25 @@
         "text"
       ]
     },
+    "signal-prop-seed-logical-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:&&",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "signal-with-fallback": {
       "kinds": [
         "call",

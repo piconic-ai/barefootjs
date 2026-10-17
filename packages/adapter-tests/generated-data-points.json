@@ -6536,6 +6536,38 @@
       }
     }
   ],
+  "signal-prop-seed-logical-fallback": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:flag:true",
+      "props": {
+        "flag": true
+      }
+    },
+    {
+      "name": "gen:flag:false",
+      "props": {
+        "flag": false
+      }
+    }
+  ],
   "signal-with-fallback": [
     {
       "name": "gen:initial:absent",
