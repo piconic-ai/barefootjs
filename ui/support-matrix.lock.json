@@ -5860,6 +5860,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6116,6 +6122,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6357,6 +6369,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -6676,6 +6694,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6929,6 +6953,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -7188,6 +7218,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7429,6 +7465,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -7688,6 +7730,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7941,6 +7989,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -8244,6 +8298,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8422,6 +8482,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -8591,6 +8657,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -8838,6 +8910,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9016,6 +9094,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9191,6 +9275,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -9378,6 +9468,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9556,6 +9652,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -9731,6 +9833,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -9922,6 +10030,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9944,6 +10058,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9965,6 +10085,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -9994,6 +10120,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10015,6 +10147,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10038,6 +10176,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10059,6 +10203,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10082,6 +10232,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10103,6 +10259,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10190,6 +10352,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -10407,6 +10575,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10606,6 +10780,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -10865,6 +11045,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11076,6 +11262,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -11293,6 +11485,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11492,6 +11690,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -11709,6 +11913,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11920,6 +12130,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -17250,6 +17466,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17362,6 +17584,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17465,6 +17693,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -17628,6 +17862,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17740,6 +17980,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17849,6 +18095,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -17970,6 +18222,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18082,6 +18340,12 @@
               ]
             },
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18191,6 +18455,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
               ]
             },
             {
@@ -18422,6 +18692,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18438,6 +18714,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18453,6 +18735,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
@@ -18476,6 +18764,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18491,6 +18785,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -18508,6 +18808,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18523,6 +18829,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -18540,6 +18852,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18555,6 +18873,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "computed-let-shadows-prop-reassigned-absent",
+              "limitations": [
+                "reassigned-let-shadows-prop-default"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [

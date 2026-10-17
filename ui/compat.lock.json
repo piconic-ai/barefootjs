@@ -2568,6 +2568,62 @@
           }
         }
       },
+      "computed-let-shadows-prop-reassigned-absent": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "reassigned-let-shadows-prop-default"
+          ]
+        }
+      },
       "conditional-nested-loop-signal-reactivity": {
         "go-template": {
           "kind": "refusal",
@@ -7111,6 +7167,10 @@
         "description": "A computed const whose initializer has no template lowering refuses (BF101) instead of reading an…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-read-unlowerable.ts"
       },
+      "computed-let-shadows-prop-reassigned-absent": {
+        "description": "a reassigned let shadowing a prop with a default renders the default when the prop is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-let-shadows-prop-reassigned-absent.ts"
+      },
       "conditional-nested-loop-signal-reactivity": {
         "description": "Nested branch rows update attributes and text after selection and branch re-entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
@@ -7981,6 +8041,27 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "reassigned-let-shadows-prop-default": {
+      "title": "A reassigned let that shadows its prop with a default",
+      "kind": "silent",
+      "given": "a component-scope `let` that shadows its own prop with a default and is reassigned later (`let label = props.label ?? 'Default'; if (!label) label = 'Fallback'`), with the prop omitted",
+      "expected": "renders the initializer's value (`Default`)",
+      "actual": "the template adapters and the CSR template read the bare prop and render empty text",
+      "fixtures": [
+        "computed-let-shadows-prop-reassigned-absent"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "ref-effect-attr-state-ssr": {
