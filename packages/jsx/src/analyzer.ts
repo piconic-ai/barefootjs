@@ -1918,12 +1918,39 @@ function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolea
 }
 
 /**
+ * Whether a callback's body means the same outside the callback. An arrow
+ * binds nothing of its own. A `function` expression binds its name (when it
+ * has one), `arguments` and `this`, so its body only means the same when it
+ * is anonymous and reads neither; nested non-arrow functions bind their own
+ * and are not searched.
+ */
+function isFunctionScopeFree(fn: ts.ArrowFunction | ts.FunctionExpression): boolean {
+  if (ts.isArrowFunction(fn)) return true
+  if (fn.name) return false
+  let bound = false
+  const visit = (node: ts.Node): void => {
+    if (bound) return
+    if (node.kind === ts.SyntaxKind.ThisKeyword || (ts.isIdentifier(node) && node.text === 'arguments')) {
+      bound = true
+      return
+    }
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isMethodDeclaration(node) ||
+        ts.isClassLike(node) || ts.isGetAccessor(node) || ts.isSetAccessor(node)) return
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(fn.body, visit)
+  return !bound
+}
+
+/**
  * The expression a memo's callback evaluates to, as the analyzer reads it from
  * the callback node (#3510). A zero-parameter arrow or `function` expression
  * yields its body: the expression body, or the operand of a block that is a
  * single `return`. Any other block (and any other callback: async, generator,
- * a parameter, a function reference) yields a call of the whole callback, so
- * a consumer that substitutes the memo's value never sees an uncalled function.
+ * a parameter, a function reference, a `function` expression whose body needs
+ * its own scope) yields a call of the whole callback, so a consumer that
+ * substitutes the memo's value never sees an uncalled function or a body
+ * detached from its bindings.
  */
 function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean } {
   let fn: ts.Expression = callback
@@ -1931,7 +1958,8 @@ function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean }
   if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return { node: callback, call: true }
   const plain = fn.parameters.length === 0 &&
     !(ts.isFunctionExpression(fn) && fn.asteriskToken) &&
-    !fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)
+    !fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) &&
+    isFunctionScopeFree(fn)
   if (!plain) return { node: callback, call: true }
   if (!ts.isBlock(fn.body)) return { node: fn.body, call: false }
   const [only] = fn.body.statements
@@ -1961,7 +1989,9 @@ function memoStructuredBody(
   // callback are unwrapped (#3510).
   let memoFn: ts.Node | undefined = callback
   while (memoFn && ts.isParenthesizedExpression(memoFn)) memoFn = memoFn.expression
-  if (memoFn && !ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) memoFn = undefined
+  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || !isFunctionScopeFree(memoFn))) {
+    memoFn = undefined
+  }
   const parsedBody =
     memoFn && !ts.isBlock(memoFn.body)
       ? parseExpression(ctx.getJS(memoFn.body))

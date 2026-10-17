@@ -8,6 +8,8 @@
 
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
+import { compileJSX } from '../compiler'
+import { TestAdapter } from '../adapters/test-adapter'
 
 function memoOf(callback: string, props = '') {
   const source = `
@@ -59,5 +61,37 @@ describe('MemoInfo.bodyExpr (#3510)', () => {
     const arrow = memoOf('() => { return count() * 2 }')
     expect(fn.parsedBlock).toEqual(arrow.parsedBlock)
     expect(fn.parsedBlockComplete).toBe(true)
+  })
+
+  test('a function expression that needs its own scope is called as a whole', () => {
+    for (const callback of [
+      'function base() { return typeof base }',
+      'function () { return arguments.length }',
+      'function () { return this }',
+    ]) {
+      const memo = memoOf(callback, '{ base }: { base: number }')
+      expect(memo.bodyExprIsCall).toBe(true)
+      expect(memo.bodyExpr).toBe(`(${callback})()`)
+      expect(memo.parsedBlock).toBeUndefined()
+    }
+  })
+
+  test('the CSR template evaluates a scope-bound callback to its own value', () => {
+    const source = `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      export function C({ base }: { base: number }) {
+        const named = createMemo(function base() { return typeof base })
+        const args = createMemo(function () { return arguments.length })
+        return <p>{named()}|{args()}</p>
+      }
+    `
+    const result = compileJSX(source, 'C.tsx', { adapter: new TestAdapter() })
+    const line = result.files.find((f) => f.type === 'clientJs')!.content.split('\n').find((l) => l.includes('hydrate('))!
+    const lambda = line.match(/template: (\(_p\) => `.*`) \}\)$/)![1]
+    const template = new Function('escapeTextOrMarkup', 'escapeText', 'escapeAttr', `return ${lambda}`)(String, String, String)
+    const html = template({ base: 7 })
+    expect(html).toContain('-->function<!--')
+    expect(html).toContain('-->0<!--')
   })
 })
