@@ -297,23 +297,26 @@ export function computeInlinability(
 
   const decisionsByName = new Map<string, RelocateDecision[]>()
   // Constants are classified in declaration order, so a later const can see
-  // which earlier ones inline (#3513).
+  // which earlier ones inline (#3513) and accept a method call on them.
   const inlinableLocals = new Set<string>()
   env.inlinableLocals = inlinableLocals
-  for (const c of ctx.localConstants) {
-    const { status, decisions } = classifyConstantInitial(
-      c,
-      graph.declaredNames,
-      signalGetters,
-      signalSetters,
-      memoNames,
-      env,
-      getterAliases,
-      constantScope,
-    )
-    constants.set(c.name, status)
-    decisionsByName.set(c.name, decisions)
-    if (status.kind === 'inlinable') inlinableLocals.add(c.name)
+  const classifyAll = (refused: ReadonlySet<string>) => {
+    inlinableLocals.clear()
+    for (const c of ctx.localConstants) {
+      const { status, decisions } = classifyConstantInitial(
+        c,
+        graph.declaredNames,
+        signalGetters,
+        signalSetters,
+        memoNames,
+        env,
+        getterAliases,
+        constantScope,
+      )
+      constants.set(c.name, status)
+      decisionsByName.set(c.name, decisions)
+      if (status.kind === 'inlinable' && !refused.has(c.name)) inlinableLocals.add(c.name)
+    }
   }
 
   const templateRiskyNames = collectTemplateRiskyNames(irRoot)
@@ -325,7 +328,21 @@ export function computeInlinability(
   // transformation. The map lives on `ClientJsContext` — not on the
   // cross-adapter `ConstantInfo` IR — so SSR adapters don't see CSR
   // substitution semantics they have no use for.
-  populateCsrInlinable(ctx, env, getterAliases, constantScope)
+  //
+  // A const classified inlinable can still end with no CSR form here
+  // (`(choices).includes(name)` fails the post-substitution check). A
+  // method call on it was accepted on the provisional verdict, so it would
+  // read as `undefined.m()`: withdraw the receiver and classify again
+  // until no accepted receiver is refused. Each round removes at least one
+  // name, so this stops within `localConstants.length` rounds.
+  const refused = new Set<string>()
+  for (;;) {
+    classifyAll(refused)
+    populateCsrInlinable(ctx, env, getterAliases, constantScope)
+    const withdrawn = [...inlinableLocals].filter(name => ctx.csrInlinable.get(name) === null)
+    if (withdrawn.length === 0) break
+    for (const name of withdrawn) refused.add(name)
+  }
 
   return { constants, functions, decisionsByName, templateRiskyNames }
 }
@@ -386,6 +403,7 @@ function populateCsrInlinable(
     substitutions: new Map([...baseEnv.substitutions, ...constSubs]),
     propsObjectName: baseEnv.propsObjectName,
   })
+  const receivers = inlinedReceiverCheck(relocateEnv)
 
   // Pre-mark consts that are structurally ineligible — they record
   // `null` in `ctx.csrInlinable`. Mirrors `classifyConstantInitial`
@@ -478,11 +496,10 @@ function populateCsrInlinable(
       // `rewritePropsObjectRef` doesn't need to redo the AST work. The
       // free identifiers are re-extracted from the bridged form so
       // the post-substitution unsafe-name check stays exact.
-      const inlineResult = isInlinableInTemplate(rewritten, relocateEnv)
-      if (!inlineResult.ok) {
+      const bridgedRewritten = bridgedCsrForm(rewritten, source, env, relocateEnv, receivers)
+      if (bridgedRewritten === null) {
         ctx.csrInlinable.set(c.name, null)
       } else {
-        const bridgedRewritten = inlineResult.rewrittenValue
         const bridgedFreeIdentifiers = recomputeFreeIdentifiers(bridgedRewritten, freeIdentifiers)
         ctx.csrInlinable.set(c.name, { rewrittenValue: bridgedRewritten, freeIdentifiers: bridgedFreeIdentifiers })
         constSubs.set(c.name, {
@@ -490,6 +507,7 @@ function populateCsrInlinable(
           replacement: bridgedRewritten,
           freeIdentifiers: bridgedFreeIdentifiers,
         })
+        receivers.add(c.name, bridgedRewritten)
       }
       finalised.add(c.name)
       progressed = true
@@ -502,6 +520,59 @@ function populateCsrInlinable(
   // (a cycle in const-on-const refs would be a TDZ violation in source).
   for (const c of ctx.localConstants) {
     if (!finalised.has(c.name)) ctx.csrInlinable.set(c.name, null)
+  }
+}
+
+/**
+ * The bridged CSR form of a const whose substituted text is `rewritten`, or
+ * null when it isn't safe in template scope.
+ */
+function bridgedCsrForm(
+  rewritten: string,
+  source: string,
+  env: CsrEnv,
+  relocateEnv: RelocateEnv,
+  receivers: ReturnType<typeof inlinedReceiverCheck>,
+): string | null {
+  const inlineResult = isInlinableInTemplate(rewritten, relocateEnv)
+  return inlineResult.ok ? inlineResult.rewrittenValue : receivers.check(source, env)
+}
+
+/**
+ * The post-substitution check refuses a method call on an inlinable local
+ * (`text.toUpperCase()`, #3513): once `text` is substituted, the receiver
+ * is a parenthesized expression the adapter can't vouch for. `check`
+ * re-runs it with the receivers that already have a CSR form left as
+ * identifiers, so relocate's receiver rule decides the call and inlines
+ * each one as its `inline` form (an `inline` read inside a call argument
+ * still counts as bridged, #1138). A receiver whose own CSR form was
+ * refused is never added, so a call on it stays refused.
+ */
+function inlinedReceiverCheck(relocateEnv: RelocateEnv): {
+  add: (name: string, bridged: string) => void
+  check: (source: string, env: CsrEnv) => string | null
+} {
+  const inlined = new Map<string, string>()
+  const vetted = new Set<string>()
+  const receiverEnv: RelocateEnv = { ...relocateEnv, inlinable: inlined, inlinableLocals: vetted }
+  return {
+    add(name, bridged) {
+      // Only an init-local reaches relocate's receiver rule; a module
+      // const keeps the post-substitution verdict (#2106).
+      const kind = relocateEnv.bindings.get(name)
+      if (kind !== 'init-local' && kind !== 'sub-init-local') return
+      if (relocateEnv.inlinableLocals?.has(name) !== true) return
+      vetted.add(name)
+      inlined.set(name, `(${bridged})`)
+    },
+    check(source, env) {
+      if (vetted.size === 0) return null
+      const substitutions = new Map(env.substitutions)
+      for (const name of vetted) substitutions.delete(name)
+      const partial = csrSubstitute(source, { substitutions, propsObjectName: env.propsObjectName }).rewritten
+      const result = isInlinableInTemplate(partial, receiverEnv)
+      return result.ok ? result.rewrittenValue : null
+    },
   }
 }
 
