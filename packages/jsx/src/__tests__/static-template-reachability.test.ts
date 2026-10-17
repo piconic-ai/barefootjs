@@ -29,7 +29,7 @@ function templateLambda(source: string): string {
 
 /** Evaluate the lambda at "module scope": only the escape helpers exist. */
 function render(lambda: string, props: Record<string, unknown>): string {
-  const template = new Function('escapeTextOrMarkup', 'escapeAttr', `return ${lambda}`)(String, String)
+  const template = new Function('escapeTextOrMarkup', 'escapeText', 'escapeAttr', `return ${lambda}`)(String, String, String)
   return template(props)
 }
 
@@ -91,5 +91,47 @@ export function PropOnly({ label }: { label: string }) {
   return <button onClick={() => setCount(count() + 1)}>{label.toUpperCase()}</button>
 }`)
     expect(render(lambda, { label: 'hi' })).toContain('HI')
+  })
+
+  test('a signal passed into an inlined JSX helper, in text, attribute and condition', () => {
+    const lambda = templateLambda(`${header}
+export function Helper({ label }: { label: string }) {
+  const [count, setCount] = createSignal(0)
+  function text(value: number) {
+    return <span>{value}</span>
+  }
+  function attr(value: number) {
+    return <span data-x={value} />
+  }
+  function cond(value: number) {
+    return <span>{value ? <b>yes</b> : <i>no</i>}</span>
+  }
+  return (
+    <button onClick={() => setCount(count() + 1)}>
+      {label}
+      {text(count())}
+      {attr(count())}
+      {cond(count())}
+    </button>
+  )
+}`)
+    expect(lambda).not.toContain('count()')
+    const html = render(lambda, { label: 'n' })
+    expect(html).toContain('data-x="0"')
+    expect(html).toContain('<i')
+  })
+
+  test('a signal passed into an inlined multi-return JSX helper', () => {
+    const lambda = templateLambda(`${header}
+export function MultiHelper({ label }: { label: string }) {
+  const [count, setCount] = createSignal(0)
+  function pick(value: number) {
+    if (value > 0) return <b>{value}</b>
+    return <i>{value}</i>
+  }
+  return <button onClick={() => setCount(count() + 1)}>{label}{pick(count())}</button>
+}`)
+    expect(lambda).not.toContain('count()')
+    expect(render(lambda, { label: 'n' })).toContain('<i')
   })
 })
