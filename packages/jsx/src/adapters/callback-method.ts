@@ -318,11 +318,15 @@ export function isUnloweredCall(
   return !(callee.kind === 'member' && callee.object.kind === 'identifier' && callee.object.name === propsObjectName)
 }
 
-/** The identifier a member chain (`window.performance.now`) is rooted at; `null` for any other callee. */
+/**
+ * The identifier a member chain is rooted at, through literal and computed
+ * access alike (`window.performance.now`, `Date[key]`,
+ * `globalThis[name].now`); `null` for any other callee.
+ */
 function memberRoot(callee: ParsedExpr): string | null {
-  if (callee.kind !== 'member') return null
+  if (callee.kind !== 'member' && callee.kind !== 'index-access') return null
   let object = callee.object
-  while (object.kind === 'member') object = object.object
+  while (object.kind === 'member' || object.kind === 'index-access') object = object.object
   return object.kind === 'identifier' ? object.name : null
 }
 

@@ -218,8 +218,16 @@ describe('isUnloweredCall (#3493)', () => {
   })
 
   test('a zero-arg call rooted at a global has no lowering (#3505)', () => {
-    const isGlobal = (name: string) => ['Date', 'Math', 'window', 'location'].includes(name)
-    for (const source of ['Date.now()', 'Math.random()', 'window.performance.now()', 'location.toString()', 'Date.now.call()']) {
+    const isGlobal = (name: string) => ['Date', 'Math', 'window', 'location', 'globalThis'].includes(name)
+    for (const source of [
+      'Date.now()',
+      'Math.random()',
+      'window.performance.now()',
+      'location.toString()',
+      'Date.now.call()',
+      'Date[method]()',
+      'globalThis[name].now()',
+    ]) {
       const c = call(source)
       expect(isUnloweredCall(c.callee, c.args, 'props', isGlobal)).toBe(true)
     }
@@ -227,7 +235,7 @@ describe('isUnloweredCall (#3493)', () => {
 
   test('a zero-arg call on a bound name keeps the callee read, even when it is named like a global', () => {
     // `isGlobal` is false for a prop, a local (`const navigator = useContext(Nav)`) or a loop binding.
-    for (const source of ['ctx.open()', 'navigator.current()', 'document.title()', 'item.label()']) {
+    for (const source of ['ctx.open()', 'navigator.current()', 'document.title()', 'item.label()', 'props.getters[key]()']) {
       const c = call(source)
       expect(isUnloweredCall(c.callee, c.args, 'props', noGlobals)).toBe(false)
     }

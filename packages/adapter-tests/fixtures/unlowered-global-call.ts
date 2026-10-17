@@ -1,8 +1,9 @@
 import { createFixture } from '../src/types'
 
 /**
- * A zero-arg call on a JavaScript global (`Date.UTC()`), in an attribute and
- * through a computed const read in text. A template has no binding for the
+ * A zero-arg call on a JavaScript global (`Date.UTC()`), in an attribute,
+ * through a computed const read in text, and through a computed member
+ * (`Date[props.method]()`). A template has no binding for the
  * global, so every template adapter used to read the call as a member value
  * (`Date['UTC']`, `.Date.UTC`) and render empty. Each now refuses with
  * BF101, as a method call with arguments outside the catalogue already did
@@ -19,11 +20,12 @@ export const fixture = createFixture({
   source: `
 'use client'
 
-export function GlobalCall() {
+export function GlobalCall(props: { method: string }) {
   const stamp = Date.UTC()
-  return <p title={Date.UTC()}>{stamp}</p>
+  return <p title={Date.UTC()} data-computed={Date[props.method as 'UTC']()}>{stamp}</p>
 }
 `,
+  props: { method: 'UTC' },
   expectedHtml: `
     <p bf-s="test" bf="s0" title="NaN">NaN</p>
   `,
