@@ -1,5 +1,5 @@
 import ts from 'typescript'
-import type { ConstantInfo, ParamInfo, PropUsage } from './types.ts'
+import type { ConstantInfo, ParamInfo, PropUsage, SignalPropSeed } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 import { propHasPropertyAccess } from './ir-to-client-js/compute-prop-usage.ts'
 import { parsePropReadInitializer } from './ir-to-client-js/prune-unused-prop-extractions.ts'
@@ -94,6 +94,56 @@ export function isPropsAliasConst(
   if (c.propsDestructure) return c.propsDestructure.sourceKey === c.name
   const read = parsedPropRead(c.parsed, propsObjectName)
   return read !== null && read.key === c.name && (!read.hasDefault || c.mutatedAfterDeclaration === true)
+}
+
+/**
+ * How a parsed signal initializer reads a prop: a member chain rooted at the
+ * props object (`props.<name>`, `props.row.count`, `props.items[0]`) or a
+ * destructured binding `<name>`, bare or under a `??` / `||` fallback chain
+ * of one operator (`props.a ?? props.b ?? 0`). `null` for any other shape
+ * (`props.a && x`, `props.a + 1`, a call). A binding counts only when it is
+ * one of `propsParams`.
+ */
+export function signalPropSeed(
+  parsed: ParsedExpr | undefined,
+  propsParams: readonly ParamInfo[],
+  propsObjectName: string | null,
+): SignalPropSeed | null {
+  if (!parsed) return null
+  const { read, fallback } = splitFallbackChain(parsed)
+  const declared = (name: string) => propsParams.some(p => p.name === name)
+  if (read.kind === 'identifier') {
+    return declared(read.name) ? { propName: read.name, via: 'binding', nested: false, declared: true, fallback } : null
+  }
+  const hop = propsMemberRoot(read, propsObjectName)
+  if (!hop) return null
+  return { propName: hop.property, via: 'member', nested: hop !== read, declared: declared(hop.property), fallback }
+}
+
+/**
+ * Split a left-associated `??` / `||` chain of ONE operator into its leftmost
+ * operand and the fallback after it: `(a ?? b) ?? 0` reads `a` with fallback
+ * `b ?? 0`. Anything else is a read with no fallback.
+ */
+function splitFallbackChain(parsed: ParsedExpr): { read: ParsedExpr; fallback: SignalPropSeed['fallback'] } {
+  if (parsed.kind !== 'logical' || (parsed.op !== '??' && parsed.op !== '||')) return { read: parsed, fallback: null }
+  const op = parsed.op
+  const rights: ParsedExpr[] = []
+  let node: ParsedExpr = parsed
+  while (node.kind === 'logical' && node.op === op) {
+    rights.unshift(node.right)
+    node = node.left
+  }
+  const expr = rights.slice(1).reduce<ParsedExpr>((left, right) => ({ ...parsed, left, right }), rights[0])
+  return { read: node, fallback: { op, expr } }
+}
+
+/** The `props.<name>` hop a member / index chain is rooted at, or `null`. */
+function propsMemberRoot(read: ParsedExpr, propsObjectName: string | null): Extract<ParsedExpr, { kind: 'member' }> | null {
+  let node = read
+  while ((node.kind === 'member' || node.kind === 'index-access') && !(node.object.kind === 'identifier')) node = node.object
+  if (node.kind !== 'member' || node.computed || node.optional) return null
+  return node.object.kind === 'identifier' && node.object.name === propsObjectName ? node : null
 }
 
 /**

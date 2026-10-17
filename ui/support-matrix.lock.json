@@ -4276,6 +4276,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6594,6 +6600,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8774,6 +8786,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9978,6 +9996,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10780,6 +10804,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
               ]
             },
             {
@@ -17582,6 +17612,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18340,6 +18376,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
             }
           ]
         },
@@ -18587,7 +18629,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},

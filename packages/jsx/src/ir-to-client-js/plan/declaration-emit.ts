@@ -80,6 +80,11 @@ export interface ControlledSignalEffectPlan {
   accessorExpr: string
   /** Profile-mode IR-aligned id, appended as the `createEffect` 2nd arg (#1690). */
   bfId?: string
+  /**
+   * When set, the value the effect sets once the prop is defined (the
+   * signal's initializer, for a `||` fallback); otherwise the prop itself.
+   */
+  valueExpr?: string
 }
 
 export interface MemoEmitPlan {

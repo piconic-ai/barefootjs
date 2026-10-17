@@ -26,7 +26,7 @@
  */
 
 import ts from 'typescript'
-import { inferDefaultValue } from './utils.ts'
+import { inferDefaultValue, readsBareProp } from './utils.ts'
 import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
 import type { ConstantInfo, MemoInfo, SignalInfo } from '../types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -587,7 +587,7 @@ export function buildSignalMemoEnv(
     if (s.envReader) continue
     substitutions.set(s.getter, {
       kind: 'call',
-      replacement: normalizeSignalInitial(s, propsObjectName),
+      replacement: normalizeSignalInitial(s),
       freeIdentifiers: s.initialFreeIdentifiers ?? new Set(),
     })
     // A bare reference to the SETTER (`<Display update={setCount} />`,
@@ -629,7 +629,8 @@ export function buildSignalMemoEnv(
 
 /**
  * Add the `?? <default>` SSR fallback to a signal's initial value when
- * the value is a bare `propsName.X` reference. Returns the value in raw
+ * the value is a bare `propsName.X` reference (`readsBareProp`, read from
+ * the analyzer's `SignalInfo.propSeed`, #3508). Returns the value in raw
  * (props.X) form — the `propsObjectName → _p` rewrite is deferred to
  * `rewritePropsObjectRef` at emit time so the post-substitution
  * `isInlinableInTemplate` check still sees bridged-arg shapes (#1138).
@@ -637,17 +638,15 @@ export function buildSignalMemoEnv(
  * The `??` fallback prevents literal `undefined` from leaking into the
  * SSR HTML when the prop is omitted — `inferDefaultValue` picks a
  * type-appropriate sentinel (`0` for number, `''` for string, etc.).
- * Skipped when the value already carries its own `??` so user-supplied
- * defaults aren't masked.
+ * Skipped when the value carries a fallback of its own (`??` / `||`) so
+ * user-supplied defaults aren't masked.
  */
-function normalizeSignalInitial(signal: SignalInfo, propsObjectName: string | null): string {
+function normalizeSignalInitial(signal: SignalInfo): string {
   const initialValue = signal.initialValue
-  const propsName = propsObjectName ?? 'props'
-  const propsPrefix = `${propsName}.`
   // An async factory's `initial` (#3165) renders exactly as given: an absent
   // prop means no obtained result, so the value is `undefined` on the server
   // too, never a type default.
-  if (!signal.factory && initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
+  if (!signal.factory && readsBareProp(signal)) {
     return `${initialValue} ?? ${inferDefaultValue(signal.type)}`
   }
   // Destructured mode (#2265): `templateInitialValue` (when present) has
