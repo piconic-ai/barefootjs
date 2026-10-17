@@ -7524,6 +7524,14 @@
       }
     }
   ],
+  "unlowered-global-call": [
+    {
+      "name": "gen:method:union:parse",
+      "props": {
+        "method": "parse"
+      }
+    }
+  ],
   "unlowered-global-call-precomputed": [
     {
       "name": "gen:stamp:negative",

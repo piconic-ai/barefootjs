@@ -10959,6 +10959,7 @@
       "kinds": [
         "call",
         "identifier",
+        "index-access",
         "member"
       ],
       "axes": [],

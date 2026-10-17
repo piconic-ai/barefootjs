@@ -20,13 +20,13 @@ export const fixture = createFixture({
   source: `
 'use client'
 
-export function GlobalCall(props: { method: string }) {
+export function GlobalCall(props: { method: 'UTC' | 'parse' }) {
   const stamp = Date.UTC()
-  return <p title={Date.UTC()} data-computed={Date[props.method as 'UTC']()}>{stamp}</p>
+  return <p title={Date.UTC()} data-computed={Date[props.method]()}>{stamp}</p>
 }
 `,
   props: { method: 'UTC' },
   expectedHtml: `
-    <p bf-s="test" bf="s0" title="NaN">NaN</p>
+    <p bf-s="test" bf="s0" data-computed="NaN" title="NaN">NaN</p>
   `,
 })
