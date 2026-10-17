@@ -38,6 +38,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // loop; SSR refuses it on the template adapters and the CSR template has
   // no value for it either.
   'computed-const-read-unlowerable',
+  // `reassigned-let-shadows-prop-default`: a reassigned `let` shadowing its
+  // prop with a default has no single value to inline, so the CSR template
+  // reads the bare prop and the omitted prop renders empty.
+  'computed-let-shadows-prop-reassigned-absent',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',

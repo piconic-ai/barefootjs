@@ -7,6 +7,10 @@ import { createFixture } from '../src/types'
  * the text is the prop. Such a binding has no single value the CSR template
  * could inline, so the template reads the prop it starts from, as it did
  * before #3501 made an unreassigned shadow read its own default.
+ *
+ * The prop is typed required so no omitted-prop data point is generated:
+ * that shape is `computed-let-shadows-prop-reassigned-absent`, pinned as
+ * `reassigned-let-shadows-prop-default`.
  */
 export const fixture = createFixture({
   id: 'computed-let-shadows-prop-reassigned',
@@ -14,7 +18,7 @@ export const fixture = createFixture({
   source: `
 'use client'
 
-export function ReassignedLabel(props: { label?: string }) {
+export function ReassignedLabel(props: { label: string }) {
   let label = props.label ?? 'Default'
   if (!label) label = 'Fallback'
   return <p>{label}</p>

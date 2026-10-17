@@ -41,6 +41,8 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A reassigned `let` that shadows its prop with a default reads the bare prop: the omitted prop renders empty.
+  'computed-let-shadows-prop-reassigned-absent': { limitation: 'reassigned-let-shadows-prop-default' },
   // A props spread onto a child component: a key the spread omits erases an earlier explicit prop (#3479).
   'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
   // Arithmetic over an omitted optional number prop: the engine reads the

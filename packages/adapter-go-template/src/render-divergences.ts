@@ -93,6 +93,8 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
+  // A reassigned `let` that shadows its prop with a default reads the bare prop: the omitted prop renders empty.
+  'computed-let-shadows-prop-reassigned-absent': { limitation: 'reassigned-let-shadows-prop-default' },
   // A props spread onto a child component: this adapter drops the spread (#3479).
   'component-spread-rest': { limitation: 'component-prop-spread' },
   'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },

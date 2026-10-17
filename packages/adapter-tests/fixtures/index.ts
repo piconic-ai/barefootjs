@@ -685,6 +685,7 @@ import { fixture as computedConstRead } from './computed-const-read'
 import { fixture as computedConstShadowsProp } from './computed-const-shadows-prop'
 import { fixture as computedConstShadowsPropPositions } from './computed-const-shadows-prop-positions'
 import { fixture as computedLetShadowsPropReassigned } from './computed-let-shadows-prop-reassigned'
+import { fixture as computedLetShadowsPropReassignedAbsent } from './computed-let-shadows-prop-reassigned-absent'
 import { fixture as computedConstNullishMemoArithmetic } from './computed-const-nullish-memo-arithmetic'
 import { fixture as computedConstReadUnlowerable } from './computed-const-read-unlowerable'
 import { fixture as computedConstReadUnlowerablePrecomputed } from './computed-const-read-unlowerable-precomputed'
@@ -1489,6 +1490,7 @@ export const jsxFixtures: JSXFixture[] = [
   computedConstShadowsProp,
   computedConstShadowsPropPositions,
   computedLetShadowsPropReassigned,
+  computedLetShadowsPropReassignedAbsent,
   computedConstNullishMemoArithmetic,
   computedConstReadUnlowerable,
   computedConstReadUnlowerablePrecomputed,

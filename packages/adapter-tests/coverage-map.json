@@ -2038,6 +2038,21 @@
         "text"
       ]
     },
+    "computed-let-shadows-prop-reassigned-absent": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "cond-arm-tag-collision": {
       "kinds": [
         "array-literal",
