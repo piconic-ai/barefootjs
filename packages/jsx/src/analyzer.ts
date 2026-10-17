@@ -2052,6 +2052,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     name,
     computation,
     bodyExpr,
+    bodyExprIsCall: body?.call || undefined,
     templateBodyExpr,
     parsedBlock,
     parsedBlockComplete,

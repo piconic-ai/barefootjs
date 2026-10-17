@@ -1748,6 +1748,12 @@ export interface MemoInfo {
    */
   bodyExpr?: string
   /**
+   * Set when `bodyExpr` is a call of the whole callback rather than the
+   * expression the callback returns — a multi-statement body, or a callback
+   * that is not a plain zero-parameter function.
+   */
+  bodyExprIsCall?: boolean
+  /**
    * `bodyExpr` with bare destructured-prop refs rewritten to `_p.X` —
    * the memo twin of `SignalInfo.templateInitialValue` (#2265). Consumed by
    * `buildSignalMemoEnv` when the memo body is inlined into the module-scope
