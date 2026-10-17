@@ -490,9 +490,10 @@ function evalEnvValueGo(
   } else if (name === ctx.state.propsObjectName) {
     // The props object (`props.items.length`) as a map keyed by each
     // prop's caller-facing name (#3512).
-    goExpr = `map[string]any{${propsParams
-      .map(p => `${JSON.stringify(p.sourceName ?? p.name)}: in.${capitalizeFieldName(p.sourceName ?? p.name)}`)
-      .join(', ')}}`
+    // An aliased destructure (`const { label: text } = props`) adds a
+    // second entry with the same caller-facing name; each key appears once.
+    const keys = [...new Set(propsParams.map(p => p.sourceName ?? p.name))]
+    goExpr = `map[string]any{${keys.map(key => `${JSON.stringify(key)}: in.${capitalizeFieldName(key)}`).join(', ')}}`
   }
   return goExpr
 }
