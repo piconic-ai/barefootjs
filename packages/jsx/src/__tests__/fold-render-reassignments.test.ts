@@ -31,8 +31,11 @@ describe('foldRenderReassignmentsInSource', () => {
     expect(fold(body)?.split('\n').length).toBe(body.split('\n').length)
   })
 
-  test('a computed value read twice on one path inside a statement is not folded', () => {
+  test('a computed value inside a statement that would be repeated, reordered or dropped is not folded', () => {
     expect(fold("  let label = 'a'\n  if (props.label) { label = props.label; label = label + label }")).toBeNull()
+    expect(fold("  let label = 'a'\n  if (props.label) { label = props.label; label = props.b + label }")).toBeNull()
+    expect(fold('  let label = 0\n  { label = props.label; label = 7 }')).toBeNull()
+    expect(fold("  let label = 'a'\n  { label = props.label; if (props.b) label = 1 }")).toBeNull()
   })
 
   test('a reassignment with a side effect is not folded', () => {
@@ -65,6 +68,7 @@ describe('folding preserves evaluation', () => {
     'let label = props.label\n  if (label) label = 0',
     "let label = props.label\n  if (props.label) { label = props.label } else { label += '!' }\n  label ??= 'z'",
     "let label = 'a'\n  if (props.label) { label = props.label; label += '!' }",
+    "let label = 0\n  label = props.label\n  label = 7",
   ]
   const run = (source: string, values: unknown[]) => {
     const log: unknown[] = []

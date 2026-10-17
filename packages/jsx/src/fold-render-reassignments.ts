@@ -26,11 +26,11 @@
  *   - the initializer, every assigned value and every condition is free of
  *     side effects (no calls, no assignments, no functions);
  *   - every expression is evaluated exactly as often, and in the same order,
- *     as the original statements evaluate it. Each statement's incoming value
- *     is a binding (a read of it is unobservable) or a literal, and a
- *     conditional evaluates only the branch it takes; inside a statement, a
- *     computed value read more than once on one path is left unfolded, since
- *     repeating it would repeat a member read a getter may observe.
+ *     as the original statements evaluate it, since a member read may run a
+ *     getter. Each statement's incoming value is a binding (a read of it is
+ *     unobservable) or a literal, a conditional evaluates only the branch it
+ *     takes, and inside a statement a computed value may only flow into a
+ *     compound assignment (see `foldStatement`).
  * Anything else leaves the binding as it is (and `markMutatedConstants`
  * flags it as before).
  */
@@ -159,65 +159,60 @@ const COMPOUND_OPERATORS = new Map<ts.SyntaxKind, string>([
 ])
 
 /**
- * A statement's effect on the binding: its value afterwards, and the most
- * times one path through it evaluates the incoming value.
- */
-interface Folded extends Value {
-  reads: number
-}
-
-/**
  * The binding's value after `stmt`, given its value `current` before; `null`
- * when `stmt` is not foldable, or when it would evaluate a computed
- * `current` more than once on one path.
+ * when `stmt` is not foldable.
+ *
+ * A trivial `current` (a binding, a literal) may be read any number of times,
+ * or not at all. A computed one (left by an earlier assignment inside the
+ * same statement) must be evaluated exactly once and before anything else, as
+ * the original evaluated it, so only a compound assignment (`x += e`, whose
+ * `e` does not read `x`) or an empty statement may follow it: an overwrite
+ * would drop its evaluation, and any other read could repeat or reorder it.
  */
-function foldStatement(stmt: ts.Statement, name: string, current: Value, sf: ts.SourceFile): Folded | null {
-  const folded = foldStatementUnchecked(stmt, name, current, sf)
-  return folded !== null && (current.trivial || folded.reads <= 1) ? folded : null
+function foldStatement(stmt: ts.Statement, name: string, current: Value, sf: ts.SourceFile): Value | null {
+  if (ts.isEmptyStatement(stmt)) return current
+  if (ts.isBlock(stmt)) return foldSequence(stmt.statements, name, current, sf)
+  if (ts.isIfStatement(stmt)) return current.trivial ? foldIf(stmt, name, current, sf) : null
+  const assignment = reassignment(stmt, name)
+  if (!assignment) return null
+  const value = substitute(assignment.right, name, current.text, sf)
+  if (assignment.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+    return current.trivial ? { text: value.text, trivial: value.reads === 0 && isTrivial(assignment.right) } : null
+  }
+  const op = COMPOUND_OPERATORS.get(assignment.operatorToken.kind)
+  if (op === undefined || (!current.trivial && value.reads > 0)) return null
+  return { text: `((${current.text}) ${op} (${value.text}))`, trivial: false }
 }
 
-function foldStatementUnchecked(stmt: ts.Statement, name: string, current: Value, sf: ts.SourceFile): Folded | null {
-  if (ts.isEmptyStatement(stmt)) return { ...current, reads: 1 }
-  if (ts.isBlock(stmt)) return foldSequence(stmt.statements, name, current, sf)
-  if (ts.isIfStatement(stmt)) return foldIf(stmt, name, current, sf)
+/** `name = e` / `name op= e` with a side-effect-free `e`, as an expression statement. */
+function reassignment(stmt: ts.Statement, name: string): ts.BinaryExpression | null {
   if (!ts.isExpressionStatement(stmt)) return null
   const expr = skipParens(stmt.expression)
   if (!ts.isBinaryExpression(expr)) return null
   const target = skipParens(expr.left)
-  if (!ts.isIdentifier(target) || target.text !== name || !isPure(expr.right)) return null
-  const value = substitute(expr.right, name, current.text, sf)
-  if (expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-    return { text: value.text, reads: value.reads, trivial: value.reads === 0 && isTrivial(expr.right) }
-  }
-  const op = COMPOUND_OPERATORS.get(expr.operatorToken.kind)
-  if (op === undefined) return null
-  return { text: `((${current.text}) ${op} (${value.text}))`, reads: 1 + value.reads, trivial: false }
+  return ts.isIdentifier(target) && target.text === name && isPure(expr.right) ? expr : null
 }
 
 /** Statements in order: each reads the value the previous one left. */
-function foldSequence(stmts: readonly ts.Statement[], name: string, current: Value, sf: ts.SourceFile): Folded | null {
-  let value: Folded = { ...current, reads: 1 }
+function foldSequence(stmts: readonly ts.Statement[], name: string, current: Value, sf: ts.SourceFile): Value | null {
+  let value = current
   for (const s of stmts) {
     const next = foldStatement(s, name, value, sf)
     if (next === null) return null
-    value = { ...next, reads: next.reads * value.reads }
+    value = next
   }
   return value
 }
 
-/** A conditional evaluates its test, then only the branch it takes. */
-function foldIf(stmt: ts.IfStatement, name: string, current: Value, sf: ts.SourceFile): Folded | null {
+/** A conditional evaluates its test, then only the branch it takes. `current` is trivial here. */
+function foldIf(stmt: ts.IfStatement, name: string, current: Value, sf: ts.SourceFile): Value | null {
   if (!isPure(stmt.expression)) return null
   const whenTrue = foldStatement(stmt.thenStatement, name, current, sf)
   if (whenTrue === null) return null
-  const whenFalse = stmt.elseStatement ? foldStatement(stmt.elseStatement, name, current, sf) : { ...current, reads: 1 }
+  const whenFalse = stmt.elseStatement ? foldStatement(stmt.elseStatement, name, current, sf) : current
   if (whenFalse === null) return null
   const test = substitute(stmt.expression, name, current.text, sf)
-  return {
-    text: `((${test.text}) ? (${whenTrue.text}) : (${whenFalse.text}))`,
-    reads: test.reads + Math.max(whenTrue.reads, whenFalse.reads),
-    trivial: false,
-  }
+  return { text: `((${test.text}) ? (${whenTrue.text}) : (${whenFalse.text}))`, trivial: false }
 }
 
 /** `expr`'s source text with every read of `name` replaced by `(current)`, and how many reads there were. */
