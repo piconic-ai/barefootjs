@@ -469,6 +469,17 @@ export function emitRefCall(callback: string, elementVar: string, ssrPortalOwner
   return `{ ${call}; if (__scopeId) ${elementVar}.setAttribute('${BF_PORTAL_OWNER}', __scopeId) }`
 }
 
+/**
+ * Whether a signal's initializer is a bare read of the props object
+ * (`props.X`, `props.row.count`) with no fallback of its own
+ * (`SignalInfo.propSeed`, #3508), the one shape both the init
+ * body and the CSR template give a type default (`?? <inferDefaultValue>`)
+ * so an omitted prop never seeds the signal with `undefined`.
+ */
+export function readsBareProp(signal: { propSeed?: { via: string; fallback: unknown } }): boolean {
+  return signal.propSeed?.via === 'member' && signal.propSeed.fallback === null
+}
+
 /** Infer a sensible JS default value literal from a type descriptor. */
 export function inferDefaultValue(type: { kind: string; primitive?: string }): string {
   if (type.kind === 'primitive') {

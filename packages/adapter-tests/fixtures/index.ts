@@ -294,6 +294,7 @@ import { fixture as optionalChainNumericKeyCondition } from './optional-chain-nu
 import { fixture as optionalComputedFilterPredicate } from './optional-computed-filter-predicate'
 import { fixture as optionalComputedFilterPresence } from './optional-computed-filter-presence'
 import { fixture as optionalNestedObjectSignalSeed } from './optional-nested-object-signal-seed'
+import { fixture as signalPropSeedLogicalFallback } from './signal-prop-seed-logical-fallback'
 import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as signalLiteralPropScalarCollision } from './signal-literal-prop-scalar-collision'
 import { fixture as signalLiteralPropObjectCollision } from './signal-literal-prop-object-collision'
@@ -1202,6 +1203,7 @@ export const jsxFixtures: JSXFixture[] = [
   optionalComputedFilterPredicate,
   optionalComputedFilterPresence,
   optionalNestedObjectSignalSeed,
+  signalPropSeedLogicalFallback,
   signalLiteralPropNameCollision,
   signalLiteralPropScalarCollision,
   signalLiteralPropObjectCollision,

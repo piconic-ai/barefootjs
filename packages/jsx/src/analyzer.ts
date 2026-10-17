@@ -13,7 +13,7 @@ import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, Decline
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
-import { buildPropAliasMap, coalesceDefaultText } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -389,6 +389,9 @@ export function analyzeComponent(
     if (!signal.initialValue) continue
     const parsed = parseExpression(`(${signal.initialValue})`)
     if (parsed.kind !== 'unsupported') signal.parsed = parsed
+    // Which prop the initializer reads, and with what fallback (#3508).
+    const seed = signal.isModule ? null : signalPropSeed(signal.parsed, ctx.propsParams, ctx.propsObjectName)
+    if (seed) signal.propSeed = seed
   }
 
   const separatedSource = separateLiteralSignalPropBindings(ctx, isNonReferenceIdentifierPosition)
