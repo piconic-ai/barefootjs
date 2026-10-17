@@ -24,7 +24,11 @@ export function QuestionMarkTest(props: { item?: { active: boolean }; mode?: str
 `,
   props: { item: { active: false }, mode: 'x' },
   expectedHtml: `
-    <div></div>
+    <div bf-s="test">
+      <a bf="s0">a</a>
+      <a bf="s1">b</a>
+      <a bf="s2" data-f="has">c</a>
+    </div>
   `,
   dataPoints: [
     { name: 'active-and-question-mark', props: { item: { active: true }, mode: 'x?' } },
