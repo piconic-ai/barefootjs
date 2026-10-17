@@ -18,6 +18,7 @@
 import { collectContextConsumers, lookupLiteralConst } from '../augment-inherited-props.ts'
 import { freeIdentifiers, inlineBinding, parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
 import type { ConstantInfo, ExpressionAttr, IRMetadata } from '../types.ts'
+import { componentBindings } from '../relocate.ts'
 
 export interface ComputedConstContext {
   constants: IRMetadata['localConstants'] | undefined
@@ -31,6 +32,12 @@ export interface ComputedConstContext {
   isShadowed(name: string): boolean
   /** Whether the adapter binds the const `name` itself, so a read of it stays as written. */
   isAdapterBound(name: string): boolean
+  /**
+   * Whether `name` read where the expression is read is a JavaScript global:
+   * bound by neither the component nor its module (`componentBindings`), nor
+   * the rest props, nor an enclosing loop or callback.
+   */
+  isGlobal(name: string): boolean
 }
 
 /** The {@link ComputedConstContext} fields that come from the component's metadata. */
@@ -39,6 +46,7 @@ export function computedConstContext(
   isShadowed: (name: string) => boolean,
   isAdapterBound: (name: string) => boolean = () => false,
 ): ComputedConstContext {
+  const bindings = componentBindings(metadata)
   return {
     constants: metadata.localConstants,
     getters: new Set([...metadata.signals.map(s => s.getter), ...metadata.memos.map(m => m.name)]),
@@ -46,6 +54,7 @@ export function computedConstContext(
     propsBindings: propsBindingNames(metadata),
     isShadowed,
     isAdapterBound,
+    isGlobal: name => !bindings.has(name) && name !== metadata.restPropsName && !isShadowed(name),
   }
 }
 

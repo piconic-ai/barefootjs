@@ -6966,6 +6966,125 @@
           }
         }
       },
+      "unlowered-global-call": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        }
+      },
       "unlowered-method-call": {
         "blade": {
           "kind": "refusal",
@@ -7323,6 +7442,10 @@
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
       },
+      "unlowered-global-call": {
+        "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call.ts"
+      },
       "unlowered-method-call": {
         "description": "A method call outside the catalogue, outside a callback, refuses (BF101) instead of rendering a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-method-call.ts"
@@ -7470,6 +7593,10 @@
       "static-nested-loop-ref-precomputed": {
         "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
+      },
+      "unlowered-global-call-precomputed": {
+        "description": "prop-precompute twin of unlowered-global-call — the value arrives as a prop (#3505)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call-precomputed.ts"
       },
       "unlowered-method-call-precomputed": {
         "description": "prop-precompute twin of unlowered-method-call — the comparison arrives as a prop (#3493)",
@@ -8117,11 +8244,12 @@
     "unlowered-method-call": {
       "title": "A method call no template lowers",
       "kind": "refusal",
-      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`) outside any higher-order callback, directly or through a computed const it reads (`const keys = Object.keys(labels)`)",
+      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`), or, with none, a method of a JavaScript global (`Date.now()`), outside any higher-order callback, directly or through a computed const it reads (`const keys = Object.keys(labels)`)",
       "expected": "the method runs and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "computed-const-read-unlowerable",
+        "unlowered-global-call",
         "unlowered-method-call"
       ],
       "adapters": [
