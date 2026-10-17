@@ -162,7 +162,7 @@ describe('computeSsrSeedPlan', () => {
     }
   })
 
-  test('block-bodied memo → opaque (v1 gates to expression-bodied memos)', () => {
+  test('block-bodied memo → derived from its fold (#3523)', () => {
     const plan = planFor(`
       'use client'
       import { createMemo, createSignal } from '@barefootjs/client'
@@ -171,6 +171,26 @@ describe('computeSsrSeedPlan', () => {
         const label = createMemo(() => {
           const v = on()
           return v ? 'yes' : 'no'
+        })
+        return <p>{label()}</p>
+      }
+    `)
+
+    const label = step(plan, 'label')
+    expect(label.kind).toBe('derived')
+    if (label.kind === 'derived') expect(label.frees).toContain('on')
+  })
+
+  test('block-bodied memo that does not fold → opaque', () => {
+    const plan = planFor(`
+      'use client'
+      import { createMemo, createSignal } from '@barefootjs/client'
+      function C() {
+        const [on, setOn] = createSignal(false)
+        const label = createMemo(() => {
+          let n = 0
+          for (const x of [1, 2]) n += x
+          return on() ? n : 0
         })
         return <p>{label()}</p>
       }
