@@ -3882,6 +3882,17 @@
       }
     }
   ],
+  "memo-ternary-comparison-test": [
+    {
+      "name": "gen:sel:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",

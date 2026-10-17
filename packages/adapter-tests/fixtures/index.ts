@@ -605,6 +605,7 @@ import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
 import { fixture as memoChain } from './memo-chain'
 import { fixture as memoMultiStatementBlock } from './memo-multi-statement-block'
 import { fixture as memoFunctionExpression } from './memo-function-expression'
+import { fixture as memoTernaryComparisonTest } from './memo-ternary-comparison-test'
 import { fixture as signalObjectField } from './signal-object-field'
 import { fixture as nestedFragments } from './nested-fragments'
 import { fixture as deepNesting } from './deep-nesting'
@@ -1452,6 +1453,7 @@ export const jsxFixtures: JSXFixture[] = [
   memoChain,
   memoMultiStatementBlock,
   memoFunctionExpression,
+  memoTernaryComparisonTest,
   signalObjectField,
   nestedFragments,
   deepNesting,

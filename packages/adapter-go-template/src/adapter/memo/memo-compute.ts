@@ -444,34 +444,58 @@ export function evalExprGo(
   const entries: string[] = []
   for (const name of freeVarsInBody(materialized, new Set())) {
     if (name === 'undefined') continue
-    let goExpr: string | null = null
-    const signal = signals.find(s => s.getter === name)
-    const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
-    const param = propsParams.find(p => p.name === name)
-    if (signal) {
-      // A literal seed goes in as the JS value itself: an object as a
-      // source-keyed map, so a field the literal omits stays absent for
-      // `??` instead of reading as the Go zero value of a struct field.
-      const literal = signal.parsed ? seedLiteralToEvalGo(ctx, signal.parsed) : null
-      if (literal !== null) {
-        goExpr = literal
-      } else {
-        goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
-        // `0` is also its answer for a seed it can't resolve; the evaluator
-        // would compute over that stand-in instead of the real value.
-        if (goExpr === '0' && signal.initialValue.trim() !== '0') return null
-      }
-    } else if (memo) {
-      if (resolving.has(memo.name)) return null
-      goExpr = memoEnvValueGo(ctx, memo, signals, propsParams, propFallbackVars, new Set([...resolving, memo.name]))
-    } else if (param) {
-      const hoisted = propFallbackVars.get(name)
-      goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
-    }
+    const goExpr = evalEnvValueGo(ctx, name, signals, propsParams, propFallbackVars, resolving)
     if (goExpr === null) return null
     entries.push(`${JSON.stringify(name)}: ${goExpr}`)
   }
   return `bf.EvalExpr("${escapeGoString(json)}", map[string]any{${entries.join(', ')}})`
+}
+
+/**
+ * The Go value {@link evalExprGo} hands the evaluator for one free name of
+ * the expression: a signal's seed, a memo's value, a prop field, or the
+ * props object as a map. Null when the name has no SSR value.
+ */
+function evalEnvValueGo(
+  ctx: GoEmitContext,
+  name: string,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  resolving: ReadonlySet<string>,
+): string | null {
+  let goExpr: string | null = null
+  const signal = signals.find(s => s.getter === name)
+  const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
+  const param = propsParams.find(p => p.name === name)
+  if (signal) {
+    // A literal seed goes in as the JS value itself: an object as a
+    // source-keyed map, so a field the literal omits stays absent for
+    // `??` instead of reading as the Go zero value of a struct field.
+    const literal = signal.parsed ? seedLiteralToEvalGo(ctx, signal.parsed) : null
+    if (literal !== null) {
+      goExpr = literal
+    } else {
+      goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
+      // `0` is also its answer for a seed it can't resolve; the evaluator
+      // would compute over that stand-in instead of the real value.
+      if (goExpr === '0' && signal.initialValue.trim() !== '0') return null
+    }
+  } else if (memo) {
+    if (resolving.has(memo.name)) return null
+    goExpr = memoEnvValueGo(ctx, memo, signals, propsParams, propFallbackVars, new Set([...resolving, memo.name]))
+  } else if (param) {
+    const hoisted = propFallbackVars.get(name)
+    goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
+  } else if (name === ctx.state.propsObjectName) {
+    // The props object (`props.items.length`) as a map keyed by each
+    // prop's caller-facing name (#3512).
+    // An aliased destructure (`const { label: text } = props`) adds a
+    // second entry with the same caller-facing name; each key appears once.
+    const keys = [...new Set(propsParams.map(p => p.sourceName ?? p.name))]
+    goExpr = `map[string]any{${keys.map(key => `${JSON.stringify(key)}: in.${capitalizeFieldName(key)}`).join(', ')}}`
+  }
+  return goExpr
 }
 
 /**

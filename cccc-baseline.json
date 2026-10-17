@@ -130,9 +130,6 @@
       "collectPropsReadByCtorInit/visit": [
         37
       ],
-      "evalExprGo": [
-        37
-      ],
       "memoInitialFromParsedBody": [
         226
       ],
