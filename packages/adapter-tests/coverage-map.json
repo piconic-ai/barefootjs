@@ -6254,12 +6254,14 @@
         "conditional",
         "identifier",
         "literal",
+        "logical",
         "member"
       ],
       "axes": [
         "binary:===",
         "literal:number",
-        "literal:string"
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "text"
