@@ -296,6 +296,10 @@ export function computeInlinability(
   // here rather than calling `computeDeclarationScopes` a second time.
 
   const decisionsByName = new Map<string, RelocateDecision[]>()
+  // Constants are classified in declaration order, so a later const can see
+  // which earlier ones inline (#3513).
+  const inlinableLocals = new Set<string>()
+  env.inlinableLocals = inlinableLocals
   for (const c of ctx.localConstants) {
     const { status, decisions } = classifyConstantInitial(
       c,
@@ -309,6 +313,7 @@ export function computeInlinability(
     )
     constants.set(c.name, status)
     decisionsByName.set(c.name, decisions)
+    if (status.kind === 'inlinable') inlinableLocals.add(c.name)
   }
 
   const templateRiskyNames = collectTemplateRiskyNames(irRoot)
