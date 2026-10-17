@@ -10,12 +10,13 @@
  *   if (!label) label = 'Fallback'
  *
  * This pre-pass rewrites that to the single value the binding holds at
- * render time, and removes the reassigning statements:
+ * render time, binding each intermediate value once, and removes the
+ * reassigning statements:
  *
- *   let label = ((!(props.label ?? 'Default')) ? ('Fallback') : (props.label ?? 'Default'))
+ *   const label_1 = props.label ?? 'Default'; let label = ((!(label_1)) ? ('Fallback') : (label_1))
  *
  * Every later stage (the analyzer, the CSR template, the template adapters,
- * the client init body) then sees an ordinary binding with one value, so
+ * the client init body) then sees ordinary bindings with one value each, so
  * they agree by construction.
  *
  * The rewrite only applies where it cannot change behaviour:
@@ -23,16 +24,20 @@
  *     is an assignment to the binding (`x = e`, `x += e`, `x ??= e`, …), an
  *     `if`/`else` whose branches are such assignments, or a block of them;
  *   - the initializer, every assigned value and every condition is free of
- *     side effects (no calls, no assignments, no functions), so evaluating
- *     them at the declaration instead of at their statements yields the same
- *     value.
+ *     side effects (no calls, no assignments, no functions);
+ *   - every expression is evaluated exactly as often, and in the same order,
+ *     as the original statements evaluate it. Each statement's incoming value
+ *     is a binding (a read of it is unobservable) or a literal, and a
+ *     conditional evaluates only the branch it takes; inside a statement, a
+ *     computed value read more than once on one path is left unfolded, since
+ *     repeating it would repeat a member read a getter may observe.
  * Anything else leaves the binding as it is (and `markMutatedConstants`
  * flags it as before).
  */
 
 import ts from 'typescript'
 
-/** Folded values longer than this are left unfolded: each `if` may repeat the value so far. */
+/** Folded values longer than this are left unfolded. */
 const MAX_FOLDED_LENGTH = 4000
 
 interface Edit {
@@ -50,7 +55,8 @@ export function foldRenderReassignmentsInSource(source: string, filePath: string
   if (!source.includes('let ')) return null
   const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const edits: Edit[] = []
-  for (const body of topLevelFunctionBodies(sf)) foldBlock(body.statements, sf, edits)
+  const names = new FreshNames(sf)
+  for (const body of topLevelFunctionBodies(sf)) foldBlock(body.statements, sf, names, edits)
   if (edits.length === 0) return null
   edits.sort((a, b) => b.start - a.start)
   let out = source
@@ -71,27 +77,64 @@ function topLevelFunctionBodies(sf: ts.SourceFile): ts.Block[] {
   return bodies
 }
 
-function foldBlock(statements: ts.NodeArray<ts.Statement>, sf: ts.SourceFile, edits: Edit[]): void {
+/** Identifiers not yet used anywhere in the file, for the intermediate bindings. */
+class FreshNames {
+  private readonly used = new Set<string>()
+  constructor(sf: ts.SourceFile) {
+    const visit = (node: ts.Node): void => {
+      if (ts.isIdentifier(node)) this.used.add(node.text)
+      ts.forEachChild(node, visit)
+    }
+    visit(sf)
+  }
+  next(base: string): string {
+    let k = 1
+    while (this.used.has(`${base}_${k}`)) k++
+    const name = `${base}_${k}`
+    this.used.add(name)
+    return name
+  }
+}
+
+/** A value: its source text, and whether it is a literal or a plain identifier, which may be repeated freely. */
+interface Value {
+  text: string
+  trivial: boolean
+}
+
+function foldBlock(statements: ts.NodeArray<ts.Statement>, sf: ts.SourceFile, names: FreshNames, edits: Edit[]): void {
   for (let i = 0; i < statements.length; i++) {
     const decl = foldableLet(statements[i]!)
     if (!decl) continue
     const name = decl.name.text
-    let current = decl.initializer.getText(sf)
+    // `value` is the binding's value so far. Each statement reads it through
+    // a binding of its own (or directly, when it is a literal or identifier),
+    // so its expression is evaluated once, where the original evaluated it.
+    let value: Value = { text: decl.initializer.getText(sf), trivial: isTrivial(decl.initializer) }
+    const bindings: string[] = []
     let last = i
     for (let j = i + 1; j < statements.length; j++) {
-      const next = foldStatement(statements[j]!, name, current, sf)
-      if (next === null || next.length > MAX_FOLDED_LENGTH) break
-      current = next
+      const ref = value.trivial ? value.text : names.next(name)
+      const next = foldStatement(statements[j]!, name, { text: ref, trivial: true }, sf)
+      if (next === null || next.text.length > MAX_FOLDED_LENGTH) break
+      if (!value.trivial) bindings.push(`const ${ref} = ${value.text}; `)
+      value = next
       last = j
     }
     if (last === i) continue
-    const removed = statements.slice(i + 1, last + 1)
+    const stmt = statements[i]!
     const initText = decl.initializer.getText(sf)
-    edits.push({ start: decl.initializer.getStart(sf), end: decl.initializer.getEnd(), text: current })
-    const surplus = countNewlines(current) - countNewlines(initText)
-    edits.push(...blankStatements(removed, sf, surplus))
+    const prefix = bindings.join('')
+    edits.push({ start: stmt.getStart(sf), end: stmt.getStart(sf), text: prefix })
+    edits.push({ start: decl.initializer.getStart(sf), end: decl.initializer.getEnd(), text: value.text })
+    const surplus = countNewlines(prefix) + countNewlines(value.text) - countNewlines(initText)
+    edits.push(...blankStatements(statements.slice(i + 1, last + 1), sf, surplus))
     i = last
   }
+}
+
+function isTrivial(expr: ts.Expression): boolean {
+  return PURE_LEAF_KINDS.has(skipParens(expr).kind)
 }
 
 /** `let x = <pure initializer>` with a single identifier binding. */
@@ -115,42 +158,71 @@ const COMPOUND_OPERATORS = new Map<ts.SyntaxKind, string>([
   [ts.SyntaxKind.AmpersandAmpersandEqualsToken, '&&'],
 ])
 
-/** The binding's value after `stmt`, given its value `current` before; `null` when `stmt` is not foldable. */
-function foldStatement(stmt: ts.Statement, name: string, current: string, sf: ts.SourceFile): string | null {
-  if (ts.isEmptyStatement(stmt)) return current
-  if (ts.isBlock(stmt)) {
-    let value = current
-    for (const s of stmt.statements) {
-      const next = foldStatement(s, name, value, sf)
-      if (next === null) return null
-      value = next
-    }
-    return value
-  }
-  if (ts.isIfStatement(stmt)) {
-    if (!isPure(stmt.expression)) return null
-    const whenTrue = foldStatement(stmt.thenStatement, name, current, sf)
-    if (whenTrue === null) return null
-    const whenFalse = stmt.elseStatement ? foldStatement(stmt.elseStatement, name, current, sf) : current
-    if (whenFalse === null) return null
-    const test = substitute(stmt.expression, name, current, sf)
-    return `((${test}) ? (${whenTrue}) : (${whenFalse}))`
-  }
+/**
+ * A statement's effect on the binding: its value afterwards, and the most
+ * times one path through it evaluates the incoming value.
+ */
+interface Folded extends Value {
+  reads: number
+}
+
+/**
+ * The binding's value after `stmt`, given its value `current` before; `null`
+ * when `stmt` is not foldable, or when it would evaluate a computed
+ * `current` more than once on one path.
+ */
+function foldStatement(stmt: ts.Statement, name: string, current: Value, sf: ts.SourceFile): Folded | null {
+  const folded = foldStatementUnchecked(stmt, name, current, sf)
+  return folded !== null && (current.trivial || folded.reads <= 1) ? folded : null
+}
+
+function foldStatementUnchecked(stmt: ts.Statement, name: string, current: Value, sf: ts.SourceFile): Folded | null {
+  if (ts.isEmptyStatement(stmt)) return { ...current, reads: 1 }
+  if (ts.isBlock(stmt)) return foldSequence(stmt.statements, name, current, sf)
+  if (ts.isIfStatement(stmt)) return foldIf(stmt, name, current, sf)
   if (!ts.isExpressionStatement(stmt)) return null
   const expr = skipParens(stmt.expression)
   if (!ts.isBinaryExpression(expr)) return null
   const target = skipParens(expr.left)
   if (!ts.isIdentifier(target) || target.text !== name || !isPure(expr.right)) return null
-  const value = substitute(expr.right, name, current, sf)
-  if (expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) return value
+  const value = substitute(expr.right, name, current.text, sf)
+  if (expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+    return { text: value.text, reads: value.reads, trivial: value.reads === 0 && isTrivial(expr.right) }
+  }
   const op = COMPOUND_OPERATORS.get(expr.operatorToken.kind)
-  return op === undefined ? null : `((${current}) ${op} (${value}))`
+  if (op === undefined) return null
+  return { text: `((${current.text}) ${op} (${value.text}))`, reads: 1 + value.reads, trivial: false }
 }
 
-/** `expr`'s source text with every read of `name` replaced by `(current)`. */
-function substitute(expr: ts.Expression, name: string, current: string, sf: ts.SourceFile): string {
+/** Statements in order: each reads the value the previous one left. */
+function foldSequence(stmts: readonly ts.Statement[], name: string, current: Value, sf: ts.SourceFile): Folded | null {
+  let value: Folded = { ...current, reads: 1 }
+  for (const s of stmts) {
+    const next = foldStatement(s, name, value, sf)
+    if (next === null) return null
+    value = { ...next, reads: next.reads * value.reads }
+  }
+  return value
+}
+
+/** A conditional evaluates its test, then only the branch it takes. */
+function foldIf(stmt: ts.IfStatement, name: string, current: Value, sf: ts.SourceFile): Folded | null {
+  if (!isPure(stmt.expression)) return null
+  const whenTrue = foldStatement(stmt.thenStatement, name, current, sf)
+  if (whenTrue === null) return null
+  const whenFalse = stmt.elseStatement ? foldStatement(stmt.elseStatement, name, current, sf) : { ...current, reads: 1 }
+  if (whenFalse === null) return null
+  const test = substitute(stmt.expression, name, current.text, sf)
+  return {
+    text: `((${test.text}) ? (${whenTrue.text}) : (${whenFalse.text}))`,
+    reads: test.reads + Math.max(whenTrue.reads, whenFalse.reads),
+    trivial: false,
+  }
+}
+
+/** `expr`'s source text with every read of `name` replaced by `(current)`, and how many reads there were. */
+function substitute(expr: ts.Expression, name: string, current: string, sf: ts.SourceFile): { text: string; reads: number } {
   const start = expr.getStart(sf)
-  const text = expr.getText(sf)
   const reads: ts.Identifier[] = []
   const visit = (node: ts.Node): void => {
     if (ts.isTypeNode(node)) return
@@ -158,12 +230,12 @@ function substitute(expr: ts.Expression, name: string, current: string, sf: ts.S
     ts.forEachChild(node, visit)
   }
   visit(expr)
-  let out = text
-  for (const id of reads.reverse()) {
+  let out = expr.getText(sf)
+  for (const id of [...reads].reverse()) {
     const at = id.getStart(sf) - start
     out = `${out.slice(0, at)}(${current})${out.slice(at + id.text.length)}`
   }
-  return out
+  return { text: out, reads: reads.length }
 }
 
 function isPropertyName(id: ts.Identifier): boolean {
