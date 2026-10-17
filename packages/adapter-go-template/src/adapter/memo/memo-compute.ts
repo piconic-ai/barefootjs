@@ -32,6 +32,7 @@ import {
   unboxToGoScalar,
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
+import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -479,6 +480,8 @@ export function computedPropSeedGo(
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
   if (!parsed || !isComputedSeedShape(parsed)) return null
+  // A prop member chain inside the seed keeps its own refusal (#3142).
+  if (embeddedPropMemberChain(ctx, parsed, propsParams)) return null
   const readsProp = [...freeVarsInBody(parsed, new Set())].some(
     name => name === ctx.state.propsObjectName || propsParams.some(p => p.name === name),
   )
