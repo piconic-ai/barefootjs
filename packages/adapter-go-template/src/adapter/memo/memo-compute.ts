@@ -1358,8 +1358,8 @@ export function resolveGetterValueAsGo(
     // Already on the resolution stack (self- or mutually-referencing
     // ternary operands) — fall back to null rather than recurse forever.
     if (resolving.has(memo.name)) return null
-    const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
-    const fb = ctx.extractPropFallback(stripped)
+    const body = memo.bodyExpr ?? ''
+    const fb = ctx.extractPropFallback(body)
     if (fb && capitalizeFieldName(fb.propName) === capitalizeFieldName(memo.name)) {
       const fbParam = propsParams.find(p => p.name === fb.propName)
       const field = `in.${capitalizeFieldName(fbParam?.sourceName ?? fb.propName)}`

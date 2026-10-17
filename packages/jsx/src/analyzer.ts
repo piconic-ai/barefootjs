@@ -1905,7 +1905,7 @@ function isMemoDeclaration(node: ts.VariableDeclaration, ctx: AnalyzerContext): 
 function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolean {
   let node: ts.Node | undefined = memoArrow
   while (node && ts.isParenthesizedExpression(node)) node = node.expression
-  if (!node || !ts.isArrowFunction(node)) return false
+  if (!node || (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node))) return false
   let body: ts.Node = node.body
   while (ts.isParenthesizedExpression(body)) body = body.expression
   if (ts.isBlock(body)) {
@@ -1917,11 +1917,36 @@ function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolea
   return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
 }
 
+/**
+ * The expression a memo's callback evaluates to, as the analyzer reads it from
+ * the callback node (#3510). A zero-parameter arrow or `function` expression
+ * yields its body: the expression body, or the operand of a block that is a
+ * single `return`. Any other block (and any other callback: async, generator,
+ * a parameter, a function reference) yields a call of the whole callback, so
+ * a consumer that substitutes the memo's value never sees an uncalled function.
+ */
+function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean } {
+  let fn: ts.Expression = callback
+  while (ts.isParenthesizedExpression(fn)) fn = fn.expression
+  if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return { node: callback, call: true }
+  const plain = fn.parameters.length === 0 &&
+    !(ts.isFunctionExpression(fn) && fn.asteriskToken) &&
+    !fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)
+  if (!plain) return { node: callback, call: true }
+  if (!ts.isBlock(fn.body)) return { node: fn.body, call: false }
+  const [only] = fn.body.statements
+  if (fn.body.statements.length === 1 && ts.isReturnStatement(only) && only.expression) {
+    return { node: only.expression, call: false }
+  }
+  return { node: callback, call: true }
+}
+
 function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   const name = (node.name as ts.Identifier).text
   const callExpr = node.initializer as ts.CallExpression
   const computation = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
   const typedComputation = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
+  const body = callExpr.arguments[0] ? memoBodyNode(callExpr.arguments[0]) : undefined
 
   // Extract dependencies from computation
   const deps = extractDependencies(computation, ctx)
@@ -1937,13 +1962,9 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else {
-    // The memo computation is an arrow function; the type we want is
-    // the body's, not the arrow itself. Pull `() => <body>` apart so
-    // `inferTypeFromValue` sees the actual expression.
-    const arrowBody = computation.replace(/^\s*\([^)]*\)\s*=>\s*/, '').trim()
-    if (arrowBody && arrowBody !== computation) {
-      type = inferTypeFromValue(arrowBody)
-    }
+    // The type we want is the body's, not the callback itself, so
+    // `inferTypeFromValue` sees the expression the memo evaluates to.
+    if (body && !body.call) type = inferTypeFromValue(ctx.getJS(body.node))
   }
 
   // When the syntactic heuristic above can't resolve a precise type
@@ -1976,9 +1997,14 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   // (`() => { … }`) and unsupported shapes leave `parsed` undefined and
   // consumers fall back to `computation`.
   const memoArrow = callExpr.arguments[0]
+  // Unwrap parens around the callback; a `function () { … }` callback counts
+  // as a block-bodied arrow (#3510).
+  let memoFn: ts.Node | undefined = memoArrow
+  while (memoFn && ts.isParenthesizedExpression(memoFn)) memoFn = memoFn.expression
+  if (memoFn && !ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) memoFn = undefined
   const parsedBody =
-    memoArrow && ts.isArrowFunction(memoArrow) && !ts.isBlock(memoArrow.body)
-      ? parseExpression(ctx.getJS(memoArrow.body))
+    memoFn && !ts.isBlock(memoFn.body)
+      ? parseExpression(ctx.getJS(memoFn.body))
       : undefined
   // `object-literal` is excluded alongside `unsupported`: an object-returning
   // memo (`() => ({ … })`) isn't lowered from the parsed tree yet, so leaving
@@ -1991,14 +2017,8 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
 
   // Block-bodied memos: carry the statements (tolerant — unparseable ones are
   // omitted) so adapters can pattern-match block shapes (e.g. a guard-and-
-  // return-const memo) without re-parsing `computation`. Unwrap parens around
-  // the arrow to match the former adapter walks.
-  let arrowNode: ts.Node | undefined = memoArrow
-  while (arrowNode && ts.isParenthesizedExpression(arrowNode)) arrowNode = arrowNode.expression
-  const blockBody =
-    arrowNode && ts.isArrowFunction(arrowNode) && ts.isBlock(arrowNode.body)
-      ? arrowNode.body
-      : undefined
+  // return-const memo) without re-parsing `computation`.
+  const blockBody = memoFn && ts.isBlock(memoFn.body) ? memoFn.body : undefined
   const parsedBlock = blockBody
     ? parseBlockBodyTolerant(blockBody, ctx.sourceFile, node => ctx.getJS(node))
     : undefined
@@ -2016,19 +2036,23 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   // module scope — it is not a closure over `initXxx`'s `const value =
   // _p.value` extraction, so the bare ref must become `_p.value`
   // (adapter-tests scope-gate, #2468 sweep).
-  let templateComputation: string | undefined
-  if (!ctx.propsObjectName && callExpr.arguments[0]) {
+  const asBodyExpr = (text: string): string => (body?.call ? `(${text})()` : text)
+  const bodyExpr = body ? asBodyExpr(ctx.getJS(body.node)) : undefined
+  let templateBodyExpr: string | undefined
+  if (!ctx.propsObjectName && body) {
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateComputation = rewriteBarePropRefs(computation, callExpr.arguments[0], propNames, undefined, propAliases)
+      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases)
+      templateBodyExpr = rewritten === undefined ? undefined : asBodyExpr(rewritten)
     }
   }
 
   ctx.memos.push({
     name,
     computation,
-    templateComputation,
+    bodyExpr,
+    templateBodyExpr,
     parsedBlock,
     parsedBlockComplete,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,

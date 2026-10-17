@@ -2690,8 +2690,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // prop's field, so its `?? fallback` folds into the prop initializer.
     const memoFallbacks = new Map<string, { goFallback: string; goType: string }>()
     for (const memo of ir.metadata.memos) {
-      const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
-      const m = this.extractPropFallback(stripped)
+      const body = memo.bodyExpr ?? ''
+      const m = this.extractPropFallback(body)
       if (!m) continue
       if (capitalizeFieldName(m.propName) !== capitalizeFieldName(memo.name)) continue
       // `applyGoFallback` emits a string-typed zero check; only `string` /

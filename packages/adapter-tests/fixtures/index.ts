@@ -603,6 +603,7 @@ import { fixture as preWhitespace } from './pre-whitespace'
 import { fixture as tableDynamicRows } from './table-dynamic-rows'
 import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
 import { fixture as memoChain } from './memo-chain'
+import { fixture as memoFunctionExpression } from './memo-function-expression'
 import { fixture as signalObjectField } from './signal-object-field'
 import { fixture as nestedFragments } from './nested-fragments'
 import { fixture as deepNesting } from './deep-nesting'
@@ -1448,6 +1449,7 @@ export const jsxFixtures: JSXFixture[] = [
   tableDynamicRows,
   adjacentDynamicText,
   memoChain,
+  memoFunctionExpression,
   signalObjectField,
   nestedFragments,
   deepNesting,
