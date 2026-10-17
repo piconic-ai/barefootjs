@@ -68,6 +68,8 @@ describe('MemoInfo.bodyExpr (#3510)', () => {
       'function base() { return typeof base }',
       'function () { return arguments.length }',
       'function () { return this }',
+      'function () { return Object.keys({ [arguments.length]() {} })[0] }',
+      'function () { return class extends (this ? Object : Object) {} }',
     ]) {
       const memo = memoOf(callback, '{ base }: { base: number }')
       expect(memo.bodyExprIsCall).toBe(true)
@@ -93,5 +95,26 @@ describe('MemoInfo.bodyExpr (#3510)', () => {
     const html = template({ base: 7 })
     expect(html).toContain('-->function<!--')
     expect(html).toContain('-->0<!--')
+  })
+
+  test('a callback whose nested function only binds its own scope is still extracted', () => {
+    const memo = memoOf('function () { return [1].map(function () { return arguments.length })[0] }')
+    expect(memo.bodyExprIsCall).toBeUndefined()
+  })
+
+  test('a computed method name reading the callback\'s arguments renders its own value', () => {
+    const source = `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      export function C() {
+        const key = createMemo(function () { return Object.keys({ [arguments.length]() {} })[0] })
+        return <p>{key()}</p>
+      }
+    `
+    const result = compileJSX(source, 'C.tsx', { adapter: new TestAdapter() })
+    const line = result.files.find((f) => f.type === 'clientJs')!.content.split('\n').find((l) => l.includes('hydrate('))!
+    const lambda = line.match(/template: (\(_p\) => `.*`) \}\)$/)![1]
+    const template = new Function('escapeTextOrMarkup', 'escapeText', 'escapeAttr', `return ${lambda}`)(String, String, String)
+    expect(template({})).toContain('-->0<!--')
   })
 })

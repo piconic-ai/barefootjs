@@ -1921,8 +1921,9 @@ function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolea
  * Whether a callback's body means the same outside the callback. An arrow
  * binds nothing of its own. A `function` expression binds its name (when it
  * has one), `arguments` and `this`, so its body only means the same when it
- * is anonymous and reads neither; nested non-arrow functions bind their own
- * and are not searched.
+ * is anonymous and reads neither; the bodies of nested non-arrow functions,
+ * methods and class members bind their own and are not searched, but their
+ * computed names and a class's `extends` clause are.
  */
 function isFunctionScopeFree(fn: ts.ArrowFunction | ts.FunctionExpression): boolean {
   if (ts.isArrowFunction(fn)) return true
@@ -1934,8 +1935,20 @@ function isFunctionScopeFree(fn: ts.ArrowFunction | ts.FunctionExpression): bool
       bound = true
       return
     }
-    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) || ts.isMethodDeclaration(node) ||
-        ts.isClassLike(node) || ts.isGetAccessor(node) || ts.isSetAccessor(node)) return
+    // A nested function or class body binds its own `this` / `arguments`,
+    // but a computed member name and a class's `extends` clause are
+    // evaluated in the enclosing scope, so those are still searched.
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) return
+    if (ts.isMethodDeclaration(node) || ts.isGetAccessor(node) || ts.isSetAccessor(node) ||
+        ts.isPropertyDeclaration(node)) {
+      if (ts.isComputedPropertyName(node.name)) visit(node.name.expression)
+      return
+    }
+    if (ts.isClassLike(node)) {
+      node.heritageClauses?.forEach(visit)
+      node.members.forEach(visit)
+      return
+    }
     ts.forEachChild(node, visit)
   }
   ts.forEachChild(fn.body, visit)
