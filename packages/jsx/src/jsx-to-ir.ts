@@ -414,7 +414,7 @@ function exprReferencesModuleClientSignal(expr: ts.Expression, ctx: TransformCon
 /**
  * Walk an expression AST to check if it contains any CallExpression.
  * Catches all call patterns: identifier(), obj.method(), fn?.(), IIFEs, etc.
- * Used by canGenerateStaticTemplate() to detect expressions unsafe for static rendering.
+ * Recorded on the IR as `hasFunctionCalls`.
  */
 function exprHasFunctionCalls(expr: ts.Expression): boolean {
   let found = false
