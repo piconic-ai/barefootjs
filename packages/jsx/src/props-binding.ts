@@ -80,9 +80,11 @@ function parsedPropRead(
  * `value` text as that destructure but is NOT the prop: its default lives
  * only in the const, and reading the prop instead drops it (#3501). The
  * analyzer marks the destructure on `ConstantInfo.propsDestructure`, so the
- * two are told apart by that field, not by the text. One such binding that
- * is reassigned later still reads the prop: it has no single value the
- * template could inline, and the prop is what it holds until reassigned.
+ * two are told apart by that field, not by the text. A reassignment that
+ * directly follows the declaration folds into the initializer
+ * (`fold-render-reassignments.ts`), so the binding keeps one value; one that
+ * cannot fold (`mutatedAfterDeclaration`) leaves no single value a template
+ * could inline, so the binding reads the prop it holds until reassigned.
  */
 export function isPropsAliasConst(
   c: Pick<ConstantInfo, 'name' | 'parsed' | 'propsDestructure' | 'mutatedAfterDeclaration'>,

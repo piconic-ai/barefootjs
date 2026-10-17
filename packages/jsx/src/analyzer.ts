@@ -7,6 +7,7 @@
  */
 
 import ts from 'typescript'
+import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
@@ -263,6 +264,14 @@ export function analyzeComponent(
     // The pre-built ts.Program (if any) references the original source,
     // so discard it — the analyzer will rebuild a fresh program if
     // type-based detection is needed.
+    program = undefined
+  }
+  // Pre-pass: fold a `let`'s render-time reassignments into its initializer
+  // so every stage reads one value for it (#3501). A no-op unless a `let`
+  // is directly followed by side-effect-free reassignments of it.
+  const folded = foldRenderReassignmentsInSource(source, filePath)
+  if (folded) {
+    source = folded
     program = undefined
   }
 

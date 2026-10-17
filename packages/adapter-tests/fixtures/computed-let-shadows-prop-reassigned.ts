@@ -2,15 +2,17 @@ import { createFixture } from '../src/types'
 
 /**
  * A `let` that shadows a prop of the same name with a default and is
- * reassigned later (`let label = props.label ?? 'Default'; if (!label) label
- * = 'Fallback'`), with the prop passed. The reassignment is not taken, so
- * the text is the prop. Such a binding has no single value the CSR template
- * could inline, so the template reads the prop it starts from, as it did
- * before #3501 made an unreassigned shadow read its own default.
+ * reassigned under a condition (`let label = props.label ?? 'Default'; if
+ * (!label) label = 'Fallback'`), with the prop passed. A template cannot run
+ * the reassigning statement, so the reassignment is folded into the
+ * initializer before analysis (`fold-render-reassignments.ts`, #3501): every
+ * adapter and the CSR template read the one value the binding holds at
+ * render. The generated data points cover the omitted prop (`Default`) and
+ * the empty one (`Fallback`).
  */
 export const fixture = createFixture({
   id: 'computed-let-shadows-prop-reassigned',
-  description: 'a reassigned let shadowing a prop with a default renders the passed prop on CSR (#3501)',
+  description: 'a let reassigned under a condition renders its render-time value on every adapter and on CSR (#3501)',
   source: `
 'use client'
 

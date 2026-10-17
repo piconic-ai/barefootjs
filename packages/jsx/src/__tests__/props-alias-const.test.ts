@@ -37,8 +37,12 @@ describe('isPropsAliasConst', () => {
     expect(aliasOf("let label = props.label ?? 'Default'")).toBe(false)
   })
 
-  test('a `?? default` binding reassigned later still reads the prop', () => {
-    expect(aliasOf("let label = props.label ?? 'Default'\n  if (!label) label = 'Fallback'")).toBe(true)
+  test('a `?? default` binding whose reassignment cannot fold still reads the prop', () => {
+    expect(aliasOf("let label = props.label ?? 'Default'\n  for (const t of [1]) label = 'Fallback'")).toBe(true)
+  })
+
+  test('a `?? default` binding whose reassignment folds is not the prop', () => {
+    expect(aliasOf("let label = props.label ?? 'Default'\n  if (!label) label = 'Fallback'")).toBe(false)
   })
 
   test('a renamed destructure binding is not an alias of a prop of its own name', () => {
