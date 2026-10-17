@@ -3842,6 +3842,26 @@
       }
     }
   ],
+  "memo-multi-statement-block": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "memo-string-concat-signal": [
     {
       "name": "gen:name:empty",
@@ -3859,6 +3879,17 @@
       "name": "gen:name:multibyte",
       "props": {
         "name": "日本語"
+      }
+    }
+  ],
+  "memo-ternary-comparison-test": [
+    {
+      "name": "gen:sel:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ]
       }
     }
   ],

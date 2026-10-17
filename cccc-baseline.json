@@ -130,9 +130,6 @@
       "collectPropsReadByCtorInit/visit": [
         37
       ],
-      "evalExprGo": [
-        37
-      ],
       "memoInitialFromParsedBody": [
         226
       ],
@@ -496,9 +493,6 @@
       ]
     },
     "packages/jsx/src/analyzer.ts": {
-      "analyzeComponent": [
-        31
-      ],
       "checkStatementsForReactiveFactoryArity": [
         73
       ],
