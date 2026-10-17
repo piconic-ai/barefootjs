@@ -37,6 +37,8 @@
     "complexity": "cccc packages/*/src --table --top-cognitive 20",
     "complexity:check": "bun scripts/ci/complexity-ratchet.ts",
     "complexity:baseline": "bun scripts/ci/complexity-ratchet.ts --update",
+    "ratchet:emit-parse": "bun scripts/ci/emit-parse-ratchet.ts",
+    "ratchet:emit-parse:baseline": "bun scripts/ci/emit-parse-ratchet.ts --update",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {

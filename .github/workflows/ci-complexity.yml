@@ -22,6 +22,9 @@ on:
       - 'cccc-baseline.json'
       - 'scripts/ci/complexity-ratchet.ts'
       - 'scripts/lib/complexity-ratchet.ts'
+      - 'emit-parse-baseline.json'
+      - 'scripts/ci/emit-parse-ratchet.ts'
+      - 'scripts/lib/emit-parse-ratchet.ts'
       - '.github/workflows/ci-complexity.yml'
   pull_request:
     paths:
@@ -31,6 +34,9 @@ on:
       - 'cccc-baseline.json'
       - 'scripts/ci/complexity-ratchet.ts'
       - 'scripts/lib/complexity-ratchet.ts'
+      - 'emit-parse-baseline.json'
+      - 'scripts/ci/emit-parse-ratchet.ts'
+      - 'scripts/lib/emit-parse-ratchet.ts'
       - '.github/workflows/ci-complexity.yml'
 
 permissions:
@@ -64,3 +70,23 @@ jobs:
         # No dependencies: the script and its library import nothing from
         # node_modules, so no `bun install`.
         run: bun scripts/ci/complexity-ratchet.ts
+
+  # The emit-parse ratchet (#3516, AGENTS.md "Complexity"): Phase 2 code may
+  # not re-parse IR source text in more places than emit-parse-baseline.json
+  # records. It walks the sources with the TypeScript AST, so it needs the
+  # dependencies the complexity job does without.
+  emit-parse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Emit-parse ratchet
+        run: bun scripts/ci/emit-parse-ratchet.ts
