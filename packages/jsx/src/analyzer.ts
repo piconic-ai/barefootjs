@@ -237,6 +237,18 @@ export function createAnchoredProgram(source: string, filename: string, anchorDi
   return createProgramForFile(source, filename, { currentDirectory: anchorDir })?.program
 }
 
+/**
+ * Parse a signal's initializer into the IR, and record which prop it seeds
+ * from and with what fallback (#3508).
+ */
+function parseSignalInitializer(signal: AnalyzerContext['signals'][number], ctx: AnalyzerContext): void {
+  if (!signal.initialValue) return
+  const parsed = parseExpression(`(${signal.initialValue})`)
+  if (parsed.kind !== 'unsupported') signal.parsed = parsed
+  const seed = signal.isModule ? null : signalPropSeed(signal.parsed, ctx.propsParams, ctx.propsObjectName)
+  if (seed) signal.propSeed = seed
+}
+
 // =============================================================================
 // Main Entry Point
 // =============================================================================
@@ -385,14 +397,7 @@ export function analyzeComponent(
   // scalars / prop refs are unchanged. An unsupported shape leaves `parsed`
   // undefined and the adapter falls back. Runs after `scanImportedClientSignals`
   // so imported signals are covered too.
-  for (const signal of ctx.signals) {
-    if (!signal.initialValue) continue
-    const parsed = parseExpression(`(${signal.initialValue})`)
-    if (parsed.kind !== 'unsupported') signal.parsed = parsed
-    // Which prop the initializer reads, and with what fallback (#3508).
-    const seed = signal.isModule ? null : signalPropSeed(signal.parsed, ctx.propsParams, ctx.propsObjectName)
-    if (seed) signal.propSeed = seed
-  }
+  for (const signal of ctx.signals) parseSignalInitializer(signal, ctx)
 
   const separatedSource = separateLiteralSignalPropBindings(ctx, isNonReferenceIdentifierPosition)
   if (separatedSource !== null) {
