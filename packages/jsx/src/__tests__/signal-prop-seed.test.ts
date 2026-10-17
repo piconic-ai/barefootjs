@@ -8,10 +8,10 @@ import { TestAdapter } from '../adapters/test-adapter'
  * (`getControlledPropName`) read one fact, the analyzer's
  * `SignalInfo.propSeed`, so they agree on every initializer shape (#3508).
  */
-function clientJs(init: string): string {
+function clientJs(init: string, params = 'props: { a?: string; b?: string; n?: number; row?: { count: number } }'): string {
   const source = `'use client'
 import { createSignal } from '@barefootjs/client'
-export function T(props: { a?: string; n?: number; row?: { count: number } }) {
+export function T(${params}) {
   const [v, setV] = createSignal(${init})
   return <button onClick={() => setV(v())}>{String(v())}</button>
 }
@@ -67,5 +67,24 @@ describe('signal prop seed', () => {
     for (const init of ['props.n + 1', "props.a ? 'y' : 'n'"]) {
       expect(declaration(clientJs(init))).toBe(init.replaceAll('props.', '_p.'))
     }
+  })
+
+  test('a chained `??` seed stays controlled by its leftmost prop', () => {
+    const js = clientJs("props.a ?? props.b ?? 'x'")
+    expect(declaration(js)).toBe("_p.a ?? _p.b ?? 'x'")
+    expect(js).toContain('const __val = _p.a')
+    expect(js).toContain('if (__val !== undefined) setV(__val)')
+  })
+
+  test('a chained `||` seed stays controlled and re-syncs to the initializer', () => {
+    const js = clientJs("props.a || props.b || 'x'")
+    expect(js).toContain('const __val = _p.a')
+    expect(js).toContain("if (__val !== undefined) setV(_p.a || _p.b || 'x')")
+  })
+
+  test('a chained seed over destructured props stays controlled', () => {
+    const js = clientJs("a ?? b ?? 'x'", '{ a, b }: { a?: string; b?: string }')
+    expect(js).toContain('const __val = _p.a')
+    expect(js).toContain('if (__val !== undefined) setV(__val)')
   })
 })
