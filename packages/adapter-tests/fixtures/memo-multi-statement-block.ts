@@ -7,7 +7,8 @@ import { createFixture } from '../src/types'
  * adapters that seed memos in-template rendered them empty. They now seed
  * from the analyzer's fold of the statements into one expression (#3523).
  * Go Template typed such a memo from the block's text, where `{` reads as
- * an object, and rendered `map[]`; the type now comes from the fold too.
+ * an object, and rendered `map[]`; the type now comes from the fold too
+ * (`k ?? false` is not typed by its fallback, so it renders `2`).
  */
 export const fixture = createFixture({
   id: 'memo-multi-statement-block',
@@ -29,21 +30,27 @@ export function MultiStatementMemo({ label }: { label?: string }) {
     if (count() > 5) return 'big'
     return 'small'
   })
+  const settled = createMemo(() => {
+    const k = count()
+    return k ?? false
+  })
   return (
     <button onClick={() => setCount(count() + 1)}>
       <span>{tripled()}</span>
       <span>{shown()}</span>
       <span>{size()}</span>
+      <span>{settled()}</span>
     </button>
   )
 }
 `,
   props: {},
   expectedHtml: `
-    <button bf-s="test" bf="s6">
+    <button bf-s="test" bf="s8">
       <span bf="s1"><!--bf:s0-->6<!--/--></span>
       <span bf="s3"><!--bf:s2-->none<!--/--></span>
       <span bf="s5"><!--bf:s4-->small<!--/--></span>
+      <span bf="s7"><!--bf:s6-->2<!--/--></span>
     </button>
   `,
   dataPoints: [

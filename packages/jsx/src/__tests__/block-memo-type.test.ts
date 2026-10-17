@@ -33,6 +33,10 @@ describe('block memo type from its fold (#3523)', () => {
     expect(memoType(callback)).not.toBe('object')
   })
 
+  test('a logical fold is unknown, not the fallback type', () => {
+    expect(memoType('() => { const k = count()\n return k ?? false }')).toBe('unknown')
+  })
+
   test('a block returning an object literal is still an object', () => {
     expect(memoType('() => { const k = count()\n return { k } }')).toBe('object')
   })

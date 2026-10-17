@@ -6238,13 +6238,16 @@
         "conditional",
         "identifier",
         "literal",
+        "logical",
         "unary"
       ],
       "axes": [
         "binary:*",
         "binary:>",
+        "literal:boolean",
         "literal:number",
         "literal:string",
+        "logical:??",
         "unary:!"
       ],
       "contexts": [

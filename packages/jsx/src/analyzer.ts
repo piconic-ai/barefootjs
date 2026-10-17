@@ -10,7 +10,7 @@ import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { buildPropAliasMap, coalesceDefaultText } from './props-binding.ts'
@@ -417,15 +417,11 @@ export function analyzeComponent(
 function foldBlockMemos(ctx: AnalyzerContext): void {
   const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
   for (const memo of ctx.memos) {
-    if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete) continue
+    if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete || clientDirectiveMemos.has(memo)) continue
     const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })
     if (!folded.ok) continue
     memo.parsed = folded.expr
-    // The block's text read as `object`; its value is the fold (#3523). A
-    // returned object literal stays `object`.
-    if (blockTextTypedMemos.has(memo) && folded.expr.kind !== 'object-literal') {
-      memo.type = inferTypeFromValue(stringifyParsedExpr(folded.expr))
-    }
+    if (blockTextTypedMemos.has(memo)) memo.type = foldType(folded.expr)
   }
 }
 
@@ -2020,7 +2016,9 @@ function memoStructuredBody(
   // callback are unwrapped (#3510).
   let memoFn: ts.Node | undefined = callback
   while (memoFn && ts.isParenthesizedExpression(memoFn)) memoFn = memoFn.expression
-  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || !isValueReturningCallback(memoFn))) {
+  // A parameter binds names the body reads (`(label = 'inner') => label`),
+  // which a tree of the body alone would read as component scope (#3523).
+  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || memoFn.parameters.length > 0 || !isValueReturningCallback(memoFn))) {
     memoFn = undefined
   }
   const parsedBody =
@@ -2160,6 +2158,43 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   }
   ctx.memos.push(memo)
   if (blockTyped) blockTextTypedMemos.add(memo)
+  if (body && containsClientDirective(body.node, ctx.sourceFile)) clientDirectiveMemos.add(memo)
+}
+
+/**
+ * Whether a `/* @client *​/` directive comment precedes any node inside
+ * `root` (`return /* @client *​/ d.toLocaleDateString(…)`). A block memo
+ * carrying one is left unfolded, so it stays client-only (#3523).
+ */
+function containsClientDirective(root: ts.Node, sourceFile: ts.SourceFile): boolean {
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    const trivia = sourceFile.text.slice(node.pos, node.getStart(sourceFile))
+    BLOCK_COMMENT_RE.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = BLOCK_COMMENT_RE.exec(trivia)) !== null) {
+      if (CLIENT_DIRECTIVE_INTERIOR_RE.test(m[1])) found = true
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(root, visit)
+  return found
+}
+
+/** Block memos that carry a `/* @client *​/` directive and so are not folded. */
+const clientDirectiveMemos = new WeakSet<MemoInfo>()
+
+/**
+ * A block memo's type from its fold (#3523): the block's text read as
+ * `object`, but its value is the fold. A returned object literal stays
+ * `object`. A logical fold (`k ?? false`) is `unknown`: its value can be
+ * either side, while the text heuristic would read the fallback's type.
+ */
+function foldType(expr: ParsedExpr): TypeInfo {
+  if (expr.kind === 'object-literal') return { kind: 'object', raw: 'object' }
+  if (expr.kind === 'logical') return { kind: 'unknown', raw: 'unknown' }
+  return inferTypeFromValue(stringifyParsedExpr(expr))
 }
 
 /**

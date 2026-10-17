@@ -201,6 +201,39 @@ describe('computeSsrSeedPlan', () => {
     if (label.kind === 'opaque') expect(label.origin).toBe('memo')
   })
 
+  test.each([
+    ["(label = 'inner') => label"],
+    ["(label = 'inner') => { const k = label\n return k }"],
+  ])('memo callback with a parameter → opaque: %s', (callback) => {
+    const plan = planFor(`
+      'use client'
+      import { createMemo, createSignal } from '@barefootjs/client'
+      function C({ label }: { label: string }) {
+        const [on] = createSignal(false)
+        const m = createMemo(${callback})
+        return <p>{m()}{on() ? 'y' : 'n'}</p>
+      }
+    `)
+    expect(step(plan, 'm').kind).toBe('opaque')
+  })
+
+  test('block memo with a /* @client */ directive → opaque', () => {
+    const plan = planFor(`
+      'use client'
+      import { createMemo, createSignal } from '@barefootjs/client'
+      function C() {
+        const [date] = createSignal<Date | undefined>(undefined)
+        const label = createMemo(() => {
+          const d = date()
+          if (!d) return 'none'
+          return /* @client */ d.toLocaleDateString('en-US')
+        })
+        return <p>{label()}</p>
+      }
+    `)
+    expect(step(plan, 'label').kind).toBe('opaque')
+  })
+
   test('object-literal body → derived (#2696: value-position object literal, isSupportedValue)', () => {
     // Was `opaque` before `checkSupport` gained its `pos` parameter — a
     // memo's WHOLE body is a value position (an assignment, never a

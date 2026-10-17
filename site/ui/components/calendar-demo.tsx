@@ -18,7 +18,7 @@ export function CalendarBasicDemo() {
   const formattedDate = createMemo(() => {
     const d = date()
     if (!d) return 'No date selected'
-    return d.toLocaleDateString('en-US', {
+    return /* @client */ d.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -47,7 +47,7 @@ export function CalendarFormDemo() {
   const formattedDate = createMemo(() => {
     const d = date()
     if (!d) return ''
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return /* @client */ d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   })
 
   return (
@@ -101,7 +101,7 @@ export function CalendarWithConstraintsDemo() {
   const formattedDate = createMemo(() => {
     const d = date()
     if (!d) return 'Select a weekday'
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+    return /* @client */ d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
   })
 
   return (
