@@ -171,6 +171,17 @@ function isPropertyName(id: ts.Identifier): boolean {
   return ts.isPropertyAccessExpression(p) && p.name === id
 }
 
+const PURE_LEAF_KINDS: ReadonlySet<ts.SyntaxKind> = new Set([
+  ts.SyntaxKind.Identifier,
+  ts.SyntaxKind.StringLiteral,
+  ts.SyntaxKind.NumericLiteral,
+  ts.SyntaxKind.BigIntLiteral,
+  ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+  ts.SyntaxKind.TrueKeyword,
+  ts.SyntaxKind.FalseKeyword,
+  ts.SyntaxKind.NullKeyword,
+])
+
 /**
  * Whether evaluating `expr` has no side effects and reads nothing a
  * statement between the declaration and the reassignment could change:
@@ -178,30 +189,30 @@ function isPropertyName(id: ts.Identifier): boolean {
  */
 function isPure(expr: ts.Expression): boolean {
   const e = skipParens(expr)
-  if (ts.isIdentifier(e) || ts.isLiteralExpression(e) || ts.isNoSubstitutionTemplateLiteral(e)) return true
-  switch (e.kind) {
-    case ts.SyntaxKind.TrueKeyword:
-    case ts.SyntaxKind.FalseKeyword:
-    case ts.SyntaxKind.NullKeyword:
-      return true
-  }
-  if (ts.isPropertyAccessExpression(e)) return isPure(e.expression)
-  if (ts.isElementAccessExpression(e)) return isPure(e.expression) && isPure(e.argumentExpression)
+  if (PURE_LEAF_KINDS.has(e.kind)) return true
+  const operands = pureOperands(e)
+  return operands !== null && operands.every(isPure)
+}
+
+/** The sub-expressions of a side-effect-free form, or `null` for any other form. */
+function pureOperands(e: ts.Expression): readonly ts.Expression[] | null {
+  if (ts.isPropertyAccessExpression(e) || ts.isTypeOfExpression(e)) return [e.expression]
+  if (ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression(e)) return [e.expression]
+  if (ts.isElementAccessExpression(e)) return [e.expression, e.argumentExpression]
+  if (ts.isConditionalExpression(e)) return [e.condition, e.whenTrue, e.whenFalse]
+  if (ts.isTemplateExpression(e)) return e.templateSpans.map(s => s.expression)
   if (ts.isPrefixUnaryExpression(e)) {
-    return (
-      e.operator !== ts.SyntaxKind.PlusPlusToken && e.operator !== ts.SyntaxKind.MinusMinusToken && isPure(e.operand)
-    )
+    const sideEffect = e.operator === ts.SyntaxKind.PlusPlusToken || e.operator === ts.SyntaxKind.MinusMinusToken
+    return sideEffect ? null : [e.operand]
   }
-  if (ts.isTypeOfExpression(e)) return isPure(e.expression)
-  if (ts.isBinaryExpression(e)) {
-    const op = e.operatorToken.kind
-    const isAssignment = op >= ts.SyntaxKind.FirstAssignment && op <= ts.SyntaxKind.LastAssignment
-    return !isAssignment && op !== ts.SyntaxKind.CommaToken && isPure(e.left) && isPure(e.right)
-  }
-  if (ts.isConditionalExpression(e)) return isPure(e.condition) && isPure(e.whenTrue) && isPure(e.whenFalse)
-  if (ts.isTemplateExpression(e)) return e.templateSpans.every(s => isPure(s.expression))
-  if (ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression(e)) return isPure(e.expression)
-  return false
+  if (ts.isBinaryExpression(e)) return isPureOperator(e.operatorToken.kind) ? [e.left, e.right] : null
+  return null
+}
+
+/** A binary operator that neither assigns nor sequences. */
+function isPureOperator(op: ts.SyntaxKind): boolean {
+  const isAssignment = op >= ts.SyntaxKind.FirstAssignment && op <= ts.SyntaxKind.LastAssignment
+  return !isAssignment && op !== ts.SyntaxKind.CommaToken
 }
 
 function skipParens(expr: ts.Expression): ts.Expression {

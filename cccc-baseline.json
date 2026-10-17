@@ -497,7 +497,7 @@
     },
     "packages/jsx/src/analyzer.ts": {
       "analyzeComponent": [
-        32
+        31
       ],
       "checkStatementsForReactiveFactoryArity": [
         73

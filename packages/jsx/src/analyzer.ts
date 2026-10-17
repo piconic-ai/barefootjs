@@ -202,6 +202,22 @@ export function createProgramForFile(
 }
 
 /**
+ * The source the analyzer reads after its pre-passes, or `null` when none
+ * applies: same-file reactive factory calls inlined (#931), then each
+ * `let`'s render-time reassignments folded into its initializer so every
+ * stage reads one value for it (#3501).
+ */
+function rewriteSourceForAnalysis(
+  source: string,
+  filePath: string,
+  prescan: ReturnType<typeof prescanReactiveFactoriesInSource>,
+): string | null {
+  const inlined = prescan.factories.size > 0 ? rewriteFactoryCallsInSource(source, prescan) : null
+  const base = inlined ?? source
+  return foldRenderReassignmentsInSource(base, filePath) ?? inlined
+}
+
+/**
  * The Program to pass as `compileJSX`'s `program` when a test harness
  * compiles `source` under the relative virtual `filename`, with type
  * resolution anchored at `anchorDir` instead of `process.cwd()` — or
@@ -256,22 +272,12 @@ export function analyzeComponent(
   // no recognisable factories are present, so it is a no-op for the
   // common case.
   const prescan = prescanReactiveFactoriesInSource(source, filePath)
-  const rewritten = prescan.factories.size > 0
-    ? rewriteFactoryCallsInSource(source, prescan)
-    : null
+  const rewritten = rewriteSourceForAnalysis(source, filePath, prescan)
   if (rewritten) {
     source = rewritten
     // The pre-built ts.Program (if any) references the original source,
     // so discard it — the analyzer will rebuild a fresh program if
     // type-based detection is needed.
-    program = undefined
-  }
-  // Pre-pass: fold a `let`'s render-time reassignments into its initializer
-  // so every stage reads one value for it (#3501). A no-op unless a `let`
-  // is directly followed by side-effect-free reassignments of it.
-  const folded = foldRenderReassignmentsInSource(source, filePath)
-  if (folded) {
-    source = folded
     program = undefined
   }
 

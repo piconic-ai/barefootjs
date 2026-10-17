@@ -2025,14 +2025,17 @@
     },
     "computed-let-shadows-prop-reassigned": {
       "kinds": [
+        "conditional",
         "identifier",
         "literal",
         "logical",
-        "member"
+        "member",
+        "unary"
       ],
       "axes": [
         "literal:string",
-        "logical:??"
+        "logical:??",
+        "unary:!"
       ],
       "contexts": [
         "text"
