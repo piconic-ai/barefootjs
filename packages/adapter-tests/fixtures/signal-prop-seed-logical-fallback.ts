@@ -16,9 +16,9 @@ export const fixture = createFixture({
 import { createSignal } from '@barefootjs/client'
 
 export function SeedFallback(props: { label?: string; flag?: boolean }) {
-  const [label] = createSignal(props.label || 'none')
+  const [text] = createSignal(props.label || 'none')
   const [mark] = createSignal(props.flag && 'on')
-  return <p title={label()}>{mark() ? 'marked' : 'plain'}</p>
+  return <p title={text()}>{mark() ? 'marked' : 'plain'}</p>
 }
 `,
   props: {},
