@@ -33,7 +33,10 @@ export function MultiStatementMemo(props: { label?: string }) {
 `,
   props: {},
   expectedHtml: `
-    <div></div>
+    <button bf-s="test" bf="s4">
+      <span bf="s1"><!--bf:s0-->6<!--/--></span>
+      <span bf="s3"><!--bf:s2-->none<!--/--></span>
+    </button>
   `,
   dataPoints: [
     { name: 'label-given', props: { label: 'Given' } },
