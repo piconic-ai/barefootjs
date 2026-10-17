@@ -52,7 +52,6 @@ export function propsDestructureBinding(p: ParamInfo): string {
   return p.defaultValue ? `${binding} = ${p.defaultValue}` : binding
 }
 
-
 /**
  * Whether a component-scope const is the props-object read of its own prop,
  * so a template may read the prop in its place: a bare alias
@@ -76,6 +75,7 @@ export function isPropsAliasConst(
   return read?.kind === 'member' && !read.computed && !read.optional && read.property === c.name &&
     read.object.kind === 'identifier' && read.object.name === propsObjectName
 }
+
 /**
  * Local-name → caller-facing-key map for prop-reference rewrites —
  * entries only for `ParamInfo`s that actually rename (`sourceName` set,
