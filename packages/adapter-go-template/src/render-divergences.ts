@@ -92,9 +92,13 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // nullable union's `undefined`/`null` initial value as the field's `nil`
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
+// #3519 graduated `signal-prop-seed-logical-fallback`
+// (`logical-signal-seed`): a signal seeded by a computed prop expression
+// (`props.x || d`, `props.x && v`, `n * 2`) is now seeded by the runtime
+// evaluator (`computedPropSeedGo`) instead of the bare prop or nil.
 export const renderDivergences: RenderDivergences = {
-  // A signal seeded by `props.x || d` / `props.x && v` starts at the bare prop or nil.
-  'signal-prop-seed-logical-fallback': { limitation: 'logical-signal-seed' },
+  // An absent optional prop reaches the runtime evaluator as its Go zero value, so `??` keeps it.
+  'signal-computed-prop-seed-absent': { limitation: 'evaluated-nullish-absent-prop' },
   // A props spread onto a child component: this adapter drops the spread (#3479).
   'component-spread-rest': { limitation: 'component-prop-spread' },
   'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },

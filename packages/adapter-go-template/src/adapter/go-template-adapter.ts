@@ -182,7 +182,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFie
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
@@ -2780,7 +2780,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Bake against the synthesised struct type if one was inferred for this
       // untyped object-array signal, else the signal's own type.
       const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-      const initialValue = signalSeedGo(this.emitCtx, signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
+      const initialValue = this.ownSignalSeed(signal, ir.metadata.propsParams, propFallbackVars, memoPropsParamMap, bakeType)
       lines.push(`\t\t${fieldName}: ${initialValue},`)
       const resolvedParsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
       if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
@@ -5868,6 +5868,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const inner = this.extractPropFallbackFromParsed(parsed.left)
     if (!inner) return null
     return { ...inner, operator: parsed.op, operand: String(right.value) }
+  }
+
+  /**
+   * The Go value a signal's own field is seeded with. A computed prop
+   * expression (#3519) is evaluated and converted to the field's Go type;
+   * any other seed is `signalSeedGo`'s.
+   */
+  private ownSignalSeed(
+    signal: ComponentIR['metadata']['signals'][number],
+    propsParams: ComponentIR['metadata']['propsParams'],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    propsParamMap: ReadonlyMap<string, ComponentIR['metadata']['propsParams'][number]>,
+    bakeType: TypeInfo,
+  ): string {
+    const computed = computedPropSeedGo(this.emitCtx, signal.parsed, propsParams, propFallbackVars)
+    const typed = computed === null ? null : evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
+    return typed ?? signalSeedGo(this.emitCtx, signal, propsParams, propFallbackVars, bakeType, true)
   }
 
   /**

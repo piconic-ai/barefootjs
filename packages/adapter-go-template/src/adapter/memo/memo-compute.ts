@@ -451,6 +451,41 @@ export function evalExprGo(
   return `bf.EvalExpr("${escapeGoString(json)}", map[string]any{${entries.join(', ')}})`
 }
 
+/** Seed shapes that compute a value; a top-level `??` keeps its hoisted prop fallback. */
+function isComputedSeedShape(e: ParsedExpr): boolean {
+  switch (e.kind) {
+    case 'logical':
+      return e.op !== '??'
+    case 'binary':
+    case 'conditional':
+    case 'unary':
+    case 'template-literal':
+      return true
+    default:
+      return false
+  }
+}
+
+/**
+ * A signal seed that computes over a prop (`props.label || 'none'`,
+ * `props.flag && 'on'`, `n * 2`), evaluated by the runtime evaluator as a
+ * memo body is (#3519). Before, such a seed baked the bare prop or `nil`.
+ * Null for any other seed, or one the evaluator can't take.
+ */
+export function computedPropSeedGo(
+  ctx: GoEmitContext,
+  parsed: ParsedExpr | undefined,
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  if (!parsed || !isComputedSeedShape(parsed)) return null
+  const readsProp = [...freeVarsInBody(parsed, new Set())].some(
+    name => name === ctx.state.propsObjectName || propsParams.some(p => p.name === name),
+  )
+  if (!readsProp) return null
+  return evalExprGo(ctx, parsed, [], propsParams, propFallbackVars, new Set())
+}
+
 /**
  * The Go value {@link evalExprGo} hands the evaluator for one free name of
  * the expression: a signal's seed, a memo's value, a prop field, or the
@@ -473,8 +508,11 @@ function evalEnvValueGo(
     // source-keyed map, so a field the literal omits stays absent for
     // `??` instead of reading as the Go zero value of a struct field.
     const literal = signal.parsed ? seedLiteralToEvalGo(ctx, signal.parsed) : null
+    const computed = literal === null ? computedPropSeedGo(ctx, signal.parsed, propsParams, propFallbackVars) : null
     if (literal !== null) {
       goExpr = literal
+    } else if (computed !== null) {
+      goExpr = computed
     } else {
       goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
       // `0` is also its answer for a seed it can't resolve; the evaluator
