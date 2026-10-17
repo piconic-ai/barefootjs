@@ -1428,6 +1428,21 @@
         "text"
       ]
     },
+    "child-prop-from-props-object": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "child-prop-rest-forward": {
       "kinds": [
         "call",
