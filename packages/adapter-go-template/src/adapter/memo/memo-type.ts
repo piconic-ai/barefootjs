@@ -26,52 +26,69 @@ export function isListFilterMemo(memo: { parsed?: ParsedExpr }): boolean {
   return cb !== null && cb.method === 'filter'
 }
 
+const COMPARISON_OPS: ReadonlySet<string> = new Set(['===', '!==', '==', '!=', '<', '>', '<=', '>='])
+
 /**
- * Heuristic: does this memo evaluate to a boolean? True when its computation is
- * a comparison (`!==`/`===`/`!=`/`==`), a negation (`!x`), or a ternary whose
- * branches are all boolean signals/props. Used to pick `bool` (zero value
- * `false`) over the int `0` default for the SSR initial value.
+ * Does this memo evaluate to a boolean? Decided on `memo.parsed`, never on
+ * the computation text (#3512): true when the body is a comparison, a `!`
+ * negation, a boolean literal, a boolean signal or prop read, a `&&` / `||`
+ * over boolean operands, or a ternary whose BRANCHES are both boolean. A
+ * comparison in a ternary's test, a callback argument or a string does not
+ * count. Without a `parsed` tree the answer is false, so the memo keeps its
+ * declared type. Used to pick `bool` (zero value `false`) over the int `0`
+ * default for the SSR initial value.
  */
 export function isBooleanMemo(
   ctx: GoEmitContext,
-  memo: { computation: string; deps: string[]; parsed?: ParsedExpr },
+  memo: { parsed?: ParsedExpr },
   signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
   propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }>,
 ): boolean {
-  const c = memo.computation
-  // A LIST-valued `.filter(arrow)` memo (#2075) is never boolean, even though
-  // its predicate arrow body often contains a `!` negation (`!tag() || …`) —
-  // that would otherwise trip the `/=>\s*!/` heuristic below into
-  // misclassifying the whole memo. Bail before any regex runs.
-  if (isListFilterMemo(memo)) return false
-  // A ternary whose two branches are string literals is a STRING memo, not
-  // boolean — the `===` lives in the *condition*, so the blanket comparison
-  // check below would misclassify it as bool and bake `false`. Bail first.
-  if (isStringTernaryMemo(ctx, memo.parsed)) return false
-  if (/(!==|===|!=(?!=)|==(?!=))/.test(c)) return true
-  if (/=>\s*!/.test(c)) return true
-  // Ternary `() => cond() ? a() : b()` — boolean when both branches are
-  // boolean-resolving getters (signals whose value is boolean, or boolean
-  // props).
+  // A boolean signal or prop read through its getter.
   const isBoolGetter = (name: string): boolean => {
     const sig = signals.find(s => s.getter === name)
     if (sig) {
       if ((propMemberSeedGoType(ctx, sig) ?? typeInfoToGo(ctx, sig.type)) === 'bool') return true
       // Signal initialised from `props.X ?? false` / a boolean prop.
-      if (/\?\?\s*(true|false)\b/.test(sig.initialValue)) return true
+      if (sig.parsed?.kind === 'logical' && sig.parsed.op === '??' && isBoolLiteral(sig.parsed.right)) return true
       const propName = ctx.extractPropNameFromInitialValue(sig.initialValue, sig.parsed) ?? sig.initialValue
       const prop = propsParamMap.get(propName)
       if (prop && typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed) === 'bool') return true
       return false
     }
+    return isBoolProp(name)
+  }
+  const isBoolProp = (name: string): boolean => {
     const prop = propsParamMap.get(name)
     return !!prop && typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed) === 'bool'
   }
-  const ternary = c.match(/=>\s*\w+\(\)\s*\?\s*(\w+)\(\)\s*:\s*(\w+)\(\)/)
-  if (ternary) {
-    return isBoolGetter(ternary[1]) && isBoolGetter(ternary[2])
+  const isBool = (node: ParsedExpr): boolean => {
+    switch (node.kind) {
+      case 'binary':
+        return COMPARISON_OPS.has(node.op)
+      case 'unary':
+        return node.op === '!'
+      case 'literal':
+        return isBoolLiteral(node)
+      case 'call':
+        return node.args.length === 0 && node.callee.kind === 'identifier' && isBoolGetter(node.callee.name)
+      case 'member':
+        // `props.on` read off the props object.
+        return !node.computed && node.object.kind === 'identifier' &&
+          node.object.name === ctx.state.propsObjectName && isBoolProp(node.property)
+      case 'logical':
+        return node.op !== '??' && isBool(node.left) && isBool(node.right)
+      case 'conditional':
+        return isBool(node.consequent) && isBool(node.alternate)
+      default:
+        return false
+    }
   }
-  return false
+  return memo.parsed !== undefined && isBool(memo.parsed)
+}
+
+function isBoolLiteral(node: ParsedExpr): boolean {
+  return node.kind === 'literal' && node.literalType === 'boolean'
 }
 
 /**
