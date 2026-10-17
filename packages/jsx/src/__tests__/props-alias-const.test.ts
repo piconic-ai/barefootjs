@@ -34,6 +34,11 @@ describe('isPropsAliasConst', () => {
 
   test('a hand-written `?? default` const is not the prop', () => {
     expect(aliasOf("const label = props.label ?? 'Default'")).toBe(false)
+    expect(aliasOf("let label = props.label ?? 'Default'")).toBe(false)
+  })
+
+  test('a `?? default` binding reassigned later still reads the prop', () => {
+    expect(aliasOf("let label = props.label ?? 'Default'\n  if (!label) label = 'Fallback'")).toBe(true)
   })
 
   test('a renamed destructure binding is not an alias of a prop of its own name', () => {

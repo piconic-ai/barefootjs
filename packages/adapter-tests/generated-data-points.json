@@ -1469,6 +1469,30 @@
       }
     }
   ],
+  "computed-let-shadows-prop-reassigned": [
+    {
+      "name": "gen:label:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "conditional-branch-sigil-text": [
     {
       "name": "gen:on:true",
