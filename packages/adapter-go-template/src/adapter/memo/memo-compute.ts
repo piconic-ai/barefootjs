@@ -467,6 +467,12 @@ export function evalExprGo(
     } else if (param) {
       const hoisted = propFallbackVars.get(name)
       goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
+    } else if (name === ctx.state.propsObjectName) {
+      // The props object (`props.items.length`) as a map keyed by each
+      // prop's caller-facing name (#3512).
+      goExpr = `map[string]any{${propsParams
+        .map(p => `${JSON.stringify(p.sourceName ?? p.name)}: in.${capitalizeFieldName(p.sourceName ?? p.name)}`)
+        .join(', ')}}`
     }
     if (goExpr === null) return null
     entries.push(`${JSON.stringify(name)}: ${goExpr}`)

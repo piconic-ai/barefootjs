@@ -6232,6 +6232,24 @@
         "text"
       ]
     },
+    "memo-ternary-comparison-test": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-array-seed": {
       "kinds": [
         "array-literal",

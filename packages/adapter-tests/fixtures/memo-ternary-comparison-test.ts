@@ -21,7 +21,7 @@ export function TernaryTestMemo(props: { items: any; sel: any }) {
 `,
   props: { items: ['a', 'b'], sel: 'b' },
   expectedHtml: `
-    <div></div>
+    <button bf-s="test" bf="s1"><!--bf:s0-->2<!--/--></button>
   `,
   dataPoints: [
     { name: 'other-selection', props: { items: ['a', 'b'], sel: 'a' } },
