@@ -20,6 +20,6 @@ export function ComputedSeedAbsent(props: { label?: string; n?: number }) {
 `,
   props: {},
   expectedHtml: `
-    <p bf-s="test" bf="s0" title="ab" data-doubled="2">x</p>
+    <p bf-s="test" bf="s0" data-doubled="2" title="ab">x</p>
   `,
 })
