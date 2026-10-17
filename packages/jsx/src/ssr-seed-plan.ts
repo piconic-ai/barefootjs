@@ -180,6 +180,17 @@ function resolveThroughLocalConsts(
  * from the analyzer's fold of its statements (`MemoInfo.parsed`, #2040,
  * #3523), and is `opaque` when the fold failed.
  */
+/**
+ * The expression a memo seeds from: the returned expression, as the analyzer
+ * read it from the callback node (#3510). A body that must be called as a
+ * whole seeds from the analyzer's fold of its statements into one expression
+ * when there is one (#3523); `''` (opaque) otherwise.
+ */
+function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
+  if (!memo.bodyExprIsCall) return memo.bodyExpr?.trim() ?? ''
+  return memo.parsed ? stringifyParsedExpr(memo.parsed) : ''
+}
+
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const baseScope: string[] = metadata.propsParams.map(p => p.name)
   if (metadata.propsObjectName) baseScope.push(metadata.propsObjectName)
@@ -238,13 +249,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   }
 
   for (const memo of metadata.memos) {
-    // The returned expression, as the analyzer read it from the callback
-    // node (#3510). A body that must be called as a whole seeds from the
-    // analyzer's fold of its statements into one expression when there is
-    // one (#3523), and is opaque otherwise.
-    const expr = memo.bodyExprIsCall
-      ? (memo.parsed ? stringifyParsedExpr(memo.parsed) : '')
-      : (memo.bodyExpr?.trim() ?? '')
+    const expr = memoSeedExpr(memo)
     steps.push(
       expr === ''
         ? { kind: 'opaque', name: memo.name, origin: 'memo' }

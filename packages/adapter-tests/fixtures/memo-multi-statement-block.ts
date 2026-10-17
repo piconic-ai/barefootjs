@@ -6,6 +6,8 @@ import { createFixture } from '../src/types'
  * callback, which the SSR seed plan used to leave `opaque`, so the template
  * adapters that seed memos in-template rendered them empty. They now seed
  * from the analyzer's fold of the statements into one expression (#3523).
+ * Go Template typed such a memo from the block's text, where `{` reads as
+ * an object, and rendered `map[]`; the type now comes from the fold too.
  */
 export const fixture = createFixture({
   id: 'memo-multi-statement-block',
@@ -13,20 +15,25 @@ export const fixture = createFixture({
   source: `
 'use client'
 import { createSignal, createMemo } from '@barefootjs/client'
-export function MultiStatementMemo(props: { label?: string }) {
+export function MultiStatementMemo({ label }: { label?: string }) {
   const [count, setCount] = createSignal(2)
   const tripled = createMemo(() => {
     const k = count()
     return k * 3
   })
   const shown = createMemo(() => {
-    if (!props.label) return 'none'
-    return props.label
+    if (!label) return 'none'
+    return label
+  })
+  const size = createMemo(() => {
+    if (count() > 5) return 'big'
+    return 'small'
   })
   return (
     <button onClick={() => setCount(count() + 1)}>
       <span>{tripled()}</span>
       <span>{shown()}</span>
+      <span>{size()}</span>
     </button>
   )
 }

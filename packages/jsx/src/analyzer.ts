@@ -10,7 +10,7 @@ import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { buildPropAliasMap, coalesceDefaultText } from './props-binding.ts'
@@ -409,14 +409,24 @@ export function analyzeComponent(
   // parser dropped a statement it couldn't represent) or one that doesn't fold
   // (imperative residue) leaves `parsed` undefined and consumers keep their
   // existing `parsedBlock` fallback.
+  foldBlockMemos(ctx)
+
+  return ctx
+}
+
+function foldBlockMemos(ctx: AnalyzerContext): void {
   const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
   for (const memo of ctx.memos) {
     if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete) continue
     const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })
-    if (folded.ok) memo.parsed = folded.expr
+    if (!folded.ok) continue
+    memo.parsed = folded.expr
+    // The block's text read as `object`; its value is the fold (#3523). A
+    // returned object literal stays `object`.
+    if (blockTextTypedMemos.has(memo) && folded.expr.kind !== 'object-literal') {
+      memo.type = inferTypeFromValue(stringifyParsedExpr(folded.expr))
+    }
   }
-
-  return ctx
 }
 
 /**
@@ -1598,6 +1608,7 @@ function collectFactorySignal(
       : new Set<string>()
 
   let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+  let blockTyped = false
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else if (initialNode.kind !== 'absent') {
@@ -2088,6 +2099,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   // adapter renders the field as `interface{}`, even though the
   // expression is clearly a number.
   let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+  let blockTyped = false
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else {
@@ -2098,6 +2110,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     const fn = callExpr.arguments[0]
     if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
       type = inferTypeFromValue(ctx.getJS(fn.body).trim())
+      blockTyped = ts.isBlock(fn.body)
     }
   }
 
@@ -2118,7 +2131,10 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     const sig = fnType.getCallSignatures()[0]
     if (sig) {
       const inferred = tsTypeToTypeInfo(ctx.checker.getReturnTypeOfSignature(sig), ctx.checker)
-      if (inferred && inferred.kind !== 'unknown') type = inferred
+      if (inferred && inferred.kind !== 'unknown') {
+        type = inferred
+        blockTyped = false
+      }
     }
   }
 
@@ -2126,7 +2142,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
 
   const bodyFields = body ? memoBodyFields(body, ctx) : {}
 
-  ctx.memos.push({
+  const memo: MemoInfo = {
     name,
     computation,
     ...bodyFields,
@@ -2141,8 +2157,16 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     computationFreeIdentifiers: callExpr.arguments[0]
       ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
       : new Set(),
-  })
+  }
+  ctx.memos.push(memo)
+  if (blockTyped) blockTextTypedMemos.add(memo)
 }
+
+/**
+ * Memos whose type was read off a block body's text, where `{` reads as an
+ * object. Their type is re-inferred from the block's fold (#3523).
+ */
+const blockTextTypedMemos = new WeakSet<MemoInfo>()
 
 // =============================================================================
 // Effect Detection & Collection
