@@ -107,11 +107,12 @@ function rewriteParamDestructuredReads(
  * bare-member-alias) prop local in `code` to a live `_p.<key>` read, for a
  * bare-props-form component (`function Foo(props: Props)`).
  *
- * `resolveBodyPropAliases` can't distinguish `const { value } = props` from
- * `const value = props.value` (the analyzer's IR is identical for both —
- * see its docstring), so this rewrite treats them identically too. That's
- * the correct call, not a shortcut: BOTH are pure single-prop passthroughs
- * with no computation of their own, so both should read live, matching
+ * `resolveBodyPropAliases` treats `const { value } = props` and `const value
+ * = props.value` alike (their `value` text is identical; only
+ * `ConstantInfo.propsDestructure` tells them apart, #3501), and so does this
+ * rewrite. That's the correct call, not a shortcut: BOTH are pure
+ * single-prop passthroughs with no computation of their own, so both should
+ * read live, matching
  * `props.value` used directly (which already reads live via
  * `rewritePropsObjectRef`).
  *

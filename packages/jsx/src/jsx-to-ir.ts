@@ -52,7 +52,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -750,11 +750,7 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
       }
       for (const m of ctx.analyzer.memos) shadowed.add(m.name)
       for (const c of ctx.analyzer.localConstants) {
-        const isDestructureFromProps =
-          typeof c.value === 'string' &&
-          (c.value === `${ctx.analyzer.propsObjectName}.${c.name}` ||
-            c.value.startsWith(`${ctx.analyzer.propsObjectName}.${c.name} ??`))
-        if (!isDestructureFromProps) shadowed.add(c.name)
+        if (!isPropsAliasConst(c, ctx.analyzer.propsObjectName)) shadowed.add(c.name)
       }
     }
     const eligible = ctx.analyzer.propsParams.filter(p => !shadowed.has(p.name))

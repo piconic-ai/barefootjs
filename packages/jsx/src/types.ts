@@ -2120,6 +2120,16 @@ export interface ConstantInfo {
   /** When true, the initializer contains an arrow function or function expression (computed from AST). */
   containsArrow?: boolean
   /**
+   * Set when this const is a binding of a body destructure of the props
+   * object (`const { label = 'Default' } = props`), recorded by the analyzer
+   * from the binding pattern itself. `sourceKey` is the prop it reads (the
+   * property key, which differs from `name` for a renamed binding). Its
+   * `value` text (`props.label ?? 'Default'`) is the same as a hand-written
+   * `const label = props.label ?? 'Default'`, so consumers ask this field,
+   * not the text, whether the const IS the prop (#3501).
+   */
+  propsDestructure?: { sourceKey: string }
+  /**
    * When true, the initializer IS an arrow function or function expression
    * (`const status = () => …`), so reading the constant yields a function and
    * only calling it evaluates the body. Computed from the AST.

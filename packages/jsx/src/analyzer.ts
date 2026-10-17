@@ -7,6 +7,7 @@
  */
 
 import ts from 'typescript'
+import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
@@ -201,6 +202,22 @@ export function createProgramForFile(
 }
 
 /**
+ * The source the analyzer reads after its pre-passes, or `null` when none
+ * applies: same-file reactive factory calls inlined (#931), then each
+ * `let`'s render-time reassignments folded into its initializer so every
+ * stage reads one value for it (#3501).
+ */
+function rewriteSourceForAnalysis(
+  source: string,
+  filePath: string,
+  prescan: ReturnType<typeof prescanReactiveFactoriesInSource>,
+): string | null {
+  const inlined = prescan.factories.size > 0 ? rewriteFactoryCallsInSource(source, prescan) : null
+  const base = inlined ?? source
+  return foldRenderReassignmentsInSource(base, filePath) ?? inlined
+}
+
+/**
  * The Program to pass as `compileJSX`'s `program` when a test harness
  * compiles `source` under the relative virtual `filename`, with type
  * resolution anchored at `anchorDir` instead of `process.cwd()` — or
@@ -255,9 +272,7 @@ export function analyzeComponent(
   // no recognisable factories are present, so it is a no-op for the
   // common case.
   const prescan = prescanReactiveFactoriesInSource(source, filePath)
-  const rewritten = prescan.factories.size > 0
-    ? rewriteFactoryCallsInSource(source, prescan)
-    : null
+  const rewritten = rewriteSourceForAnalysis(source, filePath, prescan)
   if (rewritten) {
     source = rewritten
     // The pre-built ts.Program (if any) references the original source,
@@ -3545,6 +3560,7 @@ function collectConstant(
         // Body-level destructure-from-props is collected only when
         // _isModule === false; binding lives in init scope.
         origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
+        propsDestructure: { sourceKey },
       })
 
       // #2943: a BODY destructure's default (`const { label = 'none' } =

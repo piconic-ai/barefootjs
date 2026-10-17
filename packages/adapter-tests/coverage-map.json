@@ -2002,6 +2002,45 @@
         "text"
       ]
     },
+    "computed-const-shadows-prop-positions": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "computed-let-shadows-prop-reassigned": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "cond-arm-tag-collision": {
       "kinds": [
         "array-literal",

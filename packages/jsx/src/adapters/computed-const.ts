@@ -138,10 +138,12 @@ function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedEx
 /**
  * A `const` holding a value computed by an expression, as opposed to a
  * function, JSX, a static object or array the adapters resolve through their
- * own lookups, or a runtime construct.
+ * own lookups, or a runtime construct. A `let` no statement reassigns after
+ * its declaration holds one value too: its render-time reassignments were
+ * folded into the initializer (`fold-render-reassignments.ts`, #3501).
  */
 function isPlainComputedConst(constant: ConstantInfo, init: ParsedExpr): boolean {
-  if (constant.declarationKind !== 'const' || constant.mutatedAfterDeclaration) return false
+  if (constant.mutatedAfterDeclaration) return false
   if (constant.isJsx || constant.isJsxFunction || constant.containsArrow || constant.isFunctionValue) return false
   if (constant.systemConstructKind) return false
   if (init.kind === 'call' && init.callee.kind === 'identifier' && init.callee.name === 'useContext') return false

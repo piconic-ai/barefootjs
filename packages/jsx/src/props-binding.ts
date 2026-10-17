@@ -1,5 +1,6 @@
 import ts from 'typescript'
 import type { ConstantInfo, ParamInfo, PropUsage } from './types.ts'
+import type { ParsedExpr } from './expression-parser.ts'
 import { propHasPropertyAccess } from './ir-to-client-js/compute-prop-usage.ts'
 import { parsePropReadInitializer } from './ir-to-client-js/prune-unused-prop-extractions.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
@@ -50,6 +51,49 @@ export function propsDestructureBinding(p: ParamInfo): string {
     ? localName
     : `${isIdentifierName(callerKey) ? callerKey : JSON.stringify(callerKey)}: ${localName}`
   return p.defaultValue ? `${binding} = ${p.defaultValue}` : binding
+}
+
+/**
+ * The prop a parsed initializer reads off the props object: a bare
+ * `props.<key>` member read, or one with a `?? <default>` fallback.
+ * `null` for any other shape.
+ */
+function parsedPropRead(
+  read: ParsedExpr | undefined,
+  propsObjectName: string,
+): { key: string; hasDefault: boolean } | null {
+  const hasDefault = read?.kind === 'logical' && read.op === '??'
+  const member = hasDefault ? read.left : read
+  if (member?.kind !== 'member' || member.computed || member.optional) return null
+  if (member.object.kind !== 'identifier' || member.object.name !== propsObjectName) return null
+  return { key: member.property, hasDefault }
+}
+
+/**
+ * Whether a component-scope const is the props-object read of its own prop,
+ * so a template may read the prop in its place: a bare alias
+ * (`const label = props.label`, read from its parsed initializer), or an
+ * un-renamed binding of a body destructure (`const { label = 'Default' } =
+ * props`, whose default the analyzer also records on the prop's `ParamInfo`).
+ *
+ * A hand-written `const label = props.label ?? 'Default'` has the same
+ * `value` text as that destructure but is NOT the prop: its default lives
+ * only in the const, and reading the prop instead drops it (#3501). The
+ * analyzer marks the destructure on `ConstantInfo.propsDestructure`, so the
+ * two are told apart by that field, not by the text. A reassignment that
+ * directly follows the declaration folds into the initializer
+ * (`fold-render-reassignments.ts`), so the binding keeps one value; one that
+ * cannot fold (`mutatedAfterDeclaration`) leaves no single value a template
+ * could inline, so the binding reads the prop it holds until reassigned.
+ */
+export function isPropsAliasConst(
+  c: Pick<ConstantInfo, 'name' | 'parsed' | 'propsDestructure' | 'mutatedAfterDeclaration'>,
+  propsObjectName: string | null,
+): boolean {
+  if (propsObjectName === null) return false
+  if (c.propsDestructure) return c.propsDestructure.sourceKey === c.name
+  const read = parsedPropRead(c.parsed, propsObjectName)
+  return read !== null && read.key === c.name && (!read.hasDefault || c.mutatedAfterDeclaration === true)
 }
 
 /**
@@ -120,10 +164,11 @@ export function resolveBodyDestructuredPropAliases(
  * Foo(props: Props)`) whose value is a PURE alias of a single caller-facing
  * prop — either a body destructure (`const { value } = props`, `const {
  * label = 'none' } = props`) or an equivalent bare member read (`const label
- * = props.label ?? 'fallback'`); the analyzer's IR can't distinguish the two
- * shapes (both parse to the same `ConstantInfo`), and neither can this
- * resolver — see `resolveBodyAliasReads`'s (`rewrite-destructured-props.ts`)
- * docstring for why that's the right call.
+ * = props.label ?? 'fallback'`). Both shapes share the same `value` text;
+ * the IR tells them apart via `ConstantInfo.propsDestructure` (#3501), but
+ * this resolver deliberately treats them alike — see
+ * `rewriteBodyAliasReads`'s (`rewrite-destructured-props.ts`) docstring for
+ * why that's the right call.
  */
 export interface BodyPropAlias {
   /** Caller-facing prop key (`props.<key>`). */
