@@ -29,10 +29,9 @@ export function MemoFunctionExpression({ base }: { base: number }) {
 `,
   props: { base: 5 },
   expectedHtml: `
-    <button bf-s="test" bf="s6">
+    <button bf-s="test" bf="s4">
       <span bf="s1"><!--bf:s0-->20<!--/--></span>
-      <span bf="s3"><!--bf:s2-->6<!--/--></span>
-      <span bf="s5"><!--bf:s4-->7<!--/--></span>
+      <span bf="s3"><!--bf:s2-->7<!--/--></span>
     </button>
   `,
 })
