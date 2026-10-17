@@ -3081,6 +3081,12 @@
               ]
             },
             {
+              "fixture": "signal-computed-prop-seed-absent",
+              "limitations": [
+                "evaluated-nullish-absent-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4270,15 +4276,15 @@
               ]
             },
             {
-              "fixture": "signal-object-spread-init",
+              "fixture": "signal-computed-prop-seed-absent",
               "limitations": [
-                "derived-object-literal-signal"
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
-              "fixture": "signal-prop-seed-logical-fallback",
+              "fixture": "signal-object-spread-init",
               "limitations": [
-                "logical-signal-seed"
+                "derived-object-literal-signal"
               ]
             },
             {
@@ -6594,15 +6600,15 @@
               ]
             },
             {
-              "fixture": "signal-object-spread-init",
+              "fixture": "signal-computed-prop-seed-absent",
               "limitations": [
-                "derived-object-literal-signal"
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
-              "fixture": "signal-prop-seed-logical-fallback",
+              "fixture": "signal-object-spread-init",
               "limitations": [
-                "logical-signal-seed"
+                "derived-object-literal-signal"
               ]
             },
             {
@@ -8780,15 +8786,15 @@
               ]
             },
             {
-              "fixture": "signal-object-spread-init",
+              "fixture": "signal-computed-prop-seed-absent",
               "limitations": [
-                "derived-object-literal-signal"
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
-              "fixture": "signal-prop-seed-logical-fallback",
+              "fixture": "signal-object-spread-init",
               "limitations": [
-                "logical-signal-seed"
+                "derived-object-literal-signal"
               ]
             },
             {
@@ -9996,9 +10002,9 @@
               ]
             },
             {
-              "fixture": "signal-prop-seed-logical-fallback",
+              "fixture": "signal-computed-prop-seed-absent",
               "limitations": [
-                "logical-signal-seed"
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
@@ -10801,15 +10807,15 @@
               ]
             },
             {
-              "fixture": "signal-object-spread-init",
+              "fixture": "signal-computed-prop-seed-absent",
               "limitations": [
-                "derived-object-literal-signal"
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
-              "fixture": "signal-prop-seed-logical-fallback",
+              "fixture": "signal-object-spread-init",
               "limitations": [
-                "logical-signal-seed"
+                "derived-object-literal-signal"
               ]
             },
             {
@@ -14954,6 +14960,12 @@
               "limitations": [
                 "omitted-optional-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "signal-computed-prop-seed-absent",
+              "limitations": [
+                "evaluated-nullish-absent-prop"
+              ]
             }
           ]
         },
@@ -15107,6 +15119,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "signal-computed-prop-seed-absent",
+              "limitations": [
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
@@ -16633,6 +16651,12 @@
               ]
             },
             {
+              "fixture": "signal-computed-prop-seed-absent",
+              "limitations": [
+                "evaluated-nullish-absent-prop"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -17606,15 +17630,15 @@
               ]
             },
             {
-              "fixture": "signal-object-spread-init",
+              "fixture": "signal-computed-prop-seed-absent",
               "limitations": [
-                "derived-object-literal-signal"
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
-              "fixture": "signal-prop-seed-logical-fallback",
+              "fixture": "signal-object-spread-init",
               "limitations": [
-                "logical-signal-seed"
+                "derived-object-literal-signal"
               ]
             },
             {
@@ -18376,12 +18400,6 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
-            },
-            {
-              "fixture": "signal-prop-seed-logical-fallback",
-              "limitations": [
-                "logical-signal-seed"
-              ]
             }
           ]
         },
@@ -18499,6 +18517,12 @@
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "signal-computed-prop-seed-absent",
+              "limitations": [
+                "evaluated-nullish-absent-prop"
               ]
             },
             {
@@ -18629,16 +18653,7 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "signal-prop-seed-logical-fallback",
-              "limitations": [
-                "logical-signal-seed"
-              ]
-            }
-          ]
-        },
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},

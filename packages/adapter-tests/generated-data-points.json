@@ -6395,6 +6395,88 @@
       }
     }
   ],
+  "signal-computed-prop-seed": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "n": 3,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "n": 3,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "n": 3,
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "label": "x"
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "label": "x"
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "label": "x"
+      }
+    }
+  ],
+  "signal-computed-prop-seed-absent": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
   "signal-default-from-jsx": [
     {
       "name": "gen:x:zero",
