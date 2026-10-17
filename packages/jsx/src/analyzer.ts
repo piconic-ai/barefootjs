@@ -1962,9 +1962,14 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else {
-    // The type we want is the body's, not the callback itself, so
-    // `inferTypeFromValue` sees the expression the memo evaluates to.
-    if (body && !body.call) type = inferTypeFromValue(ctx.getJS(body.node))
+    // The memo computation is a function; the type we want is the body's,
+    // not the function itself, so `inferTypeFromValue` sees the body text
+    // (a block body reads as `object`, which the checker upgrade below
+    // refines).
+    const fn = callExpr.arguments[0]
+    if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
+      type = inferTypeFromValue(ctx.getJS(fn.body).trim())
+    }
   }
 
   // When the syntactic heuristic above can't resolve a precise type
