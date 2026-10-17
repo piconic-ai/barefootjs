@@ -120,6 +120,15 @@ fixtures and build output `cccc.toml` excludes). Install the pinned version (`v1
 
 The logic and its rationale are in `scripts/lib/complexity-ratchet.ts`.
 
+A second ratchet in the same workflow guards `spec/adapter-architecture.md`'s rule that Phase 2
+does not re-parse IR source text. `bun run ratchet:emit-parse` counts, per function, the calls
+to `parseExpression` / `parseLiteralExpression` in the client-JS emitter and the template
+adapters, and `ts.createSourceFile` in the adapters. It fails when a count grows, a new function
+gains one, or the baseline (`emit-parse-baseline.json`) is above the tree. As with the complexity
+baseline, nobody edits it by hand: `bun run ratchet:emit-parse:baseline` regenerates it, only
+ever lower, and `--force` needs a reason in the PR. Read the parsed tree the IR carries instead
+of adding a parser call; the logic is in `scripts/lib/emit-parse-ratchet.ts`.
+
 ## Reference Adapter
 
 `packages/adapter-hono/` is the **reference adapter**. Every fixture's `expectedHtml` is
