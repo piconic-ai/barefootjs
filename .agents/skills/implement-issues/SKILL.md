@@ -146,14 +146,9 @@ when the host offers that capability. Do not claim another agent's authorship or
 add duplicate tool-generated attribution footers.
 
 Read and follow [polish-pr](../polish-pr/SKILL.md) to completion. That step owns
-review/simplification, undrafting, CI, Pullfrog responses, and the final notification;
+review/simplification, undrafting, CI, Pullfrog responses (including a loop that
+does not converge), and the final notification;
 do not stop at PR creation or leave an async review loop without an owner.
-
-Watch for a review loop that does not converge. If a third round of findings lands
-on the same decision, stop patching instance by instance. The usual cause is a
-decision that is still made in more than one place, or a sibling class step 3
-missed. Re-derive the decision, fix it at its single source, add the class to
-step 3, and say in the PR that the approach changed and why.
 
 For a stack, work bottom-up: propagate each lower fix into higher branches before
 reviewing them. A changed head invalidates its earlier review/CI evidence. After
