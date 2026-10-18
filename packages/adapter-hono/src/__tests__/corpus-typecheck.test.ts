@@ -42,8 +42,6 @@ const KNOWN_DIAGNOSTICS: Record<string, number> = {
   'chart TS17001': 6,
   // A `string | null` computed field on a non-nullable SVG attribute.
   'chart TS2322': 2,
-  // The source passes the optional `PieProps.nameKey` to `buildPieSlices`'s `string` parameter.
-  'chart TS2345': 1,
   // The source provides an `InternalFlowStore<NodeType, EdgeType>` to the non-generic `FlowContext`.
   'xyflow TS2345': 1,
 }
