@@ -6270,6 +6270,14 @@
           }
         }
       },
+      "signal-prop-seed-logical-fallback": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "logical-signal-seed"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -7402,6 +7410,10 @@
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
       },
+      "signal-prop-seed-logical-fallback": {
+        "description": "a signal seeded by `props.x || d` / `props.x && v` keeps its initializer as written on CSR (#3508)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-prop-seed-logical-fallback.ts"
+      },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
@@ -7921,6 +7933,19 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "logical-signal-seed": {
+      "title": "A signal seeded by a logical expression over a prop",
+      "kind": "silent",
+      "given": "a signal whose initializer is a logical expression over a prop (`createSignal(props.label || 'none')`, `createSignal(props.flag && 'on')`)",
+      "expected": "the signal starts at the expression's value",
+      "actual": "seeds the bare prop (dropping a `||` fallback) or nil, so the server renders the wrong value",
+      "fixtures": [
+        "signal-prop-seed-logical-fallback"
+      ],
+      "adapters": [
+        "go-template"
+      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",

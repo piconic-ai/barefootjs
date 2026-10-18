@@ -106,7 +106,7 @@ export function classifyLocalDeclarations(
       moduleLevelSignals.push(signal)
       continue
     }
-    const controlledPropName = getControlledPropName(signal, ctx.propsParams, ctx.propsObjectName)
+    const controlledPropName = getControlledPropName(signal)
     if (controlledPropName) {
       controlledSignals.push({ signal, propName: controlledPropName })
     }

@@ -3,10 +3,15 @@
  *
  * Verifies that createSignal initializers referencing props are correctly
  * identified so the compiler generates sync effects for controlled components.
+ * The answer comes from `SignalInfo.propSeed`, which the analyzer records
+ * from the parsed initializer (`signalPropSeed`, #3508); `controlled` below
+ * sets it the same way.
  */
 
 import { describe, test, expect } from 'bun:test'
 import { getControlledPropName } from '../ir-to-client-js/prop-handling'
+import { parseExpression } from '../expression-parser'
+import { signalPropSeed } from '../props-binding'
 import type { ParamInfo, SignalInfo, TypeInfo } from '../types'
 
 const boolType: TypeInfo = { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
@@ -24,6 +29,14 @@ function makeSignal(initialValue: string): SignalInfo {
   }
 }
 
+function controlled(initialValue: string, params: ParamInfo[], propsObjectName = 'props'): string | null {
+  const signal = makeSignal(initialValue)
+  const parsed = parseExpression(`(${initialValue})`)
+  const seed = signalPropSeed(parsed.kind === 'unsupported' ? undefined : parsed, params, propsObjectName)
+  if (seed) signal.propSeed = seed
+  return getControlledPropName(signal)
+}
+
 const propsParams: ParamInfo[] = [
   { name: 'checked', type: boolType, optional: true },
   { name: 'value', type: strType, optional: true },
@@ -34,68 +47,74 @@ const propsParams: ParamInfo[] = [
 
 describe('getControlledPropName', () => {
   test('direct props.xxx reference', () => {
-    expect(getControlledPropName(makeSignal('props.checked'), propsParams)).toBe('checked')
+    expect(controlled('props.checked', propsParams)).toBe('checked')
   })
 
   test('props.xxx ?? default (bug fix: #434)', () => {
-    expect(getControlledPropName(makeSignal('props.initial ?? 0'), propsParams)).toBe('initial')
+    expect(controlled('props.initial ?? 0', propsParams)).toBe('initial')
   })
 
   test('props.xxx ?? string default (bug fix: #434)', () => {
-    expect(getControlledPropName(makeSignal("props.value ?? ''"), propsParams)).toBe('value')
+    expect(controlled("props.value ?? ''", propsParams)).toBe('value')
   })
 
   test('props.xxx || fallback', () => {
-    expect(getControlledPropName(makeSignal("props.value || ''"), propsParams)).toBe('value')
+    expect(controlled("props.value || ''", propsParams)).toBe('value')
   })
 
   test('default-prefixed prop is excluded', () => {
-    expect(getControlledPropName(makeSignal('props.defaultChecked'), propsParams)).toBeNull()
+    expect(controlled('props.defaultChecked', propsParams)).toBeNull()
   })
 
   test('default-prefixed prop with ?? is excluded', () => {
-    expect(getControlledPropName(makeSignal('props.defaultChecked ?? false'), propsParams)).toBeNull()
+    expect(controlled('props.defaultChecked ?? false', propsParams)).toBeNull()
   })
 
   test('destructured prop name', () => {
-    expect(getControlledPropName(makeSignal('checked'), propsParams)).toBe('checked')
+    expect(controlled('checked', propsParams)).toBe('checked')
   })
 
   test('destructured prop with ?? fallback', () => {
-    expect(getControlledPropName(makeSignal('checked ?? false'), propsParams)).toBe('checked')
+    expect(controlled('checked ?? false', propsParams)).toBe('checked')
   })
 
   test('destructured default-prefixed prop is excluded', () => {
-    expect(getControlledPropName(makeSignal("defaultValue ?? ''"), propsParams)).toBeNull()
+    expect(controlled("defaultValue ?? ''", propsParams)).toBeNull()
   })
 
   test('complex expression returns null', () => {
-    expect(getControlledPropName(makeSignal('someFunction(props.value)'), propsParams)).toBeNull()
+    expect(controlled('someFunction(props.value)', propsParams)).toBeNull()
+  })
+
+  test('an initializer that only starts with a prop read returns null (#3508)', () => {
+    for (const init of ["props.value && 'x'", 'props.initial + 1', "props.value ? 'a' : 'b'", 'props.value.trim()']) {
+      expect(controlled(init, propsParams)).toBeNull()
+    }
   })
 
   test('unknown prop name returns null', () => {
-    expect(getControlledPropName(makeSignal('props.unknown'), propsParams)).toBeNull()
+    expect(controlled('props.unknown', propsParams)).toBeNull()
   })
 
   describe('custom props parameter name', () => {
     test('p.checked with propsObjectName="p"', () => {
-      expect(getControlledPropName(makeSignal('p.checked'), propsParams, 'p')).toBe('checked')
+      expect(controlled('p.checked', propsParams, 'p')).toBe('checked')
     })
 
     test('p.initial ?? 0 with propsObjectName="p"', () => {
-      expect(getControlledPropName(makeSignal('p.initial ?? 0'), propsParams, 'p')).toBe('initial')
+      expect(controlled('p.initial ?? 0', propsParams, 'p')).toBe('initial')
     })
 
     test('p.defaultChecked ?? false is excluded', () => {
-      expect(getControlledPropName(makeSignal('p.defaultChecked ?? false'), propsParams, 'p')).toBeNull()
+      expect(controlled('p.defaultChecked ?? false', propsParams, 'p')).toBeNull()
     })
 
     test('prop.value || "" with propsObjectName="prop"', () => {
-      expect(getControlledPropName(makeSignal("prop.value || ''"), propsParams, 'prop')).toBe('value')
+      expect(controlled("prop.value || ''", propsParams, 'prop')).toBe('value')
     })
 
     test('props.checked is not matched when propsObjectName="p"', () => {
-      expect(getControlledPropName(makeSignal('props.checked'), propsParams, 'p')).toBeNull()
+      expect(controlled('props.checked', propsParams, 'p')).toBeNull()
     })
   })
 })
