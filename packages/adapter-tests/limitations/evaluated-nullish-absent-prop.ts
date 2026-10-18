@@ -6,6 +6,6 @@ export default defineLimitation({
   given:
     "a signal or memo seeded by an expression the runtime evaluator computes, with an absent optional prop on the left of a `??` (`createSignal((props.label ?? 'a') + 'b')`, `createSignal((props.n ?? 1) * 2)`)",
   expected: "the absent prop reads as `undefined`, so `??` takes its right side (`'ab'`, `2`)",
-  actual: "the evaluator receives the prop's Go zero value (`\"\"`, `0`), which `??` keeps (`'b'`, `0`)",
+  actual: "renders the prop's Go zero value (`\"\"`, `0`) as the `??` result, since the evaluator receives it in place of `undefined` (`'b'`, `0`)",
   fixtures: ['signal-computed-prop-seed-absent'],
 })
