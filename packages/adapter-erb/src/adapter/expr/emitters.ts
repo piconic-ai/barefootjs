@@ -543,8 +543,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // A method outside the catalogue (`s().localeCompare(q)`) has no
     // lowering; read as its callee, the call and its arguments would vanish
     // (#3493). A getter or function-valued prop keeps the callee read.
-    if (isUnloweredCall(callee, args, this.ctx._propsObjectName)) {
-      const refusal = unloweredCallRefusal(callee, CALLBACK_LOWERING.adapterName)
+    if (isUnloweredCall(callee, args, this.ctx._propsObjectName, this.ctx._isGlobalName)) {
+      const refusal = unloweredCallRefusal(callee, args, CALLBACK_LOWERING.adapterName)
       this.ctx._recordExprBF101(refusal.message, refusal.suggestion)
       return "''"
     }

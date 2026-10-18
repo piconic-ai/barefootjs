@@ -186,8 +186,8 @@ describe('#2641 — reactive attribute bindings route catalogued calls through t
 
 describe('#2645 — /* @client */ text expressions elide in the static/CSR template like SSR', () => {
   // `irToComponentTemplateWithOpts`'s 'expression' case never checked
-  // `node.clientOnly` — a bare-destructured-prop receiver (`isSimplePropExpression`
-  // treats `createdAt.toISOString()` as "simple") routed to this static
+  // `node.clientOnly` — a bare-destructured-prop receiver
+  // (`createdAt.toISOString()` reads only a prop) routed to this static
   // template builder, which had no clientOnly awareness and inlined the
   // (possibly lowered) value directly, breaking SSR/CSR byte parity: SSR
   // renders the @client region empty, this builder rendered it populated.

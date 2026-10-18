@@ -135,6 +135,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // is not inlined and the slot is emitted empty. Its `/* @client */` twin
   // (`opaque-local-accessor-call-client`) is NOT skipped.
   'opaque-local-accessor-call',
+  // Same harness-configuration artifact: whether the CSR template may
+  // evaluate `Date.UTC()` through the computed const `stamp` is decided by
+  // the adapter's `acceptsTemplateCall`, which this harness does not pass,
+  // so the text slot is emitted empty. Production CSR compiles with Hono's
+  // (accepts any call) and renders `NaN`, matching `expectedHtml`; every
+  // template adapter refuses the shape (BF101, #3505).
+  'unlowered-global-call',
   // #3059: `renderCsrComponent`'s harness stubs `createPortal` as a no-op
   // (`csr-render.ts`: `const createPortal = () => {}`) — it never moves
   // anything or stamps `bf-po`, unlike the REAL runtime

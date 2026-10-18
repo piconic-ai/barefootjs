@@ -1720,6 +1720,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     return {
       _searchParamsLocals: this._searchParamsLocals,
       _propsObjectName: this.propsObjectName,
+      _isGlobalName: (name: string) => this.computedConsts?.isGlobal(name) ?? false,
       _loweringMatchers: this._loweringMatchers,
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
