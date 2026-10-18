@@ -54,6 +54,7 @@ import { PAIRWISE_QUARANTINE } from '../../../adapter-tests/e2e/pairwise-quarant
 import { EXPLORE_QUARANTINE } from '../../../adapter-tests/e2e/explore-quarantine'
 import { FIXTURE_HYDRATE_QUARANTINE } from '../../../adapter-tests/e2e/fixture-hydrate-quarantine'
 import { KNOWN_UNDECLARED } from '../../../adapter-tests/src/client-js-scope-ledger'
+import { CSR_RENDER_DIVERGENCES } from '../../../adapter-tests/src/csr-skip-set'
 import { findLimitation, limitations } from '../../../adapter-tests/limitations'
 import { limitationDiagnostics } from '../../../adapter-tests/src/limitations'
 import { loadCompatAdapters } from '../adapter-registry'
@@ -74,6 +75,13 @@ function oracleFixturesCiting(limitationId: string): string[] {
 function hydrateQuarantineFixturesCiting(limitationId: string): string[] {
   return Object.entries(FIXTURE_HYDRATE_QUARANTINE)
     .filter(([, entry]) => entry.limitation === limitationId)
+    .map(([fixtureId]) => fixtureId)
+}
+
+/** Corpus fixture ids the CSR render-divergence ledger cites under `limitationId`. */
+function csrDivergenceFixturesCiting(limitationId: string): string[] {
+  return Object.entries(CSR_RENDER_DIVERGENCES)
+    .filter(([, row]) => row.limitation === limitationId)
     .map(([fixtureId]) => fixtureId)
 }
 
@@ -119,6 +127,22 @@ describe('limitation registry ↔ adapter declarations', () => {
       }
     })
   }
+
+  describe('CSR render divergences', () => {
+    for (const [fixtureId, row] of Object.entries(CSR_RENDER_DIVERGENCES)) {
+      test(`[csr:${fixtureId}] cites a registered silent limitation listing this fixture`, () => {
+        const entry = findLimitation(row.limitation)
+        if (!entry) {
+          throw new Error(
+            `CSR render divergence '${fixtureId}' cites limitation '${row.limitation}', ` +
+              `which has no entry under packages/adapter-tests/limitations/`,
+          )
+        }
+        expect(entry.kind).toBe('silent')
+        expect(entry.fixtures).toContain(fixtureId)
+      })
+    }
+  })
 
   describe('e2e quarantine ledgers', () => {
     for (const [fixtureId, row] of Object.entries(ORACLE_QUARANTINE)) {
@@ -222,6 +246,7 @@ describe('limitation registry ↔ adapter declarations', () => {
         ...oracleFixturesCiting(entry.id),
         ...hydrateQuarantineFixturesCiting(entry.id),
         ...scopeGateFixturesCiting(entry.id),
+        ...csrDivergenceFixturesCiting(entry.id),
       ])
       const orphaned = entry.fixtures.filter(fixtureId => {
         if (quarantined.has(fixtureId)) return false
@@ -234,7 +259,7 @@ describe('limitation registry ↔ adapter declarations', () => {
       if (orphaned.length > 0) {
         throw new Error(
           `limitation '${entry.id}' lists fixture(s) [${orphaned.join(', ')}] that no adapter pins, no ` +
-            `render divergence declares, and no oracle-quarantine / fixture-hydrate-quarantine / scope-gate row cites under it ` +
+            `render divergence declares, and no oracle-quarantine / fixture-hydrate-quarantine / scope-gate / CSR-divergence row cites under it ` +
             `— either the fixture graduated (drop it from the entry; delete the entry when its list empties) or a ` +
             `pin cites the wrong id.`,
         )
