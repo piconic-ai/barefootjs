@@ -95,6 +95,25 @@ describe('runtime import detection resolves scopes (#3537)', () => {
   })
 })
 
+describe('class static blocks (#3537 review)', () => {
+  test('a component whose class static block declares `var $` still imports the runtime `$`', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function T() {
+        const [n, setN] = createSignal(0)
+        const C = class { static { var $ } }
+        return <button onClick={() => { new C(); setN(n() + 1) }}>{n()}</button>
+      }
+    `
+    const result = compileJSX(source, 'T.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    expect(clientJs).toContain('$(__scope')
+    expect(runtimeImportLine(clientJs)).toMatch(/[{,]\s*\$\s*[,}]/)
+  })
+})
+
 describe('detectUsedImports', () => {
   test('reports a runtime name only where nothing binds it', () => {
     const code = [
@@ -103,6 +122,10 @@ describe('detectUsedImports', () => {
       "hydrate('T', {})",
     ].join('\n')
     expect([...detectUsedImports(code)].sort()).toEqual(['createEffect', 'hydrate'])
+  })
+
+  test('a var inside a class static block binds only inside that block', () => {
+    expect([...detectUsedImports('const C = class { static { var $ } }; $(scope, "s0")')]).toEqual(['$'])
   })
 
   test('an object key or member name spelling a runtime name is not a reference', () => {

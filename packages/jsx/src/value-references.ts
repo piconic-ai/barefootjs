@@ -131,14 +131,14 @@ export function collectValueReferencedNames(code: string): Set<string> | null {
 
 /**
  * The nodes that open a binding scope in emitted JS: the module, every
- * function-like node (its parameters and hoisted `var` / function names),
+ * function-like node and class static block (its parameters and hoisted
+ * `var` / function names),
  * blocks, `for` heads, `case` blocks and `catch` clauses (`let` / `const` /
  * class names), and class expressions (their own name).
  */
 function isScopeNode(node: ts.Node): boolean {
   return (
-    ts.isSourceFile(node) ||
-    ts.isFunctionLike(node) ||
+    isVarScopeNode(node) ||
     ts.isBlock(node) ||
     ts.isForStatement(node) ||
     ts.isForInStatement(node) ||
@@ -149,10 +149,19 @@ function isScopeNode(node: ts.Node): boolean {
   )
 }
 
+/**
+ * The nodes a `var` (and a parameter) binds into: the module, every
+ * function-like node, and a class static block, whose `var`s stay inside
+ * it (#3537 review).
+ */
+function isVarScopeNode(node: ts.Node): boolean {
+  return ts.isSourceFile(node) || ts.isFunctionLike(node) || ts.isClassStaticBlockDeclaration(node)
+}
+
 function nearestScope(from: ts.Node, functionScoped: boolean): ts.Node {
   let node: ts.Node | undefined = from
   while (node) {
-    if (functionScoped ? ts.isSourceFile(node) || ts.isFunctionLike(node) : isScopeNode(node)) return node
+    if (functionScoped ? isVarScopeNode(node) : isScopeNode(node)) return node
     node = node.parent
   }
   return from.getSourceFile()
