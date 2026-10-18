@@ -2796,12 +2796,14 @@ function collectTypeAliasDefinition(
  * literals only, or `undefined` for any other type.
  */
 function stringLiteralMembers(type: ts.TypeNode): string[] | undefined {
-  const inner = ts.isParenthesizedTypeNode(type) ? type.type : type
-  const members = ts.isUnionTypeNode(inner) ? inner.types : [inner]
+  if (ts.isParenthesizedTypeNode(type)) return stringLiteralMembers(type.type)
+  if (ts.isLiteralTypeNode(type)) return ts.isStringLiteral(type.literal) ? [type.literal.text] : undefined
+  if (!ts.isUnionTypeNode(type)) return undefined
   const values: string[] = []
-  for (const member of members) {
-    if (!ts.isLiteralTypeNode(member) || !ts.isStringLiteral(member.literal)) return undefined
-    values.push(member.literal.text)
+  for (const member of type.types) {
+    const nested = stringLiteralMembers(member)
+    if (!nested) return undefined
+    values.push(...nested)
   }
   return values
 }

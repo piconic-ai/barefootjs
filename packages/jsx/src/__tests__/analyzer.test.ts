@@ -57,10 +57,13 @@ describe('analyzeComponent', () => {
           | 'dark'
         type Tone = "warm" | "cool"
         type One = ('only')
+        type Paren = 'a' | ('b')
+        type Nested = (('x') | ('y' | 'z'))
         type Size = 'auto' | number
+        type ParenMixed = 'a' | (1)
         type Point = { x: number }
 
-        export function Shapes(props: { mode: Mode; tone: Tone; one: One; size: Size; point: Point }) {
+        export function Shapes(props: { mode: Mode; tone: Tone; one: One; paren: Paren; nested: Nested; size: Size; parenMixed: ParenMixed; point: Point }) {
           return <div>{props.mode}</div>
         }
       `
@@ -72,7 +75,10 @@ describe('analyzeComponent', () => {
       Mode: ['light', 'dark'],
       Tone: ['warm', 'cool'],
       One: ['only'],
+      Paren: ['a', 'b'],
+      Nested: ['x', 'y', 'z'],
       Size: undefined,
+      ParenMixed: undefined,
       Point: undefined,
     })
   })

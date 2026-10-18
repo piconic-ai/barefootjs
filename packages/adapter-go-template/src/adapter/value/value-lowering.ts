@@ -323,36 +323,10 @@ export function convertInitialValue(
     return jsLiteralToGo(ctx, literalTypeInfo, preParsed) ?? 'nil'
   }
 
-  // A string type-alias keeps its string value instead of falling to nil.
+  // A named local type: a string alias, a struct, or another alias (#3542).
   if (literalTypeInfo.kind === 'interface' && literalTypeInfo.raw) {
-    const aliasBase = ctx.state.localTypeAliases.get(literalTypeInfo.raw)
-    if (aliasBase === 'string') {
-      if (value.startsWith("'") || value.startsWith('"')) {
-        return value.replace(/'/g, '"')
-      }
-      return '""'
-    }
-    // A struct-backed `interface` kind (an explicitly-typed object signal,
-    // `createSignal<User>({...})`) — #2168 signal-object-field. Mirrors the
-    // `array` branch above: `jsLiteralToGo` → `parsedLiteralToGo`'s
-    // object-literal case already bakes an object literal against a named
-    // local struct correctly (proven by the existing typed-array-of-objects
-    // test); it just wasn't reachable from a SCALAR struct signal, which
-    // fell straight through to `nil` — a compile error for a non-pointer
-    // struct field (`cannot use nil as User value in struct literal`), not
-    // merely a silently-dropped initial value.
-    if (ctx.state.localStructFields.has(literalTypeInfo.raw)) {
-      const baked = jsLiteralToGo(ctx, literalTypeInfo, preParsed)
-      if (baked !== null) return baked
-      // Baking failed (a non-literal initial value, or no `preParsed` tree)
-      // — `nil` is STILL invalid Go for this non-pointer struct field, so
-      // the same compile error would resurface for any such case (Copilot
-      // review, #2201). The struct's own zero value (`User{}`) is the
-      // correct fallback here — mirrors this function's own docstring
-      // ("falls back to the type's zero value") for every other typed
-      // branch above.
-      return `${literalTypeInfo.raw}{}`
-    }
+    const named = namedLocalTypeSeed(ctx, literalTypeInfo, literalTypeInfo.raw, value, preParsed)
+    if (named !== null) return named
   }
 
   // An object-literal seed whose field is not a named struct (#3353): a
@@ -374,6 +348,63 @@ export function convertInitialValue(
   }
 
   return 'nil'
+}
+
+/**
+ * The seed of a signal typed by a named local type, or null to fall through:
+ * a string alias keeps its string value, a struct bakes its object literal
+ * (or its zero value), and any other local alias (a union mixing in a
+ * non-string member, `type Size = 'auto' | number`) types the field
+ * `interface{}`, which holds a scalar literal seed as it is (#3542).
+ */
+function namedLocalTypeSeed(
+  ctx: GoEmitContext,
+  literalTypeInfo: TypeInfo,
+  raw: string,
+  value: string,
+  preParsed: ParsedExpr | undefined,
+): string | null {
+  const aliasBase = ctx.state.localTypeAliases.get(raw)
+  if (aliasBase === 'string') {
+    if (value.startsWith("'") || value.startsWith('"')) {
+      return value.replace(/'/g, '"')
+    }
+    return '""'
+  }
+  // A struct-backed `interface` kind (an explicitly-typed object signal,
+  // `createSignal<User>({...})`) — #2168 signal-object-field. Mirrors the
+  // `array` branch above: `jsLiteralToGo` → `parsedLiteralToGo`'s
+  // object-literal case already bakes an object literal against a named
+  // local struct correctly (proven by the existing typed-array-of-objects
+  // test); it just wasn't reachable from a SCALAR struct signal, which
+  // fell straight through to `nil` — a compile error for a non-pointer
+  // struct field (`cannot use nil as User value in struct literal`), not
+  // merely a silently-dropped initial value.
+  if (ctx.state.localStructFields.has(raw)) {
+    const baked = jsLiteralToGo(ctx, literalTypeInfo, preParsed)
+    if (baked !== null) return baked
+    // Baking failed (a non-literal initial value, or no `preParsed` tree)
+    // — `nil` is STILL invalid Go for this non-pointer struct field, so
+    // the same compile error would resurface for any such case (Copilot
+    // review, #2201). The struct's own zero value (`User{}`) is the
+    // correct fallback here — mirrors this function's own docstring
+    // ("falls back to the type's zero value") for every other typed
+    // branch above.
+    return `${raw}{}`
+  }
+  // Any other local alias (a union mixing in a non-string member,
+  // `type Size = 'auto' | number`) types the field `interface{}`, which
+  // holds a scalar literal seed as it is instead of nil (#3542).
+  return ctx.state.localTypeNames.has(raw) ? scalarLiteralGo(preParsed) : null
+}
+
+/** The Go spelling of a string, number or boolean literal seed, else null. */
+function scalarLiteralGo(parsed: ParsedExpr | undefined): string | null {
+  if (parsed?.kind !== 'literal') return null
+  if (typeof parsed.value === 'string') return JSON.stringify(parsed.value)
+  if (typeof parsed.value === 'number' && Number.isFinite(parsed.value)) return String(parsed.value)
+  if (typeof parsed.value === 'boolean') return String(parsed.value)
+  return null
 }
 
 /**

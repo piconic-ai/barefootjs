@@ -8294,3 +8294,26 @@ export function Shapes(props: { mode: Mode; tone: Tone; size: Size }) {
     expect(types).toContain('Size interface{} `json:"size"`')
   })
 })
+
+describe('GoTemplateAdapter - union alias signal seeds (#3542 review)', () => {
+  test('a parenthesized union is a string alias and a mixed union keeps its scalar seeds', () => {
+    const adapter = new GoTemplateAdapter()
+    const types = adapter.generateTypes(compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Mode = 'a' | ('b')
+type Size = 'auto' | number
+
+export function Seeds() {
+  const [mode] = createSignal<Mode>('a')
+  const [size] = createSignal<Size>('auto')
+  const [count] = createSignal<Size>(3)
+  return <p data-mode={mode()} data-size={size()}>{count()}</p>
+}
+`, adapter))!
+    expect(types).toContain('type Mode = string')
+    expect(types).toMatch(/^\s+Mode: "a",$/m)
+    expect(types).toMatch(/^\s+Size: "auto",$/m)
+    expect(types).toMatch(/^\s+Count: 3,$/m)
+  })
+})
