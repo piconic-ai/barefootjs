@@ -312,32 +312,7 @@
         "ok": true
       },
       "go-template": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "limitations": [
-              "array-fill",
-              "callback-index-param",
-              "callback-outside-evaluator",
-              "client-only-loop-in-static-loop",
-              "computed-const-loop-source",
-              "conditional-nested-const-loop-source",
-              "derived-object-literal-signal",
-              "loop-row-child-children-attrs-frozen",
-              "module-scope-helper-call",
-              "nested-callback-in-filter-predicate",
-              "off-subset-callback-body",
-              "opaque-local-accessor-call",
-              "prop-member-chain-signal-seed",
-              "signal-read-in-nested-static-loop",
-              "static-literal-loop-component-row",
-              "unlowered-method-call",
-              "untyped-loop-array-no-row-struct"
-            ]
-          }
-        ]
+        "ok": true
       },
       "jinja": {
         "ok": true
@@ -1905,32 +1880,7 @@
         "ok": true
       },
       "go-template": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "limitations": [
-              "array-fill",
-              "callback-index-param",
-              "callback-outside-evaluator",
-              "client-only-loop-in-static-loop",
-              "computed-const-loop-source",
-              "conditional-nested-const-loop-source",
-              "derived-object-literal-signal",
-              "loop-row-child-children-attrs-frozen",
-              "module-scope-helper-call",
-              "nested-callback-in-filter-predicate",
-              "off-subset-callback-body",
-              "opaque-local-accessor-call",
-              "prop-member-chain-signal-seed",
-              "signal-read-in-nested-static-loop",
-              "static-literal-loop-component-row",
-              "unlowered-method-call",
-              "untyped-loop-array-no-row-struct"
-            ]
-          }
-        ]
+        "ok": true
       },
       "jinja": {
         "ok": true
@@ -7884,6 +7834,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "defaulted-prop-explicit-empty": {
+      "title": "An explicitly empty value for a prop with a destructure default",
+      "kind": "silent",
+      "given": "a destructured prop with a string default (`{ tag = 'z' }`) passed an explicit empty string (`tag: ''`)",
+      "expected": "the explicit value wins: the default applies only to an absent prop, so the binding is `''`",
+      "actual": "renders the default (`'z'`), since the input struct field cannot tell an explicit empty string from an absent prop",
+      "fixtures": [
+        "signal-computed-seed-sibling-fallbacks-destructured"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "derived-object-literal-signal": {

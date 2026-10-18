@@ -26,7 +26,10 @@ export function ComputedSeedForwardedFraction(props: { n?: number }) {
 `,
   props: { n: 3 },
   expectedHtml: `
-    <p bf-s="test"><span bf-s="test_s0" bf="s0" data-value="1.5">v</span><span bf-s="test_s1" bf="s0" data-value="3">v</span></p>
+    <p bf-s="test">
+      <span bf-s="test_s0" bf="s0" data-value="1.5">v</span>
+      <span bf-s="test_s1" bf="s0" data-value="3">v</span>
+    </p>
   `,
   dataPoints: [
     { name: 'absent', props: {} },

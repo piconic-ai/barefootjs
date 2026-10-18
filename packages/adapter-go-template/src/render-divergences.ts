@@ -220,4 +220,7 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // An explicit `''` for a prop with a string destructure default reads as
+  // absent, so the evaluated seed takes the default.
+  'signal-computed-seed-sibling-fallbacks-destructured:gen:tag:empty': { limitation: 'defaulted-prop-explicit-empty' },
 }

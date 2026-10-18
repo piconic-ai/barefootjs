@@ -6649,6 +6649,76 @@
       }
     }
   ],
+  "signal-computed-seed-sibling-fallbacks": [
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "signal-computed-seed-sibling-fallbacks-destructured": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "tag": "w"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tag": "w"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tag": "w"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tag": "w"
+      }
+    },
+    {
+      "name": "gen:tag:absent",
+      "props": {
+        "label": "q"
+      }
+    },
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "label": "q",
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "label": "q",
+        "tag": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "label": "q",
+        "tag": "日本語"
+      }
+    }
+  ],
   "signal-default-from-jsx": [
     {
       "name": "gen:x:zero",

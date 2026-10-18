@@ -466,22 +466,10 @@ export function collectFractionalChildProps(
         return mayBeFractional(e.left, seen, rows) || mayBeFractional(e.right, seen, rows)
       case 'conditional':
         return mayBeFractional(e.consequent, seen, rows) || mayBeFractional(e.alternate, seen, rows)
-      case 'call': {
+      case 'call':
         // `Math.min` / `Math.max` is fractional when an operand is (#3540).
         if (e.callee.kind !== 'identifier') return isMathMinMax(e) && e.args.some(arg => mayBeFractional(arg, seen, rows))
-        if (e.args.length !== 0) return false
-        const name = e.callee.name
-        const signal = (metadata.signals ?? []).find(s => s.getter === name)
-        // An evaluated seed (`Math.min(props.n ?? 0, 1.5)`) types its field
-        // `float64` the same way a literal fraction does (#3540).
-        if (signal) {
-          if (!signal.parsed || seen.has(name)) return isFraction(signal.parsed)
-          return mayBeFractional(signal.parsed, new Set([...seen, name]), new Map())
-        }
-        const memo = (metadata.memos ?? []).find(m => m.name === name)
-        if (!memo?.parsed || seen.has(name)) return false
-        return mayBeFractional(memo.parsed, new Set([...seen, name]), new Map())
-      }
+        return e.args.length === 0 && getterMayBeFractional(e.callee.name, seen)
       case 'member': {
         if (e.computed) return false
         if (metadata.propsObjectName && e.object.kind === 'identifier' && e.object.name === metadata.propsObjectName) {
@@ -496,6 +484,14 @@ export function collectFractionalChildProps(
       default:
         return false
     }
+  }
+  // A signal getter is fractional through its seed, evaluated ones
+  // (`Math.min(props.n ?? 0, 1.5)`) included (#3540); a memo through its body.
+  const getterMayBeFractional = (name: string, seen: ReadonlySet<string>): boolean => {
+    const signal = (metadata.signals ?? []).find(s => s.getter === name)
+    const body = signal ? signal.parsed : (metadata.memos ?? []).find(m => m.name === name)?.parsed
+    if (!body || seen.has(name)) return !!signal && isFraction(signal.parsed)
+    return mayBeFractional(body, new Set([...seen, name]), new Map())
   }
   // `rows` maps a loop's item binding to its element type, so a row
   // field (`items().map(i => <Price value={i.price} />)`) resolves too.
