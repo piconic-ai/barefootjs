@@ -29,6 +29,17 @@ import { collapseLiteralUnion, literalNumberValue, propertyInfoToGo } from '../t
 import { unwrapNullableUnion } from './value-lowering.ts'
 import { planSynthPropStructs } from '../type/synth-prop-structs.ts'
 
+/** A `Math.max(…)` / `Math.min(…)` call. */
+export function isMathMinMax(e: ParsedExpr): e is Extract<ParsedExpr, { kind: 'call' }> {
+  return (
+    e.kind === 'call' &&
+    e.callee.kind === 'member' &&
+    e.callee.object.kind === 'identifier' &&
+    e.callee.object.name === 'Math' &&
+    (e.callee.property === 'max' || e.callee.property === 'min')
+  )
+}
+
 export type PropMemberSeed =
   | {
       kind: 'resolved'
@@ -456,10 +467,17 @@ export function collectFractionalChildProps(
       case 'conditional':
         return mayBeFractional(e.consequent, seen, rows) || mayBeFractional(e.alternate, seen, rows)
       case 'call': {
-        if (e.callee.kind !== 'identifier' || e.args.length !== 0) return false
+        // `Math.min` / `Math.max` is fractional when an operand is (#3540).
+        if (e.callee.kind !== 'identifier') return isMathMinMax(e) && e.args.some(arg => mayBeFractional(arg, seen, rows))
+        if (e.args.length !== 0) return false
         const name = e.callee.name
         const signal = (metadata.signals ?? []).find(s => s.getter === name)
-        if (signal) return isFraction(signal.parsed)
+        // An evaluated seed (`Math.min(props.n ?? 0, 1.5)`) types its field
+        // `float64` the same way a literal fraction does (#3540).
+        if (signal) {
+          if (!signal.parsed || seen.has(name)) return isFraction(signal.parsed)
+          return mayBeFractional(signal.parsed, new Set([...seen, name]), new Map())
+        }
         const memo = (metadata.memos ?? []).find(m => m.name === name)
         if (!memo?.parsed || seen.has(name)) return false
         return mayBeFractional(memo.parsed, new Set([...seen, name]), new Map())

@@ -24,7 +24,7 @@ import {
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { escapeGoString } from '../lib/go-emit.ts'
+import { applyGoFallback, escapeGoString, goPropDefault } from '../lib/go-emit.ts'
 import {
   convertInitialValue,
   getSignalInitialValueAsGo,
@@ -561,8 +561,12 @@ function evalEnvValueGo(
     if (resolving.has(memo.name)) return null
     goExpr = memoEnvValueGo(ctx, memo, signals, propsParams, propFallbackVars, new Set([...resolving, memo.name]))
   } else if (param) {
-    const hoisted = propFallbackVars.get(name)
-    goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
+    // The binding itself, with its destructure default. A hoisted
+    // `propFallbackVars` local is a sibling signal's `x ?? d` seed, whose
+    // fallback is not this expression's (#3540).
+    const ref = `in.${capitalizeFieldName(param.sourceName ?? name)}`
+    const paramDefault = goPropDefault(param.defaultValue)
+    goExpr = paramDefault === null ? ref : applyGoFallback(ref, paramDefault)
   } else if (name === ctx.state.propsObjectName) {
     // The props object (`props.items.length`) as a map keyed by each
     // prop's caller-facing name (#3512).
