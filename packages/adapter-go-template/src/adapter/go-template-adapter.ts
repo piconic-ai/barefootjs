@@ -1827,8 +1827,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Convert a TS type definition to Go: object types → structs, string-literal unions → a `string` alias. */
   private typeDefinitionToGo(td: TypeDefinition): string | null {
     // A string-literal union (`type Filter = 'all' | 'active'`) carries no
-    // `properties`, so detect the alias from the definition text.
-    if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+    // `properties`; Phase 1 records its members instead.
+    if (td.stringLiteralUnion) {
       return `// ${td.name} is a string type.\ntype ${td.name} = string`
     }
 
@@ -3862,7 +3862,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const td of typeDefinitions) {
       if (td.name === 'Props' || td.name === `${componentName}Props`) continue
       if (td.name.endsWith('Props')) continue
-      if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+      if (td.stringLiteralUnion) {
         this.crossFileTypeAliases.set(td.name, 'string')
       } else {
         const fields = this.structFieldsFor(td.name, td)
@@ -3955,7 +3955,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (td.name === 'Props' || td.name === `${componentName}Props`) continue
       if (td.name.endsWith('Props')) continue
       this.state.localTypeNames.add(td.name)
-      if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+      if (td.stringLiteralUnion) {
         this.state.localTypeAliases.set(td.name, 'string')
       } else {
         // Source-key → Go-field-name map for the baker, from the same field

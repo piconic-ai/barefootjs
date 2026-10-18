@@ -2216,6 +2216,13 @@ export interface TypeDefinition {
    * type aliases that aren't object types (e.g. string-literal unions).
    */
   properties?: PropertyInfo[]
+  /**
+   * The members of a type alias whose type is a string literal or a union of
+   * string literals only (`type Mode = 'light' | 'dark'`, in any quoting or
+   * layout). Absent for every other definition, a union mixing in a
+   * non-string member included, so adapters need not re-read `definition`.
+   */
+  stringLiteralUnion?: string[]
   loc: SourceLocation
 }
 

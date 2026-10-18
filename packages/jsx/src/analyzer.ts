@@ -2780,13 +2780,30 @@ function collectTypeAliasDefinition(
   const properties = ts.isTypeLiteralNode(node.type)
     ? membersToProperties(node.type.members, ctx.sourceFile)
     : undefined
+  const stringLiteralUnion = stringLiteralMembers(node.type)
   ctx.typeDefinitions.push({
     kind: 'type',
     name: node.name.text,
     definition: node.getText(ctx.sourceFile),
     properties,
+    ...(stringLiteralUnion ? { stringLiteralUnion } : {}),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
+}
+
+/**
+ * The values of a type that is a string literal or a union of string
+ * literals only, or `undefined` for any other type.
+ */
+function stringLiteralMembers(type: ts.TypeNode): string[] | undefined {
+  const inner = ts.isParenthesizedTypeNode(type) ? type.type : type
+  const members = ts.isUnionTypeNode(inner) ? inner.types : [inner]
+  const values: string[] = []
+  for (const member of members) {
+    if (!ts.isLiteralTypeNode(member) || !ts.isStringLiteral(member.literal)) return undefined
+    values.push(member.literal.text)
+  }
+  return values
 }
 
 // =============================================================================
