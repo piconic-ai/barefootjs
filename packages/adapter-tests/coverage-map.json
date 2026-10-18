@@ -1526,6 +1526,20 @@
       "axes": [],
       "contexts": []
     },
+    "client-handler-keyword-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "client-only": {
       "kinds": [
         "array-literal",

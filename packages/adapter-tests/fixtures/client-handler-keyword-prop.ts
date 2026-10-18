@@ -19,4 +19,7 @@ export function KeywordProp(props: { default: number; label: string }) {
 }
 `,
   props: { default: 5, label: 'n' },
+  expectedHtml: `
+    <button bf-s="test" bf="s2"><!--bf:s0-->n<!--/--><!--bf:s1-->0<!--/--></button>
+  `,
 })
