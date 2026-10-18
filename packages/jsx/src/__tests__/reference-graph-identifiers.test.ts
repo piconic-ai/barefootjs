@@ -12,6 +12,7 @@
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+import { HonoAdapter } from '../../../adapter-hono/src/adapter/index'
 import {
   extractIdentifiers,
   extractTemplateExpressions,
@@ -88,5 +89,39 @@ describe('template substitutions', () => {
     const set = new Set<string>()
     extractTemplateIdentifiers('<div class="btn size-lg ${cls}">${label$}</div>', set)
     expect([...set].sort()).toEqual(['cls', 'label$'])
+  })
+})
+
+describe('regex literals and keyword-named members (#3536 review)', () => {
+  test('a quote inside a regex literal does not hide a later dependency', () => {
+    const js = clientJsFor('const step = props.n * 2\n      const _helper = (x: string) => (/"/.test(x) ? step : 0)', "_helper('a')")
+    expect(js).toContain('const step = ')
+  })
+
+  test('a brace inside a regex literal does not close a template substitution', () => {
+    expect(extractTemplateExpressions('<p>${/}/.test(dep) ? dep : fallback}</p>')).toEqual([
+      '/}/.test(dep) ? dep : fallback',
+    ])
+  })
+
+  test('a reserved word read as a member name is reported; as a keyword it is not', () => {
+    const set = new Set<string>()
+    extractIdentifiers('props.default + obj?.enum + (x instanceof Y)', set)
+    expect([...set].sort()).toEqual(['Y', 'default', 'enum', 'obj', 'props', 'x'])
+  })
+
+  test('a keyword-named prop read only by a handler is still hydrated', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function T(props: { default: number }) {
+        const [count, setCount] = createSignal(0)
+        return <button onClick={() => setCount(props.default)}>{count()}</button>
+      }
+    `
+    const hono = compileJSX(source, 'T.tsx', { adapter: new HonoAdapter() })
+    expect(hono.errors).toHaveLength(0)
+    const template = hono.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain("__hydrateProps['default']")
   })
 })

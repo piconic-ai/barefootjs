@@ -12,6 +12,7 @@
  */
 
 import ts from 'typescript'
+import { isIdentifierLikeToken, isTriviaKind, iterateJsTokens } from '../scanner/js-scanner.ts'
 
 /** JavaScript keywords and common globals to skip during identifier extraction. */
 const KEYWORDS_AND_GLOBALS = new Set([
@@ -71,45 +72,42 @@ const RESERVED_WORDS = new Set([
 ])
 
 /**
- * Walk the tokens of `text` with TypeScript's scanner, calling `onName` for
- * every identifier, member names included (`props.value` yields both: the
- * reference graph reads a props-object member as a use of that prop), and
- * `onSubstitution` with the source span of every outermost `${…}` body. String
- * contents and comments produce no tokens, and `$` is an identifier
- * character, so `step$` / `$step` are found (#3536).
+ * Walk the tokens of `text` (`iterateJsTokens`, the shared JS lexer, which
+ * reads a regex literal as one token and closes template substitutions at
+ * their own `}`), calling `onName` for every identifier, member names
+ * included (`props.value` yields both: the reference graph reads a
+ * props-object member as a use of that prop), and `onSubstitution` with the
+ * source span of every outermost `${…}` body. String, regex and comment
+ * contents produce no names, and `$` is an identifier character, so
+ * `step$` / `$step` are found (#3536).
  *
  * A contextual keyword (`type`, `of`, `get`, …) is a legal binding name, so
- * it is reported like an identifier; a reserved word never is.
+ * it is reported like an identifier; a reserved word is reported only as a
+ * member name (`props.default`).
  */
 function scanNames(
   text: string,
   onName: (name: string) => void,
   onSubstitution?: (start: number, end: number) => void,
 ): void {
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, /*skipTrivia*/ true, ts.LanguageVariant.Standard, text)
-  // One entry per open brace: the source offset where a `${` body starts,
-  // or -1 for an ordinary `{`.
-  const braces: number[] = []
-  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (token === ts.SyntaxKind.TemplateHead) {
-      braces.push(scanner.getTokenEnd())
-    } else if (token === ts.SyntaxKind.OpenBraceToken) {
-      braces.push(-1)
-    } else if (token === ts.SyntaxKind.CloseBraceToken) {
-      const bodyStart = braces.pop() ?? -1
-      if (bodyStart >= 0) {
-        // Only an outermost body: a nested template stays inside its parent's.
-        if (!braces.some(start => start >= 0)) onSubstitution?.(bodyStart, scanner.getTokenStart())
-        token = scanner.reScanTemplateToken(/*isTaggedTemplate*/ false)
-        if (token === ts.SyntaxKind.TemplateMiddle) braces.push(scanner.getTokenEnd())
-      }
-    } else if (
-      (token === ts.SyntaxKind.Identifier ||
-        (token >= ts.SyntaxKind.FirstKeyword && token <= ts.SyntaxKind.LastKeyword)) &&
-      !RESERVED_WORDS.has(scanner.getTokenValue())
-    ) {
-      onName(scanner.getTokenValue())
+  // The source offset where each open template's current `${` body starts.
+  const bodyStarts: number[] = []
+  let prev: ts.SyntaxKind | undefined
+  for (const token of iterateJsTokens(text)) {
+    if (isTriviaKind(token.kind)) continue
+    if (token.kind === ts.SyntaxKind.TemplateHead) {
+      bodyStarts.push(token.end)
+    } else if (token.kind === ts.SyntaxKind.TemplateMiddle || token.kind === ts.SyntaxKind.TemplateTail) {
+      const bodyStart = bodyStarts.pop()
+      // Only an outermost body: a nested template stays inside its parent's.
+      if (bodyStart !== undefined && bodyStarts.length === 0) onSubstitution?.(bodyStart, token.pos)
+      if (token.kind === ts.SyntaxKind.TemplateMiddle) bodyStarts.push(token.end)
+    } else if (isIdentifierLikeToken(token.kind)) {
+      const name = text.slice(token.pos, token.end)
+      const isMemberName = prev === ts.SyntaxKind.DotToken || prev === ts.SyntaxKind.QuestionDotToken
+      if (isMemberName || !RESERVED_WORDS.has(name)) onName(name)
     }
+    prev = token.kind
   }
 }
 
