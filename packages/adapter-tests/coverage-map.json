@@ -10873,6 +10873,25 @@
         "text"
       ]
     },
+    "undefined-alternate-ternary-attr-test-question-mark": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "undefined-signal-arithmetic-direct": {
       "kinds": [
         "binary",

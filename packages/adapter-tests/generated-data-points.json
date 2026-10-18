@@ -7460,6 +7460,79 @@
       }
     }
   ],
+  "undefined-alternate-ternary-attr-test-question-mark": [
+    {
+      "name": "gen:item:absent",
+      "props": {
+        "mode": "x"
+      }
+    },
+    {
+      "name": "gen:mode:absent",
+      "props": {
+        "item": {
+          "active": false
+        }
+      }
+    },
+    {
+      "name": "gen:mode:empty",
+      "props": {
+        "item": {
+          "active": false
+        },
+        "mode": ""
+      }
+    },
+    {
+      "name": "gen:mode:markup",
+      "props": {
+        "item": {
+          "active": false
+        },
+        "mode": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:mode:multibyte",
+      "props": {
+        "item": {
+          "active": false
+        },
+        "mode": "日本語"
+      }
+    },
+    {
+      "name": "gen:fallback:empty",
+      "props": {
+        "item": {
+          "active": false
+        },
+        "mode": "x",
+        "fallback": ""
+      }
+    },
+    {
+      "name": "gen:fallback:markup",
+      "props": {
+        "item": {
+          "active": false
+        },
+        "mode": "x",
+        "fallback": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:fallback:multibyte",
+      "props": {
+        "item": {
+          "active": false
+        },
+        "mode": "x",
+        "fallback": "日本語"
+      }
+    }
+  ],
   "underscore-prefixed-prop": [
     {
       "name": "gen:value:empty",
