@@ -293,32 +293,60 @@ export function emitCallbackEval(
 /**
  * Whether a call that reached an adapter's generic fallback has no lowering
  * (#3493). A zero-arg call reads a getter (`props.value()`, a getter passed
- * as a prop), and a call to a function-valued prop (`props.renderNode(node)`,
- * a render prop) names a value a backend caller never passes, so the guard
- * around it is never taken there; both keep the callee read. Any other call
- * with arguments (`s().localeCompare('m')`) would lose the call and its
- * arguments. `propsObjectName` is the undestructured props parameter
- * (`props`), `null` when the props are destructured: a destructured render
- * prop is a bare-name call, which the adapters refuse on their own.
+ * as a prop, a context getter `ctx.open()`), unless its receiver is rooted at
+ * a JavaScript global (`Date.now()`, `window.performance.now()`): `isGlobal`
+ * answers that from the component's bindings and the live loop scope, and a
+ * global has no binding in template scope (#3505). A call to a
+ * function-valued prop (`props.renderNode(node)`, a render prop) names a
+ * value a backend caller never passes, so the guard around it is never taken
+ * there; it keeps the callee read. Any other call with arguments
+ * (`s().localeCompare('m')`) would lose the call and its arguments.
+ * `propsObjectName` is the undestructured props parameter (`props`), `null`
+ * when the props are destructured: a destructured render prop is a
+ * bare-name call, which the adapters refuse on their own.
  */
 export function isUnloweredCall(
   callee: ParsedExpr,
   args: readonly ParsedExpr[],
   propsObjectName: string | null,
+  isGlobal: (name: string) => boolean,
 ): boolean {
-  if (args.length === 0) return false
+  if (args.length === 0) {
+    const root = memberRoot(callee)
+    return root !== null && isGlobal(root)
+  }
   return !(callee.kind === 'member' && callee.object.kind === 'identifier' && callee.object.name === propsObjectName)
 }
 
 /**
- * The BF101 for a call no template lowers: a method outside the array-method
- * catalogue (`s().localeCompare('m')`), or any other callee that is not a
- * getter, a template primitive or a lowering plugin's call. Read as its
- * callee, the call and its arguments would silently disappear (#3493).
+ * The identifier a member chain is rooted at, through literal and computed
+ * access alike (`window.performance.now`, `Date[key]`,
+ * `globalThis[name].now`); `null` for any other callee.
  */
-export function unloweredCallRefusal(callee: ParsedExpr, adapterName: string): { message: string; suggestion: string } {
+function memberRoot(callee: ParsedExpr): string | null {
+  if (callee.kind !== 'member' && callee.kind !== 'index-access') return null
+  let object = callee.object
+  while (object.kind === 'member' || object.kind === 'index-access') object = object.object
+  return object.kind === 'identifier' ? object.name : null
+}
+
+/**
+ * The BF101 for a call no template lowers: a method outside the array-method
+ * catalogue (`s().localeCompare('m')`), a zero-arg call on a JavaScript
+ * global (`Date.now()`), or any other callee that is not a getter, a template
+ * primitive or a lowering plugin's call. Read as its callee, the call and its
+ * arguments would silently disappear (#3493, #3505).
+ */
+export function unloweredCallRefusal(
+  callee: ParsedExpr,
+  args: readonly ParsedExpr[],
+  adapterName: string,
+): { message: string; suggestion: string } {
+  const name = stringifyParsedExpr(callee)
   return {
-    message: `Call '${stringifyParsedExpr(callee)}(...)' has no ${adapterName} template lowering; read as a value it would drop the call and its arguments`,
+    message: args.length === 0
+      ? `Call '${name}()' reads a JavaScript global, which has no ${adapterName} template binding; read as a value it would drop the call`
+      : `Call '${name}(...)' has no ${adapterName} template lowering; read as a value it would drop the call and its arguments`,
     suggestion: 'Pre-compute the value in the backend and pass it as a prop, or add /* @client */ for client-only evaluation (no SSR).',
   }
 }

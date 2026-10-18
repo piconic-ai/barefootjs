@@ -681,6 +681,9 @@ import { fixture as arrayElementIndex } from './array-element-index'
 import { fixture as unloweredMethodCall } from './unlowered-method-call'
 import { fixture as unloweredMethodCallPrecomputed } from './unlowered-method-call-precomputed'
 import { fixture as unloweredMethodCallClient } from './unlowered-method-call-client'
+import { fixture as unloweredGlobalCall } from './unlowered-global-call'
+import { fixture as unloweredGlobalCallPrecomputed } from './unlowered-global-call-precomputed'
+import { fixture as unloweredGlobalCallClient } from './unlowered-global-call-client'
 import { fixture as computedConstRead } from './computed-const-read'
 import { fixture as computedConstShadowsProp } from './computed-const-shadows-prop'
 import { fixture as computedConstShadowsPropPositions } from './computed-const-shadows-prop-positions'
@@ -1485,6 +1488,9 @@ export const jsxFixtures: JSXFixture[] = [
   unloweredMethodCall,
   unloweredMethodCallPrecomputed,
   unloweredMethodCallClient,
+  unloweredGlobalCall,
+  unloweredGlobalCallPrecomputed,
+  unloweredGlobalCallClient,
   computedConstRead,
   computedConstShadowsProp,
   computedConstShadowsPropPositions,

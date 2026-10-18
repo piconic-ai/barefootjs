@@ -6749,8 +6749,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // plain data field it fails the render (#3493). A method on the request's
     // `searchParams()` reader is a real Go method (`.SearchParams.Get "key"`),
     // and a getter or function-valued prop keeps the callee read.
-    if (isUnloweredCall(callee, args, this.state.propsObjectName) && !matchSearchParamsMethodCall(callee, args, this.state.searchParamsLocals)) {
-      const refusal = unloweredCallRefusal(callee, 'Go')
+    if (isUnloweredCall(callee, args, this.state.propsObjectName, name => this.state.computedConsts?.isGlobal(name) ?? false) && !matchSearchParamsMethodCall(callee, args, this.state.searchParamsLocals)) {
+      const refusal = unloweredCallRefusal(callee, args, 'Go')
       this.state.errors.push({
         code: 'BF101',
         severity: 'error',

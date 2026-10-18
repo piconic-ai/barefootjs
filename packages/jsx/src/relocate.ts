@@ -818,6 +818,16 @@ export function buildRelocateEnvFromIR(
   return env
 }
 
+/**
+ * Every name the component or its module binds, by kind: imports, module
+ * consts and functions, props, init locals, signals and memos (`classify`'s
+ * table). A free name absent from it, and bound by no enclosing loop or
+ * callback, is a JavaScript global.
+ */
+export function componentBindings(metadata: IRMetadata): ReadonlyMap<string, BindingKind> {
+  return buildRelocateEnvFromFields(metadata).bindings
+}
+
 interface EnvFields {
   imports: AnalyzerContext['imports']
   localFunctions: AnalyzerContext['localFunctions']
