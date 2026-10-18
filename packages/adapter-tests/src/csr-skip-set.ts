@@ -14,6 +14,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The prop-precompute twin supplies the SSR/CSR parity proof; this twin's
   // mounted interactions were also verified in the real browser.
   'conditional-nested-loop-client-reactivity',
+  // #3554: the CSR template escapes present children under a non-empty
+  // nullish fallback (`(props.children ?? '<b>x</b>') ?? ''`): children
+  // reach the template as a plain HTML string. The absent branch renders
+  // the escaped fallback correctly; SSR adapters are covered by the fixture.
+  'children-chained-nullish-fallback-escaped',
   // #2073 graduated by #2988: `format` (a module-scope arrow-valued const
   // with no free identifiers beyond its own param) is now classified
   // `module-scope-safe` by `compute-inlinability.ts` instead of the old

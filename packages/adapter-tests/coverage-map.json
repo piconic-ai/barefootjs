@@ -1477,6 +1477,21 @@
         "attribute"
       ]
     },
+    "children-chained-nullish-fallback-escaped": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"
@@ -1545,6 +1560,18 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "children-preamble-local-escaped": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },

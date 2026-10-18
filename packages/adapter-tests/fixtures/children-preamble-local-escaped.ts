@@ -24,4 +24,7 @@ export function ChildrenPreambleLocal({ children, rows }: { children?: unknown; 
 }
 `,
   props: { rows: [{ label: '<b>x</b>' }, { label: 'y' }] },
+  expectedHtml: `
+    <div bf-s="test"><ul bf="s1"><li data-key="&lt;b&gt;x&lt;/b&gt;"><!--bf:s0-->&lt;b&gt;x&lt;/b&gt;<!--/--></li><li data-key="y"><!--bf:s0-->y<!--/--></li></ul></div>
+  `,
 })

@@ -1054,6 +1054,14 @@
       }
     }
   ],
+  "children-preamble-local-escaped": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "component-spread-explicit-then-props": [
     {
       "name": "gen:tone:absent",

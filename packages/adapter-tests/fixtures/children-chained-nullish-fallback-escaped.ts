@@ -31,4 +31,10 @@ export function Leaf() {
 }
 `,
   },
+  expectedHtml: `
+    <main bf-s="test">
+      <div bf-s="test_s1" class="box"><span bf-s="test_s0" class="leaf">leaf</span></div>
+      <div bf-s="test_s2" class="box">&lt;b&gt;fallback&lt;/b&gt;</div>
+    </main>
+  `,
 })
