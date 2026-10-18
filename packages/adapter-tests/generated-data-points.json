@@ -3718,6 +3718,26 @@
       }
     }
   ],
+  "memo-function-expression": [
+    {
+      "name": "gen:base:zero",
+      "props": {
+        "base": 0
+      }
+    },
+    {
+      "name": "gen:base:negative",
+      "props": {
+        "base": -7
+      }
+    },
+    {
+      "name": "gen:base:large",
+      "props": {
+        "base": 1234567890
+      }
+    }
+  ],
   "memo-length-prop-seeded-signal": [
     {
       "name": "gen:items:empty",

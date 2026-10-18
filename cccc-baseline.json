@@ -523,9 +523,6 @@
       "collectImport": [
         32
       ],
-      "collectMemo": [
-        36
-      ],
       "detectReactiveFactory": [
         48
       ],
