@@ -110,6 +110,20 @@ function optionalLength(receiver: string, optional: boolean): string {
   return optional ? `((${receiver}).nil? ? nil : ${read})` : read
 }
 
+/**
+ * The Ruby block param a nested callback binds `param` as: its own local,
+ * unless an enclosing callback param of another name already renders as that
+ * local (a loop gate's filter param rendered as the row local `todo`, with a
+ * nested callback param named `todo`), which the block param would shadow;
+ * then the first of `_bf_<param>`, `_bf2_<param>`, … that none renders as.
+ */
+function blockLocal(param: string, outerLocals: ReadonlyMap<string, string>): string {
+  const taken = (local: string) => [...outerLocals].some(([name, l]) => name !== param && l === local)
+  let local = rubyLocal(param)
+  for (let n = 1; taken(local); n++) local = n === 1 ? `_bf_${rubyLocal(param)}` : `_bf${n}_${rubyLocal(param)}`
+  return local
+}
+
 export class ErbFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -289,17 +303,18 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     const param = arrow.params[0]
     const predicate = arrow.body
     const arrayExpr = emit(object)
+    const outerLocals = new Map([...this.outerLocals, [this.param, this.renderParamAs]])
+    const blockParam = blockLocal(param, outerLocals)
     const nested = new ErbFilterEmitter(
       param,
       this.localVarMap,
       (n) => n === this.param || this.isLoopBoundOuter(n),
       this.isStringName,
       this.onUnsupported,
-      undefined,
-      new Map([...this.outerLocals, [this.param, this.renderParamAs]]),
+      blockParam,
+      outerLocals,
     )
     const predBody = emitParsedExpr(predicate, nested)
-    const blockParam = rubyLocal(param)
     if (method === 'filter') return `${arrayExpr}.select { |${blockParam}| bf.truthy?(${predBody}) }`
     if (method === 'every') return `${arrayExpr}.all? { |${blockParam}| bf.truthy?(${predBody}) }`
     if (method === 'some') return `${arrayExpr}.any? { |${blockParam}| bf.truthy?(${predBody}) }`

@@ -148,12 +148,14 @@ function emitNullishEquality(
  * `$<param>`, unless an enclosing param of another name already reads as
  * that variable (a loop filter's param spelled as the row variable `$todo`,
  * with a nested callback param named `todo`), which the inner binding would
- * shadow. An enclosing param of the same name is shadowed in JS too.
+ * shadow; then the first of `$_bf_<param>`, `$_bf2_<param>`, … that no such
+ * param reads as. An enclosing param of the same name is shadowed in JS too.
  */
 function grepLexical(param: string, enclosing: ReadonlyMap<string, string>): string {
-  const own = `$${param}`
-  const taken = [...enclosing].some(([name, spelled]) => name !== param && spelled === own)
-  return taken ? `$_bf_${param}` : own
+  const taken = (spelled: string) => [...enclosing].some(([name, s]) => name !== param && s === spelled)
+  let lexical = `$${param}`
+  for (let n = 1; taken(lexical); n++) lexical = n === 1 ? `$_bf_${param}` : `$_bf${n}_${param}`
+  return lexical
 }
 
 /**
