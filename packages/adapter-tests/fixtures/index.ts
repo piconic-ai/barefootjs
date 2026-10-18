@@ -295,6 +295,9 @@ import { fixture as optionalComputedFilterPredicate } from './optional-computed-
 import { fixture as optionalComputedFilterPresence } from './optional-computed-filter-presence'
 import { fixture as optionalNestedObjectSignalSeed } from './optional-nested-object-signal-seed'
 import { fixture as signalPropSeedLogicalFallback } from './signal-prop-seed-logical-fallback'
+import { fixture as signalComputedPropSeed } from './signal-computed-prop-seed'
+import { fixture as signalComputedPropSeedAbsent } from './signal-computed-prop-seed-absent'
+import { fixture as signalComputedPropSeedConsumers } from './signal-computed-prop-seed-consumers'
 import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as signalLiteralPropScalarCollision } from './signal-literal-prop-scalar-collision'
 import { fixture as signalLiteralPropObjectCollision } from './signal-literal-prop-object-collision'
@@ -1212,6 +1215,9 @@ export const jsxFixtures: JSXFixture[] = [
   optionalComputedFilterPresence,
   optionalNestedObjectSignalSeed,
   signalPropSeedLogicalFallback,
+  signalComputedPropSeed,
+  signalComputedPropSeedAbsent,
+  signalComputedPropSeedConsumers,
   signalLiteralPropNameCollision,
   signalLiteralPropScalarCollision,
   signalLiteralPropObjectCollision,

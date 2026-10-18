@@ -9219,6 +9219,66 @@
         "text"
       ]
     },
+    "signal-computed-prop-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-prop-seed-absent": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-prop-seed-consumers": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "signal-default-from-jsx": {
       "kinds": [
         "binary",

@@ -17,6 +17,7 @@
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { CompileState } from './lib/compile-state.ts'
+import type { PropFallbackVar } from './lib/types.ts'
 
 export interface GoEmitContext {
   /** Per-compile mutable state (signals, consts, type tables, errors, …). */
@@ -47,6 +48,19 @@ export interface GoEmitContext {
    * or null. Callers validate the name against `propsParams`.
    */
   extractPropNameFromInitialValue(initialValue: string, preParsed?: ParsedExpr): string | null
+
+  /**
+   * A signal's SSR value when it is seeded by a computed prop expression
+   * (#3519): evaluated by the runtime evaluator and converted to the
+   * signal's own field type, or null for any other seed. Every reader of a
+   * signal's seed (its field, a child prop it is forwarded to, a memo
+   * lowering that reads it) asks this first, so they agree.
+   */
+  computedSignalSeed(
+    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null
 
   /**
    * Parse a signal-time initial value `props.X ?? <literal>` (or the

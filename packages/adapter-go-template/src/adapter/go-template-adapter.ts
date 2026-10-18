@@ -182,7 +182,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFie
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, memoPropFallback } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
@@ -365,6 +365,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertConditionToGo(jsCondition, preParsed),
     extractPropNameFromInitialValue: (initialValue, preParsed) =>
       this.extractPropNameFromInitialValue(initialValue, preParsed),
+    computedSignalSeed: (signal, propsParams, propFallbackVars) =>
+      this.computedSignalSeed(signal, propsParams, propFallbackVars),
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
@@ -5871,6 +5873,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const inner = this.extractPropFallbackFromParsed(parsed.left)
     if (!inner) return null
     return { ...inner, operator: parsed.op, operand: String(right.value) }
+  }
+
+  /** {@link GoEmitContext.computedSignalSeed}. */
+  private computedSignalSeed(
+    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    const computed = computedPropSeedGo(this.emitCtx, signal.parsed, [...propsParams], propFallbackVars)
+    if (computed === null) return null
+    const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
+    return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
   }
 
   /**
