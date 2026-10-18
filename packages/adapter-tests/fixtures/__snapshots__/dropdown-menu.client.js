@@ -2900,13 +2900,7 @@ export function initDropdownMenu(__scope, _p = {}) {
 hydrate('DropdownMenu', { init: initDropdownMenu, template: (_p) => `<div data-slot="dropdown-menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('relative inline-block')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative inline-block')} ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenu(_p, __bfKey) { return createComponent('DropdownMenu', _p, __bfKey) }
 var DropdownMenuContext = DropdownMenuContext ?? createContext()
-
-export function initDropdownMenuTrigger(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const dropdownMenuTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
-  const warnIfMisusedTrigger = (el, componentName) => {
+var warnIfMisusedTrigger = warnIfMisusedTrigger ?? function(el, componentName) {
   const interactiveSelector = 'button, [role="button"], a[href]'
   const hasNestedInteractive = el.querySelector(interactiveSelector) != null
   const isEmpty = Array.from(el.childNodes).every(
@@ -2924,6 +2918,12 @@ export function initDropdownMenuTrigger(__scope, _p = {}) {
     )
   }
 }
+
+export function initDropdownMenuTrigger(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const dropdownMenuTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
   const handleMount = (el) => {
     const ctx = useContext(DropdownMenuContext)
 
