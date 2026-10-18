@@ -118,10 +118,17 @@ caught after the PR opens costs a full review round.
    code is written that way. Use the `code-review` skill when it is available; when
    delegation is authorized, give a reviewer agent only the diff and the contract.
    Otherwise re-read the diff cold yourself as a separate pass.
-3. Treat each finding as a hypothesis. Confirm it with an executable repro (a
-   fixture, a unit test, or a compile of the shape) before changing code, and drop
-   it when it does not reproduce. Fix confirmed findings most severe first: wrong
-   or silently divergent output, then a loud failure, then a missing test.
+3. Treat each finding as a hypothesis and confirm it before changing code:
+   - A claimed output or behaviour defect needs an executable repro (a fixture, a
+     unit test, or a compile of the shape). Drop it when it does not reproduce.
+   - A design or testing-contract finding is confirmed by pointing at the code and
+     the rule it breaks: one of `AGENTS.md`'s "Never …" conventions, a decision made
+     in more than one place, or a missing coverage-coupling fixture. It is
+     must-address even when the output is correct today
+     (`.github/pullfrog/review.md`), so a passing repro does not dismiss it.
+
+   Fix confirmed findings most severe first: wrong or silently divergent output,
+   then a loud failure, then a design-contract violation, then a missing test.
 4. Do not act on style, wording or cleanup-only findings in this pass. They widen
    the diff and cost a CI cycle without making a revert less likely.
 
