@@ -149,6 +149,12 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   // Defaults to `rubyLocal(param)`, i.e. every other construction site is
   // unaffected.
   private readonly renderParamAs: string
+  // The Ruby locals an ENCLOSING callback's param renders as, keyed by its
+  // JS name. A nested `.some(g => g === t.main)` inside the loop-gating
+  // predicate must emit the outer `t` as the loop's bound local (`todo`),
+  // the same split `renderParamAs` makes for this emitter's own param
+  // (#3542).
+  private readonly outerLocals: ReadonlyMap<string, string>
 
   constructor(
     param: string,
@@ -157,6 +163,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     isStringName: (n: string) => boolean = unusedIsStringName,
     onUnsupported?: (message: string, reason?: string) => void,
     renderParamAs: string = rubyLocal(param),
+    outerLocals: ReadonlyMap<string, string> = new Map(),
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -164,10 +171,13 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
     this.renderParamAs = renderParamAs
+    this.outerLocals = outerLocals
   }
 
   identifier(name: string): string {
     if (name === this.param) return this.renderParamAs
+    const outerLocal = this.outerLocals.get(name)
+    if (outerLocal) return outerLocal
     const signal = this.localVarMap.get(name)
     if (signal) return `v[${rubySymbolLiteral(signal)}]`
     if (this.isLoopBoundOuter(name)) return rubyLocal(name)
@@ -285,6 +295,8 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
       (n) => n === this.param || this.isLoopBoundOuter(n),
       this.isStringName,
       this.onUnsupported,
+      undefined,
+      new Map([...this.outerLocals, [this.param, this.renderParamAs]]),
     )
     const predBody = emitParsedExpr(predicate, nested)
     const blockParam = rubyLocal(param)

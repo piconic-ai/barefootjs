@@ -5,7 +5,9 @@ import { createFixture } from '../src/types'
  * callback's param (`t => t.tags.some(g => g === t.main)`), as a loop filter
  * and as a `.length` read. Mojolicious bound both params to `$_` with a
  * regex rename, so inside the nested `grep` the outer `t` read the inner
- * element; each callback param is now its own lexical (#3542).
+ * element; each callback param is now its own lexical (#3542). ERB's loop
+ * gate emitted the outer `t` under its JS name inside the nested block
+ * instead of the loop's bound local (`todo`), a `NameError` at render time.
  */
 export const fixture = createFixture({
   id: 'filter-nested-callback-reads-outer-param',
