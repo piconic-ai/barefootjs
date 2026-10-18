@@ -44,8 +44,8 @@ export function initConditionalChildListenerCleanup(__scope, _p = {}) {
     }
   })
 
-  if (_s4) _s4.addEventListener('click', () => { setMounted(false) })
-  if (_s5) _s5.addEventListener('click', () => { window.dispatchEvent(new Event('fixture-ping')) })
+  if (_s4) _s4.addEventListener('click', () => setMounted(false))
+  if (_s5) _s5.addEventListener('click', () => window.dispatchEvent(new Event('fixture-ping')))
 }
 
 hydrate('ConditionalChildListenerCleanup', { init: initConditionalChildListenerCleanup, template: (_p) => `<div bf="s6">${(true) ? `<!--bf-cond-start:s0-->${renderChild('PingListener__85856cd1', {}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}<p class="count" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--> pings</p><button class="unmount" bf="s4">unmount</button><button class="ping" bf="s5">ping</button></div>` })
