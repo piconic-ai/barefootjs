@@ -6642,13 +6642,15 @@ export function NonCollide(props: { count?: number }) {
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     const types = result.files.find(f => f.type === 'types')!.content
-    // No collision here — `count`'s own field stays the plain concrete type,
-    // byte-identical to before this fix.
-    expect(types).toContain('Count int')
-    expect(types).not.toContain('Count interface{}')
+    // No collision here, so no hoisted collision fallback. Since #3532 the
+    // prop is nillable (`interface{}`) all the same: the seed is evaluated,
+    // and an absent `count` must reach the evaluator as nil for `?? 1` to
+    // apply (it used to read as 0 and seed 0 instead of 2).
+    expect(types).toContain('Count interface{}')
     const newProps = types.slice(types.indexOf('func NewNonCollideProps'))
     expect(newProps).not.toContain('var count int')
     expect(newProps).toContain('Count: in.Count,')
+    expect(newProps).toContain('bf.EvalExpr(')
   })
 })
 

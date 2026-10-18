@@ -256,7 +256,9 @@ export function convertInitialValue(
   // it refuses (BF101) instead of baking `0` / `""` / `nil` in its place
   // (#3540). A member chain above already refused.
   const zero = (goZero: string): string => {
-    if (refuseUnloweredProp && !memberSeed && !embedded) refuseUnloweredPropSeed(ctx, value, preParsed, propsParams)
+    if (refuseUnloweredProp && !memberSeed && !embedded) {
+      refuseUnloweredPropSeed(ctx, value, preParsed, propsParams)
+    }
     return goZero
   }
 
@@ -406,7 +408,9 @@ function refuseUnloweredPropSeed(
   preParsed: ParsedExpr | undefined,
   propsParams: readonly { name: string }[] | undefined,
 ): void {
-  if (!preParsed) return
+  // An object or array literal spreading a prop is refused where the
+  // template reads it (#2700), which a client-only read escapes.
+  if (!preParsed || preParsed.kind === 'object-literal' || preParsed.kind === 'array-literal') return
   const propsObject = ctx.state.propsObjectName
   const readsProp = [...(freeIdentifiers(preParsed) ?? [])].some(
     name => name === propsObject || (propsParams ?? []).some(p => p.name === name),
