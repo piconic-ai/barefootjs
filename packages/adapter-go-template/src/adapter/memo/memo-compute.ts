@@ -1440,8 +1440,7 @@ export function resolveGetterValueAsGo(
     // Already on the resolution stack (self- or mutually-referencing
     // ternary operands) — fall back to null rather than recurse forever.
     if (resolving.has(memo.name)) return null
-    const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
-    const fb = ctx.extractPropFallback(stripped)
+    const fb = memoPropFallback(ctx, memo)
     if (fb && capitalizeFieldName(fb.propName) === capitalizeFieldName(memo.name)) {
       const fbParam = propsParams.find(p => p.name === fb.propName)
       const field = `in.${capitalizeFieldName(fbParam?.sourceName ?? fb.propName)}`
@@ -1683,4 +1682,15 @@ export function collectPropsReadByCtorInit(
   }
   visit(body, new Set())
   return found
+}
+
+/**
+ * The `props.X ?? fallback` a memo's body expression reads, matched on the
+ * analyzer's `MemoInfo.bodyExpr` (#3510), or null.
+ */
+export function memoPropFallback(
+  ctx: GoEmitContext,
+  memo: { bodyExpr?: string },
+): ReturnType<GoEmitContext['extractPropFallback']> {
+  return memo.bodyExpr === undefined ? null : ctx.extractPropFallback(memo.bodyExpr)
 }

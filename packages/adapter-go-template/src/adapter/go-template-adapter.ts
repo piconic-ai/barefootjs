@@ -182,7 +182,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFie
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
@@ -2692,8 +2692,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // prop's field, so its `?? fallback` folds into the prop initializer.
     const memoFallbacks = new Map<string, { goFallback: string; goType: string }>()
     for (const memo of ir.metadata.memos) {
-      const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
-      const m = this.extractPropFallback(stripped)
+      const m = memoPropFallback(this.emitCtx, memo)
       if (!m) continue
       if (capitalizeFieldName(m.propName) !== capitalizeFieldName(memo.name)) continue
       // `applyGoFallback` emits a string-typed zero check; only `string` /

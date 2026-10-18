@@ -3760,7 +3760,7 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
 
 }
 
-hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: (_p) => `<div class="w-full space-y-4"><input type="text" placeholder="Filter emails..." class="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" ${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s0" />${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's1')}${renderChild('TableHead', {children: `Status`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `Amount`}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${((/* @client */ ([
+hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: (_p) => `<div class="w-full space-y-4"><input type="text" placeholder="Filter emails..." class="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" ${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s0" />${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's1')}${renderChild('TableHead', {children: `Status`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `Amount`}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${((([
   ...([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
@@ -3777,7 +3777,7 @@ hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: 
   { id: 'PAY012', amount: 210, status: 'pending', email: 'emma.d@example.com' },
 ]).filter(row =>
       row.email.toLowerCase().includes(('').toLowerCase())
-    )).slice((0) * (5), ((0) + 1) * (5))).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s7-->${escapeText(payment.id)}<!--/-->`}, undefined, 's8')}${renderChild('TableCell', {children: `<!--bf:^s9-->${escapeText(payment.status)}<!--/-->`}, undefined, 's10')}${renderChild('TableCell', {children: `<!--bf:^s11-->${escapeText(payment.email)}<!--/-->`}, undefined, 's12')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s13-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's14')}`}, payment.id, 's15', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's16')}`}, undefined, 's17')}${renderChild('DataTablePagination', {canPrev: (0) > 0, canNext: (0) < (Math.max(1, Math.ceil((/* @client */ ([
+    )).slice((0) * (5), ((0) + 1) * (5))).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s7-->${escapeText(payment.id)}<!--/-->`}, undefined, 's8')}${renderChild('TableCell', {children: `<!--bf:^s9-->${escapeText(payment.status)}<!--/-->`}, undefined, 's10')}${renderChild('TableCell', {children: `<!--bf:^s11-->${escapeText(payment.email)}<!--/-->`}, undefined, 's12')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s13-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's14')}`}, payment.id, 's15', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's16')}`}, undefined, 's17')}${renderChild('DataTablePagination', {canPrev: (0) > 0, canNext: (0) < (Math.max(1, Math.ceil((([
   ...([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
@@ -3794,7 +3794,7 @@ hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: 
   { id: 'PAY012', amount: 210, status: 'pending', email: 'emma.d@example.com' },
 ]).filter(row =>
       row.email.toLowerCase().includes(('').toLowerCase())
-    )).length / (5)))) - 1, children: `Page <!--bf:^s18-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s19-->${escapeTextOrMarkup((Math.max(1, Math.ceil((/* @client */ ([
+    )).length / (5)))) - 1, children: `Page <!--bf:^s18-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s19-->${escapeTextOrMarkup((Math.max(1, Math.ceil((([
   ...([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },

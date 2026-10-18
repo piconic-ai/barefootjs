@@ -6126,6 +6126,22 @@
         "text"
       ]
     },
+    "memo-function-expression": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-length-prop-seeded-signal": {
       "kinds": [
         "call",

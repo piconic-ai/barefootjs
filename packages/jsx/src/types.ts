@@ -1760,14 +1760,30 @@ export interface MemoInfo {
   name: string
   computation: string
   /**
-   * `computation` with bare destructured-prop refs rewritten to `_p.X` —
+   * The expression the memo evaluates to, read from the callback node at
+   * analysis time (#3510): the body of a zero-parameter arrow or `function`
+   * expression (`() => e`, `() => { return e }`, `function () { return e }`),
+   * or a call of the whole callback (`(() => { … })()`) for any other shape.
+   * Type-stripped. Consumers substitute it for `memo()` instead of matching
+   * `computation` against `() =>`. Unset only when `createMemo` has no
+   * argument.
+   */
+  bodyExpr?: string
+  /**
+   * Set when `bodyExpr` is a call of the whole callback rather than the
+   * expression the callback returns — a multi-statement body, or a callback
+   * that is not a plain zero-parameter function.
+   */
+  bodyExprIsCall?: boolean
+  /**
+   * `bodyExpr` with bare destructured-prop refs rewritten to `_p.X` —
    * the memo twin of `SignalInfo.templateInitialValue` (#2265). Consumed by
    * `buildSignalMemoEnv` when the memo body is inlined into the module-scope
    * CSR `template:` arrow, which is not a closure over init's destructured
    * extractions (#2468). Only set for destructured-arg components that
    * actually reference a prop.
    */
-  templateComputation?: string
+  templateBodyExpr?: string
   /** Computation with TypeScript type annotations preserved, for .tsx output */
   typedComputation?: string
   /**

@@ -295,7 +295,7 @@ function csrSubstituteOnce(
     // Arrow function: bind params + any block-scoped locals declared
     // inside the body, recurse, unbind. Pre-collecting body locals
     // before descending matters for the IIFE shape that
-    // `extractMemoBodyExpr` produces for non-trivial memo bodies:
+    // `MemoInfo.bodyExpr` carries for non-trivial memo bodies:
     //
     //   (() => { const items = foo; return items.length })()
     //
@@ -458,28 +458,6 @@ export function extractFreeIdentifiersFromTemplateText(template: string): Set<st
 }
 
 /**
- * Reduce a memo's `() => expr` source to the expression that should be
- * substituted in for `memoName()`. Matches the extraction done by the
- * legacy `buildSignalAndMemoMaps` in `emit-registration.ts`:
- *
- *   - `() => expr`               → `expr`
- *   - `() => { return e; }`      → `e`
- *   - `() => { ...complex... }`  → `(() => { ...complex... })()`
- *
- * The IIFE form for non-trivial blocks keeps intermediate `const`/`let`
- * bindings in scope; inlining the block bare would dangle them.
- */
-export function extractMemoBodyExpr(computation: string): string {
-  const arrowMatch = computation.match(/^\(\)\s*=>\s*(.+)$/s)
-  if (!arrowMatch) return computation
-  const body = arrowMatch[1].trim()
-  if (!body.startsWith('{')) return body
-  const simpleReturn = body.match(/^\{\s*return\s+([\s\S]+?)\s*;?\s*\}$/)
-  if (simpleReturn) return simpleReturn[1]
-  return `(() => ${body})()`
-}
-
-/**
  * Which local consts are bare alias-hop chains that ultimately name a
  * substitutable signal/memo getter (`isGetter`) — e.g. `const
  * items__alias = items` where `items` is a signal getter. Returns
@@ -612,12 +590,13 @@ export function buildSignalMemoEnv(
   for (const m of memos) {
     substitutions.set(m.name, {
       kind: 'call',
-      // Destructured mode (#2468): `templateComputation` (when present) has
+      // Destructured mode (#2468): `templateBodyExpr` (when present) has
       // bare destructured prop refs already rewritten to `_p.X` — the
       // spliced body lands in the module-scope template arrow, which is not
       // a closure over init's `const value = _p.value` extraction. Mirrors
-      // the signal `templateInitialValue` handling above (#2265).
-      replacement: extractMemoBodyExpr(m.templateComputation ?? m.computation),
+      // the signal `templateInitialValue` handling above (#2265). The body
+      // itself is read from the callback node by the analyzer (#3510).
+      replacement: m.templateBodyExpr ?? m.bodyExpr ?? 'undefined',
       freeIdentifiers: m.computationFreeIdentifiers ?? new Set(),
     })
   }
