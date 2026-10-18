@@ -24,4 +24,7 @@ export function StringLiteralUnionShapes(props: { mode: Mode; tone: Tone; size: 
 }
 `,
   props: { mode: 'dark', tone: 'cool', size: 3 },
+  expectedHtml: `
+    <p bf-s="test" bf="s1" data-mode="dark" data-tone="cool"><!--bf:s0-->3<!--/--></p>
+  `,
 })

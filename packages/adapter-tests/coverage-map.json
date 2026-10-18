@@ -10305,6 +10305,17 @@
         "text"
       ]
     },
+    "string-literal-union-alias-shapes": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "string-padEnd": {
       "kinds": [
         "array-method",
