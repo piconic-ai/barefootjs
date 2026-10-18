@@ -2971,14 +2971,6 @@
       }
     }
   ],
-  "filter-predicate-shape-loop-client": [
-    {
-      "name": "gen:items:empty",
-      "props": {
-        "items": []
-      }
-    }
-  ],
   "flatmap-expression-body": [
     {
       "name": "gen:items:empty",

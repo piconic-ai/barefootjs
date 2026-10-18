@@ -3898,6 +3898,7 @@
     },
     "filter-predicate-shape-loop-client": {
       "kinds": [
+        "array-literal",
         "arrow",
         "call",
         "conditional",
