@@ -625,7 +625,7 @@ function SidebarMenuSkeleton({ className = '', showIcon = false, ...props }: Sid
       )}
       <div
         className="h-4 flex-1 bg-muted animate-pulse rounded-md"
-        style={`max-width:${width}`}
+        style={/* @client */ `max-width:${width}`}
       />
     </div>
   )

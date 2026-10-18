@@ -497,7 +497,7 @@
     },
     "packages/jsx/src/analyzer.ts": {
       "analyzeComponent": [
-        31
+        27
       ],
       "checkStatementsForReactiveFactoryArity": [
         73
@@ -795,9 +795,6 @@
     "packages/jsx/src/ir-to-client-js/html-template.ts": {
       "buildLoopSkeletonTemplate": [
         62
-      ],
-      "canGenerateStaticTemplate": [
-        56
       ],
       "generateCsrTemplateWithOpts": [
         77

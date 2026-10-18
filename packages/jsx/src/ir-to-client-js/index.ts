@@ -17,6 +17,7 @@ import { addConstantPropRefsToSet } from './init-declarations.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { PROPS_PARAM, initFunctionName, componentDefScopeFlags, isTransparentFragmentRoot } from './utils.ts'
+import { collectReactiveGetterNames } from '../analyzer-context.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
 import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from './component-scope.ts'
@@ -317,7 +318,7 @@ function hasInitScopeOnlyConstant(ctx: ClientJsContext): boolean {
  * Returns '' if a static template cannot be generated.
  */
 function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): string {
-  const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
+  const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
   const graph = buildReferencesGraph(ctx, ir.root)
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, ir.root)
 
@@ -329,7 +330,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   let templateHtml: string | undefined
 
-  if (canGenerateStaticTemplate(ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
+  if (canGenerateStaticTemplate(ir.root, reactiveGetterNames, inlinableConstants, unsafeLocalNames)) {
     // `ctx.dynamicElements` is always empty on this template-only path
     // (`needsClientJs(ctx)` gates it) — derived through the shared function
     // anyway rather than special-casing "no markup slots here" (#2651).

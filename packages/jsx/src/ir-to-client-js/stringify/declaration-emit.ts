@@ -125,7 +125,7 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
 function emitControlledEffect(lines: string[], plan: ControlledSignalEffectPlan): void {
   lines.push(`  createEffect(() => {`)
   lines.push(`    const __val = ${plan.accessorExpr}`)
-  lines.push(`    if (__val !== undefined) ${plan.setter}(__val)`)
+  lines.push(`    if (__val !== undefined) ${plan.setter}(${plan.valueExpr ?? '__val'})`)
   lines.push(`  }${bfIdArg(plan.bfId)})`)
 }
 

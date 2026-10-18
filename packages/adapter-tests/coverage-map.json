@@ -9399,6 +9399,25 @@
         "text"
       ]
     },
+    "signal-prop-seed-logical-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:&&",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "signal-with-fallback": {
       "kinds": [
         "call",
@@ -10889,6 +10908,25 @@
         "text"
       ]
     },
+    "undefined-alternate-ternary-attr-test-question-mark": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "undefined-signal-arithmetic-direct": {
       "kinds": [
         "binary",
@@ -10961,6 +10999,42 @@
       ]
     },
     "union-catalogued": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "unlowered-global-call": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "unlowered-global-call-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "unlowered-global-call-precomputed": {
       "kinds": [
         "identifier",
         "member"

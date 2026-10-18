@@ -1578,6 +1578,18 @@ export interface IRProp extends AttrMeta {
 // Metadata
 // =============================================================================
 
+/** How a signal's initial value reads a prop (`SignalInfo.propSeed`). */
+export interface SignalPropSeed {
+  /** The prop read: the first property after the props object, or the destructured binding. */
+  propName: string
+  via: 'member' | 'binding'
+  /** True when the read goes past the prop (`props.row.count`, `props.items[0]`). */
+  nested: boolean
+  /** Whether `propName` is one of the component's declared props (`propsParams`). */
+  declared: boolean
+  fallback: { op: '??' | '||'; expr: ParsedExpr } | null
+}
+
 export interface SignalInfo {
   getter: string
   setter: string | null
@@ -1590,6 +1602,16 @@ export interface SignalInfo {
    * consumers fall back to parsing `initialValue`.
    */
   parsed?: ParsedExpr
+  /**
+   * Set when `initialValue` is a read of one prop, bare or with a single
+   * `??` / `||` fallback (`props.checked`, `checked ?? false`,
+   * `props.value || ''`, `props.row.count`), recorded by the analyzer from
+   * `parsed`. `via` is
+   * how the prop is read: a member of the props object, or a binding a props
+   * destructure introduced. The CSR init body asks this field, not the text,
+   * whether the signal seeds from a prop and what default it keeps (#3508).
+   */
+  propSeed?: SignalPropSeed
   /** Initial value with TypeScript type annotations preserved, for .tsx output */
   typedInitialValue?: string
   /**
