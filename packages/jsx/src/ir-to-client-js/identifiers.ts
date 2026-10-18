@@ -11,6 +11,8 @@
  * issue #1021 Stage B for the rationale.
  */
 
+import ts from 'typescript'
+
 /** JavaScript keywords and common globals to skip during identifier extraction. */
 const KEYWORDS_AND_GLOBALS = new Set([
   'true',
@@ -56,46 +58,97 @@ const KEYWORDS_AND_GLOBALS = new Set([
 ])
 
 /**
- * Extract identifiers from an expression string.
+ * Words that can never name a binding in module (strict) code. Every other
+ * identifier-or-keyword token, contextual keywords included (`type`, `of`,
+ * `get`, …), can.
  */
-export function extractIdentifiers(expr: string, set: Set<string>): void {
-  const matches = expr.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g)
-  if (matches) {
-    for (const id of matches) {
-      if (!isKeywordOrGlobal(id)) {
-        set.add(id)
+const RESERVED_WORDS = new Set([
+  'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do',
+  'else', 'enum', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'implements', 'import',
+  'in', 'instanceof', 'interface', 'let', 'new', 'null', 'package', 'private', 'protected', 'public',
+  'return', 'static', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while',
+  'with', 'yield',
+])
+
+/**
+ * Walk the tokens of `text` with TypeScript's scanner, calling `onName` for
+ * every identifier, member names included (`props.value` yields both: the
+ * reference graph reads a props-object member as a use of that prop), and
+ * `onSubstitution` with the source span of every outermost `${…}` body. String
+ * contents and comments produce no tokens, and `$` is an identifier
+ * character, so `step$` / `$step` are found (#3536).
+ *
+ * A contextual keyword (`type`, `of`, `get`, …) is a legal binding name, so
+ * it is reported like an identifier; a reserved word never is.
+ */
+function scanNames(
+  text: string,
+  onName: (name: string) => void,
+  onSubstitution?: (start: number, end: number) => void,
+): void {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, /*skipTrivia*/ true, ts.LanguageVariant.Standard, text)
+  // One entry per open brace: the source offset where a `${` body starts,
+  // or -1 for an ordinary `{`.
+  const braces: number[] = []
+  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+    if (token === ts.SyntaxKind.TemplateHead) {
+      braces.push(scanner.getTokenEnd())
+    } else if (token === ts.SyntaxKind.OpenBraceToken) {
+      braces.push(-1)
+    } else if (token === ts.SyntaxKind.CloseBraceToken) {
+      const bodyStart = braces.pop() ?? -1
+      if (bodyStart >= 0) {
+        // Only an outermost body: a nested template stays inside its parent's.
+        if (!braces.some(start => start >= 0)) onSubstitution?.(bodyStart, scanner.getTokenStart())
+        token = scanner.reScanTemplateToken(/*isTaggedTemplate*/ false)
+        if (token === ts.SyntaxKind.TemplateMiddle) braces.push(scanner.getTokenEnd())
       }
+    } else if (
+      (token === ts.SyntaxKind.Identifier ||
+        (token >= ts.SyntaxKind.FirstKeyword && token <= ts.SyntaxKind.LastKeyword)) &&
+      !RESERVED_WORDS.has(scanner.getTokenValue())
+    ) {
+      onName(scanner.getTokenValue())
     }
   }
 }
 
+/** `text` as a template literal: already backtick-quoted, or quoted here. */
+function asTemplateLiteral(text: string): string {
+  return text.startsWith('`') && text.endsWith('`') && text.length >= 2 ? text : `\`${text}\``
+}
+
 /**
- * Yield each `${...}` substitution body inside a template-style string.
- * Returns the inner expressions — the surrounding HTML / static text is
- * stripped. Empty array when no substitutions are present.
- *
- * Uses a `[^}]+` character class rather than a balance-aware scanner —
- * cheap and matches the legacy reach. Object literals inside `${...}`
- * are not supported (they would split prematurely on the inner `}`).
+ * Extract identifiers from an expression string.
+ */
+export function extractIdentifiers(expr: string, set: Set<string>): void {
+  scanNames(expr, name => {
+    if (!isKeywordOrGlobal(name)) set.add(name)
+  })
+}
+
+/**
+ * Yield each `${...}` substitution body inside a template-style string
+ * (backtick-quoted or not). Returns the inner expressions — the
+ * surrounding HTML / static text is stripped. Empty array when no
+ * substitutions are present. Nested braces and template literals inside a
+ * body are kept whole.
  */
 export function extractTemplateExpressions(template: string): string[] {
-  const re = /\$\{([^}]+)\}/g
+  const literal = asTemplateLiteral(template)
   const out: string[] = []
-  let match
-  while ((match = re.exec(template)) !== null) {
-    out.push(match[1])
-  }
+  scanNames(literal, () => {}, (start, end) => out.push(literal.slice(start, end)))
   return out
 }
 
 /**
  * Extract identifiers from template literal expressions.
- * Finds ${...} patterns and extracts identifiers from inside.
+ * Only `${...}` substitutions are scanned; static text is not code.
  */
 export function extractTemplateIdentifiers(template: string, set: Set<string>): void {
-  for (const expr of extractTemplateExpressions(template)) {
-    extractIdentifiers(expr, set)
-  }
+  scanNames(asTemplateLiteral(template), name => {
+    if (!isKeywordOrGlobal(name)) set.add(name)
+  })
 }
 
 /**
