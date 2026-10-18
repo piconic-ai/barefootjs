@@ -425,3 +425,52 @@ export function resolveFreeRefs(
 ): FreeReference[] {
   return resolveFreeRefsInternal(node, env, new Set<string>())
 }
+
+/**
+ * Replace the free references to a helper's parameters, inside the IR built
+ * from its inlined body, with the references of the call's arguments
+ * (#3509). `argRefs` maps each parameter name to its argument's resolved
+ * references. Rewrites `origin.freeRefs` (expressions, conditions, and any
+ * other node carrying an origin) and attribute `freeIdentifiers` in place,
+ * anywhere in the subtree.
+ */
+export function rebindHelperParamRefs(root: unknown, argRefs: ReadonlyMap<string, readonly FreeReference[]>): void {
+  if (argRefs.size === 0) return
+  const seen = new WeakSet<object>()
+  const visit = (value: unknown): void => {
+    if (typeof value !== 'object' || value === null || seen.has(value)) return
+    seen.add(value)
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item)
+      return
+    }
+    if (value instanceof Set || value instanceof Map) return
+    const node = value as { origin?: { freeRefs?: FreeReference[] }; freeIdentifiers?: ReadonlySet<string> }
+    if (node.origin?.freeRefs) node.origin.freeRefs = rebindRefs(node.origin.freeRefs, argRefs)
+    if (node.freeIdentifiers instanceof Set) node.freeIdentifiers = rebindIds(node.freeIdentifiers, argRefs)
+    for (const child of Object.values(value)) visit(child)
+  }
+  visit(root)
+}
+
+function rebindRefs(refs: FreeReference[], argRefs: ReadonlyMap<string, readonly FreeReference[]>): FreeReference[] {
+  if (!refs.some(r => argRefs.has(r.name))) return refs
+  const out: FreeReference[] = []
+  for (const ref of refs) {
+    const replacement = argRefs.get(ref.name)
+    if (!replacement) out.push(ref)
+    else for (const r of replacement) if (!out.some(o => o.name === r.name && o.kind === r.kind)) out.push(r)
+  }
+  return out
+}
+
+function rebindIds(ids: ReadonlySet<string>, argRefs: ReadonlyMap<string, readonly FreeReference[]>): ReadonlySet<string> {
+  if (![...ids].some(id => argRefs.has(id))) return ids
+  const out = new Set<string>()
+  for (const id of ids) {
+    const replacement = argRefs.get(id)
+    if (!replacement) out.add(id)
+    else for (const r of replacement) if (r.kind !== 'reactive-brand') out.add(r.name)
+  }
+  return out
+}

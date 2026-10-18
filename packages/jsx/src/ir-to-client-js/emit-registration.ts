@@ -7,6 +7,7 @@
 import type { ComponentIR, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM, componentDefScopeFlags, initFunctionName } from './utils.ts'
+import { collectReactiveGetterNames } from '../analyzer-context.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
@@ -190,7 +191,7 @@ export function emitRegistrationAndHydration(
   lines.push(`}`)
   lines.push('')
 
-  const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
+  const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
   const { inlinableConstants, unsafeLocalNames } = inlinability ?? buildInlinableConstants(ctx, graph, _ir.root)
 
   // Build rest spread names: these are rest/props spreads handled by
@@ -219,7 +220,7 @@ export function emitRegistrationAndHydration(
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: ${initFunctionName(name)}`]
-  if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
+  if (canGenerateStaticTemplate(_ir.root, reactiveGetterNames, inlinableConstants, unsafeLocalNames)) {
     const markupSlotIds = markupSlotIdsOf(ctx)
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
     if (templateHtml) {

@@ -12,7 +12,7 @@ import type { ControlledSignal } from '../init-declarations.ts'
 import type { Declaration } from '../declaration-sort.ts'
 import type { ClientJsContext } from '../types.ts'
 import type { ParamInfo, SignalInfo } from '../../types.ts'
-import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
+import { inferDefaultValue, PROPS_PARAM, readsBareProp } from '../utils.ts'
 import { livePropReadExpr } from '../../props-binding.ts'
 import { signalFactoryInitializer, signalSecondBinding } from '../../signal-initializer.ts'
 import type {
@@ -113,7 +113,7 @@ function buildSignalPlan(
     getter: signal.getter,
     setter: signal.setter,
     getterElided: signal.getterElided,
-    initialValueExpr: resolveSignalInitialValue(signal, ctx, lookups),
+    initialValueExpr: resolveSignalInitialValue(signal, lookups),
     controlledEffect,
     branchCondition: signal.branchCondition,
     bfId: ctx.profile ? `${ctx.componentName}#signal:${signal.getter}` : undefined,
@@ -121,57 +121,28 @@ function buildSignalPlan(
 }
 
 /**
- * Order of checks:
- *   1. Reads a prop directly without `??` → wrap with the prop's inferred
- *      default (`_p.X ?? <inferredDefault>`).
- *   2. Controlled signal:
- *      - has `??` already → respect the user's expression (rewrite props
- *        prefix only).
- *      - no `??`           → synthesize `_p.<propName> ?? <defaultVal>`.
- *   3. Other reads of `propsName.X` → straight prop rewrite.
- *   4. Otherwise            → verbatim.
+ * The signal's initial value, decided from `SignalInfo.propSeed` (#3508):
+ *   1. A bare read of the props object (`props.X`, `props.row.count`) →
+ *      `<it> ?? <inferred default>`, so the signal never starts as
+ *      `undefined`.
+ *   2. A controlled signal seeded by a bare destructured binding →
+ *      `_p.<caller key> ?? <the prop's default>`.
+ *   3. Anything else (a `??` / `||` fallback the user wrote, any other
+ *      expression) → the initializer as written; `generateInit`'s
+ *      `rewritePropsObjectRef` maps its `props.X` reads to `_p.X`.
  */
-function resolveSignalInitialValue(
-  signal: SignalInfo,
-  ctx: ClientJsContext,
-  lookups: DeclarationEmitLookups,
-): string {
-  const propsName = ctx.propsObjectName ?? 'props'
-  const propsPrefix = `${propsName}.`
-  const startsWithPropsPrefix = signal.initialValue.startsWith(propsPrefix)
-  const hasNullish = signal.initialValue.includes('??')
-
-  // Case 1: bare `propsName.X` read — append the inferred default so the
-  // signal never starts as `undefined`.
-  if (startsWithPropsPrefix && !hasNullish) {
-    const propRef = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
-    return `${propRef} ?? ${inferDefaultValue(signal.type)}`
-  }
-
-  const controlled = lookups.controlledBySignal.get(signal)
-  if (controlled) {
-    // Case 2a: user already wrote `??` — keep their default but rewrite
-    // a leading `propsName.` prefix.
-    if (hasNullish) {
-      if (ctx.propsObjectName && startsWithPropsPrefix) {
-        return `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
-      }
-      return signal.initialValue
+function resolveSignalInitialValue(signal: SignalInfo, lookups: DeclarationEmitLookups): string {
+  const seed = signal.propSeed
+  if (readsBareProp(signal)) return `${signal.initialValue} ?? ${inferDefaultValue(signal.type)}`
+  if (seed && seed.fallback === null) {
+    const controlled = lookups.controlledBySignal.get(signal)
+    if (controlled) {
+      const prop = lookups.propByName.get(controlled.propName)
+      const defaultVal = prop?.defaultValue ?? inferDefaultValue(signal.type)
+      // `_p` is always keyed by the caller-facing name (#2524 CSR half).
+      return `${PROPS_PARAM}.${prop?.sourceName ?? controlled.propName} ?? ${defaultVal}`
     }
-    // Case 2b: synthesize the prop accessor + default.
-    const prop = lookups.propByName.get(controlled.propName)
-    const defaultVal = prop?.defaultValue ?? inferDefaultValue(signal.type)
-    // `_p` is always keyed by the caller-facing name (#2524 CSR half).
-    return `${PROPS_PARAM}.${prop?.sourceName ?? controlled.propName} ?? ${defaultVal}`
   }
-
-  // Case 3: non-controlled `propsObjectName.X` (only when destructured-
-  // props mode is OFF — the destructured form has no `propsObjectName`).
-  if (ctx.propsObjectName && startsWithPropsPrefix) {
-    return `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
-  }
-
-  // Case 4: fall-through.
   return signal.initialValue
 }
 
@@ -190,5 +161,8 @@ function buildControlledSignalEffect(
     ? livePropReadExpr(prop, undefined, false)
     : `${PROPS_PARAM}.${controlled.propName}`
 
-  return { setter: signal.setter, accessorExpr }
+  // A `||` fallback (`createSignal(props.value || '')`) also replaces a
+  // falsy prop, so the re-sync sets the initializer's value, not the raw prop.
+  const valueExpr = signal.propSeed?.fallback?.op === '||' ? signal.initialValue : undefined
+  return { setter: signal.setter, accessorExpr, valueExpr }
 }

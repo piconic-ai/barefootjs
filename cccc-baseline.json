@@ -790,9 +790,6 @@
       "buildLoopSkeletonTemplate": [
         62
       ],
-      "canGenerateStaticTemplate": [
-        56
-      ],
       "generateCsrTemplateWithOpts": [
         77
       ],
