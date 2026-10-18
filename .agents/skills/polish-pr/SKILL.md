@@ -41,7 +41,9 @@ Refresh it after every push; never combine results from different heads.
 ## Review, simplify, and trigger review
 
 - Read the cumulative diff against the PR's actual base. Review correctness and
-  the repository design/testing contracts; a self-assessment of "clean" is not
+  the repository design/testing contracts from a fresh context: against the
+  acceptance contract and implement-issues' sibling-shape list, not against your
+  memory of why the code is written that way. A self-assessment of "clean" is not
   independent evidence. Available review skills may help, but inline review is
   a valid fallback. Do not spawn agents or switch models without authorization.
 - Simplify only changed code: shared decisions, clarity, and unnecessary work.
@@ -66,6 +68,15 @@ For each actionable CI/review finding:
 
 1. Re-diff against the current head and verify the finding is still applicable.
    Inspect failed job logs, not only the summary or an older run's failure.
+   Confirm a review finding the way implement-issues' "Open and finish" step 3
+   does:
+   - A claimed output defect needs an executable repro. When it does not
+     reproduce, reply with that evidence instead of changing code.
+   - A design or testing-contract finding is must-address on code-and-rule evidence,
+     even when the output is correct today.
+
+   When a round brings several findings, fix the most severe first, in the order
+   that step gives.
 2. Add a repro at the correct layer, fix the root decision, verify, commit, and
    push. New divergences found during this work need executable evidence, not
    speculative registry entries or broad late-stage cleanup. A finding that names
@@ -79,6 +90,13 @@ For each actionable CI/review finding:
    bodies as well as threads: a blocking finding can exist without an inline thread.
 4. Wait for review of the NEW head and all applicable checks again. Every push,
    rebase, or lower-stack fix invalidates stale approval and CI evidence.
+
+Watch for a loop that does not converge. If a third round of findings lands on the
+same decision, stop patching instance by instance. The usual cause is a decision
+that is still made in more than one place, or a sibling class the list in
+implement-issues step 3 missed. Re-derive the decision, fix it at its single source,
+add the missed class to that list, and say in the PR that the approach changed and
+why.
 
 Do not blindly rerun failures. If the failure is infrastructure-related, verify
 that diagnosis, retry the affected job, and inspect the result. Do not weaken
