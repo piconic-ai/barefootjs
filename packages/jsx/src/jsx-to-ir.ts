@@ -7118,6 +7118,17 @@ function computeReactivityFlags(
 }
 
 /**
+ * An event handler's source as `IREvent.handler`: one expression that
+ * emitters pass verbatim as the listener argument, so a comma sequence
+ * (`{a, b}`) is parenthesized (#3538).
+ */
+function eventHandlerText(handlerExpr: ts.Expression, ctx: TransformContext): string {
+  const isSequence =
+    ts.isBinaryExpression(handlerExpr) && handlerExpr.operatorToken.kind === ts.SyntaxKind.CommaToken
+  return isSequence ? `(${ctx.getJS(handlerExpr)})` : ctx.getJS(handlerExpr)
+}
+
+/**
  * Emit BF047 if a ref / event-handler callback body references a
  * JSX-typed branch-local — the multi-return pipeline has no way to
  * keep the JSX live as a runtime value here (substituting the JSX
@@ -7183,17 +7194,12 @@ function processAttributes(
     // (`click`, not `Click`), so strip the `on` prefix and downcase.
     if (isEventHandlerName(rawName)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-        const eventName = rawName.slice(2).toLowerCase()
         const handlerExpr = attr.initializer.expression
         reportJsxBranchLocalInCallback(handlerExpr, ctx)
-        // Emitters pass the handler verbatim as an argument, so a comma
-        // sequence (`{a, b}`) must stay one expression (#3538).
-        const isSequence =
-          ts.isBinaryExpression(handlerExpr) && handlerExpr.operatorToken.kind === ts.SyntaxKind.CommaToken
         events.push({
-          name: eventName,
+          name: rawName.slice(2).toLowerCase(),
           originalAttr: rawName,
-          handler: isSequence ? `(${ctx.getJS(handlerExpr)})` : ctx.getJS(handlerExpr),
+          handler: eventHandlerText(handlerExpr, ctx),
           loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
         })
       }
