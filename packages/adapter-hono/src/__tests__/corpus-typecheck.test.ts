@@ -38,12 +38,14 @@ const UI_LIB = join(REPO, 'ui/lib')
  * pass.
  */
 const KNOWN_DIAGNOSTICS: Record<string, number> = {
+  // Author `data-key={props.dataKey}` beside the synthesized loop-row `data-key`.
   'chart TS17001': 6,
-  'chart TS18046': 69,
-  'chart TS2307': 2,
+  // A `string | null` computed field on a non-nullable SVG attribute.
   'chart TS2322': 2,
-  'chart TS7006': 16,
-  'xyflow TS2307': 2,
+  // The source passes the optional `PieProps.nameKey` to `buildPieSlices`'s `string` parameter.
+  'chart TS2345': 1,
+  // The source provides an `InternalFlowStore<NodeType, EdgeType>` to the non-generic `FlowContext`.
+  'xyflow TS2345': 1,
 }
 
 describe('ui corpus type-check gate (#2570 / #2573)', () => {
@@ -102,6 +104,15 @@ describe('ui corpus type-check gate (#2570 / #2573)', () => {
         lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
         allowImportingTsExtensions: true,
         skipLibCheck: true,
+        // The ui components' own packages, from source: the temp dir sits outside
+        // `ui/`, whose `node_modules` is the only place they are linked, and their
+        // `exports` point at a `dist/` that a test run may not have built. Left
+        // unresolved, the chart context collapsed to `any`, `useContext` read `unknown`,
+        // and TS18046 / TS7006 hid the real diagnostics (#2573).
+        paths: {
+          '@barefootjs/chart': [join(REPO, 'packages/chart/src/index.ts')],
+          '@barefootjs/xyflow': [join(REPO, 'packages/xyflow/src/index.ts')],
+        },
       })
 
       const counts = new Map<string, number>()
