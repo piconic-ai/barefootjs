@@ -93,6 +93,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
   type ComputedConstContext,
+  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import {
@@ -1090,6 +1091,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
           this.scope = scopeBeforeAliases
         }
       } else {
+        // Phase 1 always attaches the predicate; a missing one is refused,
+        // never stood in for by a truthy constant that renders every row (#3534).
+        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
+        this._recordExprBF101(refusal.message, refusal.suggestion)
         filterCond = '1'
       }
       // Map filter param to loop param (e.g., $t → $todo)

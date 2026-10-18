@@ -78,6 +78,11 @@ export const conformancePins: ConformancePins = {
       limitation: 'computed-const-loop-source',
     },
   ],
+  // A loop filter predicate with no template form refuses rather than
+  // rendering every row (#3534).
+  'filter-predicate-shape-loop': [
+    { code: 'BF101', severity: 'error', limitation: 'unlowerable-loop-filter-predicate' },
+  ],
   // A method call no template lowers, outside a callback, refuses rather
   // than rendering a read of the method name (#3493).
   'unlowered-method-call': [

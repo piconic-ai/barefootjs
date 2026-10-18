@@ -14,6 +14,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The prop-precompute twin supplies the SSR/CSR parity proof; this twin's
   // mounted interactions were also verified in the real browser.
   'conditional-nested-loop-client-reactivity',
+  // Same contract for `/* @client */` loop filters (#3534): SSR renders the
+  // empty loop markers, while the CSR template filters and renders the rows
+  // itself. The refusing twin `filter-predicate-shape-loop` supplies the
+  // SSR/CSR parity proof.
+  'filter-predicate-shape-loop-client',
   // #2073 graduated by #2988: `format` (a module-scope arrow-valued const
   // with no free identifiers beyond its own param) is now classified
   // `module-scope-safe` by `compute-inlinability.ts` instead of the old
