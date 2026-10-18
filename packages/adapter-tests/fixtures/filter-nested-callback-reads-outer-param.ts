@@ -10,6 +10,7 @@ import { createFixture } from '../src/types'
 export const fixture = createFixture({
   id: 'filter-nested-callback-reads-outer-param',
   description: 'A nested filter callback reading the outer callback param sees the outer element (#3542)',
+  escapes: [{ kind: 'client-directive', fixture: 'filter-nested-callback-reads-outer-param-client' }],
   source: `
 export function FilterNestedCallbackReadsOuterParam(props: { items: { name: string; tags: number[]; main: number }[] }) {
   return (
@@ -27,4 +28,13 @@ export function FilterNestedCallbackReadsOuterParam(props: { items: { name: stri
       { name: 'c', tags: [5], main: 5 },
     ],
   },
+  expectedHtml: `
+    <div bf-s="test">
+      <ul bf="s1">
+        <li data-key="a"><!--bf:s0-->a<!--/--></li>
+        <li data-key="c"><!--bf:s0-->c<!--/--></li>
+      </ul>
+      <p bf="s3"><!--bf:s2-->2<!--/--></p>
+    </div>
+  `,
 })

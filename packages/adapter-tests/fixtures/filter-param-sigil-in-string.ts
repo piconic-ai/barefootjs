@@ -16,4 +16,10 @@ export function FilterParamSigilInString(props: { items: { name: string }[] }) {
 }
 `,
   props: { items: [{ name: '$t' }, { name: '$todo' }, { name: 'x' }] },
+  expectedHtml: `
+    <ul bf-s="test" bf="s1">
+      <li data-key="$todo"><!--bf:s0-->$todo<!--/--></li>
+      <li data-key="x"><!--bf:s0-->x<!--/--></li>
+    </ul>
+  `,
 })
