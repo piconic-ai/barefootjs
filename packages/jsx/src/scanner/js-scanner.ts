@@ -159,11 +159,15 @@ function regexAfter(kind: ts.SyntaxKind, before: ts.SyntaxKind | undefined, inFo
   return canRegexStartHere(kind)
 }
 
-/** Whether a `before` token can end a `for…of` binding (`x`, `[a, b]`, `{ a }`). */
+/**
+ * Whether a `before` token can end a `for…of` binding: a name (`x`, or a
+ * contextual keyword used as one, `type`), `[a, b]` or `{ a }`.
+ */
 function endsBinding(before: ts.SyntaxKind | undefined): boolean {
   return before === ts.SyntaxKind.Identifier
     || before === ts.SyntaxKind.CloseBracketToken
     || before === ts.SyntaxKind.CloseBraceToken
+    || (before !== undefined && before > ts.SyntaxKind.LastFutureReservedWord && before <= ts.SyntaxKind.LastKeyword)
 }
 
 export function isTriviaKind(kind: ts.SyntaxKind): boolean {

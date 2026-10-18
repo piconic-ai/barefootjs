@@ -116,6 +116,14 @@ describe('regex literals and keyword-named members (#3536 review)', () => {
     expect(js).toContain('const step = ')
   })
 
+  test('a regex literal after a contextual-keyword for-of binding does not hide a later dependency', () => {
+    const js = clientJsFor(
+      'const step = props.n * 2\n      const _helper = (x: string) => { for (const type of /"/.exec(x) || []) {} return step }',
+      "_helper('a')",
+    )
+    expect(js).toContain('const step = ')
+  })
+
   test('division on an `of` binding after a line break does not hide a later dependency', () => {
     const js = clientJsFor(
       'const step = props.n * 2\n      const _helper = (x: number) => {\n        let of = x\n        of /= step\n        return of\n      }',

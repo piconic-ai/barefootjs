@@ -265,6 +265,8 @@ describe('iterateJsTokens: division after a keyword used as a name (#3536)', () 
     expect(kinds('for (const hit of /"/.exec(x) || []) {}')).toContain('RegularExpressionLiteral')
     expect(kinds('for (const [a, b] of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
     expect(kinds('for await (const hit of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for (const type of /"/.exec(x) || []) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for (const of of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
   })
 
   test('`of` after a binding outside a for header is a name (ASI)', () => {
