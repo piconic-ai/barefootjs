@@ -14,7 +14,7 @@
  * genuinely needs it, so the seam documents the real cross-module coupling.
  */
 
-import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 
 import type { CompileState } from './lib/compile-state.ts'
 import type { PropFallbackVar } from './lib/types.ts'
@@ -47,7 +47,7 @@ export interface GoEmitContext {
    * `preParsed` in a destructured component, an `x ?? …` identifier form —
    * or null. Callers validate the name against `propsParams`.
    */
-  extractPropNameFromInitialValue(initialValue: string, preParsed?: ParsedExpr): string | null
+  extractPropNameFromInitialValue(initialValue: JsSourceText, preParsed?: ParsedExpr): string | null
 
   /**
    * A signal's SSR value when it is seeded by a computed prop expression
@@ -57,7 +57,7 @@ export interface GoEmitContext {
    * lowering that reads it) asks this first, so they agree.
    */
   computedSignalSeed(
-    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null
@@ -69,7 +69,7 @@ export interface GoEmitContext {
    * that shape. Callers validate the name against `propsParams`.
    */
   extractPropFallback(
-    initialValue: string,
+    initialValue: JsSourceText,
     preParsed?: ParsedExpr,
   ): { propName: string; goFallback: string } | null
 

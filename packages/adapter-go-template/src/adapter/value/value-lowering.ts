@@ -5,7 +5,7 @@
  * literal. Pure free functions over a {@link GoEmitContext}.
  */
 
-import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 import {
   asCallbackMethodCall,
   freeVarsInBody,
@@ -501,7 +501,7 @@ export function objectLiteralToGoMap(
  */
 export function getSignalInitialValueAsGo(
   ctx: GoEmitContext,
-  initialValue: string,
+  initialValue: JsSourceText,
   propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   signalType?: TypeInfo,
@@ -604,7 +604,7 @@ export function matchMapJoinChain(expr: ParsedExpr): {
 function resolveMapJoinBaseAsGo(
   ctx: GoEmitContext,
   object: ParsedExpr,
-  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string }[],
 ): string | null {
   if (object.kind === 'call' && object.callee.kind === 'identifier' && object.args.length === 0) {
@@ -665,7 +665,7 @@ function callbackStepToGo(
   method: string,
   itemsGo: string,
   arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
-  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
@@ -718,7 +718,7 @@ function callbackStepToGo(
 function resolveMapChainAsGo(
   ctx: GoEmitContext,
   expr: ParsedExpr,
-  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
@@ -754,7 +754,7 @@ function resolveMapChainAsGo(
 export function mapJoinChainToGo(
   ctx: GoEmitContext,
   chain: { object: ParsedExpr; arrow: Extract<ParsedExpr, { kind: 'arrow' }>; sepArg?: ParsedExpr },
-  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {

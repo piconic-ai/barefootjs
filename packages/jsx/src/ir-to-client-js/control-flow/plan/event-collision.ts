@@ -20,13 +20,14 @@
 
 import type { InteractiveElement } from '../../types.ts'
 import { toDomEventName, NON_BUBBLING_EVENTS } from '../../utils.ts'
+import type { JsSourceText } from '../../../types.ts'
 
 export interface ContainerOwnHandler {
   /** The container element's own slot id (used for profile-mode turn ids). */
   slotId: string
   /** Original (pre-DOM-mapped) event name, e.g. 'contextmenu'. */
   eventName: string
-  handler: string
+  handler: JsSourceText
 }
 
 /**

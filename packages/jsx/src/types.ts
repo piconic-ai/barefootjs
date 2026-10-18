@@ -8,6 +8,17 @@ import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
 import type { SsrSeedPlan } from './ssr-seed-plan.ts'
 
 /**
+ * JS/TS source text the IR carries verbatim (an expression, a handler, a
+ * statement body), as written in the component. Phase 2 passes it through to
+ * output or reads the parsed tree beside it; it does not re-derive meaning
+ * from the text with regex or string search (spec/adapter-architecture.md,
+ * rule 1). A flavor, not a strict brand: a plain `string` is assignable, so
+ * producers need no cast, while a read keeps the type and the emit-parse
+ * ratchet counts a string operation on it (#3543).
+ */
+export type JsSourceText = string & { readonly __jsSourceText?: 'JsSourceText' }
+
+/**
  * Loop-hoisted sort comparator for the `.sort().map()` / `.toSorted().map()`
  * pattern (#2018 P5). Carries the generic comparator `arrow` (params + body)
  * that the SSR adapter serializes to the runtime evaluator (eval-first) or, for
@@ -92,7 +103,7 @@ export interface ParamInfo {
   name: string
   type: TypeInfo
   optional: boolean
-  defaultValue?: string
+  defaultValue?: JsSourceText
   /**
    * `defaultValue` parsed into a structured tree, mirroring `SignalInfo.parsed`
    * (Roadmap A). Attached best-effort by the analyzer (`tsNodeToParsedExpr` on
@@ -412,7 +423,7 @@ export interface IRText {
 
 export interface IRExpression {
   type: 'expression'
-  expr: string
+  expr: JsSourceText
   /**
    * Pre-transformed expr with destructured prop refs rewritten to _p.xxx
    * (for client JS templates). Carries ONLY that rewrite — never an
@@ -496,7 +507,7 @@ export interface IRExpression {
 
 export interface IRConditional {
   type: 'conditional'
-  condition: string
+  condition: JsSourceText
   /** Pre-transformed condition with destructured prop refs rewritten to _p.xxx. */
   templateCondition?: string
   /**
@@ -562,7 +573,7 @@ export interface IRLoop {
    * inline via placeholder substitution — see `FlatMapCallback`.
    */
   method?: 'flatMap'
-  array: string
+  array: JsSourceText
   /**
    * Structured parse of `array` (`parseExpression(array.trim())`), attached
    * during IR construction so adapters lower the loop's array from the tree
@@ -577,7 +588,7 @@ export interface IRLoop {
   itemType: TypeInfo | null
   param: string
   index: string | null
-  key: string | null
+  key: JsSourceText | null
   children: IRNode[]
   slotId: string | null
   /**
@@ -1024,7 +1035,7 @@ export interface PreambleValueDeclaration {
  */
 export interface PreambleRegionSource {
   slotId: string
-  expr: string
+  expr: JsSourceText
   joinArrayChild?: boolean
 }
 
@@ -1238,7 +1249,7 @@ export interface IRAsync {
 export interface IRIfStatement {
   type: 'if-statement'
   /** The condition expression (e.g., "name === 'github'") */
-  condition: string
+  condition: JsSourceText
   /** Pre-transformed condition with destructured prop refs rewritten to _p.xxx. */
   templateCondition?: string
   /**
@@ -1337,10 +1348,10 @@ export interface LiteralAttr {
 export interface ExpressionAttr {
   kind: 'expression'
   /** Source-level JS expression text (e.g. `count()`, `props.checked`). */
-  expr: string
+  expr: JsSourceText
   /** `expr` with destructured prop refs rewritten to `_p.xxx`, for SSR
    *  template inlining. Absent when no rewrite was needed. */
-  templateExpr?: string
+  templateExpr?: JsSourceText
   /**
    * Structured parse of `expr` (`parseExpression(expr.trim())`), attached
    * during IR construction so adapters lower the attribute value from the tree
@@ -1381,7 +1392,7 @@ export interface TemplateAttr {
 
 export interface SpreadAttr {
   kind: 'spread'
-  expr: string
+  expr: JsSourceText
   templateExpr?: string
   /**
    * Structured parse of `expr` (`parseExpression(expr.trim())`), attached
@@ -1550,7 +1561,7 @@ export interface IRAttribute extends AttrMeta {
 export interface IREvent {
   name: string // 'click', 'input', 'keydown'
   originalAttr?: string // Original JSX attribute name: 'onClick', 'onKeyDown'
-  handler: string // JS expression: '() => setCount(n => n + 1)'
+  handler: JsSourceText // JS expression: '() => setCount(n => n + 1)'
   loc: SourceLocation
 }
 
@@ -1593,7 +1604,7 @@ export interface SignalPropSeed {
 export interface SignalInfo {
   getter: string
   setter: string | null
-  initialValue: string
+  initialValue: JsSourceText
   /**
    * `initialValue` parsed into a structured tree (Roadmap A). Attached
    * best-effort by the analyzer so adapters can lower a literal initial value
@@ -1758,7 +1769,7 @@ export interface SignalFactoryCall {
 
 export interface MemoInfo {
   name: string
-  computation: string
+  computation: JsSourceText
   /**
    * The expression the memo evaluates to, read from the callback node at
    * analysis time (#3510): the body of a zero-parameter arrow or `function`
@@ -1848,7 +1859,7 @@ export interface MemoInfo {
 }
 
 export interface EffectInfo {
-  body: string
+  body: JsSourceText
   deps: string[]
   /**
    * When set, the effect was captured as `const <captureName> = createEffect(...)`
@@ -1861,7 +1872,7 @@ export interface EffectInfo {
 }
 
 export interface OnMountInfo {
-  body: string
+  body: JsSourceText
   loc: SourceLocation
 }
 
@@ -1878,7 +1889,7 @@ export interface OnMountInfo {
  */
 export interface InitStatementInfo {
   /** Raw JS source of the statement (TypeScript types already stripped). */
-  body: string
+  body: JsSourceText
   loc: SourceLocation
   /**
    * Free identifier references used by this statement. Used by the emitter
@@ -2061,7 +2072,7 @@ export interface ImportSpecifier {
 export interface FunctionInfo {
   name: string
   params: ParamInfo[]
-  body: string
+  body: JsSourceText
   /** Body with TypeScript type annotations preserved, for .tsx output */
   typedBody?: string
   /**
@@ -2120,7 +2131,7 @@ export interface FunctionInfo {
 
 export interface ConstantInfo {
   name: string
-  value?: string
+  value?: JsSourceText
   /**
    * `value` parsed into a structured tree (Roadmap A). Attached best-effort by
    * the analyzer (parsed from the parenthesised value so a bare object literal

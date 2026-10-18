@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
+import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble, JsSourceText } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -327,7 +327,7 @@ function escapeAttrValueExpr(valExpr: string): string {
  */
 function dangerouslyHtmlChildren(
   attrs: ReadonlyArray<IRAttribute>,
-  toExpr: (v: { expr: string; templateExpr?: string }) => string,
+  toExpr: (v: { expr: JsSourceText; templateExpr?: JsSourceText }) => string,
 ): string | null {
   const attr = attrs.find(a => a.name === 'dangerouslySetInnerHTML')
   if (!attr || attr.value.kind !== 'expression') return null
@@ -341,7 +341,7 @@ function dangerouslyHtmlChildren(
  * template path; for non-`expression`/`spread`/`template` variants we
  * delegate to the canonical projection.
  */
-function transformKeyValue(value: AttrValue, transformExpr: (expr: string, templateExpr?: string) => string): string {
+function transformKeyValue(value: AttrValue, transformExpr: (expr: JsSourceText, templateExpr?: JsSourceText) => string): string {
   switch (value.kind) {
     case 'expression':
     case 'spread':
@@ -1849,7 +1849,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
   // Bare prop name prefixing (org → _p.org) is handled by templateExpr
   // from Phase 1 AST rewrite. Only constant inlining and props object
   // normalization are done here. (#807)
-  const transformExpr = (expr: string, templateExpr?: string): string => {
+  const transformExpr = (expr: JsSourceText, templateExpr?: JsSourceText): string => {
     const { protect, restore } = createStringProtector()
     let result = protect(templateExpr ?? expr)
 
@@ -2478,7 +2478,7 @@ export function computeDeferredChildSlots(
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
   const { restSpreadNames, propsObjectName, restPropsName, csrEnv, unsafeLocalNames, loopDepth = 0 } = opts
   const env: CsrEnv = csrEnv ?? { substitutions: new Map(), propsObjectName: propsObjectName ?? null }
-  const transformExpr = (expr: string, templateExpr?: string): string => {
+  const transformExpr = (expr: JsSourceText, templateExpr?: JsSourceText): string => {
     // Single AST substitution pass: replaces signal getter calls
     // (`count()` → `(initialValue)`), memo calls (`bars()` → `(body)`),
     // and inlinable-const refs (`label` → `(rewrittenValue)`) in one

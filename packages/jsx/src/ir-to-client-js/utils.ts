@@ -4,7 +4,7 @@
  */
 
 import ts from 'typescript'
-import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR } from '../types.ts'
+import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR, JsSourceText } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
 import { isNonReferenceIdentifierPosition } from '../analyzer.ts'
 import { BindingScope, type LoopBindingSource } from '../scope/binding-scope.ts'
@@ -395,7 +395,7 @@ export function quotePropName(name: string): string {
  *   Input:  (e) => e.key === 'Enter' && handleAdd()
  *   Output: (e) => { e.key === 'Enter' && handleAdd() }
  */
-export function wrapHandlerInBlock(handler: string): string {
+export function wrapHandlerInBlock(handler: JsSourceText): string {
   const trimmed = handler.trim()
 
   if (trimmed.startsWith('(') && trimmed.includes('=>')) {
@@ -424,7 +424,7 @@ export function wrapHandlerInBlock(handler: string): string {
  * emitted while it runs. Used at every handler emit site in profile mode so
  * no path is left unattributed.
  */
-export function wrapHandlerForTurn(handler: string, handlerId: string, loc?: string): string {
+export function wrapHandlerForTurn(handler: JsSourceText, handlerId: string, loc?: string): string {
   const idArg = loc ? `${JSON.stringify(handlerId)}, ${JSON.stringify(loc)}` : JSON.stringify(handlerId)
   return `(...__bfa) => { beginTurn(${idArg}); try { return (${handler.trim()})(...__bfa) } finally { endTurn() } }`
 }

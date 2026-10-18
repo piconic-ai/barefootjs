@@ -14,6 +14,7 @@
  */
 
 import { toDomEventName, wrapHandlerInBlock, wrapHandlerForTurn } from '../../utils.ts'
+import type { JsSourceText } from '../../../types.ts'
 
 export type EventNameMode = 'dom' | 'raw'
 
@@ -29,7 +30,7 @@ export function emitListenerLine(
   indent: string,
   elementVar: string,
   eventName: string,
-  handler: string,
+  handler: JsSourceText,
   mode: EventNameMode = 'dom',
   turnId?: string,
 ): void {
@@ -57,7 +58,7 @@ export function emitListenerBlock(
   slotId: string,
   elementLocal: string,
   eventName: string,
-  handler: string,
+  handler: JsSourceText,
   mode: EventNameMode = 'dom',
   bodyIsMultiRoot: boolean = false,
 ): void {
