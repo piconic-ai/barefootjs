@@ -607,6 +607,7 @@ import { fixture as preWhitespace } from './pre-whitespace'
 import { fixture as tableDynamicRows } from './table-dynamic-rows'
 import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
 import { fixture as memoChain } from './memo-chain'
+import { fixture as childPropFromPropsObject } from './child-prop-from-props-object'
 import { fixture as memoTernaryComparisonTest } from './memo-ternary-comparison-test'
 import { fixture as memoFunctionExpression } from './memo-function-expression'
 import { fixture as undefinedAlternateTernaryAttrTestQuestionMark } from './undefined-alternate-ternary-attr-test-question-mark'
@@ -1462,6 +1463,7 @@ export const jsxFixtures: JSXFixture[] = [
   tableDynamicRows,
   adjacentDynamicText,
   memoChain,
+  childPropFromPropsObject,
   memoTernaryComparisonTest,
   memoFunctionExpression,
   undefinedAlternateTernaryAttrTestQuestionMark,
