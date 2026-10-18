@@ -222,7 +222,8 @@ import {
   stringifyParsedExpr,
   exprToString,
   parseProviderObjectLiteral,
-  parseStyleObjectEntries,
+  planStyleObject,
+  type ExpressionAttr,
   isSupported,
   isSupportedValue,
   emitParsedExpr,
@@ -1401,7 +1402,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101 (#1322).
       if (name === 'style') {
-        const css = this.tryLowerStyleObject(value.expr)
+        const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
       // Refuse shapes that the lowering pipeline can't represent in Pebble —
@@ -1520,15 +1521,12 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * unsupported or any value can't be lowered (caller falls through to
    * BF101). (#1322)
    */
-  private tryLowerStyleObject(expr: string): string | null {
-    const entries = parseStyleObjectEntries(expr)
+  private tryLowerStyleObject(value: ExpressionAttr): string | null {
+    const entries = planStyleObject(value)
     if (!entries) return null
-    for (const e of entries) {
-      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
-    }
     const args = entries.flatMap(e => [
       JSON.stringify(e.cssKey),
-      e.kind === 'literal' ? JSON.stringify(e.value) : this.convertExpressionToPebble(e.expr),
+      e.kind === 'literal' ? JSON.stringify(e.value) : this.convertExpressionToPebble(e.expr, e.parsed),
     ])
     // `bf.style_object([...])` — a single Pebble LIST-literal argument, not
     // trailing variadic args: Pebble's method resolver can't match a Java

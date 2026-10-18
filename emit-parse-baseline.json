@@ -1,16 +1,14 @@
 {
   "files": {
     "packages/adapter-blade/src/adapter/blade-adapter.ts": {
-      "BladeAdapter.convertExpressionToBlade": 1,
-      "BladeAdapter.tryLowerStyleObject": 1
+      "BladeAdapter.convertExpressionToBlade": 1
     },
     "packages/adapter-erb/src/adapter/boolean-result.ts": {
       "isExplicitStringCall": 1
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "ErbAdapter.convertExpressionToRuby": 1,
-      "ErbAdapter.isChildrenValueExpr": 1,
-      "ErbAdapter.tryLowerStyleObject": 1
+      "ErbAdapter.isChildrenValueExpr": 1
     },
     "packages/adapter-go-template/src/adapter/analysis/static-child-loop-bake.ts": {
       "analyzeBakeableStaticChildLoop": 1
@@ -27,7 +25,6 @@
       "GoTemplateAdapter.convertExpressionToGo": 2,
       "GoTemplateAdapter.generateNewPropsFunction": 1,
       "GoTemplateAdapter.refuseComputedConstLoopSource": 1,
-      "GoTemplateAdapter.tryLowerStyleObject": 1,
       "emitExpression": 1
     },
     "packages/adapter-go-template/src/adapter/lib/loop-row-path.ts": {
@@ -37,31 +34,25 @@
       "buildSpreadInitializer": 2
     },
     "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
-      "JinjaAdapter.convertExpressionToJinja": 1,
-      "JinjaAdapter.tryLowerStyleObject": 1
+      "JinjaAdapter.convertExpressionToJinja": 1
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
       "MojoAdapter.convertExpressionToPerl": 1,
       "MojoAdapter.renderExpression": 1,
-      "MojoAdapter.tryLowerStyleObject": 1,
       "emitExpression": 1
     },
     "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
-      "PebbleAdapter.convertExpressionToPebble": 1,
-      "PebbleAdapter.tryLowerStyleObject": 1
+      "PebbleAdapter.convertExpressionToPebble": 1
     },
     "packages/adapter-rust/src/adapter/minijinja-adapter.ts": {
-      "MinijinjaAdapter.convertExpressionToJinja": 1,
-      "MinijinjaAdapter.tryLowerStyleObject": 1
+      "MinijinjaAdapter.convertExpressionToJinja": 1
     },
     "packages/adapter-twig/src/adapter/twig-adapter.ts": {
-      "TwigAdapter.convertExpressionToTwig": 1,
-      "TwigAdapter.tryLowerStyleObject": 1
+      "TwigAdapter.convertExpressionToTwig": 1
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
       "XslateAdapter.convertExpressionToKolon": 1,
       "XslateAdapter.renderExpression": 1,
-      "XslateAdapter.tryLowerStyleObject": 1,
       "emitExpression": 1
     },
     "packages/jsx/src/adapters/attr-plan.ts": {

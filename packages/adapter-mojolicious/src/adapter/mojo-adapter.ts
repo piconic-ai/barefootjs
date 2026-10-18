@@ -39,7 +39,8 @@ import {
   type AttrValueEmitter,
   parseExpression,
   stringifyParsedExpr,
-  parseStyleObjectEntries,
+  planStyleObject,
+  type ExpressionAttr,
   isSupported,
   isSupportedValue,
   parseProviderObjectLiteral,
@@ -1297,7 +1298,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101 (#1322).
       if (name === 'style') {
-        const css = this.tryLowerStyleObject(value.expr)
+        const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
       // Refuse shapes that the regex pipeline silently mangles into
@@ -1441,15 +1442,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * unsupported or any value can't be lowered (caller then falls through to
    * the BF101 refusal). (#1322)
    */
-  private tryLowerStyleObject(expr: string): string | null {
-    const entries = parseStyleObjectEntries(expr)
+  private tryLowerStyleObject(value: ExpressionAttr): string | null {
+    const entries = planStyleObject(value)
     if (!entries) return null
-    for (const e of entries) {
-      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
-    }
     const args = entries.flatMap(e => [
       `'${e.cssKey.replace(/[\\']/g, m => `\\${m}`)}'`,
-      e.kind === 'literal' ? `'${e.value.replace(/[\\']/g, m => `\\${m}`)}'` : this.convertExpressionToPerl(e.expr),
+      e.kind === 'literal' ? `'${e.value.replace(/[\\']/g, m => `\\${m}`)}'` : this.convertExpressionToPerl(e.expr, e.parsed),
     ])
     return `<%== bf->style_object(${args.join(', ')}) %>`
   }

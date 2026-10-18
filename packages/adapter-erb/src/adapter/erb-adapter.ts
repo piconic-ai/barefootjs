@@ -67,7 +67,8 @@ import {
   type AttrValueEmitter,
   parseExpression,
   stringifyParsedExpr,
-  parseStyleObjectEntries,
+  planStyleObject,
+  type ExpressionAttr,
   isSupported,
   isSupportedValue,
   parseProviderObjectLiteral,
@@ -1401,7 +1402,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101.
       if (name === 'style') {
-        const css = this.tryLowerStyleObject(value.expr)
+        const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
       // Refuse shapes that have no idiomatic ERB template representation.
@@ -1529,12 +1530,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * Returns null when the shape is unsupported or any value can't be
    * lowered (caller then falls through to the BF101 refusal).
    */
-  private tryLowerStyleObject(expr: string): string | null {
-    const entries = parseStyleObjectEntries(expr)
+  private tryLowerStyleObject(value: ExpressionAttr): string | null {
+    const entries = planStyleObject(value)
     if (!entries) return null
-    for (const e of entries) {
-      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
-    }
     // Routed through the single `bf.style_object` runtime call (#2261)
     // rather than per-pair `key:value` template interpolation — a dynamic
     // value that fails the ported `has_unsafe_style_value?` CSS-injection
@@ -1549,7 +1547,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       .map(e =>
         e.kind === 'literal'
           ? `${JSON.stringify(e.cssKey)}, ${rubyStringLiteral(e.value)}`
-          : `${JSON.stringify(e.cssKey)}, (${this.convertExpressionToRuby(e.expr)})`,
+          : `${JSON.stringify(e.cssKey)}, (${this.convertExpressionToRuby(e.expr, e.parsed)})`,
       )
       .join(', ')
     return `<%= bf.h(bf.style_object(${args})) %>`
