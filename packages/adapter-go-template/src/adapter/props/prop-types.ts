@@ -10,6 +10,7 @@ import { asCallbackMethodCall, isBooleanAttr, isNullableSignal } from '@barefoot
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
+import { applyGoFallback, goPropDefault } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 
@@ -607,6 +608,38 @@ export function collectPresenceCheckedPropNames(ctx: GoEmitContext, ir: Componen
  * the nillable-field set (`collectNillablePropNames`) can't drift from the
  * emitted field types.
  */
+/**
+ * The Go value of a destructured prop binding with its destructure default
+ * applied, read off the input struct: the props field it initializes and the
+ * runtime evaluator's environment both read it (#3540). Null when the binding
+ * has no literal default.
+ *
+ * The input field may be `interface{}` although the binding's own type is
+ * concrete: the Input struct declares a caller-facing field once, typed by its
+ * first `propsParams` entry, and a second binding of the same name (a renamed
+ * body destructure `{ label: text = 'none' }` beside a raw `props.label` read
+ * under `??`) can lose that nillable flip (#2943). The zero-value check of
+ * `applyGoFallback` would not compile there, so it nil-checks and asserts back
+ * to the binding's type instead.
+ */
+export function defaultedBindingGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  const paramDefault = goPropDefault(param.defaultValue)
+  if (paramDefault === null) return null
+  const inputField = capitalizeFieldName(param.sourceName ?? param.name)
+  const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
+  const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
+  const inputType = fieldOwner ? resolvePropGoType(ctx, fieldOwner, propTypeOverrides) : undefined
+  if (outputType !== 'interface{}' && inputType === 'interface{}') {
+    return `func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return in.${inputField}.(${outputType}) }()`
+  }
+  return applyGoFallback(`in.${inputField}`, paramDefault)
+}
+
 export function resolvePropGoType(
   ctx: GoEmitContext,
   param: IRMetadata['propsParams'][number],

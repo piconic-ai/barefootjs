@@ -302,6 +302,7 @@ import { fixture as signalComputedCallSeedDestructured } from './signal-computed
 import { fixture as signalComputedSeedForwardedFraction } from './signal-computed-seed-forwarded-fraction'
 import { fixture as signalComputedSeedSiblingFallbacks } from './signal-computed-seed-sibling-fallbacks'
 import { fixture as signalComputedSeedSiblingFallbacksDestructured } from './signal-computed-seed-sibling-fallbacks-destructured'
+import { fixture as signalComputedSeedDefaultedAlias } from './signal-computed-seed-defaulted-alias'
 import { fixture as signalComputedPropSeedConsumers } from './signal-computed-prop-seed-consumers'
 import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as signalLiteralPropScalarCollision } from './signal-literal-prop-scalar-collision'
@@ -1227,6 +1228,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalComputedSeedForwardedFraction,
   signalComputedSeedSiblingFallbacks,
   signalComputedSeedSiblingFallbacksDestructured,
+  signalComputedSeedDefaultedAlias,
   signalComputedPropSeedConsumers,
   signalLiteralPropNameCollision,
   signalLiteralPropScalarCollision,

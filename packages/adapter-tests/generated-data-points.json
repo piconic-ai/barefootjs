@@ -6649,6 +6649,20 @@
       }
     }
   ],
+  "signal-computed-seed-defaulted-alias": [
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "signal-computed-seed-sibling-fallbacks": [
     {
       "name": "gen:label:markup",

@@ -9318,6 +9318,24 @@
         "text"
       ]
     },
+    "signal-computed-seed-defaulted-alias": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "signal-computed-seed-forwarded-fraction": {
       "kinds": [
         "call",

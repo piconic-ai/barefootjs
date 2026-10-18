@@ -185,7 +185,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -2243,31 +2243,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('')
   }
 
-  /**
-   * The Go type the Input struct ACTUALLY emits for `fieldName` —
-   * `generateInputStruct`'s own first-entry-wins dedup (#2943: a
-   * body-destructure-with-default rename like `{ label: text = 'none' }`
-   * adds a second `propsParams` entry sharing `label`'s caller-facing
-   * field name), replayed here so a default-application site downstream
-   * (`generatePropsStruct`) picks the wrapper that matches the type the
-   * field was ACTUALLY declared with — not the type `text`'s OWN
-   * `ParamInfo` would resolve to in isolation, which can disagree when an
-   * earlier, non-defaulted entry for the same field (e.g. a bare
-   * `props.label` read elsewhere) won the interface{}-nillable flip.
-   */
-  private resolveInputFieldGoType(
-    ir: ComponentIR,
-    fieldName: string,
-    propTypeOverrides: Map<string, string>,
-  ): string | undefined {
-    for (const param of ir.metadata.propsParams) {
-      if (capitalizeFieldName(param.sourceName ?? param.name) === fieldName) {
-        return resolvePropGoType(this.emitCtx, param, propTypeOverrides)
-      }
-    }
-    return undefined
-  }
-
   private generatePropsStruct(
     lines: string[],
     ir: ComponentIR,
@@ -2727,28 +2702,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           : hoisted.varName
         lines.push(`\t\t${fieldName}: ${value},`)
       } else {
-        const paramDefault = goPropDefault(param.defaultValue)
+        const defaulted = defaultedBindingGo(this.emitCtx, param, ir.metadata.propsParams, propTypeOverrides)
         const memoFold = memoFallbacks.get(fieldName)
-        const outputType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
-        if (
-          paramDefault !== null &&
-          outputType !== 'interface{}' &&
-          this.resolveInputFieldGoType(ir, inputField, propTypeOverrides) === 'interface{}'
-        ) {
-          // #2943: the shared Input FIELD this default reads from resolved
-          // to `interface{}` — not `param`'s (concrete, since it has its
-          // OWN default) `outputType` — because another `propsParams` entry
-          // sharing this field name (a bare `props.X` read elsewhere) won
-          // the nillable flip. `applyGoFallback`'s zero-value check assumes
-          // the ref is already `outputType`-typed, which `in.<inputField>`
-          // no longer is; nil-check then type-assert back to `outputType`
-          // instead (the TS type contract guarantees a caller-supplied
-          // value is that type whenever it isn't nil).
-          lines.push(
-            `\t\t${fieldName}: func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return in.${inputField}.(${outputType}) }(),`,
-          )
-        } else if (paramDefault !== null) {
-          lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${inputField}`, paramDefault)},`)
+        if (defaulted !== null) {
+          lines.push(`\t\t${fieldName}: ${defaulted},`)
         } else if (memoFold !== undefined && memoFold.goType === 'string') {
           lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${inputField}`, memoFold.goFallback)},`)
         } else if (memoFold !== undefined) {

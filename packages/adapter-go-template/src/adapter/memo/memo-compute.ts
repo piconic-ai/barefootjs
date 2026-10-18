@@ -24,7 +24,7 @@ import {
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { applyGoFallback, escapeGoString, goPropDefault } from '../lib/go-emit.ts'
+import { escapeGoString } from '../lib/go-emit.ts'
 import {
   convertInitialValue,
   getSignalInitialValueAsGo,
@@ -34,6 +34,7 @@ import {
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
+import { defaultedBindingGo } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -564,9 +565,11 @@ function evalEnvValueGo(
     // The binding itself, with its destructure default. A hoisted
     // `propFallbackVars` local is a sibling signal's `x ?? d` seed, whose
     // fallback is not this expression's (#3540).
-    const ref = `in.${capitalizeFieldName(param.sourceName ?? name)}`
-    const paramDefault = goPropDefault(param.defaultValue)
-    goExpr = paramDefault === null ? ref : applyGoFallback(ref, paramDefault)
+    const binding = ctx.state.currentPropsParams.find(p => p.name === name)
+    const defaulted = binding
+      ? defaultedBindingGo(ctx, binding, ctx.state.currentPropsParams, ctx.state.propTypeOverrides)
+      : null
+    goExpr = defaulted ?? `in.${capitalizeFieldName(param.sourceName ?? name)}`
   } else if (name === ctx.state.propsObjectName) {
     // The props object (`props.items.length`) as a map keyed by each
     // prop's caller-facing name (#3512).
