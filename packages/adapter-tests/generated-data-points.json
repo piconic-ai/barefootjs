@@ -1003,6 +1003,26 @@
       }
     }
   ],
+  "child-prop-from-props-object": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "component-spread-explicit-then-props": [
     {
       "name": "gen:tone:absent",

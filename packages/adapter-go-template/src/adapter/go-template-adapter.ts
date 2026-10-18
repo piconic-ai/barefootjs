@@ -5601,8 +5601,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
+    // A component-scope computed const (`const shown = props.label ?? 'd'`)
+    // is read through its value, not its name (#3507) — a const shadowing a
+    // prop would otherwise read the prop and drop the const's default.
     const evaluated = evalExprGo(
-      this.emitCtx, value, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, new Set(),
+      this.emitCtx, inlineComputedConsts(value, this.state.computedConsts), ir.metadata.signals,
+      ir.metadata.propsParams, propFallbackVars, new Set(),
     )
     if (evaluated === null) return null
     if (routesToRestBag(childShape, propName) || childShape?.nillableParamNames.has(propName)) return evaluated
