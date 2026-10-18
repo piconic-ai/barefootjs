@@ -1815,16 +1815,22 @@ export function irToComponentTemplate(
   return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName })
 }
 
+/**
+ * The `csrSubstitute` environment that inlines each template constant by
+ * name (#3535), or null when there is none to inline.
+ */
+function inlinableConstantEnv(inlinableConstants: ReadonlyMap<string, string> | undefined): CsrEnv | null {
+  if (!inlinableConstants || inlinableConstants.size === 0) return null
+  const substitutions = new Map<string, CsrSubstitution>()
+  for (const [name, value] of inlinableConstants) {
+    substitutions.set(name, { kind: 'identifier', replacement: value, freeIdentifiers: new Set() })
+  }
+  return { substitutions, propsObjectName: null }
+}
+
 function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
   const { inlinableConstants, restSpreadNames, propsObjectName, restPropsName, loopDepth = 0 } = opts
-  const constantEnv: CsrEnv | null = inlinableConstants && inlinableConstants.size > 0
-    ? {
-        substitutions: new Map(
-          [...inlinableConstants].map(([name, value]) => [name, { kind: 'identifier' as const, replacement: value, freeIdentifiers: new Set<string>() }]),
-        ),
-        propsObjectName: null,
-      }
-    : null
+  const constantEnv = inlinableConstantEnv(inlinableConstants)
   // `recurse` preserves `inHoistedChildren` for structural pass-through
   // (fragment / conditional); `childrenRecurse` clears it so element
   // descendants don't re-emit the placeholder. (#1320)

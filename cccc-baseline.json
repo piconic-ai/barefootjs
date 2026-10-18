@@ -781,11 +781,6 @@
         40
       ]
     },
-    "packages/jsx/src/ir-to-client-js/emit-registration.ts": {
-      "resolveChainedRefs": [
-        47
-      ]
-    },
     "packages/jsx/src/ir-to-client-js/html-template.ts": {
       "buildLoopSkeletonTemplate": [
         62
