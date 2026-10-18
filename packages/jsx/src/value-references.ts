@@ -128,3 +128,126 @@ export function collectValueReferencedNames(code: string): Set<string> | null {
   visit(sourceFile)
   return names
 }
+
+/**
+ * The nodes that open a binding scope in emitted JS: the module, every
+ * function-like node (its parameters and hoisted `var` / function names),
+ * blocks, `for` heads, `case` blocks and `catch` clauses (`let` / `const` /
+ * class names), and class expressions (their own name).
+ */
+function isScopeNode(node: ts.Node): boolean {
+  return (
+    ts.isSourceFile(node) ||
+    ts.isFunctionLike(node) ||
+    ts.isBlock(node) ||
+    ts.isForStatement(node) ||
+    ts.isForInStatement(node) ||
+    ts.isForOfStatement(node) ||
+    ts.isCaseBlock(node) ||
+    ts.isCatchClause(node) ||
+    ts.isClassExpression(node)
+  )
+}
+
+function nearestScope(from: ts.Node, functionScoped: boolean): ts.Node {
+  let node: ts.Node | undefined = from
+  while (node) {
+    if (functionScoped ? ts.isSourceFile(node) || ts.isFunctionLike(node) : isScopeNode(node)) return node
+    node = node.parent
+  }
+  return from.getSourceFile()
+}
+
+function bindingNames(name: ts.BindingName, out: string[]): string[] {
+  if (ts.isIdentifier(name)) {
+    out.push(name.text)
+  } else {
+    for (const element of name.elements) {
+      if (ts.isBindingElement(element)) bindingNames(element.name, out)
+    }
+  }
+  return out
+}
+
+/** The scope each declaration in `sourceFile` binds its names into. */
+function collectScopeBindings(sourceFile: ts.SourceFile): Map<ts.Node, Set<string>> {
+  const bindings = new Map<ts.Node, Set<string>>()
+  const bind = (scope: ts.Node, names: readonly string[]): void => {
+    let set = bindings.get(scope)
+    if (!set) bindings.set(scope, (set = new Set()))
+    for (const name of names) set.add(name)
+  }
+  function visit(node: ts.Node): void {
+    if (ts.isVariableDeclaration(node)) {
+      const list = node.parent
+      const isVar = ts.isVariableDeclarationList(list) && (list.flags & ts.NodeFlags.BlockScoped) === 0
+      bind(nearestScope(list, isVar), bindingNames(node.name, []))
+    } else if (ts.isParameter(node)) {
+      bind(node.parent, bindingNames(node.name, []))
+    } else if ((ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) && node.name) {
+      bind(nearestScope(node.parent, false), [node.name.text])
+    } else if ((ts.isFunctionExpression(node) || ts.isClassExpression(node)) && node.name) {
+      bind(node, [node.name.text])
+    } else if (ts.isCatchClause(node) && node.variableDeclaration) {
+      bind(node, bindingNames(node.variableDeclaration.name, []))
+      node.block.statements.forEach(visit)
+      return
+    } else if (ts.isImportClause(node) && node.name) {
+      bind(sourceFile, [node.name.text])
+    } else if (ts.isNamespaceImport(node) || ts.isImportSpecifier(node)) {
+      bind(sourceFile, [node.name.text])
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return bindings
+}
+
+/** What {@link analyzeEmittedReferences} reports about one emitted module. */
+export interface EmittedReferences {
+  /** Value references that no enclosing scope binds: imports or globals. */
+  free: Set<string>
+  /** Names called directly (`name(…)`), bound or not. */
+  called: Set<string>
+}
+
+/**
+ * Parse emitted client JS and report its unbound value references and its
+ * directly called names.
+ *
+ * Unlike {@link collectValueReferencedNames}, `free` resolves scopes, so a
+ * name the module declares itself (a module-level helper emitted as
+ * `var insert = …`, a parameter, a block-scoped `const`) is not reported
+ * where that declaration is visible (#3537). Hoisting is modelled per
+ * scope, not per position: a binding counts for its whole scope.
+ *
+ * Returns `null` when the text did not parse cleanly, with the same
+ * "cannot answer" contract as {@link collectValueReferencedNames}.
+ */
+export function analyzeEmittedReferences(code: string): EmittedReferences | null {
+  let sourceFile: ts.SourceFile
+  try {
+    sourceFile = ts.createSourceFile('generated.js', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  } catch {
+    return null
+  }
+  const diagnostics = (sourceFile as unknown as { parseDiagnostics?: readonly unknown[] }).parseDiagnostics
+  if (diagnostics && diagnostics.length > 0) return null
+
+  const bindings = collectScopeBindings(sourceFile)
+  const isBound = (id: ts.Identifier): boolean => {
+    for (let node: ts.Node | undefined = id.parent; node; node = node.parent) {
+      if (bindings.get(node)?.has(id.text)) return true
+    }
+    return false
+  }
+  const free = new Set<string>()
+  const called = new Set<string>()
+  function visit(node: ts.Node): void {
+    if (ts.isIdentifier(node) && isValueReferenceIdentifier(node) && !isBound(node)) free.add(node.text)
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) called.add(node.expression.text)
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return { free, called }
+}
