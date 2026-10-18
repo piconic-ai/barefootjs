@@ -101,7 +101,7 @@ describe('ui corpus type-check gate (#2570 / #2573)', () => {
         moduleResolution: ts.ModuleResolutionKind.Bundler,
         jsx: ts.JsxEmit.ReactJSX,
         jsxImportSource: '@barefootjs/hono/jsx',
-        lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+        lib: ['lib.esnext.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
         allowImportingTsExtensions: true,
         skipLibCheck: true,
         // The ui components' own packages, from source: the temp dir sits outside
@@ -118,6 +118,10 @@ describe('ui corpus type-check gate (#2570 / #2573)', () => {
       const counts = new Map<string, number>()
       const samples = new Map<string, string>()
       for (const d of ts.getPreEmitDiagnostics(program)) {
+        // The packages mapped through `paths` above are type-checked by their own
+        // builds; this gate counts the emitted templates (and the ui files copied
+        // beside them) only.
+        if (d.file && !d.file.fileName.startsWith(`${tmp}/`)) continue
         const component = d.file
           ? d.file.fileName.replace(`${tmp}/components/ui/`, '').replace('/index.tsx', '')
           : '(no file)'
