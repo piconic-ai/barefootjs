@@ -23,4 +23,10 @@ export function FilterNestedCallbackReadsOuterParamClient() {
   )
 }
 `,
+  expectedHtml: `
+    <div bf-s="test">
+      <ul bf="s1"></ul>
+      <p bf="s3"><!--bf:s2--><!--/--></p>
+    </div>
+  `,
 })

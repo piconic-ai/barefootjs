@@ -2870,6 +2870,14 @@
       }
     }
   ],
+  "filter-nested-callback-reads-outer-param": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "filter-param-literal-matches-renamed-name": [
     {
       "name": "gen:items:empty",
@@ -2879,6 +2887,14 @@
     }
   ],
   "filter-param-named-loop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "filter-param-sigil-in-string": [
     {
       "name": "gen:items:empty",
       "props": {

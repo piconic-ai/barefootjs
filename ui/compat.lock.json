@@ -3445,6 +3445,99 @@
           }
         }
       },
+      "filter-nested-callback-reads-outer-param": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-callback-in-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-reads-outer-param-client"
+          }
+        }
+      },
       "filter-nested-find-predicate": {
         "blade": {
           "kind": "refusal",
@@ -7282,6 +7375,10 @@
         "description": "Filter predicate containing a nested .some() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate.ts"
       },
+      "filter-nested-callback-reads-outer-param": {
+        "description": "A nested filter callback reading the outer callback param sees the outer element (#3542)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-reads-outer-param.ts"
+      },
       "filter-nested-find-predicate": {
         "description": "Filter predicate containing a nested .find() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate.ts"
@@ -7501,6 +7598,10 @@
       "filter-nested-callback-predicate-client": {
         "description": "Nested-callback filter predicate + /* @client */ suppresses BF101 (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate-client.ts"
+      },
+      "filter-nested-callback-reads-outer-param-client": {
+        "description": "A nested filter callback reading the outer param, deferred to the client via /* @client */ (#3542)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-reads-outer-param-client.ts"
       },
       "filter-nested-find-predicate-client": {
         "description": "Nested-callback (.find()) filter predicate + /* @client */ suppresses BF101 (#2038)",
@@ -8024,6 +8125,7 @@
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "filter-nested-callback-predicate",
+        "filter-nested-callback-reads-outer-param",
         "filter-nested-find-predicate"
       ],
       "adapters": [
