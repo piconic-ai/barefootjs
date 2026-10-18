@@ -7184,11 +7184,16 @@ function processAttributes(
     if (isEventHandlerName(rawName)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         const eventName = rawName.slice(2).toLowerCase()
-        reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
+        const handlerExpr = attr.initializer.expression
+        reportJsxBranchLocalInCallback(handlerExpr, ctx)
+        // Emitters pass the handler verbatim as an argument, so a comma
+        // sequence (`{a, b}`) must stay one expression (#3538).
+        const isSequence =
+          ts.isBinaryExpression(handlerExpr) && handlerExpr.operatorToken.kind === ts.SyntaxKind.CommaToken
         events.push({
           name: eventName,
           originalAttr: rawName,
-          handler: ctx.getJS(attr.initializer.expression),
+          handler: isSequence ? `(${ctx.getJS(handlerExpr)})` : ctx.getJS(handlerExpr),
           loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
         })
       }
