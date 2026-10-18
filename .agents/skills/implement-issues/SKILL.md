@@ -28,6 +28,19 @@ connector, or delegated agent is required.
   scoped partial fix. If the request is to make a silent limitation work, registering
   or renaming it is not a fix. Prefer working behavior; use a loud fallback only
   when authorized and genuinely necessary. Report any remaining gap explicitly.
+- Classify the change's risk; the tier sets how much verification it gets before
+  the first push and goes in the PR description:
+  - **Low:** docs, tests or fixtures only, or a refactor that is byte-identical on
+    every adapter suite and `update-expected-html`.
+  - **Medium:** a fix inside one adapter, or a new fixture with pins.
+  - **High:** a shared compiler, runtime or `@barefootjs/jsx/adapters` decision,
+    hydration or client-JS emission, or a change to the Hono reference output (an
+    existing fixture's `expectedHtml` changes). High risk needs the full suites of
+    every touched layer and a real pipeline repro before the PR opens, not after
+    review asks for it.
+- Keep each PR one revertable decision. Land a byte-identical refactor and the
+  behaviour change it enables as separate commits, or separate PRs when either is
+  large, so that a revert of one does not take the other with it.
 
 ## Implement and verify
 
@@ -56,6 +69,10 @@ connector, or delegated agent is required.
      only one of them takes the new representation.
    - **Names:** shadowing by a loop row or a nested loop, a sibling loop, a
      filter callback capture, and string literals that contain the renamed name.
+
+   This list is built from findings that escaped earlier PRs. When a review finding
+   or a revert names a class of shape that is not here, add it to this list in the
+   same PR that fixes it.
 4. Implement one shared semantic decision rather than matching copies across
    adapters. Test the reference and affected backend runtimes against the same
    fixture. Include discriminating values when relevant: fractions and numeric
@@ -91,13 +108,39 @@ connector, or delegated agent is required.
 
 ## Open and finish
 
-Before the first push, review your own diff against the sibling-shape list in
-step 3 and run the `code-review` skill on it when it is available. Fix what it
-confirms in the same push: every push to a PR restarts its CI.
+Do most of the review before the PR exists. Every push restarts CI, and a finding
+caught after the PR opens costs a full review round.
+
+1. Run the checks in step 6, at the depth the risk tier calls for, and get them
+   green.
+2. Review the cumulative diff from a fresh context, against the acceptance contract
+   and the sibling-shape list in step 3 only, not against your memory of why the
+   code is written that way. Use the `code-review` skill when it is available; when
+   delegation is authorized, give a reviewer agent only the diff and the contract.
+   Otherwise re-read the diff cold yourself as a separate pass.
+3. Treat each finding as a hypothesis and confirm it before changing code:
+   - A claimed output or behaviour defect needs an executable repro (a fixture, a
+     unit test, or a compile of the shape). Drop it when it does not reproduce.
+   - A design or testing-contract finding is confirmed by pointing at the code and
+     the rule it breaks: one of `AGENTS.md`'s "Never …" conventions, a decision made
+     in more than one place, or a missing coverage-coupling fixture. It is
+     must-address even when the output is correct today
+     (`.github/pullfrog/review.md`), so a passing repro does not dismiss it.
+
+   Fix confirmed findings most severe first: wrong or silently divergent output,
+   then a loud failure, then a design-contract violation, then a missing test.
+4. Do not act on style, wording or cleanup-only findings in this pass. They widen
+   the diff and cost a CI cycle without making a revert less likely.
 
 Commit scoped changes using `AGENTS.md`'s author/trailer rules. Push and open a draft
-PR when the requested workflow includes a PR. Check for a PR template; describe
-the contract, production-path evidence, validation, and remaining limitations.
+PR when the requested workflow includes a PR. Check for a PR template. Open the
+description with what a human has to judge, before the narrative:
+
+- the risk tier and why;
+- any change to the Hono reference output or to a contract;
+- remaining limitations.
+
+Then give the contract, production-path evidence and validation.
 Use `Closes #N` only for fully resolved cases. Attach the PR to the current task
 when the host offers that capability. Do not claim another agent's authorship or
 add duplicate tool-generated attribution footers.
@@ -105,6 +148,12 @@ add duplicate tool-generated attribution footers.
 Read and follow [polish-pr](../polish-pr/SKILL.md) to completion. That step owns
 review/simplification, undrafting, CI, Pullfrog responses, and the final notification;
 do not stop at PR creation or leave an async review loop without an owner.
+
+Watch for a review loop that does not converge. If a third round of findings lands
+on the same decision, stop patching instance by instance. The usual cause is a
+decision that is still made in more than one place, or a sibling class step 3
+missed. Re-derive the decision, fix it at its single source, add the class to
+step 3, and say in the PR that the approach changed and why.
 
 For a stack, work bottom-up: propagate each lower fix into higher branches before
 reviewing them. A changed head invalidates its earlier review/CI evidence. After
