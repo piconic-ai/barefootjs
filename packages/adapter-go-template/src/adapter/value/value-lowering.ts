@@ -22,6 +22,9 @@ import { bakeSourceKeyedObjectAsGoMap, numberLiteralRawGo, parsedLiteralToGo } f
 import { collapseLiteralUnion, typeInfoToGo } from '../type/type-codegen.ts'
 import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
 
+/** A signal with no inferred type, for {@link GoEmitContext.computedSignalSeed}. */
+const UNKNOWN_TYPE: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
 
@@ -609,7 +612,8 @@ function resolveMapJoinBaseAsGo(
     const sig = signals.find(s => s.getter === calleeName)
     if (sig) {
       const bakeType = ctx.state.synthStructTypes.get(sig.getter) ?? sig.type ?? { kind: 'array', raw: 'unknown[]' }
-      return convertInitialValue(ctx, sig.initialValue, bakeType, propsParams, sig.parsed)
+      return ctx.computedSignalSeed({ ...sig, type: sig.type ?? UNKNOWN_TYPE }, propsParams, EMPTY_PROP_FALLBACK_VARS)
+        ?? convertInitialValue(ctx, sig.initialValue, bakeType, propsParams, sig.parsed)
     }
   }
 
@@ -681,7 +685,8 @@ function callbackStepToGo(
     let goExpr: string | null = null
     const freeVarParam = propsParams.find(p => p.name === name)
     if (sig) {
-      goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, sig.type, sig.parsed)
+      goExpr = ctx.computedSignalSeed({ ...sig, type: sig.type ?? UNKNOWN_TYPE }, propsParams, propFallbackVars)
+        ?? getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, sig.type, sig.parsed)
     } else if (freeVarParam) {
       const hoisted = propFallbackVars.get(name)
       goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(freeVarParam.sourceName ?? name)}`

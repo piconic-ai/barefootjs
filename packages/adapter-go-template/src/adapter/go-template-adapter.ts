@@ -365,6 +365,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertConditionToGo(jsCondition, preParsed),
     extractPropNameFromInitialValue: (initialValue, preParsed) =>
       this.extractPropNameFromInitialValue(initialValue, preParsed),
+    computedSignalSeed: (signal, propsParams, propFallbackVars) =>
+      this.computedSignalSeed(signal, propsParams, propFallbackVars),
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
@@ -2780,7 +2782,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Bake against the synthesised struct type if one was inferred for this
       // untyped object-array signal, else the signal's own type.
       const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-      const initialValue = this.ownSignalSeed(signal, ir.metadata.propsParams, propFallbackVars, memoPropsParamMap, bakeType)
+      const initialValue = signalSeedGo(this.emitCtx, signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
       lines.push(`\t\t${fieldName}: ${initialValue},`)
       const resolvedParsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
       if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
@@ -5870,21 +5872,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return { ...inner, operator: parsed.op, operand: String(right.value) }
   }
 
-  /**
-   * The Go value a signal's own field is seeded with. A computed prop
-   * expression (#3519) is evaluated and converted to the field's Go type;
-   * any other seed is `signalSeedGo`'s.
-   */
-  private ownSignalSeed(
-    signal: ComponentIR['metadata']['signals'][number],
-    propsParams: ComponentIR['metadata']['propsParams'],
+  /** {@link GoEmitContext.computedSignalSeed}. */
+  private computedSignalSeed(
+    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-    propsParamMap: ReadonlyMap<string, ComponentIR['metadata']['propsParams'][number]>,
-    bakeType: TypeInfo,
-  ): string {
-    const computed = computedPropSeedGo(this.emitCtx, signal.parsed, propsParams, propFallbackVars)
-    const typed = computed === null ? null : evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
-    return typed ?? signalSeedGo(this.emitCtx, signal, propsParams, propFallbackVars, bakeType, true)
+  ): string | null {
+    const computed = computedPropSeedGo(this.emitCtx, signal.parsed, [...propsParams], propFallbackVars)
+    if (computed === null) return null
+    const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
+    return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
   }
 
   /**

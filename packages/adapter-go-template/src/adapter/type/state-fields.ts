@@ -118,9 +118,11 @@ export function signalFieldGoType(
  * The Go number type of an arithmetic seed over numeric props and literals
  * (`props.n * 2`, `n - 1`), so its evaluated value (#3519) is stored as a
  * number rather than an `interface{}` holding a float64, which the template
- * would print in Go's exponent notation. `float64` when an operand is, else
- * `int`. Null for any other seed. `+` (which may concatenate) and `/` (which
- * may yield a fraction) are left untyped.
+ * would print in Go's exponent notation. `float64` when an operand's
+ * resolved field type or a literal is fractional, else `int`: a product or
+ * difference of integers is an integer. Null for any other seed. `+` (which
+ * may concatenate), `/` (a fraction) and `%` (`NaN` for a zero divisor) are
+ * left untyped.
  */
 function numericArithmeticSeedGoType(
   ctx: GoEmitContext,
@@ -140,12 +142,14 @@ function numericArithmeticSeedGoType(
       null
     const prop = name === null ? undefined : propsParamMap.get(name)
     if (!prop) return false
-    const goType = typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed)
+    // The prop's resolved field type: `.toFixed()` or a fractional caller
+    // widens an `int` prop to `float64` (`buildPropTypeOverrides`).
+    const goType = ctx.state.propTypeOverrides.get(prop.name) ?? typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed)
     if (goType === 'float64') float = true
     return goType === 'int' || goType === 'float64'
   }
   const visit = (e: ParsedExpr): boolean =>
-    e.kind === 'binary' && (e.op === '*' || e.op === '-' || e.op === '%') ? visit(e.left) && visit(e.right) : leaf(e)
+    e.kind === 'binary' && (e.op === '*' || e.op === '-') ? visit(e.left) && visit(e.right) : leaf(e)
   if (!parsed || parsed.kind !== 'binary' || !visit(parsed)) return null
   return float ? 'float64' : 'int'
 }
@@ -394,6 +398,9 @@ export function signalSeedGo(
   bakeType: TypeInfo = signal.type,
   nillableDest = false,
 ): string {
+  // A computed prop seed (#3519) is evaluated, the same value every reader gets.
+  const computed = ctx.computedSignalSeed(signal, propsParams, propFallbackVars)
+  if (computed !== null) return computed
   // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
   // one value.
   const fallbackMatch = ctx.extractPropFallback(signal.initialValue, resolveSignalParsedThroughSeedPlan(ctx.state, signal))

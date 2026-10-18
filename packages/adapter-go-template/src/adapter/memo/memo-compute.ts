@@ -452,6 +452,26 @@ export function evalExprGo(
   return `bf.EvalExpr("${escapeGoString(json)}", map[string]any{${entries.join(', ')}})`
 }
 
+/**
+ * A signal's SSR value as a memo lowering reads it: the evaluated computed
+ * prop seed (#3519) when there is one, the same value its own field and a
+ * forwarded child prop get, else `getSignalInitialValueAsGo`'s.
+ */
+function signalSeedValueGo(
+  ctx: GoEmitContext,
+  signal: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr },
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  signalType: TypeInfo | undefined,
+): string {
+  const computed = ctx.computedSignalSeed(
+    { ...signal, type: signal.type ?? { kind: 'unknown', raw: 'unknown' } },
+    propsParams,
+    propFallbackVars,
+  )
+  return computed ?? getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signalType, signal.parsed)
+}
+
 /** Seed shapes that compute a value; a top-level `??` keeps its hoisted prop fallback. */
 function isComputedSeedShape(e: ParsedExpr): boolean {
   switch (e.kind) {
@@ -511,13 +531,10 @@ function evalEnvValueGo(
     // source-keyed map, so a field the literal omits stays absent for
     // `??` instead of reading as the Go zero value of a struct field.
     const literal = signal.parsed ? seedLiteralToEvalGo(ctx, signal.parsed) : null
-    const computed = literal === null ? computedPropSeedGo(ctx, signal.parsed, propsParams, propFallbackVars) : null
     if (literal !== null) {
       goExpr = literal
-    } else if (computed !== null) {
-      goExpr = computed
     } else {
-      goExpr = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
+      goExpr = signalSeedValueGo(ctx, signal, propsParams, propFallbackVars, signal.type)
       // `0` is also its answer for a seed it can't resolve; the evaluator
       // would compute over that stand-in instead of the real value.
       if (goExpr === '0' && signal.initialValue.trim() !== '0') return null
@@ -873,7 +890,7 @@ export function memoInitialFromParsedBody(
         } else {
           const sig = signals.find(s => s.getter === name)
           if (sig) {
-            goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, undefined, sig.parsed)
+            goExpr = signalSeedValueGo(ctx, sig, propsParams, propFallbackVars, undefined)
           } else {
             const p = propsParams.find(pp => pp.name === name)
             if (p) goExpr = propRef(name)
@@ -994,7 +1011,7 @@ export function memoInitialFromParsedBody(
         let condGo: string | null = null
         const condSignal = signals.find(sg => sg.getter === condName)
         if (condSignal) {
-          condGo = getSignalInitialValueAsGo(ctx, condSignal.initialValue, propsParams, propFallbackVars, undefined, condSignal.parsed)
+          condGo = signalSeedValueGo(ctx, condSignal, propsParams, propFallbackVars, undefined)
         } else {
           const condMemo = (ctx.state.currentMemos ?? []).find(m => m.name === condName)
           // A condition memo already on the resolution stack (self- or
@@ -1416,7 +1433,7 @@ export function resolveGetterValueAsGo(
 ): string | null {
   const signal = signals.find(s => s.getter === name)
   if (signal) {
-    return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type, signal.parsed)
+    return signalSeedValueGo(ctx, signal, propsParams, propFallbackVars, signal.type)
   }
   const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
   if (memo) {

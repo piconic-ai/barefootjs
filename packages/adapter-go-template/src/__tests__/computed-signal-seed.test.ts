@@ -9,6 +9,22 @@ import { describe, test, expect } from 'bun:test'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
 
+function compileTypes(params: string, init: string, body = '<p title={String(v())}>x</p>'): string {
+  const src = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T(${params}) {
+  const [v] = createSignal(${init})
+  return ${body}
+}
+`
+  const adapter = new GoTemplateAdapter()
+  const result = compileJSX(src.trimStart(), 'T.tsx', { adapter, outputIR: true })
+  const irFile = result.files.find(f => f.type === 'ir')
+  if (!irFile) throw new Error('no IR')
+  return adapter.generate(JSON.parse(irFile.content) as ComponentIR).types
+}
+
 function seedOf(params: string, init: string): string {
   const src = `
 'use client'
@@ -52,5 +68,15 @@ describe('computed signal seed (#3519)', () => {
     [PROPS, '1 + 2'],
   ])('%s: %s keeps its existing seed', (params, init) => {
     expect(seedOf(params, init)).not.toContain('bf.EvalExpr(')
+  })
+
+  test.each([
+    ['props.n * 2', '{props.n}', 'int'],
+    ['props.n * 2', '{props.n.toFixed(1)}', 'float64'],
+    ['props.n * 1.5', '{props.n}', 'float64'],
+    ['props.n % 3', '{props.n}', 'interface{}'],
+  ])('%s with %s is typed %s', (init, text, goType) => {
+    const types = compileTypes('props: { n: number }', init, `<p data-v={v()}>${text}</p>`)
+    expect(types).toMatch(new RegExp(`^\\s+V ${goType.replace(/[{}]/g, '\\$&')} `, 'm'))
   })
 })
