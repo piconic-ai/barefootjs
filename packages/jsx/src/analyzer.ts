@@ -10,7 +10,7 @@ import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { buildPropAliasMap, coalesceDefaultText, signalPropSeed } from './props-binding.ts'
@@ -417,14 +417,20 @@ export function analyzeComponent(
   // parser dropped a statement it couldn't represent) or one that doesn't fold
   // (imperative residue) leaves `parsed` undefined and consumers keep their
   // existing `parsedBlock` fallback.
-  const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
-  for (const memo of ctx.memos) {
-    if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete) continue
-    const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })
-    if (folded.ok) memo.parsed = folded.expr
-  }
+  foldBlockMemos(ctx)
 
   return ctx
+}
+
+function foldBlockMemos(ctx: AnalyzerContext): void {
+  const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
+  for (const memo of ctx.memos) {
+    if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete || clientDirectiveMemos.has(memo)) continue
+    const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })
+    if (!folded.ok) continue
+    memo.parsed = folded.expr
+    if (blockTextTypedMemos.has(memo)) memo.type = foldType(folded.expr)
+  }
 }
 
 /**
@@ -1606,6 +1612,7 @@ function collectFactorySignal(
       : new Set<string>()
 
   let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+  let blockTyped = false
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else if (initialNode.kind !== 'absent') {
@@ -1964,6 +1971,17 @@ function isFunctionScopeFree(fn: ts.ArrowFunction | ts.FunctionExpression): bool
 }
 
 /**
+ * Whether calling the callback yields its body's value in the callback's
+ * absence: not async (a Promise), not a generator (an iterator), and not
+ * bound to its own scope (`isFunctionScopeFree`).
+ */
+function isValueReturningCallback(fn: ts.ArrowFunction | ts.FunctionExpression): boolean {
+  if (ts.isFunctionExpression(fn) && fn.asteriskToken) return false
+  if (fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return false
+  return isFunctionScopeFree(fn)
+}
+
+/**
  * The expression a memo's callback evaluates to, as the analyzer reads it from
  * the callback node (#3510). A zero-parameter arrow or `function` expression
  * yields its body: the expression body, or the operand of a block that is a
@@ -1977,11 +1995,7 @@ function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean }
   let fn: ts.Expression = callback
   while (ts.isParenthesizedExpression(fn)) fn = fn.expression
   if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return { node: callback, call: true }
-  const plain = fn.parameters.length === 0 &&
-    !(ts.isFunctionExpression(fn) && fn.asteriskToken) &&
-    !fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) &&
-    isFunctionScopeFree(fn)
-  if (!plain) return { node: callback, call: true }
+  if (fn.parameters.length > 0 || !isValueReturningCallback(fn)) return { node: callback, call: true }
   if (!ts.isBlock(fn.body)) return { node: fn.body, call: false }
   const [only] = fn.body.statements
   if (fn.body.statements.length === 1 && ts.isReturnStatement(only) && only.expression) {
@@ -2010,7 +2024,9 @@ function memoStructuredBody(
   // callback are unwrapped (#3510).
   let memoFn: ts.Node | undefined = callback
   while (memoFn && ts.isParenthesizedExpression(memoFn)) memoFn = memoFn.expression
-  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || !isFunctionScopeFree(memoFn))) {
+  // A parameter binds names the body reads (`(label = 'inner') => label`),
+  // which a tree of the body alone would read as component scope (#3523).
+  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || memoFn.parameters.length > 0 || !isValueReturningCallback(memoFn))) {
     memoFn = undefined
   }
   const parsedBody =
@@ -2089,6 +2105,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   // adapter renders the field as `interface{}`, even though the
   // expression is clearly a number.
   let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+  let blockTyped = false
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else {
@@ -2099,6 +2116,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     const fn = callExpr.arguments[0]
     if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
       type = inferTypeFromValue(ctx.getJS(fn.body).trim())
+      blockTyped = ts.isBlock(fn.body)
     }
   }
 
@@ -2119,7 +2137,10 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     const sig = fnType.getCallSignatures()[0]
     if (sig) {
       const inferred = tsTypeToTypeInfo(ctx.checker.getReturnTypeOfSignature(sig), ctx.checker)
-      if (inferred && inferred.kind !== 'unknown') type = inferred
+      if (inferred && inferred.kind !== 'unknown') {
+        type = inferred
+        blockTyped = false
+      }
     }
   }
 
@@ -2127,7 +2148,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
 
   const bodyFields = body ? memoBodyFields(body, ctx) : {}
 
-  ctx.memos.push({
+  const memo: MemoInfo = {
     name,
     computation,
     ...bodyFields,
@@ -2142,8 +2163,58 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     computationFreeIdentifiers: callExpr.arguments[0]
       ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
       : new Set(),
-  })
+  }
+  ctx.memos.push(memo)
+  markBlockMemo(memo, blockTyped, body?.node, ctx)
 }
+
+/** Record what `foldBlockMemos` needs to know about a block memo (#3523). */
+function markBlockMemo(memo: MemoInfo, blockTyped: boolean, bodyNode: ts.Node | undefined, ctx: AnalyzerContext): void {
+  if (blockTyped) blockTextTypedMemos.add(memo)
+  if (bodyNode && containsClientDirective(bodyNode, ctx.sourceFile)) clientDirectiveMemos.add(memo)
+}
+
+/**
+ * Whether a `/* @client *​/` directive comment precedes any node inside
+ * `root` (`return /* @client *​/ d.toLocaleDateString(…)`). A block memo
+ * carrying one is left unfolded, so it stays client-only (#3523).
+ */
+function containsClientDirective(root: ts.Node, sourceFile: ts.SourceFile): boolean {
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    const trivia = sourceFile.text.slice(node.pos, node.getStart(sourceFile))
+    BLOCK_COMMENT_RE.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = BLOCK_COMMENT_RE.exec(trivia)) !== null) {
+      if (CLIENT_DIRECTIVE_INTERIOR_RE.test(m[1])) found = true
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(root, visit)
+  return found
+}
+
+/** Block memos that carry a `/* @client *​/` directive and so are not folded. */
+const clientDirectiveMemos = new WeakSet<MemoInfo>()
+
+/**
+ * A block memo's type from its fold (#3523): the block's text read as
+ * `object`, but its value is the fold. A returned object literal stays
+ * `object`. A logical fold (`k ?? false`) is `unknown`: its value can be
+ * either side, while the text heuristic would read the fallback's type.
+ */
+function foldType(expr: ParsedExpr): TypeInfo {
+  if (expr.kind === 'object-literal') return { kind: 'object', raw: 'object' }
+  if (expr.kind === 'logical') return { kind: 'unknown', raw: 'unknown' }
+  return inferTypeFromValue(stringifyParsedExpr(expr))
+}
+
+/**
+ * Memos whose type was read off a block body's text, where `{` reads as an
+ * object. Their type is re-inferred from the block's fold (#3523).
+ */
+const blockTextTypedMemos = new WeakSet<MemoInfo>()
 
 // =============================================================================
 // Effect Detection & Collection

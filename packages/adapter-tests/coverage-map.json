@@ -6246,6 +6246,29 @@
         "text"
       ]
     },
+    "memo-multi-statement-block": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-string-concat-signal": {
       "kinds": [
         "binary",
