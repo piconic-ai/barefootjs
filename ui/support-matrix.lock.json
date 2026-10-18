@@ -12390,10 +12390,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L171"
       },
       "example": {
-        "fixture": "children-passthrough-no-children",
-        "description": "An unguarded {props.children} renders nothing when the caller passes no children",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-passthrough-no-children.ts",
-        "code": "props.header"
+        "fixture": "children-named-loop-row-escaped",
+        "description": "A loop row named children is escaped text, not the children prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-named-loop-row-escaped.ts",
+        "code": "props.kids"
       }
     },
     "object-literal": {

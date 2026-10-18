@@ -9,7 +9,6 @@
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "ErbAdapter.convertExpressionToRuby": 1,
-      "ErbAdapter.isChildrenValueExpr": 1,
       "ErbAdapter.tryLowerStyleObject": 1
     },
     "packages/adapter-go-template/src/adapter/analysis/static-child-loop-bake.ts": {
@@ -87,9 +86,6 @@
     },
     "packages/jsx/src/ir-to-client-js/control-flow/plan/build-lazy-row.ts": {
       "attrFreeIdentifiers": 1
-    },
-    "packages/jsx/src/ir-to-client-js/safe-html.ts": {
-      "isChildrenPassthroughExpr": 1
     }
   }
 }

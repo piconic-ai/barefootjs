@@ -1486,6 +1486,33 @@
         "text"
       ]
     },
+    "children-named-local-escaped": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-named-loop-row-escaped": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "children-nullish-fallback": {
       "kinds": [
         "identifier",

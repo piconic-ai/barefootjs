@@ -52,7 +52,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveBodyPropAliases, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -1000,6 +1000,81 @@ function parseValueExpr(trimmed: string): ParsedExpr {
   return parseExpression(trimmed.startsWith('{') ? `(${trimmed})` : trimmed)
 }
 
+const childrenAliasCache = new WeakMap<AnalyzerContext, ReadonlySet<string>>()
+
+/**
+ * The body locals that alias the children prop with no default
+ * (`const { children: kids } = props`, `const kids = props.children`).
+ */
+function childrenAliasNames(analyzer: AnalyzerContext): ReadonlySet<string> {
+  let names = childrenAliasCache.get(analyzer)
+  if (!names) {
+    const aliases = resolveBodyPropAliases(analyzer.localConstants, analyzer.propsObjectName)
+    names = new Set([...aliases].filter(([, a]) => a.key === 'children' && !a.hasDefault).map(([local]) => local))
+    childrenAliasCache.set(analyzer, names)
+  }
+  return names
+}
+
+/**
+ * How `parsed` reads the component's own `children` prop
+ * (`IRExpression.childrenRead`, #3539): a bare `children` the props
+ * destructure binds or `<propsObject>.children`, that read on the left of
+ * `?? ''`, or on the left of another `?? fallback`. A name the enclosing loop
+ * rows bind (`bound`) shadows the prop; a component-body `const children`
+ * cannot coexist with a destructured `children` param, so the destructure is
+ * the binding when it lists the name.
+ */
+function childrenReadOf(
+  parsed: ParsedExpr,
+  analyzer: AnalyzerContext,
+  bound: ReadonlySet<string>,
+): IRExpression['childrenRead'] | null {
+  if (parsed.kind === 'logical' && parsed.op === '??') {
+    if (!childrenReadOf(parsed.left, analyzer, bound)) return null
+    const right = parsed.right
+    return right.kind === 'literal' && right.value === '' ? 'nullish-empty' : 'nullish-fallback'
+  }
+  if (parsed.kind === 'identifier') {
+    if (bound.has(parsed.name)) return null
+    const isProp = analyzer.propsParams.some(p => p.name === parsed.name && (p.sourceName ?? p.name) === 'children')
+    return isProp || childrenAliasNames(analyzer).has(parsed.name) ? 'bare' : null
+  }
+  const isPropsMember =
+    parsed.kind === 'member' &&
+    !parsed.computed &&
+    parsed.property === 'children' &&
+    parsed.object.kind === 'identifier' &&
+    parsed.object.name === analyzer.propsObjectName &&
+    !bound.has(parsed.object.name)
+  return isPropsMember ? 'bare' : null
+}
+
+/**
+ * Attach `parsed` to every expression-valued attribute / prop so adapters can
+ * lower from the tree instead of re-parsing the string. Element attrs,
+ * component props (e.g. `opts={{ … }}` → Go map), and a provider's `value`
+ * prop all carry it; only `expression` values do (a `spread` / `template`
+ * value can't be the inline object literal the consumers read).
+ */
+function attachParsedAttrValues(
+  node: IRNode,
+  parse: (trimmed: string) => ParsedExpr,
+  parseValue: (trimmed: string) => ParsedExpr,
+): void {
+  const attach = (value: { kind: string; expr?: string; parsed?: ParsedExpr }, spreads: boolean): void => {
+    const trimmed = value.kind === 'expression' || (spreads && value.kind === 'spread') ? value.expr?.trim() : undefined
+    if (trimmed) value.parsed = value.kind === 'spread' ? parse(trimmed) : parseValue(trimmed)
+  }
+  if (node.type === 'element') {
+    for (const attr of node.attrs) attach(attr.value, true)
+  } else if (node.type === 'component') {
+    for (const prop of node.props) attach(prop.value, false)
+  } else if (node.type === 'provider') {
+    attach(node.valueProp.value, false)
+  }
+}
+
 /** Shared empty-set default for `attachParsedExpressions`/`resolveCallbackMethodFunctionReferences`'s `bound` param — avoids a fresh allocation per call when nothing is shadowed. */
 const EMPTY_BOUND: ReadonlySet<string> = new Set()
 
@@ -1025,38 +1100,13 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
     if (trimmed) node.parsed = parse(trimmed)
+    const childrenRead = node.parsed ? childrenReadOf(node.parsed, analyzer, bound) : null
+    if (childrenRead) node.childrenRead = childrenRead
   } else if (node.type === 'conditional' || node.type === 'if-statement') {
     const trimmed = node.condition.trim()
     if (trimmed) node.parsedCondition = parse(trimmed)
   }
-  // Attach `parsed` to every expression-valued attribute / prop so adapters can
-  // lower from the tree instead of re-parsing the string. Element attrs,
-  // component props (e.g. `opts={{ … }}` → Go map), and a provider's `value`
-  // prop all carry it; only `expression` values do (a `spread` / `template`
-  // value can't be the inline object literal the consumers read).
-  if (node.type === 'element') {
-    for (const attr of node.attrs) {
-      if (attr.value.kind === 'expression') {
-        const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parseValue(trimmed)
-      } else if (attr.value.kind === 'spread') {
-        const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parse(trimmed)
-      }
-    }
-  } else if (node.type === 'component') {
-    for (const prop of node.props) {
-      if (prop.value.kind === 'expression') {
-        const trimmed = prop.value.expr.trim()
-        if (trimmed) prop.value.parsed = parseValue(trimmed)
-      }
-    }
-  } else if (node.type === 'provider') {
-    if (node.valueProp.value.kind === 'expression') {
-      const trimmed = node.valueProp.value.expr.trim()
-      if (trimmed) node.valueProp.value.parsed = parseValue(trimmed)
-    }
-  }
+  attachParsedAttrValues(node, parse, parseValue)
   switch (node.type) {
     case 'element':
     case 'component':
@@ -1083,6 +1133,8 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
       const loopBound = new Set(bound)
       loopBound.add(node.param)
       if (node.index) loopBound.add(node.index)
+      // A destructured row (`({ children }) => …`) binds its names, not `param`.
+      for (const binding of node.paramBindings ?? []) loopBound.add(binding.name)
       for (const child of node.children) attachParsedExpressions(child, analyzer, loopBound)
       // Loops also hold expression nodes off the main `children` array.
       if (node.childComponent) {
