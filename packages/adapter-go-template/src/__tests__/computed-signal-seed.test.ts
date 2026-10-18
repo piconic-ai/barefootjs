@@ -111,13 +111,6 @@ describe('call and member seeds (#3540)', () => {
     expect(seedOf(params, init)).toContain('bf.EvalExpr(')
   })
 
-  test('a prop seed outside the evaluator refuses instead of baking a zero value', () => {
-    const { errors } = generate(PROPS, "(props.label ?? '').padStart(3, '0')")
-    expect(errors.filter(e => e.code === 'BF101').map(e => e.message)).toEqual([
-      expect.stringContaining("Initial value '(props.label ?? '').padStart(3, '0')' has no Go template lowering"),
-    ])
-  })
-
   test('the legacy row seed `(props.X ?? []).map(…)` keeps the prop field', () => {
     const { types, errors } = generate('props: { rows?: Row[] }', '(props.rows ?? []).map(r => ({ ...r }))')
     expect(errors).toEqual([])

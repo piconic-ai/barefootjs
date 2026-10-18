@@ -8,7 +8,6 @@
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 import {
   asCallbackMethodCall,
-  freeIdentifiers,
   freeVarsInBody,
   isNullishLiteral,
   materializeGetterCalls,
@@ -156,13 +155,6 @@ export function convertInitialValue(
   preParsed?: ParsedExpr,
   /** The destination is an `interface{}` field that keeps a nillable seed whole (#3323). */
   ownNillableField = false,
-  /**
-   * The value is a signal's own seed, which has no other lowering: a prop
-   * read it cannot bake refuses (BF101) rather than baking the zero value
-   * (#3540). A loop source const reads the zero value as "not baked" and
-   * takes another path, so it leaves this off.
-   */
-  refuseUnloweredProp = false,
 ): string {
   // Literal unions collapse to their backing primitive the same way
   // `typeInfoToGo` collapses the field's type — the two MUST agree, or a
@@ -251,17 +243,6 @@ export function convertInitialValue(
     })
   }
 
-  // Every branch below bakes a literal or the type's zero value. A seed that
-  // reads a prop and lands on a zero value has no lowering for that read, so
-  // it refuses (BF101) instead of baking `0` / `""` / `nil` in its place
-  // (#3540). A member chain above already refused.
-  const zero = (goZero: string): string => {
-    if (refuseUnloweredProp && !memberSeed && !embedded) {
-      refuseUnloweredPropSeed(ctx, value, preParsed, propsParams)
-    }
-    return goZero
-  }
-
   // A `T | undefined`/`T | null` union's literal initial value silently fell
   // through to `nil` before #3061: `collapseLiteralUnion` above
   // intentionally leaves this heterogeneous union alone (member families
@@ -292,7 +273,7 @@ export function convertInitialValue(
       if (preParsed?.kind === 'literal' && preParsed.literalType === 'boolean' && typeof preParsed.value === 'boolean') {
         return preParsed.value ? 'true' : 'false'
       }
-      return value === 'true' ? 'true' : zero('false')
+      return value === 'true' ? 'true' : 'false'
     }
     if (literalTypeInfo.primitive === 'number') {
       // Structural first — `numberLiteralRawGo` unwraps a leading unary minus
@@ -306,7 +287,7 @@ export function convertInitialValue(
       // zero-value fallback, regardless of the field's Go type).
       if (/^-?\d+$/.test(value)) return value
       if (/^-?\d+\.\d+$/.test(value)) return value
-      return zero('0')
+      return '0'
     }
     if (literalTypeInfo.primitive === 'string') {
       // Structural first: `JSON.stringify` re-quotes/escapes the literal's
@@ -335,12 +316,12 @@ export function convertInitialValue(
           if (chainGo !== null) return chainGo
         }
       }
-      return zero('""')
+      return '""'
     }
   }
 
   if (literalTypeInfo.kind === 'array') {
-    return jsLiteralToGo(ctx, literalTypeInfo, preParsed) ?? zero('nil')
+    return jsLiteralToGo(ctx, literalTypeInfo, preParsed) ?? 'nil'
   }
 
   // A string type-alias keeps its string value instead of falling to nil.
@@ -350,7 +331,7 @@ export function convertInitialValue(
       if (value.startsWith("'") || value.startsWith('"')) {
         return value.replace(/'/g, '"')
       }
-      return zero('""')
+      return '""'
     }
     // A struct-backed `interface` kind (an explicitly-typed object signal,
     // `createSignal<User>({...})`) — #2168 signal-object-field. Mirrors the
@@ -371,7 +352,7 @@ export function convertInitialValue(
       // correct fallback here — mirrors this function's own docstring
       // ("falls back to the type's zero value") for every other typed
       // branch above.
-      return zero(`${literalTypeInfo.raw}{}`)
+      return `${literalTypeInfo.raw}{}`
     }
   }
 
@@ -393,40 +374,7 @@ export function convertInitialValue(
     }
   }
 
-  return zero('nil')
-}
-
-/**
- * BF101 for a seed that reads a prop (`props.label`, a destructured `label`)
- * but that no lowering in {@link convertInitialValue} could bake (#3540):
- * it is outside the runtime evaluator's subset, and not a prop passthrough.
- * Reported once per seed text.
- */
-function refuseUnloweredPropSeed(
-  ctx: GoEmitContext,
-  value: string,
-  preParsed: ParsedExpr | undefined,
-  propsParams: readonly { name: string }[] | undefined,
-): void {
-  // An object or array literal spreading a prop is refused where the
-  // template reads it (#2700), which a client-only read escapes.
-  if (!preParsed || preParsed.kind === 'object-literal' || preParsed.kind === 'array-literal') return
-  const propsObject = ctx.state.propsObjectName
-  const readsProp = [...(freeIdentifiers(preParsed) ?? [])].some(
-    name => name === propsObject || (propsParams ?? []).some(p => p.name === name),
-  )
-  if (!readsProp) return
-  const message = `Initial value '${value}' has no Go template lowering — it reads a prop, but it is outside the runtime evaluator's subset and is not a plain prop read, so its value cannot be baked into the constructor.`
-  if (ctx.state.errors.some(e => e.message === message)) return
-  ctx.state.errors.push({
-    code: 'BF101',
-    severity: 'error',
-    message,
-    loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-    suggestion: {
-      message: 'Pass the computed value as its own prop, or seed from the prop alone and derive the rest with a memo.',
-    },
-  })
+  return 'nil'
 }
 
 /**

@@ -32,7 +32,7 @@ import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/me
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isBoxedNumericMemoBody, isEvaluatedMemo, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
-import { propMemberSeedGoType } from '../value/prop-member-seed.ts'
+import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
 import { convertInitialValue } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
 
@@ -159,17 +159,6 @@ function numericArithmeticSeedGoType(
   }
   if (!parsed || (parsed.kind !== 'binary' && !isMathMinMax(parsed)) || !visit(parsed)) return null
   return float ? 'float64' : 'int'
-}
-
-/** A `Math.max(…)` / `Math.min(…)` call. */
-function isMathMinMax(e: ParsedExpr): e is Extract<ParsedExpr, { kind: 'call' }> {
-  return (
-    e.kind === 'call' &&
-    e.callee.kind === 'member' &&
-    e.callee.object.kind === 'identifier' &&
-    e.callee.object.name === 'Math' &&
-    (e.callee.property === 'max' || e.callee.property === 'min')
-  )
 }
 
 /**
@@ -430,5 +419,5 @@ export function signalSeedGo(
   // child Input keeps the asserted form.
   const ownNillableField = nillableDest && (
     isNillableSeedSignal(ctx, signal) || propMemberSeedGoType(ctx, signal) === 'interface{}')
-  return convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField, true)
+  return convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField)
 }
