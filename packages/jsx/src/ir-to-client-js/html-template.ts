@@ -2124,26 +2124,32 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
  * Returns false if the component has:
  * - Loops (which use dynamic signal arrays)
  * - Child components (which can't be fully represented in templates)
- * - Signal calls in expressions (like todos().length)
- * - References to local variables not available at module scope (#343)
+ * - A free reference that the module-scope template lambda cannot reach:
+ *   a signal getter or memo (`todos().length`, `label + count()`), or a local
+ *   variable not available at module scope (#343)
  *
  * Components that fail this check should not have registerTemplate() generated
  * as the template would reference undefined variables at module scope.
  *
+ * The decision reads only the IR's free identifiers (`origin.freeRefs` for
+ * expressions and conditions, `freeIdentifiers` for attributes), never the
+ * expression text, so it does not depend on operand order (#3509).
+ *
  * @param node - IR node to check
- * @param propNames - Set of prop names (safe to reference via props parameter)
+ * @param reactiveGetterNames - Signal getter and memo names (not callable in the template lambda)
  * @param inlinableConstants - Constants that can be substituted with their values
  * @param unsafeLocalNames - Local names that cannot be used in module-scope templates
  */
 export function canGenerateStaticTemplate(
   node: IRNode,
-  propNames: Set<string>,
+  reactiveGetterNames: ReadonlySet<string>,
   inlinableConstants?: Map<string, string>,
   unsafeLocalNames?: Set<string>
 ): boolean {
-  const hasUnsafeRef = (freeIds: ReadonlySet<string> | undefined): boolean => {
-    return !!(unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIds, unsafeLocalNames))
-  }
+  const recurse = (child: IRNode): boolean =>
+    canGenerateStaticTemplate(child, reactiveGetterNames, inlinableConstants, unsafeLocalNames)
+  const hasUnreachableRef = (freeIds: ReadonlySet<string> | undefined): boolean =>
+    setIntersects(freeIds, reactiveGetterNames) || setIntersects(freeIds, unsafeLocalNames)
 
   switch (node.type) {
     case 'loop':
@@ -2153,59 +2159,32 @@ export function canGenerateStaticTemplate(
       return false
 
     case 'expression':
-      if (hasUnsafeRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
-      // Use AST-derived flag when available, fall back to string check for older IR
-      if ((node.hasFunctionCalls ?? node.expr.includes('()')) && !isSimplePropExpression(node.expr, propNames)) {
-        return false
-      }
-      return true
+      return !hasUnreachableRef(freeIdsFromRefs(node.origin?.freeRefs))
 
     case 'element':
       for (const attr of node.attrs) {
-        if (attr.name === '...') {
-          // Computed local spreads are now handled by spreadAttrs() at runtime.
-          // Only check for unsafe references that would fail at module scope.
-          const valueStr = attrValueToString(attr.value)
-          if (valueStr && hasUnsafeRef(attr.freeIdentifiers)) return false
-          if (valueStr && valueStr.includes('()') && !isSimplePropExpression(valueStr, propNames)) return false
-          continue
-        }
-        // Only `expression` / `template` carry runtime references worth probing.
-        if (attr.value.kind === 'expression' || attr.value.kind === 'template' || attr.value.kind === 'spread') {
-          const valueStr = attrValueToString(attr.value)
-          if (valueStr) {
-            if (hasUnsafeRef(attr.freeIdentifiers)) return false
-            if (valueStr.includes('()') && !isSimplePropExpression(valueStr, propNames)) {
-              return false
-            }
-          }
-        }
+        // Only `expression` / `template` / `spread` carry runtime references
+        // worth probing. A spread (`{...rest}`) of a computed local is handled
+        // by spreadAttrs() at runtime, so the same reachability check applies.
+        const probes = attr.name === '...' || attr.value.kind === 'expression' ||
+          attr.value.kind === 'template' || attr.value.kind === 'spread'
+        if (probes && attrValueToString(attr.value) && hasUnreachableRef(attr.freeIdentifiers)) return false
       }
-      return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
+      return node.children.every(recurse)
 
     case 'conditional':
-      if (hasUnsafeRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
-      if (node.condition.includes('()') && !isSimplePropExpression(node.condition, propNames)) {
-        return false
-      }
-      return canGenerateStaticTemplate(node.whenTrue, propNames, inlinableConstants, unsafeLocalNames) &&
-             canGenerateStaticTemplate(node.whenFalse, propNames, inlinableConstants, unsafeLocalNames)
+      if (hasUnreachableRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
+      return recurse(node.whenTrue) && recurse(node.whenFalse)
 
     case 'fragment':
-      return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
+      return node.children.every(recurse)
 
     case 'if-statement':
-      if (!canGenerateStaticTemplate(node.consequent, propNames, inlinableConstants, unsafeLocalNames)) {
-        return false
-      }
-      if (node.alternate && !canGenerateStaticTemplate(node.alternate, propNames, inlinableConstants, unsafeLocalNames)) {
-        return false
-      }
-      return true
+      return recurse(node.consequent) && (!node.alternate || recurse(node.alternate))
 
     case 'provider':
     case 'async':
-      return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
+      return node.children.every(recurse)
 
     case 'text':
       return true
@@ -2903,26 +2882,3 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
   }
 }
 
-/**
- * Check if an expression is a simple prop-based expression.
- * Simple prop expressions access props only: todo.done, todo.text, props.name
- * Non-prop expressions call signals: todos(), todos().length, todos().filter(...)
- */
-export function isSimplePropExpression(expr: string, propNames: Set<string>): boolean {
-  const match = expr.match(/^([a-zA-Z_$][a-zA-Z0-9_$]*)/)
-  if (!match) {
-    // No identifier at start (e.g., template literal `${...}`) — check for signal calls
-    return !expr.includes('()')
-  }
-
-  const rootIdent = match[1]
-  if (propNames.has(rootIdent)) {
-    // Even if root is a prop name, calling it as a function means it's a signal getter
-    const rest = expr.slice(rootIdent.length)
-    if (rest.startsWith('(')) return false
-    return true
-  }
-  if (expr.includes('()')) return false
-
-  return true
-}
