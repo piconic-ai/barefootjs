@@ -75,6 +75,28 @@ describe('constant inlining on the tree (#3535)', () => {
   })
 })
 
+/** Runs the registered template lambda against `props`, as a CSR mount would. */
+function renderTemplate(js: string, props: Record<string, unknown>): string {
+  const line = templateOf(js)
+  const lambda = line.slice(line.indexOf('template: (_p) =>') + 'template: '.length).replace(/ \}\)\s*$/, '')
+  const escape = (v: unknown) => String(v ?? '')
+  const run = new Function('escapeAttr', 'escapeText', 'escapeTextOrMarkup', 'markupOrEmpty', `return (${lambda})`)
+  return run(escape, escape, escape, escape)(props)
+}
+
+describe('computed object keys (#3535 review)', () => {
+  test('a constant in a computed key is inlined, so the template runs', () => {
+    const js = clientJs("const size = 'lg'", button('data-o={JSON.stringify({ [size]: props.label })}'))
+    expect(templateOf(js)).toContain("[('lg')]")
+    expect(() => renderTemplate(js, { label: 'hello' })).not.toThrow()
+  })
+
+  test('a compound computed key is inlined too', () => {
+    const js = clientJs("const size = 'lg'", button("data-o={JSON.stringify({ [size + '!']: props.label })}"))
+    expect(() => renderTemplate(js, { label: 'hello' })).not.toThrow()
+  })
+})
+
 describe('resolveChainedRefs', () => {
   test('resolves a chain on the tree, leaving strings and member names alone', () => {
     const constants = new Map([
@@ -85,6 +107,15 @@ describe('resolveChainedRefs', () => {
     resolveChainedRefs(constants)
     expect(constants.get('cls')).toBe("`btn base-${('lg')}`")
     expect(constants.get('opts')).toBe("({ base: ('lg'), other: o.base })")
+  })
+
+  test('a computed key in a chained constant is resolved', () => {
+    const constants = new Map([
+      ['size', "'lg'"],
+      ['obj', '({ [size]: 1 })'],
+    ])
+    resolveChainedRefs(constants)
+    expect(constants.get('obj')).toBe("({ [('lg')]: 1 })")
   })
 
   test('a value brought in by a substitution is resolved too', () => {

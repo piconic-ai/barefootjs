@@ -264,8 +264,10 @@ function csrSubstituteOnce(
     }
 
     // Property assignment in object literal: `{ X: value }` — `X` is a
-    // key, not a free ref. `value` is.
+    // key, not a free ref. `value` is, and so is a computed key's
+    // expression (`{ [size]: value }`, #3535).
     if (ts.isPropertyAssignment(node)) {
+      if (ts.isComputedPropertyName(node.name)) visit(node.name.expression)
       visit(node.initializer)
       return
     }
