@@ -172,61 +172,20 @@ export function expandConstantForReactivity(
 }
 
 /**
- * Check if a signal is initialized from a prop value (controlled signal pattern).
- * Returns the prop name if the signal's initial value references a prop, null otherwise.
+ * The prop a signal is controlled by: its initializer reads that declared
+ * prop itself (not a member of it), bare or with a `??` / `||` fallback (`createSignal(props.checked)`,
+ * `createSignal(value ?? 0)`), so a createEffect re-syncs it when the
+ * parent's prop changes. Read from the analyzer's `SignalInfo.propSeed`, the
+ * same field `resolveSignalInitialValue` reads, never from the text (#3508).
  *
- * Detects patterns like:
- *   const [controlledChecked, setControlledChecked] = createSignal(props.checked)
- *   const [controlledValue, setControlledValue] = createSignal(value)
- *
- * These signals need a createEffect to sync with parent's prop changes.
- *
- * Note: Props starting with "default" (e.g., defaultChecked, defaultValue) are
- * excluded as they are initial values, not controlled props.
+ * Props starting with "default" (`defaultChecked`) are initial values, not
+ * controlled props, and an async factory's value (`createQuery(fn, {
+ * initial: props.posts })`, #3165) takes `initial` once, then comes from its
+ * own requests.
  */
-export function getControlledPropName(
-  signal: SignalInfo,
-  propsParams: ParamInfo[],
-  propsObjectName: string | null = null
-): string | null {
-  // An async factory's value (`createQuery(fn, { initial: props.posts })`,
-  // #3165) takes `initial` once; later values come from its own requests, so
-  // it is never re-synced from the prop.
-  if (signal.factory) return null
-  const initialValue = signal.initialValue.trim()
-  const isDefaultProp = (propName: string) => propName.startsWith('default')
-  // Use the source-level props name for pattern matching (not the generated PROPS_PARAM)
-  const propsName = propsObjectName ?? 'props'
-
-  // Direct <propsName>.X reference, optionally with ?? or || fallback
-  // e.g., props.checked, p.value ?? 0, props.initial || ''
-  const propsPattern = new RegExp(`^${propsName}\\.(\\w+)(?:\\s*(?:\\?\\?|\\|\\|)\\s*.+)?$`)
-  const propsMatch = initialValue.match(propsPattern)
-  if (propsMatch) {
-    const propName = propsMatch[1]
-    if (propsParams.some((p) => p.name === propName) && !isDefaultProp(propName)) {
-      return propName
-    }
-  }
-
-  // Simple prop name (e.g., checked in createSignal(checked))
-  if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initialValue)) {
-    if (propsParams.some((p) => p.name === initialValue) && !isDefaultProp(initialValue)) {
-      return initialValue
-    }
-  }
-
-  // Prop with nullish coalescing or logical OR fallback
-  // e.g., checked ?? false, props.checked ?? false, p.value || ''
-  const fallbackPattern = new RegExp(`^(?:${propsName}\\.)?(\\w+)\\s*(?:\\?\\?|\\|\\|)\\s*.+$`)
-  const fallbackMatch = initialValue.match(fallbackPattern)
-  if (fallbackMatch) {
-    const propName = fallbackMatch[1]
-    if (propsParams.some((p) => p.name === propName) && !isDefaultProp(propName)) {
-      return propName
-    }
-  }
-
-  return null
+export function getControlledPropName(signal: SignalInfo): string | null {
+  const seed = signal.propSeed
+  if (signal.factory || !seed || seed.nested || !seed.declared) return null
+  return seed.propName.startsWith('default') ? null : seed.propName
 }
 

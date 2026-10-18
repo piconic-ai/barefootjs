@@ -494,7 +494,7 @@
     },
     "packages/jsx/src/analyzer.ts": {
       "analyzeComponent": [
-        31
+        27
       ],
       "checkStatementsForReactiveFactoryArity": [
         73
@@ -519,9 +519,6 @@
       ],
       "collectImport": [
         32
-      ],
-      "collectMemo": [
-        36
       ],
       "detectReactiveFactory": [
         48
@@ -795,9 +792,6 @@
     "packages/jsx/src/ir-to-client-js/html-template.ts": {
       "buildLoopSkeletonTemplate": [
         62
-      ],
-      "canGenerateStaticTemplate": [
-        56
       ],
       "generateCsrTemplateWithOpts": [
         77

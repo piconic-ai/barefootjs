@@ -26,7 +26,7 @@
  */
 
 import ts from 'typescript'
-import { inferDefaultValue } from './utils.ts'
+import { inferDefaultValue, readsBareProp } from './utils.ts'
 import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
 import type { ConstantInfo, MemoInfo, SignalInfo } from '../types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -295,7 +295,7 @@ function csrSubstituteOnce(
     // Arrow function: bind params + any block-scoped locals declared
     // inside the body, recurse, unbind. Pre-collecting body locals
     // before descending matters for the IIFE shape that
-    // `extractMemoBodyExpr` produces for non-trivial memo bodies:
+    // `MemoInfo.bodyExpr` carries for non-trivial memo bodies:
     //
     //   (() => { const items = foo; return items.length })()
     //
@@ -458,28 +458,6 @@ export function extractFreeIdentifiersFromTemplateText(template: string): Set<st
 }
 
 /**
- * Reduce a memo's `() => expr` source to the expression that should be
- * substituted in for `memoName()`. Matches the extraction done by the
- * legacy `buildSignalAndMemoMaps` in `emit-registration.ts`:
- *
- *   - `() => expr`               → `expr`
- *   - `() => { return e; }`      → `e`
- *   - `() => { ...complex... }`  → `(() => { ...complex... })()`
- *
- * The IIFE form for non-trivial blocks keeps intermediate `const`/`let`
- * bindings in scope; inlining the block bare would dangle them.
- */
-export function extractMemoBodyExpr(computation: string): string {
-  const arrowMatch = computation.match(/^\(\)\s*=>\s*(.+)$/s)
-  if (!arrowMatch) return computation
-  const body = arrowMatch[1].trim()
-  if (!body.startsWith('{')) return body
-  const simpleReturn = body.match(/^\{\s*return\s+([\s\S]+?)\s*;?\s*\}$/)
-  if (simpleReturn) return simpleReturn[1]
-  return `(() => ${body})()`
-}
-
-/**
  * Which local consts are bare alias-hop chains that ultimately name a
  * substitutable signal/memo getter (`isGetter`) — e.g. `const
  * items__alias = items` where `items` is a signal getter. Returns
@@ -587,7 +565,7 @@ export function buildSignalMemoEnv(
     if (s.envReader) continue
     substitutions.set(s.getter, {
       kind: 'call',
-      replacement: normalizeSignalInitial(s, propsObjectName),
+      replacement: normalizeSignalInitial(s),
       freeIdentifiers: s.initialFreeIdentifiers ?? new Set(),
     })
     // A bare reference to the SETTER (`<Display update={setCount} />`,
@@ -612,12 +590,13 @@ export function buildSignalMemoEnv(
   for (const m of memos) {
     substitutions.set(m.name, {
       kind: 'call',
-      // Destructured mode (#2468): `templateComputation` (when present) has
+      // Destructured mode (#2468): `templateBodyExpr` (when present) has
       // bare destructured prop refs already rewritten to `_p.X` — the
       // spliced body lands in the module-scope template arrow, which is not
       // a closure over init's `const value = _p.value` extraction. Mirrors
-      // the signal `templateInitialValue` handling above (#2265).
-      replacement: extractMemoBodyExpr(m.templateComputation ?? m.computation),
+      // the signal `templateInitialValue` handling above (#2265). The body
+      // itself is read from the callback node by the analyzer (#3510).
+      replacement: m.templateBodyExpr ?? m.bodyExpr ?? 'undefined',
       freeIdentifiers: m.computationFreeIdentifiers ?? new Set(),
     })
   }
@@ -629,7 +608,8 @@ export function buildSignalMemoEnv(
 
 /**
  * Add the `?? <default>` SSR fallback to a signal's initial value when
- * the value is a bare `propsName.X` reference. Returns the value in raw
+ * the value is a bare `propsName.X` reference (`readsBareProp`, read from
+ * the analyzer's `SignalInfo.propSeed`, #3508). Returns the value in raw
  * (props.X) form — the `propsObjectName → _p` rewrite is deferred to
  * `rewritePropsObjectRef` at emit time so the post-substitution
  * `isInlinableInTemplate` check still sees bridged-arg shapes (#1138).
@@ -637,17 +617,15 @@ export function buildSignalMemoEnv(
  * The `??` fallback prevents literal `undefined` from leaking into the
  * SSR HTML when the prop is omitted — `inferDefaultValue` picks a
  * type-appropriate sentinel (`0` for number, `''` for string, etc.).
- * Skipped when the value already carries its own `??` so user-supplied
- * defaults aren't masked.
+ * Skipped when the value carries a fallback of its own (`??` / `||`) so
+ * user-supplied defaults aren't masked.
  */
-function normalizeSignalInitial(signal: SignalInfo, propsObjectName: string | null): string {
+function normalizeSignalInitial(signal: SignalInfo): string {
   const initialValue = signal.initialValue
-  const propsName = propsObjectName ?? 'props'
-  const propsPrefix = `${propsName}.`
   // An async factory's `initial` (#3165) renders exactly as given: an absent
   // prop means no obtained result, so the value is `undefined` on the server
   // too, never a type default.
-  if (!signal.factory && initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
+  if (!signal.factory && readsBareProp(signal)) {
     return `${initialValue} ?? ${inferDefaultValue(signal.type)}`
   }
   // Destructured mode (#2265): `templateInitialValue` (when present) has

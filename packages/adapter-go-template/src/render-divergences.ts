@@ -93,6 +93,8 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // instead of baking the non-nullish branch's zero value (`""`), so the
 // child's rest bag no longer receives `{"tag": ""}`.
 export const renderDivergences: RenderDivergences = {
+  // A signal seeded by `props.x || d` / `props.x && v` starts at the bare prop or nil.
+  'signal-prop-seed-logical-fallback': { limitation: 'logical-signal-seed' },
   // A props spread onto a child component: this adapter drops the spread (#3479).
   'component-spread-rest': { limitation: 'component-prop-spread' },
   'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },

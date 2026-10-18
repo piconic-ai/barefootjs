@@ -6270,6 +6270,14 @@
           }
         }
       },
+      "signal-prop-seed-logical-fallback": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "logical-signal-seed"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -6966,6 +6974,125 @@
           }
         }
       },
+      "unlowered-global-call": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "unlowered-global-call-precomputed"
+          }
+        }
+      },
       "unlowered-method-call": {
         "blade": {
           "kind": "refusal",
@@ -7283,6 +7410,10 @@
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
       },
+      "signal-prop-seed-logical-fallback": {
+        "description": "a signal seeded by `props.x || d` / `props.x && v` keeps its initializer as written on CSR (#3508)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-prop-seed-logical-fallback.ts"
+      },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
@@ -7322,6 +7453,10 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
+      },
+      "unlowered-global-call": {
+        "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call.ts"
       },
       "unlowered-method-call": {
         "description": "A method call outside the catalogue, outside a callback, refuses (BF101) instead of rendering a…",
@@ -7470,6 +7605,10 @@
       "static-nested-loop-ref-precomputed": {
         "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
+      },
+      "unlowered-global-call-precomputed": {
+        "description": "prop-precompute twin of unlowered-global-call — the value arrives as a prop (#3505)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call-precomputed.ts"
       },
       "unlowered-method-call-precomputed": {
         "description": "prop-precompute twin of unlowered-method-call — the comparison arrives as a prop (#3493)",
@@ -7795,6 +7934,19 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
+    "logical-signal-seed": {
+      "title": "A signal seeded by a logical expression over a prop",
+      "kind": "silent",
+      "given": "a signal whose initializer is a logical expression over a prop (`createSignal(props.label || 'none')`, `createSignal(props.flag && 'on')`)",
+      "expected": "the signal starts at the expression's value",
+      "actual": "seeds the bare prop (dropping a `||` fallback) or nil, so the server renders the wrong value",
+      "fixtures": [
+        "signal-prop-seed-logical-fallback"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
       "kind": "refusal",
@@ -8117,11 +8269,12 @@
     "unlowered-method-call": {
       "title": "A method call no template lowers",
       "kind": "refusal",
-      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`) outside any higher-order callback, directly or through a computed const it reads (`const keys = Object.keys(labels)`)",
+      "given": "a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare('m')`), or, with none, a method of a JavaScript global (`Date.now()`), outside any higher-order callback, directly or through a computed const it reads (`const keys = Object.keys(labels)`)",
       "expected": "the method runs and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "computed-const-read-unlowerable",
+        "unlowered-global-call",
         "unlowered-method-call"
       ],
       "adapters": [

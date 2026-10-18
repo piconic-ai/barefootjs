@@ -3860,6 +3860,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -4053,6 +4059,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -4276,6 +4288,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4309,6 +4327,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -4520,6 +4544,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -4728,6 +4758,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -4921,6 +4957,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -5132,6 +5174,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -5340,6 +5388,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -5539,6 +5593,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6082,6 +6142,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -6311,6 +6377,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6594,6 +6666,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6639,6 +6717,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6898,6 +6982,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -7154,6 +7244,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -7395,6 +7491,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -7654,6 +7756,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -7910,6 +8018,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -8160,6 +8274,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -8183,15 +8303,96 @@
     "index-access": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
@@ -8199,10 +8400,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
       },
       "example": {
-        "fixture": "record-index-lookup-via-child-prop",
-        "description": "Object literal indexed by a prop, passed to a child component prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-index-lookup-via-child-prop.ts",
-        "code": "classes[variant]"
+        "fixture": "unlowered-global-call",
+        "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call.ts",
+        "code": "Date[props.method]"
       }
     },
     "literal": {
@@ -8771,6 +8972,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
               ]
             },
             {
@@ -9978,6 +10185,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10373,6 +10586,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10560,6 +10779,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -10783,6 +11008,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10828,6 +11059,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11045,6 +11282,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11259,6 +11502,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11458,6 +11707,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11675,6 +11930,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11889,6 +12150,12 @@
               ]
             },
             {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -12094,6 +12361,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17582,6 +17855,12 @@
               ]
             },
             {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18340,6 +18619,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
             }
           ]
         },
@@ -18587,7 +18872,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "signal-prop-seed-logical-fallback",
+              "limitations": [
+                "logical-signal-seed"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
