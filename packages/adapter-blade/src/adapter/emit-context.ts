@@ -29,6 +29,8 @@ export interface BladeEmitContext {
 
   /** The undestructured props parameter's name (`props`), or `null` when the props are destructured. */
   readonly _propsObjectName: string | null
+  /** Whether `name` read here is a JavaScript global (`ComputedConstContext.isGlobal`), #3505. */
+  readonly _isGlobalName: (name: string) => boolean
 
   /**
    * Registered lowering-plugin matchers (#2057), bound to this component's

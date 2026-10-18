@@ -42,7 +42,7 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
-import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo } from './types.ts'
+import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -55,7 +55,7 @@ import {
 import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
-import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
+import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
 import { extractFreeIdentifiersFromText } from './ir-to-client-js/csr-substitute.ts'
@@ -414,7 +414,7 @@ function exprReferencesModuleClientSignal(expr: ts.Expression, ctx: TransformCon
 /**
  * Walk an expression AST to check if it contains any CallExpression.
  * Catches all call patterns: identifier(), obj.method(), fn?.(), IIFEs, etc.
- * Used by canGenerateStaticTemplate() to detect expressions unsafe for static rendering.
+ * Recorded on the IR as `hasFunctionCalls`.
  */
 function exprHasFunctionCalls(expr: ts.Expression): boolean {
   let found = false
@@ -2717,13 +2717,49 @@ function transformJsxFunctionCall(
   ctx: TransformContext,
   _isClientOnly: boolean
 ): IRNode {
+  return withHelperParamsSubstituted(callExpr, jsxFunc.params, ctx, () => {
+    const result = transformNode(jsxFunc.jsxReturn, ctx)
+    return result ?? {
+      type: 'expression' as const,
+      expr: 'null',
+      typeInfo: null,
+      reactive: false,
+      slotId: null,
+      loc: getSourceLocation(callExpr, ctx.sourceFile, ctx.filePath),
+      origin: {
+        phase: 'tick',
+        scope: 'template',
+        effect: 'pure',
+        freeRefs: [],
+      },
+    }
+  })
+}
+
+/**
+ * Run `build` with the helper's parameters substituted by the call's
+ * arguments, for both inliners (#569). The substitution is textual (`getJS`
+ * output), so the free references the built IR records still name the
+ * parameters, which resolve to nothing in the component. Afterwards each
+ * parameter reference is replaced by the argument's own free references
+ * (`rebindHelperParamRefs`), so a consumer that reads the IR instead of the
+ * text sees that `render(count())` reads the `count` signal (#3509).
+ */
+function withHelperParamsSubstituted(
+  callExpr: ts.CallExpression,
+  params: readonly string[],
+  ctx: TransformContext,
+  build: (getText: (node: ts.Node) => string) => IRNode,
+): IRNode {
   // Build substitution map: paramName → argument expression text
   const substitutions = new Map<string, string>()
-  for (let i = 0; i < jsxFunc.params.length; i++) {
-    const paramName = jsxFunc.params[i]
+  const argRefs = new Map<string, FreeReference[]>()
+  const env = makeBindingEnv(ctx)
+  for (let i = 0; i < params.length; i++) {
     const arg = callExpr.arguments[i]
     if (arg) {
-      substitutions.set(paramName, ctx.getJS(arg))
+      substitutions.set(params[i], ctx.getJS(arg))
+      argRefs.set(params[i], resolveFreeRefs(arg, env))
     }
   }
 
@@ -2749,21 +2785,9 @@ function transformJsxFunctionCall(
   ctx.analyzer.getJS = substitutedGetJS
 
   try {
-    const result = transformNode(jsxFunc.jsxReturn, ctx)
-    return result ?? {
-      type: 'expression' as const,
-      expr: 'null',
-      typeInfo: null,
-      reactive: false,
-      slotId: null,
-      loc: getSourceLocation(callExpr, ctx.sourceFile, ctx.filePath),
-      origin: {
-        phase: 'tick',
-        scope: 'template',
-        effect: 'pure',
-        freeRefs: [],
-      },
-    }
+    const result = build(substitutedGetJS)
+    rebindHelperParamRefs(result, argRefs)
+    return result
   } finally {
     ctx.getJS = originalCtxGetJS
     ctx.analyzer.getJS = originalAnalyzerGetJS
@@ -2775,42 +2799,9 @@ function transformMultiReturnJsxFunctionCall(
   info: MultiReturnJsxInfo,
   ctx: TransformContext,
 ): IRNode {
-  // Build substitution map: paramName → argument expression text
-  const substitutions = new Map<string, string>()
-  for (let i = 0; i < info.params.length; i++) {
-    const paramName = info.params[i]
-    const arg = callExpr.arguments[i]
-    if (arg) {
-      substitutions.set(paramName, ctx.getJS(arg))
-    }
-  }
-
-  const baseGetJS = ctx.analyzer.getJS.bind(ctx.analyzer)
-  const originalCtxGetJS = ctx.getJS
-  const originalAnalyzerGetJS = ctx.analyzer.getJS
-
-  const substitutedGetJS = (node: ts.Node) => {
-    let text = baseGetJS(node)
-    for (const [paramName, argExpr] of substitutions) {
-      // Replacer function, not the string form: `argExpr` is arbitrary
-      // caller-supplied JS text and may itself contain `$` sequences
-      // (`$&`, `$1`, …) that `String.replace`'s string-replacement form
-      // would interpret specially instead of inserting literally (#2592).
-      text = text.replace(identifierPattern(paramName, 'g'), () => argExpr)
-    }
-    return text
-  }
-
-  ctx.getJS = substitutedGetJS
-  ctx.analyzer.getJS = substitutedGetJS
-
-  try {
-    const loc = getSourceLocation(callExpr, ctx.sourceFile, ctx.filePath)
-    return foldMultiReturnBranches(info, ctx, loc, substitutedGetJS)
-  } finally {
-    ctx.getJS = originalCtxGetJS
-    ctx.analyzer.getJS = originalAnalyzerGetJS
-  }
+  const loc = getSourceLocation(callExpr, ctx.sourceFile, ctx.filePath)
+  return withHelperParamsSubstituted(callExpr, info.params, ctx, (getText) =>
+    foldMultiReturnBranches(info, ctx, loc, getText))
 }
 
 /**

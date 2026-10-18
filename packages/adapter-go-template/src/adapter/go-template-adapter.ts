@@ -182,7 +182,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFie
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
@@ -2690,8 +2690,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // prop's field, so its `?? fallback` folds into the prop initializer.
     const memoFallbacks = new Map<string, { goFallback: string; goType: string }>()
     for (const memo of ir.metadata.memos) {
-      const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
-      const m = this.extractPropFallback(stripped)
+      const m = memoPropFallback(this.emitCtx, memo)
       if (!m) continue
       if (capitalizeFieldName(m.propName) !== capitalizeFieldName(memo.name)) continue
       // `applyGoFallback` emits a string-typed zero check; only `string` /
@@ -6749,8 +6748,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // plain data field it fails the render (#3493). A method on the request's
     // `searchParams()` reader is a real Go method (`.SearchParams.Get "key"`),
     // and a getter or function-valued prop keeps the callee read.
-    if (isUnloweredCall(callee, args, this.state.propsObjectName) && !matchSearchParamsMethodCall(callee, args, this.state.searchParamsLocals)) {
-      const refusal = unloweredCallRefusal(callee, 'Go')
+    if (isUnloweredCall(callee, args, this.state.propsObjectName, name => this.state.computedConsts?.isGlobal(name) ?? false) && !matchSearchParamsMethodCall(callee, args, this.state.searchParamsLocals)) {
+      const refusal = unloweredCallRefusal(callee, args, 'Go')
       this.state.errors.push({
         code: 'BF101',
         severity: 'error',
@@ -10245,13 +10244,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           (e.kind === 'literal' && (e.value === null || e.value === undefined))
         const test = parsed.test
         if (undef(parsed.alternate) && !undef(parsed.consequent)) {
+          // Lower the parsed test. If it renders as a self-contained action
+          // block, lower the whole ternary instead, as before. Never re-read
+          // the test from `value.expr`: slicing at the first `?` cuts a
+          // `?.`, `??` or `'?'` in the test short (#3511).
+          const condTree = this.isTemplateFragment(this.renderParsedExpr(test), test.kind) ? parsed : test
           const { condition: goCond, preamble } = this.convertConditionToGo(
-            // Re-render the test from its source span via the parsed tree. If it
-            // lowered to a self-contained action block, re-parse the whole
-            // ternary source; otherwise slice off the test portion.
-            this.isTemplateFragment(this.renderParsedExpr(test), test.kind)
-              ? value.expr
-              : value.expr.slice(0, value.expr.indexOf('?')).trim(),
+            stringifyParsedExpr(condTree),
+            condTree,
           )
           // #2842 / #2743: a `query` guard-list consequent (queryHref) takes
           // the whole-attribute `bf_attr` route INSIDE the `{{if}}`, so

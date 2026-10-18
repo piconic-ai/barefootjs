@@ -79,6 +79,15 @@ export interface RelocateEnv {
    */
   acceptsTemplateCall?: TemplateCallAcceptor
   /**
+   * Component-scope locals already classified as inlinable into template
+   * scope (#3513), filled in declaration order by `computeInlinability`. A
+   * method call on one (`text.toUpperCase()` with `const text = props.label
+   * ?? 'd'`) runs on the local's inlined value, so a broad
+   * `acceptsTemplateCall` can vouch for it even though the receiver is an
+   * init-local.
+   */
+  inlinableLocals?: ReadonlySet<string>
+  /**
    * Lowering-registry matchers (#2057) bound to this component's metadata
    * (`prepareLoweringMatchers`), consulted by `isCallAcceptedByAdapter` as a
    * third acceptance path alongside `templatePrimitives` /
@@ -477,6 +486,24 @@ const REGISTRY_SAFE_BINDING_KINDS: ReadonlySet<BindingKind> = new Set([
 ])
 
 /**
+ * A method call on an inlinable local (`text.toUpperCase()`) runs on that
+ * local's value in template scope (#3513). Only the broad
+ * `acceptsTemplateCall` can vouch for it: the path-keyed registries name
+ * globals, which this receiver isn't. A bare call of the local itself is
+ * never accepted.
+ */
+function isAcceptedMethodCallOnInlinableLocal(
+  originalPath: string,
+  leftmost: string | null,
+  resolvedLeftmost: string,
+  resolvedPath: string,
+  env: RelocateEnv,
+): boolean {
+  if (originalPath === leftmost || env.inlinableLocals?.has(resolvedLeftmost) !== true) return false
+  return env.acceptsTemplateCall?.(resolvedPath) === true
+}
+
+/**
  * Whether `env`'s adapter promises it can render this call in template
  * scope. Three independent acceptance paths, any of which is sufficient:
  *
@@ -540,7 +567,7 @@ function isCallAcceptedByAdapter(
   if (resolvedLeftmost !== null) {
     const kind = env.bindings.get(resolvedLeftmost)
     if (kind !== undefined && !REGISTRY_SAFE_BINDING_KINDS.has(kind)) {
-      return false
+      return isAcceptedMethodCallOnInlinableLocal(originalPath, leftmost, resolvedLeftmost, resolvedPath, env)
     }
   }
 
@@ -789,6 +816,16 @@ export function buildRelocateEnvFromIR(
   // from the real component, not `[]`.
   env.loweringMatchers = prepareLoweringMatchers(metadata)
   return env
+}
+
+/**
+ * Every name the component or its module binds, by kind: imports, module
+ * consts and functions, props, init locals, signals and memos (`classify`'s
+ * table). A free name absent from it, and bound by no enclosing loop or
+ * callback, is a JavaScript global.
+ */
+export function componentBindings(metadata: IRMetadata): ReadonlyMap<string, BindingKind> {
+  return buildRelocateEnvFromFields(metadata).bindings
 }
 
 interface EnvFields {

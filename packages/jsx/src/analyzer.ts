@@ -9,11 +9,11 @@
 import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
-import { buildPropAliasMap, coalesceDefaultText } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -237,6 +237,18 @@ export function createAnchoredProgram(source: string, filename: string, anchorDi
   return createProgramForFile(source, filename, { currentDirectory: anchorDir })?.program
 }
 
+/**
+ * Parse a signal's initializer into the IR, and record which prop it seeds
+ * from and with what fallback (#3508).
+ */
+function parseSignalInitializer(signal: AnalyzerContext['signals'][number], ctx: AnalyzerContext): void {
+  if (!signal.initialValue) return
+  const parsed = parseExpression(`(${signal.initialValue})`)
+  if (parsed.kind !== 'unsupported') signal.parsed = parsed
+  const seed = signal.isModule ? null : signalPropSeed(signal.parsed, ctx.propsParams, ctx.propsObjectName)
+  if (seed) signal.propSeed = seed
+}
+
 // =============================================================================
 // Main Entry Point
 // =============================================================================
@@ -385,11 +397,7 @@ export function analyzeComponent(
   // scalars / prop refs are unchanged. An unsupported shape leaves `parsed`
   // undefined and the adapter falls back. Runs after `scanImportedClientSignals`
   // so imported signals are covered too.
-  for (const signal of ctx.signals) {
-    if (!signal.initialValue) continue
-    const parsed = parseExpression(`(${signal.initialValue})`)
-    if (parsed.kind !== 'unsupported') signal.parsed = parsed
-  }
+  for (const signal of ctx.signals) parseSignalInitializer(signal, ctx)
 
   const separatedSource = separateLiteralSignalPropBindings(ctx, isNonReferenceIdentifierPosition)
   if (separatedSource !== null) {
@@ -1905,7 +1913,7 @@ function isMemoDeclaration(node: ts.VariableDeclaration, ctx: AnalyzerContext): 
 function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolean {
   let node: ts.Node | undefined = memoArrow
   while (node && ts.isParenthesizedExpression(node)) node = node.expression
-  if (!node || !ts.isArrowFunction(node)) return false
+  if (!node || (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node))) return false
   let body: ts.Node = node.body
   while (ts.isParenthesizedExpression(body)) body = body.expression
   if (ts.isBlock(body)) {
@@ -1917,11 +1925,158 @@ function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolea
   return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
 }
 
+/**
+ * Whether a callback's body means the same outside the callback. An arrow
+ * binds nothing of its own. A `function` expression binds its name (when it
+ * has one), `arguments` and `this`, so its body only means the same when it
+ * is anonymous and reads neither; the bodies of nested non-arrow functions,
+ * methods and class members bind their own and are not searched, but their
+ * computed names and a class's `extends` clause are.
+ */
+function isFunctionScopeFree(fn: ts.ArrowFunction | ts.FunctionExpression): boolean {
+  if (ts.isArrowFunction(fn)) return true
+  if (fn.name) return false
+  let bound = false
+  const visit = (node: ts.Node): void => {
+    if (bound) return
+    if (node.kind === ts.SyntaxKind.ThisKeyword || (ts.isIdentifier(node) && node.text === 'arguments')) {
+      bound = true
+      return
+    }
+    // A nested function or class body binds its own `this` / `arguments`,
+    // but a computed member name and a class's `extends` clause are
+    // evaluated in the enclosing scope, so those are still searched.
+    if (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) return
+    if (ts.isMethodDeclaration(node) || ts.isGetAccessor(node) || ts.isSetAccessor(node) ||
+        ts.isPropertyDeclaration(node)) {
+      if (ts.isComputedPropertyName(node.name)) visit(node.name.expression)
+      return
+    }
+    if (ts.isClassLike(node)) {
+      node.heritageClauses?.forEach(visit)
+      node.members.forEach(visit)
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(fn.body, visit)
+  return !bound
+}
+
+/**
+ * The expression a memo's callback evaluates to, as the analyzer reads it from
+ * the callback node (#3510). A zero-parameter arrow or `function` expression
+ * yields its body: the expression body, or the operand of a block that is a
+ * single `return`. Any other block (and any other callback: async, generator,
+ * a parameter, a function reference, a `function` expression whose body needs
+ * its own scope) yields a call of the whole callback, so a consumer that
+ * substitutes the memo's value never sees an uncalled function or a body
+ * detached from its bindings.
+ */
+function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean } {
+  let fn: ts.Expression = callback
+  while (ts.isParenthesizedExpression(fn)) fn = fn.expression
+  if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return { node: callback, call: true }
+  const plain = fn.parameters.length === 0 &&
+    !(ts.isFunctionExpression(fn) && fn.asteriskToken) &&
+    !fn.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) &&
+    isFunctionScopeFree(fn)
+  if (!plain) return { node: callback, call: true }
+  if (!ts.isBlock(fn.body)) return { node: fn.body, call: false }
+  const [only] = fn.body.statements
+  if (fn.body.statements.length === 1 && ts.isReturnStatement(only) && only.expression) {
+    return { node: only.expression, call: false }
+  }
+  return { node: callback, call: true }
+}
+
+/**
+ * The memo body as structured trees (#2040, #3510): `parsed` for an
+ * expression body, `parsedBlock` for a block body. See the field docs on
+ * `MemoInfo`.
+ */
+function memoStructuredBody(
+  callback: ts.Expression | undefined,
+  ctx: AnalyzerContext,
+): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete'> {
+  // Structured parse of the arrow BODY, so adapters can shape-match the memo
+  // on a tree instead of re-parsing `computation`. Parse from the type-STRIPPED
+  // body (`ctx.getJS`, same source as `computation`) — `getText` would keep
+  // TypeScript-only syntax (`as T`, `!`, `satisfies`) that `parseExpression`
+  // rejects, leaving `parsed` undefined for typed bodies that the stripped
+  // `computation` would match. Expression bodies only — block bodies
+  // (`() => { … }`, `function () { … }`) and unsupported shapes leave
+  // `parsed` undefined here (the block fold sets it later). Parens around the
+  // callback are unwrapped (#3510).
+  let memoFn: ts.Node | undefined = callback
+  while (memoFn && ts.isParenthesizedExpression(memoFn)) memoFn = memoFn.expression
+  if (memoFn && ((!ts.isArrowFunction(memoFn) && !ts.isFunctionExpression(memoFn)) || !isFunctionScopeFree(memoFn))) {
+    memoFn = undefined
+  }
+  const parsedBody =
+    memoFn && !ts.isBlock(memoFn.body)
+      ? parseExpression(ctx.getJS(memoFn.body))
+      : undefined
+  // `object-literal` is excluded alongside `unsupported`: an object-returning
+  // memo (`() => ({ … })`) isn't lowered from the parsed tree yet, so leaving
+  // `parsed` undefined keeps the adapter on its existing object-memo lowering
+  // (byte-identical; flipped in a later Roadmap A unit).
+  const parsed =
+    parsedBody && parsedBody.kind !== 'unsupported' && parsedBody.kind !== 'object-literal'
+      ? parsedBody
+      : undefined
+
+  // Block-bodied memos: carry the statements (tolerant — unparseable ones are
+  // omitted) so adapters can pattern-match block shapes (e.g. a guard-and-
+  // return-const memo) without re-parsing `computation`.
+  const blockBody = memoFn && ts.isBlock(memoFn.body) ? memoFn.body : undefined
+  const parsedBlock = blockBody
+    ? parseBlockBodyTolerant(blockBody, ctx.sourceFile, node => ctx.getJS(node))
+    : undefined
+  // `parseBlockBodyTolerant` runs `parseStatement` once per source statement and
+  // pushes only the non-null results, so equal lengths mean every statement was
+  // represented — nothing silently omitted (see `MemoInfo.parsedBlockComplete`).
+  const parsedBlockComplete =
+    parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
+  return { parsed, parsedBlock, parsedBlockComplete }
+}
+
+/**
+ * `MemoInfo.bodyExpr` / `bodyExprIsCall` / `templateBodyExpr` from the
+ * callback's body node (#3510).
+ */
+function memoBodyFields(
+  body: { node: ts.Node; call: boolean },
+  ctx: AnalyzerContext,
+): Pick<MemoInfo, 'bodyExpr' | 'bodyExprIsCall' | 'templateBodyExpr'> {
+  // Destructured-arg components only — the memo twin of the signal
+  // `templateInitialValue` rewrite (#2265) a few hundred lines up: a memo
+  // body referencing a bare destructured prop (`createMemo(() => value *
+  // 10)` with `{ value }: { value: number }`) is inlined into the CSR
+  // `template:` arrow by `buildSignalMemoEnv`, and that arrow runs at
+  // module scope — it is not a closure over `initXxx`'s `const value =
+  // _p.value` extraction, so the bare ref must become `_p.value`
+  // (adapter-tests scope-gate, #2468 sweep).
+  const asBodyExpr = (text: string): string => (body.call ? `(${text})()` : text)
+  const bodyExpr = asBodyExpr(ctx.getJS(body.node))
+  let templateBodyExpr: string | undefined
+  if (!ctx.propsObjectName) {
+    const propNames = new Set(ctx.propsParams.map(p => p.name))
+    if (propNames.size > 0) {
+      const propAliases = buildPropAliasMap(ctx.propsParams)
+      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases)
+      templateBodyExpr = rewritten === undefined ? undefined : asBodyExpr(rewritten)
+    }
+  }
+  return { bodyExpr, bodyExprIsCall: body.call || undefined, templateBodyExpr }
+}
+
 function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   const name = (node.name as ts.Identifier).text
   const callExpr = node.initializer as ts.CallExpression
   const computation = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
   const typedComputation = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
+  const body = callExpr.arguments[0] ? memoBodyNode(callExpr.arguments[0]) : undefined
 
   // Extract dependencies from computation
   const deps = extractDependencies(computation, ctx)
@@ -1937,12 +2092,13 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
     type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
   } else {
-    // The memo computation is an arrow function; the type we want is
-    // the body's, not the arrow itself. Pull `() => <body>` apart so
-    // `inferTypeFromValue` sees the actual expression.
-    const arrowBody = computation.replace(/^\s*\([^)]*\)\s*=>\s*/, '').trim()
-    if (arrowBody && arrowBody !== computation) {
-      type = inferTypeFromValue(arrowBody)
+    // The memo computation is a function; the type we want is the body's,
+    // not the function itself, so `inferTypeFromValue` sees the body text
+    // (a block body reads as `object`, which the checker upgrade below
+    // refines).
+    const fn = callExpr.arguments[0]
+    if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
+      type = inferTypeFromValue(ctx.getJS(fn.body).trim())
     }
   }
 
@@ -1967,73 +2123,19 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     }
   }
 
-  // Structured parse of the arrow BODY, so adapters can shape-match the memo
-  // on a tree instead of re-parsing `computation`. Parse from the type-STRIPPED
-  // body (`ctx.getJS`, same source as `computation`) — `getText` would keep
-  // TypeScript-only syntax (`as T`, `!`, `satisfies`) that `parseExpression`
-  // rejects, leaving `parsed` undefined for typed bodies that the stripped
-  // `computation` would match. Expression-bodied arrows only — block bodies
-  // (`() => { … }`) and unsupported shapes leave `parsed` undefined and
-  // consumers fall back to `computation`.
-  const memoArrow = callExpr.arguments[0]
-  const parsedBody =
-    memoArrow && ts.isArrowFunction(memoArrow) && !ts.isBlock(memoArrow.body)
-      ? parseExpression(ctx.getJS(memoArrow.body))
-      : undefined
-  // `object-literal` is excluded alongside `unsupported`: an object-returning
-  // memo (`() => ({ … })`) isn't lowered from the parsed tree yet, so leaving
-  // `parsed` undefined keeps the adapter on its existing object-memo lowering
-  // (byte-identical; flipped in a later Roadmap A unit).
-  const parsed =
-    parsedBody && parsedBody.kind !== 'unsupported' && parsedBody.kind !== 'object-literal'
-      ? parsedBody
-      : undefined
+  const { parsed, parsedBlock, parsedBlockComplete } = memoStructuredBody(callExpr.arguments[0], ctx)
 
-  // Block-bodied memos: carry the statements (tolerant — unparseable ones are
-  // omitted) so adapters can pattern-match block shapes (e.g. a guard-and-
-  // return-const memo) without re-parsing `computation`. Unwrap parens around
-  // the arrow to match the former adapter walks.
-  let arrowNode: ts.Node | undefined = memoArrow
-  while (arrowNode && ts.isParenthesizedExpression(arrowNode)) arrowNode = arrowNode.expression
-  const blockBody =
-    arrowNode && ts.isArrowFunction(arrowNode) && ts.isBlock(arrowNode.body)
-      ? arrowNode.body
-      : undefined
-  const parsedBlock = blockBody
-    ? parseBlockBodyTolerant(blockBody, ctx.sourceFile, node => ctx.getJS(node))
-    : undefined
-  // `parseBlockBodyTolerant` runs `parseStatement` once per source statement and
-  // pushes only the non-null results, so equal lengths mean every statement was
-  // represented — nothing silently omitted (see `MemoInfo.parsedBlockComplete`).
-  const parsedBlockComplete =
-    parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
-
-  // Destructured-arg components only — the memo twin of the signal
-  // `templateInitialValue` rewrite (#2265) a few hundred lines up: a memo
-  // body referencing a bare destructured prop (`createMemo(() => value *
-  // 10)` with `{ value }: { value: number }`) is inlined into the CSR
-  // `template:` arrow by `buildSignalMemoEnv`, and that arrow runs at
-  // module scope — it is not a closure over `initXxx`'s `const value =
-  // _p.value` extraction, so the bare ref must become `_p.value`
-  // (adapter-tests scope-gate, #2468 sweep).
-  let templateComputation: string | undefined
-  if (!ctx.propsObjectName && callExpr.arguments[0]) {
-    const propNames = new Set(ctx.propsParams.map(p => p.name))
-    if (propNames.size > 0) {
-      const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateComputation = rewriteBarePropRefs(computation, callExpr.arguments[0], propNames, undefined, propAliases)
-    }
-  }
+  const bodyFields = body ? memoBodyFields(body, ctx) : {}
 
   ctx.memos.push({
     name,
     computation,
-    templateComputation,
+    ...bodyFields,
     parsedBlock,
     parsedBlockComplete,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
-    bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(memoArrow),
+    bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(callExpr.arguments[0]),
     type,
     deps,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),

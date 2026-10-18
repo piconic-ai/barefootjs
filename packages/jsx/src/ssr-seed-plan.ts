@@ -35,7 +35,6 @@ import { collectModuleStringConsts } from './augment-inherited-props.ts'
 import { collectAliasableGetterNames, resolveGetterAliases } from './ir-to-client-js/csr-substitute.ts'
 import { envSignalReaderFor, type EnvSignalReader } from './adapters/env-signal.ts'
 import {
-  extractArrowBodyExpression,
   freeIdentifiers,
   inlineBinding,
   isSupportedValue,
@@ -174,9 +173,11 @@ function resolveThroughLocalConsts(
 
 /**
  * Compute the component's SSR seed plan from its metadata. See the module
- * doc for the contract. Memo steps are gated to EXPRESSION-BODIED memos
- * (`extractArrowBodyExpression` returns the body): a block-bodied memo is
- * `opaque` even when the analyzer folded it to a `parsed` expression.
+ * doc for the contract. Memo steps are gated to memos whose callback returns
+ * one expression (`MemoInfo.bodyExpr` is not a call of the whole callback):
+ * an arrow expression body, or a block or `function` body that is a single
+ * `return`. Any other block-bodied memo is `opaque` even when the analyzer
+ * folded it to a `parsed` expression.
  */
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const baseScope: string[] = metadata.propsParams.map(p => p.name)
@@ -236,8 +237,9 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   }
 
   for (const memo of metadata.memos) {
-    const body = extractArrowBodyExpression(memo.computation)
-    const expr = body?.trim() ?? ''
+    // The returned expression, as the analyzer read it from the callback
+    // node (#3510). A body that must be called as a whole is opaque.
+    const expr = memo.bodyExprIsCall ? '' : (memo.bodyExpr?.trim() ?? '')
     steps.push(
       expr === ''
         ? { kind: 'opaque', name: memo.name, origin: 'memo' }
