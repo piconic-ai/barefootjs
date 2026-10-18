@@ -162,7 +162,7 @@ describe('computeSsrSeedPlan', () => {
     }
   })
 
-  test('block-bodied memo → opaque (v1 gates to expression-bodied memos)', () => {
+  test('block-bodied memo → derived from its fold (#3523)', () => {
     const plan = planFor(`
       'use client'
       import { createMemo, createSignal } from '@barefootjs/client'
@@ -177,8 +177,61 @@ describe('computeSsrSeedPlan', () => {
     `)
 
     const label = step(plan, 'label')
+    expect(label.kind).toBe('derived')
+    if (label.kind === 'derived') expect(label.frees).toContain('on')
+  })
+
+  test('block-bodied memo that does not fold → opaque', () => {
+    const plan = planFor(`
+      'use client'
+      import { createMemo, createSignal } from '@barefootjs/client'
+      function C() {
+        const [on, setOn] = createSignal(false)
+        const label = createMemo(() => {
+          let n = 0
+          for (const x of [1, 2]) n += x
+          return on() ? n : 0
+        })
+        return <p>{label()}</p>
+      }
+    `)
+
+    const label = step(plan, 'label')
     expect(label.kind).toBe('opaque')
     if (label.kind === 'opaque') expect(label.origin).toBe('memo')
+  })
+
+  test.each([
+    ["(label = 'inner') => label"],
+    ["(label = 'inner') => { const k = label\n return k }"],
+  ])('memo callback with a parameter → opaque: %s', (callback) => {
+    const plan = planFor(`
+      'use client'
+      import { createMemo, createSignal } from '@barefootjs/client'
+      function C({ label }: { label: string }) {
+        const [on] = createSignal(false)
+        const m = createMemo(${callback})
+        return <p>{m()}{on() ? 'y' : 'n'}</p>
+      }
+    `)
+    expect(step(plan, 'm').kind).toBe('opaque')
+  })
+
+  test('block memo with a /* @client */ directive → opaque', () => {
+    const plan = planFor(`
+      'use client'
+      import { createMemo, createSignal } from '@barefootjs/client'
+      function C() {
+        const [date] = createSignal<Date | undefined>(undefined)
+        const label = createMemo(() => {
+          const d = date()
+          if (!d) return 'none'
+          return /* @client */ d.toLocaleDateString('en-US')
+        })
+        return <p>{label()}</p>
+      }
+    `)
+    expect(step(plan, 'label').kind).toBe('opaque')
   })
 
   test('object-literal body → derived (#2696: value-position object literal, isSupportedValue)', () => {
