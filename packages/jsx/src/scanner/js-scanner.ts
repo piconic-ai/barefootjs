@@ -66,6 +66,10 @@ export function* iterateJsTokens(
   // starts a regex literal (`regexAfter`), and that token's kind.
   let prevSignificant: ts.SyntaxKind | undefined
   let regexMayStart = true
+  // One entry per open `(`: whether it opens a `for (…)` / `for await (…)`
+  // header, where `of` can be the for-of separator.
+  const parens: boolean[] = []
+  let beforePrev: ts.SyntaxKind | undefined
 
   while (true) {
     let kind = scanner.scan()
@@ -108,9 +112,29 @@ export function* iterateJsTokens(
     yield { kind, pos: scanner.getTokenStart(), end: scanner.getTokenEnd() }
 
     if (!isTriviaKind(kind)) {
-      regexMayStart = regexAfter(kind, prevSignificant)
+      trackForHeaderParens(parens, kind, prevSignificant, beforePrev)
+      regexMayStart = regexAfter(kind, prevSignificant, parens[parens.length - 1] === true)
+      beforePrev = prevSignificant
       prevSignificant = kind
     }
+  }
+}
+
+/**
+ * Push / pop `parens` for an open / close paren: each entry says whether that
+ * `(` opens a `for (…)` or `for await (…)` header.
+ */
+function trackForHeaderParens(
+  parens: boolean[],
+  kind: ts.SyntaxKind,
+  prev: ts.SyntaxKind | undefined,
+  beforePrev: ts.SyntaxKind | undefined,
+): void {
+  if (kind === ts.SyntaxKind.OpenParenToken) {
+    parens.push(prev === ts.SyntaxKind.ForKeyword
+      || (prev === ts.SyntaxKind.AwaitKeyword && beforePrev === ts.SyntaxKind.ForKeyword))
+  } else if (kind === ts.SyntaxKind.CloseParenToken) {
+    parens.pop()
   }
 }
 
@@ -120,14 +144,16 @@ export function* iterateJsTokens(
  * an identifier does, so `/` after it is division: a member name
  * (`obj.default / 2`) and a contextual keyword, which is a legal binding
  * name (`type / 2`). `await` keeps its operator reading (`await /re/`), and
- * so does `of` as the `for…of` separator.
+ * so does `of` as the separator of a `for (…)` header (`inForHeader`).
  */
-function regexAfter(kind: ts.SyntaxKind, before: ts.SyntaxKind | undefined): boolean {
+function regexAfter(kind: ts.SyntaxKind, before: ts.SyntaxKind | undefined, inForHeader: boolean): boolean {
   if (kind >= ts.SyntaxKind.FirstKeyword && kind <= ts.SyntaxKind.LastKeyword) {
     if (before === ts.SyntaxKind.DotToken || before === ts.SyntaxKind.QuestionDotToken) return false
-    // `of` right after a binding is the `for (x of …)` separator, which an
-    // expression follows: `for (const hit of /re/.exec(s))`.
-    if (kind === ts.SyntaxKind.OfKeyword && endsBinding(before)) return true
+    // `of` right after a binding, directly inside a `for (…)` header, is the
+    // for-of separator, which an expression follows:
+    // `for (const hit of /re/.exec(s))`. Elsewhere (`let of = x⏎of /= 2`)
+    // it is a name.
+    if (kind === ts.SyntaxKind.OfKeyword && inForHeader && endsBinding(before)) return true
     if (kind > ts.SyntaxKind.LastFutureReservedWord && kind !== ts.SyntaxKind.AwaitKeyword) return false
   }
   return canRegexStartHere(kind)

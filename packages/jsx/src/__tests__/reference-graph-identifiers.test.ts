@@ -116,6 +116,14 @@ describe('regex literals and keyword-named members (#3536 review)', () => {
     expect(js).toContain('const step = ')
   })
 
+  test('division on an `of` binding after a line break does not hide a later dependency', () => {
+    const js = clientJsFor(
+      'const step = props.n * 2\n      const _helper = (x: number) => {\n        let of = x\n        of /= step\n        return of\n      }',
+      '_helper(12)',
+    )
+    expect(js).toContain('const step = ')
+  })
+
   test('a brace inside a regex literal does not close a template substitution', () => {
     expect(extractTemplateExpressions('<p>${/}/.test(dep) ? dep : fallback}</p>')).toEqual([
       '/}/.test(dep) ? dep : fallback',
