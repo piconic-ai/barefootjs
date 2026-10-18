@@ -6455,6 +6455,118 @@
       }
     }
   ],
+  "signal-computed-call-seed": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "label": "abc"
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "abc",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "abc",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "abc",
+        "n": 1234567890
+      }
+    }
+  ],
+  "signal-computed-call-seed-destructured": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "label": "abc"
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "abc",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "abc",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "abc",
+        "n": 1234567890
+      }
+    }
+  ],
   "signal-computed-prop-seed": [
     {
       "name": "gen:label:empty",

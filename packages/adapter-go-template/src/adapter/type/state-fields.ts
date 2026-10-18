@@ -151,10 +151,25 @@ function numericArithmeticSeedGoType(
     if (goType === 'float64') float = true
     return goType === 'int' || goType === 'float64'
   }
-  const visit = (e: ParsedExpr): boolean =>
-    e.kind === 'binary' && (e.op === '*' || e.op === '-') ? visit(e.left) && visit(e.right) : leaf(e)
-  if (!parsed || parsed.kind !== 'binary' || !visit(parsed)) return null
+  const visit = (e: ParsedExpr): boolean => {
+    if (e.kind === 'binary' && (e.op === '*' || e.op === '-')) return visit(e.left) && visit(e.right)
+    // `Math.max` / `Math.min` over numbers is a number of the same kind (#3540).
+    if (isMathMinMax(e)) return e.args.length > 0 && e.args.every(visit)
+    return leaf(e)
+  }
+  if (!parsed || (parsed.kind !== 'binary' && !isMathMinMax(parsed)) || !visit(parsed)) return null
   return float ? 'float64' : 'int'
+}
+
+/** A `Math.max(…)` / `Math.min(…)` call. */
+function isMathMinMax(e: ParsedExpr): e is Extract<ParsedExpr, { kind: 'call' }> {
+  return (
+    e.kind === 'call' &&
+    e.callee.kind === 'member' &&
+    e.callee.object.kind === 'identifier' &&
+    e.callee.object.name === 'Math' &&
+    (e.callee.property === 'max' || e.callee.property === 'min')
+  )
 }
 
 /**

@@ -9219,6 +9219,45 @@
         "text"
       ]
     },
+    "signal-computed-call-seed": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-call-seed-destructured": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "signal-computed-prop-seed": {
       "kinds": [
         "binary",

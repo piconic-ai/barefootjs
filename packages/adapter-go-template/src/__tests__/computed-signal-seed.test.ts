@@ -137,3 +137,15 @@ describe('an absent prop under `??` in an evaluated seed (#3532)', () => {
     expect(types).toMatch(/^\s+N int /m)
   })
 })
+
+describe('Math.max / Math.min seeds type as a number (#3540)', () => {
+  test('over int operands the field is int, so a large value prints in full', () => {
+    const { types } = generate(PROPS, 'Math.max(props.n ?? 0, 1)')
+    expect(types).toMatch(/^\s+V int /m)
+  })
+
+  test('a fractional operand widens the field to float64', () => {
+    const { types } = generate(PROPS, 'Math.min(props.n ?? 0, 1.5)')
+    expect(types).toMatch(/^\s+V float64 /m)
+  })
+})
