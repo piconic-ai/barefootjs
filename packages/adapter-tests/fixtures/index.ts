@@ -1044,6 +1044,8 @@ import { fixture as conditionalThenPercentText } from './conditional-then-percen
 import { fixture as conditionalBranchSigilText } from './conditional-branch-sigil-text'
 import { fixture as childrenNamedLocalEscaped } from './children-named-local-escaped'
 import { fixture as childrenNamedLoopRowEscaped } from './children-named-loop-row-escaped'
+import { fixture as childrenChainedNullishFallbackEscaped } from './children-chained-nullish-fallback-escaped'
+import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1765,4 +1767,6 @@ export const jsxFixtures: JSXFixture[] = [
   createMutationElidedValue,
   childrenNamedLocalEscaped,
   childrenNamedLoopRowEscaped,
+  childrenChainedNullishFallbackEscaped,
+  childrenPreambleLocalEscaped,
 ]

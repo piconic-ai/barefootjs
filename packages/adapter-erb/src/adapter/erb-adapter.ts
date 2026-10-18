@@ -67,6 +67,7 @@ import {
   type AttrValueEmitter,
   parseExpression,
   stringifyParsedExpr,
+  nullishChainParts,
   parseStyleObjectEntries,
   isSupported,
   isSupportedValue,
@@ -768,9 +769,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    */
   private childrenAwareOutput(expr: IRExpression, rubyExpr: string): string {
     if (expr.childrenRead === 'bare' || expr.childrenRead === 'nullish-empty') return rubyExpr
-    if (expr.childrenRead === 'nullish-fallback' && expr.parsed?.kind === 'logical') {
-      const children = this.convertExpressionToRuby(stringifyParsedExpr(expr.parsed.left), expr.parsed.left)
-      const fallback = this.convertExpressionToRuby(stringifyParsedExpr(expr.parsed.right), expr.parsed.right)
+    const chain = expr.childrenRead === 'nullish-fallback' && expr.parsed ? nullishChainParts(expr.parsed) : null
+    if (chain) {
+      const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
+      const fallback = this.convertExpressionToRuby(stringifyParsedExpr(chain.fallback), chain.fallback)
       return `((${children}).nil? ? bf.h(${fallback}) : ${children})`
     }
     return `bf.h(${rubyExpr})`
