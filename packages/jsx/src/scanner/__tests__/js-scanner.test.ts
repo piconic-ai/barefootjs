@@ -260,6 +260,12 @@ describe('iterateJsTokens: division after a keyword used as a name (#3536)', () 
     expect(kinds('obj?.new / 2')).not.toContain('RegularExpressionLiteral')
   })
 
+  test('`of` as a binding is followed by division; as the for-of separator, by a regex literal', () => {
+    expect(kinds('of / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+    expect(kinds('for (const hit of /"/.exec(x) || []) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for (const [a, b] of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
+  })
+
   test('an operator keyword still starts a regex literal', () => {
     expect(kinds('return /a/.test(x)')).toContain('RegularExpressionLiteral')
     expect(kinds('typeof /a/')).toContain('RegularExpressionLiteral')

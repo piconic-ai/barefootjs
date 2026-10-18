@@ -119,14 +119,25 @@ export function* iterateJsTokens(
  * starts a regex literal. A keyword used as a name ends an expression like
  * an identifier does, so `/` after it is division: a member name
  * (`obj.default / 2`) and a contextual keyword, which is a legal binding
- * name (`type / 2`). `await` keeps its operator reading (`await /re/`).
+ * name (`type / 2`). `await` keeps its operator reading (`await /re/`), and
+ * so does `of` as the `for…of` separator.
  */
 function regexAfter(kind: ts.SyntaxKind, before: ts.SyntaxKind | undefined): boolean {
   if (kind >= ts.SyntaxKind.FirstKeyword && kind <= ts.SyntaxKind.LastKeyword) {
     if (before === ts.SyntaxKind.DotToken || before === ts.SyntaxKind.QuestionDotToken) return false
+    // `of` right after a binding is the `for (x of …)` separator, which an
+    // expression follows: `for (const hit of /re/.exec(s))`.
+    if (kind === ts.SyntaxKind.OfKeyword && endsBinding(before)) return true
     if (kind > ts.SyntaxKind.LastFutureReservedWord && kind !== ts.SyntaxKind.AwaitKeyword) return false
   }
   return canRegexStartHere(kind)
+}
+
+/** Whether a `before` token can end a `for…of` binding (`x`, `[a, b]`, `{ a }`). */
+function endsBinding(before: ts.SyntaxKind | undefined): boolean {
+  return before === ts.SyntaxKind.Identifier
+    || before === ts.SyntaxKind.CloseBracketToken
+    || before === ts.SyntaxKind.CloseBraceToken
 }
 
 export function isTriviaKind(kind: ts.SyntaxKind): boolean {
