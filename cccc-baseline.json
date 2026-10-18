@@ -757,7 +757,7 @@
     },
     "packages/jsx/src/ir-to-client-js/csr-substitute.ts": {
       "csrSubstituteOnce/visit": [
-        38
+        37
       ]
     },
     "packages/jsx/src/ir-to-client-js/declaration-sort.ts": {
