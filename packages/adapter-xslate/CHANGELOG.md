@@ -1,5 +1,15 @@
 # @barefootjs/xslate
 
+## 0.39.7
+
+### Patch Changes
+
+- 57f2337: A component-scope const computed from props or signals (`const cls = 'btn ' + props.variant`, `const label = props.label ?? 'Default'`) now reads as its initializer wherever a template uses it: text, attributes, conditions, loop rows and memo bodies (Go). Every template adapter used to read it as a template variable nothing defines, so it rendered empty, rendered a same-named prop without the const's default, or failed the Go render. A const whose initializer has no template lowering (`Object.keys(labels)`) now refuses with BF101 instead of rendering an empty value. `ui/xyflow`'s `Flow` reads such a const (`createFlowStore(props)`) as its Provider value and now refuses on the template adapters (see #3502, #3503).
+- 2ebd9cf: The element markup every template adapter writes the same way (`renderElementShell`, `renderElementAttributes`), the fragment scope wrap (`renderFragmentScope`), the `dangerouslySetInnerHTML` children (`renderDangerousInnerHtml`), the unsupported-attribute BF101 (`unsupportedAttrExpressionError`) and the context-consumer seed (`contextConsumerSeed`) live once in `@barefootjs/jsx`; each adapter supplies only its template spelling. The compiled templates are unchanged.
+- 785a604: A numeric index on an array (`pair[1]`, `groups[0][1]`, or a loop row typed as an array, `entries[0]`) now reads the element through `bf_get` on Go instead of a `.Field0` struct field, which html/template failed to render; a condition such as `entries[1] === 'b'` no longer emits the unparsable `.1`. On every template adapter, an attribute filled by an index or computed-key read is omitted when the read is out of range or absent, as Hono omits an `undefined` attribute.
+- 48ea4c0: A method call with arguments that no template lowers, outside a higher-order callback (`s().localeCompare('m')`), now refuses with BF101 (`/* @client */` or a precomputed prop) on every template adapter. It used to render a read of the method name, dropping the call and its arguments; on Go it emitted a method call on a plain field.
+- @barefootjs/shared@0.39.7
+
 ## 0.39.6
 
 ### Patch Changes
