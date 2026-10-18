@@ -827,7 +827,7 @@ export function TodoApp(props: { initial?: Todo[] }) {
     })
 
     test('signal initialized via `(props.X ?? []).length` lands as int, not []T (#1442 echo TodoApp repro)', () => {
-      // Regression: `extractPropNameFromInitialValue` greedily matched
+      // Regression: the seed's prop passthrough (now `seedPassthroughPropName`) greedily matched
       // any `(props.X ?? Y).<something>` shape and propagated the prop's
       // Go type ([]Todo) to the signal field, even when the trailing
       // accessor (`.length`) transformed the expression to a number.

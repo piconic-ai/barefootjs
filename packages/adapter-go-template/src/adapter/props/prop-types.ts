@@ -6,7 +6,7 @@
  */
 
 import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
-import { isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
+import { asCallbackMethodCall, isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -23,7 +23,7 @@ import { typeInfoToGo } from '../type/type-codegen.ts'
  * struct types` — "Let a specific signal type override a less-specific prop
  * type in either direction"), so the Input/Props field type this override
  * feeds (via `resolvePropGoType`) and the constructor's baked VALUE
- * (`convertInitialValue`'s `extractPropNameFromInitialValue` prop-passthrough
+ * (`convertInitialValue`'s `seedPassthroughPropName` prop-passthrough
  * shortcut) never disagree about which type is authoritative:
  *
  *   1. A generic prop type (containing `interface{}`) — the historical case.
@@ -46,7 +46,7 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
   const overrides = new Map<string, string>()
   for (const signal of ir.metadata.signals) {
     const propNames = [signal.initialValue]
-    const extracted = ctx.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
+    const extracted = seedPassthroughPropName(ctx, signal.parsed)
     if (extracted) propNames.push(extracted)
 
     for (const propName of propNames) {
@@ -175,8 +175,8 @@ function computedConstInitializers(ir: ComponentIR): unknown[] {
 
 /**
  * Names of OPTIONAL props consumed nullish-sensitively — the left operand of
- * a `??` anywhere in the component's parsed expression trees, or a signal's
- * `props.X ?? <literal>` initial value (#2248).
+ * a `??` anywhere in the component's parsed expression trees or signal seeds
+ * (#3532), or a signal's `props.X ?? <literal>` initial value (#2248).
  *
  * Why this matters: JS `??` falls back only on `null`/`undefined`, keeping
  * `''`/`0`/`false`. A Go zero-valued scalar field cannot represent "absent",
@@ -252,6 +252,10 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   // A computed const reads as its initializer in the template (#3494), so a
   // `props.X ?? d` there is consumed like one written in place.
   walk(computedConstInitializers(ir))
+  // A signal seed the runtime evaluator computes (`(props.n ?? 1) * 2`)
+  // hands it the prop's field, which must be nil when the prop is absent
+  // for that `??` to take its right side (#3532).
+  walk(ir.metadata.signals.map(s => s.parsed))
 
   // Signal seeds (`createSignal(props.X ?? 1)`) live in metadata, not the
   // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
@@ -335,6 +339,31 @@ export function bareSeedPropName(ctx: GoEmitContext, parsed: ParsedExpr | undefi
     return parsed.property
   }
   return null
+}
+
+/**
+ * The prop a signal seed passes through (#3540), read off the parsed seed:
+ * `props.X` on the left of `??` / `||` (or `x ?? …` in a destructured
+ * component), and the row seed `(props.X ?? []).map(cb)`, which bakes as the
+ * prop's own rows (the shape example apps seed a list from; a mapped field
+ * the prop lacks starts at its Go zero value). Its consumers type the
+ * signal's field and the prop's field alike, and seed the signal from the
+ * prop; a bare `props.X` / `x` is `bareSeedPropName`'s. Null for any other
+ * seed, which the runtime evaluator computes or which refuses.
+ */
+export function seedPassthroughPropName(ctx: GoEmitContext, parsed: ParsedExpr | undefined): string | null {
+  if (!parsed) return null
+  const propsObject = ctx.state.propsObjectName
+  const fallbackOf = (e: ParsedExpr): string | null => {
+    if (e.kind !== 'logical' || (e.op !== '??' && e.op !== '||')) return null
+    if (!propsObject) return e.left.kind === 'identifier' ? e.left.name : null
+    return bareSeedPropName(ctx, e.left)
+  }
+  if (!propsObject) return fallbackOf(parsed)
+  const direct = bareSeedPropName(ctx, parsed) ?? fallbackOf(parsed)
+  if (direct !== null) return direct
+  const rows = asCallbackMethodCall(parsed)
+  return rows?.method === 'map' ? fallbackOf(rows.object) : null
 }
 
 /**

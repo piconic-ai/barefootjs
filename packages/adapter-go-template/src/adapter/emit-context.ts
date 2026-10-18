@@ -43,13 +43,6 @@ export interface GoEmitContext {
   ): { condition: string; preamble: string }
 
   /**
-   * Extract the prop name from a `props.X ?? …` initial value — or, given
-   * `preParsed` in a destructured component, an `x ?? …` identifier form —
-   * or null. Callers validate the name against `propsParams`.
-   */
-  extractPropNameFromInitialValue(initialValue: string, preParsed?: ParsedExpr): string | null
-
-  /**
    * A signal's SSR value when it is seeded by a computed prop expression
    * (#3519): evaluated by the runtime evaluator and converted to the
    * signal's own field type, or null for any other seed. Every reader of a

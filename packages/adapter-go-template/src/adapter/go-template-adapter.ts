@@ -185,7 +185,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -363,8 +363,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertExpressionToGo(jsExpr, out, preParsed),
     convertConditionToGo: (jsCondition, preParsed) =>
       this.convertConditionToGo(jsCondition, preParsed),
-    extractPropNameFromInitialValue: (initialValue, preParsed) =>
-      this.extractPropNameFromInitialValue(initialValue, preParsed),
     computedSignalSeed: (signal, propsParams, propFallbackVars) =>
       this.computedSignalSeed(signal, propsParams, propFallbackVars),
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
@@ -803,7 +801,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(signal => nullable.has(signal.getter))
         .filter(signal => isNillableSeedSignal(this.emitCtx, signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}' || (
           !propNames.has(signal.initialValue) &&
-          !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
+          !seedPassthroughPropName(this.emitCtx, signal.parsed) &&
           !propMemberSeedGoType(this.emitCtx, signal) &&
           typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}'))
         .map(signal => signal.getter),
@@ -5885,52 +5883,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
-  }
-
-  /**
-   * Extract the prop name from a signal's `props.xxx`-pattern initialValue,
-   * e.g. `"props.initial ?? 0"` → `"initial"`, `"props.checked"` → `"checked"`.
-   * For destructured components (`propsObjectName` null) the same shapes are
-   * matched structurally on `preParsed` with an identifier left operand
-   * (`size ?? 0` → `"size"`); callers validate the name against
-   * `propsParams`, which filters shadowing locals.
-   */
-  private extractPropNameFromInitialValue(initialValue: string, preParsed?: ParsedExpr): string | null {
-    if (!this.state.propsObjectName) {
-      if (
-        preParsed?.kind === 'logical' &&
-        (preParsed.op === '??' || preParsed.op === '||') &&
-        preParsed.left.kind === 'identifier'
-      ) {
-        return preParsed.left.name
-      }
-      return null
-    }
-    const trimmed = initialValue.trim()
-    const name = this.state.propsObjectName
-
-    // "props.initial ?? 0", "props.checked", "p.value || ''"
-    const direct = new RegExp(`^${name}\\.(\\w+)(?:\\s*(?:\\?\\?|\\|\\|)\\s*.+)?$`)
-    const m1 = trimmed.match(direct)
-    if (m1) return m1[1]
-
-    // "(props.initialTodos ?? []).map(...)"
-    const wrapped = new RegExp(`^\\(${name}\\.(\\w+)\\s*(?:\\?\\?|\\|\\|)\\s*[^)]+\\)(.*)$`)
-    const m2 = trimmed.match(wrapped)
-    if (m2) {
-      const tail = m2[2]
-      // The propagation rule is "this signal's Go type is the prop's Go type".
-      // That breaks when the trailing access transforms the prop type — e.g.
-      // `(props.initial ?? []).length` is a `number`, not the prop's `[]Todo`.
-      // Bail so the caller falls back to `inferTypeFromValue` on the full
-      // expression, which recognises `.length` / `.some()` / `.every()` etc.
-      if (/^\s*\.(length|size|some|every|includes|indexOf|findIndex|lastIndexOf)\b/.test(tail)) {
-        return null
-      }
-      return m2[1]
-    }
-
-    return null
   }
 
   /**

@@ -3,7 +3,7 @@ import { createFixture } from '../src/types'
 /**
  * `signal-computed-prop-seed` with the props absent: the `??` defaults are
  * taken. Go Template seeds these through the runtime evaluator, which gets
- * an absent optional prop as its Go zero value, so `??` keeps it (#3519).
+ * an absent optional prop as `nil` from its nillable field (#3519, #3532).
  */
 export const fixture = createFixture({
   id: 'signal-computed-prop-seed-absent',

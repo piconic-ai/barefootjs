@@ -31,7 +31,7 @@ import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isBoxedNumericMemoBody, isEvaluatedMemo, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
-import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType } from '../props/prop-types.ts'
+import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { propMemberSeedGoType } from '../value/prop-member-seed.ts'
 import { convertInitialValue } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
@@ -131,6 +131,9 @@ function numericArithmeticSeedGoType(
 ): 'int' | 'float64' | null {
   let float = false
   const leaf = (e: ParsedExpr): boolean => {
+    // A defaulted optional prop (`props.n ?? 1`), whose field is nillable
+    // for the `??` (#3532), is a number when both sides are.
+    if (e.kind === 'logical' && e.op === '??') return leaf(e.left) && leaf(e.right)
     if (e.kind === 'literal') {
       if (typeof e.value !== 'number') return false
       if (!Number.isInteger(e.value)) float = true
@@ -166,7 +169,7 @@ function seedingProp(
 ): StatePropParam | undefined {
   const direct = propsParamMap.get(signal.initialValue)
   if (direct) return direct
-  const propName = ctx.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
+  const propName = seedPassthroughPropName(ctx, signal.parsed)
   return propName ? propsParamMap.get(propName) : undefined
 }
 
@@ -412,5 +415,5 @@ export function signalSeedGo(
   // child Input keeps the asserted form.
   const ownNillableField = nillableDest && (
     isNillableSeedSignal(ctx, signal) || propMemberSeedGoType(ctx, signal) === 'interface{}')
-  return convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField)
+  return convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed, ownNillableField, true)
 }
