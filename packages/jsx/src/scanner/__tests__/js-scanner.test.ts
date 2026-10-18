@@ -1,8 +1,11 @@
 import { describe, test, expect } from 'bun:test'
+import ts from 'typescript'
 import {
   replaceInExprContexts,
   findInterpolationEnd,
   findTopLevelTemplateLiterals,
+  isTriviaKind,
+  iterateJsTokens,
 } from '../js-scanner'
 
 // ---------------------------------------------------------------------------
@@ -241,5 +244,25 @@ describe('findTopLevelTemplateLiterals', () => {
   test('regex with apostrophe inside expression does not confuse the scanner', () => {
     const r = findTopLevelTemplateLiterals("arr.filter(x => /it's/.test(x)) ? `<a/>` : `<b/>`")
     expect(r).toEqual(['<a/>', '<b/>'])
+  })
+})
+
+describe('iterateJsTokens: division after a keyword used as a name (#3536)', () => {
+  const kinds = (text: string) =>
+    [...iterateJsTokens(text)].filter(t => !isTriviaKind(t.kind)).map(t => ts.SyntaxKind[t.kind])
+
+  test('a contextual-keyword binding is followed by division', () => {
+    expect(kinds('type / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+  })
+
+  test('a keyword-named member is followed by division', () => {
+    expect(kinds('obj.default / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+    expect(kinds('obj?.new / 2')).not.toContain('RegularExpressionLiteral')
+  })
+
+  test('an operator keyword still starts a regex literal', () => {
+    expect(kinds('return /a/.test(x)')).toContain('RegularExpressionLiteral')
+    expect(kinds('typeof /a/')).toContain('RegularExpressionLiteral')
+    expect(kinds('await /a/.test(x)')).toContain('RegularExpressionLiteral')
   })
 })

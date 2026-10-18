@@ -62,9 +62,10 @@ export function* iterateJsTokens(
   // closes an object literal nested inside.
   const templateStack: { braceDepth: number }[] = []
 
-  // Previous *significant* (non-trivia) token kind. Drives the `/`
-  // regex-vs-division decision.
+  // Whether a `/` after the previous *significant* (non-trivia) token
+  // starts a regex literal (`regexAfter`), and that token's kind.
   let prevSignificant: ts.SyntaxKind | undefined
+  let regexMayStart = true
 
   while (true) {
     let kind = scanner.scan()
@@ -74,7 +75,7 @@ export function* iterateJsTokens(
     // significant token cannot end an expression.
     if (
       (kind === ts.SyntaxKind.SlashToken || kind === ts.SyntaxKind.SlashEqualsToken)
-      && canRegexStartHere(prevSignificant)
+      && regexMayStart
     ) {
       kind = scanner.reScanSlashToken()
     }
@@ -106,8 +107,26 @@ export function* iterateJsTokens(
 
     yield { kind, pos: scanner.getTokenStart(), end: scanner.getTokenEnd() }
 
-    if (!isTriviaKind(kind)) prevSignificant = kind
+    if (!isTriviaKind(kind)) {
+      regexMayStart = regexAfter(kind, prevSignificant)
+      prevSignificant = kind
+    }
   }
+}
+
+/**
+ * Whether a `/` right after a `kind` token (itself preceded by `before`)
+ * starts a regex literal. A keyword used as a name ends an expression like
+ * an identifier does, so `/` after it is division: a member name
+ * (`obj.default / 2`) and a contextual keyword, which is a legal binding
+ * name (`type / 2`). `await` keeps its operator reading (`await /re/`).
+ */
+function regexAfter(kind: ts.SyntaxKind, before: ts.SyntaxKind | undefined): boolean {
+  if (kind >= ts.SyntaxKind.FirstKeyword && kind <= ts.SyntaxKind.LastKeyword) {
+    if (before === ts.SyntaxKind.DotToken || before === ts.SyntaxKind.QuestionDotToken) return false
+    if (kind > ts.SyntaxKind.LastFutureReservedWord && kind !== ts.SyntaxKind.AwaitKeyword) return false
+  }
+  return canRegexStartHere(kind)
 }
 
 export function isTriviaKind(kind: ts.SyntaxKind): boolean {
