@@ -3367,8 +3367,8 @@ export function TodoList() {
 
     test('state does not bleed between two nested-filter expressions in the same component', () => {
       // Both filters now lower (one nested + one supported). Pin
-      // both to make sure the depth-scoped state reset
-      // (`filterExprUnsupported`) doesn't accidentally smother a
+      // both to make sure a refused predicate (`renderFilterExpr`
+      // returning `null`) doesn't accidentally smother a
       // sibling predicate when a transient default-arm hit DOES
       // occur (e.g. for the still-unsupported `flatMap` / `reduce`
       // shapes elsewhere in the same component).
@@ -8272,4 +8272,34 @@ describe('dataPointDivergences', () => {
       ).toBeDefined()
     })
   }
+})
+
+describe('GoTemplateAdapter - refusals carried as results, not marker text (#3542)', () => {
+  test('a find() predicate with no Go lowering reports one BF101 and keeps the template valid', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+type Item = { id: number; tags: string[] }
+
+export function FindRefused() {
+  const [items] = createSignal<Item[]>([])
+  return <p>{items().find(i => i.tags.some(t => t === 'a'))?.id}</p>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(result.errors.filter(e => e.code === 'BF101')).toHaveLength(1)
+    // The refused predicate becomes `false`: the BF101 fails the build, and
+    // the template still parses.
+    expect(template).toContain('{{range .Items}}{{if false}}{{.ID}}{{break}}{{end}}{{end}}')
+    expect(template).not.toContain('UNSUPPORTED')
+  })
+
+  test('the emitter backstop reports BF101 and emits a valid value', () => {
+    const adapter = new GoTemplateAdapter()
+    const state = (adapter as unknown as { state: { errors: { code: string; message: string }[] } }).state
+    expect(adapter.unsupported('a.b()', 'no lowering')).toBe('""')
+    expect(state.errors.map(e => e.code)).toEqual(['BF101'])
+    expect(state.errors[0].message).toContain("'a.b()'")
+  })
 })
