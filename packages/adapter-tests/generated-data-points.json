@@ -2870,6 +2870,68 @@
       }
     }
   ],
+  "filter-nested-callback-reads-outer-param": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "groups": [
+          {
+            "name": "g",
+            "tags": [
+              {
+                "children": [
+                  1
+                ],
+                "main": 1
+              }
+            ]
+          },
+          {
+            "name": "h",
+            "tags": [
+              {
+                "children": [
+                  2
+                ],
+                "main": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "items": [
+          {
+            "name": "a",
+            "tags": [
+              1,
+              2
+            ],
+            "main": 2
+          },
+          {
+            "name": "b",
+            "tags": [
+              3
+            ],
+            "main": 4
+          },
+          {
+            "name": "c",
+            "tags": [
+              5
+            ],
+            "main": 5
+          }
+        ],
+        "groups": []
+      }
+    }
+  ],
   "filter-param-literal-matches-renamed-name": [
     {
       "name": "gen:items:empty",
@@ -2879,6 +2941,14 @@
     }
   ],
   "filter-param-named-loop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "filter-param-sigil-in-string": [
     {
       "name": "gen:items:empty",
       "props": {

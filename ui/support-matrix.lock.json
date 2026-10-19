@@ -1857,6 +1857,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2069,6 +2075,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2181,6 +2193,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2288,6 +2306,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -2505,6 +2529,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2617,6 +2647,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2723,6 +2759,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -2803,10 +2845,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
       },
       "example": {
-        "fixture": "array-sort-self",
-        "description": ".sort((a,b) => a - b) sorts a primitive array by item value",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-self.ts",
-        "code": "(a, b) => a - b"
+        "fixture": "filter-nested-callback-reads-outer-param",
+        "description": "A nested filter callback reading the outer callback param sees the outer element (#3542)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-reads-outer-param.ts",
+        "code": "g => g === t.main"
       }
     },
     "binary": {
@@ -2834,6 +2876,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -3027,6 +3075,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3121,6 +3175,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3204,6 +3264,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -3379,6 +3445,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3467,6 +3539,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -3550,6 +3628,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -3728,6 +3812,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4157,6 +4247,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -4406,6 +4502,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -4615,6 +4717,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -5036,6 +5144,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5250,6 +5364,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5453,6 +5573,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -5957,6 +6083,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -6492,6 +6624,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -6796,6 +6934,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7053,6 +7197,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -7570,6 +7720,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -7832,6 +7988,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -8083,6 +8245,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -10430,6 +10598,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -10864,6 +11038,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -11120,6 +11300,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -11335,6 +11521,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -11768,6 +11960,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -11988,6 +12186,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -12197,6 +12401,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -15568,6 +15778,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -15678,6 +15894,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -15736,6 +15958,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -15783,6 +16011,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
@@ -15886,6 +16120,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -15938,6 +16178,12 @@
               ]
             },
             {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -15985,6 +16231,12 @@
             },
             {
               "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
               "limitations": [
                 "nested-callback-in-filter-predicate"
               ]
