@@ -757,7 +757,7 @@
     },
     "packages/jsx/src/ir-to-client-js/csr-substitute.ts": {
       "csrSubstituteOnce/visit": [
-        38
+        37
       ]
     },
     "packages/jsx/src/ir-to-client-js/declaration-sort.ts": {
@@ -779,11 +779,6 @@
       ],
       "emitReactivePropBindings": [
         40
-      ]
-    },
-    "packages/jsx/src/ir-to-client-js/emit-registration.ts": {
-      "resolveChainedRefs": [
-        47
       ]
     },
     "packages/jsx/src/ir-to-client-js/html-template.ts": {
