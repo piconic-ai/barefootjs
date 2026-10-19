@@ -37,7 +37,6 @@
  */
 
 import type { IRExpression } from '../types.ts'
-import { parseExpression, type ParsedExpr } from '../expression-parser.ts'
 
 /**
  * A JS expression string that evaluates, in the client template, to HTML
@@ -179,37 +178,6 @@ export const EMPTY_MARKUP: SafeHtml = safeHtml("''")
 // The door for a child-position expression node.
 // ---------------------------------------------------------------------------
 
-/**
- * Recognizes a JSX child-position expression that is exactly a reference to
- * the reserved `children` prop, optionally with `?? ''`: bare `children` (destructured) or
- * `<receiver>.children` for any single-identifier receiver (`props.children`,
- * a custom props-param name, a loop-scoped alias closing over props, ...).
- *
- * Deliberately LOOSER than `isTransparentFragment` (`jsx-to-ir.ts`), which
- * runs on the TS AST with the analyzer-resolved props name in hand. This
- * layer parses IR expressions without analyzer context, so any single-identifier receiver
- * is the available approximation. The looseness costs nothing measurable: an
- * unrelated `.children` member (a tree node's own `children` array, say) is a
- * reactive member expression that gets a `slotId` and takes the slotted arm
- * of `spliceChildValue` before this predicate is consulted.
- */
-function isChildrenPassthroughExpr(expr: string): boolean {
-  return isChildrenPassthrough(parseExpression(expr))
-}
-
-function isChildrenPassthrough(expr: ParsedExpr): boolean {
-  if (expr.kind === 'identifier') return expr.name === 'children'
-  if (expr.kind === 'member') {
-    return expr.object.kind === 'identifier' && expr.property === 'children'
-      && !expr.computed && !expr.optional
-  }
-  // An empty fallback adds no untrusted text to the compiler-built markup.
-  // Other fallbacks still take the escape-by-default path.
-  return expr.kind === 'logical' && expr.op === '??'
-    && expr.right.kind === 'literal' && expr.right.value === ''
-    && isChildrenPassthrough(expr.left)
-}
-
 export interface ChildSpliceContext {
   /**
    * Set while emitting inside a conditional-branch `template()` arrow
@@ -250,7 +218,7 @@ export interface ChildSpliceContext {
  * either alone misses one of the two shapes (#2786).
  */
 export function spliceChildValue(
-  node: Pick<IRExpression, 'expr' | 'slotId' | 'joinArrayChild'>,
+  node: Pick<IRExpression, 'expr' | 'slotId' | 'joinArrayChild' | 'childrenRead'>,
   valueExpr: string,
   cx: ChildSpliceContext,
 ): SafeHtml {
@@ -259,7 +227,7 @@ export function spliceChildValue(
   if (node.slotId) {
     return cx.markupSlotIds?.has(node.slotId) ? escapedTextOrMarkup(valueExpr) : escapedText(valueExpr)
   }
-  if (isChildrenPassthroughExpr(node.expr) || isChildrenPassthroughExpr(valueExpr)) {
+  if (node.childrenRead === 'bare' || node.childrenRead === 'nullish-empty') {
     return childrenMarkup(valueExpr)
   }
   return escapedText(valueExpr)
