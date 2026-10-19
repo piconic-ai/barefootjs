@@ -5832,7 +5832,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
-    const computed = computedPropSeedGo(this.emitCtx, signal.parsed, [...propsParams], propFallbackVars)
+    // The seed plan's form, which reads through local consts and helper calls (#3562).
+    const parsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
+    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars)
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))

@@ -9733,6 +9733,24 @@
         "text"
       ]
     },
+    "signal-seed-local-helper-call": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "signal-with-fallback": {
       "kinds": [
         "call",
