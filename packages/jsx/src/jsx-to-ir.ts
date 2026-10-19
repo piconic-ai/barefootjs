@@ -42,7 +42,7 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
-import { nullishChainParts } from './children-nullish.ts'
+import { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
@@ -1029,7 +1029,8 @@ function isEmptyStringFallback(fallback: ParsedExpr): boolean {
  * How `parsed` reads the component's own `children` prop
  * (`IRExpression.childrenRead`, #3539): a bare `children` the props
  * destructure binds or `<propsObject>.children`, that read on the left of
- * `?? ''`, or on the left of another `?? fallback`. A chained
+ * `?? ''`, on the left of another `?? fallback`, or on the left of
+ * `|| fallback` (#3554). A chained
  * `(children ?? '<b>x</b>') ?? ''` reads as `children ?? ('<b>x</b>' ?? '')`
  * (`nullishChainParts`), so its inner fallback stays escaped text. A name the enclosing loop rows bind
  * (item, index, destructured names and preamble locals, through `scope`)
@@ -1047,6 +1048,8 @@ function childrenReadOf(
     if (childrenReadOf(chain.head, analyzer, scope) !== 'bare') return null
     return isEmptyStringFallback(chain.fallback) ? 'nullish-empty' : 'nullish-fallback'
   }
+  const orChain = fallbackChainParts(parsed, '||')
+  if (orChain) return childrenReadOf(orChain.head, analyzer, scope) === 'bare' ? 'or-fallback' : null
   if (parsed.kind === 'identifier') {
     if (scope.isBound(parsed.name)) return null
     const isProp = analyzer.propsParams.some(p => p.name === parsed.name && (p.sourceName ?? p.name) === 'children')

@@ -102,6 +102,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
 export const renderDivergences: RenderDivergences = {
+  // A children prop renamed in the parameter destructure (`{ children: kids }`):
+  // the renamed `Kids` field reads nil when the parent passes children, so
+  // present children are dropped and the `??` fallback renders.
+  'children-renamed-param': { limitation: 'renamed-children-param' },
   // Arithmetic over an omitted optional number prop: the engine reads the
   // nil as `0`, JS reads `undefined` as `NaN` (#3474).
   'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },

@@ -6076,6 +6076,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -6344,6 +6350,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -6579,6 +6591,30 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-rest",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -6910,6 +6946,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -7175,6 +7217,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -7446,6 +7494,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -7693,6 +7747,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -7964,6 +8024,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8229,6 +8295,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -8996,6 +9068,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
               ]
             },
             {
@@ -10419,6 +10497,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10625,6 +10709,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -10854,6 +10944,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -11047,6 +11143,24 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-then-explicit",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
+              "fixture": "component-spread-rest",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -11318,6 +11432,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -11541,6 +11661,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -11770,6 +11896,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -11975,6 +12107,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -12204,6 +12342,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -12427,6 +12571,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-then-props",
+              "limitations": [
+                "component-prop-spread"
               ]
             },
             {
@@ -18107,6 +18257,12 @@
               ]
             },
             {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -19140,6 +19296,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
             {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [

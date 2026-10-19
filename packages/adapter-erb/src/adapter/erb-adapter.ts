@@ -67,7 +67,7 @@ import {
   type AttrValueEmitter,
   parseExpression,
   stringifyParsedExpr,
-  nullishChainParts,
+  fallbackChainParts,
   planStyleObject,
   type ExpressionAttr,
   isSupported,
@@ -766,16 +766,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
 
   /**
    * The Ruby value an expression child prints: the `children` prop's markup
-   * as it is, a `children ?? fallback` read with only the fallback escaped,
-   * and anything else escaped (`IRExpression.childrenRead`, #3539).
+   * as it is, a `children ?? fallback` / `children || fallback` read with
+   * only the fallback escaped, and anything else escaped
+   * (`IRExpression.childrenRead`, #3539, #3554).
    */
   private childrenAwareOutput(expr: IRExpression, rubyExpr: string): string {
     if (expr.childrenRead === 'bare' || expr.childrenRead === 'nullish-empty') return rubyExpr
-    const chain = expr.childrenRead === 'nullish-fallback' && expr.parsed ? nullishChainParts(expr.parsed) : null
+    const op = expr.childrenRead === 'nullish-fallback' ? '??' : expr.childrenRead === 'or-fallback' ? '||' : null
+    const chain = op && expr.parsed ? fallbackChainParts(expr.parsed, op) : null
     if (chain) {
       const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
       const fallback = this.convertExpressionToRuby(stringifyParsedExpr(chain.fallback), chain.fallback)
-      return `((${children}).nil? ? bf.h(${fallback}) : ${children})`
+      if (op === '??') return `((${children}).nil? ? bf.h(${fallback}) : ${children})`
+      return `(bf.truthy?(${children}) ? ${children} : bf.h(${fallback}))`
     }
     return `bf.h(${rubyExpr})`
   }
