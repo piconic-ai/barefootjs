@@ -22,11 +22,11 @@
  * literal value — `collectModuleStringConsts` is the shared source of that
  * set — so a reference to one is never a template-variable read.
  *
- * A `derived` step with EMPTY `frees` is a constant expression (e.g.
- * `createSignal('b')`): the plan still classifies it as derived because the
- * expression is fully analyzable; emit-side constant-skipping (adapters keep
- * their existing ssr-defaults seeding for such inits) is an adapter concern,
- * not a plan concern. Likewise the plan makes no backend-specific choices —
+ * A `derived` step whose `frees` name only module pure-string consts (or
+ * nothing, e.g. `createSignal('b')`) is a constant expression, marked
+ * `constant`: the plan still classifies it as derived because the expression
+ * is fully analyzable, and adapters keep their static ssr-defaults seed for
+ * it instead of computing it in-template. Likewise the plan makes no backend-specific choices —
  * no target-variable checks, no self-shadowing rules, no per-backend shape
  * catalogs — those stay in the adapters.
  */
@@ -64,7 +64,20 @@ import { isElidedFactoryGetter } from './types.ts'
  */
 export type SsrSeedStep =
   | { kind: 'env-reader'; name: string; reader: EnvSignalReader }
-  | { kind: 'derived'; name: string; origin: 'signal' | 'memo'; expr: string; parsed: ParsedExpr; frees: string[] }
+  | {
+      kind: 'derived'
+      name: string
+      origin: 'signal' | 'memo'
+      expr: string
+      parsed: ParsedExpr
+      frees: string[]
+      /**
+       * Every free identifier is a module pure-string const, which every
+       * adapter inlines, so the lowered expression reads no template
+       * variable (#3542).
+       */
+      constant: boolean
+    }
   | { kind: 'opaque'; name: string; origin: 'signal' | 'memo' }
 
 export interface SsrSeedPlan {
@@ -96,6 +109,7 @@ function classify(
   expr: string,
   parsed: ParsedExpr,
   available: ReadonlySet<string>,
+  inlined: ReadonlySet<string>,
 ): SsrSeedStep {
   if (!isSupportedValue(parsed).supported) return { kind: 'opaque', name, origin }
   const frees = freeIdentifiers(parsed)
@@ -103,7 +117,8 @@ function classify(
   for (const free of frees) {
     if (!available.has(free)) return { kind: 'opaque', name, origin }
   }
-  return { kind: 'derived', name, origin, expr, parsed, frees: [...frees] }
+  const constant = [...frees].every(free => inlined.has(free))
+  return { kind: 'derived', name, origin, expr, parsed, frees: [...frees], constant }
 }
 
 /**
@@ -194,9 +209,8 @@ function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const baseScope: string[] = metadata.propsParams.map(p => p.name)
   if (metadata.propsObjectName) baseScope.push(metadata.propsObjectName)
-  for (const name of collectModuleStringConsts(metadata.localConstants).keys()) {
-    baseScope.push(name)
-  }
+  const inlined = new Set(collectModuleStringConsts(metadata.localConstants).keys())
+  baseScope.push(...inlined)
 
   const available = new Set<string>(baseScope)
   const localConsts = localConstExprsByName(metadata)
@@ -243,6 +257,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
             // undefined) equally safe.
             resolveThroughLocalConsts(signal.parsed ?? parseExpression(`(${expr})`), localConsts),
             available,
+            inlined,
           ),
     )
     available.add(signal.getter)
@@ -259,6 +274,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
             expr,
             resolveThroughLocalConsts(memo.parsed ?? parseExpression(expr), localConsts),
             available,
+            inlined,
           ),
     )
     available.add(memo.name)
@@ -271,7 +287,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   for (const [alias, origin] of resolveGetterAliases(metadata.localConstants ?? [], name => getters.has(name))) {
     if (metadata.propsParams.some(p => p.name === alias)) continue
     const parsed: ParsedExpr = { kind: 'call', callee: { kind: 'identifier', name: origin }, args: [] }
-    steps.push(classify(alias, 'memo', `${origin}()`, parsed, available))
+    steps.push(classify(alias, 'memo', `${origin}()`, parsed, available, inlined))
     available.add(alias)
   }
   return { baseScope, steps }

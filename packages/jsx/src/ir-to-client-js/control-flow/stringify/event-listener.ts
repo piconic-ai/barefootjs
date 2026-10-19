@@ -6,24 +6,24 @@
  *   2. inline event setup     (`emit-control-flow.ts::emitEventSetup`)
  *   3. loop-cond branch bindings (`stringify/loop-child-arm.ts::stringifyBranchEventBindings`)
  *
- * Each repeated `wrapHandlerInBlock(handler)` + DOM-event-name normalisation +
- * `if (elem) elem.addEventListener(...)` line. Centralising the shape here
- * keeps the wrap and the event-name decision in one place — useful when
+ * Each repeated the DOM-event-name normalisation + `if (elem)
+ * elem.addEventListener(...)` line. Centralising the shape here keeps the
+ * event-name decision in one place — useful when
  * we eventually drop the legacy "raw event name" mode (currently only used
  * by `@client` conditionals).
  */
 
-import { toDomEventName, wrapHandlerInBlock, wrapHandlerForTurn } from '../../utils.ts'
+import { toDomEventName, wrapHandlerForTurn } from '../../utils.ts'
 import type { JsSourceText } from '../../../types.ts'
 
 export type EventNameMode = 'dom' | 'raw'
 
 /**
  * Emit `if (<elementVar>) <elementVar>.addEventListener('<eventName>',
- * <wrappedHandler>)` on a single line. The handler is already
- * source-level — pass it verbatim; the helper applies
- * `wrapHandlerInBlock` so block-form arrow functions are safe to drop
- * into an expression position.
+ * <handler>)` on a single line. The handler is already source-level and
+ * an expression (Phase 1 parenthesizes a comma sequence), so it is passed
+ * verbatim: `addEventListener` ignores a listener's return value, so an
+ * expression-bodied arrow needs no block wrap (#3538).
  */
 export function emitListenerLine(
   lines: string[],
@@ -36,7 +36,7 @@ export function emitListenerLine(
 ): void {
   // Profile mode (#1690, SR3): when a turn id is supplied the handler is
   // bracketed with beginTurn/endTurn instead of the plain block wrap.
-  const wrapped = turnId ? wrapHandlerForTurn(handler, turnId) : wrapHandlerInBlock(handler)
+  const wrapped = turnId ? wrapHandlerForTurn(handler, turnId) : handler.trim()
   const name = mode === 'dom' ? toDomEventName(eventName) : eventName
   lines.push(`${indent}if (${elementVar}) ${elementVar}.addEventListener('${name}', ${wrapped})`)
 }
@@ -62,7 +62,7 @@ export function emitListenerBlock(
   mode: EventNameMode = 'dom',
   bodyIsMultiRoot: boolean = false,
 ): void {
-  const wrapped = wrapHandlerInBlock(handler)
+  const wrapped = handler.trim()
   const name = mode === 'dom' ? toDomEventName(eventName) : eventName
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
   lines.push(`${indent}{ const ${elementLocal} = ${lookup}(${scopeVar}, '[bf="${slotId}"]'); if (${elementLocal}) ${elementLocal}.addEventListener('${name}', ${wrapped}) }`)

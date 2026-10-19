@@ -15,7 +15,7 @@ export function initZeroArgSignal(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => { setV('x') })
+  if (_s1) _s1.addEventListener('click', () => setV('x'))
 }
 
 hydrate('ZeroArgSignal', { init: initZeroArgSignal, template: (_p) => `<button bf="s1"><!--bf:s0-->${escapeTextOrMarkup((undefined) ?? 'none')}<!--/--></button>` })

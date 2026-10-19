@@ -96,9 +96,12 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`logical-signal-seed`): a signal seeded by a computed prop expression
 // (`props.x || d`, `props.x && v`, `n * 2`) is now seeded by the runtime
 // evaluator (`computedPropSeedGo`) instead of the bare prop or nil.
+//
+// #3532 graduated `signal-computed-prop-seed-absent`
+// (`evaluated-nullish-absent-prop`): an optional prop under `??` in an
+// evaluated seed takes the nillable field, so the evaluator gets `nil` for an
+// absent one.
 export const renderDivergences: RenderDivergences = {
-  // An absent optional prop reaches the runtime evaluator as its Go zero value, so `??` keeps it.
-  'signal-computed-prop-seed-absent': { limitation: 'evaluated-nullish-absent-prop' },
   // A props spread onto a child component: this adapter drops the spread (#3479).
   'component-spread-rest': { limitation: 'component-prop-spread' },
   'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
@@ -217,4 +220,7 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // An explicit `''` for a prop with a string destructure default reads as
+  // absent, so the evaluated seed takes the default.
+  'signal-computed-seed-sibling-fallbacks-destructured:gen:tag:empty': { limitation: 'defaulted-prop-explicit-empty' },
 }

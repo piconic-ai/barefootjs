@@ -13,6 +13,7 @@ import {
   arithmeticOperandIsUndefined,
   asCallbackMethodCall,
   bareGetterCallName,
+  freeIdentifiers,
   freeVarsInBody,
   materializeGetterCalls,
   isNullishLiteral,
@@ -33,6 +34,7 @@ import {
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
+import { defaultedBindingGo } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -472,7 +474,14 @@ function signalSeedValueGo(
   return computed ?? getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signalType, signal.parsed)
 }
 
-/** Seed shapes that compute a value; a top-level `??` keeps its hoisted prop fallback. */
+/**
+ * Seed shapes that compute a value; a top-level `??` keeps its hoisted prop
+ * fallback. A call (`Math.max(props.n ?? 0, 1)`, `(props.label ?? 'x')
+ * .toUpperCase()`) computes one too (#3540), and so does a member read off a
+ * computed value (`(props.label ?? '').length`, `[props.n].length`). A member
+ * chain rooted at a name (`props.label`, `initial.address.city`) is a prop
+ * passthrough or a prop member seed, resolved to its Input field elsewhere.
+ */
 function isComputedSeedShape(e: ParsedExpr): boolean {
   switch (e.kind) {
     case 'logical':
@@ -481,7 +490,14 @@ function isComputedSeedShape(e: ParsedExpr): boolean {
     case 'conditional':
     case 'unary':
     case 'template-literal':
+    case 'call':
+    case 'array-method':
       return true
+    case 'member': {
+      let root: ParsedExpr = e
+      while (root.kind === 'member') root = root.object
+      return root.kind !== 'identifier'
+    }
     default:
       return false
   }
@@ -489,8 +505,9 @@ function isComputedSeedShape(e: ParsedExpr): boolean {
 
 /**
  * A signal seed that computes over a prop (`props.label || 'none'`,
- * `props.flag && 'on'`, `n * 2`), evaluated by the runtime evaluator as a
- * memo body is (#3519). Before, such a seed baked the bare prop or `nil`.
+ * `props.flag && 'on'`, `n * 2`, `(props.label ?? '').length`), evaluated by
+ * the runtime evaluator as a memo body is (#3519, #3540). Before, such a seed
+ * baked the bare prop, `nil` or the type's zero value.
  * Null for any other seed, or one the evaluator can't take.
  */
 export function computedPropSeedGo(
@@ -502,7 +519,9 @@ export function computedPropSeedGo(
   if (!parsed || !isComputedSeedShape(parsed)) return null
   // A prop member chain inside the seed keeps its own refusal (#3142).
   if (embeddedPropMemberChain(ctx, parsed, propsParams)) return null
-  const readsProp = [...freeVarsInBody(parsed, new Set())].some(
+  // `freeIdentifiers`, not `freeVarsInBody`: the latter skips the receiver
+  // of a string method (`(props.label ?? 'x').toUpperCase()`).
+  const readsProp = [...(freeIdentifiers(parsed) ?? [])].some(
     name => name === ctx.state.propsObjectName || propsParams.some(p => p.name === name),
   )
   if (!readsProp) return null
@@ -543,8 +562,14 @@ function evalEnvValueGo(
     if (resolving.has(memo.name)) return null
     goExpr = memoEnvValueGo(ctx, memo, signals, propsParams, propFallbackVars, new Set([...resolving, memo.name]))
   } else if (param) {
-    const hoisted = propFallbackVars.get(name)
-    goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
+    // The binding itself, with its destructure default. A hoisted
+    // `propFallbackVars` local is a sibling signal's `x ?? d` seed, whose
+    // fallback is not this expression's (#3540).
+    const binding = ctx.state.currentPropsParams.find(p => p.name === name)
+    const defaulted = binding
+      ? defaultedBindingGo(ctx, binding, ctx.state.currentPropsParams, ctx.state.propTypeOverrides)
+      : null
+    goExpr = defaulted ?? `in.${capitalizeFieldName(param.sourceName ?? name)}`
   } else if (name === ctx.state.propsObjectName) {
     // The props object (`props.items.length`) as a map keyed by each
     // prop's caller-facing name (#3512).

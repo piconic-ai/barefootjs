@@ -1561,7 +1561,12 @@ export interface IRAttribute extends AttrMeta {
 export interface IREvent {
   name: string // 'click', 'input', 'keydown'
   originalAttr?: string // Original JSX attribute name: 'onClick', 'onKeyDown'
-  handler: JsSourceText // JS expression: '() => setCount(n => n + 1)'
+  /**
+   * JS expression: '() => setCount(n => n + 1)'. Always a single expression
+   * (a comma sequence arrives parenthesized), passed verbatim as the
+   * listener argument.
+   */
+  handler: JsSourceText
   loc: SourceLocation
 }
 

@@ -66,7 +66,7 @@ export function initRowPortalRefBranch(__scope, _p = {}) {
     }
   })
 
-  if (_s0) _s0.addEventListener('click', () => { setOpen(o => !o) })
+  if (_s0) _s0.addEventListener('click', () => setOpen(o => !o))
 }
 
 hydrate('RowPortalRefBranch', { init: initRowPortalRefBranch, template: (_p) => `<div bf="s7"><button type="button" class="toggle" bf="s0">toggle</button><p class="last" bf="s2"><!--bf:s1-->${escapeTextOrMarkup(('none'))}<!--/--></p>${(true) ? `<ul bf-c="s3" bf="s6"><!--bf-loop:l0-->${_p.rows.map((r) => `<li data-key="${escapeAttr(r)}"><button type="button" class="row" data-key="${escapeAttr(r)}" bf="s5"><!--bf:s4-->${escapeText(r)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul>` : `<!--bf-cond-start:s3--><!--bf-cond-end:s3-->`}</div>` })

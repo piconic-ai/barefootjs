@@ -74,7 +74,7 @@
         28
       ],
       "generateNewPropsFunction": [
-        97
+        95
       ],
       "isStringExpr": [
         29
@@ -183,7 +183,7 @@
     },
     "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {
       "collectFractionalChildProps/mayBeFractional": [
-        35
+        28
       ],
       "collectFractionalChildProps/visit": [
         28
@@ -241,7 +241,7 @@
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
       "renderLoop": [
-        60
+        58
       ]
     },
     "packages/adapter-mojolicious/src/test-render.ts": {
@@ -332,7 +332,7 @@
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
       "renderLoop": [
-        77
+        75
       ]
     },
     "packages/adapter-xslate/src/test-render.ts": {
@@ -757,7 +757,7 @@
     },
     "packages/jsx/src/ir-to-client-js/csr-substitute.ts": {
       "csrSubstituteOnce/visit": [
-        38
+        37
       ]
     },
     "packages/jsx/src/ir-to-client-js/declaration-sort.ts": {
@@ -779,11 +779,6 @@
       ],
       "emitReactivePropBindings": [
         40
-      ]
-    },
-    "packages/jsx/src/ir-to-client-js/emit-registration.ts": {
-      "resolveChainedRefs": [
-        47
       ]
     },
     "packages/jsx/src/ir-to-client-js/html-template.ts": {

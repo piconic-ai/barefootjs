@@ -186,7 +186,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -358,8 +358,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertExpressionToGo(jsExpr, out, preParsed),
     convertConditionToGo: (jsCondition, preParsed) =>
       this.convertConditionToGo(jsCondition, preParsed),
-    extractPropNameFromInitialValue: (initialValue, preParsed) =>
-      this.extractPropNameFromInitialValue(initialValue, preParsed),
     computedSignalSeed: (signal, propsParams, propFallbackVars) =>
       this.computedSignalSeed(signal, propsParams, propFallbackVars),
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
@@ -798,7 +796,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(signal => nullable.has(signal.getter))
         .filter(signal => isNillableSeedSignal(this.emitCtx, signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}' || (
           !propNames.has(signal.initialValue) &&
-          !this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed) &&
+          !seedPassthroughPropName(this.emitCtx, signal.parsed) &&
           !propMemberSeedGoType(this.emitCtx, signal) &&
           typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed) === 'interface{}'))
         .map(signal => signal.getter),
@@ -2240,31 +2238,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('')
   }
 
-  /**
-   * The Go type the Input struct ACTUALLY emits for `fieldName` —
-   * `generateInputStruct`'s own first-entry-wins dedup (#2943: a
-   * body-destructure-with-default rename like `{ label: text = 'none' }`
-   * adds a second `propsParams` entry sharing `label`'s caller-facing
-   * field name), replayed here so a default-application site downstream
-   * (`generatePropsStruct`) picks the wrapper that matches the type the
-   * field was ACTUALLY declared with — not the type `text`'s OWN
-   * `ParamInfo` would resolve to in isolation, which can disagree when an
-   * earlier, non-defaulted entry for the same field (e.g. a bare
-   * `props.label` read elsewhere) won the interface{}-nillable flip.
-   */
-  private resolveInputFieldGoType(
-    ir: ComponentIR,
-    fieldName: string,
-    propTypeOverrides: Map<string, string>,
-  ): string | undefined {
-    for (const param of ir.metadata.propsParams) {
-      if (capitalizeFieldName(param.sourceName ?? param.name) === fieldName) {
-        return resolvePropGoType(this.emitCtx, param, propTypeOverrides)
-      }
-    }
-    return undefined
-  }
-
   private generatePropsStruct(
     lines: string[],
     ir: ComponentIR,
@@ -2724,28 +2697,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           : hoisted.varName
         lines.push(`\t\t${fieldName}: ${value},`)
       } else {
-        const paramDefault = goPropDefault(param.defaultValue)
+        const defaulted = defaultedBindingGo(this.emitCtx, param, ir.metadata.propsParams, propTypeOverrides)
         const memoFold = memoFallbacks.get(fieldName)
-        const outputType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
-        if (
-          paramDefault !== null &&
-          outputType !== 'interface{}' &&
-          this.resolveInputFieldGoType(ir, inputField, propTypeOverrides) === 'interface{}'
-        ) {
-          // #2943: the shared Input FIELD this default reads from resolved
-          // to `interface{}` — not `param`'s (concrete, since it has its
-          // OWN default) `outputType` — because another `propsParams` entry
-          // sharing this field name (a bare `props.X` read elsewhere) won
-          // the nillable flip. `applyGoFallback`'s zero-value check assumes
-          // the ref is already `outputType`-typed, which `in.<inputField>`
-          // no longer is; nil-check then type-assert back to `outputType`
-          // instead (the TS type contract guarantees a caller-supplied
-          // value is that type whenever it isn't nil).
-          lines.push(
-            `\t\t${fieldName}: func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return in.${inputField}.(${outputType}) }(),`,
-          )
-        } else if (paramDefault !== null) {
-          lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${inputField}`, paramDefault)},`)
+        if (defaulted !== null) {
+          lines.push(`\t\t${fieldName}: ${defaulted},`)
         } else if (memoFold !== undefined && memoFold.goType === 'string') {
           lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${inputField}`, memoFold.goFallback)},`)
         } else if (memoFold !== undefined) {
@@ -5880,52 +5835,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
-  }
-
-  /**
-   * Extract the prop name from a signal's `props.xxx`-pattern initialValue,
-   * e.g. `"props.initial ?? 0"` → `"initial"`, `"props.checked"` → `"checked"`.
-   * For destructured components (`propsObjectName` null) the same shapes are
-   * matched structurally on `preParsed` with an identifier left operand
-   * (`size ?? 0` → `"size"`); callers validate the name against
-   * `propsParams`, which filters shadowing locals.
-   */
-  private extractPropNameFromInitialValue(initialValue: JsSourceText, preParsed?: ParsedExpr): string | null {
-    if (!this.state.propsObjectName) {
-      if (
-        preParsed?.kind === 'logical' &&
-        (preParsed.op === '??' || preParsed.op === '||') &&
-        preParsed.left.kind === 'identifier'
-      ) {
-        return preParsed.left.name
-      }
-      return null
-    }
-    const trimmed = initialValue.trim()
-    const name = this.state.propsObjectName
-
-    // "props.initial ?? 0", "props.checked", "p.value || ''"
-    const direct = new RegExp(`^${name}\\.(\\w+)(?:\\s*(?:\\?\\?|\\|\\|)\\s*.+)?$`)
-    const m1 = trimmed.match(direct)
-    if (m1) return m1[1]
-
-    // "(props.initialTodos ?? []).map(...)"
-    const wrapped = new RegExp(`^\\(${name}\\.(\\w+)\\s*(?:\\?\\?|\\|\\|)\\s*[^)]+\\)(.*)$`)
-    const m2 = trimmed.match(wrapped)
-    if (m2) {
-      const tail = m2[2]
-      // The propagation rule is "this signal's Go type is the prop's Go type".
-      // That breaks when the trailing access transforms the prop type — e.g.
-      // `(props.initial ?? []).length` is a `number`, not the prop's `[]Todo`.
-      // Bail so the caller falls back to `inferTypeFromValue` on the full
-      // expression, which recognises `.length` / `.some()` / `.every()` etc.
-      if (/^\s*\.(length|size|some|every|includes|indexOf|findIndex|lastIndexOf)\b/.test(tail)) {
-        return null
-      }
-      return m2[1]
-    }
-
-    return null
   }
 
   /**

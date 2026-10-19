@@ -11,7 +11,7 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
 
   const [_s0, _s2] = $(__scope, 's0', 's2')
 
-  if (_s0) _s0.addEventListener('click', () => { setIds([1, 2]) })
+  if (_s0) _s0.addEventListener('click', () => setIds([1, 2]))
   mapArrayLazy(() => ids(), _s2, (id) => String(id), {
     createRow: (__e, __idx) => {
       const id = () => __e.item

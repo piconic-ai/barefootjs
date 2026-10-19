@@ -31,8 +31,8 @@ import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isBoxedNumericMemoBody, isEvaluatedMemo, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
-import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType } from '../props/prop-types.ts'
-import { propMemberSeedGoType } from '../value/prop-member-seed.ts'
+import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
+import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
 import { convertInitialValue } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
 
@@ -131,6 +131,9 @@ function numericArithmeticSeedGoType(
 ): 'int' | 'float64' | null {
   let float = false
   const leaf = (e: ParsedExpr): boolean => {
+    // A defaulted optional prop (`props.n ?? 1`), whose field is nillable
+    // for the `??` (#3532), is a number when both sides are.
+    if (e.kind === 'logical' && e.op === '??') return leaf(e.left) && leaf(e.right)
     if (e.kind === 'literal') {
       if (typeof e.value !== 'number') return false
       if (!Number.isInteger(e.value)) float = true
@@ -148,9 +151,13 @@ function numericArithmeticSeedGoType(
     if (goType === 'float64') float = true
     return goType === 'int' || goType === 'float64'
   }
-  const visit = (e: ParsedExpr): boolean =>
-    e.kind === 'binary' && (e.op === '*' || e.op === '-') ? visit(e.left) && visit(e.right) : leaf(e)
-  if (!parsed || parsed.kind !== 'binary' || !visit(parsed)) return null
+  const visit = (e: ParsedExpr): boolean => {
+    if (e.kind === 'binary' && (e.op === '*' || e.op === '-')) return visit(e.left) && visit(e.right)
+    // `Math.max` / `Math.min` over numbers is a number of the same kind (#3540).
+    if (isMathMinMax(e)) return e.args.length > 0 && e.args.every(visit)
+    return leaf(e)
+  }
+  if (!parsed || (parsed.kind !== 'binary' && !isMathMinMax(parsed)) || !visit(parsed)) return null
   return float ? 'float64' : 'int'
 }
 
@@ -166,7 +173,7 @@ function seedingProp(
 ): StatePropParam | undefined {
   const direct = propsParamMap.get(signal.initialValue)
   if (direct) return direct
-  const propName = ctx.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
+  const propName = seedPassthroughPropName(ctx, signal.parsed)
   return propName ? propsParamMap.get(propName) : undefined
 }
 
