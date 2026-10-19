@@ -3743,6 +3743,41 @@
         "text"
       ]
     },
+    "filter-nested-callback-reads-outer-param": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-nested-callback-reads-outer-param-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-nested-find-predicate": {
       "kinds": [
         "array-literal",
@@ -3869,6 +3904,23 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-param-sigil-in-string": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -9273,6 +9325,45 @@
         "text"
       ]
     },
+    "signal-computed-call-seed": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-call-seed-destructured": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "signal-computed-prop-seed": {
       "kinds": [
         "binary",
@@ -9331,6 +9422,75 @@
       "contexts": [
         "attribute",
         "text"
+      ]
+    },
+    "signal-computed-seed-defaulted-alias": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-seed-forwarded-fraction": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-seed-sibling-fallbacks": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-computed-seed-sibling-fallbacks-destructured": {
+      "kinds": [
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "signal-default-from-jsx": {

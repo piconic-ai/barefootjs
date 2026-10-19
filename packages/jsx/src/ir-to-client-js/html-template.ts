@@ -20,29 +20,6 @@ import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
 
 /**
- * Protect string literals from regex-based replacements.
- * Returns protect/restore functions that extract string literals before
- * regex replacements and restore them after.
- */
-export function createStringProtector(): {
-  protect: (s: string) => string
-  restore: (s: string) => string
-} {
-  const strings: string[] = []
-  const protect = (s: string): string => {
-    return s.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, (match) => {
-      const idx = strings.length
-      strings.push(match)
-      return `__STRLIT_${idx}__`
-    })
-  }
-  const restore = (s: string): string => {
-    return s.replace(/__STRLIT_(\d+)__/g, (_, idx) => strings[Number(idx)])
-  }
-  return { protect, restore }
-}
-
-/**
  * Split a template literal body into static segments and `${...}` interpolations,
  * correctly handling nested braces (e.g. object literals inside interpolations).
  */
@@ -1838,8 +1815,22 @@ export function irToComponentTemplate(
   return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName })
 }
 
+/**
+ * The `csrSubstitute` environment that inlines each template constant by
+ * name (#3535), or null when there is none to inline.
+ */
+function inlinableConstantEnv(inlinableConstants: ReadonlyMap<string, string> | undefined): CsrEnv | null {
+  if (!inlinableConstants || inlinableConstants.size === 0) return null
+  const substitutions = new Map<string, CsrSubstitution>()
+  for (const [name, value] of inlinableConstants) {
+    substitutions.set(name, { kind: 'identifier', replacement: value, freeIdentifiers: new Set() })
+  }
+  return { substitutions, propsObjectName: null }
+}
+
 function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
   const { inlinableConstants, restSpreadNames, propsObjectName, restPropsName, loopDepth = 0 } = opts
+  const constantEnv = inlinableConstantEnv(inlinableConstants)
   // `recurse` preserves `inHoistedChildren` for structural pass-through
   // (fragment / conditional); `childrenRecurse` clears it so element
   // descendants don't re-emit the placeholder. (#1320)
@@ -1850,28 +1841,18 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
   // from Phase 1 AST rewrite. Only constant inlining and props object
   // normalization are done here. (#807)
   const transformExpr = (expr: string, templateExpr?: string): string => {
-    const { protect, restore } = createStringProtector()
-    let result = protect(templateExpr ?? expr)
+    // Inline constant references with their resolved values (#343), on the
+    // expression tree: a constant's name inside a string or template
+    // literal, a member name, or a binding that shadows it is never
+    // replaced, and a shorthand `{ size }` expands to `size: (value)`
+    // (#3535).
+    const source = templateExpr ?? expr
+    const restored = constantEnv ? csrSubstitute(source, constantEnv, opts.scope).rewritten : source
 
-    // Inline constant references with their resolved values (#343)
-    if (inlinableConstants && inlinableConstants.size > 0) {
-      for (const [constName, constValue] of inlinableConstants) {
-        result = result.replace(new RegExp(`(?<![-.])\\b${constName}\\b`, 'g'), `(${protect(constValue)})`)
-      }
-    }
-
-    // Normalize source-level props object access (e.g., props.xxx → _p.xxx).
-    // Restore FIRST: `rewritePropsObjectRef` parses `result` as real
-    // TypeScript, and a still-protected string/template-literal span would
-    // parse as an opaque placeholder token instead of the source text it
-    // stands for (harmless for the placeholder itself, but it must not be
-    // mistaken for unparsed leftover input by a caller reading `result`
-    // before this point). Regex-based `\b${propsObjectName}\.` (removed
-    // here) required the name to be immediately followed by `.`, so a
-    // parenthesised receiver — `(props).label`, produced by this same
-    // function's own constant-inlining step just above when the inlined
-    // value is itself `props` (a local alias of the whole props object) —
-    // silently kept the pre-rewrite name instead of `_p`.
+    // Normalize source-level props object access (e.g., props.xxx → _p.xxx),
+    // also on the tree: a parenthesised receiver — `(props).label`, produced
+    // by the constant inlining just above when the inlined value is itself
+    // `props` (a local alias of the whole props object) — resolves too.
     //
     // The gate stays keyed on `propsObjectName` for the destructured-prop
     // case (unconditionally rewriting here would also change static-path
@@ -1881,7 +1862,6 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
     // param), so `rest.header` resolves to `_p.header` here the same way
     // it already does in the init body (`generate-init.ts`, #2723) instead
     // of reaching the template as a bare, undeclared `rest` (#2806).
-    const restored = restore(result)
     return (propsObjectName && propsObjectName !== PROPS_PARAM) || restPropsName
       ? rewritePropsObjectRef(restored, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
       : restored

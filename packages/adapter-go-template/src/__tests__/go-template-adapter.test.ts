@@ -827,7 +827,7 @@ export function TodoApp(props: { initial?: Todo[] }) {
     })
 
     test('signal initialized via `(props.X ?? []).length` lands as int, not []T (#1442 echo TodoApp repro)', () => {
-      // Regression: `extractPropNameFromInitialValue` greedily matched
+      // Regression: the seed's prop passthrough (now `seedPassthroughPropName`) greedily matched
       // any `(props.X ?? Y).<something>` shape and propagated the prop's
       // Go type ([]Todo) to the signal field, even when the trailing
       // accessor (`.length`) transformed the expression to a number.
@@ -3367,8 +3367,8 @@ export function TodoList() {
 
     test('state does not bleed between two nested-filter expressions in the same component', () => {
       // Both filters now lower (one nested + one supported). Pin
-      // both to make sure the depth-scoped state reset
-      // (`filterExprUnsupported`) doesn't accidentally smother a
+      // both to make sure a refused predicate (`renderFilterExpr`
+      // returning `null`) doesn't accidentally smother a
       // sibling predicate when a transient default-arm hit DOES
       // occur (e.g. for the still-unsupported `flatMap` / `reduce`
       // shapes elsewhere in the same component).
@@ -6642,13 +6642,15 @@ export function NonCollide(props: { count?: number }) {
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     const types = result.files.find(f => f.type === 'types')!.content
-    // No collision here — `count`'s own field stays the plain concrete type,
-    // byte-identical to before this fix.
-    expect(types).toContain('Count int')
-    expect(types).not.toContain('Count interface{}')
+    // No collision here, so no hoisted collision fallback. Since #3532 the
+    // prop is nillable (`interface{}`) all the same: the seed is evaluated,
+    // and an absent `count` must reach the evaluator as nil for `?? 1` to
+    // apply (it used to read as 0 and seed 0 instead of 2).
+    expect(types).toContain('Count interface{}')
     const newProps = types.slice(types.indexOf('func NewNonCollideProps'))
     expect(newProps).not.toContain('var count int')
     expect(newProps).toContain('Count: in.Count,')
+    expect(newProps).toContain('bf.EvalExpr(')
   })
 })
 
@@ -8272,4 +8274,34 @@ describe('dataPointDivergences', () => {
       ).toBeDefined()
     })
   }
+})
+
+describe('GoTemplateAdapter - refusals carried as results, not marker text (#3542)', () => {
+  test('a find() predicate with no Go lowering reports one BF101 and keeps the template valid', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+type Item = { id: number; tags: string[] }
+
+export function FindRefused() {
+  const [items] = createSignal<Item[]>([])
+  return <p>{items().find(i => i.tags.some(t => t === 'a'))?.id}</p>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(result.errors.filter(e => e.code === 'BF101')).toHaveLength(1)
+    // The refused predicate becomes `false`: the BF101 fails the build, and
+    // the template still parses.
+    expect(template).toContain('{{range .Items}}{{if false}}{{.ID}}{{break}}{{end}}{{end}}')
+    expect(template).not.toContain('UNSUPPORTED')
+  })
+
+  test('the emitter backstop reports BF101 and emits a valid value', () => {
+    const adapter = new GoTemplateAdapter()
+    const state = (adapter as unknown as { state: { errors: { code: string; message: string }[] } }).state
+    expect(adapter.unsupported('a.b()', 'no lowering')).toBe('""')
+    expect(state.errors.map(e => e.code)).toEqual(['BF101'])
+    expect(state.errors[0].message).toContain("'a.b()'")
+  })
 })

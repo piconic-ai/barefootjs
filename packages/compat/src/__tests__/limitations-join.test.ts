@@ -253,13 +253,17 @@ describe('limitation registry ↔ adapter declarations', () => {
         return !loaded.some(adapter => {
           const pinned = (adapter.pins[fixtureId] ?? []).some(p => p.limitation === entry.id)
           const divergent = adapter.renderDivergences[fixtureId]?.limitation === entry.id
-          return pinned || divergent
+          // A data point divergence (`<fixture>:<point>`) of a fixture whose primary render matches.
+          const pointDivergent = Object.entries(adapter.dataPointDivergences).some(
+            ([point, d]) => d.limitation === entry.id && point.startsWith(`${fixtureId}:`),
+          )
+          return pinned || divergent || pointDivergent
         })
       })
       if (orphaned.length > 0) {
         throw new Error(
           `limitation '${entry.id}' lists fixture(s) [${orphaned.join(', ')}] that no adapter pins, no ` +
-            `render divergence declares, and no oracle-quarantine / fixture-hydrate-quarantine / scope-gate / CSR-divergence row cites under it ` +
+            `render or data point divergence declares, and no oracle-quarantine / fixture-hydrate-quarantine / scope-gate / CSR-divergence row cites under it ` +
             `— either the fixture graduated (drop it from the entry; delete the entry when its list empties) or a ` +
             `pin cites the wrong id.`,
         )

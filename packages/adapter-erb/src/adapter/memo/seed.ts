@@ -47,8 +47,8 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
  * analysis lives in `computeSsrSeedPlan` (packages/jsx/src/ssr-seed-plan.ts);
  * this only lowers each step's expression to Ruby and applies the two
  * backend-specific emit guards: skip an empty lowering, and skip a lowering
- * that references no `v[:var]` at all (a constant init/body — e.g. a
- * `derived` step with empty `frees` — keeps the existing static ssr-defaults
+ * that the plan marks `constant` (a constant init/body — e.g. a
+ * `derived` step reading only inlined module consts — keeps the existing static ssr-defaults
  * seed instead). `env-reader` and `opaque` steps emit nothing (the runtime
  * supplies the reader, or the adapter's ssr-defaults path already covers
  * it). (#1297, #2075)
@@ -63,7 +63,7 @@ export function generateDerivedMemoSeed(ctx: ErbMemoContext, ir: ComponentIR): s
     if (step.kind !== 'derived') continue
     // `'value'` — this RHS is an assignment, not a render (#2696 review).
     const ruby = ctx.convertExpressionToRuby(step.expr, step.parsed, 'value')
-    if (ruby === '' || !/v\[:[A-Za-z_]\w*\]/.test(ruby)) continue
+    if (ruby === '' || step.constant) continue
     lines.push(`<% v[:${step.name}] = ${ruby} %>`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''

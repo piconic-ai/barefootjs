@@ -44,7 +44,7 @@ export function initDiamondPropagation(__scope, _p = {}) {
     __bfw_s8('s8', escapeTextOrNode(__val))
   })
 
-  if (_s10) _s10.addEventListener('click', () => { setA(n => n + 1) })
+  if (_s10) _s10.addEventListener('click', () => setA(n => n + 1))
   createEffect(() => {
     const base = a()
     const consistent = b() === base * 10 && c() === base * 100

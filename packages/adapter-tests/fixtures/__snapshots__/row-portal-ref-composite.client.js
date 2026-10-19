@@ -42,7 +42,7 @@ export function initRowPortalRefComposite(__scope, _p = {}) {
     })())
     if (__existing) claimRowPortals(__existing, __scopeId, ["s4"], _s5)
     upsertChildItem(__el, 'RowLabel__f13d1715', 's2', { get text() { return r() } }, undefined, __scope)
-    { const __e = qsaItem(__el, '[bf="s4"]'); if (__e) __e.addEventListener('click', () => { setLast(r()) }) }
+    { const __e = qsaItem(__el, '[bf="s4"]'); if (__e) __e.addEventListener('click', () => setLast(r())) }
     const __bfw_s3 = lazySlots(__el, [{ id: 's3', kind: 'text', path: [] }])
     createEffect(() => { __bfw_s3('s3', String(r())) })
     { const __rf_s4 = qsaItem(__el, '[bf="s4"]')

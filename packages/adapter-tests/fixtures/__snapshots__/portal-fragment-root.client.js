@@ -26,8 +26,8 @@ export function initPortalFragmentRoot(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) _s0.addEventListener('click', () => { setOpen(true) })
-  if (_s1) _s1.addEventListener('click', () => { setOpen(false) })
+  if (_s0) _s0.addEventListener('click', () => setOpen(true))
+  if (_s1) _s1.addEventListener('click', () => setOpen(false))
   if (_s2) { (moveToBody)(_s2); if (__scopeId) _s2.setAttribute('bf-po', __scopeId) }
 }
 
