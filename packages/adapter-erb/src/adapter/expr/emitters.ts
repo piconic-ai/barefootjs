@@ -110,6 +110,20 @@ function optionalLength(receiver: string, optional: boolean): string {
   return optional ? `((${receiver}).nil? ? nil : ${read})` : read
 }
 
+/**
+ * The Ruby block param a nested callback binds `param` as: its own local,
+ * unless an enclosing callback param of another name already renders as that
+ * local (a loop gate's filter param rendered as the row local `todo`, with a
+ * nested callback param named `todo`), which the block param would shadow;
+ * then the first of `_bf_<param>`, `_bf2_<param>`, … that none renders as.
+ */
+function blockLocal(param: string, outerLocals: ReadonlyMap<string, string>): string {
+  const taken = (local: string) => [...outerLocals].some(([name, l]) => name !== param && l === local)
+  let local = rubyLocal(param)
+  for (let n = 1; taken(local); n++) local = n === 1 ? `_bf_${rubyLocal(param)}` : `_bf${n}_${rubyLocal(param)}`
+  return local
+}
+
 export class ErbFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -149,6 +163,12 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   // Defaults to `rubyLocal(param)`, i.e. every other construction site is
   // unaffected.
   private readonly renderParamAs: string
+  // The Ruby locals an ENCLOSING callback's param renders as, keyed by its
+  // JS name. A nested `.some(g => g === t.main)` inside the loop-gating
+  // predicate must emit the outer `t` as the loop's bound local (`todo`),
+  // the same split `renderParamAs` makes for this emitter's own param
+  // (#3542).
+  private readonly outerLocals: ReadonlyMap<string, string>
 
   constructor(
     param: string,
@@ -157,6 +177,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     isStringName: (n: string) => boolean = unusedIsStringName,
     onUnsupported?: (message: string, reason?: string) => void,
     renderParamAs: string = rubyLocal(param),
+    outerLocals: ReadonlyMap<string, string> = new Map(),
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -164,10 +185,13 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
     this.renderParamAs = renderParamAs
+    this.outerLocals = outerLocals
   }
 
   identifier(name: string): string {
     if (name === this.param) return this.renderParamAs
+    const outerLocal = this.outerLocals.get(name)
+    if (outerLocal) return outerLocal
     const signal = this.localVarMap.get(name)
     if (signal) return `v[${rubySymbolLiteral(signal)}]`
     if (this.isLoopBoundOuter(name)) return rubyLocal(name)
@@ -279,15 +303,18 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     const param = arrow.params[0]
     const predicate = arrow.body
     const arrayExpr = emit(object)
+    const outerLocals = new Map([...this.outerLocals, [this.param, this.renderParamAs]])
+    const blockParam = blockLocal(param, outerLocals)
     const nested = new ErbFilterEmitter(
       param,
       this.localVarMap,
       (n) => n === this.param || this.isLoopBoundOuter(n),
       this.isStringName,
       this.onUnsupported,
+      blockParam,
+      outerLocals,
     )
     const predBody = emitParsedExpr(predicate, nested)
-    const blockParam = rubyLocal(param)
     if (method === 'filter') return `${arrayExpr}.select { |${blockParam}| bf.truthy?(${predBody}) }`
     if (method === 'every') return `${arrayExpr}.all? { |${blockParam}| bf.truthy?(${predBody}) }`
     if (method === 'some') return `${arrayExpr}.any? { |${blockParam}| bf.truthy?(${predBody}) }`

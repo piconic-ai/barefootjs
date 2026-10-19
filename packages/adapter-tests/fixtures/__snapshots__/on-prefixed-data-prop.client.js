@@ -49,7 +49,7 @@ export function initOnPrefixedDataProp(__scope, _p = {}) {
   const [_s5, _s2, _s4] = $(__scope, 's5', 's2', 's4')
   const [_s0] = $c(__scope, 's0')
 
-  if (_s5) _s5.addEventListener('click', () => { setFlag(v => !v) })
+  if (_s5) _s5.addEventListener('click', () => setFlag(v => !v))
 
   // Reactive prop bindings
   { const __m = []

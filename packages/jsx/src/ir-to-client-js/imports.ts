@@ -3,9 +3,10 @@
  */
 
 import ts from 'typescript'
-import type { ComponentIR, IRNode } from '../types.ts'
+import type { CompilerError, ComponentIR, ImportInfo, IRNode, SourceLocation } from '../types.ts'
+import { createError, ErrorCodes } from '../errors.ts'
 import { isClientBuiltinName } from '../builtins.ts'
-import { collectValueReferencedNames } from '../value-references.ts'
+import { analyzeEmittedReferences, collectValueReferencedNames } from '../value-references.ts'
 import { identifierCallPattern } from '../identifier-pattern.ts'
 
 // All exports from @barefootjs/client/runtime that may be used in generated code
@@ -84,30 +85,66 @@ export const RUNTIME_MODULE = '@barefootjs/client/runtime'
 export const IMPORT_PLACEHOLDER = '/* __BAREFOOTJS_DOM_IMPORTS__ */'
 export const MODULE_CONSTANTS_PLACEHOLDER = '/* __MODULE_LEVEL_CONSTANTS__ */'
 
+/** Runtime names `detectUsedImports` can report: the candidates plus the slot finders. */
+const RUNTIME_IMPORT_NAMES: ReadonlySet<string> = new Set<string>([...RUNTIME_IMPORT_CANDIDATES, '$', '$c', '$t'])
+
 /**
- * Detect which @barefootjs/client/runtime functions are actually used in the generated code
+ * Detect which @barefootjs/client/runtime functions the generated code uses:
+ * the runtime names it references without binding them itself (#3537). A
+ * module-level user helper emitted as `var insert = …`, or a parameter that
+ * happens to be called `qsa`, binds its name, so it neither pulls in the
+ * runtime import nor collides with it as a duplicate declaration.
+ *
+ * Falls back to the per-name call scan only when the code does not parse
+ * cleanly, where narrowing on a partial parse could drop a needed import.
  */
 export function detectUsedImports(code: string): Set<string> {
+  const refs = analyzeEmittedReferences(code)
+  if (refs) return new Set([...refs.free].filter(name => RUNTIME_IMPORT_NAMES.has(name)))
   const used = new Set<string>()
   for (const name of RUNTIME_IMPORT_CANDIDATES) {
-    // Match function calls: name(
-    if (identifierCallPattern(name).test(code)) {
-      used.add(name)
+    if (identifierCallPattern(name).test(code)) used.add(name)
+  }
+  if (/\$c\s*\(/.test(code)) used.add('$c')
+  if (/\$t\s*\(/.test(code)) used.add('$t')
+  if (/\$\s*\(/.test(code)) used.add('$')
+  return used
+}
+
+/**
+ * BF057 for each module-level binding of the user's that takes a runtime
+ * helper's name (#3537): a module-level declaration the client JS re-emits,
+ * or a value import from anything but the runtime itself, whose name the
+ * emitted `code` also calls. That call may be the compiler's own, which the
+ * user's binding would capture, so it is refused rather than guessed at.
+ * This is exactly the case that used to emit both the binding and a runtime
+ * import of the same name, a duplicate-declaration SyntaxError. A binding
+ * the code never calls (`const qsa = {…}` read as `qsa.step`) stays legal.
+ */
+export function runtimeNameCollisions(
+  declarations: readonly { name: string; loc: SourceLocation }[],
+  imports: readonly ImportInfo[],
+  code: string,
+): CompilerError[] {
+  const runtimeSources = new Set([RUNTIME_MODULE, '@barefootjs/client'])
+  const bound = [...declarations]
+  for (const imp of imports) {
+    if (imp.isTypeOnly || runtimeSources.has(imp.source)) continue
+    for (const spec of imp.specifiers) {
+      if (!spec.isTypeOnly) bound.push({ name: spec.alias ?? spec.name, loc: imp.loc })
     }
   }
-  // Shorthand finders need special detection ($ is not a word character)
-  if (/\$c\s*\(/.test(code)) {
-    used.add('$c')
-  }
-  // Match $t( for text node finders
-  if (/\$t\s*\(/.test(code)) {
-    used.add('$t')
-  }
-  // Match $( but not $c( or $t( - use negative lookahead
-  if (/\$\s*\(/.test(code)) {
-    used.add('$')
-  }
-  return used
+  const colliding = bound.filter(b => RUNTIME_IMPORT_NAMES.has(b.name))
+  if (colliding.length === 0) return []
+  const called = analyzeEmittedReferences(code)?.called
+  return colliding
+    .filter(b => called?.has(b.name) ?? true)
+    .map(b =>
+      createError(ErrorCodes.RUNTIME_HELPER_NAME_COLLISION, b.loc, {
+        message: `'${b.name}' is also a BarefootJS runtime helper, and the compiled client JS calls '${b.name}(…)'. ` +
+          'Rename the declaration, or import it under an alias.',
+      }),
+    )
 }
 
 /**

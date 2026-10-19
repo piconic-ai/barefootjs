@@ -9,7 +9,7 @@ export function initCreateQueryInitial(__scope, _p = {}) {
 
   const [_s2, _s1] = $(__scope, 's2', 's1')
 
-  if (_s2) _s2.addEventListener('click', () => { fetchPosts() })
+  if (_s2) _s2.addEventListener('click', () => fetchPosts())
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = `<li data-key=""><!--bf:s0--><!--/--></li>`
   const __lzp_l0 = [[0]]

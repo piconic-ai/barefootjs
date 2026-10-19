@@ -26,7 +26,7 @@ export function initNestedCondToggleList(__scope, _p = {}) {
       template: () => { const __slots = []; return { html: `<button bf-c="s0" ${(`${item().active ? 'toggle-btn on' : 'toggle-btn'}`) != null ? 'class="' + escapeAttr(`${item().active ? 'toggle-btn on' : 'toggle-btn'}`) + '"' : ''} ${(`toggle-${item().id}`) != null ? 'data-testid="' + escapeAttr(`toggle-${item().id}`) + '"' : ''} bf="s2">${item().active ? `<!--bf-cond-start:s1-->${__bfSlot('On', __slots)}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${__bfSlot('Off', __slots)}<!--bf-cond-end:s1-->`}</button>`, slots: __slots } },
       bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
         { const _s2 = qsa(__branchScope, '[bf="s2"]')
-          if (_s2) _s2.addEventListener('click', () => { toggle(item().id) })
+          if (_s2) _s2.addEventListener('click', () => toggle(item().id))
         }
         const __disposers = []
         { const __ra_s2 = qsa(__branchScope, '[bf="s2"]')

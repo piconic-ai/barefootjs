@@ -127,6 +127,14 @@ export const ErrorCodes = {
   // adapter including Hono. See `format-date-refusal.ts`.
   FORMAT_DATE_AUTHORED_CALL: 'BF056',
 
+  // A module-level declaration or a value import binds the name of a
+  // `@barefootjs/client/runtime` helper (`insert`, `hydrate`, `qsa`, …) and
+  // the compiled client JS calls that name (#3537). The call may be the
+  // compiler's own, which the user's binding would capture. Before import
+  // detection resolved scopes, this shape emitted the binding next to a
+  // runtime import of the same name: a duplicate-declaration SyntaxError.
+  RUNTIME_HELPER_NAME_COLLISION: 'BF057',
+
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 
@@ -280,6 +288,10 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.FORMAT_DATE_AUTHORED_CALL]:
     'formatDate cannot be called directly — it is compiler ABI, not an authored API.',
+
+  [ErrorCodes.RUNTIME_HELPER_NAME_COLLISION]:
+    'This module-level name is also a BarefootJS runtime helper, and the compiled client JS calls it. ' +
+    'Rename the declaration, or import it under an alias.',
 
   [ErrorCodes.BUILTIN_REQUIRES_IMPORT]:
     "Built-in <Async> / <Region> must be imported from '@barefootjs/client'. " +
