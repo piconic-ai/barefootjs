@@ -6,7 +6,7 @@
  */
 
 import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
-import { isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
+import { collectAbsentPropSeedReads, isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -317,6 +317,12 @@ export function collectNullableSignalSeedPropNames(ctx: GoEmitContext, ir: Compo
     if (!isNullableSignal(signal)) continue
     const name = bareSeedPropName(ctx, signal.parsed)
     if (name !== null && optionalParams.has(name)) names.add(name)
+  }
+  // A seed that can evaluate to an absent optional prop through a ternary
+  // branch or a `??` / `||` / `&&` operand (#3567) reads that prop the same
+  // way: its field must hold `nil` for the seed to.
+  for (const reads of collectAbsentPropSeedReads(ir).values()) {
+    for (const name of reads) if (optionalParams.has(name)) names.add(name)
   }
   return names
 }

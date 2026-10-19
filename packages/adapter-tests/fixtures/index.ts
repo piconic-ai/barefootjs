@@ -161,6 +161,7 @@ import { fixture as dataTable } from './data-table'
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
 import { fixture as signalWithFallback } from './signal-with-fallback'
+import { fixture as signalSeedAbsentOptionalPropAttr } from './signal-seed-absent-optional-prop-attr'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
 import { fixture as createMutationElidedValue } from './create-mutation-elided-value'
@@ -1089,6 +1090,7 @@ export const jsxFixtures: JSXFixture[] = [
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,
+  signalSeedAbsentOptionalPropAttr,
   signalDefaultFromJsx,
   controlledSignal,
   signalPropSameName,

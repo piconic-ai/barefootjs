@@ -46,9 +46,95 @@ export function isNullableSignal(signal: SignalInfo): boolean {
   return signal.type.kind === 'unknown' && isNullishLiteral(signal.parsed)
 }
 
-/** Getter names of the component's signals whose SSR value can be nullish. */
+/**
+ * Getter names of the component's signals whose SSR value can be nullish:
+ * a nullable signal (`isNullableSignal`), or one whose seed can evaluate to
+ * an absent optional prop (`createSignal(props.label)`,
+ * `createSignal(wide ? props.label : 'narrow')`, #3567). The seed is read in
+ * the form the SSR seed plan resolved it to, so a hop through a
+ * component-scope const counts too.
+ */
 export function collectNullableSignalGetters(ir: ComponentIR): Set<string> {
-  return new Set((ir.metadata.signals ?? []).filter(isNullableSignal).map(s => s.getter))
+  const absentReads = collectAbsentPropSeedReads(ir)
+  return new Set(
+    (ir.metadata.signals ?? []).filter(s => isNullableSignal(s) || absentReads.has(s.getter)).map(s => s.getter),
+  )
+}
+
+/**
+ * For each signal whose seed can evaluate to an absent optional prop, the
+ * props (by param name) it can read whole (#3567). The seed is read in the
+ * form the SSR seed plan resolved it to. A backend that types a prop by
+ * value (Go) flips each of these props to a nillable field so the absence
+ * survives into the signal.
+ */
+export function collectAbsentPropSeedReads(ir: ComponentIR): Map<string, Set<string>> {
+  const nullableProps = collectNullablePropReads(ir)
+  const out = new Map<string, Set<string>>()
+  if (nullableProps.size === 0) return out
+  const resolved = new Map<string, ParsedExpr>()
+  for (const step of ir.metadata.ssrSeedPlan?.steps ?? []) {
+    if (step.kind === 'derived' && step.origin === 'signal') resolved.set(step.name, step.parsed)
+  }
+  for (const s of ir.metadata.signals ?? []) {
+    const reads = new Set<string>()
+    collectSeedPropReads(resolved.get(s.getter) ?? s.parsed, nullableProps, reads)
+    if (reads.size > 0) out.set(s.getter, reads)
+  }
+  return out
+}
+
+/**
+ * Reads of a prop that can be absent at SSR time (optional or typed with
+ * `undefined` / `null`, no default, not a rest param): the name a read
+ * uses (the binding name, or `<propsObjectName>.<key>` for a member read)
+ * mapped to the param name.
+ */
+function collectNullablePropReads(ir: ComponentIR): ReadonlyMap<string, string> {
+  const names = new Map<string, string>()
+  const objectName = ir.metadata.propsObjectName
+  for (const p of ir.metadata.propsParams) {
+    if (p.isRest || p.defaultValue !== undefined) continue
+    if (!p.optional && !(p.type && admitsNullish(p.type))) continue
+    names.set(objectName ? `${objectName}.${p.sourceName ?? p.name}` : p.name, p.name)
+  }
+  return names
+}
+
+/**
+ * Add to `out` the params of `nullableProps` a seed's value can be read
+ * whole from: a bare read, a ternary branch, the right operand of `??` /
+ * `||`, or either operand of `&&`. A call, a member read past the prop, or
+ * any other shape produces its own value, so it does not count.
+ */
+function collectSeedPropReads(
+  expr: ParsedExpr | undefined,
+  nullableProps: ReadonlyMap<string, string>,
+  out: Set<string>,
+): void {
+  if (!expr) return
+  const add = (key: string): void => {
+    const param = nullableProps.get(key)
+    if (param !== undefined) out.add(param)
+  }
+  switch (expr.kind) {
+    case 'identifier':
+      add(expr.name)
+      return
+    case 'member':
+      if (!expr.computed && expr.object.kind === 'identifier') add(`${expr.object.name}.${expr.property}`)
+      return
+    case 'conditional':
+      collectSeedPropReads(expr.consequent, nullableProps, out)
+      collectSeedPropReads(expr.alternate, nullableProps, out)
+      return
+    case 'logical':
+      if (expr.op === '&&') collectSeedPropReads(expr.left, nullableProps, out)
+      collectSeedPropReads(expr.right, nullableProps, out)
+      return
+    default:
+      return
+  }
 }
 
 /**
