@@ -144,6 +144,36 @@ function emitNullishEquality(
  * JS's `undefined` — so `(x?.length ?? 0)` falls back to `0` and a bare
  * `x?.length` renders empty. A non-optional `.length` is emitted unchanged.
  */
+/**
+ * The Perl lexical a callback param is bound to inside its `grep` block:
+ * `$<param>`, unless an enclosing param of another name already reads as
+ * that variable (a loop filter's param spelled as the row variable `$todo`,
+ * with a nested callback param named `todo`), which the inner binding would
+ * shadow; then the first of `$_bf_<param>`, `$_bf2_<param>`, … that no such
+ * param reads as. An enclosing param of the same name is shadowed in JS too.
+ */
+function grepLexical(param: string, enclosing: ReadonlyMap<string, string>): string {
+  const taken = (spelled: string) => [...enclosing].some(([name, s]) => name !== param && s === spelled)
+  let lexical = `$${param}`
+  for (let n = 1; taken(lexical); n++) lexical = n === 1 ? `$_bf_${param}` : `$_bf${n}_${param}`
+  return lexical
+}
+
+/**
+ * The inline `grep` form of a `filter` / `every` / `some` predicate, its
+ * param bound by name from `$_` (#3542); `null` for the `find*` methods,
+ * which return an element or an index and have no inline form.
+ */
+function grepPredicate(method: string, paramVar: string, predBody: string, arrayExpr: string): string | null {
+  // The identity filter's synthesized param (`.filter(Boolean)`) is `_`,
+  // which already reads `$_`.
+  const bind = paramVar === '$_' ? '' : `my ${paramVar} = $_; `
+  if (method === 'filter') return `[grep { ${bind}${predBody} } @{${arrayExpr}}]`
+  if (method === 'every') return `!(grep { ${bind}!(${predBody}) } @{${arrayExpr}})`
+  if (method === 'some') return `!!(grep { ${bind}${predBody} } @{${arrayExpr}})`
+  return null
+}
+
 function optionalLength(receiver: string, optional: boolean, read: (receiver: string) => string): string {
   return optional ? `(defined(${receiver}) ? ${read(receiver)} : undef)` : read(receiver)
 }
@@ -168,21 +198,34 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   // emitter construction stays possible without an adapter; a missing hook
   // keeps the old silent-degrade emit.
   private readonly onUnsupported?: (message: string, reason?: string) => void
+  // The Perl variable each enclosing predicate's param reads as, by JS name
+  // (#3542): a loop filter's param reads the loop's row variable, and an
+  // enclosing callback's param its own `grep` lexical. The binding decides
+  // the spelling; nothing renames variables in the rendered text.
+  private readonly enclosingParams: ReadonlyMap<string, string>
+  // The Perl variable this predicate's own param reads as.
+  private readonly paramVar: string
 
   constructor(
     param: string,
     localVarMap: Map<string, string>,
     isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
+    enclosingParams: ReadonlyMap<string, string> = new Map(),
+    paramVar = `$${param}`,
   ) {
     this.param = param
     this.localVarMap = localVarMap
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
+    this.enclosingParams = enclosingParams
+    this.paramVar = paramVar
   }
 
   identifier(name: string): string {
-    if (name === this.param) return `$${this.param}`
+    if (name === this.param) return this.paramVar
+    const enclosing = this.enclosingParams.get(name)
+    if (enclosing) return enclosing
     const signal = this.localVarMap.get(name)
     if (signal) return `$${signal}`
     return `$${name}`
@@ -303,11 +346,16 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     const param = arrow.params[0]
     const predicate = arrow.body
     const arrayExpr = emit(object)
-    const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported))
-    const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
-    if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
-    if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
-    if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+    // The callback's param is a lexical bound from `$_`, so an enclosing
+    // param stays reachable inside the nested `grep` (`$_` would shadow it).
+    const enclosing = new Map(this.enclosingParams).set(this.param, this.paramVar)
+    const paramVar = grepLexical(param, enclosing)
+    const predBody = emitParsedExpr(
+      predicate,
+      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar),
+    )
+    const grep = grepPredicate(method, paramVar, predBody, arrayExpr)
+    if (grep !== null) return grep
     // `find` / `findIndex` / `findLast` / `findLastIndex` return an element
     // (or index), not a boolean — there is no inline grep form. Degrading to
     // the receiver silently changes predicate semantics, so be loud (#2038).
@@ -672,11 +720,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
    */
   private _nativePredicate(method: PredicateMethod, param: string, predicate: ParsedExpr, arrayExpr: string): string {
     const predBody = this.ctx._renderPerlFilterExprPublic(predicate, param)
-    const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
-    if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
-    if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
-    if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
-    const findHelper = { find: 'find', findIndex: 'find_index', findLast: 'find_last', findLastIndex: 'find_last_index' }
+    const grep = grepPredicate(method, `$${param}`, predBody, arrayExpr)
+    if (grep !== null) return grep
+    const findHelper: Record<string, string> = { find: 'find', findIndex: 'find_index', findLast: 'find_last', findLastIndex: 'find_last_index' }
     return `bf->${findHelper[method]}(${arrayExpr}, sub { my $${param} = $_[0]; ${predBody} })`
   }
 

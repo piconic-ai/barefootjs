@@ -106,6 +106,9 @@ export const conformancePins: ConformancePins = {
     { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
   ],
   'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' }],
+  'filter-nested-callback-reads-outer-param': [
+    { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
+  ],
   // `loop` is renamed to `__bf_loop`, so a component that also uses
   // `__bf_loop` would read one value under both names (#3404).
   'reserved-name-and-internal-twin': [

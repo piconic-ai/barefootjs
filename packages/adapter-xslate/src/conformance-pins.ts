@@ -104,6 +104,9 @@ export const conformancePins: ConformancePins = {
     { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
   ],
   'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' }],
+  'filter-nested-callback-reads-outer-param': [
+    { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
+  ],
   // Top-level `.find`/`.findIndex`/`.findLast`/`.findLastIndex` are NOT
   // pinned — unlike mojo (which refuses them), Xslate lowers them via the
   // same Kolon-lambda mechanism as `.filter`/`.some`. Only the nested form

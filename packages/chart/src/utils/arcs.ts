@@ -111,7 +111,8 @@ export function buildRadialBarArcs(
 export function buildPieSlices(
   data: Record<string, unknown>[],
   dataKey: string,
-  nameKey: string,
+  // Optional like `<Pie nameKey>`: without one, every slice is unnamed.
+  nameKey: string | undefined,
   config: Record<string, { label: string; color: string }>,
   width: number,
   height: number,
@@ -124,7 +125,7 @@ export function buildPieSlices(
   const radius = Math.min(width, height) / 2
 
   const pieData = data.map((d) => {
-    const name = String(d[nameKey] ?? '')
+    const name = nameKey === undefined ? '' : String(d[nameKey] ?? '')
     const value = Number(d[dataKey]) || 0
     const configEntry = config[name]
     const fill = configEntry?.color ?? 'currentColor'

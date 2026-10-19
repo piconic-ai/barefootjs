@@ -6,7 +6,7 @@
  * nested scope boundaries and comment-based scopes.
  */
 
-import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange, type CommentScopeInfo } from './scope.ts'
+import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange, isOwnedByScope, type CommentScopeInfo } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { BF_SCOPE, BF_SLOT, BF_HOST, BF_AT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
@@ -904,7 +904,7 @@ export function $t(scope: Element | null, ...ids: string[]): (Text | null)[] {
     const entry = markerMap.get(comment.nodeValue ?? '')
     if (!entry || results[entry.index] !== null) continue
 
-    if (isComponentScope && !entry.isParentOwned && !commentBelongsToScope(comment, scope, commentInfo)) {
+    if (isComponentScope && !entry.isParentOwned && !isOwnedByScope(comment, scope)) {
       continue
     }
     results[entry.index] = textNodeAfterComment(comment)
@@ -915,7 +915,7 @@ export function $t(scope: Element | null, ...ids: string[]): (Text | null)[] {
   // `createPortal`, #3059): any still-unresolved id gets one more pass over
   // `scope`'s relocated descendants — but only a PARENT-OWNED (`^`-prefixed)
   // id can legitimately live there; a non-parent-owned id unresolved by the
-  // in-range walk was never going to pass `commentBelongsToScope` either, so
+  // in-range walk was never going to pass `isOwnedByScope` either, so
   // skip it here too rather than pay for a walk that can't help it.
   if (remaining > 0) {
     for (const el of relocatedDescendants(scope)) {
@@ -955,28 +955,3 @@ export function textNodeAfterComment(comment: Comment): Text {
 
 export { textNodeAfterComment as tAfter }
 
-/**
- * Check if a comment node belongs to the given scope (not inside a nested child scope).
- */
-function commentBelongsToScope(
-  comment: Comment,
-  scope: Element,
-  commentInfo: { commentNode: Comment; scopeId: string } | undefined
-): boolean {
-  // Walk up from the comment to find the nearest scope element
-  const parent = comment.parentElement
-  if (!parent) return false
-
-  // If the comment's parent element has a bf-s attribute that is NOT our scope,
-  // then the comment is inside a child component's scope
-  const parentScope = parent.closest(`[${BF_SCOPE}]`)
-  if (parentScope === scope) return true
-
-  // For comment-based scopes, the scope element is virtual
-  if (commentInfo) {
-    return isInCommentScopeRange(parent, commentInfo.commentNode)
-  }
-
-  // If the nearest scope is inside our scope, the comment is in a nested scope
-  return false
-}

@@ -1058,9 +1058,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
+        // The filter's param reads as the loop's row local (`$t` →
+        // `$todo`), under the row's renamed local when it has one (#3392).
         filterCond = this.renderKolonFilterExpr(
           loop.filterPredicate.predicate,
-          loop.filterPredicate.param
+          loop.filterPredicate.param,
+          new Map(),
+          rowNames.get(param) ?? param,
         )
       } else {
         // Phase 1 always attaches the predicate; a missing one is refused,
@@ -1068,15 +1072,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
         this._recordExprBF101(refusal.message, refusal.suggestion)
         filterCond = '1'
-      }
-      // Map filter param to loop param (e.g., $t → $todo), under the row's
-      // renamed local when it has one (#3392).
-      const itemLocal = rowNames.get(param) ?? param
-      if (loop.filterPredicate.param !== itemLocal) {
-        filterCond = filterCond.replace(
-          new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),
-          `$${itemLocal}`
-        )
       }
       lines.push(`: if (${filterCond}) {`)
       lines.push(...preambleLines)
@@ -1477,6 +1472,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     expr: ParsedExpr,
     param: string,
     localVarMap: Map<string, string> = new Map(),
+    paramLocal = param,
   ): string {
     return emitParsedExpr(
       expr,
@@ -1490,6 +1486,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         (message, reason) => this._recordExprBF101(message, reason),
         name => this.memoKolonNames.get(name) ?? name,
         name => this.rowLocalName(name),
+        paramLocal,
       ),
     )
   }

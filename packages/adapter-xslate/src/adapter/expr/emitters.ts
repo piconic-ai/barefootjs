@@ -119,6 +119,10 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   // The Kolon local an enclosing loop row binds a captured name under
   // (#3392); identity without an adapter.
   private readonly rowLocalName: (name: string) => string
+  // The Kolon local the predicate's param reads as (#3542): a loop filter's
+  // param reads the loop's row local, decided here rather than renamed in
+  // the rendered text.
+  private readonly paramLocal: string
 
   constructor(
     param: string,
@@ -127,6 +131,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     onUnsupported?: (message: string, reason?: string) => void,
     memoKolonName: (name: string) => string = name => name,
     rowLocalName: (name: string) => string = name => name,
+    paramLocal = param,
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -134,10 +139,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     this.onUnsupported = onUnsupported
     this.memoKolonName = memoKolonName
     this.rowLocalName = rowLocalName
+    this.paramLocal = paramLocal
   }
 
   identifier(name: string): string {
-    if (name === this.param) return `$${this.param}`
+    if (name === this.param) return `$${this.paramLocal}`
     const signal = this.localVarMap.get(name)
     if (signal) return `$${signal}`
     return `$${this.rowLocalName(name)}`
