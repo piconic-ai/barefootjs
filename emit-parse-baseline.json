@@ -24,32 +24,17 @@
     "packages/adapter-go-template/src/adapter/go-template-adapter.ts": {
       "GoTemplateAdapter.childInputRowKeyField": 1,
       "GoTemplateAdapter.convertConditionToGo": 1,
-      "GoTemplateAdapter.convertExpressionToGo": 5,
-      "GoTemplateAdapter.extractPropFallback": 1,
-      "GoTemplateAdapter.extractPropNameFromInitialValue": 2,
+      "GoTemplateAdapter.convertExpressionToGo": 2,
       "GoTemplateAdapter.generateNewPropsFunction": 1,
       "GoTemplateAdapter.refuseComputedConstLoopSource": 1,
-      "GoTemplateAdapter.resolveDynamicPropValue": 1,
       "GoTemplateAdapter.tryLowerStyleObject": 1,
-      "emitExpression": 4
+      "emitExpression": 1
     },
     "packages/adapter-go-template/src/adapter/lib/loop-row-path.ts": {
       "loopKeyToGoRowExpr": 1
     },
-    "packages/adapter-go-template/src/adapter/memo/memo-compute.ts": {
-      "memoInitialFromParsedBody": 1
-    },
-    "packages/adapter-go-template/src/adapter/props/prop-classes.ts": {
-      "isBareStringLiteral": 4
-    },
     "packages/adapter-go-template/src/adapter/spread/spread-codegen.ts": {
-      "buildSpreadInitializer": 3
-    },
-    "packages/adapter-go-template/src/adapter/type/state-fields.ts": {
-      "isNumericArithmeticMemo": 4
-    },
-    "packages/adapter-go-template/src/adapter/value/value-lowering.ts": {
-      "getSignalInitialValueAsGo": 7
+      "buildSpreadInitializer": 2
     },
     "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
       "JinjaAdapter.convertExpressionToJinja": 1,
