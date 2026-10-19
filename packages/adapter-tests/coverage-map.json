@@ -3931,6 +3931,43 @@
         "text"
       ]
     },
+    "filter-predicate-shape-loop": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-predicate-shape-loop-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-predicate-signal-alias": {
       "kinds": [
         "array-literal",

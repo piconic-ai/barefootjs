@@ -146,6 +146,8 @@ export {
   isPredicateMethod,
   lowerCallbackMethod,
   nestedCallbackRefusal,
+  filterPredicateShapeRefusal,
+  missingFilterPredicateRefusal,
   isUnloweredCall,
   unloweredCallRefusal,
   sortEvalPlan,

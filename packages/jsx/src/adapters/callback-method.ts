@@ -352,6 +352,29 @@ export function unloweredCallRefusal(
 }
 
 /**
+ * BF101 for a `.filter(...).map(...)` predicate shape a DSL adapter's filter
+ * emitter has no form for: a conditional, a template literal, an object
+ * literal, a standalone arrow or regex, or an unsupported node (#3534). The
+ * emitters used to stand a truthy constant in for these, so every row
+ * rendered; the same predicate outside a loop is evaluated or refused, never
+ * guessed.
+ */
+export function filterPredicateShapeRefusal(shape: string, adapterName: string): { message: string; suggestion: string } {
+  return {
+    message: `Filter predicate contains ${shape}, which has no ${adapterName} loop-filter form`,
+    suggestion: `Rewrite the predicate as comparisons joined with && / || / !, or add /* @client */ for client-only evaluation (no SSR).`,
+  }
+}
+
+/** BF101 for a loop filter whose predicate never reached the IR (#3534). */
+export function missingFilterPredicateRefusal(raw: string, adapterName: string): { message: string; suggestion: string } {
+  return {
+    message: `Filter predicate '${raw}' has no ${adapterName} loop-filter form`,
+    suggestion: `Rewrite the predicate as an expression-body arrow, or add /* @client */ for client-only evaluation (no SSR).`,
+  }
+}
+
+/**
  * The BF101 for a callback method nested inside a filter predicate, which a
  * predicate emitter has no scalar form for.
  */

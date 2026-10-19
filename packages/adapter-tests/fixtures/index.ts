@@ -1049,6 +1049,8 @@ import { fixture as literalConstConditionalShapes } from './literal-const-condit
 import { fixture as conditionalThenColonText } from './conditional-then-colon-text'
 import { fixture as conditionalThenPercentText } from './conditional-then-percent-text'
 import { fixture as conditionalBranchSigilText } from './conditional-branch-sigil-text'
+import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
+import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
 import { fixture as stringLiteralUnionAliasShapes } from './string-literal-union-alias-shapes'
 import { fixture as stringLiteralUnionAliasSignalSeeds } from './string-literal-union-alias-signal-seeds'
 import { fixture as filterParamSigilInString } from './filter-param-sigil-in-string'
@@ -1780,6 +1782,8 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalNestedStatic,
   conditionalNestedSignal,
   createMutationElidedValue,
+  filterPredicateShapeLoop,
+  filterPredicateShapeLoopClient,
   stringLiteralUnionAliasShapes,
   stringLiteralUnionAliasSignalSeeds,
   filterParamSigilInString,
