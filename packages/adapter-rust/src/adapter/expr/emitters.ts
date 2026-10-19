@@ -68,6 +68,7 @@ import {
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
+  filterPredicateShapeRefusal,
   isUnloweredCall,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
@@ -296,29 +297,36 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
-    return 'true'
+    return this.refuseShape('a conditional (`?:`)')
   }
 
   templateLiteral(_parts: TemplatePart[]): string {
-    return 'true'
+    return this.refuseShape('a template literal')
   }
 
   arrow(_params: string[], _body: ParsedExpr): string {
-    return 'true'
+    return this.refuseShape('a standalone arrow function')
   }
 
   regex(_raw: string): string {
-    return 'true'
+    return this.refuseShape('a regular expression literal')
   }
 
-  unsupported(_raw: string, _reason: string): string {
-    return 'true'
+  unsupported(_raw: string, reason: string): string {
+    return this.refuseShape(`an expression with no template form (${reason})`)
   }
 
   objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
-    // Filter-predicate context: emit the truthy sentinel exactly as
-    // `unsupported` does. Object values lower to Jinja dicts in the
-    // conditional/attr paths, not through this dispatcher.
+    return this.refuseShape('an object literal')
+  }
+
+  /**
+   * A predicate shape this emitter cannot spell is BF101, never a truthy
+   * constant standing in for it (#3534): that rendered every row.
+   */
+  private refuseShape(shape: string): string {
+    const refusal = filterPredicateShapeRefusal(shape, CALLBACK_LOWERING.adapterName)
+    this.onUnsupported?.(refusal.message, refusal.suggestion)
     return 'true'
   }
 }

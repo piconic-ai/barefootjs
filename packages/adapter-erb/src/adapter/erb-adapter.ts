@@ -117,6 +117,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
   type ComputedConstContext,
+  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import { isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
@@ -1190,6 +1191,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
           this.scope = scopeBeforeAliases
         }
       } else {
+        // Phase 1 always attaches the predicate; a missing one is refused,
+        // never stood in for by a truthy constant that renders every row (#3534).
+        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
+        this._recordExprBF101(refusal.message, refusal.suggestion)
         filterCond = 'true'
       }
       lines.push(`<%- if bf.truthy?(${filterCond}) -%>`)
