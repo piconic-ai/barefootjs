@@ -123,11 +123,18 @@ The logic and its rationale are in `scripts/lib/complexity-ratchet.ts`.
 A second ratchet in the same workflow guards `spec/adapter-architecture.md`'s rule that Phase 2
 does not re-parse IR source text. `bun run ratchet:emit-parse` counts, per function, the calls
 to `parseExpression` / `parseLiteralExpression` in the client-JS emitter and the template
-adapters, and `ts.createSourceFile` in the adapters. It fails when a count grows, a new function
+adapters, and `ts.createSourceFile` in the adapters. With the type checker it also counts regex
+and string search over `JsSourceText`, the type the IR's source-text fields carry
+(`IRExpression.expr`, `MemoInfo.computation`, a handler, a loop key, …): `replace`, `match`,
+`includes`, `startsWith`, `indexOf`, `split` and the like on that text, `RegExp#test` / `exec`
+with it as the argument, and `new RegExp(it)`. The text stays `JsSourceText` through
+`trim` / `slice` and a `const`. Passing it through to output untouched does not count. Type a
+helper parameter or a local mirror of an IR field that holds such text as `JsSourceText` too,
+so the ratchet sees what the helper does with it. It fails when a count grows, a new function
 gains one, or the baseline (`emit-parse-baseline.json`) is above the tree. As with the complexity
 baseline, nobody edits it by hand: `bun run ratchet:emit-parse:baseline` regenerates it, only
 ever lower, and `--force` needs a reason in the PR. Read the parsed tree the IR carries instead
-of adding a parser call; the logic is in `scripts/lib/emit-parse-ratchet.ts`.
+of adding a parser call or a text search; the logic is in `scripts/lib/emit-parse-ratchet.ts`.
 
 ## Reference Adapter
 

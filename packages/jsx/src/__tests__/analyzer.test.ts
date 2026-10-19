@@ -50,6 +50,39 @@ describe('analyzeComponent', () => {
     expect(ctx.typeDefinitions[0].name).toBe('CounterProps')
   })
 
+  test('records string-literal union members in any quoting or layout (#3542)', () => {
+    const source = `
+        export type Mode =
+          | 'light'
+          | 'dark'
+        type Tone = "warm" | "cool"
+        type One = ('only')
+        type Paren = 'a' | ('b')
+        type Nested = (('x') | ('y' | 'z'))
+        type Size = 'auto' | number
+        type ParenMixed = 'a' | (1)
+        type Point = { x: number }
+
+        export function Shapes(props: { mode: Mode; tone: Tone; one: One; paren: Paren; nested: Nested; size: Size; parenMixed: ParenMixed; point: Point }) {
+          return <div>{props.mode}</div>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Shapes.tsx')
+    const members = Object.fromEntries(ctx.typeDefinitions.map(td => [td.name, td.stringLiteralUnion]))
+
+    expect(members).toEqual({
+      Mode: ['light', 'dark'],
+      Tone: ['warm', 'cool'],
+      One: ['only'],
+      Paren: ['a', 'b'],
+      Nested: ['x', 'y', 'z'],
+      Size: undefined,
+      ParenMixed: undefined,
+      Point: undefined,
+    })
+  })
+
   test('extracts memos', () => {
     const source = `
         'use client'
