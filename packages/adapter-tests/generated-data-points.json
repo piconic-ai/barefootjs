@@ -6750,12 +6750,6 @@
       }
     },
     {
-      "name": "gen:label:absent",
-      "props": {
-        "mode": "wide"
-      }
-    },
-    {
       "name": "gen:label:empty",
       "props": {
         "mode": "wide",

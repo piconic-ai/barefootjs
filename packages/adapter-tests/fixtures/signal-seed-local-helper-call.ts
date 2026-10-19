@@ -8,6 +8,11 @@ import { createFixture } from '../src/types'
  * body, so every SSR adapter seeds `props.mode === 'wide' ? … : …`. The CSR
  * template splices the helper itself, so the call reads
  * `(() => props.mode === 'wide')()`.
+ *
+ * `label` is required: an absent optional `label` would make the seed
+ * `undefined`, and the DSL adapters do not yet treat a signal seeded from an
+ * optional prop as nullable, so they render `data-shown=""` where Hono omits
+ * the attribute. That gap is independent of the helper call (#3567).
  */
 export const fixture = createFixture({
   id: 'signal-seed-local-helper-call',
@@ -16,7 +21,7 @@ export const fixture = createFixture({
 'use client'
 import { createSignal } from '@barefootjs/client'
 
-export function SignalSeedLocalHelperCall(props: { mode?: string; label?: string }) {
+export function SignalSeedLocalHelperCall(props: { mode?: string; label: string }) {
   const isWide = () => props.mode === 'wide'
   const [shown] = createSignal(isWide() ? props.label : 'narrow')
   return <p data-shown={shown()}>x</p>
