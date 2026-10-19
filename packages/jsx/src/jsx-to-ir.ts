@@ -42,6 +42,7 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
+import { nullishChainParts } from './children-nullish.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
@@ -52,7 +53,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveBodyPropAliases, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -1000,8 +1001,91 @@ function parseValueExpr(trimmed: string): ParsedExpr {
   return parseExpression(trimmed.startsWith('{') ? `(${trimmed})` : trimmed)
 }
 
-/** Shared empty-set default for `attachParsedExpressions`/`resolveCallbackMethodFunctionReferences`'s `bound` param — avoids a fresh allocation per call when nothing is shadowed. */
-const EMPTY_BOUND: ReadonlySet<string> = new Set()
+const childrenAliasCache = new WeakMap<AnalyzerContext, ReadonlySet<string>>()
+
+/**
+ * The body locals that alias the children prop with no default
+ * (`const { children: kids } = props`, `const kids = props.children`).
+ */
+function childrenAliasNames(analyzer: AnalyzerContext): ReadonlySet<string> {
+  let names = childrenAliasCache.get(analyzer)
+  if (!names) {
+    const aliases = resolveBodyPropAliases(analyzer.localConstants, analyzer.propsObjectName)
+    names = new Set([...aliases].filter(([, a]) => a.key === 'children' && !a.hasDefault).map(([local]) => local))
+    childrenAliasCache.set(analyzer, names)
+  }
+  return names
+}
+
+/** `''`, or a `??` chain of `''` (`'' ?? ''`). */
+function isEmptyStringFallback(fallback: ParsedExpr): boolean {
+  if (fallback.kind === 'logical' && fallback.op === '??') {
+    return isEmptyStringFallback(fallback.left) && isEmptyStringFallback(fallback.right)
+  }
+  return fallback.kind === 'literal' && fallback.value === ''
+}
+
+/**
+ * How `parsed` reads the component's own `children` prop
+ * (`IRExpression.childrenRead`, #3539): a bare `children` the props
+ * destructure binds or `<propsObject>.children`, that read on the left of
+ * `?? ''`, or on the left of another `?? fallback`. A chained
+ * `(children ?? '<b>x</b>') ?? ''` reads as `children ?? ('<b>x</b>' ?? '')`
+ * (`nullishChainParts`), so its inner fallback stays escaped text. A name the enclosing loop rows bind
+ * (item, index, destructured names and preamble locals, through `scope`)
+ * shadows the prop; a component-body `const children` cannot coexist with a
+ * destructured `children` param, so the destructure is the binding when it
+ * lists the name.
+ */
+function childrenReadOf(
+  parsed: ParsedExpr,
+  analyzer: AnalyzerContext,
+  scope: BindingScope,
+): IRExpression['childrenRead'] | null {
+  const chain = nullishChainParts(parsed)
+  if (chain) {
+    if (childrenReadOf(chain.head, analyzer, scope) !== 'bare') return null
+    return isEmptyStringFallback(chain.fallback) ? 'nullish-empty' : 'nullish-fallback'
+  }
+  if (parsed.kind === 'identifier') {
+    if (scope.isBound(parsed.name)) return null
+    const isProp = analyzer.propsParams.some(p => p.name === parsed.name && (p.sourceName ?? p.name) === 'children')
+    return isProp || childrenAliasNames(analyzer).has(parsed.name) ? 'bare' : null
+  }
+  const isPropsMember =
+    parsed.kind === 'member' &&
+    !parsed.computed &&
+    parsed.property === 'children' &&
+    parsed.object.kind === 'identifier' &&
+    parsed.object.name === analyzer.propsObjectName &&
+    !scope.isBound(parsed.object.name)
+  return isPropsMember ? 'bare' : null
+}
+
+/**
+ * Attach `parsed` to every expression-valued attribute / prop so adapters can
+ * lower from the tree instead of re-parsing the string. Element attrs,
+ * component props (e.g. `opts={{ … }}` → Go map), and a provider's `value`
+ * prop all carry it; only `expression` values do (a `spread` / `template`
+ * value can't be the inline object literal the consumers read).
+ */
+function attachParsedAttrValues(
+  node: IRNode,
+  parse: (trimmed: string) => ParsedExpr,
+  parseValue: (trimmed: string) => ParsedExpr,
+): void {
+  const attach = (value: { kind: string; expr?: string; parsed?: ParsedExpr }, spreads: boolean): void => {
+    const trimmed = value.kind === 'expression' || (spreads && value.kind === 'spread') ? value.expr?.trim() : undefined
+    if (trimmed) value.parsed = value.kind === 'spread' ? parse(trimmed) : parseValue(trimmed)
+  }
+  if (node.type === 'element') {
+    for (const attr of node.attrs) attach(attr.value, true)
+  } else if (node.type === 'component') {
+    for (const prop of node.props) attach(prop.value, false)
+  } else if (node.type === 'provider') {
+    attach(node.valueProp.value, false)
+  }
+}
 
 /**
  * Attach `parsed` (`parseExpression(expr.trim())`) to every `expression` node
@@ -1014,59 +1098,35 @@ const EMPTY_BOUND: ReadonlySet<string> = new Set()
  * (#2206) so a bare-identifier `.map`/`.filter`/… callback (`tags.map(format)`)
  * resolves to its declaration wherever it can appear — text/attr/prop/provider
  * expressions and the loop-array expression alike — not just one hardcoded
- * spot. `bound` carries the enclosing loop(s)' `param`/`index` names down
- * into that resolution (Fable review, #2214) so a loop item variable that
- * happens to share a name with a module-scope const/function shadows it,
- * same as real JS scoping — resolution stays off within that loop's body.
+ * spot. `scope` carries the enclosing loop rows' bindings down into that
+ * resolution (Fable review, #2214) so a loop item variable that happens to
+ * share a name with a module-scope const/function shadows it, same as real
+ * JS scoping — resolution stays off within that loop's body.
  */
-function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound: ReadonlySet<string> = EMPTY_BOUND): void {
+function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, scope: BindingScope = BindingScope.EMPTY): void {
+  const bound = scope.boundNames()
   const parse = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseExpression(trimmed), analyzer, bound)
   const parseValue = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseValueExpr(trimmed), analyzer, bound)
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
     if (trimmed) node.parsed = parse(trimmed)
+    const childrenRead = node.parsed ? childrenReadOf(node.parsed, analyzer, scope) : null
+    if (childrenRead) node.childrenRead = childrenRead
   } else if (node.type === 'conditional' || node.type === 'if-statement') {
     const trimmed = node.condition.trim()
     if (trimmed) node.parsedCondition = parse(trimmed)
   }
-  // Attach `parsed` to every expression-valued attribute / prop so adapters can
-  // lower from the tree instead of re-parsing the string. Element attrs,
-  // component props (e.g. `opts={{ … }}` → Go map), and a provider's `value`
-  // prop all carry it; only `expression` values do (a `spread` / `template`
-  // value can't be the inline object literal the consumers read).
-  if (node.type === 'element') {
-    for (const attr of node.attrs) {
-      if (attr.value.kind === 'expression') {
-        const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parseValue(trimmed)
-      } else if (attr.value.kind === 'spread') {
-        const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parse(trimmed)
-      }
-    }
-  } else if (node.type === 'component') {
-    for (const prop of node.props) {
-      if (prop.value.kind === 'expression') {
-        const trimmed = prop.value.expr.trim()
-        if (trimmed) prop.value.parsed = parseValue(trimmed)
-      }
-    }
-  } else if (node.type === 'provider') {
-    if (node.valueProp.value.kind === 'expression') {
-      const trimmed = node.valueProp.value.expr.trim()
-      if (trimmed) node.valueProp.value.parsed = parseValue(trimmed)
-    }
-  }
+  attachParsedAttrValues(node, parse, parseValue)
   switch (node.type) {
     case 'element':
     case 'component':
     case 'fragment':
     case 'provider':
-      for (const child of node.children) attachParsedExpressions(child, analyzer, bound)
+      for (const child of node.children) attachParsedExpressions(child, analyzer, scope)
       break
     case 'async':
-      attachParsedExpressions(node.fallback, analyzer, bound)
-      for (const child of node.children) attachParsedExpressions(child, analyzer, bound)
+      attachParsedExpressions(node.fallback, analyzer, scope)
+      for (const child of node.children) attachParsedExpressions(child, analyzer, scope)
       break
     case 'loop': {
       // Attach the parse of the SAME `array` string the adapters consume
@@ -1077,36 +1137,35 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
       // own `param`/`index` exist), so it parses against the unextended `bound`.
       const trimmedArray = node.array.trim()
       if (trimmedArray) node.arrayParsed = parse(trimmedArray)
-      // The loop's item/index variables shadow any same-named module-scope
-      // const/function for everything inside the loop body (Fable review,
+      // The loop row's bindings (item or destructured names, index, preamble
+      // locals) shadow any same-named module-scope const/function and the
+      // children prop for everything inside the loop body (Fable review,
       // #2214) — mirrors an arrow's own params in `resolveCallbackMethodFunctionReferences`.
-      const loopBound = new Set(bound)
-      loopBound.add(node.param)
-      if (node.index) loopBound.add(node.index)
-      for (const child of node.children) attachParsedExpressions(child, analyzer, loopBound)
+      const loopScope = scope.enterLoopRow(node)
+      for (const child of node.children) attachParsedExpressions(child, analyzer, loopScope)
       // Loops also hold expression nodes off the main `children` array.
       if (node.childComponent) {
-        for (const child of node.childComponent.children) attachParsedExpressions(child, analyzer, loopBound)
+        for (const child of node.childComponent.children) attachParsedExpressions(child, analyzer, loopScope)
       }
       for (const nested of node.nestedComponents ?? []) {
-        for (const child of nested.children) attachParsedExpressions(child, analyzer, loopBound)
+        for (const child of nested.children) attachParsedExpressions(child, analyzer, loopScope)
       }
       for (const seg of node.flatMapCallback?.segments ?? []) {
-        if (seg.kind === 'jsx') attachParsedExpressions(seg.ir, analyzer, loopBound)
+        if (seg.kind === 'jsx') attachParsedExpressions(seg.ir, analyzer, loopScope)
       }
       // Preamble leaves (array-builder bodies) are nested IR the same way.
       for (const seg of node.preamble?.segments ?? []) {
-        if (seg.kind === 'jsx') attachParsedExpressions(seg.ir, analyzer, loopBound)
+        if (seg.kind === 'jsx') attachParsedExpressions(seg.ir, analyzer, loopScope)
       }
       break
     }
     case 'conditional':
-      attachParsedExpressions(node.whenTrue, analyzer, bound)
-      attachParsedExpressions(node.whenFalse, analyzer, bound)
+      attachParsedExpressions(node.whenTrue, analyzer, scope)
+      attachParsedExpressions(node.whenFalse, analyzer, scope)
       break
     case 'if-statement':
-      attachParsedExpressions(node.consequent, analyzer, bound)
-      if (node.alternate) attachParsedExpressions(node.alternate, analyzer, bound)
+      attachParsedExpressions(node.consequent, analyzer, scope)
+      if (node.alternate) attachParsedExpressions(node.alternate, analyzer, scope)
       break
   }
 }
@@ -3694,15 +3753,15 @@ function resolveCallbackMethodFunctionReferenceIdentifier(name: string, analyzer
  * const/function is never resolved against the const/function tables
  * (Fable review, #2214): it grows exactly like {@link freeVarsInBody}'s own
  * `bound` set, at the SAME `arrow` case. The initial call from
- * `attachParsedExpressions` seeds it with the enclosing loop's `param`/
- * `index` too (a loop's item variable shadows a same-named module const the
+ * `attachParsedExpressions` seeds it with the enclosing loop rows' bound
+ * names too (a loop's item variable shadows a same-named module const the
  * same way a callback arrow's param does — `origin.freeRefs` already tags
  * such a name `kind: 'render-item'`, this walk now honors it).
  */
 function resolveCallbackMethodFunctionReferences(
   expr: ParsedExpr,
   analyzer: AnalyzerContext,
-  bound: ReadonlySet<string> = EMPTY_BOUND,
+  bound: ReadonlySet<string>,
 ): ParsedExpr {
   function visit(e: ParsedExpr, bound: ReadonlySet<string>): ParsedExpr {
     switch (e.kind) {

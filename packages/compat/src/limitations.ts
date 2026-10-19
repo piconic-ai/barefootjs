@@ -57,21 +57,35 @@ export interface E2eCitation {
 }
 
 /**
- * Every limitation citation in the real-browser e2e quarantine ledgers.
+ * Every limitation citation in the real-browser e2e quarantine ledgers and
+ * the CSR render-divergence ledger (`CSR_RENDER_DIVERGENCES`).
  * Those harnesses serve the Hono reference's SSR HTML and hydrate it with
  * the client runtime, so a row observes the gap on `hono`; only the
  * exploration ledger's adapter-axis rows name another SSR adapter.
  */
 export async function e2eQuarantineCitations(): Promise<E2eCitation[]> {
-  const [{ ORACLE_QUARANTINE }, { FIXTURE_HYDRATE_QUARANTINE }, { MUTATION_QUARANTINE }, { PAIRWISE_QUARANTINE }, { EXPLORE_QUARANTINE }] =
-    await Promise.all([
-      import('../../adapter-tests/e2e/oracle-quarantine'),
-      import('../../adapter-tests/e2e/fixture-hydrate-quarantine'),
-      import('../../adapter-tests/e2e/mutation-quarantine'),
-      import('../../adapter-tests/e2e/pairwise-quarantine'),
-      import('../../adapter-tests/e2e/explore-quarantine'),
-    ])
-  const fixtureRows = [...Object.entries(ORACLE_QUARANTINE), ...Object.entries(FIXTURE_HYDRATE_QUARANTINE)].flatMap(
+  const [
+    { ORACLE_QUARANTINE },
+    { FIXTURE_HYDRATE_QUARANTINE },
+    { MUTATION_QUARANTINE },
+    { PAIRWISE_QUARANTINE },
+    { EXPLORE_QUARANTINE },
+    { CSR_RENDER_DIVERGENCES },
+  ] = await Promise.all([
+    import('../../adapter-tests/e2e/oracle-quarantine'),
+    import('../../adapter-tests/e2e/fixture-hydrate-quarantine'),
+    import('../../adapter-tests/e2e/mutation-quarantine'),
+    import('../../adapter-tests/e2e/pairwise-quarantine'),
+    import('../../adapter-tests/e2e/explore-quarantine'),
+    import('../../adapter-tests/src/csr-skip-set'),
+  ])
+  // A CSR render divergence is keyed by a corpus fixture the same way: the
+  // client template every adapter's client-rendered component uses shows it.
+  const fixtureRows = [
+    ...Object.entries(ORACLE_QUARANTINE),
+    ...Object.entries(FIXTURE_HYDRATE_QUARANTINE),
+    ...Object.entries(CSR_RENDER_DIVERGENCES),
+  ].flatMap(
     ([fixture, row]) => (row.limitation ? [{ adapter: 'hono', limitation: row.limitation, fixture }] : []),
   )
   const generatedRows: ReadonlyArray<{ adapter?: string; limitation?: string }> = [

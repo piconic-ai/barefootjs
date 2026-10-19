@@ -184,3 +184,16 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'loop-row-child-children-nested-client-row-prop',
   'loop-element-row-child-client-row-prop',
 ])
+
+/**
+ * Fixtures whose CSR render diverges from the reference, each citing the
+ * `silent` registry limitation it is an instance of
+ * (`packages/adapter-tests/limitations/<id>.ts`). Unlike a skip,
+ * `csr-conformance.test.ts` still renders these and asserts the output
+ * STILL differs, so a fix that lands without deleting the row goes red
+ * ("stale — delete the entry"). The compat join test checks the id exists
+ * and that the entry lists the fixture.
+ */
+export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  'children-chained-nullish-fallback-escaped': { limitation: 'csr-children-nullish-fallback-escaped' },
+}
