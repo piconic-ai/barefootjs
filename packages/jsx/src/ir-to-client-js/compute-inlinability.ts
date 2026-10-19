@@ -30,6 +30,7 @@ import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts
 import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate.ts'
 import type { RelocateEnv, RelocateDecision } from '../relocate.ts'
 import { createError, ErrorCodes } from '../errors.ts'
+import { zeroArgCallBody } from '../expression-parser.ts'
 import { attrValueToString } from './utils.ts'
 import { walkIR, type IRVisitor } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, resolveGetterAliases, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
@@ -532,13 +533,15 @@ function populateCsrInlinable(
 }
 
 /**
- * A const whose value is a zero-param arrow (`() => props.mode === 'wide'`):
- * calling it only reads the names its expression body reads, so splicing the
- * arrow into template scope is as safe as splicing that body, which the
- * substitution's own template-safety check decides.
+ * A const whose value is a zero-param, synchronous arrow with a pure value
+ * body (`() => props.mode === 'wide'`, see `zeroArgCallBody`): calling it
+ * only reads the names its body reads, so splicing the arrow into template
+ * scope is as safe as splicing that body, which the substitution's own
+ * template-safety check decides. A body that mutates state
+ * (`() => ({ id: ++nextId })`) must run where it is declared.
  */
 function isZeroParamArrowHelper(c: ConstantInfo): boolean {
-  return c.parsed?.kind === 'arrow' && c.parsed.params.length === 0
+  return c.parsed !== undefined && zeroArgCallBody(c.parsed) !== null
 }
 
 /** A const with no value this pass can substitute (see `populateCsrInlinable`). */

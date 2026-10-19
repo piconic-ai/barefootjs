@@ -61,8 +61,10 @@ export type ParsedExpr =
   // callbacks (`.filter`/`.sort`/`.reduce`/`.flatMap`) arrive as a generic
   // `call` whose argument is this kind; the adapter serializes `body` to the
   // runtime evaluator (#2018). Block bodies with locals / multiple statements,
-  // and array-binding-pattern params, stay `unsupported`.
-  | { kind: 'arrow'; params: string[]; body: ParsedExpr }
+  // and array-binding-pattern params, stay `unsupported`. `callKind` marks an
+  // async arrow / function or a generator function: calling one returns a
+  // Promise or an iterator, not `body`'s value (#3562 review).
+  | { kind: 'arrow'; params: string[]; body: ParsedExpr; callKind?: 'async' | 'generator' }
   // A regex literal carried as its exact source text (`/\/+$/`), so the Go
   // ctor lowering matches the one trailing-slash-strip pattern it recognises
   // (`String.replace`). Outside that narrow surface a regex resolves to
@@ -1159,6 +1161,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
   // a generic `call` whose argument is this kind; the adapter serializes
   // `body` to the runtime evaluator.
   if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+    const callKind = arrowCallKind(node)
     // Resolve the body expression: an expression-bodied arrow carries it
     // directly; a block body (arrow `=> { … }` or a function expression)
     // must reduce to exactly one `return <expr>;`. Multi-statement /
@@ -1287,7 +1290,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       }
       const syntheticParam = pickSyntheticParam(fieldMap, body)
       const rewritten = substituteDestructuredFields(body, fieldMap, syntheticParam, restName)
-      return { kind: 'arrow', params: [syntheticParam], body: rewritten }
+      return { kind: 'arrow', params: [syntheticParam], body: rewritten, ...callKind }
     }
 
     // Every (remaining) parameter must be a plain identifier. Multi-param
@@ -1300,7 +1303,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       }
       params.push(p.name.text)
     }
-    return { kind: 'arrow', params, body }
+    return { kind: 'arrow', params, body, ...callKind }
   }
 
   // Default: unsupported
@@ -2961,6 +2964,25 @@ function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number
   return walk(expr)
 }
 
+/** `{ callKind }` for an async or generator function, else nothing (see the `arrow` kind). */
+function arrowCallKind(node: ts.ArrowFunction | ts.FunctionExpression): { callKind?: 'async' | 'generator' } {
+  if (ts.isFunctionExpression(node) && node.asteriskToken) return { callKind: 'generator' }
+  if (node.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return { callKind: 'async' }
+  return {}
+}
+
+/**
+ * The value a call of `value` with no arguments evaluates to, when that is
+ * just its body: a zero-param, synchronous, non-generator arrow whose body
+ * is a pure value expression. Null otherwise (an async call returns a
+ * Promise, a generator an iterator, and a body that mutates state, like
+ * `++nextId`, must run where it is declared).
+ */
+export function zeroArgCallBody(value: ParsedExpr): ParsedExpr | null {
+  if (value.kind !== 'arrow' || value.params.length !== 0 || value.callKind) return null
+  return isSupportedValue(value.body).supported ? value.body : null
+}
+
 /** `name()` with no arguments, where `name` is not shadowed by an enclosing param. */
 function isBareCallOf(e: Extract<ParsedExpr, { kind: 'call' }>, name: string, enclosing: ReadonlySet<string>): boolean {
   return e.args.length === 0 && e.callee.kind === 'identifier' && e.callee.name === name && !enclosing.has(name)
@@ -2996,10 +3018,10 @@ export function inlineBinding(
   let captured = false
   // A zero-param arrow (`const isWide = () => props.mode === 'wide'`) called
   // with no arguments inlines as its body, so `isWide()` reads what the call
-  // returns (#3562). Calling it evaluates the body in the same scope the
-  // substitution resolves it in; the capture check covers the body's free
-  // variables, which are `value`'s.
-  const callBody = value.kind === 'arrow' && value.params.length === 0 ? value.body : null
+  // returns (#3562; `zeroArgCallBody` says which arrows qualify). Calling it
+  // evaluates the body in the same scope the substitution resolves it in;
+  // the capture check covers the body's free variables, which are `value`'s.
+  const callBody = zeroArgCallBody(value)
   // Inlining here: does any enclosing param capture a free var of `value`?
   const capturesValueFree = (enclosing: ReadonlySet<string>): boolean => {
     for (const p of enclosing) {
@@ -3048,7 +3070,7 @@ export function inlineBinding(
         }
       case 'arrow': {
         const innerEnclosing = e.params.length === 0 ? enclosing : new Set([...enclosing, ...e.params])
-        return { kind: 'arrow', params: e.params, body: walk(e.body, innerEnclosing) }
+        return { ...e, body: walk(e.body, innerEnclosing) }
       }
       case 'array-literal':
         return { kind: 'array-literal', elements: e.elements.map(el => walk(el, enclosing)) }
@@ -3444,7 +3466,7 @@ export function materializeGetterCalls(expr: ParsedExpr, names: ReadonlySet<stri
         properties: expr.properties.map(p => (p.kind === 'spread' ? { ...p, expr: rw(p.expr) } : { ...p, value: rw(p.value) })),
       }
     case 'arrow':
-      return { kind: 'arrow', params: expr.params, body: rw(expr.body) }
+      return { ...expr, body: rw(expr.body) }
     // Leaves / opaque shapes — nothing to rewrite.
     case 'identifier':
     case 'literal':

@@ -356,6 +356,23 @@ describe('computeSsrSeedPlan', () => {
     expect(step(plan, 'n').kind).toBe('opaque')
   })
 
+  test.each([
+    ['an async arrow', 'const helper = async () => props.flag'],
+    ['a generator function', 'const helper = function* () { return props.flag }'],
+    ['a body that mutates state', 'let n = 0\n        const helper = () => (n += 1)'],
+  ])('a helper call to %s stays opaque (#3562 review)', (_label, decl) => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { flag?: boolean }) {
+        ${decl}
+        const [shown] = createSignal(helper() ? 'yes' : 'no')
+        return <p>{shown()}</p>
+      }
+    `)
+    expect(step(plan, 'shown').kind).toBe('opaque')
+  })
+
   test('a helper that takes params is not inlined at a call site (#3562)', () => {
     const plan = planFor(`
       'use client'
