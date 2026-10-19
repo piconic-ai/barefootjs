@@ -38,6 +38,7 @@ import type {
   LoopBindingSource,
   ConstantInfo,
   ImportInfo,
+  JsSourceText,
 } from '@barefootjs/jsx'
 import { isElidedFactoryGetter } from '@barefootjs/jsx'
 import {
@@ -1889,7 +1890,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * The signal's own top-level struct is always the LAST entry.
    */
   private synthesizeStructFromSignal(
-    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     componentName: string,
   ): Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> | null {
     // Only untyped arrays: typed (`Item[]`) / scalar (`string[]`) elements bake
@@ -5367,8 +5368,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   private resolveDynamicPropValue(
     expr: string,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: string; deps: string[] }[],
+    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: JsSourceText; deps: string[] }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     /** The destination child Input field is nillable `interface{}` (#3323). */
@@ -5581,8 +5582,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private resolveTernaryOperandAsGo(
     node: ParsedExpr,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
@@ -5616,8 +5617,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private resolveLocalGetterAsGo(
     name: string,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     nillableDest = false,
@@ -5703,7 +5704,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * caller-supplied non-zero inputs are honoured.
    */
   private extractPropFallback(
-    initialValue: string,
+    initialValue: JsSourceText,
     preParsed?: ParsedExpr,
   ): { propName: string; goFallback: string } | null {
     const structural = preParsed ? this.extractPropFallbackFromParsed(preParsed) : null
@@ -5826,7 +5827,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** {@link GoEmitContext.computedSignalSeed}. */
   private computedSignalSeed(
-    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {

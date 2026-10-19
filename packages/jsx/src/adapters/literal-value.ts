@@ -8,7 +8,7 @@
  */
 
 import type { ParsedExpr } from '../expression-parser.ts'
-import type { TypeInfo } from '../types.ts'
+import type { TypeInfo, JsSourceText } from '../types.ts'
 
 /** True when `type` is the `string` primitive. */
 export function isStringTypeInfo(type: TypeInfo | undefined): boolean {
@@ -16,7 +16,7 @@ export function isStringTypeInfo(type: TypeInfo | undefined): boolean {
 }
 
 /** True when `initialValue` is a bare string-literal expression. */
-export function isBareStringLiteral(initialValue: string | undefined): boolean {
+export function isBareStringLiteral(initialValue: JsSourceText | undefined): boolean {
   if (!initialValue) return false
   const v = initialValue.trim()
   return (v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))
