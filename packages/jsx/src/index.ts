@@ -188,6 +188,7 @@ export {
   arithmeticOperandCoercion,
   bareGetterCallName,
   attrValueMayBeNullish,
+  collectAbsentPropSeedReads,
   collectNullableSignalGetters,
   collectNullishAttrContext,
   isNullableSignal,

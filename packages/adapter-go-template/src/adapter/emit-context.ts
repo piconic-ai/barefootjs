@@ -47,12 +47,15 @@ export interface GoEmitContext {
    * (#3519): evaluated by the runtime evaluator and converted to the
    * signal's own field type, or null for any other seed. Every reader of a
    * signal's seed (its field, a child prop it is forwarded to, a memo
-   * lowering that reads it) asks this first, so they agree.
+   * lowering that reads it) asks this first, so they agree. `concreteDest`
+   * converts to the type a concrete child Input takes instead, for a
+   * signal whose own field is `interface{}` only to keep nil.
    */
   computedSignalSeed(
     signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    concreteDest?: boolean,
   ): string | null
 
   /**

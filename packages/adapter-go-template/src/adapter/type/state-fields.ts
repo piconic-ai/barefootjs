@@ -64,8 +64,13 @@ export interface StateMemo {
   parsedBlock?: ParsedStatement[]
 }
 
-/** A nullable signal seeded whole from a prop flipped to `interface{}` for it (#3323). */
-export function isNillableSeedSignal(ctx: GoEmitContext, signal: { parsed?: ParsedExpr }): boolean {
+/**
+ * A nullable signal seeded whole from a prop flipped to `interface{}` for it
+ * (#3323), or one whose seed reaches such props through a ternary branch or a
+ * logical operand (`absentPropSeedSignals`, #3567).
+ */
+export function isNillableSeedSignal(ctx: GoEmitContext, signal: { getter?: string; parsed?: ParsedExpr }): boolean {
+  if (signal.getter !== undefined && ctx.state.absentPropSeedSignals.has(signal.getter)) return true
   const name = bareSeedPropName(ctx, signal.parsed)
   return name !== null && ctx.state.nullableSignalSeedPropNames.has(name)
 }
@@ -90,17 +95,21 @@ export function isNillableSeedSignal(ctx: GoEmitContext, signal: { parsed?: Pars
  *    either direction, and `.length` / `.some()` / `.every()` chains land
  *    on their actual Go type.
  * 5. Otherwise the signal's own inferred type.
+ *
+ * `concreteDest` skips step 3: the type a concrete child Input field takes
+ * the signal's value as, where nil cannot be stored (#3569 review).
  */
 export function signalFieldGoType(
   ctx: GoEmitContext,
   signal: StateSignal,
   propsParamMap: ReadonlyMap<string, StatePropParam>,
+  concreteDest = false,
 ): string {
   const synthType = ctx.state.synthStructTypes.get(signal.getter)
   if (synthType) return typeInfoToGo(ctx, synthType)
   const memberSeedType = propMemberSeedGoType(ctx, signal)
   if (memberSeedType) return memberSeedType
-  if (isNillableSeedSignal(ctx, signal)) return 'interface{}'
+  if (!concreteDest && isNillableSeedSignal(ctx, signal)) return 'interface{}'
   const referencedProp = seedingProp(ctx, signal, propsParamMap)
   const signalGoType = typeInfoToGo(ctx, signal.type, signal.initialValue, signal.parsed)
   if (!referencedProp) {
@@ -405,8 +414,10 @@ export function signalSeedGo(
   bakeType: TypeInfo = signal.type,
   nillableDest = false,
 ): string {
-  // A computed prop seed (#3519) is evaluated, the same value every reader gets.
-  const computed = ctx.computedSignalSeed(signal, propsParams, propFallbackVars)
+  // A computed prop seed (#3519) is evaluated, the same value every reader
+  // gets, converted to the destination: a concrete child Input takes the
+  // signal's concrete type even when its own field keeps nil.
+  const computed = ctx.computedSignalSeed(signal, propsParams, propFallbackVars, !nillableDest)
   if (computed !== null) return computed
   // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
   // one value.

@@ -287,6 +287,15 @@ export class CompileState {
   nullableSignalSeedPropNames: Set<string> = new Set()
 
   /**
+   * Getters of signals whose seed can evaluate to an absent optional prop
+   * through a ternary branch or a `??` / `||` / `&&` operand
+   * (`collectAbsentPropSeedReads`, #3567), when every prop it reads is in
+   * `nullableSignalSeedPropNames`. Their field is `interface{}` too, so the
+   * evaluated `nil` is not coerced to a zero value.
+   */
+  absentPropSeedSignals: Set<string> = new Set()
+
+  /**
    * OPTIONAL no-default scalar prop names read as an optional-chain receiver
    * (`props.text?.length`) — #3422. Same `resolvePropGoType` flip: the `?.`
    * guard needs a nil to see an omitted prop.
