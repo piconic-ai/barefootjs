@@ -298,6 +298,12 @@ import { fixture as optionalNestedObjectSignalSeed } from './optional-nested-obj
 import { fixture as signalPropSeedLogicalFallback } from './signal-prop-seed-logical-fallback'
 import { fixture as signalComputedPropSeed } from './signal-computed-prop-seed'
 import { fixture as signalComputedPropSeedAbsent } from './signal-computed-prop-seed-absent'
+import { fixture as signalComputedCallSeed } from './signal-computed-call-seed'
+import { fixture as signalComputedCallSeedDestructured } from './signal-computed-call-seed-destructured'
+import { fixture as signalComputedSeedForwardedFraction } from './signal-computed-seed-forwarded-fraction'
+import { fixture as signalComputedSeedSiblingFallbacks } from './signal-computed-seed-sibling-fallbacks'
+import { fixture as signalComputedSeedSiblingFallbacksDestructured } from './signal-computed-seed-sibling-fallbacks-destructured'
+import { fixture as signalComputedSeedDefaultedAlias } from './signal-computed-seed-defaulted-alias'
 import { fixture as signalComputedPropSeedConsumers } from './signal-computed-prop-seed-consumers'
 import { fixture as signalLiteralPropNameCollision } from './signal-literal-prop-name-collision'
 import { fixture as signalLiteralPropScalarCollision } from './signal-literal-prop-scalar-collision'
@@ -1219,6 +1225,12 @@ export const jsxFixtures: JSXFixture[] = [
   signalPropSeedLogicalFallback,
   signalComputedPropSeed,
   signalComputedPropSeedAbsent,
+  signalComputedCallSeed,
+  signalComputedCallSeedDestructured,
+  signalComputedSeedForwardedFraction,
+  signalComputedSeedSiblingFallbacks,
+  signalComputedSeedSiblingFallbacksDestructured,
+  signalComputedSeedDefaultedAlias,
   signalComputedPropSeedConsumers,
   signalLiteralPropNameCollision,
   signalLiteralPropScalarCollision,

@@ -74,7 +74,7 @@
         28
       ],
       "generateNewPropsFunction": [
-        97
+        95
       ],
       "isStringExpr": [
         29
@@ -183,7 +183,7 @@
     },
     "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {
       "collectFractionalChildProps/mayBeFractional": [
-        35
+        28
       ],
       "collectFractionalChildProps/visit": [
         28

@@ -21,6 +21,7 @@ import { escapeGoString } from '../lib/go-emit.ts'
 import { bakeSourceKeyedObjectAsGoMap, numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
 import { collapseLiteralUnion, typeInfoToGo } from '../type/type-codegen.ts'
 import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
+import { seedPassthroughPropName } from '../props/prop-types.ts'
 
 /** A signal with no inferred type, for {@link GoEmitContext.computedSignalSeed}. */
 const UNKNOWN_TYPE: TypeInfo = { kind: 'unknown', raw: 'unknown' }
@@ -192,7 +193,7 @@ export function convertInitialValue(
     if (inlinedConst !== null) return inlinedConst
   }
 
-  const propName = ctx.extractPropNameFromInitialValue(value, preParsed)
+  const propName = seedPassthroughPropName(ctx, preParsed)
   const param = propName ? propsParams?.find(p => p.name === propName) : undefined
   if (param) {
     return propRef(param)
@@ -524,7 +525,7 @@ export function getSignalInitialValueAsGo(
     return propRef(directParam)
   }
 
-  const propName = ctx.extractPropNameFromInitialValue(initialValue)
+  const propName = seedPassthroughPropName(ctx, parsed)
   const param = propName ? propsParams.find(p => p.name === propName) : undefined
   if (param) {
     const hoisted = propFallbackVars.get(propName!)
