@@ -38,6 +38,7 @@ import type {
   LoopBindingSource,
   ConstantInfo,
   ImportInfo,
+  JsSourceText,
 } from '@barefootjs/jsx'
 import { isElidedFactoryGetter } from '@barefootjs/jsx'
 import {
@@ -1819,8 +1820,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Convert a TS type definition to Go: object types → structs, string-literal unions → a `string` alias. */
   private typeDefinitionToGo(td: TypeDefinition): string | null {
     // A string-literal union (`type Filter = 'all' | 'active'`) carries no
-    // `properties`, so detect the alias from the definition text.
-    if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+    // `properties`; Phase 1 records its members instead.
+    if (td.stringLiteralUnion) {
       return `// ${td.name} is a string type.\ntype ${td.name} = string`
     }
 
@@ -1889,7 +1890,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * The signal's own top-level struct is always the LAST entry.
    */
   private synthesizeStructFromSignal(
-    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     componentName: string,
   ): Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> | null {
     // Only untyped arrays: typed (`Item[]`) / scalar (`string[]`) elements bake
@@ -3811,7 +3812,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const td of typeDefinitions) {
       if (td.name === 'Props' || td.name === `${componentName}Props`) continue
       if (td.name.endsWith('Props')) continue
-      if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+      if (td.stringLiteralUnion) {
         this.crossFileTypeAliases.set(td.name, 'string')
       } else {
         const fields = this.structFieldsFor(td.name, td)
@@ -3904,7 +3905,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (td.name === 'Props' || td.name === `${componentName}Props`) continue
       if (td.name.endsWith('Props')) continue
       this.state.localTypeNames.add(td.name)
-      if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+      if (td.stringLiteralUnion) {
         this.state.localTypeAliases.set(td.name, 'string')
       } else {
         // Source-key → Go-field-name map for the baker, from the same field
@@ -5367,8 +5368,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   private resolveDynamicPropValue(
     expr: string,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: string; deps: string[] }[],
+    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: JsSourceText; deps: string[] }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     /** The destination child Input field is nillable `interface{}` (#3323). */
@@ -5581,8 +5582,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private resolveTernaryOperandAsGo(
     node: ParsedExpr,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
@@ -5616,8 +5617,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private resolveLocalGetterAsGo(
     name: string,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
     nillableDest = false,
@@ -5703,7 +5704,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * caller-supplied non-zero inputs are honoured.
    */
   private extractPropFallback(
-    initialValue: string,
+    initialValue: JsSourceText,
     preParsed?: ParsedExpr,
   ): { propName: string; goFallback: string } | null {
     const structural = preParsed ? this.extractPropFallbackFromParsed(preParsed) : null
@@ -5826,11 +5827,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** {@link GoEmitContext.computedSignalSeed}. */
   private computedSignalSeed(
-    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
+    signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
-    const computed = computedPropSeedGo(this.emitCtx, signal.parsed, [...propsParams], propFallbackVars)
+    // The seed plan's form, which reads through local consts and helper calls (#3562).
+    const parsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
+    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars)
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))

@@ -327,6 +327,65 @@ describe('computeSsrSeedPlan', () => {
     }
   })
 
+  test('a seed calling a zero-param local arrow helper derives through its body (#3562)', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { mode?: string; label?: string }) {
+        const isWide = () => props.mode === 'wide'
+        const [shown] = createSignal(isWide() ? props.label : 'narrow')
+        return <p>{shown()}</p>
+      }
+    `)
+    const shown = step(plan, 'shown')
+    expect(shown.kind).toBe('derived')
+    if (shown.kind === 'derived') expect(shown.frees).toEqual(['props'])
+  })
+
+  test('a helper whose body a callback param would capture stays opaque (#3562)', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { items: string[]; tag?: string }) {
+        const tag = props.tag
+        const matches = () => tag === 'x'
+        const [n] = createSignal(props.items.filter(tag => matches()).length)
+        return <p>{n()}</p>
+      }
+    `)
+    expect(step(plan, 'n').kind).toBe('opaque')
+  })
+
+  test.each([
+    ['an async arrow', 'const helper = async () => props.flag'],
+    ['a generator function', 'const helper = function* () { return props.flag }'],
+    ['a body that mutates state', 'let n = 0\n        const helper = () => (n += 1)'],
+  ])('a helper call to %s stays opaque (#3562 review)', (_label, decl) => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { flag?: boolean }) {
+        ${decl}
+        const [shown] = createSignal(helper() ? 'yes' : 'no')
+        return <p>{shown()}</p>
+      }
+    `)
+    expect(step(plan, 'shown').kind).toBe('opaque')
+  })
+
+  test('a helper that takes params is not inlined at a call site (#3562)', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { mode?: string }) {
+        const is = (m: string) => props.mode === m
+        const [wide] = createSignal(is('wide'))
+        return <p>{String(wide())}</p>
+      }
+    `)
+    expect(step(plan, 'wide').kind).toBe('opaque')
+  })
+
   test('multi-hop const chain THROUGH TWO component-scope consts (#2685 review): still derived', () => {
     const plan = planFor(`
       'use client'

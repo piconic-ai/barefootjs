@@ -13,6 +13,7 @@ import type {
   LoopParamBinding,
   ParsedExpr,
   TypeInfo,
+  JsSourceText,
 } from '@barefootjs/jsx'
 
 /**
@@ -292,7 +293,7 @@ export interface SpreadSlotInfo {
    * shapes.
    */
   parsed: ParsedExpr | undefined
-  templateExpr: string | undefined
+  templateExpr: JsSourceText | undefined
   bagSource: 'inline' | 'input-bag'
 }
 

@@ -24,6 +24,7 @@ import type {
   IRProvider,
   IRAsync,
   ParsedExpr,
+  JsSourceText,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -35,7 +36,7 @@ interface RawSpreadAttr {
   slotId: string
   expr: string
   parsed: ParsedExpr | undefined
-  templateExpr: string | undefined
+  templateExpr: JsSourceText | undefined
 }
 
 /**

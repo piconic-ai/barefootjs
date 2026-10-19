@@ -24,6 +24,7 @@ import type {
   TypeDefinition,
   MapCallbackPreamble,
   PreambleRegionSource,
+  JsSourceText,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 import type { SkeletonSlotPaths } from './html-template.ts'
@@ -197,7 +198,7 @@ export interface DynamicElement {
 export interface ConditionalBranchEvent {
   slotId: string
   eventName: string
-  handler: string
+  handler: JsSourceText
 }
 
 export interface ConditionalBranchRef {
@@ -528,7 +529,7 @@ export interface NestedLoop extends LoopCore {
 export interface LoopChildEvent {
   eventName: string // 'click', 'submit', etc.
   childSlotId: string // bf slot ID of the element with the event
-  handler: string // Handler expression (may reference loop param)
+  handler: JsSourceText // Handler expression (may reference loop param)
   /** Nesting info for events inside nested inner loops. Empty = direct child. */
   nestedLoops: NestedLoop[]
   /** DOM nesting depth (0 = loop body root). Deepest-first sorting for event delegation (#774). */

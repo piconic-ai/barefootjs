@@ -8,6 +8,7 @@
  */
 
 import { collectLoopBoundNames, resolveBodyDestructuredPropAliases, type ComponentIR, type TypeInfo } from '@barefootjs/jsx'
+import type { JsSourceText } from '@barefootjs/jsx'
 
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo): boolean {
@@ -15,7 +16,7 @@ function isStringTypeInfo(type: TypeInfo): boolean {
 }
 
 /** True when `initialValue` is a bare string-literal expression. */
-function isBareStringLiteral(initialValue: string | undefined): boolean {
+function isBareStringLiteral(initialValue: JsSourceText | undefined): boolean {
   if (!initialValue) return false
   const v = initialValue.trim()
   return (v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))
