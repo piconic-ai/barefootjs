@@ -1083,22 +1083,19 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         const scopeBeforeAliases = this.scope
         this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
         try {
+          // The filter's param reads as the loop's row variable (`$t` →
+          // `$todo`), decided by the binding rather than renamed in the text.
           filterCond = this.renderPerlFilterExpr(
             renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
-            loop.filterPredicate.param
+            loop.filterPredicate.param,
+            new Map(),
+            `$${param}`,
           )
         } finally {
           this.scope = scopeBeforeAliases
         }
       } else {
         filterCond = '1'
-      }
-      // Map filter param to loop param (e.g., $t → $todo)
-      if (loop.filterPredicate.param !== param) {
-        filterCond = filterCond.replace(
-          new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),
-          `$${param}`
-        )
       }
       lines.push(`% if (${filterCond}) {`)
       lines.push(...preambleLines)
@@ -1484,6 +1481,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     expr: ParsedExpr,
     param: string,
     localVarMap: Map<string, string> = new Map(),
+    paramVar = `$${param}`,
   ): string {
     // Nested higher-order in filter predicates was refused outright
     // until #1443 PR4 because the `member` emit produced
@@ -1506,6 +1504,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         localVarMap,
         (n, property) => this._isStringValueName(n, property),
         (message, reason) => this._recordExprBF101(message, reason),
+        new Map(),
+        paramVar,
       ),
     )
   }

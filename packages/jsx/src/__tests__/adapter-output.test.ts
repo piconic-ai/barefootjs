@@ -454,15 +454,17 @@ describe('Adapter output', () => {
 
     test('exported arrow function body is preserved in module exports', () => {
       const honoAdapter = new HonoAdapter()
+      // The helper is not named `formatDate`: that is a runtime helper the
+      // client JS calls, so a module-level binding of it is BF057 (#3537).
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/client'
 
-        export const formatDate = (d) => d.toISOString().split('T')[0]
+        export const toIsoDay = (d) => d.toISOString().split('T')[0]
 
         export function DatePicker() {
           const [date, setDate] = createSignal(new Date())
-          return <span>{formatDate(date())}</span>
+          return <span>{toIsoDay(date())}</span>
         }
       `
 
@@ -471,7 +473,7 @@ describe('Adapter output', () => {
 
       const template = result.files.find(f => f.type === 'markedTemplate')!
       expect(template).toBeDefined()
-      expect(template.content).toContain("export const formatDate = (d) => d.toISOString().split('T')[0]")
+      expect(template.content).toContain("export const toIsoDay = (d) => d.toISOString().split('T')[0]")
     })
   })
 

@@ -19,7 +19,7 @@ export function initLoopRowFragmentRootChild(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
-  if (_s3) _s3.addEventListener('click', () => { setActive('b') })
+  if (_s3) _s3.addEventListener('click', () => setActive('b'))
   // Reactive texts in static array children
   if (_s4) {
     opts.forEach((opt, __idx) => {

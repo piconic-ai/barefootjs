@@ -27,7 +27,7 @@ export function initNoteBoxNative(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) _s0.addEventListener('input', (e) => { setNote(e.target.value) })
+  if (_s0) _s0.addEventListener('input', (e) => setNote(e.target.value))
 }
 
 hydrate('NoteBoxNative', { init: initNoteBoxNative, template: (_p) => `<div class="notebox"><textarea class="note-textarea" bf="s0">${escapeText(('initial note'))}</textarea><p class="note-preview" bf="s2"><!--bf:s1-->${escapeTextOrMarkup(('initial note'))}<!--/--></p></div>` })

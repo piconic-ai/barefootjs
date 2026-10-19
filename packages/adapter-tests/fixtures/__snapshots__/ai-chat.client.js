@@ -88,7 +88,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
 
   if (_s6) _s6.addEventListener('input', e => setInput(e.target.value))
   if (_s6) _s6.addEventListener('keydown', handleKeyDown)
-  if (_s7) _s7.addEventListener('click', () => { send(input()) })
+  if (_s7) _s7.addEventListener('click', () => send(input()))
   createEffect(() => {
     messages()
     streamingText()

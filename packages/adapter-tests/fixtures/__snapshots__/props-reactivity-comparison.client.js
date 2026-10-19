@@ -18,7 +18,7 @@ export function initReactiveChild(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
-  if (_s4) _s4.addEventListener('click', () => { _p.onIncrement() })
+  if (_s4) _s4.addEventListener('click', () => _p.onIncrement())
 }
 
 hydrate('ReactiveChild__aca6fc98', { init: initReactiveChild, template: (_p) => `<div class="reactive-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="child-value" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(_p.value)}<!--/--></span><button class="btn-child-increment" bf="s4">Increment from child</button></div>`, name: 'ReactiveChild' })
@@ -45,7 +45,7 @@ export function initReactiveProps(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
-  if (_s4) _s4.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s4) _s4.addEventListener('click', () => setCount(n => n + 1))
 
   // Reactive prop bindings
   createEffect(() => {
@@ -148,7 +148,7 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s2) _s2.addEventListener('click', () => setCount(n => n + 1))
 
   // Reactive prop bindings
   createEffect(() => {

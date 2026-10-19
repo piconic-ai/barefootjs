@@ -46,8 +46,8 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
  * analysis lives in `computeSsrSeedPlan` (packages/jsx/src/ssr-seed-plan.ts);
  * this only lowers each step's expression to Kolon and applies the
  * backend-specific emit guards: skip an empty lowering, skip a lowering that
- * references no `$var` at all (a constant init/body — e.g. a `derived` step
- * with empty `frees` — keeps the existing static ssr-defaults seed instead),
+ * the plan marks `constant` (a constant init/body — e.g. a `derived` step
+ * reading only inlined module consts — keeps the existing static ssr-defaults seed instead),
  * and capture-before-shadow a self-referencing lowering (Kolon's `my`
  * shadows the RHS, so `: my $x = … $x …` would read the just-declared
  * undefined lexical rather than the render var — the plan rules out
@@ -94,7 +94,7 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
     // `'value'` — this RHS is an assignment, not a render (#2696 review).
     const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed, 'value')
     const local = ctx.memoKolonName(step.name)
-    if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) {
+    if (kolon === '' || step.constant) {
       // Not computed in-template: the value arrives as the stash var
       // `$<name>`. A renamed memo still needs its local bound to it.
       if (local !== step.name) lines.push(`: my $${local} = $${step.name};`)
