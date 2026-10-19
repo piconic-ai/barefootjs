@@ -64,7 +64,8 @@ import {
   collectNullishAttrContext,
   parseExpression,
   stringifyParsedExpr,
-  parseStyleObjectEntries,
+  planStyleObject,
+  type ExpressionAttr,
   isSupported,
   exprToString,
   identifierPath,
@@ -10151,7 +10152,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101.
       if (name === 'style') {
-        const css = this.tryLowerStyleObject(value.expr)
+        const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
@@ -10394,14 +10395,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * shape is unsupported or any value expression can't be lowered (the caller
    * then falls through to the generic BF101 path).
    */
-  private tryLowerStyleObject(expr: string): string | null {
-    const entries = parseStyleObjectEntries(expr)
+  private tryLowerStyleObject(value: ExpressionAttr): string | null {
+    const entries = planStyleObject(value)
     if (!entries) return null
-    // Pre-check every dynamic value so an unsupported one bails the whole
-    // object (rather than recording a partial BF101 mid-build).
-    for (const e of entries) {
-      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
-    }
     // Routed through the single `bf_style_object` runtime call (#2261)
     // rather than per-pair `key:value` template interpolation — a dynamic
     // value that fails the ported `hasUnsafeStyleValue` CSS-injection scan
@@ -10415,7 +10411,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // call returning a trusted `template.CSS`, not a plain `string`).
     const args = entries.flatMap(e => [
       JSON.stringify(e.cssKey),
-      e.kind === 'literal' ? JSON.stringify(e.value) : wrapIfMultiToken(this.convertExpressionToGo(e.expr)),
+      e.kind === 'literal' ? JSON.stringify(e.value) : wrapIfMultiToken(this.convertExpressionToGo(e.expr, undefined, e.parsed)),
     ])
     return `{{bf_style_object ${args.join(' ')}}}`
   }

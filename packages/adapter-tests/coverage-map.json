@@ -10879,6 +10879,19 @@
         "attribute"
       ]
     },
+    "style-object-shorthand": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "style-object-static": {
       "kinds": [],
       "axes": [],
