@@ -40,7 +40,8 @@ import type {
   ImportInfo,
   JsSourceText,
 } from '@barefootjs/jsx'
-import { isElidedFactoryGetter } from '@barefootjs/jsx'
+import {
+  collectAbsentPropSeedReads, isElidedFactoryGetter } from '@barefootjs/jsx'
 import {
   BaseAdapter,
   type AdapterOutput,
@@ -766,6 +767,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
+    this.state.absentPropSeedSignals = new Set(
+      [...collectAbsentPropSeedReads(ir)]
+        .filter(([, reads]) => [...reads].every(name => this.state.nullableSignalSeedPropNames.has(name)))
+        .map(([getter]) => getter),
+    )
     this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields

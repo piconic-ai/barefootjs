@@ -4,7 +4,7 @@ import { createFixture } from '../src/types'
  * Signals seeded from an optional, no-default prop, bound to attributes
  * (#3567). When the prop is absent the seed is `undefined`, so Hono omits
  * the attribute; an explicit `''` still renders `name=""`. Covers a bare
- * read and a ternary branch.
+ * read, a ternary branch and a `||` fallback between two optional props.
  */
 export const fixture = createFixture({
   id: 'signal-seed-absent-optional-prop-attr',
@@ -16,16 +16,18 @@ import { createSignal } from '@barefootjs/client'
 export function SignalSeedAbsentOptionalPropAttr(props: { mode?: string; label?: string }) {
   const [bare] = createSignal(props.label)
   const [shown] = createSignal(props.mode === 'wide' ? props.label : 'narrow')
-  return <p data-bare={bare()} data-shown={shown()}>x</p>
+  const [fallback] = createSignal(props.label || props.mode)
+  return <p data-bare={bare()} data-shown={shown()} data-fallback={fallback()}>x</p>
 }
 `,
   props: { mode: 'wide', label: 'L' },
   expectedHtml: `
-    <p bf-s="test" bf="s0" data-bare="L" data-shown="L">x</p>
+    <p bf-s="test" bf="s0" data-bare="L" data-shown="L" data-fallback="L">x</p>
   `,
   dataPoints: [
     { name: 'label-absent', props: { mode: 'wide' } },
     { name: 'label-empty', props: { mode: 'wide', label: '' } },
     { name: 'narrow', props: { mode: 'tall' } },
+    { name: 'all-absent', props: {} },
   ],
 })

@@ -64,8 +64,13 @@ export interface StateMemo {
   parsedBlock?: ParsedStatement[]
 }
 
-/** A nullable signal seeded whole from a prop flipped to `interface{}` for it (#3323). */
-export function isNillableSeedSignal(ctx: GoEmitContext, signal: { parsed?: ParsedExpr }): boolean {
+/**
+ * A nullable signal seeded whole from a prop flipped to `interface{}` for it
+ * (#3323), or one whose seed reaches such props through a ternary branch or a
+ * logical operand (`absentPropSeedSignals`, #3567).
+ */
+export function isNillableSeedSignal(ctx: GoEmitContext, signal: { getter?: string; parsed?: ParsedExpr }): boolean {
+  if (signal.getter !== undefined && ctx.state.absentPropSeedSignals.has(signal.getter)) return true
   const name = bareSeedPropName(ctx, signal.parsed)
   return name !== null && ctx.state.nullableSignalSeedPropNames.has(name)
 }
