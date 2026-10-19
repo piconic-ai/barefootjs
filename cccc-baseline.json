@@ -194,7 +194,7 @@
     },
     "packages/adapter-go-template/src/adapter/value/value-lowering.ts": {
       "convertInitialValue": [
-        96
+        87
       ]
     },
     "packages/adapter-go-template/src/test-render.ts": {

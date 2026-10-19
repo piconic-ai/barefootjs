@@ -10465,6 +10465,32 @@
         "text"
       ]
     },
+    "string-literal-union-alias-shapes": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "string-literal-union-alias-signal-seeds": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "string-padEnd": {
       "kinds": [
         "array-method",
