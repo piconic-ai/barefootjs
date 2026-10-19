@@ -8276,6 +8276,50 @@ describe('dataPointDivergences', () => {
   }
 })
 
+describe('GoTemplateAdapter - string-literal union aliases from the IR (#3542)', () => {
+  test('an exported, multi-line or double-quoted union is a string alias; a mixed union is not', () => {
+    const adapter = new GoTemplateAdapter()
+    const types = adapter.generateTypes(compileToIR(`
+export type Mode =
+  | 'light'
+  | 'dark'
+type Tone = "warm" | "cool"
+type Size = 'auto' | number
+
+export function Shapes(props: { mode: Mode; tone: Tone; size: Size }) {
+  return <p data-mode={props.mode} data-tone={props.tone}>{props.size}</p>
+}
+`, adapter))!
+    expect(types).toContain('type Mode = string')
+    expect(types).toContain('type Tone = string')
+    expect(types).not.toContain('type Size = string')
+    expect(types).toContain('Size interface{} `json:"size"`')
+  })
+})
+
+describe('GoTemplateAdapter - union alias signal seeds (#3542 review)', () => {
+  test('a parenthesized union is a string alias and a mixed union keeps its scalar seeds', () => {
+    const adapter = new GoTemplateAdapter()
+    const types = adapter.generateTypes(compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Mode = 'a' | ('b')
+type Size = 'auto' | number
+
+export function Seeds() {
+  const [mode] = createSignal<Mode>('a')
+  const [size] = createSignal<Size>('auto')
+  const [count] = createSignal<Size>(3)
+  return <p data-mode={mode()} data-size={size()}>{count()}</p>
+}
+`, adapter))!
+    expect(types).toContain('type Mode = string')
+    expect(types).toMatch(/^\s+Mode: "a",$/m)
+    expect(types).toMatch(/^\s+Size: "auto",$/m)
+    expect(types).toMatch(/^\s+Count: 3,$/m)
+  })
+})
+
 describe('GoTemplateAdapter - refusals carried as results, not marker text (#3542)', () => {
   test('a find() predicate with no Go lowering reports one BF101 and keeps the template valid', () => {
     const result = compileJSX(`
