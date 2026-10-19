@@ -496,6 +496,19 @@ export interface IRExpression {
    * unification A3) is its only wiring.
    */
   preambleRegion?: boolean
+  /**
+   * How the expression reads the component's own `children` prop (#3539):
+   * a bare read (`children` bound by the props destructure, renamed or not,
+   * `<propsObject>.children`, or a body alias such as `const { children: kids }
+   * = props`), that read on the left of `?? ''`, or on the
+   * left of `?? <other fallback>`. Decided once in Phase 1 from the binding,
+   * so a local `const children`, a loop row named `children`, or another
+   * object's `.children` is never mistaken for the prop. The children value
+   * is pre-rendered markup: adapters that cannot tell markup from a string
+   * by value (ERB) and the client template's child splice read this to skip
+   * escaping it, while a non-empty fallback stays escaped text.
+   */
+  childrenRead?: 'bare' | 'nullish-empty' | 'nullish-fallback'
   /** When true, expression calls signal getters or memos (has reactive `foo()` pattern). */
   callsReactiveGetters?: boolean
   /** When true, expression contains function call(s) — any `identifier()` pattern (computed from AST). */

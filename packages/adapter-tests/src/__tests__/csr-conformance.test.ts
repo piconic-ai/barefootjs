@@ -10,7 +10,7 @@ import { describe, test, expect } from 'bun:test'
 import { jsxFixtures } from '../../fixtures'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from '../jsx-runner'
 import { renderCsrComponent } from '../csr-render'
-import { CSR_SKIP_FIXTURES } from '../csr-skip-set'
+import { CSR_RENDER_DIVERGENCES, CSR_SKIP_FIXTURES } from '../csr-skip-set'
 
 describe('CSR Conformance Tests', () => {
   // Fixtures to skip in CSR conformance tests — see `../csr-skip-set.ts`
@@ -45,6 +45,16 @@ describe('CSR Conformance Tests', () => {
       // here at compare time.
       const normalizedHtml = stripConditionalMarkersForCrossAdapter(normalizeHTML(html))
       const normalizedExpected = stripConditionalMarkersForCrossAdapter(normalizeHTML(fixture.expectedHtml!))
+      const divergence = CSR_RENDER_DIVERGENCES[fixture.id]
+      if (divergence) {
+        if (normalizedHtml === normalizedExpected) {
+          throw new Error(
+            `[${fixture.id}] now matches the reference in CSR: the CSR_RENDER_DIVERGENCES entry citing ` +
+              `'${divergence.limitation}' is stale — delete it (and the fixture from the limitation entry).`,
+          )
+        }
+        return
+      }
       expect(normalizedHtml).toBe(normalizedExpected)
     })
   }

@@ -1984,6 +1984,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2004,6 +2005,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2027,6 +2029,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2047,6 +2050,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2068,6 +2072,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2088,6 +2093,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2108,6 +2114,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -2129,6 +2136,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
+              "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
           }
@@ -3773,6 +3781,125 @@
           "escape": {
             "state": "escapable",
             "twin": "filter-opaque-predicate-client"
+          }
+        }
+      },
+      "filter-predicate-shape-loop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowerable-loop-filter-predicate"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-predicate-shape-loop-client"
           }
         }
       },
@@ -7379,6 +7506,10 @@
         "description": "A `.filter()` predicate calling an unlowered method — DSL diagnostic on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-opaque-predicate.ts"
       },
+      "filter-predicate-shape-loop": {
+        "description": "A loop filter predicate with no template form refuses (BF101) instead of rendering every row (#3534)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-shape-loop.ts"
+      },
       "filter-typeof-predicate": {
         "description": "Off-subset filter predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-typeof-predicate.ts"
@@ -7598,6 +7729,10 @@
       "filter-opaque-predicate-client": {
         "description": "A `.filter()` predicate calling an unlowered method, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-opaque-predicate-client.ts"
+      },
+      "filter-predicate-shape-loop-client": {
+        "description": "A /* @client */ loop filter with no template form defers to the browser instead of refusing SSR…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-shape-loop-client.ts"
       },
       "filter-typeof-predicate-client": {
         "description": "Off-subset filter predicate deferred to the client via /* @client */",
@@ -7935,6 +8070,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "csr-children-nullish-fallback-escaped": {
+      "title": "Present children under a non-empty nullish fallback in the client template",
+      "kind": "silent",
+      "given": "a children read with a non-empty nullish fallback (`{(props.children ?? '<b>fallback</b>') ?? ''}`, `{props.children ?? 'fallback'}`) rendered by the client template with children passed",
+      "expected": "the children render as markup, and only an absent read renders the escaped fallback",
+      "actual": "renders the children markup as escaped visible text: the client template receives children as a plain HTML string and escapes the whole read",
+      "fixtures": [
+        "children-chained-nullish-fallback-escaped"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "defaulted-prop-explicit-empty": {
@@ -8334,6 +8491,30 @@
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "unlowerable-loop-filter-predicate": {
+      "title": "A loop filter predicate with no template form",
+      "kind": "refusal",
+      "given": "a `.filter(pred).map(…)` loop whose predicate is a conditional (`t => t.done ? t.a : t.b`), a template literal, or another shape outside comparisons joined with `&&` / `||` / `!`",
+      "expected": "only the rows the predicate keeps render in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "filter-predicate-shape-loop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ],
       "diagnostics": [
         "BF101"
