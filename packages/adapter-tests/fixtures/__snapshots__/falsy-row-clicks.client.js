@@ -184,7 +184,7 @@ export function initFalsyRowClicks(__scope, _p = {}) {
     if (__ic1_0) mapArray(() => g() || [], __ic1_0, (v) => String(v), (v, __innerIdx1_0, __existing) => {
       let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<button type="button" data-key-1="${escapeAttr(v())}" class="cell" bf="s15"><!--bf:s14-->${escapeText(v())}<!--/--></button>`; return __t.content.firstElementChild.cloneNode(true) })()
       __innerEl1_0.setAttribute('data-key-1', String(v()))
-      { const __e = qsa(__innerEl1_0, '[bf="s15"]'); if (__e) __e.addEventListener('click', () => { setLast(`cell:${gi()}:${v()}`) }) }
+      { const __e = qsa(__innerEl1_0, '[bf="s15"]'); if (__e) __e.addEventListener('click', () => setLast(`cell:${gi()}:${v()}`)) }
       const __bfw_s14 = lazySlots(__innerEl1_0, [{ id: 's14', kind: 'text', path: [] }])
       createEffect(() => { __bfw_s14('s14', String(v())) })
       return __innerEl1_0

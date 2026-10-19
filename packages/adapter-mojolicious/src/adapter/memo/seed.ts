@@ -45,8 +45,8 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
  * lives in `computeSsrSeedPlan` (packages/jsx/src/ssr-seed-plan.ts); this
  * only lowers each step's expression to Perl and applies the two
  * backend-specific emit guards: skip an empty lowering, and skip a lowering
- * that references no `$var` at all (a constant init/body — e.g. a `derived`
- * step with empty `frees` — keeps the existing static ssr-defaults seed
+ * that the plan marks `constant` (a constant init/body — e.g. a `derived`
+ * step reading only inlined module consts — keeps the existing static ssr-defaults seed
  * instead). `env-reader` and `opaque` steps emit nothing (the runtime
  * supplies the reader, or the adapter's ssr-defaults path already covers it).
  * (#1297, #2075)
@@ -61,7 +61,7 @@ export function generateDerivedMemoSeed(ctx: MojoMemoContext, ir: ComponentIR): 
     if (step.kind !== 'derived') continue
     // `'value'` — this RHS is an assignment, not a render (#2696 review).
     const perl = ctx.convertExpressionToPerl(step.expr, step.parsed, 'value')
-    if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) continue
+    if (perl === '' || step.constant) continue
     lines.push(`% my $${step.name} = ${perl};`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''

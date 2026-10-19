@@ -1049,6 +1049,9 @@ import { fixture as literalConstConditionalShapes } from './literal-const-condit
 import { fixture as conditionalThenColonText } from './conditional-then-colon-text'
 import { fixture as conditionalThenPercentText } from './conditional-then-percent-text'
 import { fixture as conditionalBranchSigilText } from './conditional-branch-sigil-text'
+import { fixture as filterParamSigilInString } from './filter-param-sigil-in-string'
+import { fixture as filterNestedCallbackReadsOuterParam } from './filter-nested-callback-reads-outer-param'
+import { fixture as filterNestedCallbackReadsOuterParamClient } from './filter-nested-callback-reads-outer-param-client'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1775,4 +1778,7 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalNestedStatic,
   conditionalNestedSignal,
   createMutationElidedValue,
+  filterParamSigilInString,
+  filterNestedCallbackReadsOuterParam,
+  filterNestedCallbackReadsOuterParamClient,
 ]

@@ -426,4 +426,27 @@ describe('computeSsrSeedPlan', () => {
     const on = step(plan, 'on')
     expect(on.kind).toBe('opaque')
   })
+
+  test('a derived step reading only inlined module consts, or nothing, is constant (#3542)', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      const PREFIX = 'pre'
+      function C(props: { label: string }) {
+        const [first] = createSignal([{ a: 'p' }].map((t) => t.a).join(','))
+        const [tagged] = createSignal(PREFIX + '-x')
+        const [label] = createSignal(props.label + '!')
+        const both = createMemo(() => PREFIX + first())
+        return <p>{first()}{tagged()}{label()}{both()}</p>
+      }
+    `)
+    const constantOf = (name: string) => {
+      const s = step(plan, name)
+      return s.kind === 'derived' ? s.constant : null
+    }
+    expect(constantOf('first')).toBe(true)
+    expect(constantOf('tagged')).toBe(true)
+    expect(constantOf('label')).toBe(false)
+    expect(constantOf('both')).toBe(false)
+  })
 })

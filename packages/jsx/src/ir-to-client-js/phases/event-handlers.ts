@@ -17,7 +17,7 @@
  */
 
 import type { ClientJsContext } from '../types.ts'
-import { toDomEventName, varSlotId, wrapHandlerInBlock, wrapHandlerForTurn } from '../utils.ts'
+import { toDomEventName, varSlotId, wrapHandlerForTurn } from '../utils.ts'
 import type { LoopDelegationIndex } from '../control-flow/plan/loop-delegation-index.ts'
 
 export function emitEventHandlers(
@@ -35,7 +35,7 @@ export function emitEventHandlers(
       // profiling run attributes the reactive work it triggers to this turn.
       const wrappedHandler = ctx.profile
         ? wrapHandlerForTurn(event.handler, `${ctx.componentName}#handler:${elem.slotId}:${event.name}`)
-        : wrapHandlerInBlock(event.handler)
+        : event.handler.trim()
       if (elem.slotId === '__scope') {
         lines.push(`  if (__scope) __scope.addEventListener('${eventName}', ${wrappedHandler})`)
       } else {

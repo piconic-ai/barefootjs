@@ -388,30 +388,6 @@ export function quotePropName(name: string): string {
 // toHTMLAttrName), keeping the same public name for downstream consumers.
 
 /**
- * Wrap arrow function handler in block to prevent accidental return false.
- * Returning false from a DOM event handler prevents default behavior.
- *
- * Example:
- *   Input:  (e) => e.key === 'Enter' && handleAdd()
- *   Output: (e) => { e.key === 'Enter' && handleAdd() }
- */
-export function wrapHandlerInBlock(handler: string): string {
-  const trimmed = handler.trim()
-
-  if (trimmed.startsWith('(') && trimmed.includes('=>')) {
-    const arrowIndex = trimmed.indexOf('=>')
-    const params = trimmed.substring(0, arrowIndex + 2)
-    const body = trimmed.substring(arrowIndex + 2).trim()
-
-    if (!body.startsWith('{')) {
-      return `${params} { ${body} }`
-    }
-  }
-
-  return trimmed
-}
-
-/**
  * Profile mode (#1690, SR3): wrap an event handler so a profiling run can
  * attribute the reactive work it triggers to one turn. The original handler
  * expression (arrow or identifier) is invoked verbatim with the forwarded

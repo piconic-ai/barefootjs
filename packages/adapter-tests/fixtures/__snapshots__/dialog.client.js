@@ -485,7 +485,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
     }
   }) }
 
-  if (_s5) _s5.addEventListener('input', (e) => { setConfirmText((e.target).value) })
+  if (_s5) _s5.addEventListener('input', (e) => setConfirmText((e.target).value))
   if (_s7) _s7.addEventListener('click', handleDelete)
 
   // Reactive prop bindings

@@ -23,7 +23,7 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
 
   const [_s0, _s3] = $(__scope, 's0', 's3')
 
-  if (_s0) _s0.addEventListener('click', () => { setIds([1, 2]) })
+  if (_s0) _s0.addEventListener('click', () => setIds([1, 2]))
   mapArray(() => ids(), _s3, (id) => String(id), (id, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
@@ -31,7 +31,7 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Tag__515bc416', 's1', { get id() { return id() } }, undefined, __scope)
-    { const __e = qsa(__el, '[bf="s2"]'); if (__e) __e.addEventListener('input', () => { setValue('a</textarea><b class="broke">X</b>') }) }
+    { const __e = qsa(__el, '[bf="s2"]'); if (__e) __e.addEventListener('input', () => setValue('a</textarea><b class="broke">X</b>')) }
     const __ra_s2 = qsa(__el, '[bf="s2"]')
     const __l = []
     createEffect(() => {

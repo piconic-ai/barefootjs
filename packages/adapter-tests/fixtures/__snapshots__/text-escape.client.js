@@ -21,7 +21,7 @@ export function initTextEscape(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
-  if (_s3) _s3.addEventListener('click', () => { setCount(count() + 1) })
+  if (_s3) _s3.addEventListener('click', () => setCount(count() + 1))
 }
 
 hydrate('TextEscape', { init: initTextEscape, template: (_p) => `<div class="text-escape"><p class="label" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.label)}<!--/--></p><button type="button" bf="s3">count: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></button></div>` })

@@ -13,7 +13,7 @@ export function initLoopRowChildChildrenAttrs(__scope, _p = {}) {
 
   const [_s3, _s4] = $(__scope, 's3', 's4')
 
-  if (_s3) _s3.addEventListener('click', () => { setActive('b') })
+  if (_s3) _s3.addEventListener('click', () => setActive('b'))
   // Reactive attributes / reactive texts in static array children
   if (_s4) {
     opts.forEach((opt, __idx) => {
