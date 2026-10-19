@@ -3081,12 +3081,6 @@
               ]
             },
             {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4285,12 +4279,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
               ]
             },
             {
@@ -6666,12 +6654,6 @@
               ]
             },
             {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -8975,12 +8957,6 @@
               ]
             },
             {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -10191,12 +10167,6 @@
               ]
             },
             {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -11005,12 +10975,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
               ]
             },
             {
@@ -15203,12 +15167,6 @@
               "limitations": [
                 "omitted-optional-number-arithmetic"
               ]
-            },
-            {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
             }
           ]
         },
@@ -15362,12 +15320,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
               ]
             },
             {
@@ -16894,12 +16846,6 @@
               ]
             },
             {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
-            },
-            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -17873,12 +17819,6 @@
               ]
             },
             {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -18760,12 +18700,6 @@
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
-              ]
-            },
-            {
-              "fixture": "signal-computed-prop-seed-absent",
-              "limitations": [
-                "evaluated-nullish-absent-prop"
               ]
             },
             {
