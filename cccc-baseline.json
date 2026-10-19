@@ -939,7 +939,7 @@
         39
       ],
       "extractSsrDefaults": [
-        79
+        72
       ]
     },
     "packages/jsx/src/static-literal.ts": {
