@@ -370,9 +370,9 @@ export function initExample(__scope, _p = {}) {
 
   const [_s0, _s1, _s2] = $(__scope, 's0', 's1', 's2')
 
-  if (_s0) _s0.addEventListener('click', () => { setCount(n => n + 1) })
-  if (_s1) _s1.addEventListener('input', (e) => { setText((e.target).value) })
-  if (_s2) _s2.addEventListener('keydown', (e) => { e.key === 'Enter' && handleSubmit() })
+  if (_s0) _s0.addEventListener('click', () => setCount(n => n + 1))
+  if (_s1) _s1.addEventListener('input', (e) => setText((e.target).value))
+  if (_s2) _s2.addEventListener('keydown', (e) => e.key === 'Enter' && handleSubmit())
 }
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div><button bf="s0">+1</button><input bf="s1" /><input bf="s2" /></div>\` })
@@ -1137,7 +1137,7 @@ export function initPostList(__scope, _p = {}) {
     }
   })
 
-  if (_s3) _s3.addEventListener('click', () => { setPage(page() + 1) })
+  if (_s3) _s3.addEventListener('click', () => setPage(page() + 1))
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s1--><!--/--></li>\`
   const __lzp_l0 = [[0]]
@@ -1285,8 +1285,8 @@ export function initCommentForm(__scope, _p = {}) {
     }
   })
 
-  if (_s1) _s1.addEventListener('input', (e) => { setText(e.target.value) })
-  if (_s2) _s2.addEventListener('click', () => { save() })
+  if (_s1) _s1.addEventListener('input', (e) => setText(e.target.value))
+  if (_s2) _s2.addEventListener('click', () => save())
 }
 
 hydrate('CommentForm', { init: initCommentForm, template: (_p) => \`<form bf="s4">\${undefined ? \`<p bf-c="s0" role="alert">Failed to save</p>\` : \`<!--bf-cond-start:s0--><!--bf-cond-end:s0-->\`}<input \${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s1" /><button type="button" \${false ? 'disabled' : ''} bf="s2">Post</button>\${(undefined) ? \`<p bf-c="s3">Saved</p>\` : \`<!--bf-cond-start:s3--><!--bf-cond-end:s3-->\`}</form>\` })
@@ -1354,7 +1354,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s1) _s1.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
@@ -1418,7 +1418,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s1) _s1.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((_p.initial))}<!--/--></button>\` })
@@ -1843,8 +1843,8 @@ export function initTooltip(__scope, _p = {}) {
     __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
-  if (_s0) _s0.addEventListener('mouseenter', () => { setVisible(true) })
-  if (_s0) _s0.addEventListener('mouseleave', () => { setVisible(false) })
+  if (_s0) _s0.addEventListener('mouseenter', () => setVisible(true))
+  if (_s0) _s0.addEventListener('mouseleave', () => setVisible(false))
   if (_s2) { (handleMount)(_s2); if (__scopeId) _s2.setAttribute('bf-po', __scopeId) }
 }
 
@@ -1888,7 +1888,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s1) _s1.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
@@ -1917,7 +1917,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s2) _s2.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((_p.initial ?? 0))}<!--/--></span><button bf="s2">+1</button></div>\` })
@@ -1966,7 +1966,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s2) _s2.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((_p.initial ?? 0))}<!--/--></span><button bf="s2">+1</button></div>\` })
@@ -1995,7 +1995,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s2) _s2.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((_p.initial))}<!--/--></p><button bf="s2">+1</button></div>\` })
@@ -2027,7 +2027,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
-  if (_s3) _s3.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s3) _s3.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s2"><!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--> doubled is <!--bf:s1-->\${escapeTextOrMarkup(((0) * 2))}<!--/--></p><button bf="s3">+1</button></div>\` })
@@ -2052,7 +2052,7 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
+  if (_s1) _s1.addEventListener('click', () => setCount(n => n + 1))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })

@@ -111,7 +111,7 @@
 
 import { BF_SCOPE, BF_PARENT_OWNED_PREFIX } from '@barefootjs/shared'
 import { commentsInScope } from './query.ts'
-import { commentScopeRegistry } from './scope.ts'
+import { commentScopeRegistry, isOwnedByScope } from './scope.ts'
 import { relocatedRowElements } from './row-portal.ts'
 
 /**
@@ -295,23 +295,9 @@ function isSlotComment(node: Node | null, id: string): node is Comment {
 function findOwnedMarker(root: Element, id: string): Comment | null {
   const marker = `bf:${id}`
   const parentOwned = id.startsWith(BF_PARENT_OWNED_PREFIX)
-  const registryInfo = commentScopeRegistry.get(root)
-  const wideBoundary = registryInfo ? registryInfo.commentNode.parentElement : root
   for (const comment of commentsInScope(root)) {
     if (comment.nodeValue !== marker) continue
-    if (parentOwned) return comment
-    // `registryInfo` absent means `wideBoundary` already IS `root`, so the
-    // `contains()` check can only change the outcome when a wider boundary
-    // is actually in play — skip it (short-circuited by `&&`) otherwise.
-    const boundary = registryInfo && !root.contains(comment) ? wideBoundary : root
-    let owned = true
-    for (let el = comment.parentElement; el && el !== boundary; el = el.parentElement) {
-      if (el.hasAttribute(BF_SCOPE)) {
-        owned = false
-        break
-      }
-    }
-    if (owned) return comment
+    if (parentOwned || isOwnedByScope(comment, root)) return comment
   }
   return findRelocatedRowMarker(root, marker, parentOwned)
 }

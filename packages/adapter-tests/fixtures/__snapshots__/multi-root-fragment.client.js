@@ -15,7 +15,7 @@ export function initMultiRootFragment(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => { setCount(count() + 1) })
+  if (_s1) _s1.addEventListener('click', () => setCount(count() + 1))
 }
 
 hydrate('MultiRootFragment', { init: initMultiRootFragment, template: (_p) => `<h1>title</h1>between<p bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></p>`, comment: true, fragmentRoot: true })

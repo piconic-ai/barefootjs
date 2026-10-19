@@ -89,8 +89,8 @@ export function initCondForwardedChildAttr(__scope, _p = {}) {
     }
   })
 
-  if (_s4) _s4.addEventListener('click', () => { setLabel(label() === 'alpha' ? 'beta' : 'alpha') })
-  if (_s5) _s5.addEventListener('click', () => { setShow(!show()) })
+  if (_s4) _s4.addEventListener('click', () => setLabel(label() === 'alpha' ? 'beta' : 'alpha'))
+  if (_s5) _s5.addEventListener('click', () => setShow(!show()))
 }
 
 hydrate('CondForwardedChildAttr', { init: initCondForwardedChildAttr, template: (_p) => `<div bf="s6">${(true) ? `<!--bf-cond-start:s0-->${renderChild('Other__4d0b2e9a', {}, undefined, 's1')}${renderChild('Wrapper__4d0b2e9a', {children: `<strong class="forwarded" ${(('alpha')) != null ? 'data-label="' + escapeAttr(('alpha')) + '"' : ''} bf="^s2">value</strong>`}, undefined, 's3')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}<button class="update" bf="s4">update</button><button class="toggle" bf="s5">toggle</button></div>` })

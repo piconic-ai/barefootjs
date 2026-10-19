@@ -258,11 +258,11 @@ export abstract class JsxAdapter extends BaseAdapter {
         lines.push(`  ${keyword} ${constant.name}${typeAnnotation}`)
         continue
       }
-      const value = constant.value.trim()
-      // Skip client-only constructs in SSR:
+      // Skip client-only constructs in SSR (`ConstantInfo.systemConstructKind`,
+      // decided by the analyzer from the initializer's AST, #3542):
       // - createContext() — only used client-side via provideContext/useContext
       // - new WeakMap() — client-side cross-component shared state
-      if (/^createContext\b/.test(value) || /^new WeakMap\b/.test(value)) continue
+      if (constant.systemConstructKind) continue
 
       // Skip unreachable constants (only used in event handler code paths)
       if (!reachable.has(constant.name)) continue
@@ -489,9 +489,8 @@ export abstract class JsxAdapter extends BaseAdapter {
         entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name}${typeAnnotation}` })
         continue
       }
-      const trimmed = c.value.trim()
-      if (/^new WeakMap\b/.test(trimmed)) continue
-      if (c.isExported && /^createContext\b/.test(trimmed)) continue
+      if (c.systemConstructKind === 'weakMap') continue
+      if (c.isExported && c.systemConstructKind === 'createContext') continue
       const value = preserveTypes ? (c.typedValue ?? c.value) : c.value
       // Preserve an explicit module-scope `let` type annotation from source
       // (#2589) — see the function-scope sibling above for rationale. `const`

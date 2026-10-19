@@ -24,7 +24,7 @@ export function initFragmentChildInConditional(__scope, _p = {}) {
     }
   })
 
-  if (_s2) _s2.addEventListener('click', () => { setShow(!show()) })
+  if (_s2) _s2.addEventListener('click', () => setShow(!show()))
 }
 
 hydrate('FragmentChildInConditional', { init: initFragmentChildInConditional, template: (_p) => `<div bf="s3">${(true) ? `<!--bf-cond-start:s0-->${renderChild('Passthrough__9ec964fa', {children: `<mark class="m">value</mark>`}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}<button class="toggle" bf="s2">toggle</button></div>` })

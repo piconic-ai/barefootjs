@@ -37,7 +37,7 @@ export function initChildPropRestForwardUndefinedStart(__scope, _p = {}) {
   const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
 
-  if (_s1) _s1.addEventListener('click', () => { setTag(t => (t === undefined ? 'x' : undefined)) })
+  if (_s1) _s1.addEventListener('click', () => setTag(t => (t === undefined ? 'x' : undefined)))
 
   // Reactive prop bindings
   { const __m = []

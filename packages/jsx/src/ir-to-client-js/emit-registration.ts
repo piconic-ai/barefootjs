@@ -9,72 +9,43 @@ import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM, componentDefScopeFlags, initFunctionName } from './utils.ts'
 import { collectReactiveGetterNames } from '../analyzer-context.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
-import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
+import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
+import { csrSubstitute, type CsrEnv } from './csr-substitute.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { resolveRestSpreadNames } from './prop-handling.ts'
 
 /**
  * Resolve chained references within a constants map.
- * If constant A references constant B, replace B's name in A's value with B's resolved value.
- * Uses pre-computed freeIdentifiers to skip unnecessary regex replacements.
+ * If constant A references constant B, replace B's name in A's value with
+ * B's resolved value. The substitution runs on the expression tree
+ * (`csrSubstitute`), so a constant's name inside a string or template
+ * literal, a member name, or a binding that shadows it is never replaced,
+ * and an object-literal shorthand expands to `name: (value)` (#3535).
  *
- * When `freeIdsMap` is supplied, it is updated in place: each substitution
- * removes the substituted name from the resolving constant's free-id set
- * and unions in the substituted constant's own free ids. The result is a
- * transitively-closed free-id map that downstream callers
- * (`toLegacyInlinability` unsafe-ref check, #1267) can read without
- * re-scanning the resolved string.
+ * When `freeIdsMap` is supplied, it is updated in place to the free
+ * identifiers of each resolved value, so downstream callers
+ * (`toLegacyInlinability` unsafe-ref check, #1267) can read a
+ * transitively-closed free-id map without re-scanning the resolved string.
+ * A constant whose recorded free ids name no other constant is skipped.
  */
 export function resolveChainedRefs(constants: Map<string, string>, freeIdsMap?: Map<string, Set<string>>): void {
-  let changed = true
-  const maxIterations = constants.size + 1
-  let iteration = 0
-  while (changed && iteration < maxIterations) {
-    changed = false
-    iteration++
-    for (const [constName, constValue] of constants) {
-      // String literal values (single/double quoted) cannot contain variable references.
-      // Skip them to avoid corrupting CSS class names like "size-4" when a constant
-      // named "size" exists (the regex would falsely match "size" in "size-4").
-      const trimmed = constValue.trim()
-      if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-          (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
-        continue
-      }
-
-      // Protect string literals within compound values (e.g., Record objects
-      // containing 'size-4') from regex-based identifier replacement
-      const { protect, restore } = createStringProtector()
-      let newValue = protect(constValue)
-      const freeIds = freeIdsMap?.get(constName)
-      for (const [otherName, otherValue] of constants) {
-        if (otherName === constName) continue
-        // Use freeIdentifiers to skip constants that are definitely not referenced.
-        // On subsequent iterations the value may have been expanded beyond what
-        // freeIdentifiers tracks, so fall through to regex when freeIds is unavailable
-        // or when the iteration is > 1 (values have been mutated).
-        if (freeIds && iteration === 1 && !freeIds.has(otherName)) continue
-        const replaced = newValue.replace(new RegExp(`(?<![-.])\\b${otherName}\\b`, 'g'), `(${protect(otherValue)})`)
-        if (replaced !== newValue) {
-          newValue = replaced
-          changed = true
-          // Maintain a transitively-closed free-id set on the resolving
-          // constant: drop the substituted name, union in the substituted
-          // constant's own free ids.
-          if (freeIds) {
-            freeIds.delete(otherName)
-            const otherFreeIds = freeIdsMap?.get(otherName)
-            if (otherFreeIds) {
-              for (const id of otherFreeIds) freeIds.add(id)
-            }
-          }
-        }
-      }
-      newValue = restore(newValue)
-      if (newValue !== constValue) {
-        constants.set(constName, newValue)
-      }
+  for (const [constName, constValue] of constants) {
+    const freeIds = freeIdsMap?.get(constName)
+    if (freeIds && ![...freeIds].some(id => id !== constName && constants.has(id))) continue
+    // Every other constant, not only the recorded free ids: a substituted
+    // value can bring in a name the original value did not mention.
+    const env: CsrEnv = { substitutions: new Map(), propsObjectName: null }
+    for (const [otherName, otherValue] of constants) {
+      if (otherName === constName) continue
+      env.substitutions.set(otherName, { kind: 'identifier', replacement: otherValue, freeIdentifiers: new Set() })
+    }
+    const { rewritten, freeIdentifiers } = csrSubstitute(constValue, env)
+    if (rewritten === constValue) continue
+    constants.set(constName, rewritten)
+    if (freeIds) {
+      freeIds.clear()
+      for (const id of freeIdentifiers) freeIds.add(id)
     }
   }
 }

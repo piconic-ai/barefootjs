@@ -6,5 +6,5 @@ export default defineLimitation({
   given: 'a `.filter()` predicate whose body calls `.some()` / `.find()` with its own arrow callback',
   expected: 'the filtered rows render in the server HTML with the nested predicate applied',
   diagnostic: 'BF101',
-  fixtures: ['filter-nested-callback-predicate', 'filter-nested-find-predicate'],
+  fixtures: ['filter-nested-callback-predicate', 'filter-nested-find-predicate', 'filter-nested-callback-reads-outer-param'],
 })
