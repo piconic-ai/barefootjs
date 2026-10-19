@@ -22,7 +22,7 @@ import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-re
 import { buildEnvFromCtx } from './compute-inlinability.ts'
 import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from './component-scope.ts'
 import { resolveRestSpreadNames } from './prop-handling.ts'
-import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports.ts'
+import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports, runtimeNameCollisions } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
 import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
@@ -391,6 +391,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // same — without it, a constant whose value got inlined into the
   // template (e.g. `useYjs(_p.x)`) leaves the template referencing a
   // bare module-import name that's no longer imported (#1138 / #1133).
+  ctx.warnings.push(...runtimeNameCollisions([], ir.metadata.imports, generatedCode))
   const externalImports = collectExternalImports(ir, generatedCode)
   const allImports = externalImports.length > 0
     ? `${importLine}\n${externalImports.join('\n')}`
