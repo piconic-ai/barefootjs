@@ -26,7 +26,7 @@ export function initSignalOptionalInit(__scope, _p = {}) {
     }
   }) }
 
-  if (_s2) _s2.addEventListener('click', () => { setLabel(l => (l === undefined ? 'one' : undefined)) })
+  if (_s2) _s2.addEventListener('click', () => setLabel(l => (l === undefined ? 'one' : undefined)))
 }
 
 hydrate('SignalOptionalInit', { init: initSignalOptionalInit, template: (_p) => `<div><span data-slot="target" ${(('one')) != null ? 'title="' + escapeAttr(('one')) + '"' : ''} bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('one'))}<!--/--></span><button bf="s2">toggle</button></div>` })

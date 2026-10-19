@@ -32,7 +32,7 @@ export function initSelectNative(__scope, _p = {}) {
     }
   }) }
 
-  if (_s2) _s2.addEventListener('change', (e) => { setPicked(e.target.value) })
+  if (_s2) _s2.addEventListener('change', (e) => setPicked(e.target.value))
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   mapArrayLazy(() => fruits(), _s2, (f, i) => String(i), {
     createRow: (__e, i) => {

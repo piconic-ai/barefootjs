@@ -26,9 +26,9 @@ export function initCounter(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
-  if (_s4) _s4.addEventListener('click', () => { setCount(n => n + 1) })
-  if (_s5) _s5.addEventListener('click', () => { setCount(n => n - 1) })
-  if (_s6) _s6.addEventListener('click', () => { setCount(0) })
+  if (_s4) _s4.addEventListener('click', () => setCount(n => n + 1))
+  if (_s5) _s5.addEventListener('click', () => setCount(n => n - 1))
+  if (_s6) _s6.addEventListener('click', () => setCount(0))
 }
 
 hydrate('Counter', { init: initCounter, template: (_p) => `<div class="counter-container"><p class="counter-value" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((_p.initial ?? 0))}<!--/--></p><p class="counter-doubled" bf="s3">doubled: <!--bf:s2-->${escapeTextOrMarkup(((_p.initial ?? 0) * 2))}<!--/--></p><div class="counter-buttons"><button class="btn btn-increment" bf="s4">+1</button><button class="btn btn-decrement" bf="s5">-1</button><button class="btn btn-reset" bf="s6">Reset</button></div></div>` })
