@@ -106,9 +106,16 @@ export const renderDivergences: RenderDivergences = {
   'component-spread-rest': { limitation: 'component-prop-spread' },
   'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
   'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
-  // Arithmetic over an omitted optional number prop: the engine reads the
-  // nil as `0`, JS reads `undefined` as `NaN` (#3474).
-  'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },
+  // `omitted-optional-number-arithmetic` used to sit here: an omitted
+  // optional number prop read as `0` in arithmetic. A prop that can only be
+  // absent now reads its nil as `undefined`, giving `NaN` (#3533).
+  // Arithmetic over an omitted `n?: number | null` prop: the engine holds an
+  // omitted prop and a `null` one as the same nil, and the type admits both,
+  // so the nil reads as `null` (`0`) where JS reads `undefined` (`NaN`).
+  'omitted-optional-nullable-number-arithmetic': { limitation: 'omitted-optional-nullable-number-arithmetic' },
+  // `%` over a `NaN` operand: `bf_mod` converts both operands to `int`, so
+  // `NaN % 2` renders an integer where JS gives `NaN`.
+  'remainder-nan-operand': { limitation: 'remainder-nan-operand' },
   // `object-signal-field-length` used to sit here: `.length` on a loop
   // item's field inside a `.filter()` predicate never matched. It now reads
   // through `bf_length` inline and the evaluator counts a typed slice (#3447).

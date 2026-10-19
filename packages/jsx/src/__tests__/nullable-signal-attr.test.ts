@@ -3,6 +3,7 @@ import { analyzeComponent } from '../analyzer'
 import { parseExpression } from '../expression-parser'
 import {
   arithmeticOperandCoercion,
+  arithmeticOperandIsUndefined,
   attrValueMayBeNullish,
   collectAbsentPropSeedReads,
   collectNullableSignalGetters,
@@ -183,12 +184,33 @@ describe('arithmeticOperandCoercion (#3474)', () => {
     arithmeticOperandCoercion(op, parseExpression(operand), parseExpression(other), ctx)
 
   test('a nullable number prop reads as null under every arithmetic operator, + with a number included', () => {
-    const ctx = ctxOf('props: { a: number | null; b?: number; c: number; d: string | null }')
+    const ctx = ctxOf('props: { a: number | null; c: number; d: string | null }')
     for (const op of ['-', '*', '/', '%', '**']) expect(coercion(ctx, op, 'props.a', 'x')).toBe('null')
     expect(coercion(ctx, '+', 'props.a', '1')).toBe('null')
-    expect(coercion(ctx, '+', 'props.b', '-2')).toBe('null')
     expect(coercion(ctx, '*', 'props.c', '2')).toBeNull()
     expect(coercion(ctx, '*', 'props.d', '2')).toBeNull()
+  })
+
+  test('a number prop that can only be absent reads its nil as undefined (#3533)', () => {
+    const ctx = ctxOf('props: { b?: number; u: number | undefined; both?: number | null }')
+    for (const op of ['-', '*', '/', '%', '**']) expect(coercion(ctx, op, 'props.b', 'x')).toBe('undefined')
+    expect(coercion(ctx, '+', 'props.b', '-2')).toBe('undefined')
+    expect(coercion(ctx, '*', 'props.u', '2')).toBe('undefined')
+    // A type that admits both keeps the null reading: its nil can be either.
+    expect(coercion(ctx, '*', 'props.both', '2')).toBe('null')
+  })
+
+  test('unary minus passes no other operand and coerces like binary minus (#3533)', () => {
+    const ctx = ctxOf('props: { a: number | null; b?: number; c: number }')
+    const unary = (operand: string) => arithmeticOperandCoercion('-', parseExpression(operand), undefined, ctx)
+    expect(unary('props.a')).toBe('null')
+    expect(unary('props.b')).toBe('undefined')
+    expect(unary('props.c')).toBeNull()
+  })
+
+  test('an absent-only prop is not certainly undefined: arithmeticOperandIsUndefined stays false', () => {
+    const ctx = ctxOf('props: { b?: number }')
+    expect(arithmeticOperandIsUndefined(parseExpression('props.b'), ctx)).toBe(false)
   })
 
   test('+ is left alone unless the other operand is a number: it may concatenate', () => {
@@ -200,7 +222,7 @@ describe('arithmeticOperandCoercion (#3474)', () => {
 
   test('a destructured nullable number prop, and a shadowed one', () => {
     const ctx = ctxOf('{ a }: { a?: number }')
-    expect(coercion(ctx, '*', 'a', '2')).toBe('null')
+    expect(coercion(ctx, '*', 'a', '2')).toBe('undefined')
     expect(arithmeticOperandCoercion('*', parseExpression('a'), parseExpression('2'), ctx, n => n === 'a')).toBeNull()
   })
 

@@ -7720,6 +7720,23 @@
         "text"
       ]
     },
+    "omitted-optional-nullable-number-arithmetic": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "omitted-optional-number-arithmetic": {
       "kinds": [
         "binary",
@@ -7731,6 +7748,37 @@
         "binary:*",
         "binary:+",
         "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "omitted-optional-number-arithmetic-destructured": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "omitted-optional-number-negation": {
+      "kinds": [
+        "identifier",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "unary:-"
       ],
       "contexts": [
         "attribute",
@@ -8103,6 +8151,25 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "optional-number-arithmetic-matrix": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:/",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -8733,6 +8800,22 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "remainder-nan-operand": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:%",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
     },
     "reserved-name-and-internal-twin": {
       "kinds": [

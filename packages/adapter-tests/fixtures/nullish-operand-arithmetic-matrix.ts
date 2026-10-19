@@ -9,7 +9,8 @@ import { createFixture } from '../src/types'
  * prop operand; every DSL adapter now coerces it alike
  * (`arithmeticOperandCoercion`). The memo shape has its own fixture
  * (`nullish-signal-arithmetic-memo`); an omitted optional prop, which JS
- * reads as `undefined`, is `omitted-optional-number-arithmetic`.
+ * reads as `undefined` (`NaN` in arithmetic), is
+ * `omitted-optional-number-arithmetic`.
  */
 export const fixture = createFixture({
   id: 'nullish-operand-arithmetic-matrix',
