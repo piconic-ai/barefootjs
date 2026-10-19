@@ -208,7 +208,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * reference instead of falling through to unconditional emission.
    */
   private restPropsName: string | null = null
-  private propsParams: { name: string }[] = []
+  private propsParams: { name: string; optional: boolean }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * (#1971) Names that resolve to a real SSR template var — prop param, signal
@@ -337,7 +337,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // The harness separately declares the matching stash vars (Pass-1 IR
     // serialization happens before `generate`, so this mutation doesn't reach it).
     augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
     // Per-compile prop classifications (see `props/prop-classes.ts`).
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanTypedProps = collectBooleanTypedProps(ir)
@@ -1211,6 +1211,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       },
       // A `%{…}` hash dereference flattens a spread into the named-arg list (`emitSpread`).
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+      presentParam: (name) => `%{ defined($${name}) ? +{ ${perlHashKey(name)} => $${name} } : +{} }`,
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
     const propsStr = parts.length > 0 ? `, ${parts.join(', ')}` : ''

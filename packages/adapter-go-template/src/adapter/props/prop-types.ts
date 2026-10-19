@@ -697,7 +697,9 @@ export function resolvePropGoType(
   // takes the same flip too (#2260) — see `collectPresenceCheckedPropNames`.
   // A prop seeding a nullable signal takes it too (#3323) — see
   // `collectNullableSignalSeedPropNames`. So does an optional-chain
-  // receiver (#3422) — see `collectOptionalChainReceiverPropNames`.
+  // receiver (#3422) — see `collectOptionalChainReceiverPropNames`. So does
+  // a param a `{...props}` spread onto a child component forwards
+  // (#3530) — see `collectPropsSpreadForwardedParams`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
@@ -706,7 +708,8 @@ export function resolvePropGoType(
       ctx.state.textConsumedPropNames.has(param.name) ||
       ctx.state.presenceCheckedPropNames.has(param.name) ||
       ctx.state.nullableSignalSeedPropNames.has(param.name) ||
-      ctx.state.optionalChainReceiverPropNames.has(param.name)) &&
+      ctx.state.optionalChainReceiverPropNames.has(param.name) ||
+      ctx.state.propsSpreadForwardedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'

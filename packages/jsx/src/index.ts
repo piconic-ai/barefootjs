@@ -174,8 +174,8 @@ export type {
   ArrayMethodSpelling,
 } from './adapters/array-method.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
-export { childTemplateName, componentPropKey, isEmptyComponentProps, planComponentProps, spellComponentProps } from './adapters/component-props.ts'
-export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, SpelledComponentPropSegment } from './adapters/component-props.ts'
+export { childTemplateName, componentPropKey, isEmptyComponentProps, planComponentProps, propsSpreadParam, resolveComponentPropKeys, spellComponentProps } from './adapters/component-props.ts'
+export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, ComponentPropsParam, EarlierComponentProps, ResolvedComponentProp, SpelledComponentPropSegment } from './adapters/component-props.ts'
 export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression, unsupportedAttrExpressionError } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
 export { planLoop } from './adapters/loop-plan.ts'

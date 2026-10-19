@@ -102,10 +102,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
 export const renderDivergences: RenderDivergences = {
-  // A props spread onto a child component: this adapter drops the spread (#3479).
-  'component-spread-rest': { limitation: 'component-prop-spread' },
-  'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
-  'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
   // Arithmetic over an omitted optional number prop: the engine reads the
   // nil as `0`, JS reads `undefined` as `NaN` (#3474).
   'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },

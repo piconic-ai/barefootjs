@@ -344,7 +344,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
    * reference instead of falling through to unconditional emission.
    */
   private restPropsName: string | null = null
-  private propsParams: { name: string }[] = []
+  private propsParams: { name: string; optional: boolean }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props + local consts) whose value is a string.
@@ -452,7 +452,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // accesses (`props.className`/`id`/`disabled`) into propsParams via the
     // shared helper, before deriving `nullableOptionalProps` below.
     augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
     // Props whose declared TS type is boolean — a bare binding of one
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), routed explicitly through
@@ -1317,6 +1317,7 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
         }
       },
       spread: (value) => this.convertExpressionToPebble(value.expr),
+      presentParam: (name) => `(${pebbleIdent(name)} is null ? {} : {${pebbleHashKey(name)}: ${pebbleIdent(name)}})`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`

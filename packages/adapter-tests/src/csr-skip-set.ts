@@ -4,10 +4,6 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
-  // `component-prop-spread` (#3479): the CSR template drops a props spread
-  // onto a child component when the call also passes explicit props.
-  'component-spread-props-then-explicit',
-  'component-spread-explicit-then-props',
   // The client-directive escape intentionally elides the outer loop's
   // SSR rows. Its native-element CSR template eagerly creates those rows,
   // so comparing it with the empty SSR placeholder is not its contract.
@@ -196,4 +192,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
   'children-chained-nullish-fallback-escaped': { limitation: 'csr-children-nullish-fallback-escaped' },
+  'component-spread-props-then-explicit': { limitation: 'csr-component-prop-spread' },
+  'component-spread-explicit-then-props': { limitation: 'csr-component-prop-spread' },
 }

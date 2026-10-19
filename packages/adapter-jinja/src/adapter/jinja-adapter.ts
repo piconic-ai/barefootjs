@@ -246,7 +246,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
    * reference instead of falling through to unconditional emission.
    */
   private restPropsName: string | null = null
-  private propsParams: { name: string }[] = []
+  private propsParams: { name: string; optional: boolean }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props) whose value is a string. Carried for
@@ -357,7 +357,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // accesses (`props.className`/`id`/`disabled`) into propsParams via the
     // shared helper, before deriving `nullableOptionalProps` below.
     augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
     // Props whose declared TS type is boolean — a bare binding of one
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), not Python's `str(bool)`
@@ -1179,6 +1179,12 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         }
       },
       spread: (value) => this.convertExpressionToJinja(value.expr),
+      // `is defined` too, as in the `??` lowering: a never-seeded variable is
+      // `ChainableUndefined`, which `is not none` alone lets through.
+      presentParam: (name) => {
+        const v = jinjaIdent(name)
+        return `({${jinjaHashKey(name)}: ${v}} if (${v} is defined and ${v} is not none) else {})`
+      },
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | safe }}`

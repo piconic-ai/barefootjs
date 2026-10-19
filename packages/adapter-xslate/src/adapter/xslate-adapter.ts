@@ -224,7 +224,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * reference instead of falling through to unconditional emission.
    */
   private restPropsName: string | null = null
-  private propsParams: { name: string }[] = []
+  private propsParams: { name: string; optional: boolean }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props) whose value is a string. In the Mojo
@@ -341,7 +341,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // accesses (`props.className`/`id`/`disabled`) into propsParams via the
     // shared helper, before deriving `nullableOptionalProps` below.
     augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
     // Props whose declared TS type is boolean — a bare binding of one
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
@@ -1207,6 +1207,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         }
       },
       spread: (value) => this.convertExpressionToKolon(value.expr),
+      presentParam: (name) => `(defined $${name} ? { ${name} => $${name} } : {})`,
     })
     const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
