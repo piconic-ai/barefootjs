@@ -67,6 +67,7 @@ import {
   type AttrValueEmitter,
   parseExpression,
   stringifyParsedExpr,
+  nullishChainParts,
   planStyleObject,
   type ExpressionAttr,
   isSupported,
@@ -736,8 +737,8 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // fresh, unresolved re-parse of the raw string.
     const rubyExpr = this.convertExpressionToRuby(expr.expr, expr.parsed)
 
-    // A bare read of the `children` prop (`{children}` / `{props.children}`,
-    // optionally `?? fallback`) is pre-rendered HTML — captured via the
+    // A read of the `children` prop (`IRExpression.childrenRead`, decided in
+    // Phase 1 from the binding, #3539) is pre-rendered HTML — captured via the
     // ERB output-buffer slice in `renderComponent` when THIS component was
     // itself invoked as a child, or materialized by `Context#render_child`
     // before the registered renderer runs. Mojo / Xslate don't need this
@@ -752,8 +753,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // structurally; a component reading its OWN `children` back as a text
     // expression was the one position still falling through the generic
     // escape-everything path. Emitting the same `bf.h(...)` wrap here would
-    // double-encode markup the runtime already rendered.
-    const wrapped = this.isChildrenValueExpr(expr) ? rubyExpr : `bf.h(${rubyExpr})`
+    // double-encode markup the runtime already rendered. A non-empty
+    // `?? fallback` is text, so only that branch is escaped.
+    const wrapped = this.childrenAwareOutput(expr, rubyExpr)
 
     if (expr.slotId) {
       return `<%= bf.text_start("${expr.slotId}") %><%= ${wrapped} %><%= bf.text_end %>`
@@ -763,32 +765,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   }
 
   /**
-   * True when `expr` is a structural read of the `children` prop: a bare
-   * `children` identifier, `props.children` / `<propsObjectName>.children`,
-   * or either of those on the left of a `?? fallback`. Prefers the IR's
-   * already-parsed `expr.parsed` tree (attached once during IR construction)
-   * and falls back to parsing `expr.expr` only when that's absent — never a
-   * regex/string scan of the source text.
+   * The Ruby value an expression child prints: the `children` prop's markup
+   * as it is, a `children ?? fallback` read with only the fallback escaped,
+   * and anything else escaped (`IRExpression.childrenRead`, #3539).
    */
-  private isChildrenValueExpr(expr: IRExpression): boolean {
-    const parsed = expr.parsed ?? parseExpression(expr.expr.trim()) ?? undefined
-    return this.isChildrenReferenceParsedExpr(parsed)
-  }
-
-  private isChildrenReferenceParsedExpr(parsed: ParsedExpr | undefined): boolean {
-    if (!parsed) return false
-    if (parsed.kind === 'logical' && parsed.op === '??') {
-      return this.isChildrenReferenceParsedExpr(parsed.left)
+  private childrenAwareOutput(expr: IRExpression, rubyExpr: string): string {
+    if (expr.childrenRead === 'bare' || expr.childrenRead === 'nullish-empty') return rubyExpr
+    const chain = expr.childrenRead === 'nullish-fallback' && expr.parsed ? nullishChainParts(expr.parsed) : null
+    if (chain) {
+      const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
+      const fallback = this.convertExpressionToRuby(stringifyParsedExpr(chain.fallback), chain.fallback)
+      return `((${children}).nil? ? bf.h(${fallback}) : ${children})`
     }
-    if (parsed.kind === 'identifier') return parsed.name === 'children'
-    if (parsed.kind === 'member' && !parsed.computed && parsed.property === 'children') {
-      return (
-        parsed.object.kind === 'identifier' &&
-        (parsed.object.name === 'props' ||
-          (this.propsObjectName !== null && parsed.object.name === this.propsObjectName))
-      )
-    }
-    return false
+    return `bf.h(${rubyExpr})`
   }
 
   // ===========================================================================
@@ -1280,7 +1269,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // into a local. No literal text (not even a newline) may sit between
     // the mark/slice tags and the children, or it would leak into (or out
     // of) the capture. Unlike the reserved `children` value, which the
-    // child reads through a structural bypass (`isChildrenValueExpr`), a
+    // child reads through a structural bypass (`IRExpression.childrenRead`), a
     // named slot is read through the generic `bf.h(v[:name])` path, so its
     // HTML is wrapped in `bf.backend.mark_raw(...)` (`BarefootJS::
     // SafeString`), which `Context#h` passes through unescaped. A named

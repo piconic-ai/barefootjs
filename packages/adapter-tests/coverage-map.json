@@ -1477,12 +1477,54 @@
         "attribute"
       ]
     },
+    "children-chained-nullish-fallback-escaped": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "children-named-local-escaped": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-named-loop-row-escaped": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -1518,6 +1560,18 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "children-preamble-local-escaped": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
