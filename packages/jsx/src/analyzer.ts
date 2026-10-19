@@ -502,10 +502,13 @@ function collectNamedExports(sourceFile: ts.SourceFile): Set<string> {
  * declarations of a module-level `const f = (…) => { … }` were collected
  * as module-level declarations of the FILE — hoisted into the init body
  * and into the marked template, where their references to the helper's
- * own parameters are unbound (#2986).
+ * own parameters are unbound (#2986). A class static block is its own scope
+ * too: `class { static { var $ } }` declares `$` in the block, not in the
+ * component body.
  */
 function isFunctionScope(node: ts.Node): boolean {
-  return ts.isArrowFunction(node)
+  return ts.isClassStaticBlockDeclaration(node)
+    || ts.isArrowFunction(node)
     || ts.isFunctionExpression(node)
     || ts.isFunctionDeclaration(node)
     || ts.isMethodDeclaration(node)

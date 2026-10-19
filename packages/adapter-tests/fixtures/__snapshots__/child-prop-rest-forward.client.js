@@ -5,7 +5,6 @@ export function initRestForwardTag(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const variantClasses = { a: 'cls-a', b: 'cls-b' }
-  const cls = variantClasses[(_p.variant ?? 'a')]
 
   const [_s0] = $(__scope, 's0')
 

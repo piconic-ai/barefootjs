@@ -19,13 +19,7 @@ export function initPopover(__scope, _p = {}) {
 hydrate('Popover', { init: initPopover, template: (_p) => `<div data-slot="popover" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('relative inline-block')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative inline-block')} ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function Popover(_p, __bfKey) { return createComponent('Popover', _p, __bfKey) }
 var PopoverContext = PopoverContext ?? createContext()
-
-export function initPopoverTrigger(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const popoverTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
-  const warnIfMisusedTrigger = (el, componentName) => {
+var warnIfMisusedTrigger = warnIfMisusedTrigger ?? function(el, componentName) {
   const interactiveSelector = 'button, [role="button"], a[href]'
   const hasNestedInteractive = el.querySelector(interactiveSelector) != null
   const isEmpty = Array.from(el.childNodes).every(
@@ -43,6 +37,12 @@ export function initPopoverTrigger(__scope, _p = {}) {
     )
   }
 }
+
+export function initPopoverTrigger(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const popoverTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
   const handleMount = (el) => {
     const ctx = useContext(PopoverContext)
 

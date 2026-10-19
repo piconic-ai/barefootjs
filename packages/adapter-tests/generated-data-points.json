@@ -1062,6 +1062,50 @@
       }
     }
   ],
+  "client-handler-keyword-prop": [
+    {
+      "name": "gen:default:zero",
+      "props": {
+        "default": 0,
+        "label": "n"
+      }
+    },
+    {
+      "name": "gen:default:negative",
+      "props": {
+        "default": -7,
+        "label": "n"
+      }
+    },
+    {
+      "name": "gen:default:large",
+      "props": {
+        "default": 1234567890,
+        "label": "n"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "default": 5,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "default": 5,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "default": 5,
+        "label": "日本語"
+      }
+    }
+  ],
   "component-spread-explicit-then-props": [
     {
       "name": "gen:tone:absent",

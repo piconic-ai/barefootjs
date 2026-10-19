@@ -1051,6 +1051,7 @@ import { fixture as literalConstConditionalShapes } from './literal-const-condit
 import { fixture as conditionalThenColonText } from './conditional-then-colon-text'
 import { fixture as conditionalThenPercentText } from './conditional-then-percent-text'
 import { fixture as conditionalBranchSigilText } from './conditional-branch-sigil-text'
+import { fixture as clientHandlerKeywordProp } from './client-handler-keyword-prop'
 import { fixture as childrenNamedLocalEscaped } from './children-named-local-escaped'
 import { fixture as childrenNamedLoopRowEscaped } from './children-named-loop-row-escaped'
 import { fixture as childrenChainedNullishFallbackEscaped } from './children-chained-nullish-fallback-escaped'
@@ -1790,6 +1791,7 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalNestedStatic,
   conditionalNestedSignal,
   createMutationElidedValue,
+  clientHandlerKeywordProp,
   childrenNamedLocalEscaped,
   childrenNamedLoopRowEscaped,
   childrenChainedNullishFallbackEscaped,
