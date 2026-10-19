@@ -323,11 +323,16 @@ export function collectNullableSignalSeedPropNames(ctx: GoEmitContext, ir: Compo
     const name = bareSeedPropName(ctx, signal.parsed)
     if (name !== null && optionalParams.has(name)) names.add(name)
   }
-  // A seed that can evaluate to an absent optional prop through a ternary
-  // branch or a `??` / `||` / `&&` operand (#3567) reads that prop the same
-  // way: its field must hold `nil` for the seed to.
+  // A seed that can evaluate to an absent optional prop, read whole or
+  // through a ternary branch or a `??` / `||` / `&&` operand (#3567), reads
+  // that prop the same way: its field must hold `nil` for the seed to. Only
+  // a primitive prop is flipped (`resolvePropGoType`); a slice or struct prop
+  // keeps its Go type, so its signal does too.
+  const primitiveParams = new Set(
+    ir.metadata.propsParams.filter(p => optionalParams.has(p.name) && p.type?.kind === 'primitive').map(p => p.name),
+  )
   for (const reads of collectAbsentPropSeedReads(ir).values()) {
-    for (const name of reads) if (optionalParams.has(name)) names.add(name)
+    for (const name of reads) if (primitiveParams.has(name)) names.add(name)
   }
   return names
 }

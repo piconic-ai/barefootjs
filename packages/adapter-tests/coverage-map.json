@@ -9740,11 +9740,13 @@
         "conditional",
         "identifier",
         "literal",
+        "logical",
         "member"
       ],
       "axes": [
         "binary:===",
-        "literal:string"
+        "literal:string",
+        "logical:||"
       ],
       "contexts": [
         "attribute"
