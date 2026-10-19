@@ -484,7 +484,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const arg = emit(argument)
     if (op === '!') return `!${arg}`
-    if (op === '-') return `-${arg}`
+    if (op === '-') {
+      // Unary minus applies JS `ToNumber` like binary `-` (#3533).
+      const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
+      return operand === arg ? `-${arg}` : `-(${operand})`
+    }
     return arg
   }
 
@@ -492,7 +496,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
    * through the runtime's JS `Number()`, which maps nil to `NaN` as
    * `ToNumber(undefined)` does (#3390). The native operator already reads a
    * `null` operand as `0`, so that coercion needs no spelling. */
-  private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+  private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf.number(${operand})` : operand
   }
 

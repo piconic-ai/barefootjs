@@ -6,7 +6,14 @@
  */
 
 import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
-import { asCallbackMethodCall, collectAbsentPropSeedReads, isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
+import {
+  arithmeticOperandCoercion,
+  asCallbackMethodCall,
+  collectAbsentPropSeedReads,
+  collectNullishAttrContext,
+  isBooleanAttr,
+  isNullableSignal,
+} from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -558,6 +565,61 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
 }
 
 /**
+ * Names of OPTIONAL no-default props read as an arithmetic operand whose nil
+ * reads as `undefined` (`props.n * 2`, `n + 1`, `-n` with `n?: number`)
+ * anywhere in the component's element tree (#3533). The shared decision
+ * (`arithmeticOperandCoercion`) routes the operand through `bf_number`,
+ * which maps nil to `NaN` as JS `ToNumber(undefined)` does. A concrete `int`
+ * field reads an omitted prop as `0`, so these props take the same
+ * `interface{}` flip as `??`/attribute/text consumption
+ * (`resolvePropGoType`). Same shadowing caveat as the sibling collectors: a
+ * same-named loop/callback param can misattribute, making the flip merely
+ * unnecessary, not incorrect.
+ */
+export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const names = new Set<string>()
+  const optionalParams = new Set(
+    ir.metadata.propsParams
+      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
+      .map(p => p.name),
+  )
+  if (optionalParams.size === 0) return names
+
+  const nullishCtx = collectNullishAttrContext(ir)
+  const propsObject = ctx.state.propsObjectName
+  const propNameOf = (operand: ParsedExpr): string | null =>
+    operand.kind === 'member' && !operand.computed &&
+      operand.object.kind === 'identifier' && operand.object.name === propsObject
+      ? operand.property
+      : !propsObject && operand.kind === 'identifier'
+        ? operand.name
+        : null
+  const addOperand = (op: string, operand: ParsedExpr, other: ParsedExpr | undefined): void => {
+    const propName = propNameOf(operand)
+    if (propName === null || !optionalParams.has(propName)) return
+    if (arithmeticOperandCoercion(op, operand, other, nullishCtx) === 'undefined') names.add(propName)
+  }
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.kind === 'binary' && rec.left && rec.right) {
+      const left = rec.left as ParsedExpr
+      const right = rec.right as ParsedExpr
+      addOperand(rec.op as string, left, right)
+      addOperand(rec.op as string, right, left)
+    }
+    if (rec.kind === 'unary' && rec.op === '-' && rec.argument) addOperand('-', rec.argument as ParsedExpr, undefined)
+    for (const value of Object.values(rec)) walk(value)
+  }
+  walk(ir.root)
+  return names
+}
+
+/**
  * Names of OPTIONAL no-default props whose PRESENCE is tested — `props.X
  * !== undefined` / `!= undefined` (or the `===`/`==` negation) — anywhere in
  * a memo's computation (#2260). This is the "controlled component" idiom's
@@ -698,8 +760,10 @@ export function resolvePropGoType(
   // A prop seeding a nullable signal takes it too (#3323) — see
   // `collectNullableSignalSeedPropNames`. So does an optional-chain
   // receiver (#3422) — see `collectOptionalChainReceiverPropNames`. So does
-  // a param a `{...props}` spread onto a child component forwards
-  // (#3530) — see `collectPropsSpreadForwardedParams`.
+  // an arithmetic operand whose nil reads as `undefined` (#3533) — see
+  // `collectArithmeticAbsentPropNames`. So does a param a `{...props}`
+  // spread onto a child component forwards (#3530) — see
+  // `collectPropsSpreadForwardedParams`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
@@ -709,6 +773,7 @@ export function resolvePropGoType(
       ctx.state.presenceCheckedPropNames.has(param.name) ||
       ctx.state.nullableSignalSeedPropNames.has(param.name) ||
       ctx.state.optionalChainReceiverPropNames.has(param.name) ||
+      ctx.state.arithmeticAbsentPropNames.has(param.name) ||
       ctx.state.propsSpreadForwardedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {

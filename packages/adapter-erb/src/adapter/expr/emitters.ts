@@ -586,14 +586,15 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const arg = emit(argument)
     if (op === '!') return `!bf.truthy?(${arg})`
-    if (op === '-') return `-(${arg})`
+    // Unary minus applies JS `ToNumber` like binary `-` (#3533).
+    if (op === '-') return `-(${this.coerceNullishOperand(op, argument, undefined, arg)})`
     return arg
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): a `null` operand reads as
    * `0`, as JS `ToNumber(null)` does (#3350); an `undefined` one as `NaN`, as
    * `ToNumber(undefined)` does (#3390). */
-  private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+  private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
     if (coercion === 'undefined') return `bf.number(${operand})`
     return coercion === 'null' ? `(${operand} || 0)` : operand

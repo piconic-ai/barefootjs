@@ -177,9 +177,22 @@ export interface NullishAttrContext {
   readonly memos: ReadonlyMap<string, MemoInfo>
   /** Props declared as a number that may be `null` or absent (`n: number |
    * null`, `n?: number`), by the name a read uses: the binding name, and
-   * `<propsObjectName>.<key>` for a member read (#3474). */
-  readonly nullableNumberProps?: ReadonlySet<string>
+   * `<propsObjectName>.<key>` for a member read (#3474), mapped to what the
+   * engine's nil stands for there (`NullableNumberPropNil`, #3533). */
+  readonly nullableNumberProps?: ReadonlyMap<string, NullableNumberPropNil>
 }
+
+/**
+ * What a nullable number prop's nil stands for at SSR (#3533). JS reads an
+ * absent prop as `undefined` (`NaN` in arithmetic) and a `null` one as `0`,
+ * while a template engine holds both as the same nil, so the declared type
+ * decides. A prop whose type admits `null` (`n: number | null`) reads its
+ * nil as `null`. A prop that can only be absent (`n?: number`,
+ * `n: number | undefined`) reads it as `undefined`; a present value, `0`
+ * included, is unaffected. A prop that admits both (`n?: number | null`)
+ * keeps the `null` reading: its nil can be either.
+ */
+export type NullableNumberPropNil = 'null' | 'undefined'
 
 export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
   const signals = ir.metadata.signals ?? []
@@ -196,23 +209,29 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
   }
 }
 
-/** Whether `type` is a number that admits `null` / `undefined` and no other family. */
-function isNullableNumberType(type: TypeInfo | undefined, optional: boolean): boolean {
-  if (!type) return false
+/**
+ * What the nil of a number prop that admits `null` / `undefined` and no other
+ * family stands for (`NullableNumberPropNil`); `null` for any other type.
+ */
+function nullableNumberPropNil(type: TypeInfo | undefined, optional: boolean): NullableNumberPropNil | null {
+  if (!type) return null
   const members = type.kind === 'union' ? (type.unionTypes ?? []) : [type]
   const families = new Set(members.map(m => (m.kind === 'primitive' ? m.primitive : m.kind)))
-  const nullable = optional || families.has('null') || families.has('undefined')
+  const admitsNull = families.has('null')
+  const nullable = optional || admitsNull || families.has('undefined')
   families.delete('null')
   families.delete('undefined')
-  return nullable && families.size === 1 && families.has('number')
+  if (!nullable || families.size !== 1 || !families.has('number')) return null
+  return admitsNull ? 'null' : 'undefined'
 }
 
-function collectNullableNumberProps(ir: ComponentIR): ReadonlySet<string> {
-  const names = new Set<string>()
+function collectNullableNumberProps(ir: ComponentIR): ReadonlyMap<string, NullableNumberPropNil> {
+  const names = new Map<string, NullableNumberPropNil>()
   const objectName = ir.metadata.propsObjectName
   for (const p of ir.metadata.propsParams) {
-    if (p.isRest || p.defaultValue !== undefined || !isNullableNumberType(p.type, p.optional)) continue
-    names.add(objectName ? `${objectName}.${p.sourceName ?? p.name}` : p.name)
+    if (p.isRest || p.defaultValue !== undefined) continue
+    const nil = nullableNumberPropNil(p.type, p.optional)
+    if (nil !== null) names.set(objectName ? `${objectName}.${p.sourceName ?? p.name}` : p.name, nil)
   }
   return names
 }
@@ -316,17 +335,25 @@ export function arithmeticOperandIsUndefined(
   return arithmeticOperandSeed(parsed, ctx, isShadowed) === 'undefined'
 }
 
+/**
+ * What an arithmetic operand's SSR nil stands for: `'null'` / `'undefined'`
+ * when the operand is that value (a nullable number prop's `null` reading
+ * included), `'absent'` when it is a number prop that may be absent
+ * (`n?: number`), whose nil is `undefined` but which may hold a number.
+ */
+type OperandSeed = 'null' | 'undefined' | 'absent' | null
+
 function arithmeticOperandSeed(
   parsed: ParsedExpr | undefined,
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean,
-): 'null' | 'undefined' | null {
+): OperandSeed {
   const visiting = new Set<string>()
-  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): 'null' | 'undefined' | null => {
+  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): OperandSeed => {
     if (expr.kind === 'literal') return expr.literalType === 'null' ? 'null' : null
     if (expr.kind === 'identifier' && expr.name === 'undefined' && !shadowed('undefined')) return 'undefined'
     const prop = nullableNumberPropRead(expr, ctx, shadowed)
-    if (prop) return 'null'
+    if (prop !== null) return prop === 'undefined' ? 'absent' : 'null'
     const getter = expr.kind === 'identifier' ? expr.name : bareGetterCallName(expr)
     if (getter === null || shadowed(getter)) return null
     if (ctx.nullSeededSignals?.has(getter)) return 'null'
@@ -342,22 +369,20 @@ function arithmeticOperandSeed(
 }
 
 /**
- * A read of a prop declared as a nullable number. Its SSR value may be
- * `null` or absent; it is coerced like a `null` operand. JS reads an absent
- * prop as `undefined` (`NaN` in arithmetic), which a template engine cannot
- * tell from `null` (the `omitted-optional-number-arithmetic` limitation).
+ * What the nil of a read of a prop declared as a nullable number stands for
+ * (`NullableNumberPropNil`), or `null` when the read is not such a prop.
  */
 function nullableNumberPropRead(
   expr: ParsedExpr,
   ctx: NullishAttrContext,
   shadowed: (name: string) => boolean,
-): boolean {
-  if (!ctx.nullableNumberProps?.size) return false
-  if (expr.kind === 'identifier') return !shadowed(expr.name) && ctx.nullableNumberProps.has(expr.name)
+): NullableNumberPropNil | null {
+  if (!ctx.nullableNumberProps?.size) return null
+  if (expr.kind === 'identifier') return shadowed(expr.name) ? null : (ctx.nullableNumberProps.get(expr.name) ?? null)
   if (expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier' && !shadowed(expr.object.name)) {
-    return ctx.nullableNumberProps.has(`${expr.object.name}.${expr.property}`)
+    return ctx.nullableNumberProps.get(`${expr.object.name}.${expr.property}`) ?? null
   }
-  return false
+  return null
 }
 
 /**
@@ -371,18 +396,21 @@ export const NULL_COERCING_ARITHMETIC_OPS: ReadonlySet<string> = new Set(['-', '
 
 /** How a DSL adapter coerces an arithmetic operand (#3474): `'null'` reads a
  * nil as `0` (JS `ToNumber(null)`), `'undefined'` reads it as `NaN`
- * (`ToNumber(undefined)`), `null` leaves the operand as is. */
+ * (`ToNumber(undefined)`), `null` leaves the operand as is. Either coercion
+ * leaves a non-nil operand's value as it is. */
 export type ArithmeticCoercion = 'null' | 'undefined' | null
 
 /**
  * The one decision behind every DSL adapter's arithmetic over a nullish
  * operand (#3474). An operand known to be `null` / `undefined`
- * (`arithmeticOperandIsNull` / `arithmeticOperandIsUndefined`, or a nullable
- * number prop) is coerced under the operators JS applies `ToNumber` to
- * ({@link NULL_COERCING_ARITHMETIC_OPS}), and under `+` when the other
- * operand is a number literal, where `+` cannot concatenate. Each adapter
- * only spells the coercion; one whose engine already reads nil as `0`
- * spells `'null'` as the operand itself.
+ * (`arithmeticOperandIsNull` / `arithmeticOperandIsUndefined`), or a
+ * nullable number prop, whose nil reads as its type says
+ * (`NullableNumberPropNil`, #3533), is coerced under the operators JS
+ * applies `ToNumber` to ({@link NULL_COERCING_ARITHMETIC_OPS}), and under
+ * `+` when the other operand is a number literal, where `+` cannot
+ * concatenate. Unary minus applies `ToNumber` too: it passes `'-'` with no
+ * `other`. Each adapter only spells the coercion; one whose engine already
+ * reads nil as `0` spells `'null'` as the operand itself.
  */
 export function arithmeticOperandCoercion(
   op: string,
@@ -392,7 +420,9 @@ export function arithmeticOperandCoercion(
   isShadowed: (name: string) => boolean = () => false,
 ): ArithmeticCoercion {
   const numeric = NULL_COERCING_ARITHMETIC_OPS.has(op) || (op === '+' && isNumberLiteral(other))
-  return numeric ? arithmeticOperandSeed(operand, ctx, isShadowed) : null
+  if (!numeric) return null
+  const seed = arithmeticOperandSeed(operand, ctx, isShadowed)
+  return seed === 'absent' ? 'undefined' : seed
 }
 
 function isNumberLiteral(expr: ParsedExpr | undefined): boolean {

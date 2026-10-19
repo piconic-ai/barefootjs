@@ -536,7 +536,12 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     if (op === '!') return `!${truthyTest(argument, emit(argument))}`
-    if (op === '-') return `-${emit(argument)}`
+    if (op === '-') {
+      // Unary minus applies JS `ToNumber` like binary `-` (#3533).
+      const arg = emit(argument)
+      const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
+      return operand === arg ? `-${arg}` : `-(${operand})`
+    }
     return emit(argument)
   }
 
@@ -544,7 +549,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
    * through the runtime's JS `Number()`, which maps nil to `NaN` as
    * `ToNumber(undefined)` does (#3390). The native operator already reads a
    * `null` operand as `0`, so that coercion needs no spelling. */
-  private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+  private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf->number(${operand})` : operand
   }
 

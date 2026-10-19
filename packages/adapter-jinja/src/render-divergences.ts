@@ -40,9 +40,13 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // Arithmetic over an omitted optional number prop: the engine reads the
-  // nil as `0`, JS reads `undefined` as `NaN` (#3474).
-  'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },
+  // `omitted-optional-number-arithmetic` used to sit here: an omitted
+  // optional number prop read as `0` in arithmetic. A prop that can only be
+  // absent now reads its nil as `undefined`, giving `NaN` (#3533).
+  // Arithmetic over an omitted `n?: number | null` prop: the engine holds an
+  // omitted prop and a `null` one as the same nil, and the type admits both,
+  // so the nil reads as `null` (`0`) where JS reads `undefined` (`NaN`).
+  'omitted-optional-nullable-number-arithmetic': { limitation: 'omitted-optional-nullable-number-arithmetic' },
   // `object-length-property-filter` used to sit here: an object row's own
   // `length` property read 0 in an inline filter predicate. The runtime
   // length helper now reads the object's property (#3449).
