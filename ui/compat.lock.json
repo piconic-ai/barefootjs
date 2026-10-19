@@ -2274,78 +2274,6 @@
           ]
         }
       },
-      "component-spread-explicit-then-props": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        }
-      },
-      "component-spread-props-then-explicit": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        }
-      },
-      "component-spread-rest": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        }
-      },
       "computed-const-loop-source-parenthesized": {
         "blade": {
           "kind": "refusal",
@@ -7442,18 +7370,6 @@
         "description": "A children prop renamed in the parameter destructure renders present children as markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
       },
-      "component-spread-explicit-then-props": {
-        "description": "An explicit prop, then a props spread onto a child component that overrides it",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-then-props.ts"
-      },
-      "component-spread-props-then-explicit": {
-        "description": "A props spread onto a child component, then an explicit prop that overrides it",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-props-then-explicit.ts"
-      },
-      "component-spread-rest": {
-        "description": "A rest spread onto a child component forwards the remaining props",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-rest.ts"
-      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -8017,29 +7933,6 @@
         "BF101"
       ]
     },
-    "component-prop-spread": {
-      "title": "A props spread onto a child component",
-      "kind": "silent",
-      "given": "a child component call that spreads an object (`<Child {...props} />`, `<Child {...rest} />`), alone or next to explicit props",
-      "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
-      "actual": "drops the spread when the call also passes explicit props (or always), or lets a key the spread omits erase an earlier explicit prop",
-      "fixtures": [
-        "component-spread-explicit-then-props",
-        "component-spread-props-then-explicit",
-        "component-spread-rest"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
       "kind": "refusal",
@@ -8082,6 +7975,29 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "csr-component-prop-spread": {
+      "title": "A props spread onto a child component next to explicit props in the client template",
+      "kind": "silent",
+      "given": "a child component call that spreads the props object next to explicit props (`<Child {...props} tone=\"x\" />`, `<Child tone=\"x\" {...props} />`), rendered by the client template",
+      "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
+      "actual": "drops the spread and passes only the explicit props, so its keys neither reach the child nor override an earlier explicit prop",
+      "fixtures": [
+        "component-spread-explicit-then-props",
+        "component-spread-props-then-explicit"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "defaulted-prop-explicit-empty": {
