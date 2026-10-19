@@ -13,7 +13,8 @@ import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM, isCommentScopedRoot, initFunctionName } from './utils.ts'
 import { buildReferencesGraph } from './build-references.ts'
 import { computePropUsage } from './compute-prop-usage.ts'
-import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports.ts'
+import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, runtimeNameCollisions } from './imports.ts'
+import { signalSecondBinding } from '../signal-initializer.ts'
 import { emitRegistrationAndHydration, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { computeDeferredChildSlots } from './html-template.ts'
 import { emitChildComponentImports } from './child-components.ts'
@@ -136,6 +137,21 @@ export function generateInitFunction(
   // reinterpreted by `String.replace`'s special-pattern handling.
   const codeWithModuleConstants = pruneUnusedPropExtractions(
     generatedCode.replace(MODULE_CONSTANTS_PLACEHOLDER, () => moduleConstantsCode),
+  )
+  ctx.warnings.push(
+    ...runtimeNameCollisions(
+      [
+        ...classification.moduleLevelConstants,
+        ...classification.moduleLevelFunctions,
+        ...classification.moduleLevelSignals.flatMap(s => {
+          const second = signalSecondBinding(s)
+          return [{ name: s.getter, loc: s.loc }, ...(second ? [{ name: second, loc: s.loc }] : [])]
+        }),
+        ...classification.moduleLevelMemos,
+      ],
+      ir.metadata.imports,
+      codeWithModuleConstants,
+    ),
   )
   const allImportLines = resolveFinalImports(codeWithModuleConstants, ir, localImportPrefixes)
 

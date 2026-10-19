@@ -153,7 +153,7 @@ export function ownScopeId(element: Element): string | null {
  * against a comment they already hold, not a registered scope element —
  * `isWithinScope` below is the scope-element-keyed sibling.
  */
-export function isInCommentScopeRange(element: Element, commentNode: Comment): boolean {
+export function isInCommentScopeRange(element: Node, commentNode: Comment): boolean {
   const boundary = getCommentScopeBoundary(commentNode)
   let node: Node | null = commentNode.nextSibling
   while (node && node !== boundary) {
@@ -163,6 +163,35 @@ export function isInCommentScopeRange(element: Element, commentNode: Comment): b
     node = node.nextSibling
   }
   return false
+}
+
+/**
+ * True when `node` (a slot marker comment, typically) belongs to `root`'s own
+ * scope rather than to a nested child component's: no element carrying its
+ * own `bf-s` sits between `node` and `root`'s boundary (#3122, #3134).
+ *
+ * The boundary is `root` itself for a node inside `root`. A comment-scoped
+ * root registered in `commentScopeRegistry` also owns its comment's sibling
+ * range, so a node outside `root` but inside that range is checked against
+ * the range's parent instead; a node outside both is never owned. Checking
+ * each candidate against its own boundary is what keeps a dual-purpose root
+ * (registered as an ancestor's comment-scope proxy while carrying its own
+ * `bf-s`) from claiming a same-numbered marker inside a nested child.
+ *
+ * The one ownership rule for `claim-slots.ts`'s `findOwnedMarker` and
+ * `query.ts`'s `$t`.
+ */
+export function isOwnedByScope(node: Node, root: Element): boolean {
+  let boundary: Element | null = root
+  if (!root.contains(node)) {
+    const info = commentScopeRegistry.get(root)
+    if (!info || !isInCommentScopeRange(node, info.commentNode)) return false
+    boundary = info.commentNode.parentElement
+  }
+  for (let el = node.parentElement; el && el !== boundary; el = el.parentElement) {
+    if (el.hasAttribute(BF_SCOPE)) return false
+  }
+  return true
 }
 
 /**

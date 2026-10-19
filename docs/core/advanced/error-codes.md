@@ -348,6 +348,38 @@ export function Post({ createdAt }: { createdAt: Date }) {
 
 See [API Reference](./api-reference.md).
 
+<a id="bf057"></a>
+
+### BF057 — Module-Level Name Collides with a Runtime Helper
+
+A module-level declaration, or a value import from anything but `@barefootjs/client`, takes the name of a runtime helper the compiled client JS calls (`insert`, `hydrate`, `qsa`, `formatDate`, …). The client JS re-emits your binding at module scope, where it would capture the compiler's own calls to that helper.
+
+```tsx
+// ❌ BF057
+'use client'
+import { createSignal } from '@barefootjs/client'
+function insert(list: string[], x: string) { return [...list, x] }
+export function Tags() {
+  const [tags, setTags] = createSignal<string[]>([])
+  return <button onClick={() => setTags(insert(tags(), 'new'))}>{tags().length}</button>
+}
+```
+
+#### Fix
+
+Rename the declaration, or import it under an alias. A binding the client JS never calls (`const qsa = { step: 1 }` read as `qsa.step`) is not reported.
+
+```tsx
+// ✅ Fixed
+'use client'
+import { createSignal } from '@barefootjs/client'
+function appendTag(list: string[], x: string) { return [...list, x] }
+export function Tags() {
+  const [tags, setTags] = createSignal<string[]>([])
+  return <button onClick={() => setTags(appendTag(tags(), 'new'))}>{tags().length}</button>
+}
+```
+
 <a id="bf063"></a>
 
 ### BF063 — Ref Callback Writes an Attribute the JSX Never Renders
@@ -418,6 +450,7 @@ Key the top-level row (`<li key={r}>`) and portal an element inside it rather th
 | BF049 | Rich-typed prop not hydratable |
 | BF054 | Built-in `<Async>` / `<Region>` used without import |
 | BF056 | Authored call to `formatDate` |
+| BF057 | Module-level name collides with a runtime helper |
 | BF063 | Ref callback writes an attribute the JSX never renders |
 | BF064 | Portaled `.map()` row element cannot be paired with its row |
 | BF101 | No template-language lowering for the expression |

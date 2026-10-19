@@ -46,11 +46,11 @@ export function initTodoItem(__scope, _p = {}) {
     }
   }) }
 
-  if (_s0) _s0.addEventListener('change', () => { _p.onToggle() })
-  if (_s2) _s2.addEventListener('dblclick', () => { _p.onStartEdit() })
-  if (_s3) _s3.addEventListener('click', () => { _p.onDelete() })
-  if (_s4) _s4.addEventListener('blur', (e) => { _p.onFinishEdit(e.target.value) })
-  if (_s4) _s4.addEventListener('keydown', (e) => { e.key === 'Enter' && !e.isComposing && _p.onFinishEdit(e.target.value) })
+  if (_s0) _s0.addEventListener('change', () => _p.onToggle())
+  if (_s2) _s2.addEventListener('dblclick', () => _p.onStartEdit())
+  if (_s3) _s3.addEventListener('click', () => _p.onDelete())
+  if (_s4) _s4.addEventListener('blur', (e) => _p.onFinishEdit(e.target.value))
+  if (_s4) _s4.addEventListener('keydown', (e) => e.key === 'Enter' && !e.isComposing && _p.onFinishEdit(e.target.value))
 }
 
 hydrate('TodoItem', { init: initTodoItem, template: (_p) => `<li ${(_p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')) != null ? 'class="' + escapeAttr(_p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')) + '"' : ''} bf="s5"><div class="view"><input class="toggle" type="checkbox" ${_p.todo.done ? 'checked' : ''} bf="s0" /><label bf="s2"><!--bf:s1-->${escapeTextOrMarkup(_p.todo.text)}<!--/--></label><button class="destroy" bf="s3"></button></div><input class="edit" ${(_p.todo.text) != null ? 'value="' + escapeAttr(_p.todo.text) + '"' : ''} autofocus bf="s4" /></li>` })
@@ -274,9 +274,9 @@ export function initTodoAppSSR(__scope, _p = {}) {
 
   if (_s0) _s0.addEventListener('input', e => setNewText(e.target.value))
   if (_s0) _s0.addEventListener('keydown', handleKeyDown)
-  if (_s10) _s10.addEventListener('click', () => { handleFilterChange('all') })
-  if (_s11) _s11.addEventListener('click', () => { handleFilterChange('active') })
-  if (_s12) _s12.addEventListener('click', () => { handleFilterChange('completed') })
+  if (_s10) _s10.addEventListener('click', () => handleFilterChange('all'))
+  if (_s11) _s11.addEventListener('click', () => handleFilterChange('active'))
+  if (_s12) _s12.addEventListener('click', () => handleFilterChange('completed'))
   onMount(() => {
     setFilter(getFilterFromHash())
     window.addEventListener('hashchange', () => {

@@ -916,7 +916,9 @@ export function C() {
 }`, 'C.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('bf->length([grep { $_->{active} } @{$t->{tags}}])')
+    // The inner `t` is its own lexical; the outer filter param already reads
+    // as the row variable `$t`, so the inner one is renamed (#3542).
+    expect(template).toContain('bf->length([grep { my $_bf_t = $_; $_bf_t->{active} } @{$t->{tags}}])')
   })
 
   test('lowers nested .some(...) in filter predicate to an inline grep — no BF101 (#2038)', () => {
