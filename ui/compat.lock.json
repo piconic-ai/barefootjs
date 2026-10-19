@@ -7937,6 +7937,28 @@
         "BF101"
       ]
     },
+    "csr-children-nullish-fallback-escaped": {
+      "title": "Present children under a non-empty nullish fallback in the client template",
+      "kind": "silent",
+      "given": "a children read with a non-empty nullish fallback (`{(props.children ?? '<b>fallback</b>') ?? ''}`, `{props.children ?? 'fallback'}`) rendered by the client template with children passed",
+      "expected": "the children render as markup, and only an absent read renders the escaped fallback",
+      "actual": "renders the children markup as escaped visible text: the client template receives children as a plain HTML string and escapes the whole read",
+      "fixtures": [
+        "children-chained-nullish-fallback-escaped"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "defaulted-prop-explicit-empty": {
       "title": "An explicitly empty value for a prop with a destructure default",
       "kind": "silent",
