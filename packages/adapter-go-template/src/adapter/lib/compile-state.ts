@@ -303,6 +303,14 @@ export class CompileState {
   optionalChainReceiverPropNames: Set<string> = new Set()
 
   /**
+   * OPTIONAL no-default number prop names read as an arithmetic operand whose
+   * nil reads as `undefined` (`props.n * 2`, `arithmeticOperandCoercion`) —
+   * #3533. Same `resolvePropGoType` flip: `bf_number` needs a nil to give
+   * `NaN` for an omitted prop, where an `int` field reads it as `0`.
+   */
+  arithmeticAbsentPropNames: Set<string> = new Set()
+
+  /**
    * `Struct.field` keys of optional scalar struct fields a nullable signal
    * seeds from (`createSignal<string | undefined>(initial.label)`) — #3323.
    * `propertyInfoToGo` types them `interface{}` so an omitted member stays

@@ -508,14 +508,19 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
-    if (op === '-') return `-${emit(argument)}`
+    if (op === '-') {
+      // Unary minus applies JS `ToNumber` like binary `-` (#3533).
+      const arg = emit(argument)
+      const operand = this.coerceNullishOperand(op, argument, undefined, arg)
+      return operand === arg ? `-${arg}` : `-(${operand})`
+    }
     return emit(argument)
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): a `null` operand reads as
    * `0`, as JS `ToNumber(null)` does (#3350); an `undefined` one as `NaN`, as
    * `ToNumber(undefined)` does (#3390). */
-  private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr, operand: string): string {
+  private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
     if (coercion === 'undefined') return `bf.number(${operand})`
     return coercion === 'null' ? `(${operand} or 0)` : operand

@@ -82,8 +82,9 @@ export interface ErbEmitContext {
   _isOpaqueLocalAccessorCall(name: string): boolean
   /** How the emitter coerces an arithmetic operand over a nullish value
    * (`arithmeticOperandCoercion`, #3474): `'null'` reads nil as `0`,
-   * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. */
-  _arithmeticCoercion(op: string, operand: ParsedExpr, other: ParsedExpr): ArithmeticCoercion
+   * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. `other` is
+   * omitted for unary minus (#3533). */
+  _arithmeticCoercion(op: string, operand: ParsedExpr, other?: ParsedExpr): ArithmeticCoercion
 
   /** Record a BF101 unsupported-expression diagnostic. */
   _recordExprBF101(message: string, reason?: string): void

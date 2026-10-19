@@ -214,6 +214,11 @@ import { fixture as componentSpreadPropsThenExplicit } from './component-spread-
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
+import { fixture as omittedOptionalNumberArithmeticDestructured } from './omitted-optional-number-arithmetic-destructured'
+import { fixture as optionalNumberArithmeticMatrix } from './optional-number-arithmetic-matrix'
+import { fixture as remainderNanOperand } from './remainder-nan-operand'
+import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
+import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
 import { fixture as callbackIndexParam } from './callback-index-param'
 import { fixture as callbackIndexParamClient } from './callback-index-param-client'
 import { fixture as callbackNestedIndexParam } from './callback-nested-index-param'
@@ -1165,6 +1170,11 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadExplicitThenProps,
   nullishOperandArithmeticMatrix,
   omittedOptionalNumberArithmetic,
+  omittedOptionalNumberArithmeticDestructured,
+  optionalNumberArithmeticMatrix,
+  remainderNanOperand,
+  omittedOptionalNumberNegation,
+  omittedOptionalNullableNumberArithmetic,
   callbackIndexParam,
   callbackIndexParamClient,
   callbackNestedIndexParam,

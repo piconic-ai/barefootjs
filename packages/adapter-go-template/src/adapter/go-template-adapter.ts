@@ -58,8 +58,7 @@ import {
   isBooleanAttr,
   collectNullableSignalGetters,
   nullableSignalAttrGetter,
-  NULL_COERCING_ARITHMETIC_OPS,
-  arithmeticOperandIsUndefined,
+  arithmeticOperandCoercion,
   attrValueMayBeNullish,
   collectNullishAttrContext,
   parseExpression,
@@ -189,7 +188,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -775,6 +774,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .map(([getter]) => getter),
     )
     this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
+    this.state.arithmeticAbsentPropNames = collectArithmeticAbsentPropNames(this.emitCtx, ir)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
@@ -6916,16 +6916,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `(elapsed / TRACK) * 100` would emit `bf_mul bf_div .Elapsed .TRACK 100`,
     // handing `bf_mul` four args. `wrapIfMultiToken` is a no-op for single tokens
     // and quoted literals.
-    // An operand that is certainly `undefined` at SSR goes through
-    // `bf_number`, which maps nil to `NaN` as JS `ToNumber(undefined)` does;
-    // the arithmetic helpers read nil as `0` (#3390).
-    const undefinedOperand = (e: ParsedExpr, w: string): string =>
-      NULL_COERCING_ARITHMETIC_OPS.has(op) &&
-      arithmeticOperandIsUndefined(e, this.state.nullishAttrCtx, n => this.scope.isBound(n))
+    // Spell `arithmeticOperandCoercion` (#3474): an operand whose nil reads
+    // as `undefined` at SSR (#3390, an omitted optional number prop #3533)
+    // goes through `bf_number`, which maps nil to `NaN` as JS
+    // `ToNumber(undefined)` does. The arithmetic helpers already read a
+    // `null` operand as `0`, so that coercion needs no spelling.
+    const undefinedOperand = (e: ParsedExpr, other: ParsedExpr, w: string): string =>
+      arithmeticOperandCoercion(op, e, other, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined'
         ? `(bf_number ${w})`
         : w
-    const wl = undefinedOperand(left, wrapIfMultiToken(l))
-    const wr = undefinedOperand(right, wrapIfMultiToken(r))
+    const wl = undefinedOperand(left, right, wrapIfMultiToken(l))
+    const wr = undefinedOperand(right, left, wrapIfMultiToken(r))
     const comparison = goComparisonCall(op, wl, wr, [left, right])
     if (comparison !== null) return comparison
     switch (op) {
@@ -6989,7 +6990,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // parses as `not` applied to 3 args, not 1) and routes a non-bool operand
     // through `bf_truthy`, since Go's `not` reads an empty slice as false.
     if (op === '!') return lowerJsNot(argument, arg)
-    if (op === '-') return `bf_neg ${arg}`
+    // Unary minus applies JS `ToNumber` like binary `-` (#3533): an operand
+    // whose nil reads as `undefined` goes through `bf_number`.
+    if (op === '-') {
+      return arithmeticOperandCoercion(op, argument, undefined, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined'
+        ? `bf_neg (bf_number ${wrapIfMultiToken(arg)})`
+        : `bf_neg ${arg}`
+    }
     return arg
   }
 
