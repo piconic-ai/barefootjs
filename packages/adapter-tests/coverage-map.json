@@ -9806,6 +9806,21 @@
         "attribute"
       ]
     },
+    "signal-seed-absent-optional-prop-child": {
+      "kinds": [
+        "call",
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "signal-seed-local-helper-call": {
       "kinds": [
         "arrow",

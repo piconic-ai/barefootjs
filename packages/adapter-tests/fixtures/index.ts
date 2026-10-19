@@ -162,6 +162,7 @@ import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
 import { fixture as signalWithFallback } from './signal-with-fallback'
 import { fixture as signalSeedAbsentOptionalPropAttr } from './signal-seed-absent-optional-prop-attr'
+import { fixture as signalSeedAbsentOptionalPropChild } from './signal-seed-absent-optional-prop-child'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
@@ -1109,6 +1110,7 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 1: Core reactivity
   signalWithFallback,
   signalSeedAbsentOptionalPropAttr,
+  signalSeedAbsentOptionalPropChild,
   signalSeedLocalHelperCall,
   signalDefaultFromJsx,
   controlledSignal,

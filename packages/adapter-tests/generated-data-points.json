@@ -7077,6 +7077,49 @@
       }
     }
   ],
+  "signal-seed-absent-optional-prop-child": [
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "a": "A"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "A",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "A",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "A",
+        "b": "日本語"
+      }
+    }
+  ],
   "signal-seed-local-helper-call": [
     {
       "name": "gen:mode:absent",
