@@ -247,9 +247,10 @@ function dependentPropDefaultSteps(
  * over `{ b?: string; a?: string }`), which need not be the pattern's order,
  * so the order comes from the reads themselves. The reads only ever name an
  * EARLIER binding of the same pattern, so they form no cycle; otherwise the
- * input order is kept.
+ * input order is kept. Every backend applying these defaults one prop at a
+ * time (the in-template re-binds here, Go's constructor) uses this order.
  */
-function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
+export function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
   const byName = new Map(params.filter(p => !p.isRest).map(p => [p.name, p]))
   const ordered: ParamInfo[] = []
   const placed = new Set<ParamInfo>()

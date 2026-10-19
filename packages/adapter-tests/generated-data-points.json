@@ -2407,6 +2407,48 @@
       }
     }
   ],
+  "destructure-default-array-child": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": [],
+        "b": [
+          "explicit",
+          "second"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": [
+          "first"
+        ],
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-array-memo": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": [],
+        "b": [
+          "explicit",
+          "second"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": [
+          "first"
+        ],
+        "b": []
+      }
+    }
+  ],
   "destructure-default-body": [
     {
       "name": "gen:off:absent",

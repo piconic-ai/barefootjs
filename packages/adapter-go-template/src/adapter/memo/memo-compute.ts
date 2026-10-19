@@ -34,7 +34,7 @@ import {
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
-import { defaultedBindingGo } from '../props/prop-types.ts'
+import { defaultedBindingGo, resolvePropGoType } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -329,6 +329,13 @@ export function computeMemoInitialValue(
       memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) {
     return 'bf.Number(nil)'
   }
+  // A memo over a boxed dependent-default prop (#3531): the evaluator's value
+  // when it converts to the field's type, else the shapes below.
+  if (memo.parsed && readsBoxedDependentDefaultProp(ctx, memo.parsed)) {
+    const evaluated = evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
+    const typed = evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
+    if (typed !== null) return typed
+  }
   const resolved = computeMemoInitialValueOrNull(
     ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
   )
@@ -517,9 +524,9 @@ export function computedPropSeedGo(
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
   if (!parsed) return null
-  // A seed reading a prop whose default reads an earlier prop is evaluated
-  // whatever its shape, a bare read included (#3531).
-  if (!isComputedSeedShape(parsed) && !readsDependentDefaultProp(ctx, parsed)) return null
+  // A seed reading a boxed dependent-default prop is evaluated whatever its
+  // shape, a bare read included, so it converts to the seed's type (#3531).
+  if (!isComputedSeedShape(parsed) && !readsBoxedDependentDefaultProp(ctx, parsed)) return null
   // A prop member chain inside the seed keeps its own refusal (#3142).
   if (embeddedPropMemberChain(ctx, parsed, propsParams)) return null
   // `freeIdentifiers`, not `freeVarsInBody`: the latter skips the receiver
@@ -532,17 +539,24 @@ export function computedPropSeedGo(
 }
 
 /**
- * Whether `parsed` reads a destructured prop whose default reads an earlier
- * prop (`ParamInfo.defaultParts`, #3531). Such a prop's Input field is
- * nillable and only its resolved binding (`defaultedBindingGo`) carries the
- * default, so a constructor value reading it is computed by the evaluator
- * over that binding and converted to the destination's Go type, never built
- * from the raw `in.<Field>`.
+ * Whether `parsed` reads a destructured scalar prop whose default reads an
+ * earlier prop (`ParamInfo.defaultParts`, #3531). The constructor has already
+ * applied that default to `in.<Field>` (`dependentDefaultNormalization`), but
+ * the field is boxed as `interface{}` so an absent prop stays nil, and a
+ * concrete destination (a `bool` signal, a `string` memo, a child's typed
+ * Input field) can't take it raw. Such a value is computed by the runtime
+ * evaluator and converted to the destination's type where that conversion
+ * exists ({@link evaluatedAsGoType}); every other destination keeps its own
+ * path, which reads the same resolved field. A non-scalar dependent prop
+ * keeps its own Go type and needs neither.
  */
-export function readsDependentDefaultProp(ctx: GoEmitContext, parsed: ParsedExpr): boolean {
+export function readsBoxedDependentDefaultProp(ctx: GoEmitContext, parsed: ParsedExpr): boolean {
   const frees = freeIdentifiers(parsed)
   if (frees === null) return false
-  return ctx.state.currentPropsParams.some(p => p.defaultParts !== undefined && frees.has(p.name))
+  return ctx.state.currentPropsParams.some(p =>
+    p.defaultParts !== undefined && frees.has(p.name) &&
+    resolvePropGoType(ctx, p, ctx.state.propTypeOverrides) === 'interface{}',
+  )
 }
 
 /**
@@ -645,8 +659,12 @@ function memoEnvValueGo(
 ): string | null {
   if (isNullishIdentityMemo(ctx, memo, signals, resolving)) return 'nil'
   if (memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) return 'bf.Number(nil)'
-  return ctx.state.hoistedMemoLocals.get(memo.name) ??
-    computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, propFallbackVars, resolving) ??
+  const hoisted = ctx.state.hoistedMemoLocals.get(memo.name)
+  if (hoisted !== undefined) return hoisted
+  // An env entry is untyped, so a memo over a boxed dependent-default prop
+  // is evaluated rather than built from its typed shapes (#3531).
+  const boxed = memo.parsed !== undefined && readsBoxedDependentDefaultProp(ctx, memo.parsed)
+  return (boxed ? null : computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, propFallbackVars, resolving)) ??
     (memo.parsed ? evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, resolving) : null)
 }
 
@@ -1407,10 +1425,6 @@ export function computeMemoInitialValueOrNull(
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
   const computation = memo.computation
-
-  // A memo over a prop whose default reads an earlier prop goes to the
-  // evaluator, which reads the resolved binding (#3531).
-  if (memo.parsed && readsDependentDefaultProp(ctx, memo.parsed)) return null
 
   // () => `...${expr}...` — template-literal memo (the classes memo). Builds a
   // Go string concatenation; null when any interpolation isn't representable.

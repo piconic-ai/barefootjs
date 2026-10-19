@@ -6,14 +6,14 @@
  */
 
 import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
-import { asCallbackMethodCall, collectAbsentPropSeedReads, isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
+import { asCallbackMethodCall, collectAbsentPropSeedReads, inDefaultReadOrder, isBooleanAttr, isNullableSignal } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { applyGoFallback, goPropDefault } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
-import { evalExprGo } from '../memo/memo-compute.ts'
+import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
 
 /**
  * Build a map from prop name to a better Go type inferred from signals. When a
@@ -641,7 +641,7 @@ export function defaultedBindingGo(
   propTypeOverrides: Map<string, string>,
 ): string | null {
   const paramDefault = goPropDefault(param.defaultValue)
-  if (paramDefault === null) return dependentDefaultedBindingGo(ctx, param, propsParams, propTypeOverrides)
+  if (paramDefault === null) return null
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
@@ -653,26 +653,80 @@ export function defaultedBindingGo(
 }
 
 /**
- * {@link defaultedBindingGo} for a default that reads an earlier binding of
- * its own destructure (`{ off = false, on = !off }`, `ParamInfo.defaultParts`,
- * #3531): the runtime evaluator computes the default over the earlier
- * bindings, each with its own default applied, when the input field is nil.
- * The field is nillable for exactly this ({@link resolvePropGoType}), so an
- * explicit `false` / `''` / `0` stays the caller's value. Null when the
- * evaluator can't take the default.
+ * The constructor statements that apply a destructure default reading an
+ * earlier prop (`{ a, b = a }`, `{ off = false, on = !off }`,
+ * `ParamInfo.defaultParts`, #3531) to the Input itself, before anything reads
+ * it: `if in.B == nil { in.B = <default> }`, one prop at a time in the
+ * defaults' read order (`inDefaultReadOrder`). Every later `in.B` read, a
+ * signal seed, a memo, a child prop or the Props field, then sees the
+ * resolved binding in the field's own Go type, so no reader needs a path of
+ * its own. Such a prop's field is nillable: a slice, map or pointer is, and a
+ * scalar is flipped to `interface{}` ({@link resolvePropGoType}), so an
+ * explicit `false` / `''` / `0` stays the caller's value.
+ *
+ * A default reading one earlier prop is that prop's resolved Go value
+ * (`in.A`, or its own literal default). Any other default is computed by the
+ * runtime evaluator, which takes a scalar, or anything into an `interface{}`
+ * field. `rawLocals` keeps each caller value `bfCallerProps` reads
+ * (`keepsCallerValue`), and
+ * `unsupported` names the props whose default can't be applied this way
+ * (the caller refuses them loudly).
  */
-function dependentDefaultedBindingGo(
+export function dependentDefaultNormalization(
+  ctx: GoEmitContext,
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+  keepsCallerValue: (param: IRMetadata['propsParams'][number]) => boolean,
+): { lines: string[]; rawLocals: Map<string, string>; unsupported: string[] } {
+  const lines: string[] = []
+  const rawLocals = new Map<string, string>()
+  const unsupported: string[] = []
+  for (const param of inDefaultReadOrder(propsParams)) {
+    if (param.isRest || !param.defaultParts || !param.parsed) continue
+    const field = capitalizeFieldName(param.sourceName ?? param.name)
+    const goType = resolvePropGoType(ctx, param, propTypeOverrides)
+    const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
+    if (value === null) {
+      unsupported.push(param.name)
+      continue
+    }
+    if (keepsCallerValue(param)) {
+      const raw = `bfCaller${field}`
+      rawLocals.set(param.name, raw)
+      lines.push(`\t${raw} := in.${field}`)
+    }
+    lines.push(`\tif in.${field} == nil {`)
+    lines.push(`\t\tin.${field} = ${value}`)
+    lines.push('\t}')
+  }
+  if (lines.length > 0) lines.push('')
+  return { lines, rawLocals, unsupported }
+}
+
+function isNillableGoType(goType: string): boolean {
+  return goType === 'interface{}' || goType === 'any' || goType.startsWith('[]') || goType.startsWith('map[') || goType.startsWith('*')
+}
+
+/** The Go value of `param`'s dependent default, in its field's type `goType`; null when it can't be built. */
+function dependentDefaultGo(
   ctx: GoEmitContext,
   param: IRMetadata['propsParams'][number],
+  goType: string,
   propsParams: IRMetadata['propsParams'],
   propTypeOverrides: Map<string, string>,
 ): string | null {
-  if (!param.defaultParts || !param.parsed) return null
-  if (resolvePropGoType(ctx, param, propTypeOverrides) !== 'interface{}') return null
-  const evaluated = evalExprGo(ctx, param.parsed, [], propsParams, new Map(), new Set())
-  if (evaluated === null) return null
-  const inputField = capitalizeFieldName(param.sourceName ?? param.name)
-  return `func() interface{} { if in.${inputField} == nil { return ${evaluated} }; return in.${inputField} }()`
+  const parsed = param.parsed!
+  if (parsed.kind === 'identifier') {
+    const ref = propsParams.find(p => !p.isRest && p.name === parsed.name)
+    if (!ref) return null
+    const refType = resolvePropGoType(ctx, ref, propTypeOverrides)
+    if (goType !== 'interface{}' && goType !== 'any' && refType !== goType) return null
+    // An earlier dependent prop is already resolved on `in`; a literal
+    // default applies here.
+    return defaultedBindingGo(ctx, ref, propsParams, propTypeOverrides) ?? `in.${capitalizeFieldName(ref.sourceName ?? ref.name)}`
+  }
+  const evaluated = evalExprGo(ctx, parsed, [], propsParams, new Map(), new Set())
+  return evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
 }
 
 export function resolvePropGoType(
@@ -724,7 +778,7 @@ export function resolvePropGoType(
   // receiver (#3422) — see `collectOptionalChainReceiverPropNames`.
   // A default that reads an earlier prop (`{ off = false, on = off }`,
   // #3531) applies to an absent prop only, which the constructor tells apart
-  // by nil (`dependentDefaultedBindingGo`).
+  // by nil (`dependentDefaultNormalization`).
   if (
     param.optional &&
     param.type.kind === 'primitive' &&

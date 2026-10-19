@@ -10667,10 +10667,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
       },
       "example": {
-        "fixture": "nullish-coalesce-empty-array",
-        "description": "`??` keeps a present empty array instead of taking the fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
-        "code": "props.c ?? props.a"
+        "fixture": "destructure-default-array-child",
+        "description": "An array prop defaulted to an earlier array prop reaches a child as passed, or as the earlier prop when omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-array-child.ts"
       }
     },
     "member": {
@@ -19425,10 +19424,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "nullish-coalesce-empty-array",
-        "description": "`??` keeps a present empty array instead of taking the fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
-        "code": "props.c ?? props.a"
+        "fixture": "destructure-default-array-child",
+        "description": "An array prop defaulted to an earlier array prop reaches a child as passed, or as the earlier prop when omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-array-child.ts"
       }
     },
     "logical:||": {
