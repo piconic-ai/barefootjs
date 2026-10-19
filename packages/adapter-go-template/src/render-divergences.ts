@@ -102,10 +102,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
 export const renderDivergences: RenderDivergences = {
-  // A props spread onto a child component: this adapter drops the spread (#3479).
-  'component-spread-rest': { limitation: 'component-prop-spread' },
-  'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
-  'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
   // A children prop renamed in the parameter destructure (`{ children: kids }`):
   // the renamed `Kids` field reads nil when the parent passes children, so
   // present children are dropped and the `??` fallback renders.
@@ -117,6 +113,11 @@ export const renderDivergences: RenderDivergences = {
   // omitted prop and a `null` one as the same nil, and the type admits both,
   // so the nil reads as `null` (`0`) where JS reads `undefined` (`NaN`).
   'omitted-optional-nullable-number-arithmetic': { limitation: 'omitted-optional-nullable-number-arithmetic' },
+  // An explicit `null` carried by a `{...props}` spread onto a child: the
+  // engine holds it and an omitted prop as the same nil, so the spread
+  // carries the key only when it is not nil and an earlier explicit prop
+  // keeps its value where JS overrides it with `null`.
+  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // `%` over a `NaN` operand: `bf_mod` converts both operands to `int`, so
   // `NaN % 2` renders an integer where JS gives `NaN`.
   'remainder-nan-operand': { limitation: 'remainder-nan-operand' },

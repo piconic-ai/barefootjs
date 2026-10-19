@@ -761,7 +761,9 @@ export function resolvePropGoType(
   // `collectNullableSignalSeedPropNames`. So does an optional-chain
   // receiver (#3422) — see `collectOptionalChainReceiverPropNames`. So does
   // an arithmetic operand whose nil reads as `undefined` (#3533) — see
-  // `collectArithmeticAbsentPropNames`.
+  // `collectArithmeticAbsentPropNames`. So does a param a `{...props}`
+  // spread onto a child component forwards (#3530) — see
+  // `collectPropsSpreadForwardedParams`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
@@ -771,7 +773,8 @@ export function resolvePropGoType(
       ctx.state.presenceCheckedPropNames.has(param.name) ||
       ctx.state.nullableSignalSeedPropNames.has(param.name) ||
       ctx.state.optionalChainReceiverPropNames.has(param.name) ||
-      ctx.state.arithmeticAbsentPropNames.has(param.name)) &&
+      ctx.state.arithmeticAbsentPropNames.has(param.name) ||
+      ctx.state.propsSpreadForwardedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'

@@ -1106,6 +1106,12 @@
       }
     }
   ],
+  "component-spread-explicit-null": [
+    {
+      "name": "gen:label:absent",
+      "props": {}
+    }
+  ],
   "component-spread-explicit-then-props": [
     {
       "name": "gen:tone:absent",
@@ -1183,6 +1189,166 @@
       "props": {
         "tone": "warm",
         "label": "日本語"
+      }
+    }
+  ],
+  "component-spread-props-rest-bag": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "title": "T"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "title": "T"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "title": "T"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "title": "T"
+      }
+    },
+    {
+      "name": "gen:title:absent",
+      "props": {
+        "label": "hi"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "label": "hi",
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "label": "hi",
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "label": "hi",
+        "title": "日本語"
+      }
+    },
+    {
+      "name": "gen:own:empty",
+      "props": {
+        "label": "hi",
+        "title": "T",
+        "own": ""
+      }
+    },
+    {
+      "name": "gen:own:markup",
+      "props": {
+        "label": "hi",
+        "title": "T",
+        "own": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:own:multibyte",
+      "props": {
+        "label": "hi",
+        "title": "T",
+        "own": "日本語"
+      }
+    }
+  ],
+  "component-spread-props-subset": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "own": "x"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "own": "x"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "own": "x"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "own": "x"
+      }
+    },
+    {
+      "name": "gen:size:empty",
+      "props": {
+        "label": "hello",
+        "own": "x",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:size:markup",
+      "props": {
+        "label": "hello",
+        "own": "x",
+        "size": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:size:multibyte",
+      "props": {
+        "label": "hello",
+        "own": "x",
+        "size": "日本語"
+      }
+    },
+    {
+      "name": "gen:own:absent",
+      "props": {
+        "label": "hello"
+      }
+    },
+    {
+      "name": "gen:own:empty",
+      "props": {
+        "label": "hello",
+        "own": ""
+      }
+    },
+    {
+      "name": "gen:own:markup",
+      "props": {
+        "label": "hello",
+        "own": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:own:multibyte",
+      "props": {
+        "label": "hello",
+        "own": "日本語"
       }
     }
   ],

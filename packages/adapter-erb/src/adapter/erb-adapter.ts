@@ -209,7 +209,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * reference instead of falling through to unconditional emission.
    */
   private restPropsName: string | null = null
-  private propsParams: { name: string }[] = []
+  private propsParams: { name: string; optional: boolean }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * Names that resolve to a real SSR template var (via `v[:name]`) — prop
@@ -327,7 +327,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // Shared with the Go/Mojo adapters (single source of truth in
     // `@barefootjs/jsx`).
     augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
     // Per-compile prop classifications (see `props/prop-classes.ts`).
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanTypedProps = collectBooleanTypedProps(ir)
@@ -1310,6 +1310,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       },
       // Ruby's `**hash` double-splat folds a spread in place (`emitSpread`).
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+      presentParam: (name) => {
+        const v = `v[${rubySymbolLiteral(name)}]`
+        return `**(${v}.nil? ? {} : { ${rubySymbolKey(name)} ${v} })`
+      },
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
     const propsHash = parts.length > 0 ? `{ ${parts.join(', ')} }` : '{}'

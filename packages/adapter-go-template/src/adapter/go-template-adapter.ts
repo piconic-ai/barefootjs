@@ -188,6 +188,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
+import { collectPropsSpreadForwardedParams, isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from "./props/props-spread.ts"
 import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
@@ -775,6 +776,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
     this.state.arithmeticAbsentPropNames = collectArithmeticAbsentPropNames(this.emitCtx, ir)
+    this.state.propsSpreadForwardedPropNames = collectPropsSpreadForwardedParams(this.emitCtx, ir)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
@@ -3058,7 +3060,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // goValue` pairs for that map.
     const childShape = this.childComponentShapes.get(declaredName)
     const restBagEntries: string[] = []
-    const emitChildField = (jsxName: string, goValue: string): void => {
+    // A `{...props}` spread, resolved per key by the shared plan (#3530).
+    const call = this.planChildCallProps(child, ir, childShape)
+    const emitChildField = (jsxName: string, writtenValue: string): void => {
+      const goValue = call.passedOr(jsxName, writtenValue)
       if (routesToRestBag(childShape, jsxName)) {
         restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
         return
@@ -3079,7 +3084,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         !/^-?\d+(\.\d+)?$/.test(goValue) && !goValue.startsWith('bf.Number(')
       fields.push({ goField: fieldName, goValue: numeric ? `bf.Number(${goValue})` : goValue })
     }
-    for (const prop of child.props) {
+    call.paramFields.forEach(field => emitChildField(field.name, field.goValue))
+    for (const prop of call.props) {
       // A prop reading the row (`tone={o.tone}`) can't be evaluated here: the
       // constructor runs once, outside the row. It is delivered per row at
       // template time instead (`loopRowChildPropOverrides`), under the same
@@ -3337,6 +3343,107 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       fields.push({ goField: childShape.restBagField, goValue: `map[string]any{${restBagEntries.join(', ')}}` })
     }
     return { fields, unlowered }
+  }
+
+  /**
+   * A child call's props once the shared plan has resolved its `{...props}`
+   * spread one key at a time (`resolvePropsSpreadCall`, #3530):
+   *
+   * - `props`: the props still lowered as written — the spread itself, and
+   *   every prop a later writer of its key replaces, dropped;
+   * - `paramFields`: an `in.<Field>` value for each param the spread carries
+   *   unconditionally and the child takes — a declared param, or any key
+   *   when the child has a rest bag (`emitChildField` routes it there);
+   * - `passedOr`: wraps the value a key would otherwise take in a nil test of
+   *   the param the spread carries only when the caller passed it.
+   *
+   * A call without the spread passes through unchanged.
+   */
+  private planChildCallProps(
+    child: { name: string; props: readonly IRProp[] },
+    ir: ComponentIR,
+    childShape: ChildComponentShape | undefined,
+  ): {
+    props: readonly IRProp[]
+    paramFields: Array<{ name: string; goValue: string }>
+    passedOr: (name: string, value: string) => string
+  } {
+    const call = resolvePropsSpreadCall(this.emitCtx, ir, child.props)
+    if (call === null) return { props: child.props, paramFields: [], passedOr: (_name, value) => value }
+    const spread = child.props.find(p => isPropsObjectSpread(p, this.state.propsObjectName))!
+    const props = child.props.filter(p => p !== spread)
+    if (call.kind === 'unresolved') {
+      this.refusePropsSpreadMerge(child.name, spread, 'the call also spreads an object whose keys are only known at render time')
+      return { props, paramFields: [], passedOr: (_name, value) => value }
+    }
+    const propsParams = ir.metadata.propsParams
+    const paramFields: Array<{ name: string; goValue: string }> = []
+    for (const resolved of call.keys.values()) {
+      const param = resolved.base?.kind === 'props-param' ? propsParams.find(p => p.name === resolved.key) : undefined
+      if (!param) continue
+      // A key the child neither declares nor collects in a rest bag has no
+      // field on its Input: JS hands it over, but the child never reads it.
+      if (childShape && !childShape.restBagField && !childShape.paramNames.has(param.name)) continue
+      const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+      const keepsNil = routesToRestBag(childShape, param.name) || childShape?.nillableParamNames.has(param.name)
+      paramFields.push({
+        name: param.name,
+        goValue: keepsNil ? ref : this.unboxNillablePropRef(ref, propsParams, childShape?.paramGoTypes.get(param.name)),
+      })
+    }
+    return {
+      props: props.filter(p => isFinalPropWriter(p, call.keys)),
+      paramFields,
+      passedOr: (name, value) => {
+        const resolved = call.keys.get(name)
+        if (!resolved || resolved.presentParams.length === 0) return value
+        return this.passedPropsParamOr(resolved.key, value, { childName: child.name, spread, childShape, ir })
+      },
+    }
+  }
+
+  /**
+   * `value` for a key a `{...props}` spread carries only when the caller
+   * passed the param of the same name: the param's own Input field when it is
+   * not nil, `value` otherwise. The field is nillable by construction
+   * (`propsSpreadForwardedPropNames`); a param whose field is not, or a child
+   * field this can't type, is refused rather than overridden unconditionally.
+   */
+  private passedPropsParamOr(
+    name: string,
+    value: string,
+    site: { childName: string; spread: IRProp; childShape: ChildComponentShape | undefined; ir: ComponentIR },
+  ): string {
+    const { childShape } = site
+    const param = site.ir.metadata.propsParams.find(p => p.name === name)
+    const ref = param ? `in.${capitalizeFieldName(param.sourceName ?? param.name)}` : ''
+    const destType = routesToRestBag(childShape, name) || childShape?.nillableParamNames.has(name)
+      ? 'interface{}'
+      : childShape?.paramGoTypes.get(name)
+    const passed = destType === 'interface{}' ? ref : destType ? unboxToGoScalar(ref, destType) : null
+    if (!param || !this.state.nillablePropNames.has(param.name) || passed === null) {
+      this.refusePropsSpreadMerge(
+        site.childName,
+        site.spread,
+        `the Go template adapter can't tell an omitted '${name}' from a passed one here, so it can't keep the value an earlier prop gives it`,
+      )
+      return value
+    }
+    return `func() ${destType} { if ${ref} != nil { return ${passed} }; return ${value} }()`
+  }
+
+  /** BF101 for a `{...props}` spread onto a child the Go constructor can't merge soundly (#3530). */
+  private refusePropsSpreadMerge(childName: string, spread: IRProp, reason: string): void {
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `'{...${this.state.propsObjectName}}' on <${childName}> can't be merged with the other props of the call: ${reason}`,
+      loc: spread.loc,
+      suggestion: {
+        message: `Pass the props to <${childName}> one by one, or wrap <${childName}> in /* @client */ so it renders on the client instead.`,
+        escape: [{ kind: 'client-directive' }],
+      },
+    })
   }
 
   /**
@@ -5548,6 +5655,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * A child prop read off this component's own rest bag (`rest.tone`, the
+   * per-key form a closed `{...rest}` spread onto a child expands to, #3530):
+   * the bag's entry, nil when the caller omitted the key, so the child sees
+   * the omission. A concrete child field takes the entry converted to its
+   * type. Null for any other value.
+   */
+  private restMemberChildPropValue(
+    value: ParsedExpr,
+    propName: string,
+    childShape: ChildComponentShape | undefined,
+  ): string | null {
+    const restName = this.state.restPropsName
+    if (
+      restName === null || value.kind !== 'member' || value.computed ||
+      value.object.kind !== 'identifier' || value.object.name !== restName
+    ) {
+      return null
+    }
+    const ref = `in.${capitalizeFieldName(restName)}[${JSON.stringify(value.property)}]`
+    if (routesToRestBag(childShape, propName) || childShape?.nillableParamNames.has(propName)) return ref
+    const goType = childShape?.paramGoTypes.get(propName)
+    return goType === undefined ? null : unboxToGoScalar(ref, goType)
+  }
+
+  /**
    * A child prop value computed by the runtime evaluator over this
    * component's seeds (`evalExprGo`), typed for its destination: a rest-bag
    * entry or a nillable Input field takes the `any` result, a concrete field
@@ -5561,6 +5693,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
+    const restRead = this.restMemberChildPropValue(value, propName, childShape)
+    if (restRead !== null) return restRead
     // A component-scope computed const (`const shown = props.label ?? 'd'`)
     // is read through its value, not its name (#3507) — a const shadowing a
     // prop would otherwise read the prop and drop the const's default.

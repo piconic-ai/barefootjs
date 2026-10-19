@@ -2274,75 +2274,59 @@
           ]
         }
       },
-      "component-spread-explicit-then-props": {
+      "component-spread-explicit-null": {
         "blade": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "component-prop-spread"
-          ]
-        }
-      },
-      "component-spread-props-then-explicit": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
-          ]
-        }
-      },
-      "component-spread-rest": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "component-prop-spread"
+            "props-spread-explicit-null-override"
           ]
         }
       },
@@ -7468,17 +7452,9 @@
         "description": "A children prop renamed in the parameter destructure renders present children as markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
       },
-      "component-spread-explicit-then-props": {
-        "description": "An explicit prop, then a props spread onto a child component that overrides it",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-then-props.ts"
-      },
-      "component-spread-props-then-explicit": {
-        "description": "A props spread onto a child component, then an explicit prop that overrides it",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-props-then-explicit.ts"
-      },
-      "component-spread-rest": {
-        "description": "A rest spread onto a child component forwards the remaining props",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-rest.ts"
+      "component-spread-explicit-null": {
+        "description": "A props spread whose explicit null overrides an earlier explicit prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
       },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
@@ -8047,29 +8023,6 @@
         "BF101"
       ]
     },
-    "component-prop-spread": {
-      "title": "A props spread onto a child component",
-      "kind": "silent",
-      "given": "a child component call that spreads an object (`<Child {...props} />`, `<Child {...rest} />`), alone or next to explicit props",
-      "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
-      "actual": "drops the spread when the call also passes explicit props (or always), or lets a key the spread omits erase an earlier explicit prop",
-      "fixtures": [
-        "component-spread-explicit-then-props",
-        "component-spread-props-then-explicit",
-        "component-spread-rest"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
       "kind": "refusal",
@@ -8112,6 +8065,31 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "csr-component-prop-spread": {
+      "title": "A props spread onto a child component in the client template",
+      "kind": "silent",
+      "given": "a child component call that spreads the props object, alone or next to explicit props (`<Child {...props} />`, `<Child {...props} tone=\"x\" />`, `<Child tone=\"x\" {...props} />`), rendered by the client template",
+      "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
+      "actual": "drops the spread and passes only the explicit props, so its keys neither reach the child nor override an earlier explicit prop",
+      "fixtures": [
+        "component-spread-explicit-then-props",
+        "component-spread-props-rest-bag",
+        "component-spread-props-subset",
+        "component-spread-props-then-explicit"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "defaulted-prop-explicit-empty": {
@@ -8400,6 +8378,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "props-spread-explicit-null-override": {
+      "title": "An explicit null prop carried by a props spread onto a child component",
+      "kind": "silent",
+      "given": "a child component call that spreads the props object after an explicit prop of the same key (`<Child label=\"first\" {...props} />`), called with that key set to `null` or `undefined`",
+      "expected": "the spread carries the key, so its `null` / `undefined` overrides the earlier explicit prop",
+      "actual": "keeps the earlier explicit prop, as if the caller had omitted the key",
+      "fixtures": [
+        "component-spread-explicit-null"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "ref-effect-attr-state-ssr": {
