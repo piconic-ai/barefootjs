@@ -6721,6 +6721,49 @@
       }
     }
   ],
+  "signal-seed-absent-optional-prop-attr": [
+    {
+      "name": "gen:mode:absent",
+      "props": {
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:mode:empty",
+      "props": {
+        "mode": "",
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:mode:markup",
+      "props": {
+        "mode": "<b>&\"'</b>",
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:mode:multibyte",
+      "props": {
+        "mode": "日本語",
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "mode": "wide",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "mode": "wide",
+        "label": "日本語"
+      }
+    }
+  ],
   "signal-with-fallback": [
     {
       "name": "gen:initial:absent",

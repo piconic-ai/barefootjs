@@ -9536,6 +9536,23 @@
         "text"
       ]
     },
+    "signal-seed-absent-optional-prop-attr": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "signal-with-fallback": {
       "kinds": [
         "call",
