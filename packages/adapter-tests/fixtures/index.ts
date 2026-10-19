@@ -1053,6 +1053,8 @@ import { fixture as childrenNamedLocalEscaped } from './children-named-local-esc
 import { fixture as childrenNamedLoopRowEscaped } from './children-named-loop-row-escaped'
 import { fixture as childrenChainedNullishFallbackEscaped } from './children-chained-nullish-fallback-escaped'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
+import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
+import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
 import { fixture as stringLiteralUnionAliasShapes } from './string-literal-union-alias-shapes'
 import { fixture as stringLiteralUnionAliasSignalSeeds } from './string-literal-union-alias-signal-seeds'
 import { fixture as filterParamSigilInString } from './filter-param-sigil-in-string'
@@ -1788,6 +1790,8 @@ export const jsxFixtures: JSXFixture[] = [
   childrenNamedLoopRowEscaped,
   childrenChainedNullishFallbackEscaped,
   childrenPreambleLocalEscaped,
+  filterPredicateShapeLoop,
+  filterPredicateShapeLoopClient,
   stringLiteralUnionAliasShapes,
   stringLiteralUnionAliasSignalSeeds,
   filterParamSigilInString,
