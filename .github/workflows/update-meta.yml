@@ -72,18 +72,13 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # TEMPORARILY verify-only — tracked by #2427.
-      #
-      # This job used to regenerate ui/meta and llms.txt and push the result. It
-      # cannot: the drift guard in meta-extract-drift.test.ts compares against it,
-      # so auto-committing makes this job the detector for its own subject.
-      # A wrong output is written in as the new expectation and the suite
-      # goes green on top of it. PR #2425 has a worked example — a fixture
-      # added to pin a marker was rewritten to assert the marker's absence.
-      #
-      # Same shape as the `lockfile` job in ci-compat.yml. Restore the
-      # commit step once a check exists that would catch a wrong
-      # regeneration WITHOUT reading the regenerated file — see #2427.
+      # Verify-only by design (#2427): this job regenerates ui/meta and llms.txt
+      # and fails on drift; it never commits the result. The drift guard in
+      # meta-extract-drift.test.ts compares against it, so a job that committed
+      # its own regeneration would be the detector for its own subject: a wrong
+      # output written in as the new expectation turns the suite green on top of
+      # it (PR #2425 has a worked example). The author regenerates locally and
+      # reviews the diff. Same shape as the `lockfile` job in ci-compat.yml.
       - name: Fail if the generated output drifted
         if: steps.diff.outputs.changed == 'true'
         run: |

@@ -33,6 +33,7 @@ import { groupBinaryOperand,
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
+  filterPredicateShapeRefusal,
   isUnloweredCall,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
@@ -395,34 +396,36 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
-    return '1'
+    return this.refuseShape('a conditional (`?:`)')
   }
 
   templateLiteral(_parts: TemplatePart[]): string {
-    return '1'
+    return this.refuseShape('a template literal')
   }
 
   arrow(_params: string[], _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
-    // A standalone arrow only reaches here outside a callback position, which
-    // never arises in a predicate context — emit the truthy sentinel like the
-    // pre-#2018 `arrowFn` fallback.
-    return '1'
+    return this.refuseShape('a standalone arrow function')
   }
 
   regex(_raw: string): string {
-    // A standalone regex has no filter-predicate meaning — truthy sentinel.
-    return '1'
+    return this.refuseShape('a regular expression literal')
   }
 
-  unsupported(_raw: string, _reason: string): string {
-    return '1'
+  unsupported(_raw: string, reason: string): string {
+    return this.refuseShape(`an expression with no template form (${reason})`)
   }
 
   objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
-    // Filter-predicate context: an object literal is not a boolean leaf, so
-    // emit the truthy sentinel exactly as `unsupported` does (byte-identical
-    // with the pre-`object-literal` fallback; Roadmap A-1). Object *values*
-    // are lowered to Perl hashrefs in the conditional/attr paths, not here.
+    return this.refuseShape('an object literal')
+  }
+
+  /**
+   * A predicate shape this emitter cannot spell is BF101, never a truthy
+   * constant standing in for it (#3534): that rendered every row.
+   */
+  private refuseShape(shape: string): string {
+    const refusal = filterPredicateShapeRefusal(shape, CALLBACK_LOWERING.adapterName)
+    this.onUnsupported?.(refusal.message, refusal.suggestion)
     return '1'
   }
 }
