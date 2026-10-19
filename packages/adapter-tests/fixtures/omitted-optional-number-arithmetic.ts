@@ -1,11 +1,14 @@
 import { createFixture } from '../src/types'
 
 /**
- * Arithmetic over an optional number prop the caller omits (#3474). JS reads
- * the omitted prop as `undefined`, so `missing * 2` is `NaN`. A template
- * engine holds an omitted prop and a `null` one as the same nil and reads it
- * as `0`, so every DSL adapter renders `0` / `1` here. Declared in each
- * adapter's `renderDivergences` under `omitted-optional-number-arithmetic`.
+ * Arithmetic over an optional number prop the caller omits (#3474, #3533).
+ * JS reads the omitted prop as `undefined`, so `missing * 2` is `NaN`. A
+ * template engine holds an omitted prop and a `null` one as the same nil,
+ * so the prop's type decides what the nil stands for: `missing?: number`
+ * cannot be `null`, so every DSL adapter reads its nil as `undefined`
+ * (`arithmeticOperandCoercion`). Siblings: `optional-number-arithmetic-matrix`
+ * (other operators, a present `0`, a `null`) and
+ * `omitted-optional-number-arithmetic-destructured`.
  */
 export const fixture = createFixture({
   id: 'omitted-optional-number-arithmetic',

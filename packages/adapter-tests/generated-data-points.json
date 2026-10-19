@@ -5594,6 +5594,14 @@
       }
     }
   ],
+  "omitted-optional-nullable-number-arithmetic": [
+    {
+      "name": "gen:missing:union:1",
+      "props": {
+        "missing": null
+      }
+    }
+  ],
   "omitted-optional-number-arithmetic": [
     {
       "name": "gen:missing:zero",
@@ -5611,6 +5619,91 @@
       "name": "gen:missing:large",
       "props": {
         "missing": 1234567890
+      }
+    }
+  ],
+  "omitted-optional-number-arithmetic-destructured": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "zero": 0,
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "zero": 0,
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "zero": 0,
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:zero:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890
+      }
+    }
+  ],
+  "omitted-optional-number-negation": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "zero": 0,
+        "nothing": null,
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "zero": 0,
+        "nothing": null,
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "zero": 0,
+        "nothing": null,
+        "missing": 1234567890
+      }
+    },
+    {
+      "name": "gen:zero:absent",
+      "props": {
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "nothing": null
       }
     }
   ],
@@ -6166,6 +6259,89 @@
       "props": {
         "blank": "",
         "text": "日本語"
+      }
+    }
+  ],
+  "optional-number-arithmetic-matrix": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "zero": 0,
+        "five": 5,
+        "nothing": null,
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "zero": 0,
+        "five": 5,
+        "nothing": null,
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "zero": 0,
+        "five": 5,
+        "nothing": null,
+        "missing": 1234567890
+      }
+    },
+    {
+      "name": "gen:zero:absent",
+      "props": {
+        "five": 5,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "five": 5,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "five": 5,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:five:absent",
+      "props": {
+        "zero": 0,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:five:zero",
+      "props": {
+        "zero": 0,
+        "five": 0,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:five:negative",
+      "props": {
+        "zero": 0,
+        "five": -7,
+        "nothing": null
+      }
+    },
+    {
+      "name": "gen:five:large",
+      "props": {
+        "zero": 0,
+        "five": 1234567890,
+        "nothing": null
       }
     }
   ],

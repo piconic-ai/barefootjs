@@ -2917,9 +2917,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -2932,6 +2932,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -2999,9 +3005,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3117,9 +3123,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3132,6 +3138,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -3211,9 +3223,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3305,9 +3317,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3387,9 +3399,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3481,9 +3493,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3575,9 +3587,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3590,6 +3602,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -3669,9 +3687,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -3684,6 +3702,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -3917,6 +3941,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -4375,6 +4405,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -5472,6 +5508,12 @@
               ]
             },
             {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5683,6 +5725,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -6250,9 +6298,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -6283,6 +6331,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -6506,9 +6560,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -6822,9 +6876,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -6867,6 +6921,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -7120,9 +7180,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -7394,9 +7454,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -7650,9 +7710,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -7924,9 +7984,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -8198,9 +8258,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -8231,6 +8291,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -8466,9 +8532,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -8499,6 +8565,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -8817,9 +8889,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -8850,6 +8922,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -8995,9 +9073,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -9221,9 +9299,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -9260,6 +9338,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -9435,9 +9519,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -9619,9 +9703,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -9797,9 +9881,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -9993,9 +10077,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -10177,9 +10261,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -10210,6 +10294,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -10355,9 +10445,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -10388,6 +10478,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -10849,9 +10945,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -11063,9 +11159,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -11313,9 +11409,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -11569,9 +11665,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -11801,9 +11897,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -12015,9 +12111,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -12247,9 +12343,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -12479,9 +12575,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -12705,9 +12801,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -13464,10 +13560,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
       },
       "example": {
-        "fixture": "create-query-optional-initial",
-        "description": "createQuery with `initial` from an absent optional prop SSR-renders the skeleton and sends on mount",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/create-query-optional-initial.ts",
-        "code": "!posts()"
+        "fixture": "omitted-optional-number-negation",
+        "description": "Unary minus over an omitted optional number prop (-undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-negation.ts",
+        "code": "-props.zero"
       }
     },
     "unsupported": {
@@ -15612,15 +15708,51 @@
     "binary:%": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
+              ]
+            }
+          ]
+        },
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
         "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -15628,10 +15760,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "filter-predicate-modulo",
-        "description": ".filter() predicate using % (modulo) (#2873)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-modulo.ts",
-        "code": "row.n % 2"
+        "fixture": "remainder-nan-operand",
+        "description": "Remainder over a NaN operand (NaN % 2 → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-nan-operand.ts",
+        "code": "n() % 2"
       }
     },
     "binary:*": {
@@ -15640,9 +15772,9 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15650,9 +15782,9 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15660,9 +15792,9 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15670,9 +15802,9 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15680,9 +15812,9 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15690,9 +15822,9 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15700,9 +15832,9 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15710,9 +15842,9 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15720,9 +15852,9 @@
         "xslate": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -15746,9 +15878,9 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15768,9 +15900,9 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15808,9 +15940,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15830,9 +15962,9 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15852,9 +15984,9 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15874,9 +16006,9 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15896,9 +16028,9 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15918,9 +16050,9 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -15940,9 +16072,9 @@
         "xslate": {
           "gaps": [
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17149,9 +17281,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17182,6 +17314,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -17243,9 +17381,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17349,9 +17487,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17382,6 +17520,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -17455,9 +17599,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17549,9 +17693,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17643,9 +17787,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17749,9 +17893,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17843,9 +17987,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17876,6 +18020,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -17937,9 +18087,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
-                "omitted-optional-number-arithmetic"
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -17970,6 +18120,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-nan-operand",
+              "limitations": [
+                "remainder-nan-operand"
               ]
             },
             {
@@ -19944,10 +20100,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L159"
       },
       "example": {
-        "fixture": "array-at",
-        "description": ".at(-1) returns the last element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts",
-        "code": "-1"
+        "fixture": "omitted-optional-number-negation",
+        "description": "Unary minus over an omitted optional number prop (-undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-negation.ts",
+        "code": "-props.zero"
       }
     }
   }
