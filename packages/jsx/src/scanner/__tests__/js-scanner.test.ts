@@ -1,8 +1,11 @@
 import { describe, test, expect } from 'bun:test'
+import ts from 'typescript'
 import {
   replaceInExprContexts,
   findInterpolationEnd,
   findTopLevelTemplateLiterals,
+  isTriviaKind,
+  iterateJsTokens,
 } from '../js-scanner'
 
 // ---------------------------------------------------------------------------
@@ -241,5 +244,39 @@ describe('findTopLevelTemplateLiterals', () => {
   test('regex with apostrophe inside expression does not confuse the scanner', () => {
     const r = findTopLevelTemplateLiterals("arr.filter(x => /it's/.test(x)) ? `<a/>` : `<b/>`")
     expect(r).toEqual(['<a/>', '<b/>'])
+  })
+})
+
+describe('iterateJsTokens: division after a keyword used as a name (#3536)', () => {
+  const kinds = (text: string) =>
+    [...iterateJsTokens(text)].filter(t => !isTriviaKind(t.kind)).map(t => ts.SyntaxKind[t.kind])
+
+  test('a contextual-keyword binding is followed by division', () => {
+    expect(kinds('type / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+  })
+
+  test('a keyword-named member is followed by division', () => {
+    expect(kinds('obj.default / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+    expect(kinds('obj?.new / 2')).not.toContain('RegularExpressionLiteral')
+  })
+
+  test('`of` as a binding is followed by division; as the for-of separator, by a regex literal', () => {
+    expect(kinds('of / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+    expect(kinds('for (const hit of /"/.exec(x) || []) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for (const [a, b] of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for await (const hit of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for (const type of /"/.exec(x) || []) {}')).toContain('RegularExpressionLiteral')
+    expect(kinds('for (const of of /x/.exec(s)) {}')).toContain('RegularExpressionLiteral')
+  })
+
+  test('`of` after a binding outside a for header is a name (ASI)', () => {
+    expect(kinds('let of = x\nof /= step\nreturn of')).not.toContain('RegularExpressionLiteral')
+    expect(kinds('f(x)\nof / 2 + step / 3')).not.toContain('RegularExpressionLiteral')
+  })
+
+  test('an operator keyword still starts a regex literal', () => {
+    expect(kinds('return /a/.test(x)')).toContain('RegularExpressionLiteral')
+    expect(kinds('typeof /a/')).toContain('RegularExpressionLiteral')
+    expect(kinds('await /a/.test(x)')).toContain('RegularExpressionLiteral')
   })
 })

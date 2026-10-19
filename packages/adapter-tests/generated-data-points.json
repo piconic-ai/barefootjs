@@ -1062,6 +1062,50 @@
       }
     }
   ],
+  "client-handler-keyword-prop": [
+    {
+      "name": "gen:default:zero",
+      "props": {
+        "default": 0,
+        "label": "n"
+      }
+    },
+    {
+      "name": "gen:default:negative",
+      "props": {
+        "default": -7,
+        "label": "n"
+      }
+    },
+    {
+      "name": "gen:default:large",
+      "props": {
+        "default": 1234567890,
+        "label": "n"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "default": 5,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "default": 5,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "default": 5,
+        "label": "日本語"
+      }
+    }
+  ],
   "component-spread-explicit-then-props": [
     {
       "name": "gen:tone:absent",
@@ -7154,6 +7198,92 @@
       "name": "gen:flag:false",
       "props": {
         "flag": false
+      }
+    }
+  ],
+  "signal-seed-absent-optional-prop-attr": [
+    {
+      "name": "gen:mode:absent",
+      "props": {
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:mode:empty",
+      "props": {
+        "mode": "",
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:mode:markup",
+      "props": {
+        "mode": "<b>&\"'</b>",
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:mode:multibyte",
+      "props": {
+        "mode": "日本語",
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "mode": "wide",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "mode": "wide",
+        "label": "日本語"
+      }
+    }
+  ],
+  "signal-seed-absent-optional-prop-child": [
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "a": "A"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "A",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "A",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "A",
+        "b": "日本語"
       }
     }
   ],

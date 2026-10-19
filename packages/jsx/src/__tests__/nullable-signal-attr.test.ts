@@ -4,6 +4,7 @@ import { parseExpression } from '../expression-parser'
 import {
   arithmeticOperandCoercion,
   attrValueMayBeNullish,
+  collectAbsentPropSeedReads,
   collectNullableSignalGetters,
   collectNullishAttrContext,
   nullableSignalAttrGetter,
@@ -47,6 +48,47 @@ describe('collectNullableSignalGetters (#3304)', () => {
       const [a] = createSignal('x')
       const [b] = createSignal<number>(0)
     `)]).toEqual([])
+  })
+})
+
+function componentIR(params: string, decls: string): ComponentIR {
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function C(${params}) {
+      ${decls}
+      return <p>x</p>
+    }
+  `
+  return { metadata: analyzeComponent(source, 'C.tsx') } as unknown as ComponentIR
+}
+
+describe('signals seeded from an absent optional prop (#3567)', () => {
+  test('a bare read, a ternary branch and a `??` right operand are nullable', () => {
+    const ir = componentIR('props: { a?: string; b?: string; c?: string }', `
+      const [bare] = createSignal(props.a)
+      const [branch] = createSignal(props.a === 'x' ? props.b : 'y')
+      const [fallback] = createSignal(props.a ?? props.c)
+    `)
+    expect([...collectNullableSignalGetters(ir)].sort()).toEqual(['bare', 'branch', 'fallback'])
+    expect(collectAbsentPropSeedReads(ir).get('branch')).toEqual(new Set(['b']))
+    expect(collectAbsentPropSeedReads(ir).get('fallback')).toEqual(new Set(['c']))
+  })
+
+  test('destructured params are read by their binding name', () => {
+    const ir = componentIR('{ label }: { label?: string }', 'const [shown] = createSignal(label)')
+    expect([...collectNullableSignalGetters(ir)]).toEqual(['shown'])
+  })
+
+  test('a required prop, a defaulted prop, a `??` left operand or a value built from the prop is not', () => {
+    const ir = componentIR("{ req, def = 'd', opt }: { req: string; def?: string; opt?: string }", `
+      const [a] = createSignal(req)
+      const [b] = createSignal(def)
+      const [c] = createSignal(opt ?? 'x')
+      const [d] = createSignal(opt === 'x')
+      const [e] = createSignal(\`\${opt}\`)
+    `)
+    expect([...collectNullableSignalGetters(ir)]).toEqual([])
   })
 })
 
