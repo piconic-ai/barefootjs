@@ -43,6 +43,7 @@ export type { SsrSeedPlan, SsrSeedStep } from './ssr-seed-plan.ts'
 
 // Pure IR types
 export type {
+  JsSourceText,
   ComponentIR,
   IRNode,
   IRElement,

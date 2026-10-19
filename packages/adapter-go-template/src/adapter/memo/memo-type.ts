@@ -7,7 +7,7 @@
  */
 
 import { asCallbackMethodCall } from '@barefootjs/jsx'
-import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
@@ -42,7 +42,7 @@ const COMPARISON_OPS: ReadonlySet<string> = new Set(['===', '!==', '==', '!=', '
 export function isBooleanMemo(
   ctx: GoEmitContext,
   memo: { parsed?: ParsedExpr },
-  signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
+  signals: { getter: string; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
   propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }>,
 ): boolean {
   // A boolean signal or prop read through its getter.
