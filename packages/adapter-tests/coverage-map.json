@@ -1580,6 +1580,20 @@
       "axes": [],
       "contexts": []
     },
+    "client-handler-keyword-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "client-only": {
       "kinds": [
         "array-literal",
@@ -9784,6 +9798,40 @@
       "contexts": [
         "attribute",
         "condition",
+        "text"
+      ]
+    },
+    "signal-seed-absent-optional-prop-attr": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "signal-seed-absent-optional-prop-child": {
+      "kinds": [
+        "call",
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

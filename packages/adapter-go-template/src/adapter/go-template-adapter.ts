@@ -40,7 +40,8 @@ import type {
   ImportInfo,
   JsSourceText,
 } from '@barefootjs/jsx'
-import { isElidedFactoryGetter } from '@barefootjs/jsx'
+import {
+  collectAbsentPropSeedReads, isElidedFactoryGetter } from '@barefootjs/jsx'
 import {
   BaseAdapter,
   type AdapterOutput,
@@ -360,8 +361,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertExpressionToGo(jsExpr, out, preParsed),
     convertConditionToGo: (jsCondition, preParsed) =>
       this.convertConditionToGo(jsCondition, preParsed),
-    computedSignalSeed: (signal, propsParams, propFallbackVars) =>
-      this.computedSignalSeed(signal, propsParams, propFallbackVars),
+    computedSignalSeed: (signal, propsParams, propFallbackVars, concreteDest) =>
+      this.computedSignalSeed(signal, propsParams, propFallbackVars, concreteDest),
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
@@ -768,6 +769,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
     this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
+    this.state.absentPropSeedSignals = new Set(
+      [...collectAbsentPropSeedReads(ir)]
+        .filter(([, reads]) => [...reads].every(name => this.state.nullableSignalSeedPropNames.has(name)))
+        .map(([getter]) => getter),
+    )
     this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
@@ -5832,13 +5838,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     propsParams: readonly { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    concreteDest = false,
   ): string | null {
     // The seed plan's form, which reads through local consts and helper calls (#3562).
     const parsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
     const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars)
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
-    return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap))
+    return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap, concreteDest))
   }
 
   /**
