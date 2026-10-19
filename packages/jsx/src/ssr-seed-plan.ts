@@ -223,7 +223,8 @@ function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
  * order ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`)
  * reads `b` after its own step re-bound it. A default the plan cannot lower
  * (or a function default) adds no step and keeps the static ssr-defaults
- * seed.
+ * seed. A callback inside the default (`a.filter((x) => …)`) does not make
+ * it a function default.
  */
 function dependentPropDefaultSteps(
   metadata: IRMetadata,
@@ -232,7 +233,7 @@ function dependentPropDefaultSteps(
 ): SsrSeedStep[] {
   const steps: SsrSeedStep[] = []
   for (const p of inDefaultReadOrder(metadata.propsParams)) {
-    if (p.isRest || !p.defaultParts || !p.parsed || p.defaultContainsArrow) continue
+    if (p.isRest || !p.defaultParts || !p.parsed || p.parsed.kind === 'arrow') continue
     const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
     const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, inlined)
     if (step.kind === 'derived') steps.push(step)

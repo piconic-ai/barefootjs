@@ -2931,8 +2931,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         message: `The default of prop '${name}' reads an earlier prop in a shape the Go template adapter can't apply in the props constructor`,
         loc: this.makeLoc(),
         suggestion: {
-          message: `Compute '${name}' in the component body (\`const value = ${name} ?? …\`) and read that, or mark the component /* @client */.`,
-          escape: [{ kind: 'client-directive' }],
+          message: `Destructure '${name}' without a default and compute its value from the earlier prop in the component body instead.`,
         },
       })
     }

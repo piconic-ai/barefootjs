@@ -3255,6 +3255,23 @@
         "text"
       ]
     },
+    "destructure-default-body-renamed-computed-array": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:slice",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-chain": {
       "kinds": [
         "identifier",
@@ -3296,6 +3313,23 @@
       ],
       "axes": [
         "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-computed-array": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:slice",
+        "literal:number",
         "logical:??"
       ],
       "contexts": [

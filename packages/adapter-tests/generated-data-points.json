@@ -2582,6 +2582,24 @@
       }
     }
   ],
+  "destructure-default-body-renamed-computed-array": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": [
+          "x",
+          "y"
+        ],
+        "b": []
+      }
+    }
+  ],
   "destructure-default-chain": [
     {
       "name": "gen:a:absent",
@@ -2742,6 +2760,24 @@
       "props": {
         "a": "p",
         "c": "日本語"
+      }
+    }
+  ],
+  "destructure-default-param-computed-array": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": [
+          "x",
+          "y"
+        ],
+        "b": []
       }
     }
   ],

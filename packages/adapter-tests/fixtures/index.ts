@@ -1018,6 +1018,8 @@ import { fixture as destructureDefaultArrayChild } from './destructure-default-a
 import { fixture as destructureDefaultArrayMemo } from './destructure-default-array-memo'
 import { fixture as destructureDefaultBodyRenamed } from './destructure-default-body-renamed'
 import { fixture as destructureDefaultParamRenamed } from './destructure-default-param-renamed'
+import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
+import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1739,6 +1741,8 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultArrayMemo,
   destructureDefaultBodyRenamed,
   destructureDefaultParamRenamed,
+  destructureDefaultBodyRenamedComputedArray,
+  destructureDefaultParamComputedArray,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,

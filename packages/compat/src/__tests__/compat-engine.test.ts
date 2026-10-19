@@ -61,6 +61,7 @@ describe('compileForCompat', () => {
           'computed-const-loop-source',
           'conditional-nested-const-loop-source',
           'derived-object-literal-signal',
+          'destructure-default-computed-array',
           'loop-row-child-children-attrs-frozen',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',

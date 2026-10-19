@@ -2798,6 +2798,34 @@
           ]
         }
       },
+      "destructure-default-body-renamed-computed-array": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "destructure-default-param-computed-array": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "embedded-prop-member-signal-seed": {
         "go-template": {
           "kind": "refusal",
@@ -7504,6 +7532,14 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
+      "destructure-default-body-renamed-computed-array": {
+        "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
+      },
+      "destructure-default-param-computed-array": {
+        "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
+      },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/embedded-prop-member-signal-seed.ts"
@@ -8140,6 +8176,23 @@
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "signal-object-spread-init"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "destructure-default-computed-array": {
+      "title": "A destructure default computing an array from an earlier prop",
+      "kind": "refusal",
+      "given": "a props destructure default that computes an array from an earlier binding of the same pattern (`{ a, b = a.slice(1) }`), in the parameter or a renamed body destructure",
+      "expected": "the omitted prop takes the computed array",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "destructure-default-body-renamed-computed-array",
+        "destructure-default-param-computed-array"
       ],
       "adapters": [
         "go-template"

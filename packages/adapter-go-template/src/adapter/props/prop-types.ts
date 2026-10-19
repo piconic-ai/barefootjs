@@ -749,8 +749,12 @@ export function dependentDefaultNormalization(
     // A binding sharing its Input field with another one (a renamed body
     // destructure beside a raw `props.b` read) can't change `in`: the other
     // reads the caller's value. Its own reads take
-    // `sharedDependentDefaultGo` instead.
-    if (sharesInputField(param, propsParams)) continue
+    // `sharedDependentDefaultGo` instead, refused here like any other default
+    // the constructor can't build.
+    if (sharesInputField(param, propsParams)) {
+      if (sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides) === null) unsupported.push(param.name)
+      continue
+    }
     const field = capitalizeFieldName(param.sourceName ?? param.name)
     const goType = resolvePropGoType(ctx, param, propTypeOverrides)
     const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
