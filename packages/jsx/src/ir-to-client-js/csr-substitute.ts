@@ -103,6 +103,15 @@ export interface CsrEnv {
 }
 
 /**
+ * The value positions of an object-literal `key: value` entry: the value,
+ * and a computed key's expression (`{ [size]: value }`, #3535). A plain key
+ * is a name, never a reference.
+ */
+function propertyValueExpressions(node: ts.PropertyAssignment): ts.Expression[] {
+  return ts.isComputedPropertyName(node.name) ? [node.name.expression, node.initializer] : [node.initializer]
+}
+
+/**
  * Substitute an expression for CSR template scope. Returns the rewritten
  * text plus the free identifiers of the rewritten form.
  *
@@ -264,9 +273,10 @@ function csrSubstituteOnce(
     }
 
     // Property assignment in object literal: `{ X: value }` — `X` is a
-    // key, not a free ref. `value` is.
+    // key, not a free ref. `value` is, and so is a computed key's
+    // expression (`{ [size]: value }`, #3535).
     if (ts.isPropertyAssignment(node)) {
-      visit(node.initializer)
+      propertyValueExpressions(node).forEach(visit)
       return
     }
 
