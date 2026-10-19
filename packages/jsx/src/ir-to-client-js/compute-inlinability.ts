@@ -368,7 +368,10 @@ export function computeInlinability(
  *     in which case it gets an identity entry (`rewrittenValue: name`)
  *     instead of `null` — the compiled bundle declares the const at
  *     module scope too, so referencing it by its own bare name from the
- *     CSR template is exactly as safe as a `module-scope-safe` function
+ *     CSR template is exactly as safe as a `module-scope-safe` function.
+ *     A zero-param arrow helper (`() => props.mode === 'wide'`) is not
+ *     marked here either: it is substituted like any other value, so a
+ *     template call `isWide()` reads its body (#3562)
  *   - it's a system construct (`createContext`, `new WeakMap`)
  *   - it's a JSX literal (handled by jsx-inline routing)
  *   - it's a bare alias-hop chain naming a signal/memo getter (`getterAliases`)
@@ -437,7 +440,12 @@ function populateCsrInlinable(
       finalised.add(c.name)
       continue
     }
-    if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind || c.mutatedAfterDeclaration || getterAliases.has(c.name)) {
+    // A zero-param helper (`const isWide = () => props.mode === 'wide'`) goes
+    // through the substitution below like any other const: `isWide()` then
+    // reads `(() => props.mode === 'wide')()` in template scope, so a seed
+    // or attribute that calls it renders its value instead of the empty
+    // fallback (#3562).
+    if (hasNoCsrSubstitute(c) || getterAliases.has(c.name)) {
       ctx.csrInlinable.set(c.name, null)
       finalised.add(c.name)
     }
@@ -521,6 +529,22 @@ function populateCsrInlinable(
   for (const c of ctx.localConstants) {
     if (!finalised.has(c.name)) ctx.csrInlinable.set(c.name, null)
   }
+}
+
+/**
+ * A const whose value is a zero-param arrow (`() => props.mode === 'wide'`):
+ * calling it only reads the names its expression body reads, so splicing the
+ * arrow into template scope is as safe as splicing that body, which the
+ * substitution's own template-safety check decides.
+ */
+function isZeroParamArrowHelper(c: ConstantInfo): boolean {
+  return c.parsed?.kind === 'arrow' && c.parsed.params.length === 0
+}
+
+/** A const with no value this pass can substitute (see `populateCsrInlinable`). */
+function hasNoCsrSubstitute(c: ConstantInfo): boolean {
+  const containsUnsplicedArrow = c.containsArrow && !isZeroParamArrowHelper(c)
+  return Boolean(c.isJsx || !c.value || containsUnsplicedArrow || c.systemConstructKind || c.mutatedAfterDeclaration)
 }
 
 /**

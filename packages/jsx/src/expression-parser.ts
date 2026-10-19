@@ -2961,6 +2961,11 @@ function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number
   return walk(expr)
 }
 
+/** `name()` with no arguments, where `name` is not shadowed by an enclosing param. */
+function isBareCallOf(e: Extract<ParsedExpr, { kind: 'call' }>, name: string, enclosing: ReadonlySet<string>): boolean {
+  return e.args.length === 0 && e.callee.kind === 'identifier' && e.callee.name === name && !enclosing.has(name)
+}
+
 /**
  * Inline `name → value` everywhere it appears free in `expr` (the let-inline
  * step). Returns `null` if the substitution would capture a free variable of
@@ -2989,6 +2994,27 @@ export function inlineBinding(
   const valueFree = new Set<string>()
   collectIdentifiers(value, valueFree)
   let captured = false
+  // A zero-param arrow (`const isWide = () => props.mode === 'wide'`) called
+  // with no arguments inlines as its body, so `isWide()` reads what the call
+  // returns (#3562). Calling it evaluates the body in the same scope the
+  // substitution resolves it in; the capture check covers the body's free
+  // variables, which are `value`'s.
+  const callBody = value.kind === 'arrow' && value.params.length === 0 ? value.body : null
+  // Inlining here: does any enclosing param capture a free var of `value`?
+  const capturesValueFree = (enclosing: ReadonlySet<string>): boolean => {
+    for (const p of enclosing) {
+      if (valueFree.has(p)) {
+        captured = true
+        return true
+      }
+    }
+    return false
+  }
+
+  const walkCall = (e: Extract<ParsedExpr, { kind: 'call' }>, enclosing: ReadonlySet<string>): ParsedExpr => {
+    if (callBody && isBareCallOf(e, name, enclosing)) return capturesValueFree(enclosing) ? e : callBody
+    return { kind: 'call', callee: walk(e.callee, enclosing), args: e.args.map(a => walk(a, enclosing)) }
+  }
 
   const walk = (e: ParsedExpr, enclosing: ReadonlySet<string>): ParsedExpr => {
     switch (e.kind) {
@@ -2997,17 +3023,10 @@ export function inlineBinding(
         // Shadowed by an enclosing callback param → this is the parameter, not
         // the binding; leave it.
         if (enclosing.has(e.name)) return e
-        // Inlining here: does any enclosing param capture a free var of `value`?
-        for (const p of enclosing) {
-          if (valueFree.has(p)) {
-            captured = true
-            return e
-          }
-        }
-        return value
+        return capturesValueFree(enclosing) ? e : value
       }
       case 'call':
-        return { kind: 'call', callee: walk(e.callee, enclosing), args: e.args.map(a => walk(a, enclosing)) }
+        return walkCall(e, enclosing)
       case 'member':
         return { kind: 'member', object: walk(e.object, enclosing), property: e.property, computed: e.computed, optional: e.optional }
       case 'index-access':
