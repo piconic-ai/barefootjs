@@ -6,7 +6,7 @@
  * `ArmBody.conditionals`, so one stringifier handles arbitrary depth.
  */
 
-import type { AttrMeta } from '../../../types.ts'
+import type { AttrMeta, JsSourceText } from '../../../types.ts'
 import type { ScopeRef } from './common.ts'
 import type { BranchLoopPlan } from './branch-loop.ts'
 
@@ -84,7 +84,7 @@ export interface ArmEventBind {
   slotId: string
   eventName: string
   /** Handler source expression (already trimmed). The stringifier wraps it. */
-  handler: string
+  handler: JsSourceText
   /** Profile-mode turn id (#1690, SR3); when set the listener is turn-wrapped. */
   turnId?: string
 }

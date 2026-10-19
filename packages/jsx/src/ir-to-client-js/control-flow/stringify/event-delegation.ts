@@ -54,6 +54,7 @@ import type {
   StaticIndexItemLookup,
   LoopChildEvent,
 } from '../plan/types.ts'
+import type { JsSourceText } from '../../../types.ts'
 
 /**
  * Profile mode (#1690, SR3): bracket a delegated handler call with turn
@@ -74,7 +75,7 @@ function withTurn(call: string, componentName: string | undefined, childSlotId: 
  * or the name already equals the in-scope index var (a self-alias). Uses AST
  * free identifiers, not a token match, so `item.id` (property) doesn't count.
  */
-function indexBindingLine(handler: string, indexParam: string | null, indexExpr: string): string | null {
+function indexBindingLine(handler: JsSourceText, indexParam: string | null, indexExpr: string): string | null {
   if (!indexParam || indexParam === indexExpr) return null
   if (!extractFreeIdentifiersFromText(handler).has(indexParam)) return null
   return `const ${indexParam} = ${indexExpr}`
@@ -93,7 +94,7 @@ function indexBindingLine(handler: string, indexParam: string | null, indexExpr:
 function preambleLineForHandler(
   mapPreamble: string | null,
   declaredNames: readonly string[],
-  handler: string,
+  handler: JsSourceText,
 ): string | null {
   if (!mapPreamble || declaredNames.length === 0) return null
   const free = extractFreeIdentifiersFromText(handler)

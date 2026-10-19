@@ -11,7 +11,7 @@
  */
 
 import { foldBlockToExpr } from '@barefootjs/jsx'
-import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -63,7 +63,7 @@ function packageModuleConst(ctx: GoEmitContext, name: string): GuardConstResult 
 export function resolveBlockBodyMemoModuleConst(
   ctx: GoEmitContext,
   memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: JsSourceText }[],
 ): GuardConstResult | null {
   return (
     fromFoldedConditional(ctx, memo.parsed, signals) ??
@@ -75,7 +75,7 @@ export function resolveBlockBodyMemoModuleConst(
 function fromFoldedConditional(
   ctx: GoEmitContext,
   parsed: ParsedExpr | undefined,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: JsSourceText }[],
 ): GuardConstResult | null {
   if (!parsed || parsed.kind !== 'conditional') return null
   const test = parsed.test
@@ -103,7 +103,7 @@ function fromFoldedConditional(
 function fromStatementPrefix(
   ctx: GoEmitContext,
   parsedBlock: ParsedStatement[] | undefined,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: JsSourceText }[],
 ): GuardConstResult | null {
   if (!parsedBlock) return null
   const varToSignal = new Map<string, string>()

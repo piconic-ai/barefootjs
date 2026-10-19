@@ -20,7 +20,7 @@
  *   the field type and the seed consult.
  */
 
-import type { ComponentIR, MemoInfo, ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
+import type { ComponentIR, MemoInfo, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -39,7 +39,7 @@ import { typeInfoToGo } from './type-codegen.ts'
 /** The minimal signal shape these decisions read (the IR's `SignalInfo` is not exported). */
 export interface StateSignal {
   getter: string
-  initialValue: string
+  initialValue: JsSourceText
   type: TypeInfo
   parsed?: ParsedExpr
 }
@@ -56,7 +56,7 @@ export interface StatePropParam {
 /** The minimal memo shape `inferMemoType` reads. */
 export interface StateMemo {
   name: string
-  computation: string
+  computation: JsSourceText
   type: TypeInfo
   deps: string[]
   bodyIsTemplateLiteral?: boolean

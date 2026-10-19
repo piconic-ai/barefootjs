@@ -15,6 +15,7 @@
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import {
   BASELINE_FILE,
   REGENERATE_COMMAND,
@@ -23,7 +24,7 @@ import {
   compareToBaseline,
   formatVerdict,
   growth,
-  measureSource,
+  measureSourceFile,
   serializeBaseline,
 } from '../lib/emit-parse-ratchet'
 
@@ -59,14 +60,37 @@ function sources(dir: string): string[] {
   })
 }
 
+/**
+ * One program over every Phase 2 source, so the checker sees each IR field's
+ * `JsSourceText` type through the workspace imports (`@barefootjs/jsx`
+ * resolves to its `src`). Type errors do not matter here; only the types of
+ * the expressions the measure asks about.
+ */
+function phase2Program(files: string[]): ts.Program {
+  return ts.createProgram(files, {
+    target: ts.ScriptTarget.ESNext,
+    module: ts.ModuleKind.Preserve,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    allowImportingTsExtensions: true,
+    noEmit: true,
+    strict: true,
+    skipLibCheck: true,
+    lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+    types: [],
+  })
+}
+
 function measureTree(): TreeCounts {
+  const files = phase2Dirs().flatMap(dir => sources(resolve(root, dir)))
+  const program = phase2Program(files)
+  const checker = program.getTypeChecker()
   const tree: TreeCounts = {}
-  for (const dir of phase2Dirs()) {
-    for (const file of sources(resolve(root, dir))) {
-      const path = relative(root, file)
-      const counts = measureSource(path, readFileSync(file, 'utf8'))
-      if (Object.keys(counts).length > 0) tree[path] = counts
-    }
+  for (const file of files) {
+    const path = relative(root, file)
+    const sf = program.getSourceFile(file)
+    if (!sf) throw new Error(`${path} is not in the Phase 2 program`)
+    const counts = measureSourceFile(sf, path, checker)
+    if (Object.keys(counts).length > 0) tree[path] = counts
   }
   return tree
 }
@@ -80,7 +104,7 @@ if (update) {
   const grown = previous ? growth(tree, previous) : []
   if (grown.length > 0 && !force) {
     console.error(
-      `${BASELINE_FILE} not written: the tree has more parser calls than the committed baseline — ` +
+      `${BASELINE_FILE} not written: the tree has more parse-like operations than the committed baseline — ` +
         'a regenerated baseline would accept them. Remove them instead, or pass --force and say why in the PR:\n' +
         formatVerdict({ ok: false, total: 0, violations: grown }),
     )
@@ -88,7 +112,7 @@ if (update) {
   }
   writeFileSync(baselinePath, serializeBaseline(tree))
   const total = Object.values(tree).reduce((n, counts) => n + Object.values(counts).reduce((m, c) => m + c, 0), 0)
-  console.log(`${BASELINE_FILE}: ${total} parser calls in Phase 2 code`)
+  console.log(`${BASELINE_FILE}: ${total} parse-like operations in Phase 2 code`)
   process.exit(0)
 }
 
@@ -98,7 +122,7 @@ if (!previous) {
 }
 const verdict = compareToBaseline(tree, previous)
 if (verdict.ok) {
-  console.log(`emit-parse ratchet: ok — ${verdict.total} parser calls in Phase 2 code, none above the baseline`)
+  console.log(`emit-parse ratchet: ok — ${verdict.total} parse-like operations in Phase 2 code, none above the baseline`)
   process.exit(0)
 }
 console.error(formatVerdict(verdict))

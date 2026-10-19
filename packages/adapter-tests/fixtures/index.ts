@@ -161,6 +161,7 @@ import { fixture as dataTable } from './data-table'
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
 import { fixture as signalWithFallback } from './signal-with-fallback'
+import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
 import { fixture as createMutationElidedValue } from './create-mutation-elided-value'
@@ -1052,6 +1053,8 @@ import { fixture as childrenNamedLocalEscaped } from './children-named-local-esc
 import { fixture as childrenNamedLoopRowEscaped } from './children-named-loop-row-escaped'
 import { fixture as childrenChainedNullishFallbackEscaped } from './children-chained-nullish-fallback-escaped'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
+import { fixture as stringLiteralUnionAliasShapes } from './string-literal-union-alias-shapes'
+import { fixture as stringLiteralUnionAliasSignalSeeds } from './string-literal-union-alias-signal-seeds'
 import { fixture as filterParamSigilInString } from './filter-param-sigil-in-string'
 import { fixture as filterNestedCallbackReadsOuterParam } from './filter-nested-callback-reads-outer-param'
 import { fixture as filterNestedCallbackReadsOuterParamClient } from './filter-nested-callback-reads-outer-param-client'
@@ -1102,6 +1105,7 @@ export const jsxFixtures: JSXFixture[] = [
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,
+  signalSeedLocalHelperCall,
   signalDefaultFromJsx,
   controlledSignal,
   signalPropSameName,
@@ -1784,6 +1788,8 @@ export const jsxFixtures: JSXFixture[] = [
   childrenNamedLoopRowEscaped,
   childrenChainedNullishFallbackEscaped,
   childrenPreambleLocalEscaped,
+  stringLiteralUnionAliasShapes,
+  stringLiteralUnionAliasSignalSeeds,
   filterParamSigilInString,
   filterNestedCallbackReadsOuterParam,
   filterNestedCallbackReadsOuterParamClient,
