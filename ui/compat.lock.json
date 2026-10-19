@@ -2266,6 +2266,14 @@
           }
         }
       },
+      "children-renamed-param": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "renamed-children-param"
+          ]
+        }
+      },
       "component-spread-explicit-then-props": {
         "blade": {
           "kind": "render",
@@ -7430,6 +7438,10 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
+      "children-renamed-param": {
+        "description": "A children prop renamed in the parameter destructure renders present children as markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
+      },
       "component-spread-explicit-then-props": {
         "description": "An explicit prop, then a props spread onto a child component that overrides it",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-then-props.ts"
@@ -8072,28 +8084,6 @@
         "BF101"
       ]
     },
-    "csr-children-nullish-fallback-escaped": {
-      "title": "Present children under a non-empty nullish fallback in the client template",
-      "kind": "silent",
-      "given": "a children read with a non-empty nullish fallback (`{(props.children ?? '<b>fallback</b>') ?? ''}`, `{props.children ?? 'fallback'}`) rendered by the client template with children passed",
-      "expected": "the children render as markup, and only an absent read renders the escaped fallback",
-      "actual": "renders the children markup as escaped visible text: the client template receives children as a plain HTML string and escapes the whole read",
-      "fixtures": [
-        "children-chained-nullish-fallback-escaped"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "defaulted-prop-explicit-empty": {
       "title": "An explicitly empty value for a prop with a destructure default",
       "kind": "silent",
@@ -8405,6 +8395,28 @@
       ],
       "diagnostics": [
         "BF063"
+      ]
+    },
+    "renamed-children-param": {
+      "title": "A children prop renamed in the parameter destructure",
+      "kind": "silent",
+      "given": "a component whose parameter destructure renames the children prop (`({ children: kids })`) and reads it (`{kids}`, `{kids ?? '<b>x</b>'}`) with children passed",
+      "expected": "the present children render as markup; an absent read renders nothing, or the escaped fallback",
+      "actual": "drops the present children (the fallback renders instead), or renders them as escaped visible text instead of markup",
+      "fixtures": [
+        "children-renamed-param"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "reserved-name-collides-with-internal-name": {

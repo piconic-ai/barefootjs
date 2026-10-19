@@ -37,6 +37,7 @@
  */
 
 import type { IRExpression } from '../types.ts'
+import { PROPS_PARAM } from './utils.ts'
 
 /**
  * A JS expression string that evaluates, in the client template, to HTML
@@ -107,6 +108,27 @@ export function branchSlotValue(expr: string, slotsVar: string): SafeHtml {
  */
 export function childrenMarkup(expr: string): SafeHtml {
   return safeHtml(`markupOrEmpty(${expr})`)
+}
+
+/**
+ * `_p.children == null ? escapeText(expr) : markupOrEmpty(_p.children)` — a
+ * read of the children prop with a text fallback: `children ?? 'x'`,
+ * `(children ?? '<b>x</b>') ?? ''` (`absentWhen: 'nullish'`), or
+ * `children || 'x'` (`absentWhen: 'falsy'`, tested as `!_p.children`); #3554.
+ * Phase 1 decided from the binding that the chain's head is the component's
+ * own `children` prop (`IRExpression.childrenRead`), so the head is read where
+ * every client template finds that prop, `_p.children` (the same place the
+ * Phase 1 `templateExpr` rewrite and the alias inlining resolve a destructured
+ * or aliased `children` to). Present children are the HTML string
+ * `materializeComponent` joined, spliced as `childrenMarkup` does; otherwise
+ * `expr` (the whole lowered chain) evaluates to its fallback, which is text
+ * and escaped. `expr` is not split: when the head is absent,
+ * `(c ?? x) ?? y` and `c ?? (x ?? y)` both evaluate to `x ?? y`.
+ */
+export function childrenMarkupOrEscapedFallback(expr: string, absentWhen: 'nullish' | 'falsy'): SafeHtml {
+  const children = `${PROPS_PARAM}.children`
+  const absent = absentWhen === 'nullish' ? `${children} == null` : `!${children}`
+  return safeHtml(`${absent} ? escapeText(${expr}) : markupOrEmpty(${children})`)
 }
 
 /**
@@ -209,7 +231,9 @@ export interface ChildSpliceContext {
  *   3. `slotId` ∈ markupSlotIds → `escapedTextOrMarkup`
  *   4. `slotId`                 → `escapedText`
  *   5. `{children}` passthrough → `childrenMarkup`    (bare splice only, #2775/#2786)
- *   6. otherwise                → `escapedText`
+ *   6. `children ?? fallback`,  → `childrenMarkupOrEscapedFallback` (#3554)
+ *      `children || fallback`
+ *   7. otherwise                → `escapedText`
  *
  * Arm 5 tests BOTH `node.expr` (the original source text, stable across
  * builders) and the caller's resolved form (with parentheses handled structurally): a
@@ -230,5 +254,7 @@ export function spliceChildValue(
   if (node.childrenRead === 'bare' || node.childrenRead === 'nullish-empty') {
     return childrenMarkup(valueExpr)
   }
+  if (node.childrenRead === 'nullish-fallback') return childrenMarkupOrEscapedFallback(valueExpr, 'nullish')
+  if (node.childrenRead === 'or-fallback') return childrenMarkupOrEscapedFallback(valueExpr, 'falsy')
   return escapedText(valueExpr)
 }

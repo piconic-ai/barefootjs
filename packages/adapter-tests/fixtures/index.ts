@@ -1055,6 +1055,13 @@ import { fixture as clientHandlerKeywordProp } from './client-handler-keyword-pr
 import { fixture as childrenNamedLocalEscaped } from './children-named-local-escaped'
 import { fixture as childrenNamedLoopRowEscaped } from './children-named-loop-row-escaped'
 import { fixture as childrenChainedNullishFallbackEscaped } from './children-chained-nullish-fallback-escaped'
+// A children read with a markup-looking text fallback (`??`, `||`, ternary)
+// in each binding of the children prop (#3554).
+import { fixture as childrenNullishTextFallback } from './children-nullish-text-fallback'
+import { fixture as childrenNullishTextFallbackShapes } from './children-nullish-text-fallback-shapes'
+import { fixture as childrenOrTextFallback } from './children-or-text-fallback'
+import { fixture as childrenTernaryTextFallback } from './children-ternary-text-fallback'
+import { fixture as childrenRenamedParam } from './children-renamed-param'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
 import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
 import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
@@ -1795,6 +1802,11 @@ export const jsxFixtures: JSXFixture[] = [
   childrenNamedLocalEscaped,
   childrenNamedLoopRowEscaped,
   childrenChainedNullishFallbackEscaped,
+  childrenNullishTextFallback,
+  childrenNullishTextFallbackShapes,
+  childrenOrTextFallback,
+  childrenTernaryTextFallback,
+  childrenRenamedParam,
   childrenPreambleLocalEscaped,
   filterPredicateShapeLoop,
   filterPredicateShapeLoopClient,
