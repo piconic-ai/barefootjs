@@ -54,6 +54,28 @@ describe('GoTemplateAdapter - {...props} onto a child component', () => {
     )
   })
 
+  test("a param the child doesn't declare gets no field on its Input", () => {
+    const { types, bf101 } = compile(source('{ label?: string }', '<Tag {...props} />', '; own?: string'))
+    expect(bf101).toEqual([])
+    expect(types).toContain('Label: in.Label,')
+    expect(types).not.toContain('Own:')
+    expect(types).not.toContain('Tone:')
+  })
+
+  test("a param the child doesn't declare goes into the child's rest bag", () => {
+    const { types, bf101 } = compile(`
+function Tag({ label, ...rest }: { label?: string; [key: string]: any }) {
+  return <b {...rest}>{label}</b>
+}
+export function Parent(props: { label?: string; own?: string }) {
+  return <p><Tag {...props} /></p>
+}
+`)
+    expect(bf101).toEqual([])
+    expect(types).toContain('Label: in.Label,')
+    expect(types).toContain('Rest: map[string]any{"own": in.Own}')
+  })
+
   test('a spread of keys only known at render time next to {...props} is refused', () => {
     const { bf101 } = compile(source(OPTIONAL, '<Tag {...props.extra} {...props} />', '; extra?: { tone?: string }'))
     expect(bf101.map(e => e.message)).toEqual([

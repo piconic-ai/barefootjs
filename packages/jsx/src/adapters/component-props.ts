@@ -85,7 +85,8 @@ export interface EarlierComponentProps {
  * A template backend reads an absent prop and an explicit `undefined` or
  * `null` one as the same nil, so "passed" is spelled "not nil" there: a
  * caller that passes `undefined`/`null` keeps the earlier value, where JS
- * would override it with the nil.
+ * would override it with the nil (limitation
+ * `props-spread-explicit-null-override`).
  */
 export function propsSpreadParam(param: ComponentPropsParam, earlier: EarlierComponentProps): 'entry' | 'present' {
   if (param.optional === false) return 'entry'

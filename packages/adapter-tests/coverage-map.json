@@ -1890,7 +1890,43 @@
         "text"
       ]
     },
+    "component-spread-explicit-null": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-spread-explicit-then-props": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "component-spread-props-rest-bag": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "component-spread-props-subset": {
       "kinds": [
         "identifier",
         "member"

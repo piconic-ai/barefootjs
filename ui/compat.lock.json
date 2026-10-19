@@ -2274,6 +2274,62 @@
           ]
         }
       },
+      "component-spread-explicit-null": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-explicit-null-override"
+          ]
+        }
+      },
       "computed-const-loop-source-parenthesized": {
         "blade": {
           "kind": "refusal",
@@ -7396,6 +7452,10 @@
         "description": "A children prop renamed in the parameter destructure renders present children as markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
       },
+      "component-spread-explicit-null": {
+        "description": "A props spread whose explicit null overrides an earlier explicit prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
+      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -8008,13 +8068,15 @@
       ]
     },
     "csr-component-prop-spread": {
-      "title": "A props spread onto a child component next to explicit props in the client template",
+      "title": "A props spread onto a child component in the client template",
       "kind": "silent",
-      "given": "a child component call that spreads the props object next to explicit props (`<Child {...props} tone=\"x\" />`, `<Child tone=\"x\" {...props} />`), rendered by the client template",
+      "given": "a child component call that spreads the props object, alone or next to explicit props (`<Child {...props} />`, `<Child {...props} tone=\"x\" />`, `<Child tone=\"x\" {...props} />`), rendered by the client template",
       "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
       "actual": "drops the spread and passes only the explicit props, so its keys neither reach the child nor override an earlier explicit prop",
       "fixtures": [
         "component-spread-explicit-then-props",
+        "component-spread-props-rest-bag",
+        "component-spread-props-subset",
         "component-spread-props-then-explicit"
       ],
       "adapters": [
@@ -8316,6 +8378,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "props-spread-explicit-null-override": {
+      "title": "An explicit null prop carried by a props spread onto a child component",
+      "kind": "silent",
+      "given": "a child component call that spreads the props object after an explicit prop of the same key (`<Child label=\"first\" {...props} />`), called with that key set to `null` or `undefined`",
+      "expected": "the spread carries the key, so its `null` / `undefined` overrides the earlier explicit prop",
+      "actual": "keeps the earlier explicit prop, as if the caller had omitted the key",
+      "fixtures": [
+        "component-spread-explicit-null"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "ref-effect-attr-state-ssr": {

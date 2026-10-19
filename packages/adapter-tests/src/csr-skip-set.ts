@@ -193,6 +193,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
   'component-spread-props-then-explicit': { limitation: 'csr-component-prop-spread' },
   'component-spread-explicit-then-props': { limitation: 'csr-component-prop-spread' },
+  'component-spread-props-subset': { limitation: 'csr-component-prop-spread' },
+  'component-spread-props-rest-bag': { limitation: 'csr-component-prop-spread' },
+  // The client template drops the spread (`csr-component-prop-spread`), so
+  // the earlier explicit prop is kept: the same output the template backends
+  // render for this fixture.
+  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // The renamed param is a reactive slot, and a slotted read escapes the
   // children markup (`escapeTextOrMarkup`).
   'children-renamed-param': { limitation: 'renamed-children-param' },

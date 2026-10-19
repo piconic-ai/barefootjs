@@ -3352,7 +3352,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * - `props`: the props still lowered as written — the spread itself, and
    *   every prop a later writer of its key replaces, dropped;
    * - `paramFields`: an `in.<Field>` value for each param the spread carries
-   *   unconditionally;
+   *   unconditionally and the child takes — a declared param, or any key
+   *   when the child has a rest bag (`emitChildField` routes it there);
    * - `passedOr`: wraps the value a key would otherwise take in a nil test of
    *   the param the spread carries only when the caller passed it.
    *
@@ -3380,6 +3381,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const resolved of call.keys.values()) {
       const param = resolved.base?.kind === 'props-param' ? propsParams.find(p => p.name === resolved.key) : undefined
       if (!param) continue
+      // A key the child neither declares nor collects in a rest bag has no
+      // field on its Input: JS hands it over, but the child never reads it.
+      if (childShape && !childShape.restBagField && !childShape.paramNames.has(param.name)) continue
       const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
       const keepsNil = routesToRestBag(childShape, param.name) || childShape?.nillableParamNames.has(param.name)
       paramFields.push({
