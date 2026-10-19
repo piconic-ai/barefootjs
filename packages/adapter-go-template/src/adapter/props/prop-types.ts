@@ -13,6 +13,7 @@ import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { applyGoFallback, goPropDefault } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
+import { evalExprGo } from '../memo/memo-compute.ts'
 
 /**
  * Build a map from prop name to a better Go type inferred from signals. When a
@@ -629,7 +630,7 @@ export function defaultedBindingGo(
   propTypeOverrides: Map<string, string>,
 ): string | null {
   const paramDefault = goPropDefault(param.defaultValue)
-  if (paramDefault === null) return null
+  if (paramDefault === null) return dependentDefaultedBindingGo(ctx, param, propsParams, propTypeOverrides)
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
@@ -638,6 +639,29 @@ export function defaultedBindingGo(
     return `func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return in.${inputField}.(${outputType}) }()`
   }
   return applyGoFallback(`in.${inputField}`, paramDefault)
+}
+
+/**
+ * {@link defaultedBindingGo} for a default that reads an earlier binding of
+ * its own destructure (`{ off = false, on = !off }`, `ParamInfo.defaultParts`,
+ * #3531): the runtime evaluator computes the default over the earlier
+ * bindings, each with its own default applied, when the input field is nil.
+ * The field is nillable for exactly this ({@link resolvePropGoType}), so an
+ * explicit `false` / `''` / `0` stays the caller's value. Null when the
+ * evaluator can't take the default.
+ */
+function dependentDefaultedBindingGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  if (!param.defaultParts || !param.parsed) return null
+  if (resolvePropGoType(ctx, param, propTypeOverrides) !== 'interface{}') return null
+  const evaluated = evalExprGo(ctx, param.parsed, [], propsParams, new Map(), new Set())
+  if (evaluated === null) return null
+  const inputField = capitalizeFieldName(param.sourceName ?? param.name)
+  return `func() interface{} { if in.${inputField} == nil { return ${evaluated} }; return in.${inputField} }()`
 }
 
 export function resolvePropGoType(
@@ -687,10 +711,14 @@ export function resolvePropGoType(
   // A prop seeding a nullable signal takes it too (#3323) — see
   // `collectNullableSignalSeedPropNames`. So does an optional-chain
   // receiver (#3422) — see `collectOptionalChainReceiverPropNames`.
+  // A default that reads an earlier prop (`{ off = false, on = off }`,
+  // #3531) applies to an absent prop only, which the constructor tells apart
+  // by nil (`dependentDefaultedBindingGo`).
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
-    (ctx.state.nullishConsumedPropNames.has(param.name) ||
+    (param.defaultParts !== undefined ||
+      ctx.state.nullishConsumedPropNames.has(param.name) ||
       ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
       ctx.state.textConsumedPropNames.has(param.name) ||
       ctx.state.presenceCheckedPropNames.has(param.name) ||

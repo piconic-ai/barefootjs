@@ -2324,6 +2324,129 @@
       }
     }
   ],
+  "destructure-default-body": [
+    {
+      "name": "gen:off:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:off:false",
+      "props": {
+        "off": false
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "off": true,
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "off": true,
+        "on": false
+      }
+    }
+  ],
+  "destructure-default-chain": [
+    {
+      "name": "gen:a:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "p",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "p",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "p",
+        "b": "日本語"
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "a": "p",
+        "c": ""
+      }
+    },
+    {
+      "name": "gen:c:markup",
+      "props": {
+        "a": "p",
+        "c": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:c:multibyte",
+      "props": {
+        "a": "p",
+        "c": "日本語"
+      }
+    }
+  ],
+  "destructure-default-expression": [
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "title": "t"
+      }
+    },
+    {
+      "name": "gen:off:false",
+      "props": {
+        "off": false,
+        "title": "t"
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "off": true,
+        "title": "t",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "off": true,
+        "title": "t",
+        "on": false
+      }
+    }
+  ],
   "destructured-object-prop-nested": [
     {
       "name": "gen:user:object:minimal",

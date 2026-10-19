@@ -90,7 +90,4 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  'boolean-logical-stringify-dependent-default:gen:on:absent': {
-    limitation: 'destructure-default-reads-earlier-param',
-  },
 }

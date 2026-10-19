@@ -1081,7 +1081,8 @@
       ],
       "axes": [
         "literal:boolean",
-        "logical:&&"
+        "logical:&&",
+        "logical:??"
       ],
       "contexts": [
         "text"
@@ -3037,6 +3038,55 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "destructure-default-body": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-chain": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-expression": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:boolean",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

@@ -7944,6 +7944,7 @@
       "expected": "the explicit value wins: the default applies only to an absent prop, so the binding is `''`",
       "actual": "renders the default (`'z'`), since the input struct field cannot tell an explicit empty string from an absent prop",
       "fixtures": [
+        "destructure-default-chain",
         "signal-computed-seed-sibling-fallbacks-destructured"
       ],
       "adapters": [
@@ -7964,24 +7965,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "destructure-default-reads-earlier-param": {
-      "title": "A destructure default that reads an earlier param",
-      "kind": "silent",
-      "given": "a props destructure whose default reads an earlier param of the same pattern (`{ off = false, on = off }`), with the later prop omitted",
-      "expected": "the omitted prop takes the earlier param's value",
-      "actual": "emits the default verbatim into the client JS (`_p.on ?? off`), where the earlier param is undeclared, and renders the omitted prop empty on the server",
-      "fixtures": [
-        "boolean-logical-stringify-dependent-default"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "jinja",
-        "minijinja",
-        "pebble",
-        "twig"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

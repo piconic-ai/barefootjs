@@ -73,6 +73,8 @@ export type {
   IRTemplatePart,
   IRProp,
   ParamInfo,
+  PropDefaultPart,
+  PropDefaultRead,
   PropertyInfo,
   MemoInfo,
   ConstantInfo,

@@ -33,6 +33,7 @@ import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
 import { resolveBodyDestructuredPropAliases } from './props-binding.ts'
+import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 import type { IRMetadata } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
@@ -194,6 +195,14 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   //     evaluated value; one with none seeds `null` (→ undef; the
   //     template-side `// …` recompute supplies the real default, and a
   //     caller-passed prop wins via `propName`).
+  // A prop whose default reads an earlier prop (`{ off = false, on = !off }`,
+  // #3531) and that the seed plan re-binds in-template: its value depends on
+  // what the caller passed, so no static value is right, and a non-null seed
+  // would read as caller-supplied to the template's own `on ?? !off`.
+  const plan = metadata.ssrSeedPlan ?? computeSsrSeedPlan(metadata)
+  const templateDefaulted = new Set(
+    plan.steps.filter(s => s.kind === 'derived' && s.origin === 'prop').map(s => s.name),
+  )
   for (const p of metadata.propsParams) {
     if (p.isRest) continue
     // `propName` is the CALLER-facing key (`$props->{propName}` in the Perl
@@ -201,7 +210,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // `n`, not the local binding `count` the template variable is keyed by.
     // `sourceName ?? name` is an identity for every un-aliased prop.
     const callerPropName = p.sourceName ?? p.name
-    if (p.defaultValue !== undefined) {
+    if (p.defaultValue !== undefined && !templateDefaulted.has(p.name)) {
       const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
       out[p.name] = { propName: callerPropName, value: resultToJsonable(value) }
     } else {

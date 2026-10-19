@@ -7,5 +7,5 @@ export default defineLimitation({
   expected: "the explicit value wins: the default applies only to an absent prop, so the binding is `''`",
   actual:
     "renders the default (`'z'`), since the input struct field cannot tell an explicit empty string from an absent prop",
-  fixtures: ['signal-computed-seed-sibling-fallbacks-destructured'],
+  fixtures: ['destructure-default-chain', 'signal-computed-seed-sibling-fallbacks-destructured'],
 })

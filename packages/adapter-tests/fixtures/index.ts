@@ -1001,6 +1001,9 @@ import { fixture as booleanStringifyPositions } from './boolean-stringify-positi
 import { fixture as booleanLogicalStringify } from './boolean-logical-stringify'
 import { fixture as booleanLogicalStringifyDefaultAlias } from './boolean-logical-stringify-default-alias'
 import { fixture as booleanLogicalStringifyDependentDefault } from './boolean-logical-stringify-dependent-default'
+import { fixture as destructureDefaultChain } from './destructure-default-chain'
+import { fixture as destructureDefaultExpression } from './destructure-default-expression'
+import { fixture as destructureDefaultBody } from './destructure-default-body'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1690,6 +1693,9 @@ export const jsxFixtures: JSXFixture[] = [
   booleanLogicalStringify,
   booleanLogicalStringifyDefaultAlias,
   booleanLogicalStringifyDependentDefault,
+  destructureDefaultChain,
+  destructureDefaultExpression,
+  destructureDefaultBody,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,
