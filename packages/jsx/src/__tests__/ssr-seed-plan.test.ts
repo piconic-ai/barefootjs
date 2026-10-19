@@ -475,4 +475,15 @@ describe('computeSsrSeedPlan', () => {
     const on = step(plan, 'on')
     if (on.kind === 'derived') expect(on.expr).toBe('on ?? !off')
   })
+
+  test('dependent prop defaults follow the reads, not the props type order (#3531)', () => {
+    const plan = planFor(`
+      'use client'
+      function C(props: { c?: string; b?: string; a?: string }) {
+        const { a = 'x', b = a, c = b } = props
+        return <p>{a}{b}{c}</p>
+      }
+    `)
+    expect(plan.steps.map(s => s.name)).toEqual(['b', 'c'])
+  })
 })

@@ -516,7 +516,10 @@ export function computedPropSeedGo(
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
-  if (!parsed || !isComputedSeedShape(parsed)) return null
+  if (!parsed) return null
+  // A seed reading a prop whose default reads an earlier prop is evaluated
+  // whatever its shape, a bare read included (#3531).
+  if (!isComputedSeedShape(parsed) && !readsDependentDefaultProp(ctx, parsed)) return null
   // A prop member chain inside the seed keeps its own refusal (#3142).
   if (embeddedPropMemberChain(ctx, parsed, propsParams)) return null
   // `freeIdentifiers`, not `freeVarsInBody`: the latter skips the receiver
@@ -526,6 +529,20 @@ export function computedPropSeedGo(
   )
   if (!readsProp) return null
   return evalExprGo(ctx, parsed, [], propsParams, propFallbackVars, new Set())
+}
+
+/**
+ * Whether `parsed` reads a destructured prop whose default reads an earlier
+ * prop (`ParamInfo.defaultParts`, #3531). Such a prop's Input field is
+ * nillable and only its resolved binding (`defaultedBindingGo`) carries the
+ * default, so a constructor value reading it is computed by the evaluator
+ * over that binding and converted to the destination's Go type, never built
+ * from the raw `in.<Field>`.
+ */
+export function readsDependentDefaultProp(ctx: GoEmitContext, parsed: ParsedExpr): boolean {
+  const frees = freeIdentifiers(parsed)
+  if (frees === null) return false
+  return ctx.state.currentPropsParams.some(p => p.defaultParts !== undefined && frees.has(p.name))
 }
 
 /**
@@ -1390,6 +1407,10 @@ export function computeMemoInitialValueOrNull(
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
   const computation = memo.computation
+
+  // A memo over a prop whose default reads an earlier prop goes to the
+  // evaluator, which reads the resolved binding (#3531).
+  if (memo.parsed && readsDependentDefaultProp(ctx, memo.parsed)) return null
 
   // () => `...${expr}...` — template-literal memo (the classes memo). Builds a
   // Go string concatenation; null when any interpolation isn't representable.

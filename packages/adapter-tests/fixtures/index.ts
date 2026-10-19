@@ -1006,6 +1006,9 @@ import { fixture as booleanLogicalStringifyDependentDefault } from './boolean-lo
 import { fixture as destructureDefaultChain } from './destructure-default-chain'
 import { fixture as destructureDefaultExpression } from './destructure-default-expression'
 import { fixture as destructureDefaultBody } from './destructure-default-body'
+import { fixture as destructureDefaultReaders } from './destructure-default-readers'
+import { fixture as destructureDefaultBodyChainOrder } from './destructure-default-body-chain-order'
+import { fixture as destructureDefaultParamChainOrder } from './destructure-default-param-chain-order'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1707,6 +1710,9 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultChain,
   destructureDefaultExpression,
   destructureDefaultBody,
+  destructureDefaultReaders,
+  destructureDefaultBodyChainOrder,
+  destructureDefaultParamChainOrder,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,

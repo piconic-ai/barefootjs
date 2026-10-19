@@ -109,6 +109,21 @@ describe('client JS reads the earlier prop live', () => {
     expect(js).toContain('(_p.on ?? (_p.off ?? false))')
   })
 
+  test('the CSR template reads a signal seed and a memo over the prop with its default', () => {
+    const js = clientJs(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      export function C({ off = false, on = off }: { off?: boolean; on?: boolean }) {
+        const [v, setV] = createSignal(on)
+        const flipped = createMemo(() => !on)
+        return <p onClick={() => setV(!v())}>{String(v())}|{String(flipped())}</p>
+      }
+    `)
+    const template = js.slice(js.indexOf('template: (_p) =>'))
+    expect(template).toContain('String(((_p.on ?? (_p.off ?? false))))')
+    expect(template).toContain('String((!(_p.on ?? (_p.off ?? false))))')
+  })
+
   test('a controlled signal seeded by the prop reads the earlier prop live', () => {
     const js = clientJs(`
       'use client'

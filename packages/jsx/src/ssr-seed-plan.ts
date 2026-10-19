@@ -44,7 +44,7 @@ import {
   stringifyParsedExpr,
   type ParsedExpr,
 } from './expression-parser.ts'
-import type { IRMetadata } from './types.ts'
+import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
 /**
@@ -219,10 +219,11 @@ function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
  * A `derived` step per prop whose destructure default reads an earlier prop of
  * the same pattern (`ParamInfo.defaultParts`, #3531): `on ?? <default>`, where
  * the default's identifiers are the earlier props' template variables. Every
- * prop is already in `available` (baseScope), and the steps run in parameter
- * order, so a chain (`{ a = 1, b = a, c = b }`) reads `b` after its own step
- * re-bound it. A default the plan cannot lower (or a function default) adds
- * no step and keeps the static ssr-defaults seed.
+ * prop is already in `available` (baseScope), and the steps run in dependency
+ * order ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`)
+ * reads `b` after its own step re-bound it. A default the plan cannot lower
+ * (or a function default) adds no step and keeps the static ssr-defaults
+ * seed.
  */
 function dependentPropDefaultSteps(
   metadata: IRMetadata,
@@ -230,13 +231,39 @@ function dependentPropDefaultSteps(
   inlined: ReadonlySet<string>,
 ): SsrSeedStep[] {
   const steps: SsrSeedStep[] = []
-  for (const p of metadata.propsParams) {
+  for (const p of inDefaultReadOrder(metadata.propsParams)) {
     if (p.isRest || !p.defaultParts || !p.parsed || p.defaultContainsArrow) continue
     const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
     const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, inlined)
     if (step.kind === 'derived') steps.push(step)
   }
   return steps
+}
+
+/**
+ * `params` with every prop placed after the props its destructure default
+ * reads (`ParamInfo.defaultParts`). `propsParams` follows the props TYPE's
+ * member order for a body destructure (`const { a = 'x', b = a } = props`
+ * over `{ b?: string; a?: string }`), which need not be the pattern's order,
+ * so the order comes from the reads themselves. The reads only ever name an
+ * EARLIER binding of the same pattern, so they form no cycle; otherwise the
+ * input order is kept.
+ */
+function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
+  const byName = new Map(params.filter(p => !p.isRest).map(p => [p.name, p]))
+  const ordered: ParamInfo[] = []
+  const placed = new Set<ParamInfo>()
+  const place = (p: ParamInfo): void => {
+    if (placed.has(p)) return
+    placed.add(p)
+    for (const part of p.defaultParts ?? []) {
+      const read = part.kind === 'param' ? byName.get(part.param.name) : undefined
+      if (read) place(read)
+    }
+    ordered.push(p)
+  }
+  for (const p of params) place(p)
+  return ordered
 }
 
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {

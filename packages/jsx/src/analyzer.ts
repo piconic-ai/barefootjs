@@ -13,7 +13,7 @@ import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefault
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
-import { buildPropAliasMap, coalesceDefaultText, signalPropSeed } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -1538,7 +1538,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames, undefined, propAliases)
+      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
     }
   }
 
@@ -1630,7 +1630,7 @@ function collectFactorySignal(
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateInitialValue = rewriteBarePropRefs(initialValue, initialNode.node, propNames, undefined, propAliases)
+      templateInitialValue = rewriteBarePropRefs(initialValue, initialNode.node, propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
     }
   }
 
@@ -2083,7 +2083,7 @@ function memoBodyFields(
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases)
+      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
       templateBodyExpr = rewritten === undefined ? undefined : asBodyExpr(rewritten)
     }
   }
@@ -3661,6 +3661,18 @@ function getSystemConstructKind(node: ts.Node): 'createContext' | 'weakMap' | un
   if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'createContext') return 'createContext'
   if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'WeakMap') return 'weakMap'
   return undefined
+}
+
+/**
+ * The CSR `template:` read of a destructured prop a signal seed or memo body
+ * names (#2265): the live read every client site shares
+ * (`livePropReadExpr`), so the module-scope arrow applies the prop's
+ * destructure default too, including one that reads an earlier prop
+ * (`{ off = false, on = off }` → `(_p.on ?? (_p.off ?? false))`, #3531).
+ */
+function destructuredPropTemplateRead(ctx: AnalyzerContext): (localName: string, callerKey: string) => string {
+  const byName = new Map(ctx.propsParams.filter(p => !p.isRest).map(p => [p.name, p]))
+  return (localName, callerKey) => livePropReadExpr(byName.get(localName) ?? { name: localName, sourceName: callerKey }, undefined, false)
 }
 
 /**

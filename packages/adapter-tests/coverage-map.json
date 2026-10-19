@@ -3125,6 +3125,21 @@
         "text"
       ]
     },
+    "destructure-default-body-chain-order": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-chain": {
       "kinds": [
         "identifier",
@@ -3155,6 +3170,40 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-param-chain-order": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-readers": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "literal:boolean",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

@@ -185,7 +185,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFie
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback, readsDependentDefaultProp } from "./memo/memo-compute.ts"
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
@@ -3235,11 +3235,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
               break
             }
           }
-          const resolvedValue = this.resolveDynamicPropValue(
+          const resolvedValue = this.resolveChildPropValue(
             exprText,
-            ir.metadata.signals,
-            ir.metadata.memos,
-            ir.metadata.propsParams,
+            parsedValue,
+            ir,
             propFallbackVars,
             childShape?.nillableParamNames.has(prop.name) ?? false,
           )
@@ -5553,6 +5552,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * its JS-coerced Go type (`evaluatedAsGoType`). Null when the value is
    * outside the evaluator's surface or the destination type can't take it.
    */
+  /**
+   * `resolveDynamicPropValue` for a child prop value, except a value reading a
+   * prop whose destructure default reads an earlier prop: that one is left to
+   * {@link evaluateChildPropValue}, whose evaluator reads the resolved binding
+   * rather than the raw nillable Input field (#3531).
+   */
+  private resolveChildPropValue(
+    exprText: string,
+    parsedValue: ParsedExpr | undefined,
+    ir: ComponentIR,
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    nillableDest: boolean,
+  ): string | null {
+    if (parsedValue && readsDependentDefaultProp(this.emitCtx, parsedValue)) return null
+    return this.resolveDynamicPropValue(
+      exprText,
+      ir.metadata.signals,
+      ir.metadata.memos,
+      ir.metadata.propsParams,
+      propFallbackVars,
+      nillableDest,
+    )
+  }
+
   private evaluateChildPropValue(
     value: ParsedExpr,
     propName: string,
