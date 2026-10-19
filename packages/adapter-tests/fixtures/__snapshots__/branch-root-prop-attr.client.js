@@ -44,7 +44,7 @@ export function initBranchRootPropAttr(__scope, _p = {}) {
   const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
 
-  if (_s1) _s1.addEventListener('click', () => { setVariant(v => (v === 'a' ? 'b' : 'a')) })
+  if (_s1) _s1.addEventListener('click', () => setVariant(v => (v === 'a' ? 'b' : 'a')))
 
   // Reactive prop bindings
   { const __m = []

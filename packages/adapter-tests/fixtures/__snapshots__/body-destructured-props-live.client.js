@@ -38,7 +38,7 @@ export function initBodyLiveChild(__scope, _p = {}) {
     }
   }) }
 
-  if (_s6) _s6.addEventListener('click', () => { _p.onPick(_p.value) })
+  if (_s6) _s6.addEventListener('click', () => _p.onPick(_p.value))
   createEffect(() => {
     const current = _p.value
     if (!mounted) {
@@ -74,8 +74,8 @@ export function initBodyDestructuredPropsLive(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
-  if (_s4) _s4.addEventListener('click', () => { setCount(n => n + 1) })
-  if (_s5) _s5.addEventListener('click', () => { setNamed(v => !v) })
+  if (_s4) _s4.addEventListener('click', () => setCount(n => n + 1))
+  if (_s5) _s5.addEventListener('click', () => setNamed(v => !v))
 
   // Reactive prop bindings
   createEffect(() => {

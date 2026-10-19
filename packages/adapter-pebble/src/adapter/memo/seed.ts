@@ -39,7 +39,6 @@ import {
 } from '@barefootjs/jsx'
 
 import type { PebbleMemoContext } from '../emit-context.ts'
-import { extractTopLevelIdentifiers } from '../lib/ir-scope.ts'
 import { pebbleIdent, escapePebbleSingleQuoted } from '../lib/pebble-naming.ts'
 
 /** Pebble literal for a context-consumer's `createContext` default. */
@@ -69,8 +68,8 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
  * analysis lives in `computeSsrSeedPlan` (packages/jsx/src/ssr-seed-plan.ts);
  * this only lowers each step's expression to Pebble and applies the
  * backend-specific emit guards: skip an empty lowering, and skip a lowering
- * that references no top-level identifier at all (a constant init/body —
- * e.g. a `derived` step with empty `frees` — keeps the existing static
+ * that the plan marks `constant` (a constant init/body —
+ * e.g. a `derived` step reading only inlined module consts — keeps the existing static
  * ssr-defaults seed instead). Unlike the Kolon port there is no self-ref
  * guard — see the file header. `env-reader` and `opaque` steps emit nothing
  * (the runtime supplies the reader, or the adapter's ssr-defaults path
@@ -127,7 +126,8 @@ export function generateDerivedMemoSeed(ctx: PebbleMemoContext, ir: ComponentIR)
       ctx.errors.length = errorsBefore
       continue
     }
-    if (pebble === '' || extractTopLevelIdentifiers(pebble).length === 0) continue
+    // A constant lowering keeps the static ssr-defaults seed (#3542).
+    if (pebble === '' || step.constant) continue
     lines.push(`{% set ${pebbleIdent(step.name)} = ${pebble} %}`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
