@@ -641,7 +641,7 @@ export function defaultedBindingGo(
   propTypeOverrides: Map<string, string>,
 ): string | null {
   const paramDefault = goPropDefault(param.defaultValue)
-  if (paramDefault === null) return null
+  if (paramDefault === null) return sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides)
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
@@ -668,7 +668,7 @@ export function defaultedBindingGo(
  * (`in.A`, or its own literal default). Any other default is computed by the
  * runtime evaluator, which takes a scalar, or anything into an `interface{}`
  * field. `rawLocals` keeps each caller value `bfCallerProps` reads
- * (`keepsCallerValue`), and
+ * (`keepsCallerValue`), by Input field, and
  * `unsupported` names the props whose default can't be applied this way
  * (the caller refuses them loudly).
  */
@@ -683,6 +683,11 @@ export function dependentDefaultNormalization(
   const unsupported: string[] = []
   for (const param of inDefaultReadOrder(propsParams)) {
     if (param.isRest || !param.defaultParts || !param.parsed) continue
+    // A binding sharing its Input field with another one (a renamed body
+    // destructure beside a raw `props.b` read) can't change `in`: the other
+    // reads the caller's value. Its own reads take
+    // `sharedDependentDefaultGo` instead.
+    if (sharesInputField(param, propsParams)) continue
     const field = capitalizeFieldName(param.sourceName ?? param.name)
     const goType = resolvePropGoType(ctx, param, propTypeOverrides)
     const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
@@ -692,7 +697,7 @@ export function dependentDefaultNormalization(
     }
     if (keepsCallerValue(param)) {
       const raw = `bfCaller${field}`
-      rawLocals.set(param.name, raw)
+      rawLocals.set(field, raw)
       lines.push(`\t${raw} := in.${field}`)
     }
     lines.push(`\tif in.${field} == nil {`)
@@ -701,6 +706,38 @@ export function dependentDefaultNormalization(
   }
   if (lines.length > 0) lines.push('')
   return { lines, rawLocals, unsupported }
+}
+
+/** Whether another binding reads `param`'s caller-facing Input field (`{ b: local = a }` beside `props.b`). */
+function sharesInputField(param: IRMetadata['propsParams'][number], propsParams: IRMetadata['propsParams']): boolean {
+  const key = param.sourceName ?? param.name
+  return propsParams.some(p => p !== param && !p.isRest && (p.sourceName ?? p.name) === key)
+}
+
+/**
+ * {@link defaultedBindingGo} for a binding whose default reads an earlier
+ * prop but whose Input field another binding also reads, so the default is
+ * not applied to `in` (`dependentDefaultNormalization`): the binding's own
+ * value, the default when the field is nil. Null for any other binding, or
+ * when the field can't tell an absent prop apart.
+ */
+function sharedDependentDefaultGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  if (!param.defaultParts || !param.parsed || !sharesInputField(param, propsParams)) return null
+  const key = param.sourceName ?? param.name
+  const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
+  const inputType = resolvePropGoType(ctx, owner, propTypeOverrides)
+  const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
+  if (!isNillableGoType(inputType)) return null
+  const value = dependentDefaultGo(ctx, param, outputType, propsParams, propTypeOverrides)
+  if (value === null) return null
+  const field = `in.${capitalizeFieldName(key)}`
+  const read = outputType === inputType || outputType === 'interface{}' ? field : `${field}.(${outputType})`
+  return `func() ${outputType} { if ${field} == nil { return ${value} }; return ${read} }()`
 }
 
 function isNillableGoType(goType: string): boolean {

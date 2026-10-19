@@ -2541,6 +2541,47 @@
       }
     }
   ],
+  "destructure-default-body-renamed": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "y",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "y",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "y",
+        "b": "日本語"
+      }
+    }
+  ],
   "destructure-default-chain": [
     {
       "name": "gen:a:absent",
@@ -2701,6 +2742,47 @@
       "props": {
         "a": "p",
         "c": "日本語"
+      }
+    }
+  ],
+  "destructure-default-param-renamed": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "y",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "y",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "y",
+        "b": "日本語"
       }
     }
   ],

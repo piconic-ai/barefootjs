@@ -564,7 +564,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * The constructor locals holding the caller's own value of each prop whose
-   * dependent destructure default was applied to `in`, by prop name (#3531).
+   * dependent destructure default was applied to `in`, by Input field (#3531).
    * Set by `emitDependentDefaults` for the constructor being generated.
    */
   private dependentDefaultRawLocals: Map<string, string> = new Map()
@@ -2944,7 +2944,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * local holding what the caller passed (#3531), so hydration carries that.
    */
   private callerPropValueGo(param: { name: string; sourceName?: string }): string {
-    return this.dependentDefaultRawLocals.get(param.name) ?? `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+    const field = capitalizeFieldName(param.sourceName ?? param.name)
+    return this.dependentDefaultRawLocals.get(field) ?? `in.${field}`
   }
 
   private emitCallerPropsInit(

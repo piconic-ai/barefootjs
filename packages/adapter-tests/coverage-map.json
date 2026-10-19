@@ -3240,6 +3240,21 @@
         "text"
       ]
     },
+    "destructure-default-body-renamed": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-chain": {
       "kinds": [
         "identifier",
@@ -3274,6 +3289,20 @@
       ]
     },
     "destructure-default-param-chain-order": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-renamed": {
       "kinds": [
         "identifier",
         "literal",

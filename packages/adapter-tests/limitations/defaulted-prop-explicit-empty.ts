@@ -9,8 +9,10 @@ export default defineLimitation({
     "renders the default (`'z'`), since the input struct field cannot tell an explicit empty string from an absent prop",
   fixtures: [
     'destructure-default-body-chain-order',
+    'destructure-default-body-renamed',
     'destructure-default-chain',
     'destructure-default-param-chain-order',
+    'destructure-default-param-renamed',
     'signal-computed-seed-sibling-fallbacks-destructured',
   ],
 })
