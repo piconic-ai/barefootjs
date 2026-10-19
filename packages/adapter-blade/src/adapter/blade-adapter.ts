@@ -324,6 +324,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
   type ComputedConstContext,
+  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -1223,6 +1224,10 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
         // divergence 4: the loop-hoist filter test is a condition position too.
         filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)
       } else {
+        // Phase 1 always attaches the predicate; a missing one is refused,
+        // never stood in for by a truthy constant that renders every row (#3534).
+        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
+        this._recordExprBF101(refusal.message, refusal.suggestion)
         filterCond = 'true'
       }
       lines.push(`@if(${filterCond})`)

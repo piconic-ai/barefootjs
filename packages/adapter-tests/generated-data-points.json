@@ -3033,6 +3033,14 @@
       }
     }
   ],
+  "filter-predicate-shape-loop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "flatmap-expression-body": [
     {
       "name": "gen:items:empty",

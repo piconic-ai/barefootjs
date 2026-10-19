@@ -111,6 +111,7 @@ import {
   computedConstContext,
   inlineComputedConstAttr,
   inlineComputedConsts,
+  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -9602,6 +9603,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           this.filterCaptureAliases = prevAliases
         }
       } else {
+        // Phase 1 always attaches the predicate; a missing one is refused,
+        // never stood in for by a truthy constant that renders every row (#3534).
+        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, 'Go template')
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: refusal.message,
+          loc: this.makeLoc(),
+          suggestion: { message: refusal.suggestion },
+        })
         filterCond = 'true'
       }
       const captureDecls = [...captureAliases].map(([name, alias]) => `{{$${alias} := $${name}}}`).join('')
