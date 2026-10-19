@@ -54,7 +54,8 @@ import {
   parseExpression,
   stringifyParsedExpr,
   parseProviderObjectLiteral,
-  parseStyleObjectEntries,
+  planStyleObject,
+  type ExpressionAttr,
   isSupported,
   isSupportedValue,
   emitParsedExpr,
@@ -1301,7 +1302,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101 (#1322).
       if (name === 'style') {
-        const css = this.tryLowerStyleObject(value.expr)
+        const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
       // Refuse shapes that the lowering pipeline can't represent in Kolon —
@@ -1427,15 +1428,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * already-safe result (#2261). Returns null when the shape is unsupported
    * or any value can't be lowered (caller falls through to BF101). (#1322)
    */
-  private tryLowerStyleObject(expr: string): string | null {
-    const entries = parseStyleObjectEntries(expr)
+  private tryLowerStyleObject(value: ExpressionAttr): string | null {
+    const entries = planStyleObject(value)
     if (!entries) return null
-    for (const e of entries) {
-      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
-    }
     const args = entries.flatMap(e => [
       `'${escapeKolonSingleQuoted(e.cssKey)}'`,
-      e.kind === 'literal' ? `'${escapeKolonSingleQuoted(e.value)}'` : this.convertExpressionToKolon(e.expr),
+      e.kind === 'literal' ? `'${escapeKolonSingleQuoted(e.value)}'` : this.convertExpressionToKolon(e.expr, e.parsed),
     ])
     return `<: $bf.style_object(${args.join(', ')}) | mark_raw :>`
   }

@@ -20,7 +20,7 @@ export { isOpaqueLocalAccessorName } from './opaque-local-accessor.ts'
 // data props, not handlers. Shared by the IR builder, client-JS prop wiring
 // and the SSR adapters' "a handler has no SSR value" skips.
 export { isEventHandlerName } from './event-handler-name.ts'
-export { nullishChainParts } from './children-nullish.ts'
+export { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
 
 // Shared props-destructure binding + alias-map helpers (#2524, #2788)
 export { propsDestructureBinding, buildPropAliasMap, isIdentifierName, resolveBodyDestructuredPropAliases } from './props-binding.ts'
@@ -122,6 +122,7 @@ export { rewriteImportsForTemplate, rewriteDynamicImportsInSource } from './adap
 export { emitParsedExpr, groupBinaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary, isNumericArithmeticResult } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, LoweringEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
+export { planStyleObject, type StyleObjectPlanEntry } from './adapters/style-object.ts'
 export { filterCaptureCollisions } from './adapters/filter-capture-collisions.ts'
 export { templateNameCollisionErrors } from './adapters/template-name-collisions.ts'
 export {
@@ -316,8 +317,7 @@ export { ErrorCodes, createError, formatError, generateCodeFrame } from './error
 export { isValueReferenceIdentifier, collectValueReferencedNames } from './value-references.ts'
 
 // Expression Parser
-export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, hasOpaqueCall, unboundCallbackParamRead, unboundCallbackParamReason, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, renameFreeIdentifiers, materializeGetterCalls, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, hasUnsafeStyleValue, parseProviderObjectLiteral, isFunctionShapedExpression, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
-export type { StyleObjectEntry } from './expression-parser.ts'
+export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, hasOpaqueCall, unboundCallbackParamRead, unboundCallbackParamReason, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, renameFreeIdentifiers, materializeGetterCalls, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, hasUnsafeStyleValue, parseProviderObjectLiteral, isFunctionShapedExpression, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
 export { literalMemberIndex } from './literal-member-index.ts'
 export { PARSED_EXPR_KINDS, ARRAY_METHOD_NAMES, SORT_KEY_TYPES, SORT_KEY_TARGETS, SORT_KEY_DIRECTIONS } from './expression-parser.ts'
 export type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, SortKey, FlatDepth, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'

@@ -1056,10 +1056,18 @@ import { fixture as literalConstConditionalShapes } from './literal-const-condit
 import { fixture as conditionalThenColonText } from './conditional-then-colon-text'
 import { fixture as conditionalThenPercentText } from './conditional-then-percent-text'
 import { fixture as conditionalBranchSigilText } from './conditional-branch-sigil-text'
+import { fixture as styleObjectShorthand } from './style-object-shorthand'
 import { fixture as clientHandlerKeywordProp } from './client-handler-keyword-prop'
 import { fixture as childrenNamedLocalEscaped } from './children-named-local-escaped'
 import { fixture as childrenNamedLoopRowEscaped } from './children-named-loop-row-escaped'
 import { fixture as childrenChainedNullishFallbackEscaped } from './children-chained-nullish-fallback-escaped'
+// A children read with a markup-looking text fallback (`??`, `||`, ternary)
+// in each binding of the children prop (#3554).
+import { fixture as childrenNullishTextFallback } from './children-nullish-text-fallback'
+import { fixture as childrenNullishTextFallbackShapes } from './children-nullish-text-fallback-shapes'
+import { fixture as childrenOrTextFallback } from './children-or-text-fallback'
+import { fixture as childrenTernaryTextFallback } from './children-ternary-text-fallback'
+import { fixture as childrenRenamedParam } from './children-renamed-param'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
 import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
 import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
@@ -1801,10 +1809,16 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalNestedStatic,
   conditionalNestedSignal,
   createMutationElidedValue,
+  styleObjectShorthand,
   clientHandlerKeywordProp,
   childrenNamedLocalEscaped,
   childrenNamedLoopRowEscaped,
   childrenChainedNullishFallbackEscaped,
+  childrenNullishTextFallback,
+  childrenNullishTextFallbackShapes,
+  childrenOrTextFallback,
+  childrenTernaryTextFallback,
+  childrenRenamedParam,
   childrenPreambleLocalEscaped,
   filterPredicateShapeLoop,
   filterPredicateShapeLoopClient,

@@ -7996,6 +7996,50 @@
       }
     }
   ],
+  "style-object-shorthand": [
+    {
+      "name": "gen:color:empty",
+      "props": {
+        "color": "",
+        "padding": "8px"
+      }
+    },
+    {
+      "name": "gen:color:markup",
+      "props": {
+        "color": "<b>&\"'</b>",
+        "padding": "8px"
+      }
+    },
+    {
+      "name": "gen:color:multibyte",
+      "props": {
+        "color": "日本語",
+        "padding": "8px"
+      }
+    },
+    {
+      "name": "gen:padding:empty",
+      "props": {
+        "color": "red",
+        "padding": ""
+      }
+    },
+    {
+      "name": "gen:padding:markup",
+      "props": {
+        "color": "red",
+        "padding": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:padding:multibyte",
+      "props": {
+        "color": "red",
+        "padding": "日本語"
+      }
+    }
+  ],
   "switch": [
     {
       "name": "gen:defaultChecked:true",

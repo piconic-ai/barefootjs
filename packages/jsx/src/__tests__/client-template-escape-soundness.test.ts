@@ -180,12 +180,37 @@ export function Box(props: { children?: unknown }) {
     pin: (js) => expect(js).toContain('markupOrEmpty('),
   },
   {
+    // #3554 — present children stay markup; only the fallback is escaped.
     id: 'children-nullish-text-fallback',
     source: `
 export function Box(props: { children?: unknown }) {
   return <div>{props.children ?? '<b>text</b>'}</div>
 }`,
-    pin: (js) => expect(js).toContain('escapeText('),
+    pin: (js) =>
+      expect(js).toContain(
+        "${_p.children == null ? escapeText(_p.children ?? '<b>text</b>') : markupOrEmpty(_p.children)}",
+      ),
+  },
+  {
+    // #3554 — a destructured children reads `_p.children` in the template.
+    id: 'children-nullish-text-fallback-destructured',
+    source: `
+export function Box({ children }: { children?: unknown }) {
+  return <div>{(children ?? '<b>text</b>') ?? ''}</div>
+}`,
+    pin: (js) =>
+      expect(js).toContain(
+        "${_p.children == null ? escapeText((_p.children ?? '<b>text</b>') ?? '') : markupOrEmpty(_p.children)}",
+      ),
+  },
+  {
+    id: 'children-or-text-fallback',
+    source: `
+export function Box(props: { children?: unknown }) {
+  return <div>{props.children || '<b>text</b>'}</div>
+}`,
+    pin: (js) =>
+      expect(js).toContain("${!_p.children ? escapeText(_p.children || '<b>text</b>') : markupOrEmpty(_p.children)}"),
   },
   {
     // The author-facing escape hatch, by name.
@@ -386,6 +411,11 @@ function classifyHole(expr: ts.Expression, nested: ts.TemplateExpression[]): str
       }
       return 'conditional-markup'
     }
+    // `absent ? escapeText(fallback) : markupOrEmpty(children)` —
+    // childrenMarkupOrEscapedFallback (#3554): each branch is an escaping or
+    // trusted call on its own.
+    const branchForms = [e.whenTrue, e.whenFalse].map(b => (ts.isCallExpression(strip(b)) ? classifyHole(b, nested) : null))
+    if (branchForms.every(f => f !== null && (f.startsWith('escape:') || f.startsWith('trusted:')))) return 'children-or-fallback'
     // `x ? 'attr' : ''` / `x != null ? 'attr="' + escapeAttr(x) + '"' : ''`.
     if (isAttrConcat(e.whenTrue) && (isEmptyString(e.whenFalse) || ts.isStringLiteral(strip(e.whenFalse)))) return 'attr'
     return null
