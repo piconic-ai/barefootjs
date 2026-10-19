@@ -106,6 +106,10 @@ export const renderDivergences: RenderDivergences = {
   'component-spread-rest': { limitation: 'component-prop-spread' },
   'component-spread-props-then-explicit': { limitation: 'component-prop-spread' },
   'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
+  // A children prop renamed in the parameter destructure (`{ children: kids }`):
+  // the renamed `Kids` field reads nil when the parent passes children, so
+  // present children are dropped and the `??` fallback renders.
+  'children-renamed-param': { limitation: 'renamed-children-param' },
   // Arithmetic over an omitted optional number prop: the engine reads the
   // nil as `0`, JS reads `undefined` as `NaN` (#3474).
   'omitted-optional-number-arithmetic': { limitation: 'omitted-optional-number-arithmetic' },

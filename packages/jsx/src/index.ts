@@ -20,7 +20,7 @@ export { isOpaqueLocalAccessorName } from './opaque-local-accessor.ts'
 // data props, not handlers. Shared by the IR builder, client-JS prop wiring
 // and the SSR adapters' "a handler has no SSR value" skips.
 export { isEventHandlerName } from './event-handler-name.ts'
-export { nullishChainParts } from './children-nullish.ts'
+export { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
 
 // Shared props-destructure binding + alias-map helpers (#2524, #2788)
 export { propsDestructureBinding, buildPropAliasMap, isIdentifierName, resolveBodyDestructuredPropAliases } from './props-binding.ts'

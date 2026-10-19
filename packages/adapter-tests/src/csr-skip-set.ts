@@ -195,5 +195,7 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
-  'children-chained-nullish-fallback-escaped': { limitation: 'csr-children-nullish-fallback-escaped' },
+  // The renamed param is a reactive slot, and a slotted read escapes the
+  // children markup (`escapeTextOrMarkup`).
+  'children-renamed-param': { limitation: 'renamed-children-param' },
 }

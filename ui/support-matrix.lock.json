@@ -6594,6 +6594,12 @@
               ]
             },
             {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-then-props",
               "limitations": [
                 "component-prop-spread"
@@ -9065,6 +9071,12 @@
               ]
             },
             {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -10484,6 +10496,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18239,6 +18257,12 @@
               ]
             },
             {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -19272,6 +19296,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-renamed-param",
+              "limitations": [
+                "renamed-children-param"
+              ]
+            },
             {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [

@@ -1544,6 +1544,51 @@
         "text"
       ]
     },
+    "children-nullish-text-fallback": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-nullish-text-fallback-shapes": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-or-text-fallback": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-passthrough-no-children": {
       "kinds": [
         "identifier",
@@ -1573,6 +1618,34 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "children-renamed-param": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-ternary-text-fallback": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },

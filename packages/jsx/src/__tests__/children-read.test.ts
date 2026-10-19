@@ -4,7 +4,7 @@
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
-import { nullishChainParts } from '../children-nullish'
+import { fallbackChainParts, nullishChainParts } from '../children-nullish'
 import { parseExpression, stringifyParsedExpr } from '../expression-parser'
 import { TestAdapter } from '../adapters/test-adapter'
 
@@ -38,6 +38,19 @@ describe('nullishChainParts', () => {
   })
 })
 
+describe('fallbackChainParts', () => {
+  test('a left-nested || chain reads its head, else the remaining fallbacks', () => {
+    const parts = fallbackChainParts(parseExpression("(c || '<b>x</b>') || ''"), '||')!
+    expect(stringifyParsedExpr(parts.head)).toBe('c')
+    expect(stringifyParsedExpr(parts.fallback)).toBe('"<b>x</b>" || ""')
+  })
+
+  test('a chain of the other operator has no parts', () => {
+    expect(fallbackChainParts(parseExpression('c ?? d'), '||')).toBeNull()
+    expect(fallbackChainParts(parseExpression('(c ?? d) || e'), '??')).toBeNull()
+  })
+})
+
 describe('childrenRead', () => {
   test('a chained fallback stays a fallback, not an empty read', () => {
     expect(childrenReads(`
@@ -45,6 +58,14 @@ export function Box(props: { children?: unknown }) {
   return <div>{(props.children ?? '<b>fallback</b>') ?? ''}{(props.children ?? '') ?? ''}</div>
 }
 `)).toEqual(['nullish-fallback', 'nullish-empty'])
+  })
+
+  test('an || fallback over the children prop is an or-fallback read', () => {
+    expect(childrenReads(`
+export function Box({ children, label }: { children?: unknown; label?: string }) {
+  return <div>{children || '<b>x</b>'}{(children || label) || ''}{label || children}{(children ?? label) || ''}</div>
+}
+`)).toEqual(['or-fallback', 'or-fallback', undefined, undefined])
   })
 
   test('a loop preamble local named children shadows the prop', () => {
