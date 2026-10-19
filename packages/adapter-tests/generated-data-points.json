@@ -1023,6 +1023,45 @@
       }
     }
   ],
+  "children-named-local-escaped": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "children-named-loop-row-escaped": [
+    {
+      "name": "gen:kids:empty",
+      "props": {
+        "kids": [],
+        "rows": [
+          {
+            "children": "<i>r</i>"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "kids": [
+          "<b>a</b>",
+          "c"
+        ],
+        "rows": []
+      }
+    }
+  ],
+  "children-preamble-local-escaped": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "client-handler-keyword-prop": [
     {
       "name": "gen:default:zero",
