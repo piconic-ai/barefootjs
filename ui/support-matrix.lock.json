@@ -5757,12 +5757,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
@@ -5785,12 +5779,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
@@ -5812,12 +5800,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -5847,12 +5829,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
@@ -5874,12 +5850,6 @@
         },
         "minijinja": {
           "gaps": [
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -5903,12 +5873,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
@@ -5930,12 +5894,6 @@
         },
         "pebble": {
           "gaps": [
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -5959,12 +5917,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
@@ -5986,12 +5938,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -6157,12 +6103,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -6413,12 +6353,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -6705,12 +6639,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -7024,12 +6952,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7298,12 +7220,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7551,12 +7467,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -7828,12 +7738,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8102,12 +8006,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8367,12 +8265,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -8751,12 +8643,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8926,12 +8812,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -9128,12 +9008,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -9363,12 +9237,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9547,12 +9415,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9722,12 +9584,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -9921,12 +9777,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10105,12 +9955,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10280,12 +10124,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -10778,12 +10616,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10989,12 +10821,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -11227,12 +11053,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -11498,12 +11318,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11730,12 +11544,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11941,12 +11749,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -12176,12 +11978,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12408,12 +12204,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12631,12 +12421,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -13085,12 +12869,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -13104,12 +12882,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -13141,12 +12913,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -13169,12 +12935,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -13188,12 +12948,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -13213,12 +12967,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -13232,12 +12980,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -13257,12 +12999,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -13276,12 +13012,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -18051,12 +17781,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18160,12 +17884,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -18290,12 +18008,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -18447,12 +18159,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18565,12 +18271,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18674,12 +18374,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
@@ -18807,12 +18501,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18925,12 +18613,6 @@
               ]
             },
             {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -19034,12 +18716,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
               ]
             },
             {
