@@ -22,7 +22,7 @@ export function SignalSeedAbsentOptionalPropAttr(props: { mode?: string; label?:
 `,
   props: { mode: 'wide', label: 'L' },
   expectedHtml: `
-    <p bf-s="test" bf="s0" data-bare="L" data-shown="L" data-fallback="L">x</p>
+    <p bf-s="test" bf="s0" data-bare="L" data-fallback="L" data-shown="L">x</p>
   `,
   dataPoints: [
     { name: 'label-absent', props: { mode: 'wide' } },
