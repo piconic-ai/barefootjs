@@ -871,8 +871,8 @@ export function TodoApp(props: { initial?: Todo[] }) {
     test('hoists signal-time `props.X ?? N` fallback into shared local var (#1423)', () => {
       // Mirrors the Mojo manifest-defaults coverage (#1419): when the
       // signal default lives on a `??` against a bare prop access, the
-      // generator hoists the fallback so the signal, the prop field,
-      // and any derived memo share one fallback-applied value.
+      // generator hoists the fallback so the signal and any derived memo
+      // share one fallback-applied value.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -894,8 +894,9 @@ export function Counter(props: { initial?: number }) {
       expect(types).toContain('var initial int = 99')
       expect(types).toMatch(/if in\.Initial != nil \{\s*initial = bf\.ToInt\(in\.Initial\)\s*\}/)
 
-      // Prop, signal, and memo all reference the hoisted variable.
-      expect(types).toContain('Initial: initial,')
+      // Signal and memo reference the hoisted variable; the prop field keeps
+      // the caller's value, since no signal shares it (#3577).
+      expect(types).toContain('Initial: in.Initial,')
       expect(types).toContain('Count: initial,')
       expect(types).toContain('Doubled: initial * 2,')
 
@@ -942,7 +943,7 @@ export function Label(props: { label?: string }) {
       expect(types).toContain('Label interface{}')
       expect(types).toContain('var label string = "Default"')
       expect(types).toMatch(/if in\.Label != nil \{\s*label = in\.Label\.\(string\)\s*\}/)
-      expect(types).toContain('Label: label,')
+      expect(types).toContain('Label: in.Label,')
       // Signal name `text` differs from prop name `label`, so the
       // signal field gets its own entry that resolves through the
       // hoisted var.
@@ -969,7 +970,7 @@ export function Check(props: { checked?: boolean }) {
       expect(types).toContain('Checked interface{}')
       expect(types).toContain('var checked bool = true')
       expect(types).toMatch(/if in\.Checked != nil \{\s*checked = in\.Checked\.\(bool\)\s*\}/)
-      expect(types).toContain('Checked: checked,')
+      expect(types).toContain('Checked: in.Checked,')
       expect(types).toContain('C: checked,')
     })
 
@@ -1013,7 +1014,7 @@ export function Counter({ size }: { size?: number }) {
       expect(types).toContain('Size interface{}')
       expect(types).toContain('var size int = 1')
       expect(types).toMatch(/if in\.Size != nil \{\s*size = bf\.ToInt\(in\.Size\)\s*\}/)
-      expect(types).toContain('Size: size,')
+      expect(types).toContain('Size: in.Size,')
       expect(types).toContain('Count: size,')
     })
 

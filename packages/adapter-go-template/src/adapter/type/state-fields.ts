@@ -33,7 +33,7 @@ import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isBoxedNumericMemoBody, isEvaluatedMemo, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
-import { convertInitialValue } from '../value/value-lowering.ts'
+import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
 
 /** The minimal signal shape these decisions read (the IR's `SignalInfo` is not exported). */
@@ -282,8 +282,10 @@ export function inferMemoType(
 
 /**
  * Walk signals to collect prop fallbacks: `createSignal(props.X ?? N)`
- * hoists `N` as a local so the signal, any derived memo, and the prop field
- * share one fallback-applied value. Skips props that already have a
+ * hoists `N` as a local so the signal, any derived memo, and a prop field the
+ * signal shares ({@link sharedFieldFallbackVar}) share one fallback-applied
+ * value. The first seed per prop wins; a later seed with another fallback is
+ * evaluated instead of reusing it (#3577). Skips props that already have a
  * destructure-side default (`{ X = N }`) or signals whose fallback resolves
  * to the type's Go zero value (no-op).
  */
@@ -377,6 +379,24 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
 }
 
 /**
+ * The hoisted `props.X ?? N` local the prop's own Props field takes, else
+ * undefined. The local is a signal's value, so it belongs on the prop's
+ * field only when a signal shares that field
+ * (`const [x] = createSignal(props.x ?? N)`). Otherwise the field is the
+ * prop itself, which a template read such as `props.x ?? 'd'` or a bare
+ * `props.x` reads (#3577).
+ */
+export function sharedFieldFallbackVar(
+  ir: ComponentIR,
+  propName: string,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): PropFallbackVar | undefined {
+  const fieldName = capitalizeFieldName(propName)
+  if (!ir.metadata.signals.some(s => capitalizeFieldName(s.getter) === fieldName)) return undefined
+  return propFallbackVars.get(propName)
+}
+
+/**
  * The Go zero literal for a fallback's literal shape, or null when the
  * fallback is not a hoistable literal. Bool fallbacks (`?? true`) hoist
  * against the `false` zero — the same Go-zero conflation the int / string
@@ -420,9 +440,8 @@ export function signalSeedGo(
   const computed = ctx.computedSignalSeed(signal, propsParams, propFallbackVars, !nillableDest)
   if (computed !== null) return computed
   // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
-  // one value.
-  const fallbackMatch = ctx.extractPropFallbackFromParsed(resolveSignalParsedThroughSeedPlan(ctx.state, signal))
-  const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
+  // one value, only when that var carries this seed's own `N` (#3577).
+  const hoisted = seedFallbackVar(ctx, resolveSignalParsedThroughSeedPlan(ctx.state, signal), propFallbackVars)
   if (hoisted) return hoisted.varName
   // A nillable seed (#3323) stays whole only into an `interface{}`
   // destination: the signal's own field, or a child Input the child itself
