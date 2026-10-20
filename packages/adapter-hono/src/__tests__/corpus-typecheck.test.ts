@@ -10,8 +10,9 @@
  *
  * The gate holds the line at the CURRENT profile via `KNOWN_DIAGNOSTICS`
  * (issue #2573): a (component, TS code) pair outside the allowlist, or a
- * count above its allowlisted ceiling, fails. Fixing a family should ratchet
- * its entry down (or out) in the same PR — entries may only shrink.
+ * count above its allowlisted ceiling, fails. So does a count BELOW its
+ * ceiling: fixing a family must ratchet its entry down (or out) in the same
+ * PR — entries may only shrink, and never keep slack.
  *
  * Heaviest test in this package (~30s compile + ~10s tsc), deliberately one
  * program for all templates so cross-template imports (`../button`,
@@ -40,10 +41,6 @@ const UI_LIB = join(REPO, 'ui/lib')
 const KNOWN_DIAGNOSTICS: Record<string, number> = {
   // Author `data-key={props.dataKey}` beside the synthesized loop-row `data-key`.
   'chart TS17001': 6,
-  // A `string | null` computed field on a non-nullable SVG attribute.
-  'chart TS2322': 2,
-  // The source provides an `InternalFlowStore<NodeType, EdgeType>` to the non-generic `FlowContext`.
-  'xyflow TS2345': 1,
 }
 
 describe('ui corpus type-check gate (#2570 / #2573)', () => {
@@ -137,6 +134,14 @@ describe('ui corpus type-check gate (#2570 / #2573)', () => {
           violations.push(`NEW ${key} x${count} — ${samples.get(key)}`)
         } else if (count > allowed) {
           violations.push(`GREW ${key}: ${allowed} -> ${count} — ${samples.get(key)}`)
+        }
+      }
+      // A ceiling above the observed count is stale: lower it (or delete the
+      // entry) in the PR that fixed it, so the slack can't hide a regression.
+      for (const [key, allowed] of Object.entries(KNOWN_DIAGNOSTICS).sort()) {
+        const count = counts.get(key) ?? 0
+        if (count < allowed) {
+          violations.push(`STALE ${key}: ${allowed} -> ${count} — ratchet KNOWN_DIAGNOSTICS down`)
         }
       }
       expect(violations).toEqual([])

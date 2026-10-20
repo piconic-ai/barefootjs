@@ -322,6 +322,58 @@ const PROVIDER_BAD_SOURCE = PROVIDER_SOURCE.replace(
   'value={{ open: 1 }}',
 )
 
+/**
+ * #2573: a type assertion the source needs in a JSX attribute position —
+ * here every value is `unknown` and only the cast makes it assignable. The
+ * IR's attribute text is type-stripped (it also feeds the client JS), so
+ * the template used to emit `provideContextSSR(StoreContext, raw, …)` and
+ * `text={raw}` without the cast and failed to type-check (the ui xyflow
+ * `value={store as never}` shape). One case per position the shared
+ * attribute path serves: a Provider value, a component prop, an element
+ * attribute, a `|| undefined` presence attribute, and a component prop in
+ * a loop row. Plus the shape that must keep the stripped text: an
+ * early-return branch, whose attribute text has a branch-local inlined.
+ */
+const TYPED_ATTR_SOURCE = `"use client"
+
+import { createContext, useContext } from '@barefootjs/client'
+
+interface Store { count: number }
+
+const StoreContext = createContext<Store>()
+
+function Label(props: { text: string }) {
+  const store = useContext(StoreContext)
+  return <span data-count={String(store.count)}>{props.text}</span>
+}
+
+export function Widget({ raw, items }: { raw?: unknown; items: unknown[] }) {
+  if (items.length === 0) {
+    const fallback = String(raw)
+    return <Label text={fallback as string} />
+  }
+  return (
+    <StoreContext.Provider value={raw as Store}>
+      <Label text={raw as string} />
+      <input value={raw as string} />
+      <button disabled={raw as boolean || undefined}>go</button>
+      <ul>
+        {items.map((item, i) => (
+          <li key={i}><Label text={item as string} /></li>
+        ))}
+      </ul>
+    </StoreContext.Provider>
+  )
+}
+`
+
+const TYPED_ATTR_SERVER_SOURCE = `import { Widget } from './components/Widget.tsx'
+
+export function Page() {
+  return <Widget raw="a" items={['b']} />
+}
+`
+
 describe('consumer program type-check', () => {
   test('a compiled template used as a JSX component type-checks clean (#2559)', () => {
     const result = compileJSX(COMPONENT_SOURCE, '/virtual/Counter.tsx', {
@@ -447,5 +499,33 @@ describe('consumer program type-check', () => {
     // The provider's props stay checked — the fix must not loosen `value`.
     const rejected = typeCheckConsumer('Item', PROVIDER_BAD_SOURCE, PROVIDER_SERVER_SOURCE)
     expect(rejected.map(d => d.code)).toEqual([2322])
+  })
+
+  test('an author type assertion in an attribute survives emission (#2573)', () => {
+    const result = compileJSX(TYPED_ATTR_SOURCE, '/virtual/Widget.tsx', {
+      adapter: new HonoAdapter(),
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content
+    const clientJs = result.files.find(f => f.type === 'clientJs')?.content
+
+    // Each position keeps the cast verbatim (otherwise the type-check below
+    // could pass for another reason) …
+    expect(template).toContain('provideContextSSR(StoreContext, raw as Store, ')
+    expect(template).toContain('text={raw as string}')
+    expect(template).toContain('value={raw as string}')
+    expect(template).toContain('disabled={(raw as boolean) || undefined}')
+    expect(template).toContain('text={item as string}')
+    // In an early-return branch the IR text has the branch-local `fallback`
+    // inlined. The author's `fallback as string` differs from it by more
+    // than type syntax, so the template keeps the IR text (the ui `Slot`
+    // `className={mergedClass || undefined}` shape).
+    expect(template).toContain('text={(String(raw))}')
+    expect(template).not.toContain('fallback as string')
+    // … and the client bundle, which is plain JS, still has none of them.
+    expect(clientJs).toBeDefined()
+    expect(clientJs).not.toContain(' as ')
+
+    expect(typeCheckConsumer('Widget', template!, TYPED_ATTR_SERVER_SOURCE)).toEqual([])
   })
 })
