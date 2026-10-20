@@ -82,7 +82,7 @@ export function RadioGroup(__allProps: RadioGroupProps & { __instanceId?: string
   return (
     <>{provideContextSSR(RadioGroupContext, {
       value: currentValue,
-      onValueChange: (newValue) => {
+      onValueChange: (newValue: string) => {
         if (isControlled()) {
           setControlledValue(newValue)
         } else {

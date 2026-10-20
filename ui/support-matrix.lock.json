@@ -1339,6 +1339,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -6696,6 +6708,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -9185,6 +9209,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -10659,6 +10695,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10859,10 +10907,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
       },
       "example": {
-        "fixture": "nullish-coalesce-empty-array",
-        "description": "`??` keeps a present empty array instead of taking the fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
-        "code": "props.c ?? props.a"
+        "fixture": "destructure-default-array-child",
+        "description": "An array prop defaulted to an earlier array prop reaches a child as passed, or as the earlier prop when omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-array-child.ts"
       }
     },
     "member": {
@@ -11365,6 +11412,18 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
               ]
             },
             {
@@ -15184,6 +15243,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -17518,6 +17589,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -19615,6 +19698,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-computed-array",
+              "limitations": [
+                "destructure-default-computed-array"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -19773,10 +19868,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "nullish-coalesce-empty-array",
-        "description": "`??` keeps a present empty array instead of taking the fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
-        "code": "props.c ?? props.a"
+        "fixture": "destructure-default-array-child",
+        "description": "An array prop defaulted to an earlier array prop reaches a child as passed, or as the earlier prop when omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-array-child.ts"
       }
     },
     "logical:||": {

@@ -1274,6 +1274,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     param: string,
     localVarMap: Map<string, string> = new Map(),
     paramLocal = param,
+    onRead?: (name: string) => void,
   ): string {
     return emitParsedExpr(
       expr,
@@ -1288,6 +1289,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         name => this.memoKolonNames.get(name) ?? name,
         name => this.rowLocalName(name),
         paramLocal,
+        onRead,
       ),
     )
   }
@@ -1381,7 +1383,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _rowLocalName: (name) => this.rowLocalName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
-      _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
+      _renderKolonFilterExprPublic: (e, p, onRead) => this._renderKolonFilterExprPublic(e, p, onRead),
     }
   }
 
@@ -1404,7 +1406,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): XslateMemoContext {
     return {
-      convertExpressionToKolon: (e, preParsed, pos) => this.convertExpressionToKolon(e, preParsed, pos),
+      convertExpressionToKolon: (e, preParsed, pos, onRead) => this.convertExpressionToKolon(e, preParsed, pos, onRead),
       memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
     }
   }
@@ -1413,6 +1415,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     expr: string,
     preParsed?: ParsedExpr,
     pos: 'rendered' | 'value' = 'rendered',
+    onRead?: (name: string) => void,
   ): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
@@ -1468,15 +1471,16 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       return "''"
     }
 
-    return this.renderParsedExprToKolon(parsed)
+    return this.renderParsedExprToKolon(parsed, onRead)
   }
 
   /**
    * Render a full ParsedExpr tree to Kolon for top-level (non-filter)
-   * expressions where identifiers are signals / template vars.
+   * expressions where identifiers are signals / template vars. `onRead` is
+   * told each template variable the rendering reads.
    */
-  private renderParsedExprToKolon(expr: ParsedExpr): string {
-    return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx))
+  private renderParsedExprToKolon(expr: ParsedExpr, onRead?: (name: string) => void): string {
+    return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx, onRead))
   }
 
   /**
@@ -1599,8 +1603,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
-  private _renderKolonFilterExprPublic(expr: ParsedExpr, param: string): string {
-    return this.renderKolonFilterExpr(expr, param)
+  private _renderKolonFilterExprPublic(expr: ParsedExpr, param: string, onRead?: (name: string) => void): string {
+    return this.renderKolonFilterExpr(expr, param, new Map(), param, onRead)
   }
 }
 

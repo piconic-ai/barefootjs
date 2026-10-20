@@ -18,6 +18,14 @@ export const conformancePins: ConformancePins = {
   'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
+  // The props constructor applies the default before any read, so a
+  // `/* @client */` read site doesn't avoid the refusal: no escape twin.
+  'destructure-default-body-renamed-computed-array': [
+    { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
+  ],
+  'destructure-default-param-computed-array': [
+    { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
+  ],
   'callback-index-param': [{ code: 'BF101', severity: 'error', limitation: 'callback-index-param' }],
   'filter-index-param-loop': [{ code: 'BF021', severity: 'error', limitation: 'callback-index-param' }],
   'sort-opaque-comparator': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],

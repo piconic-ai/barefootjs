@@ -213,6 +213,47 @@ export function rewriteScopedValueRefs(
   return result
 }
 
+/** A piece of `splitScopedValueRefs`'s result: text between references, or one reference. */
+export type ScopedValueRefPiece = { kind: 'text'; text: string } | { kind: 'ref'; name: string }
+
+/**
+ * The structured twin of `rewriteScopedValueRefs`: the same scope-aware walk,
+ * but instead of splicing a replacement it splits `text` at each value
+ * reference to a name in `names`, so a later stage renders each reference by
+ * its own rule without touching the text again (#3531). A shorthand property
+ * (`{ off }`) keeps its key as text (`off: `) before the reference. Returns
+ * null when `text` doesn't parse as an expression, and an empty reference set
+ * leaves one `text` piece.
+ */
+export function splitScopedValueRefs(text: string, names: ReadonlySet<string>): ScopedValueRefPiece[] | null {
+  const prefix = '('
+  const sf = ts.createSourceFile('__bf_scoped_split.ts', `${prefix}${text}\n)`, ts.ScriptTarget.Latest, true)
+  const parseDiagnostics = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics
+  if (parseDiagnostics && parseDiagnostics.length > 0) return null
+
+  const refs: Array<{ start: number; end: number; name: string; key?: string }> = []
+  walkWithScope(sf, (n, parent, shadowed) => {
+    if (shadowed || !names.has(n.text)) return
+    if (isNonValuePosition(n, parent)) return
+    const start = n.getStart(sf) - prefix.length
+    const end = n.getEnd() - prefix.length
+    if (start < 0 || end > text.length) return
+    const shorthand = parent !== undefined && ts.isShorthandPropertyAssignment(parent) && parent.name === n
+    refs.push({ start, end, name: n.text, ...(shorthand && { key: n.text }) })
+  })
+
+  const pieces: ScopedValueRefPiece[] = []
+  let cursor = 0
+  for (const ref of refs.sort((a, b) => a.start - b.start)) {
+    const before = text.slice(cursor, ref.start) + (ref.key !== undefined ? `${ref.key}: ` : '')
+    if (before !== '') pieces.push({ kind: 'text', text: before })
+    pieces.push({ kind: 'ref', name: ref.name })
+    cursor = ref.end
+  }
+  if (cursor < text.length) pieces.push({ kind: 'text', text: text.slice(cursor) })
+  return pieces
+}
+
 /**
  * `applyScopedPropRefRewrite` specializes `rewriteScopedValueRefs` for
  * the destructured-prop case: the substitution defaults to

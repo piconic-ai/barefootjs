@@ -161,6 +161,19 @@ deliverable is a single shared implementation the sites call — not an Nth copy
 to agree today. A cross-adapter test pinning both families to the same answer for the same
 input is what makes the drift visible at all.
 
+## Go Build Cache
+
+Go-template conformance (`bun test`, `fixtures:smoke`, `fixtures:regen`) renders each fixture
+by building a throwaway program with `go build -o` inside
+`packages/adapter-go-template/.render-temp/`, which is deleted afterwards. Do not switch it back
+to `go run .`: since Go 1.24, `go run` keeps every linked executable in `GOCACHE`. Every
+fixture's program is unique, so one full run used to add several GB of binaries that are never
+reused, and long sessions ran out of disk.
+
+If the disk still fills (a cache left over from before the change, or other Go work), check
+`du -sh "$(go env GOCACHE)"` and run `go clean -cache`. It is safe; the next build is only
+slower.
+
 ## When `main` Breaks
 
 A red `main` is an outage, not a task. **Reverting is the first option to consider**, not the

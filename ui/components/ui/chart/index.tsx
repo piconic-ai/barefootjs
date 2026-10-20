@@ -355,12 +355,14 @@ function Bar(props: BarProps) {
       width: number
       height: number
       fill: string
-      rx: string | null
-      ry: string | null
+      // `undefined` (not `null`) for no rounding: SVG attribute props accept
+      // `string | number | undefined`, and both values omit the attribute.
+      rx: string | undefined
+      ry: string | undefined
       xValue: string
       yValue: number
     }[] = []
-    const rxAttr = radius > 0 ? String(radius) : null
+    const rxAttr = radius > 0 ? String(radius) : undefined
     for (const datum of data) {
       const xValue = String(datum[xKey])
       const yValue = Number(datum[dataKey]) || 0

@@ -189,7 +189,7 @@ import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlie
 import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { collectPropsSpreadForwardedParams, isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from "./props/props-spread.ts"
-import { buildPropTypeOverrides, defaultedBindingGo, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, defaultedBindingGo, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -363,7 +363,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertConditionToGo(jsCondition, preParsed),
     computedSignalSeed: (signal, propsParams, propFallbackVars, concreteDest) =>
       this.computedSignalSeed(signal, propsParams, propFallbackVars, concreteDest),
-    extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
+    extractPropFallbackFromParsed: (parsed) => this.extractPropFallbackFromParsed(parsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
     resolveModuleConstAsGo: (name, target) => this.resolveModuleConstAsGo(name, target),
@@ -561,6 +561,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * same way, by each component.
    */
   private fileNullableSeedStructFields: Set<string> = new Set()
+
+  /**
+   * The constructor locals holding the caller's own value of each prop whose
+   * dependent destructure default was applied to `in`, by Input field (#3531).
+   * Set by `emitDependentDefaults` for the constructor being generated.
+   */
+  private dependentDefaultRawLocals: Map<string, string> = new Map()
 
   /** See `fileNullableSeedStructFields`: the `float64` flip for a fractional seed (#3438). */
   private fileFractionalSeedStructFields: Set<string> = new Set()
@@ -2481,6 +2488,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`\t\tscopeID = "${componentName}_" + randomID(6)`)
     lines.push('\t}')
     lines.push('')
+    this.emitDependentDefaults(lines, ir, nestedComponents, propTypeOverrides)
 
     // Static + prop-derived nested components auto-populate from input. An
     // orphaned clientOnly nested loop (#2627 — see `isOrphanedClientOnlyNested`)
@@ -2897,6 +2905,50 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * runtime array-flattening helper, a bigger surface this method's design
    * doesn't cover. Reported, not chased (see PR description).
    */
+  /**
+   * Apply each destructure default that reads an earlier prop to the Input
+   * before anything reads it (`dependentDefaultNormalization`, #3531), and
+   * refuse one this adapter can't apply instead of rendering the prop
+   * without its default.
+   */
+  private emitDependentDefaults(
+    lines: string[],
+    ir: ComponentIR,
+    nestedComponents: NestedComponentInfo[],
+    propTypeOverrides: Map<string, string>,
+  ): void {
+    // `bfCallerProps` reads the caller's value of every prop but these
+    // (`emitCallerPropsInit`), so only the others keep a local for it.
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
+    const { lines: normalization, rawLocals, unsupported } = dependentDefaultNormalization(
+      this.emitCtx, ir.metadata.propsParams, propTypeOverrides,
+      param => param.name !== 'children' && !this.isNestedArrayShadowed(param, nestedArrayFields),
+    )
+    lines.push(...normalization)
+    this.dependentDefaultRawLocals = rawLocals
+    for (const name of unsupported) {
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `The default of prop '${name}' reads an earlier prop in a shape the Go template adapter can't apply in the props constructor`,
+        loc: this.makeLoc(),
+        suggestion: {
+          message: `Destructure '${name}' without a default and compute its value from the earlier prop in the component body instead.`,
+        },
+      })
+    }
+  }
+
+  /**
+   * The caller's own value of `param` in the props constructor: its Input
+   * field, or for a prop whose dependent default was applied to `in`, the
+   * local holding what the caller passed (#3531), so hydration carries that.
+   */
+  private callerPropValueGo(param: { name: string; sourceName?: string }): string {
+    const field = capitalizeFieldName(param.sourceName ?? param.name)
+    return this.dependentDefaultRawLocals.get(field) ?? `in.${field}`
+  }
+
   private emitCallerPropsInit(
     lines: string[],
     ir: ComponentIR,
@@ -2924,7 +2976,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // places, so the two computations can't disagree.
       const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), bfCallerPropsTakenTags)
       if (callerKey === '-') continue // tag collision — dropped from the wire, same as the Props field itself would be
-      const inputField = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+      const inputField = this.callerPropValueGo(param)
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       const isNillable = goType === 'interface{}' || goType === 'map[string]interface{}' || goType.startsWith('[]')
       // `param.optional` gates the branch (not "isNillable alone") because a
@@ -5829,49 +5881,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Parse a signal-time initial value of the form `props.X ?? <literal>` —
-   * or, for destructured components, `x ?? <literal>` — into the source prop
-   * name and the Go-formatted fallback. Returns null when the expression
-   * isn't that shape or the fallback isn't a simple literal `goPropDefault`
-   * can translate.
-   *
-   * `preParsed` (the signal's best-effort `ParsedExpr`) is matched
-   * structurally when available; the regex handles only the props-object
-   * member form for callers without a tree (memo computations). A bare
-   * identifier can shadow a same-named prop (loop/callback params — the
-   * `collectNullishConsumedPropNames` limitation class), so every caller
-   * validates the returned name against `ir.metadata.propsParams`.
+   * Match a signal's or memo's parsed value of the form `props.X ?? <literal>`
+   * — or, for destructured components, `x ?? <literal>` — into the source
+   * prop name and the Go-formatted fallback. Returns null when there is no
+   * tree, the tree isn't that shape, or the fallback isn't a literal
+   * `goPropDefault` can translate. A bare identifier can shadow a same-named
+   * prop (loop/callback params — the `collectNullishConsumedPropNames`
+   * limitation class), so every caller validates the returned name against
+   * `ir.metadata.propsParams`.
    *
    * Keeps the original prop reference (not just the resolved value) so
    * caller-supplied non-zero inputs are honoured.
    */
-  private extractPropFallback(
-    initialValue: JsSourceText,
-    preParsed?: ParsedExpr,
-  ): { propName: string; goFallback: string } | null {
-    const structural = preParsed ? this.extractPropFallbackFromParsed(preParsed) : null
-    if (structural) return structural
-
-    // Regex fallback for callers without a tree (memo computation strings)
-    // and for props-object shapes the structural match doesn't model.
-    if (!this.state.propsObjectName) return null
-    const trimmed = initialValue.trim()
-    const name = this.state.propsObjectName
-
-    // `props.X ?? <rhs>` — capture RHS greedily up to end of string.
-    const re = new RegExp(`^${name}\\.(\\w+)\\s*\\?\\?\\s*(.+)$`)
-    const m = trimmed.match(re)
-    if (!m) return null
-    const goFallback = goPropDefault(m[2].trim())
-    if (goFallback === null) return null
-    return { propName: m[1], goFallback }
-  }
-
-  /** Structural half of {@link extractPropFallback}. */
   private extractPropFallbackFromParsed(
-    preParsed: ParsedExpr,
+    preParsed: ParsedExpr | undefined,
   ): { propName: string; goFallback: string } | null {
-    if (preParsed.kind !== 'logical' || preParsed.op !== '??') return null
+    if (!preParsed || preParsed.kind !== 'logical' || preParsed.op !== '??') return null
     const left = preParsed.left
     const propName =
       left.kind === 'identifier' && !this.state.propsObjectName

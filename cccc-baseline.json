@@ -65,7 +65,7 @@
         27
       ],
       "emitCallerPropsInit": [
-        29
+        28
       ],
       "emitExpression": [
         34
@@ -208,7 +208,7 @@
         31
       ],
       "renderGoTemplateComponent": [
-        73
+        59
       ]
     },
     "packages/adapter-hono/src/adapter/hono-adapter.ts": {
@@ -939,7 +939,7 @@
         39
       ],
       "extractSsrDefaults": [
-        79
+        72
       ]
     },
     "packages/jsx/src/static-literal.ts": {

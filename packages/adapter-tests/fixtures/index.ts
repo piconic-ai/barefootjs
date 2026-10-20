@@ -1011,6 +1011,18 @@ import { fixture as booleanStringifyPositions } from './boolean-stringify-positi
 import { fixture as booleanLogicalStringify } from './boolean-logical-stringify'
 import { fixture as booleanLogicalStringifyDefaultAlias } from './boolean-logical-stringify-default-alias'
 import { fixture as booleanLogicalStringifyDependentDefault } from './boolean-logical-stringify-dependent-default'
+import { fixture as destructureDefaultChain } from './destructure-default-chain'
+import { fixture as destructureDefaultExpression } from './destructure-default-expression'
+import { fixture as destructureDefaultBody } from './destructure-default-body'
+import { fixture as destructureDefaultReaders } from './destructure-default-readers'
+import { fixture as destructureDefaultBodyChainOrder } from './destructure-default-body-chain-order'
+import { fixture as destructureDefaultParamChainOrder } from './destructure-default-param-chain-order'
+import { fixture as destructureDefaultArrayChild } from './destructure-default-array-child'
+import { fixture as destructureDefaultArrayMemo } from './destructure-default-array-memo'
+import { fixture as destructureDefaultBodyRenamed } from './destructure-default-body-renamed'
+import { fixture as destructureDefaultParamRenamed } from './destructure-default-param-renamed'
+import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
+import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1725,6 +1737,18 @@ export const jsxFixtures: JSXFixture[] = [
   booleanLogicalStringify,
   booleanLogicalStringifyDefaultAlias,
   booleanLogicalStringifyDependentDefault,
+  destructureDefaultChain,
+  destructureDefaultExpression,
+  destructureDefaultBody,
+  destructureDefaultReaders,
+  destructureDefaultBodyChainOrder,
+  destructureDefaultParamChainOrder,
+  destructureDefaultArrayChild,
+  destructureDefaultArrayMemo,
+  destructureDefaultBodyRenamed,
+  destructureDefaultParamRenamed,
+  destructureDefaultBodyRenamedComputedArray,
+  destructureDefaultParamComputedArray,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,

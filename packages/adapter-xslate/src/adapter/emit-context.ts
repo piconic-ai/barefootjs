@@ -90,8 +90,9 @@ export interface XslateEmitContext {
 
   _recordExprBF101(message: string, reason?: string): void
 
-  /** Lower a filter/predicate body to its Kolon form, bound to `param`. */
-  _renderKolonFilterExprPublic(expr: ParsedExpr, param: string): string
+  /** Lower a filter/predicate body to its Kolon form, bound to `param`;
+   * `onRead` is told each template variable the body reads. */
+  _renderKolonFilterExprPublic(expr: ParsedExpr, param: string, onRead?: (name: string) => void): string
 }
 
 /**
@@ -146,9 +147,16 @@ export interface XslateMemoContext {
    * from the tree), so callers may pass `''`. `pos` (default `'rendered'`)
    * must be `'value'` for a derived-seed RHS — an assignment, not a render —
    * so the internal support gate matches the `isSupportedValue`
-   * classification the seed plan already used.
+   * classification the seed plan already used. `onRead` is told the name of
+   * each Kolon variable (`$<name>`) the lowering reads, as the emitter
+   * spells it.
    */
-  convertExpressionToKolon(expr: string, preParsed?: ParsedExpr, pos?: 'rendered' | 'value'): string
+  convertExpressionToKolon(
+    expr: string,
+    preParsed?: ParsedExpr,
+    pos?: 'rendered' | 'value',
+    onRead?: (name: string) => void,
+  ): string
   /** The Kolon local a memo is declared under (`collectMemoKolonRenames`, #3369). */
   memoKolonName(name: string): string
 }
