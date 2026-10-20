@@ -37,6 +37,18 @@ class TemplatePrimitivesTest(unittest.TestCase):
     def setUp(self):
         self.bf = BarefootJS(None, {"backend": _PureBackend()})
 
+    def test_mod_is_the_js_remainder(self):
+        # JS `%` takes the dividend's sign; Python's `%` floors (#3474).
+        self.assertEqual(self.bf.mod(-7, 2), -1)
+        self.assertEqual(self.bf.mod(7, -2), 1)
+        self.assertEqual(self.bf.mod(-7, -2), -1)
+        self.assertEqual(self.bf.mod(-7.5, 2), -1.5)
+        # Two int operands keep an int result, so it still indexes a list.
+        self.assertIs(type(self.bf.mod(-7, 2)), int)
+        self.assertTrue(_is_nan(self.bf.mod(7, 0)))
+        self.assertTrue(_is_nan(self.bf.mod(float("nan"), 2)))
+        self.assertTrue(_is_nan(self.bf.mod(float("inf"), 2)))
+
     def test_json(self):
         self.assertEqual(self.bf.json({"a": 1}), '{"a":1}')
         self.assertEqual(self.bf.json([1, 2, 3]), "[1,2,3]")

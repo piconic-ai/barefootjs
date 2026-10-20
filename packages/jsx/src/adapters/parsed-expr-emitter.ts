@@ -305,6 +305,29 @@ export function isNumericArithmeticResult(
   return expr.op === '-' || expr.op === '*' || expr.op === '/' || expr.op === '%'
 }
 
+/** A runtime helper of the template-helper catalogue (`spec/template-helpers.md`)
+ * that a binary arithmetic operator lowers to. */
+export type ArithmeticHelper = 'mod'
+
+/**
+ * The runtime helper a JS binary arithmetic operator lowers to on every
+ * template backend, or `null` when the backend spells the operator itself
+ * (#3474). The adapter only spells the call, in its own syntax
+ * (`bf.mod(a, b)`, `$bf->mod(a, b)`, `bf_mod a b`), over operands already
+ * coerced (`arithmeticOperandCoercion`) and grouped ({@link groupBinaryOperand}).
+ *
+ * `%` is JS's truncated remainder: the result takes the dividend's sign
+ * (`-7 % 2` is `-1`, `7 % -2` is `1`), keeps a fraction (`7.5 % 2` is `1.5`),
+ * and is `NaN` for a zero divisor or a `NaN` / infinite dividend. No
+ * engine's native operator computes it: Ruby, Python and Perl floor the
+ * quotient (`-7 % 2` is `1`), MiniJinja takes the Euclidean remainder, PHP,
+ * Perl and Kolon convert the operands to integers first (`NaN % 2` is `0`),
+ * and an integer zero divisor raises in Java, PHP and MiniJinja (#3574).
+ */
+export function arithmeticHelper(op: string): ArithmeticHelper | null {
+  return op === '%' ? 'mod' : null
+}
+
 /**
  * Wrap an emitted binary/logical/ternary OPERAND in parentheses so the
  * source grouping the `ParsedExpr` tree encodes survives infix

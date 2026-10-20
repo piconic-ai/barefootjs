@@ -286,6 +286,21 @@ module BarefootJS
       to_number(l).to_f / to_number(r).to_f
     end
 
+    # JS `%`: the truncated remainder, which takes the dividend's sign
+    # (`-7 % 2` -> -1) and keeps a fraction (`7.5 % 2` -> 1.5); Ruby's `%`
+    # floors instead (`-7 % 2` -> 1). A zero divisor, or a NaN / infinite
+    # dividend, gives NaN. Two Integer operands keep an Integer result, as
+    # Ruby's own `%` did. Shared by callback-body evaluation (`binary`) and
+    # the template-emitted remainder (`Context#mod`, #3474).
+    def remainder(l, r)
+      ln = to_number(l)
+      rn = to_number(r)
+      return Float::NAN if rn.zero?
+      return ln.remainder(rn) if ln.is_a?(Integer) && rn.is_a?(Integer)
+
+      ln.to_f.remainder(rn.to_f)
+    end
+
     def binary(op, l, r)
       case op
       when '+'
@@ -297,9 +312,7 @@ module BarefootJS
       when '-' then to_number(l) - to_number(r)
       when '*' then to_number(l) * to_number(r)
       when '/' then divide(l, r)
-      when '%'
-        rn = to_number(r).to_f
-        rn.zero? ? Float::NAN : to_number(l).to_f.remainder(rn)
+      when '%' then remainder(l, r)
       when '<', '<=', '>', '>=' then relational(op, l, r)
       when '===' then strict_eq(l, r)
       when '!==' then !strict_eq(l, r)

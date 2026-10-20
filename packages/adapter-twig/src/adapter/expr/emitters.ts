@@ -60,6 +60,7 @@
  */
 
 import {
+  arithmeticHelper,
   groupBinaryOperand,
   literalMemberIndex,
   groupObjectLiteralSegments,
@@ -287,6 +288,9 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
       return `${l} ~ ${r}`
     }
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*', '/': '/',
@@ -599,6 +603,9 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
       return `${l} ~ ${r}`
     }
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

@@ -4,14 +4,6 @@
   "runner": "packages/adapter-perl/t/helper_vectors.t",
   "spec": "spec/template-helpers.md",
   "divergences": {
-    "mod/remainder keeps the dividend sign": {
-      "expect": 2,
-      "reason": "Perl native % takes the divisor sign"
-    },
-    "mod/float remainder": {
-      "expect": 1,
-      "reason": "Perl native % truncates operands to integers"
-    },
     "number/empty string coerces to 0": {
       "expect": { "$num": "NaN" },
       "reason": "deliberate: empty input must not silently zero downstream arithmetic"

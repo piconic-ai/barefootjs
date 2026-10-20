@@ -52,9 +52,9 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
-  // `%` over a `NaN` operand: PHP's `%` converts both operands to
-  // integers, so `NaN % 2` renders an integer where JS gives `NaN`.
-  'remainder-nan-operand': { limitation: 'remainder-nan-operand' },
+  // `remainder-nan-operand` used to sit here: PHP's `%` converted both
+  // operands to integers, so `NaN % 2` rendered an integer. `%` now goes
+  // through the runtime's `mod`, PHP's `fmod` (#3474).
   // `number-arithmetic-attr-exponent-boundaries` used to sit here: a number
   // at the 1e-6 / 1e21 boundary kept the host spelling. The runtime number
   // formatter now applies JavaScript's notation rules (#3380).

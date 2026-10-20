@@ -139,6 +139,11 @@ def _is_inf(n: float) -> bool:
     return n in (float("inf"), float("-inf"))
 
 
+def _is_int(v: Any) -> bool:
+    # `bool` is a subclass of `int`; a JS boolean is not an integer.
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
 def _format_js_number(n: float) -> str:
     if n != n:
         return "NaN"
@@ -976,11 +981,16 @@ class BarefootJS:
     def truthy(self, value: Any) -> bool:
         return js_truthy(value)
 
-    def mod(self, a: Any, b: Any) -> float:
+    def mod(self, a: Any, b: Any) -> Any:
         """JS `%`: remainder with the dividend's sign. Python's `math.fmod`
         implements the same C-style fmod semantics as JS `%` for finite
         operands (sign-of-dividend remainder); domain errors (zero divisor,
-        infinite dividend) map to NaN, matching JS."""
+        infinite dividend) map to NaN, matching JS. Two int operands with a
+        non-zero divisor keep an int result, as Python's own `%` did, so a
+        template-emitted remainder (#3474) still indexes a list."""
+        if _is_int(a) and _is_int(b) and b != 0:
+            r = abs(a) % abs(b)
+            return -r if a < 0 else r
         an, bn = js_number(a), js_number(b)
         try:
             return math.fmod(an, bn)

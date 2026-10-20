@@ -118,9 +118,9 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
-  // `%` over a `NaN` operand: `bf_mod` converts both operands to `int`, so
-  // `NaN % 2` renders an integer where JS gives `NaN`.
-  'remainder-nan-operand': { limitation: 'remainder-nan-operand' },
+  // `remainder-nan-operand` used to sit here: `bf_mod` converted both
+  // operands to `int`, so `NaN % 2` rendered an integer. It now computes
+  // JS's truncated remainder (#3474).
   // `object-signal-field-length` used to sit here: `.length` on a loop
   // item's field inside a `.filter()` predicate never matched. It now reads
   // through `bf_length` inline and the evaluator counts a typed slice (#3447).
