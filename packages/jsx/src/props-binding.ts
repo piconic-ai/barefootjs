@@ -332,7 +332,7 @@ const EMPTY_SET: ReadonlySet<string> = new Set()
  * never bound a parameter — so callers synthesize one of these instead of a
  * full `ParamInfo` (which would need a fabricated `type`/`optional`).
  */
-export type LivePropReadInfo = Pick<ParamInfo, 'name' | 'sourceName' | 'defaultValue' | 'defaultContainsArrow'>
+export type LivePropReadInfo = Pick<ParamInfo, 'name' | 'sourceName' | 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'>
 
 /** `_p.<callerKey>` — `_p` is always keyed by the caller-facing name (#2524 CSR half). */
 export function propReadBase(p: LivePropReadInfo): string {
@@ -372,10 +372,25 @@ export function propReadFallback(
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
 ): string | null {
-  if (p.defaultValue) return coalesceDefaultText(p.defaultValue, p.defaultContainsArrow)
+  const defaultText = propDefaultText(p)
+  if (defaultText) return coalesceDefaultText(defaultText, p.defaultContainsArrow)
   if (usage?.usedAsLoopArray) return '[]'
   if (propHasPropertyAccess(usage) && !usedAsCondition) return '{}'
   return null
+}
+
+/**
+ * A prop's destructure default as client JS. A default that reads an earlier
+ * binding of its own pattern (`{ off = false, on = off }`, #3531) renders each
+ * read as that prop's own live read (`_p.off ?? false`), since the emitted
+ * scope binds no `off`; any other default is its source text. Undefined when
+ * the prop has no default.
+ */
+export function propDefaultText(p: LivePropReadInfo): string | undefined {
+  if (!p.defaultParts) return p.defaultValue
+  return p.defaultParts
+    .map(part => (part.kind === 'text' ? part.text : livePropReadExpr(part.param, undefined, false)))
+    .join('')
 }
 
 /**

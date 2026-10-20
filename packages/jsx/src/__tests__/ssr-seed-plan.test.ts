@@ -449,4 +449,41 @@ describe('computeSsrSeedPlan', () => {
     expect(constantOf('label')).toBe(false)
     expect(constantOf('both')).toBe(false)
   })
+
+  test('a destructure default reading an earlier prop re-binds the prop first, in parameter order (#3531)', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C({ a = 'x', b = a, c = b, off = false, on = !off, plain = 1 }: { a?: string; b?: string; c?: string; off?: boolean; on?: boolean; plain?: number }) {
+        const [v] = createSignal(c)
+        return <p>{v()}{String(on)}{plain}</p>
+      }
+    `)
+    expect(plan.steps.map(s => s.name)).toEqual(['b', 'c', 'on', 'v'])
+    const b = step(plan, 'b')
+    expect(b.kind).toBe('derived')
+    if (b.kind === 'derived') {
+      expect(b.origin).toBe('prop')
+      expect(b.parsed).toEqual({
+        kind: 'logical',
+        op: '??',
+        left: { kind: 'identifier', name: 'b' },
+        right: { kind: 'identifier', name: 'a' },
+      })
+      expect(b.constant).toBe(false)
+    }
+    const on = step(plan, 'on')
+    if (on.kind === 'derived') expect(on.expr).toBe('on ?? !off')
+  })
+
+  test('dependent prop defaults follow the reads, not the props type order (#3531)', () => {
+    const plan = planFor(`
+      'use client'
+      function C(props: { c?: string; b?: string; a?: string }) {
+        const { a = 'x', b = a, c = b } = props
+        return <p>{a}{b}{c}</p>
+      }
+    `)
+    expect(plan.steps.map(s => s.name)).toEqual(['b', 'c'])
+  })
 })

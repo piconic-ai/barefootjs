@@ -65,7 +65,7 @@
         27
       ],
       "emitCallerPropsInit": [
-        29
+        28
       ],
       "emitExpression": [
         34
@@ -939,7 +939,7 @@
         39
       ],
       "extractSsrDefaults": [
-        79
+        72
       ]
     },
     "packages/jsx/src/static-literal.ts": {

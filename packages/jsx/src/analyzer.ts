@@ -9,11 +9,11 @@
 import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
-import { rewriteBarePropRefs } from './prop-rewrite.ts'
-import { buildPropAliasMap, coalesceDefaultText, signalPropSeed } from './props-binding.ts'
+import { rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
+import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -1538,7 +1538,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames, undefined, propAliases)
+      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
     }
   }
 
@@ -1630,7 +1630,7 @@ function collectFactorySignal(
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateInitialValue = rewriteBarePropRefs(initialValue, initialNode.node, propNames, undefined, propAliases)
+      templateInitialValue = rewriteBarePropRefs(initialValue, initialNode.node, propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
     }
   }
 
@@ -2083,7 +2083,7 @@ function memoBodyFields(
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
       const propAliases = buildPropAliasMap(ctx.propsParams)
-      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases)
+      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
       templateBodyExpr = rewritten === undefined ? undefined : asBodyExpr(rewritten)
     }
   }
@@ -3664,6 +3664,18 @@ function getSystemConstructKind(node: ts.Node): 'createContext' | 'weakMap' | un
 }
 
 /**
+ * The CSR `template:` read of a destructured prop a signal seed or memo body
+ * names (#2265): the live read every client site shares
+ * (`livePropReadExpr`), so the module-scope arrow applies the prop's
+ * destructure default too, including one that reads an earlier prop
+ * (`{ off = false, on = off }` → `(_p.on ?? (_p.off ?? false))`, #3531).
+ */
+function destructuredPropTemplateRead(ctx: AnalyzerContext): (localName: string, callerKey: string) => string {
+  const byName = new Map(ctx.propsParams.filter(p => !p.isRest).map(p => [p.name, p]))
+  return (localName, callerKey) => livePropReadExpr(byName.get(localName) ?? { name: localName, sourceName: callerKey }, undefined, false)
+}
+
+/**
  * The default-value-shaped fields a binding element's own `initializer`
  * contributes to a `ParamInfo` — `defaultValue`'s source text, `parsed`'s
  * structured mirror (from the initializer's OWN AST node, no re-parse),
@@ -3676,14 +3688,70 @@ function getSystemConstructKind(node: ts.Node): 'createContext' | 'weakMap' | un
 function bindingElementDefaultFields(
   initializer: ts.Expression | undefined,
   ctx: AnalyzerContext,
-): Pick<ParamInfo, 'defaultValue' | 'parsed' | 'defaultContainsArrow'> {
+  earlier: ReadonlyMap<string, PropDefaultRead> = new Map(),
+): Pick<ParamInfo, 'defaultValue' | 'parsed' | 'defaultContainsArrow' | 'defaultParts'> {
   const defaultValue = initializer ? ctx.getJS(initializer) : undefined
   const defaultContainsArrow = initializer ? nodeContainsArrow(initializer) : false
   const parsedDefault = initializer ? tsNodeToParsedExpr(initializer) : undefined
+  const defaultParts = initializer && defaultValue !== undefined
+    ? defaultPartsReadingEarlierBindings(initializer, defaultValue, earlier)
+    : undefined
   return {
     defaultValue,
     ...(parsedDefault && parsedDefault.kind !== 'unsupported' && { parsed: parsedDefault }),
     defaultContainsArrow: defaultContainsArrow || undefined,
+    ...(defaultParts && { defaultParts }),
+  }
+}
+
+/**
+ * A destructure default split at its reads of EARLIER bindings of the same
+ * pattern (`ParamInfo.defaultParts`, #3531), or undefined when it reads none.
+ * JS puts each earlier binding in scope for a later default
+ * (`{ off = false, on = off }`), so a free `off` there is that binding, not an
+ * outer name; a later binding is still in its TDZ and is left alone. The split
+ * runs on the default's JS text with the same scope-aware walk the client
+ * prop rewrite uses, so a nested callback parameter of the same name is not a
+ * read.
+ */
+function defaultPartsReadingEarlierBindings(
+  initializer: ts.Expression,
+  defaultValue: string,
+  earlier: ReadonlyMap<string, PropDefaultRead>,
+): PropDefaultPart[] | undefined {
+  if (earlier.size === 0) return undefined
+  const names = new Set([...extractFreeIdentifiersFromNode(initializer)].filter(n => earlier.has(n)))
+  if (names.size === 0) return undefined
+  const pieces = splitScopedValueRefs(defaultValue, names)
+  if (pieces === null || !pieces.some(p => p.kind === 'ref')) return undefined
+  return pieces.map((piece): PropDefaultPart =>
+    piece.kind === 'text'
+      ? { kind: 'text', text: piece.text }
+      : { kind: 'param', param: earlier.get(piece.name)! },
+  )
+}
+
+/** {@link propDefaultReadOf} for a body destructure's binding (`const { label: text = 'x' } = props`). */
+function bodyBindingRead(
+  localName: string,
+  sourceKey: string,
+  defaultFields: Pick<ParamInfo, 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'> | undefined,
+): PropDefaultRead {
+  return propDefaultReadOf({
+    name: localName,
+    ...(sourceKey !== localName && { sourceName: sourceKey }),
+    ...defaultFields,
+  })
+}
+
+/** The fields a later default's `param` part needs to read `p` (`PropDefaultRead`). */
+function propDefaultReadOf(p: PropDefaultRead): PropDefaultRead {
+  return {
+    name: p.name,
+    ...(p.sourceName !== undefined && { sourceName: p.sourceName }),
+    ...(p.defaultValue !== undefined && { defaultValue: p.defaultValue }),
+    ...(p.defaultContainsArrow && { defaultContainsArrow: p.defaultContainsArrow }),
+    ...(p.defaultParts && { defaultParts: p.defaultParts }),
   }
 }
 
@@ -3710,6 +3778,9 @@ function collectConstant(
     ctx.propsObjectName === node.initializer.text
   ) {
     const propsName = node.initializer.text
+    // Bindings already destructured by this pattern, by local name: a later
+    // default reads them (`const { off = false, on = off } = props`, #3531).
+    const earlier = new Map<string, PropDefaultRead>()
     for (const el of node.name.elements) {
       if (!ts.isBindingElement(el) || !ts.isIdentifier(el.name) || el.dotDotDotToken) continue
       const localName = el.name.text
@@ -3717,7 +3788,8 @@ function collectConstant(
       // Shared with the #2943 `ParamInfo` overlay below so "what does this
       // default look like" (source text, `defaultContainsArrow`) has one
       // computation, not two independently-drifting ones.
-      const defaultFields = el.initializer ? bindingElementDefaultFields(el.initializer, ctx) : undefined
+      const defaultFields = el.initializer ? bindingElementDefaultFields(el.initializer, ctx, earlier) : undefined
+      earlier.set(localName, bodyBindingRead(localName, sourceKey, defaultFields))
       const baseValue = `${propsName}.${sourceKey}`
       // Parenthesize an arrow/function-expression default (#2940) — `??`
       // binds tighter than an arrow head, so a bare `props.fmt ?? (v) =>
@@ -4067,6 +4139,9 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
     // `props: Props` path instead of degrading to `unknown` (which typed
     // adapters emit as `interface{}` + an unchecked assertion). See issue #2150.
     const memberTypes = param.type ? collectMemberTypes(param.type, ctx) : null
+    // Bindings already destructured, by local name: a later default reads
+    // them (`{ off = false, on = off }`, #3531).
+    const earlier = new Map<string, PropDefaultRead>()
 
     for (const element of param.name.elements) {
       if (ts.isBindingElement(element) && ts.isIdentifier(element.name)) {
@@ -4087,16 +4162,18 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
         const member = memberTypes?.get(sourcePropName)
         const resolvedType: TypeInfo = member?.type ?? { kind: 'unknown', raw: 'unknown' }
 
-        ctx.propsParams.push({
+        const info: ParamInfo = {
           name: localName,
           type: resolvedType,
           // The type's `?` and a destructure default (`{ x = 1 }`) both mean
           // the caller may omit the prop.
           optional: !!member?.optional || !!element.initializer,
-          ...bindingElementDefaultFields(element.initializer, ctx),
+          ...bindingElementDefaultFields(element.initializer, ctx, earlier),
           // Only aliased bindings carry the source key — see ParamInfo.sourceName.
           ...(sourcePropName !== localName && { sourceName: sourcePropName }),
-        })
+        }
+        ctx.propsParams.push(info)
+        earlier.set(localName, propDefaultReadOf(info))
       }
     }
 

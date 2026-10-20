@@ -11,6 +11,7 @@ import {
   asCallbackMethodCall,
   collectAbsentPropSeedReads,
   collectNullishAttrContext,
+  inDefaultReadOrder,
   isBooleanAttr,
   isNullableSignal,
 } from '@barefootjs/jsx'
@@ -20,6 +21,7 @@ import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { applyGoFallback, goPropDefault } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
+import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
 
 /**
  * Build a map from prop name to a better Go type inferred from signals. When a
@@ -702,7 +704,7 @@ export function defaultedBindingGo(
   propTypeOverrides: Map<string, string>,
 ): string | null {
   const paramDefault = goPropDefault(param.defaultValue)
-  if (paramDefault === null) return null
+  if (paramDefault === null) return sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides)
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
@@ -711,6 +713,124 @@ export function defaultedBindingGo(
     return `func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return in.${inputField}.(${outputType}) }()`
   }
   return applyGoFallback(`in.${inputField}`, paramDefault)
+}
+
+/**
+ * The constructor statements that apply a destructure default reading an
+ * earlier prop (`{ a, b = a }`, `{ off = false, on = !off }`,
+ * `ParamInfo.defaultParts`, #3531) to the Input itself, before anything reads
+ * it: `if in.B == nil { in.B = <default> }`, one prop at a time in the
+ * defaults' read order (`inDefaultReadOrder`). Every later `in.B` read, a
+ * signal seed, a memo, a child prop or the Props field, then sees the
+ * resolved binding in the field's own Go type, so no reader needs a path of
+ * its own. Such a prop's field is nillable: a slice, map or pointer is, and a
+ * scalar is flipped to `interface{}` ({@link resolvePropGoType}), so an
+ * explicit `false` / `''` / `0` stays the caller's value.
+ *
+ * A default reading one earlier prop is that prop's resolved Go value
+ * (`in.A`, or its own literal default). Any other default is computed by the
+ * runtime evaluator, which takes a scalar, or anything into an `interface{}`
+ * field. `rawLocals` keeps each caller value `bfCallerProps` reads
+ * (`keepsCallerValue`), by Input field, and
+ * `unsupported` names the props whose default can't be applied this way
+ * (the caller refuses them loudly).
+ */
+export function dependentDefaultNormalization(
+  ctx: GoEmitContext,
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+  keepsCallerValue: (param: IRMetadata['propsParams'][number]) => boolean,
+): { lines: string[]; rawLocals: Map<string, string>; unsupported: string[] } {
+  const lines: string[] = []
+  const rawLocals = new Map<string, string>()
+  const unsupported: string[] = []
+  for (const param of inDefaultReadOrder(propsParams)) {
+    if (param.isRest || !param.defaultParts || !param.parsed) continue
+    // A binding sharing its Input field with another one (a renamed body
+    // destructure beside a raw `props.b` read) can't change `in`: the other
+    // reads the caller's value. Its own reads take
+    // `sharedDependentDefaultGo` instead, refused here like any other default
+    // the constructor can't build.
+    if (sharesInputField(param, propsParams)) {
+      if (sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides) === null) unsupported.push(param.name)
+      continue
+    }
+    const field = capitalizeFieldName(param.sourceName ?? param.name)
+    const goType = resolvePropGoType(ctx, param, propTypeOverrides)
+    const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
+    if (value === null) {
+      unsupported.push(param.name)
+      continue
+    }
+    if (keepsCallerValue(param)) {
+      const raw = `bfCaller${field}`
+      rawLocals.set(field, raw)
+      lines.push(`\t${raw} := in.${field}`)
+    }
+    lines.push(`\tif in.${field} == nil {`)
+    lines.push(`\t\tin.${field} = ${value}`)
+    lines.push('\t}')
+  }
+  if (lines.length > 0) lines.push('')
+  return { lines, rawLocals, unsupported }
+}
+
+/** Whether another binding reads `param`'s caller-facing Input field (`{ b: local = a }` beside `props.b`). */
+function sharesInputField(param: IRMetadata['propsParams'][number], propsParams: IRMetadata['propsParams']): boolean {
+  const key = param.sourceName ?? param.name
+  return propsParams.some(p => p !== param && !p.isRest && (p.sourceName ?? p.name) === key)
+}
+
+/**
+ * {@link defaultedBindingGo} for a binding whose default reads an earlier
+ * prop but whose Input field another binding also reads, so the default is
+ * not applied to `in` (`dependentDefaultNormalization`): the binding's own
+ * value, the default when the field is nil. Null for any other binding, or
+ * when the field can't tell an absent prop apart.
+ */
+function sharedDependentDefaultGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  if (!param.defaultParts || !param.parsed || !sharesInputField(param, propsParams)) return null
+  const key = param.sourceName ?? param.name
+  const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
+  const inputType = resolvePropGoType(ctx, owner, propTypeOverrides)
+  const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
+  if (!isNillableGoType(inputType)) return null
+  const value = dependentDefaultGo(ctx, param, outputType, propsParams, propTypeOverrides)
+  if (value === null) return null
+  const field = `in.${capitalizeFieldName(key)}`
+  const read = outputType === inputType || outputType === 'interface{}' ? field : `${field}.(${outputType})`
+  return `func() ${outputType} { if ${field} == nil { return ${value} }; return ${read} }()`
+}
+
+function isNillableGoType(goType: string): boolean {
+  return goType === 'interface{}' || goType === 'any' || goType.startsWith('[]') || goType.startsWith('map[') || goType.startsWith('*')
+}
+
+/** The Go value of `param`'s dependent default, in its field's type `goType`; null when it can't be built. */
+function dependentDefaultGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  goType: string,
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  const parsed = param.parsed!
+  if (parsed.kind === 'identifier') {
+    const ref = propsParams.find(p => !p.isRest && p.name === parsed.name)
+    if (!ref) return null
+    const refType = resolvePropGoType(ctx, ref, propTypeOverrides)
+    if (goType !== 'interface{}' && goType !== 'any' && refType !== goType) return null
+    // An earlier dependent prop is already resolved on `in`; a literal
+    // default applies here.
+    return defaultedBindingGo(ctx, ref, propsParams, propTypeOverrides) ?? `in.${capitalizeFieldName(ref.sourceName ?? ref.name)}`
+  }
+  const evaluated = evalExprGo(ctx, parsed, [], propsParams, new Map(), new Set())
+  return evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
 }
 
 export function resolvePropGoType(
@@ -764,10 +884,14 @@ export function resolvePropGoType(
   // `collectArithmeticAbsentPropNames`. So does a param a `{...props}`
   // spread onto a child component forwards (#3530) — see
   // `collectPropsSpreadForwardedParams`.
+  // A default that reads an earlier prop (`{ off = false, on = off }`,
+  // #3531) applies to an absent prop only, which the constructor tells apart
+  // by nil (`dependentDefaultNormalization`).
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
-    (ctx.state.nullishConsumedPropNames.has(param.name) ||
+    (param.defaultParts !== undefined ||
+      ctx.state.nullishConsumedPropNames.has(param.name) ||
       ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
       ctx.state.textConsumedPropNames.has(param.name) ||
       ctx.state.presenceCheckedPropNames.has(param.name) ||
