@@ -14,5 +14,7 @@ export default defineLimitation({
     'destructure-default-param-chain-order',
     'destructure-default-param-renamed',
     'signal-computed-seed-sibling-fallbacks-destructured',
+    'signal-seed-dependent-default-nullish-literal',
+    'signal-seed-dependent-default-nullish-literal-body',
   ],
 })

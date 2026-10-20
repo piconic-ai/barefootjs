@@ -251,4 +251,6 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   'destructure-default-param-chain-order:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
   'destructure-default-body-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
   'destructure-default-param-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'signal-seed-dependent-default-nullish-literal:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'signal-seed-dependent-default-nullish-literal-body:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
 }

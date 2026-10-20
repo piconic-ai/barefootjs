@@ -326,7 +326,7 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
       }
     }
     if (!match) continue
-    if (result.has(match.propName)) continue
+    if (!hoistsFallbackVar(ctx, ir, signal, match.propName, result)) continue
     const param = ir.metadata.propsParams.find(p => p.name === match.propName)
     if (!param) continue
     // A destructure default already wins via applyGoFallback.
@@ -376,6 +376,32 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
     })
   }
   return result
+}
+
+/**
+ * Whether `signal`'s `props.X ?? N` seed hoists the local for `propName`:
+ * no earlier seed hoisted one, and the constructor line this signal owns
+ * reads it, so the local is never declared unused (#3577 review). That line
+ * is the Props field the signal shares with a prop
+ * ({@link sharedFieldFallbackVar}), which reads the local only when the
+ * prop is `propName` itself, or else the signal's own field
+ * ({@link signalSeedGo}), which reads it unless the seed is evaluated (a
+ * seed over a boxed dependent-default prop, #3531). A seed that would not
+ * read it leaves the prop to a later seed; other readers (a memo seed, a
+ * child prop) use the local only when it exists.
+ */
+function hoistsFallbackVar(
+  ctx: GoEmitContext,
+  ir: ComponentIR,
+  signal: ComponentIR['metadata']['signals'][number],
+  propName: string,
+  hoisted: ReadonlyMap<string, PropFallbackVar>,
+): boolean {
+  if (hoisted.has(propName)) return false
+  const fieldName = capitalizeFieldName(signal.getter)
+  const sharedProp = ir.metadata.propsParams.find(p => capitalizeFieldName(p.name) === fieldName)
+  if (sharedProp) return sharedProp.name === propName
+  return ctx.computedSignalSeed(signal, ir.metadata.propsParams, hoisted) === null
 }
 
 /**

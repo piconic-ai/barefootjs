@@ -8112,6 +8112,118 @@
       }
     }
   ],
+  "signal-seed-dependent-default-nullish-literal": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "c": ""
+      }
+    },
+    {
+      "name": "gen:c:markup",
+      "props": {
+        "c": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:c:multibyte",
+      "props": {
+        "c": "日本語"
+      }
+    }
+  ],
+  "signal-seed-dependent-default-nullish-literal-body": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "c": ""
+      }
+    },
+    {
+      "name": "gen:c:markup",
+      "props": {
+        "c": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:c:multibyte",
+      "props": {
+        "c": "日本語"
+      }
+    }
+  ],
   "signal-seed-local-helper-call": [
     {
       "name": "gen:mode:absent",
