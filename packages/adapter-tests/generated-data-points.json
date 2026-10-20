@@ -1023,6 +1023,22 @@
       }
     }
   ],
+  "children-alias-hop-shadowed-intermediate": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "children-alias-loop-shadow": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "children-named-local-escaped": [
     {
       "name": "gen:items:empty",
@@ -1050,6 +1066,14 @@
           "<b>a</b>",
           "c"
         ],
+        "rows": []
+      }
+    }
+  ],
+  "children-named-loop-row-key": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
         "rows": []
       }
     }

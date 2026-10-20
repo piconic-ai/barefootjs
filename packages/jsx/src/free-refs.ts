@@ -23,6 +23,7 @@ import type {
   ConstantInfo,
   FunctionInfo,
 } from './types.ts'
+import { isChildrenPropParam } from './types.ts'
 import { isReactiveType } from './reactivity-checker.ts'
 import { incrementCounter } from './instrumentation.ts'
 
@@ -36,6 +37,12 @@ export interface BindingEnvironment {
   memos: readonly MemoInfo[]
   propsParams: readonly ParamInfo[]
   propsObjectName: string | null
+  /**
+   * Component-scope consts that alias the props object (`const p = props`,
+   * through any number of hops). A `.children` read through one of them is
+   * the children prop, the same as `props.children` (#3572).
+   */
+  propsObjectAliases?: ReadonlySet<string>
   restPropsName: string | null
   localConstants: readonly ConstantInfo[]
   localFunctions: readonly FunctionInfo[]
@@ -106,7 +113,7 @@ function buildBindingMap(env: BindingEnvironment): Map<string, BindingKind> {
     // the OR-combined `reactive` flag promotes it to a text slot,
     // breaking SSR hydration on every UI component that forwards
     // children.
-    if (p.name === 'children') continue
+    if (isChildrenPropParam(p)) continue
     map.set(p.name, 'prop')
   }
   if (env.propsObjectName !== null) {
@@ -298,6 +305,25 @@ function resolveConstantInitializerRefs(
  * the transitive-taint expansion path. `visited` tracks identifier names
  * already expanded to break cycles like `const a = b; const b = a`.
  */
+/**
+ * `props.children` is rendered into the server-side HTML (it is the child
+ * slot, not a reactive value). The `props` identifier is a non-reactive
+ * reference *only* in this position, so consumers don't wrap the
+ * surrounding expression in createEffect just because it touches `props`.
+ * Matches the legacy `isPropsReference` semantics. A const alias of the
+ * props object (`const p = props; p.children`) reads the same prop (#3572).
+ */
+function isPropsChildrenRead(ident: ts.Identifier, env: BindingEnvironment): boolean {
+  if (env.propsObjectName !== ident.text && !env.propsObjectAliases?.has(ident.text)) return false
+  const parent = ident.parent
+  return (
+    !!parent &&
+    ts.isPropertyAccessExpression(parent) &&
+    parent.expression === ident &&
+    parent.name.text === 'children'
+  )
+}
+
 function resolveFreeRefsInternal(
   node: ts.Node,
   env: BindingEnvironment,
@@ -312,22 +338,7 @@ function resolveFreeRefsInternal(
   for (const ident of idents) {
     const name = ident.text
 
-    // `props.children` is rendered into the server-side HTML (it is the
-    // child slot, not a reactive value). Treat the `props` identifier as
-    // a non-reactive reference *only* in this position so consumers don't
-    // wrap the surrounding expression in createEffect just because it
-    // touches `props`. Matches the legacy `isPropsReference` semantics.
-    if (env.propsObjectName === name) {
-      const parent = ident.parent
-      if (
-        parent &&
-        ts.isPropertyAccessExpression(parent) &&
-        parent.expression === ident &&
-        parent.name.text === 'children'
-      ) {
-        continue
-      }
-    }
+    if (isPropsChildrenRead(ident, env)) continue
 
     let kind: BindingKind | undefined = bindingMap.get(name)
 

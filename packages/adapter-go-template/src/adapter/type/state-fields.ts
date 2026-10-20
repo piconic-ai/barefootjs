@@ -27,6 +27,7 @@ import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { goPropDefault } from '../lib/go-emit.ts'
 import { GO_KEYWORDS, capitalizeFieldName } from '../lib/go-naming.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
+import { propsFieldName } from '../lib/props-field-names.ts'
 import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
@@ -399,7 +400,7 @@ function hoistsFallbackVar(
 ): boolean {
   if (hoisted.has(propName)) return false
   const fieldName = capitalizeFieldName(signal.getter)
-  const sharedProp = ir.metadata.propsParams.find(p => capitalizeFieldName(p.name) === fieldName)
+  const sharedProp = ir.metadata.propsParams.find(p => propsFieldName(p, ir.metadata) === fieldName)
   if (sharedProp) return sharedProp.name === propName
   return ctx.computedSignalSeed(signal, ir.metadata.propsParams, hoisted) === null
 }
@@ -417,7 +418,10 @@ export function sharedFieldFallbackVar(
   propName: string,
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): PropFallbackVar | undefined {
-  const fieldName = capitalizeFieldName(propName)
+  // The prop's own Props field (`propsFieldName`), which may not be named
+  // after its local (`{ label: children }` is held in `Label`, #3572).
+  const param = ir.metadata.propsParams.find(p => p.name === propName)
+  const fieldName = param ? propsFieldName(param, ir.metadata) : capitalizeFieldName(propName)
   if (!ir.metadata.signals.some(s => capitalizeFieldName(s.getter) === fieldName)) return undefined
   return propFallbackVars.get(propName)
 }

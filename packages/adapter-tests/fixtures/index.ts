@@ -1095,6 +1095,19 @@ import { fixture as childrenNullishTextFallbackShapes } from './children-nullish
 import { fixture as childrenOrTextFallback } from './children-or-text-fallback'
 import { fixture as childrenTernaryTextFallback } from './children-ternary-text-fallback'
 import { fixture as childrenRenamedParam } from './children-renamed-param'
+// The children prop renamed in a destructure under the other fallbacks and
+// as a ternary's condition, a local named children bound to another prop,
+// and const alias hops of the children prop (#3572).
+import { fixture as childrenRenamedParamFallbackShapes } from './children-renamed-param-fallback-shapes'
+import { fixture as childrenRenamedParamConditional } from './children-renamed-param-conditional'
+import { fixture as childrenLocalBindsOtherProp } from './children-local-binds-other-prop'
+import { fixture as childrenAliasHop } from './children-alias-hop'
+import { fixture as childrenAliasHopFragmentRoot } from './children-alias-hop-fragment-root'
+import { fixture as childrenRenamedBesideChildrenLocal } from './children-renamed-beside-children-local'
+import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow'
+import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
+import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
+import { fixture as childrenLocalNullableAttr } from './children-local-nullable-attr'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
 import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
 import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
@@ -1873,6 +1886,16 @@ export const jsxFixtures: JSXFixture[] = [
   childrenOrTextFallback,
   childrenTernaryTextFallback,
   childrenRenamedParam,
+  childrenRenamedParamFallbackShapes,
+  childrenRenamedParamConditional,
+  childrenLocalBindsOtherProp,
+  childrenAliasHop,
+  childrenAliasHopFragmentRoot,
+  childrenRenamedBesideChildrenLocal,
+  childrenAliasLoopShadow,
+  childrenAliasHopShadowedIntermediate,
+  childrenNamedLoopRowKey,
+  childrenLocalNullableAttr,
   childrenPreambleLocalEscaped,
   filterPredicateShapeLoop,
   filterPredicateShapeLoopClient,

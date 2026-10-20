@@ -27,6 +27,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A const alias chain (`const a = children; const b = a`) read in a loop
+  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
+  // the template cannot inline the const through the shadowed name, and the
+  // const itself is never set, so the read renders nothing.
+  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

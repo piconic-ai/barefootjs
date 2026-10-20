@@ -6196,6 +6196,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -6482,6 +6488,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -6726,9 +6738,9 @@
               ]
             },
             {
-              "fixture": "children-renamed-param",
+              "fixture": "children-alias-hop-shadowed-intermediate",
               "limitations": [
-                "renamed-children-param"
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -7096,6 +7108,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7382,6 +7400,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7656,6 +7680,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7909,6 +7939,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8183,6 +8219,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8469,6 +8511,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -9266,12 +9314,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
               ]
             },
             {
@@ -10803,12 +10845,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11077,6 +11113,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11321,6 +11363,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11520,6 +11568,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -11827,6 +11881,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12071,6 +12131,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12303,6 +12369,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12514,6 +12586,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -12746,6 +12824,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -12993,6 +13077,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -13217,10 +13307,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
-        "fixture": "children-named-loop-row-escaped",
-        "description": "A loop row named children is escaped text, not the children prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-named-loop-row-escaped.ts",
-        "code": "props.kids"
+        "fixture": "children-alias-hop-shadowed-intermediate",
+        "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts",
+        "code": "rows.map"
       }
     },
     "object-literal": {
@@ -18916,12 +19006,6 @@
               ]
             },
             {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -20015,12 +20099,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
             {
               "fixture": "component-spread-explicit-null",
               "limitations": [
