@@ -1565,6 +1565,20 @@
         "text"
       ]
     },
+    "children-local-nullable-attr": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "children-named-local-escaped": {
       "kinds": [
         "array-method",

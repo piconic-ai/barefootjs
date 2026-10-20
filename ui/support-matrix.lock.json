@@ -6196,6 +6196,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -8213,6 +8219,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -11101,6 +11113,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12806,6 +12824,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {

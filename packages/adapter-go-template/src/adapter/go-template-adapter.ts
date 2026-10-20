@@ -183,6 +183,7 @@ import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, sharedFieldFallbackVar, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
+import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
@@ -263,59 +264,6 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
 /** Binary operators whose Go lowering yields a boxed number (`+` may also be
  * a string concat, which `bf_string` passes through unchanged). */
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
-
-type PropsFieldMeta = Pick<ComponentIR['metadata'], 'propsParams' | 'signals' | 'memos'>
-
-/** The field name `Children`, which only the children prop may hold. */
-const CHILDREN_FIELD = capitalizeFieldName('children')
-
-/**
- * The Props struct field each props param is held in, by local binding.
- *
- * - The children prop is always `Children`, renamed or not
- *   (`{ children: kids }`, #3572): that is the field the parent's children
- *   reach it through (`bf_with_children` sets `Children` by name, and
- *   `New<Comp>Props` copies the caller's `Input.Children`).
- * - Any other param is held in its LOCAL binding's field (`{ n: count }` →
- *   `Count`), what the template reads, unless that field is `Children`
- *   (`{ label: children }`): `Children` is reserved for the children
- *   payload, so the binding takes its caller-facing key's field instead
- *   (`Label`), with `_` appended while another prop, signal or memo field
- *   already has that name.
- *
- * The template's reads of a binding whose field is not its local's resolve
- * through `propDestructureAliases` (`propFieldAliases`).
- */
-function propsFieldNames(meta: PropsFieldMeta): ReadonlyMap<string, string> {
-  const fields = new Map<string, string>()
-  const displaced: { name: string; sourceName?: string }[] = []
-  const taken = new Set<string>([
-    ...(meta.signals ?? []).map(sig => capitalizeFieldName(sig.getter)),
-    ...(meta.memos ?? []).map(m => capitalizeFieldName(m.name)),
-  ])
-  for (const param of meta.propsParams ?? []) {
-    const field = isChildrenPropParam(param) ? CHILDREN_FIELD : capitalizeFieldName(param.name)
-    if (field === CHILDREN_FIELD && !isChildrenPropParam(param)) {
-      displaced.push(param)
-      continue
-    }
-    fields.set(param.name, field)
-    taken.add(field)
-  }
-  taken.add(CHILDREN_FIELD)
-  for (const param of displaced) {
-    let field = capitalizeFieldName(param.sourceName ?? param.name)
-    while (taken.has(field)) field = `${field}_`
-    fields.set(param.name, field)
-    taken.add(field)
-  }
-  return fields
-}
-
-/** The Props struct field `param` is held in (`propsFieldNames`). */
-function propsFieldName(param: { name: string; sourceName?: string }, meta: PropsFieldMeta): string {
-  return propsFieldNames(meta).get(param.name) ?? capitalizeFieldName(param.name)
-}
 
 /**
  * Local names whose template reads resolve to another field than their own
@@ -6655,24 +6603,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * A reference to a root-scope field — a signal, a prop, or a derived value
-   * that lives on the component's top-level data struct. Inside a `{{range}}`
-   * the dot is rebound to the iteration element, so root data must be reached
-   * through Go template's `$` (the top-level argument to Execute), which never
-   * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
-   */
-  /**
    * The root field of the nillable prop `propName` names, for the
    * `{{if ne .X nil}}` attribute-omission guard, or null when it is not a
-   * nillable prop. A bare name a loop row binds (`isBareName`, as in
-   * `rows.map(children => <li key={children}>)`) is the row value, not the
-   * prop. The prop's field is a root field, reached through `$.` inside a
-   * loop (#3572).
+   * nillable prop. It is the same field the attribute's value reads: a bare
+   * local through `rootFieldRef`'s alias resolution (`{ label: children }`
+   * reads `Label`, not the children payload's `Children`), a props-object
+   * key (`viaPropsObject`) through `propKeyFieldRef`. A bare name a loop row
+   * binds (`rows.map(children => <li key={children}>)`) is the row value,
+   * not the prop (#3572).
    */
-  private nillablePropFieldRef(propName: string, isBareName: boolean): string | null {
+  private nillablePropFieldRef(propName: string, viaPropsObject: boolean): string | null {
     if (!this.state.nillablePropNames.has(propName)) return null
-    if (isBareName && this.scope.lookup(propName) !== null) return null
-    return `${this.inLoop ? '$.' : '.'}${capitalizeFieldName(propName)}`
+    if (viaPropsObject) return this.propKeyFieldRef(propName)
+    if (this.scope.lookup(propName) !== null) return null
+    return this.rootFieldRef(propName)
   }
 
   /**
@@ -6686,6 +6630,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `${prefix}${this.state.propKeyFields.get(key) ?? capitalizeFieldName(key)}`
   }
 
+  /**
+   * A reference to a root-scope field — a signal, a prop, or a derived value
+   * that lives on the component's top-level data struct. Inside a `{{range}}`
+   * the dot is rebound to the iteration element, so root data must be reached
+   * through Go template's `$` (the top-level argument to Execute), which never
+   * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
+   */
   private rootFieldRef(name: string): string {
     const resolved = this.resolveRootFieldAlias(name)
     this.state.templateReadRootFields.add(resolved)
@@ -10512,7 +10463,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.state.propsObjectName && bareId.startsWith(`${this.state.propsObjectName}.`)
           ? bareId.slice(this.state.propsObjectName.length + 1)
           : bareId
-      const field = /^[A-Za-z_$][\w$]*$/.test(propName) ? this.nillablePropFieldRef(propName, propName === bareId) : null
+      const field = /^[A-Za-z_$][\w$]*$/.test(propName) ? this.nillablePropFieldRef(propName, propName !== bareId) : null
       if (field !== null) {
         return `{{if ne ${field} nil}}${nameTok}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
       }

@@ -2266,11 +2266,59 @@
           }
         }
       },
-      "children-renamed-param": {
+      "children-alias-hop-shadowed-intermediate": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "renamed-children-param"
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
           ]
         }
       },
@@ -7510,9 +7558,9 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
-      "children-renamed-param": {
-        "description": "A children prop renamed in the parameter destructure renders present children as markup",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
+      "children-alias-hop-shadowed-intermediate": {
+        "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts"
       },
       "component-spread-explicit-null": {
         "description": "A props spread whose explicit null overrides an earlier explicit prop",
@@ -8308,6 +8356,27 @@
         "BF101"
       ]
     },
+    "loop-shadowed-const-alias-hop": {
+      "title": "A const alias hop read in a loop row that shadows a name the hop passes through",
+      "kind": "silent",
+      "given": "a component-scope const alias chain (`const a = children; const b = a`, `const c = children`) read inside a `.map()` row whose parameter has a name the chain passes through (`rows.map(a => …{b}…)`, `rows.map((children, i) => …{c}…)`)",
+      "expected": "the read renders the value the const chain holds (here the passed children, as markup)",
+      "actual": "renders nothing, or fails to render: the template reads the const as a variable that is never set",
+      "fixtures": [
+        "children-alias-hop-shadowed-intermediate"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "memo-prop-read-takes-signal-nullish-fallback": {
       "title": "A memo reading a prop takes a sibling signal seed’s `??` fallback",
       "kind": "silent",
@@ -8539,28 +8608,6 @@
       ],
       "diagnostics": [
         "BF063"
-      ]
-    },
-    "renamed-children-param": {
-      "title": "A children prop renamed in the parameter destructure",
-      "kind": "silent",
-      "given": "a component whose parameter destructure renames the children prop (`({ children: kids })`) and reads it (`{kids}`, `{kids ?? '<b>x</b>'}`) with children passed",
-      "expected": "the present children render as markup; an absent read renders nothing, or the escaped fallback",
-      "actual": "drops the present children (the fallback renders instead), or renders them as escaped visible text instead of markup",
-      "fixtures": [
-        "children-renamed-param"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
       ]
     },
     "reserved-name-collides-with-internal-name": {

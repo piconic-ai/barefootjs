@@ -1107,6 +1107,7 @@ import { fixture as childrenRenamedBesideChildrenLocal } from './children-rename
 import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow'
 import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
 import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
+import { fixture as childrenLocalNullableAttr } from './children-local-nullable-attr'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
 import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
 import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
@@ -1894,6 +1895,7 @@ export const jsxFixtures: JSXFixture[] = [
   childrenAliasLoopShadow,
   childrenAliasHopShadowedIntermediate,
   childrenNamedLoopRowKey,
+  childrenLocalNullableAttr,
   childrenPreambleLocalEscaped,
   filterPredicateShapeLoop,
   filterPredicateShapeLoopClient,
