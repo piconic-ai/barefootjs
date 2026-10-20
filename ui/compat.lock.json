@@ -6241,32 +6241,6 @@
           ]
         }
       },
-      "remainder-nan-operand": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "remainder-nan-operand"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "remainder-nan-operand"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "remainder-nan-operand"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "remainder-nan-operand"
-          ]
-        }
-      },
       "reserved-name-and-internal-twin": {
         "blade": {
           "kind": "refusal",
@@ -7628,10 +7602,6 @@
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       },
-      "remainder-nan-operand": {
-        "description": "Remainder over a NaN operand (NaN % 2 → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-nan-operand.ts"
-      },
       "reserved-name-and-internal-twin": {
         "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-internal-twin.ts"
@@ -8425,22 +8395,6 @@
       ],
       "diagnostics": [
         "BF063"
-      ]
-    },
-    "remainder-nan-operand": {
-      "title": "Remainder over a NaN operand",
-      "kind": "silent",
-      "given": "`%` whose left operand is `NaN`, such as a signal created with no initial value (`n() % 2`)",
-      "expected": "the floating-point remainder: `NaN % 2` is `NaN`",
-      "actual": "renders an integer: the engine truncates the `NaN` operand to an integer before taking the remainder",
-      "fixtures": [
-        "remainder-nan-operand"
-      ],
-      "adapters": [
-        "blade",
-        "go-template",
-        "twig",
-        "xslate"
       ]
     },
     "renamed-children-param": {

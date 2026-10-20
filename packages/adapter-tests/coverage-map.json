@@ -8910,6 +8910,25 @@
       "axes": [],
       "contexts": []
     },
+    "remainder-fraction-zero-divisor": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "remainder-nan-operand": {
       "kinds": [
         "binary",
@@ -8923,6 +8942,28 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "remainder-negative-operands": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:===",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -11553,6 +11594,27 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "unary-minus-compound-operand": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

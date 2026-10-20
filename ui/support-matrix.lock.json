@@ -2935,12 +2935,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3138,12 +3132,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -3605,12 +3593,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3702,12 +3684,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -3941,12 +3917,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -4405,12 +4375,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -5508,12 +5472,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5725,12 +5683,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -6334,12 +6286,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "reserved-name-and-internal-twin",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
@@ -6912,12 +6858,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -8282,12 +8222,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "reserved-name-and-internal-twin",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
@@ -8553,12 +8487,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -8916,12 +8844,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -9347,12 +9269,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -10333,12 +10249,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10520,12 +10430,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -15793,51 +15697,15 @@
     "binary:%": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            }
-          ]
-        },
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
         "pebble": {},
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            }
-          ]
-        },
-        "xslate": {
-          "gaps": [
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            }
-          ]
-        }
+        "twig": {},
+        "xslate": {}
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -17402,12 +17270,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -17605,12 +17467,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -18108,12 +17964,6 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -18205,12 +18055,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
