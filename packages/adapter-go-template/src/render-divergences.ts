@@ -235,4 +235,11 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   // An explicit `''` for a prop with a string destructure default reads as
   // absent, so the evaluated seed takes the default.
   'signal-computed-seed-sibling-fallbacks-destructured:gen:tag:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  // The same for the head of a destructure-default chain (`a = 'x'`): `a`
+  // takes `'x'`, and the defaults reading it (`b = a`) follow.
+  'destructure-default-chain:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'destructure-default-body-chain-order:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'destructure-default-param-chain-order:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'destructure-default-body-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'destructure-default-param-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
 }

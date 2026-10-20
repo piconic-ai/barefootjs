@@ -173,7 +173,7 @@ export function Select(__allProps: SelectProps & { __instanceId?: string; __bfSc
       open: bfSignal_open,
       onOpenChange: (v) => { setOpen(v); props.onOpenChange?.(v) },
       value: () => isControlled() ? (props.value ?? '') : internalValue(),
-      onValueChange: (v) => {
+      onValueChange: (v: string) => {
         if (!isControlled()) setInternalValue(v)
         if (props.onValueChange) props.onValueChange(v)
       },

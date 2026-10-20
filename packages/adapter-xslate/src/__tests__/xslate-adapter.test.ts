@@ -216,6 +216,35 @@ export function C(props: { x?: number }) {
     expect(template).toContain(': my $x = $__bf_seed_x;')
   })
 
+  // The self-reference is decided from the variables the emitter reads, not
+  // from the rendered Kolon text: a read inside a native predicate body
+  // counts, and a `$x` inside a string literal does not.
+  test('captures a same-name read inside a native predicate body', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { items: string[]; x?: string }) {
+  const [x, setX] = createSignal(props.items.filter(i => i.startsWith(props.x ?? '')).length)
+  return <span>{x()}</span>
+}
+`)
+    expect(template).toContain(": my $__bf_seed_x = $bf.length($bf.filter($items, -> $i { $bf.starts_with($i, ($x // '')) }));")
+    expect(template).toContain(': my $x = $__bf_seed_x;')
+  })
+
+  test('does not capture for a $<name> spelled inside a string literal', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { label?: string }) {
+  const [x, setX] = createSignal(props.label ?? '$x')
+  return <span>{x()}</span>
+}
+`)
+    expect(template).toContain(": my $x = ($label // '$x');")
+    expect(template).not.toContain('__bf_seed_x')
+  })
+
   test('emits data_key_attr on the component root', () => {
     const { template } = compileAndGenerate(`
 export function Item() { return <div class="x">hi</div> }

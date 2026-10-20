@@ -239,24 +239,24 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   return (
     <>{provideContextSSR(ComboboxContext, {
       open,
-      onOpenChange: (v) => {
+      onOpenChange: (v: boolean) => {
         setOpen(v)
         // Clear search when closing
         if (!v) setSearch('')
       },
       value: () => isControlled() ? (props.value ?? '') : internalValue(),
-      onValueChange: (v) => {
+      onValueChange: (v: string) => {
         if (!isControlled()) setInternalValue(v)
         if (props.onValueChange) props.onValueChange(v)
       },
       search,
       onSearchChange: setSearch,
-      registerItem: (entry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
-      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      registerItem: (entry: ComboboxItemEntry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
+      unregisterItem: (entry: ComboboxItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
       items: entries,
       visibleItems,
-      itemsInGroup: (group) => itemsByGroup().get(group) ?? [],
-      isVisible: (entry) => matches(entry, search()),
+      itemsInGroup: (group: HTMLElement) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry: ComboboxItemEntry) => matches(entry, search()),
     }, <><div data-slot="combobox" id={props.id} className={`relative inline-block ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}>{props.children}</div></>)}</>
   )
 }

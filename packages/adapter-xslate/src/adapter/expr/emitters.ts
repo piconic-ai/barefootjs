@@ -68,11 +68,23 @@ const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
  * cross-adapter follow-up), silently reaching `$props.x`, and `$props` is
  * nil at runtime (silent — every row is kept instead of filtered). Returns
  * null for any other receiver so callers fall through to their generic
- * member lowering — `props.a.b` flattens only the inner hop.
+ * member lowering — `props.a.b` flattens only the inner hop. Returns the
+ * variable's name; the caller spells it through its `kolonVar`.
  */
 function flattenPropsMember(object: ParsedExpr, property: string): string | null {
-  if (object.kind === 'identifier' && object.name === 'props') return `$${property}`
+  if (object.kind === 'identifier' && object.name === 'props') return property
   return null
+}
+
+/**
+ * Spell the Kolon variable `$<name>` and report the read to `onRead` — the
+ * one door both emitters below spell a template variable through, so a
+ * caller can ask which variables a lowering reads (the derived seed's
+ * self-reference check, #2679) without scanning the rendered Kolon.
+ */
+function kolonVar(name: string, onRead: ((name: string) => void) | undefined): string {
+  onRead?.(name)
+  return `$${name}`
 }
 
 /**
@@ -123,6 +135,8 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   // param reads the loop's row local, decided here rather than renamed in
   // the rendered text.
   private readonly paramLocal: string
+  // Told each template variable the predicate reads (`kolonVar`).
+  private readonly onRead?: (name: string) => void
 
   constructor(
     param: string,
@@ -132,6 +146,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     memoKolonName: (name: string) => string = name => name,
     rowLocalName: (name: string) => string = name => name,
     paramLocal = param,
+    onRead?: (name: string) => void,
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -140,13 +155,14 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     this.memoKolonName = memoKolonName
     this.rowLocalName = rowLocalName
     this.paramLocal = paramLocal
+    this.onRead = onRead
   }
 
   identifier(name: string): string {
-    if (name === this.param) return `$${this.paramLocal}`
+    if (name === this.param) return kolonVar(this.paramLocal, this.onRead)
     const signal = this.localVarMap.get(name)
-    if (signal) return `$${signal}`
-    return `$${this.rowLocalName(name)}`
+    if (signal) return kolonVar(signal, this.onRead)
+    return kolonVar(this.rowLocalName(name), this.onRead)
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
@@ -158,7 +174,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     const flat = flattenPropsMember(object, property)
-    if (flat !== null) return flat
+    if (flat !== null) return kolonVar(flat, this.onRead)
     // `.length` — route through `$bf.length` (handles both array element
     // count and string char count, JS-compatibly). Kolon's builtin `.size()`
     // is array-only and faults on a string.
@@ -177,7 +193,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
     // Signal getter calls: filter() → $filter
     if (callee.kind === 'identifier' && args.length === 0) {
-      return `$${this.memoKolonName(callee.name)}`
+      return kolonVar(this.memoKolonName(callee.name), this.onRead)
     }
     return emit(callee)
   }
@@ -315,9 +331,13 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   // Plain field + assignment, not a parameter property — see
   // `XslateFilterEmitter`'s constructor comment above for why.
   private readonly ctx: XslateEmitContext
+  // Told each template variable the expression reads (`kolonVar`), the
+  // native predicate bodies it hands to the filter emitter included.
+  private readonly onRead?: (name: string) => void
 
-  constructor(ctx: XslateEmitContext) {
+  constructor(ctx: XslateEmitContext, onRead?: (name: string) => void) {
     this.ctx = ctx
+    this.onRead = onRead
   }
 
   /** Declared-`boolean` lookup for stringifying a logical expression (#3443). */
@@ -365,7 +385,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // #1897 pagination's `Page {currentPage()} of {totalPages}`).
     const literalConst = this.ctx._resolveLiteralConst(name)
     if (literalConst !== null) return literalConst
-    return `$${this.ctx._rowLocalName(name)}`
+    return kolonVar(this.ctx._rowLocalName(name), this.onRead)
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
@@ -378,9 +398,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned.
-    if (object.kind === 'identifier' && object.name === 'props') return `$${this.ctx._rootPropReadName(property)}`
+    if (object.kind === 'identifier' && object.name === 'props') return kolonVar(this.ctx._rootPropReadName(property), this.onRead)
     const flat = flattenPropsMember(object, property)
-    if (flat !== null) return flat
+    if (flat !== null) return kolonVar(flat, this.onRead)
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a Kolon var that
@@ -417,7 +437,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     }
     // Signal getter: count() → $count (a renamed memo reads its own local)
     if (callee.kind === 'identifier' && args.length === 0) {
-      return `$${this.ctx._memoKolonName(callee.name)}`
+      return kolonVar(this.ctx._memoKolonName(callee.name), this.onRead)
     }
     // Env-signal method call (#1922): `searchParams().get('sort')` is a real
     // method call on the per-request `$searchParams` reader object, not the
@@ -426,7 +446,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     if (this.ctx._searchParamsLocals.size > 0) {
       const sp = matchSearchParamsMethodCall(callee, args, this.ctx._searchParamsLocals)
       if (sp) {
-        return `$searchParams.${sp.method}(${sp.args.map(emit).join(', ')})`
+        return `${kolonVar('searchParams', this.onRead)}.${sp.method}(${sp.args.map(emit).join(', ')})`
       }
     }
     // Identifier-path templatePrimitive: `JSON.stringify(x)` / `Math.floor(x)`
@@ -588,8 +608,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       findLast: 'find_last',
       findLastIndex: 'find_last_index',
     }
-    const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param)
-    return `$bf.${helper[method]}(${arrayExpr}, -> $${param} { ${predBody} })`
+    const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param, this.onRead)
+    return `$bf.${helper[method]}(${arrayExpr}, -> ${kolonVar(param, this.onRead)} { ${predBody} })`
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

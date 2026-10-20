@@ -660,6 +660,20 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.setCount).toEqual({ value: null })
     expect(defaults?.setCountAlias).toEqual({ value: null })
   })
+
+  test('a default reading an earlier prop seeds null, so the template applies it (#3531)', () => {
+    const metadata = metadataFor(`
+      function C({ off = false, on = !off }: { off?: boolean; on?: boolean }) {
+        return <p>{String(on)}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.off).toEqual({ propName: 'off', value: false })
+    // A static `!off` would read `true` and win over the in-template
+    // `on ?? !off` whatever `off` the caller passed.
+    expect(defaults?.on).toEqual({ propName: 'on', value: null })
+  })
 })
 
 // TS twin of the Ruby/Python/PHP/Perl/Rust `derive*FromDefaults` runtime

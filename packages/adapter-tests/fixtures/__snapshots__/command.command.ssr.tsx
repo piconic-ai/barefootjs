@@ -237,16 +237,16 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
       search,
       onSearchChange: setSearch,
       selectedValue,
-      onSelect: (value) => {
+      onSelect: (value: string) => {
         setSelectedValue(value)
         props.onValueChange?.(value)
       },
-      registerItem: (entry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
-      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      registerItem: (entry: CommandItemEntry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
+      unregisterItem: (entry: CommandItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
       items: entries,
       visibleItems,
-      itemsInGroup: (group) => itemsByGroup().get(group) ?? [],
-      isVisible: (entry) => matches(entry, search()),
+      itemsInGroup: (group: HTMLElement) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry: CommandItemEntry) => matches(entry, search()),
     }, <><div data-slot="command" id={props.id} className={`${commandRootClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div></>)}</>
   )
 }

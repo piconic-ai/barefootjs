@@ -8,9 +8,11 @@
  * template adapters' seed paths; this module computes it once, on the IR, so
  * every adapter consumes the same plan and only supplies its own syntax.
  *
- * Ordering / acyclicity guarantee: `steps` lists the component's signals
- * first, then its memos, each group in declaration order (matching
- * `IRMetadata.signals` / `IRMetadata.memos`), then canonical getter aliases.
+ * Ordering / acyclicity guarantee: `steps` lists the props whose destructure
+ * default reads an earlier prop first, in parameter order, then the
+ * component's signals, then its memos, each group in declaration order
+ * (matching `IRMetadata.signals` / `IRMetadata.memos`), then canonical getter
+ * aliases.
  * A binding's name only enters
  * the scope set AFTER its own step is decided, so a `derived` step's `frees`
  * can only name `baseScope` entries or EARLIER steps — self- and
@@ -42,12 +44,13 @@ import {
   stringifyParsedExpr,
   type ParsedExpr,
 } from './expression-parser.ts'
-import type { IRMetadata } from './types.ts'
+import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
 /**
- * One binding in dependency order (signals, memos, then getter aliases —
- * matching `IRMetadata` order and the adapters' iteration).
+ * One binding in dependency order (dependent prop defaults, signals, memos,
+ * then getter aliases — matching `IRMetadata` order and the adapters'
+ * iteration).
  *
  * - `env-reader`: an env signal whose `envReader` key resolves in the shared
  *   registry (`envSignalReaderFor`). The runtime provides the per-request
@@ -56,7 +59,12 @@ import { isElidedFactoryGetter } from './types.ts'
  *   registry falls through to the normal derived/opaque rules instead.
  * - `derived`: the binding's value expression is a supported shape whose free
  *   identifiers are all in scope at this point (baseScope + earlier steps) —
- *   an adapter may seed it in-template by lowering `parsed`/`expr`.
+ *   an adapter may seed it in-template by lowering `parsed`/`expr`. An
+ *   `origin: 'prop'` step re-binds a prop whose destructure default reads an
+ *   earlier prop (`{ off = false, on = off }` → `on ?? off`, #3531): the
+ *   static ssr-defaults seed cannot hold a value that depends on what the
+ *   caller passed, so the template applies the default itself, reading the
+ *   earlier prop's template variable.
  * - `opaque`: not seedable this way (empty init, unsupported shape,
  *   unanalyzable free set, out-of-scope reference, or a block-bodied memo).
  *   The name still enters scope for later steps; adapters keep their static
@@ -67,7 +75,7 @@ export type SsrSeedStep =
   | {
       kind: 'derived'
       name: string
-      origin: 'signal' | 'memo'
+      origin: 'signal' | 'memo' | 'prop'
       expr: string
       parsed: ParsedExpr
       frees: string[]
@@ -78,7 +86,7 @@ export type SsrSeedStep =
        */
       constant: boolean
     }
-  | { kind: 'opaque'; name: string; origin: 'signal' | 'memo' }
+  | { kind: 'opaque'; name: string; origin: 'signal' | 'memo' | 'prop' }
 
 export interface SsrSeedPlan {
   /**
@@ -105,17 +113,18 @@ export interface SsrSeedPlan {
  */
 function classify(
   name: string,
-  origin: 'signal' | 'memo',
+  origin: 'signal' | 'memo' | 'prop',
   expr: string,
   parsed: ParsedExpr,
   available: ReadonlySet<string>,
   inlined: ReadonlySet<string>,
 ): SsrSeedStep {
-  if (!isSupportedValue(parsed).supported) return { kind: 'opaque', name, origin }
+  const opaque: SsrSeedStep = { kind: 'opaque', name, origin }
+  if (!isSupportedValue(parsed).supported) return opaque
   const frees = freeIdentifiers(parsed)
-  if (frees === null) return { kind: 'opaque', name, origin }
+  if (frees === null) return opaque
   for (const free of frees) {
-    if (!available.has(free)) return { kind: 'opaque', name, origin }
+    if (!available.has(free)) return opaque
   }
   const constant = [...frees].every(free => inlined.has(free))
   return { kind: 'derived', name, origin, expr, parsed, frees: [...frees], constant }
@@ -206,6 +215,59 @@ function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
   return memo.parsed ? stringifyParsedExpr(memo.parsed) : ''
 }
 
+/**
+ * A `derived` step per prop whose destructure default reads an earlier prop of
+ * the same pattern (`ParamInfo.defaultParts`, #3531): `on ?? <default>`, where
+ * the default's identifiers are the earlier props' template variables. Every
+ * prop is already in `available` (baseScope), and the steps run in dependency
+ * order ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`)
+ * reads `b` after its own step re-bound it. A default the plan cannot lower
+ * (or a function default) adds no step and keeps the static ssr-defaults
+ * seed. A callback inside the default (`a.filter((x) => …)`) does not make
+ * it a function default.
+ */
+function dependentPropDefaultSteps(
+  metadata: IRMetadata,
+  available: ReadonlySet<string>,
+  inlined: ReadonlySet<string>,
+): SsrSeedStep[] {
+  const steps: SsrSeedStep[] = []
+  for (const p of inDefaultReadOrder(metadata.propsParams)) {
+    if (p.isRest || !p.defaultParts || !p.parsed || p.parsed.kind === 'arrow') continue
+    const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
+    const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, inlined)
+    if (step.kind === 'derived') steps.push(step)
+  }
+  return steps
+}
+
+/**
+ * `params` with every prop placed after the props its destructure default
+ * reads (`ParamInfo.defaultParts`). `propsParams` follows the props TYPE's
+ * member order for a body destructure (`const { a = 'x', b = a } = props`
+ * over `{ b?: string; a?: string }`), which need not be the pattern's order,
+ * so the order comes from the reads themselves. The reads only ever name an
+ * EARLIER binding of the same pattern, so they form no cycle; otherwise the
+ * input order is kept. Every backend applying these defaults one prop at a
+ * time (the in-template re-binds here, Go's constructor) uses this order.
+ */
+export function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
+  const byName = new Map(params.filter(p => !p.isRest).map(p => [p.name, p]))
+  const ordered: ParamInfo[] = []
+  const placed = new Set<ParamInfo>()
+  const place = (p: ParamInfo): void => {
+    if (placed.has(p)) return
+    placed.add(p)
+    for (const part of p.defaultParts ?? []) {
+      const read = part.kind === 'param' ? byName.get(part.param.name) : undefined
+      if (read) place(read)
+    }
+    ordered.push(p)
+  }
+  for (const p of params) place(p)
+  return ordered
+}
+
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const baseScope: string[] = metadata.propsParams.map(p => p.name)
   if (metadata.propsObjectName) baseScope.push(metadata.propsObjectName)
@@ -215,6 +277,8 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const available = new Set<string>(baseScope)
   const localConsts = localConstExprsByName(metadata)
   const steps: SsrSeedStep[] = []
+
+  steps.push(...dependentPropDefaultSteps(metadata, available, inlined))
 
   for (const signal of metadata.signals) {
     if (signal.envReader) {

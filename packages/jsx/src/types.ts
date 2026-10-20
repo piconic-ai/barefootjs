@@ -116,6 +116,16 @@ export interface ParamInfo {
   parsed?: ParsedExpr
   /** When true, the default value contains an arrow function or function expression (computed from AST). */
   defaultContainsArrow?: boolean
+  /**
+   * `defaultValue` split at each read of an EARLIER binding of the same props
+   * destructure (`{ off = false, on = off }` → `on`'s parts are one `param`
+   * part naming `off`). The analyzer resolves the references against the
+   * pattern's own bindings (#3531): an earlier binding is in scope for a later
+   * default, so its name there is that prop, never an outer name. Set only
+   * when the default reads at least one; `parsed` keeps the identifiers, which
+   * a template backend reads as the earlier props' own template variables.
+   */
+  defaultParts?: PropDefaultPart[]
   /** When true, the parameter is a rest spread (`...args`) — emit must prepend `...`. */
   isRest?: boolean
   /**
@@ -128,6 +138,22 @@ export interface ParamInfo {
    */
   sourceName?: string
 }
+
+/**
+ * One piece of a destructure default that reads an earlier binding of its own
+ * pattern (`ParamInfo.defaultParts`): the default's text between the reads,
+ * and each read as the earlier prop it names. A client-JS emitter renders a
+ * `param` part as that prop's own live read (`_p.off ?? false`), so the
+ * default never names a binding the emitted scope lacks. A `param` part
+ * carries what that read needs, its own `defaultParts` included, so a chain
+ * (`{ a = 1, b = a, c = b }`) renders without a lookup.
+ */
+export type PropDefaultPart =
+  | { kind: 'text'; text: JsSourceText }
+  | { kind: 'param'; param: PropDefaultRead }
+
+/** The earlier binding a `param` part reads: the fields a live prop read needs. */
+export type PropDefaultRead = Pick<ParamInfo, 'name' | 'sourceName' | 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'>
 
 // =============================================================================
 // Staged-IR primitives: Phase / Scope / Effect (#1138)
@@ -1389,6 +1415,21 @@ export interface ExpressionAttr {
    * props.
    */
   parts?: IRTemplatePart[]
+  /**
+   * The author's source for `expr` with its TypeScript syntax intact
+   * (`store as never`, `value!`, `(v: string) => …`), for adapters that emit
+   * type-checked TSX (`preserveTypes`). Set only when `expr` came from a
+   * type-stripped read of the source and the two texts differ. `forExpr` is
+   * the `expr` it was captured beside: a later rewrite of `expr` makes them
+   * differ, and the adapter then falls back to `expr`.
+   */
+  typed?: TypedExprSource
+}
+
+/** See {@link ExpressionAttr.typed}. */
+export interface TypedExprSource {
+  tsx: TsxSourceText
+  forExpr: JsSourceText
 }
 
 export interface BooleanAttr {
@@ -1446,7 +1487,12 @@ export const AttrValueOf = {
   },
   expression(
     expr: string,
-    opts?: { templateExpr?: string; presenceOrUndefined?: boolean; parts?: IRTemplatePart[] },
+    opts?: {
+      templateExpr?: string
+      presenceOrUndefined?: boolean
+      parts?: IRTemplatePart[]
+      typed?: TypedExprSource
+    },
   ): ExpressionAttr {
     return {
       kind: 'expression',
@@ -1454,6 +1500,7 @@ export const AttrValueOf = {
       ...(opts?.templateExpr !== undefined && { templateExpr: opts.templateExpr }),
       ...(opts?.presenceOrUndefined !== undefined && { presenceOrUndefined: opts.presenceOrUndefined }),
       ...(opts?.parts !== undefined && { parts: opts.parts }),
+      ...(opts?.typed !== undefined && { typed: opts.typed }),
     }
   },
   booleanAttr(): BooleanAttr {

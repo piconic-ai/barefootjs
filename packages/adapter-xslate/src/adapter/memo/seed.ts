@@ -92,7 +92,11 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   for (const step of plan.steps) {
     if (step.kind !== 'derived') continue
     // `'value'` — this RHS is an assignment, not a render (#2696 review).
-    const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed, 'value')
+    // `reads` collects each Kolon variable the lowering reads, as the
+    // emitter spells it: the plan's `frees` never name the step itself, but
+    // a free's Kolon spelling can (`props.size` reads `$size`).
+    const reads = new Set<string>()
+    const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed, 'value', name => reads.add(name))
     const local = ctx.memoKolonName(step.name)
     if (kolon === '' || step.constant) {
       // Not computed in-template: the value arrives as the stash var
@@ -100,7 +104,7 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
       if (local !== step.name) lines.push(`: my $${local} = $${step.name};`)
       continue
     }
-    if (new RegExp(`\\$${step.name}\\b`).test(kolon)) {
+    if (reads.has(step.name)) {
       // Self-referencing lowering (#2679): capture the RHS into a
       // throwaway local BEFORE `$<name>` is declared — `$<name>` inside
       // `kolon` still reads the stash var at this point, nothing is

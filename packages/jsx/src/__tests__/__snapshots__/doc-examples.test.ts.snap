@@ -1421,7 +1421,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => setCount(n => n + 1))
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((_p.initial))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(((_p.initial ?? 0)))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -1998,7 +1998,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => setCount(n => n + 1))
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((_p.initial))}<!--/--></p><button bf="s2">+1</button></div>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(((_p.initial ?? 0)))}<!--/--></p><button bf="s2">+1</button></div>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 

@@ -33,6 +33,7 @@ import {
   type PreambleRegionSource,
   type PreambleValueDeclaration,
   tsxSourceText, type TsxSourceText,
+  type TypedExprSource,
   type SourceLocation,
   type TypeInfo,
   type OriginInfo,
@@ -65,7 +66,7 @@ import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-loweri
 import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, rootIdentifierOf, type MultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
-import { reconstructAsSegments } from './strip-types.ts'
+import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope } from './scope/binding-scope.ts'
@@ -7979,15 +7980,48 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
     if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.BarBarToken) {
       if (ts.isIdentifier(expr.right) && expr.right.text === 'undefined') {
         const baseExpr = ctx.getJS(expr.left)
-        return AttrValueOf.expression(baseExpr, { presenceOrUndefined: true })
+        return AttrValueOf.expression(baseExpr, {
+          presenceOrUndefined: true,
+          typed: typedSourceBeside(expr.left, baseExpr, ctx),
+        })
       }
     }
 
     const exprText = ctx.getJS(expr)
-    return AttrValueOf.expression(exprText)
+    return AttrValueOf.expression(exprText, { typed: typedSourceBeside(expr, exprText, ctx) })
   }
 
   return AttrValueOf.booleanAttr()
+}
+
+/**
+ * The author's text for `node` with its TypeScript syntax intact, paired with
+ * the `js` that `ctx.getJS(node)` produced — so a TSX-emitting adapter can
+ * write it in place of `js`, and an assertion the source needed to type-check
+ * (`value={store as never}`) is still there when the emitted template is
+ * type-checked (#2573).
+ *
+ * `undefined` (the adapter keeps `js`) unless `js` is exactly `node`'s type
+ * strip: a synthetic re-parse (not a live position in this source file), or a
+ * `ctx.getJS` that substitutes on top of the strip (branch-scope locals,
+ * inlined helper parameters), has no author text that matches it. Also
+ * `undefined` when the strip removed nothing.
+ */
+function typedSourceBeside(
+  node: ts.Node,
+  js: string,
+  ctx: TransformContext,
+): TypedExprSource | undefined {
+  let own: ts.SourceFile | undefined
+  try {
+    own = node.getSourceFile()
+  } catch {
+    own = undefined
+  }
+  if (own !== ctx.sourceFile) return undefined
+  if (reconstructWithoutTypes(node, ctx.sourceFile, ctx.analyzer.typeExcludeRanges) !== js) return undefined
+  const tsx = node.getText(ctx.sourceFile)
+  return tsx === js ? undefined : { tsx: tsxSourceText(tsx), forExpr: js }
 }
 
 /**

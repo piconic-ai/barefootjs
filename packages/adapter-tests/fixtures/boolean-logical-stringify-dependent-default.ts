@@ -4,9 +4,8 @@ import { createFixture } from '../src/types'
  * A stringified `&&` over an optional boolean prop whose destructure
  * default reads an earlier boolean prop (`{ off = false, on = off }`,
  * #3443): the default is boolean, so the prop prints `true` / `false`.
- * The default reading another param is itself a tracked limitation
- * (`destructure-default-reads-earlier-param`) on the client JS and on the
- * adapters pinned for the absent-`on` point.
+ * An omitted `on` takes `off`'s value, in the client JS and on every
+ * template backend (#3531).
  */
 export const fixture = createFixture({
   id: 'boolean-logical-stringify-dependent-default',

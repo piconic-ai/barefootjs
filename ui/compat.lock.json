@@ -2782,6 +2782,34 @@
           ]
         }
       },
+      "destructure-default-body-renamed-computed-array": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "destructure-default-param-computed-array": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "embedded-prop-member-signal-seed": {
         "go-template": {
           "kind": "refusal",
@@ -7454,6 +7482,14 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
+      "destructure-default-body-renamed-computed-array": {
+        "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
+      },
+      "destructure-default-param-computed-array": {
+        "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
+      },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/embedded-prop-member-signal-seed.ts"
@@ -8069,6 +8105,11 @@
       "expected": "the explicit value wins: the default applies only to an absent prop, so the binding is `''`",
       "actual": "renders the default (`'z'`), since the input struct field cannot tell an explicit empty string from an absent prop",
       "fixtures": [
+        "destructure-default-body-chain-order",
+        "destructure-default-body-renamed",
+        "destructure-default-chain",
+        "destructure-default-param-chain-order",
+        "destructure-default-param-renamed",
         "signal-computed-seed-sibling-fallbacks-destructured"
       ],
       "adapters": [
@@ -8091,22 +8132,21 @@
         "BF101"
       ]
     },
-    "destructure-default-reads-earlier-param": {
-      "title": "A destructure default that reads an earlier param",
-      "kind": "silent",
-      "given": "a props destructure whose default reads an earlier param of the same pattern (`{ off = false, on = off }`), with the later prop omitted",
-      "expected": "the omitted prop takes the earlier param's value",
-      "actual": "emits the default verbatim into the client JS (`_p.on ?? off`), where the earlier param is undeclared, and renders the omitted prop empty on the server",
+    "destructure-default-computed-array": {
+      "title": "A destructure default computing an array from an earlier prop",
+      "kind": "refusal",
+      "given": "a props destructure default that computes an array from an earlier binding of the same pattern (`{ a, b = a.slice(1) }`), in the parameter or a renamed body destructure",
+      "expected": "the omitted prop takes the computed array",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
-        "boolean-logical-stringify-dependent-default"
+        "destructure-default-body-renamed-computed-array",
+        "destructure-default-param-computed-array"
       ],
       "adapters": [
-        "blade",
-        "erb",
-        "jinja",
-        "minijinja",
-        "pebble",
-        "twig"
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

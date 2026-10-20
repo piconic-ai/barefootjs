@@ -13,7 +13,7 @@ import type { Declaration } from '../declaration-sort.ts'
 import type { ClientJsContext } from '../types.ts'
 import type { ParamInfo, SignalInfo } from '../../types.ts'
 import { inferDefaultValue, PROPS_PARAM, readsBareProp } from '../utils.ts'
-import { livePropReadExpr } from '../../props-binding.ts'
+import { livePropReadExpr, propDefaultText } from '../../props-binding.ts'
 import { signalFactoryInitializer, signalSecondBinding } from '../../signal-initializer.ts'
 import type {
   ControlledSignalEffectPlan,
@@ -138,7 +138,7 @@ function resolveSignalInitialValue(signal: SignalInfo, lookups: DeclarationEmitL
     const controlled = lookups.controlledBySignal.get(signal)
     if (controlled) {
       const prop = lookups.propByName.get(controlled.propName)
-      const defaultVal = prop?.defaultValue ?? inferDefaultValue(signal.type)
+      const defaultVal = (prop && propDefaultText(prop)) ?? inferDefaultValue(signal.type)
       // `_p` is always keyed by the caller-facing name (#2524 CSR half).
       return `${PROPS_PARAM}.${prop?.sourceName ?? controlled.propName} ?? ${defaultVal}`
     }

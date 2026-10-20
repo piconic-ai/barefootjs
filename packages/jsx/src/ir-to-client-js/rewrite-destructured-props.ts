@@ -103,6 +103,16 @@ function rewriteParamDestructuredReads(
 }
 
 /**
+ * The `defaultParts` the analyzer recorded on a body-destructured local's
+ * props param (`ParamInfo.defaultParts`), when its default reads an earlier
+ * binding of the same pattern.
+ */
+function bodyAliasDefaultParts(ctx: ClientJsContext, local: string, key: string): Pick<LivePropReadInfo, 'defaultParts'> {
+  const param = ctx.propsParams.find(p => !p.isRest && p.name === local && (p.sourceName ?? p.name) === key)
+  return param?.defaultParts ? { defaultParts: param.defaultParts } : {}
+}
+
+/**
  * Rewrite every bare value-position read of a BODY-destructured (or
  * bare-member-alias) prop local in `code` to a live `_p.<key>` read, for a
  * bare-props-form component (`function Foo(props: Props)`).
@@ -150,7 +160,7 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
   const sourceFile = ts.createSourceFile('init-body.ts', code, ts.ScriptTarget.Latest, /*setParentNodes*/ true, ts.ScriptKind.TS)
 
   const spans: Array<readonly [number, number]> = []
-  const located = new Map<string, { key: string; defaultValue?: string; defaultContainsArrow?: boolean }>()
+  const located = new Map<string, Pick<LivePropReadInfo, 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'> & { key: string }>()
   for (const stmt of sourceFile.statements) {
     if (!ts.isFunctionDeclaration(stmt) || !stmt.name?.text.startsWith('init') || !stmt.body) continue
     for (const inner of stmt.body.statements) {
@@ -181,6 +191,11 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
         defaultContainsArrow: alias.defaultContainsArrow && !(
           parsedInit.fallback && ts.isParenthesizedExpression(parsedInit.fallback)
         ),
+        // A default reading an earlier binding of the same destructure
+        // (`const { off = false, on = off } = props`, #3531): the analyzer
+        // split it on the binding's props param, and the earlier binding's
+        // declaration is gone from this body, so the read renders live.
+        ...bodyAliasDefaultParts(ctx, decl.name.text, alias.key),
       })
       spans.push([inner.getFullStart(), inner.getEnd()])
     }
@@ -205,6 +220,7 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
       sourceName: info.key,
       defaultValue: info.defaultValue,
       defaultContainsArrow: info.defaultContainsArrow,
+      ...(info.defaultParts && { defaultParts: info.defaultParts }),
     }
     return livePropReadExpr(prop, undefined, false)
   }
