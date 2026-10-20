@@ -56,6 +56,36 @@ test('same-prop derived seeds and ordinary bindings stay unchanged', () => {
   expect(ctx.signals.map(s => s.getter)).toEqual(['count', 'other'])
 })
 
+test('a signal seeded from another prop, a memo, and a case-folded name are separated', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal, createMemo } from '@barefootjs/client'
+    export function App(props: { label?: string; count?: number; title?: string; b?: string }) {
+      const [label] = createSignal(props.b ?? 'y')
+      const count = createMemo(() => label().length)
+      const [Title] = createSignal(props.b)
+      return <p>{label()}{count()}{Title()}{props.label}{props.count}{props.title}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_label', 'bfSignal_Title'])
+  expect(ctx.memos.map(m => m.name)).toEqual(['bfMemo_count'])
+  expect(ctx.memos[0].computation).toContain('bfSignal_label()')
+  expect(ctx.sourceFile.text).toContain('{props.label}{props.count}{props.title}')
+})
+
+test('a memo derived from its own same-named prop keeps its name', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createMemo } from '@barefootjs/client'
+    export function App(props: { label?: string }) {
+      const fallback = props.label
+      const label = createMemo(() => (fallback ?? 'none') + '!')
+      return <p>{label()}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.memos.map(m => m.name)).toEqual(['label'])
+})
+
 test('signed literal seeds are separated without a type-based program', () => {
   const ctx = analyzeComponent(`
     'use client'

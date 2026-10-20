@@ -102,6 +102,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
 export const renderDivergences: RenderDivergences = {
+  // A signal seeded from its own same-named prop keeps the prop's template
+  // variable, so a raw `props.<name>` read beside it sees the derived value.
+  'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
   // A children prop renamed in the parameter destructure (`{ children: kids }`):
   // the renamed `Kids` field reads nil when the parent passes children, so
   // present children are dropped and the `??` fallback renders.

@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A signal seeded from its own same-named prop keeps the prop's template
+  // variable, so a raw `props.<name>` read beside it sees the derived value.
+  'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

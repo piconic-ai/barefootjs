@@ -33,7 +33,7 @@ import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
 import fs from 'node:fs'
 import { signalSecondBinding } from './signal-initializer.ts'
-import { separateLiteralSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
+import { separateSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -399,7 +399,7 @@ export function analyzeComponent(
   // so imported signals are covered too.
   for (const signal of ctx.signals) parseSignalInitializer(signal, ctx)
 
-  const separatedSource = separateLiteralSignalPropBindings(ctx, isNonReferenceIdentifierPosition)
+  const separatedSource = separateSignalPropBindings(ctx, isNonReferenceIdentifierPosition)
   if (separatedSource !== null) {
     // The checker supplied by the caller names the old AST. Re-analyze the
     // structurally renamed source, preserving the shared-program contract
