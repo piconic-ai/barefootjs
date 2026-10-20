@@ -37,7 +37,6 @@
 
 import type {
   ComponentIR,
-  IRMetadata,
   IRNode,
   IRElement,
   IRText,
@@ -53,15 +52,11 @@ import type {
   IRProp,
   IRTemplatePart,
   AttrValue,
-  CompilerError,
   TypeInfo,
   TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
 import {
-  BaseAdapter,
-  type AdapterOutput,
-  type AdapterGenerateOptions,
-  type TemplateSections,
+  DslTemplateAdapter,
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
@@ -76,17 +71,13 @@ import {
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
-  augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   extractArrowBodyExpression,
   collectContextConsumers,
   isLowerableLoopDestructure,
   type ContextConsumer,
-  collectModuleStringConsts,
   lookupStaticRecordLiteral,
   lookupLiteralConst,
-  searchParamsLocalNames,
-  prepareLoweringMatchers,
   childTemplateName,
   isEmptyComponentProps,
   isBooleanTypedPropRef,
@@ -95,19 +86,11 @@ import {
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  BindingScope,
   renameFreeIdentifiers,
-  buildImportAliasMap,
-  collectNullableSignalGetters,
   attrValueMayBeNullish,
-  collectNullishAttrContext,
-  type NullishAttrContext,
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
   emitCallbackEval,
   arithmeticOperandCoercion,
   renderElementShell,
@@ -115,14 +98,12 @@ import {
   renderDangerousInnerHtml,
   unsupportedAttrExpressionError,
   type ElementShellSpelling,
-  computedConstContext,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  type ComputedConstContext,
   missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import { isExplicitStringCall } from './boolean-result.ts'
-import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
+import type { ParsedExpr, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -176,7 +157,7 @@ function rubyAccessorFromSegments(base: string, segments: readonly LoopBindingPa
  * @since 0.18.0
  * @stability alpha
  */
-export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCtx> {
+export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbRenderCtx> {
   name = 'erb'
   extension = '.erb'
   templatesPerComponent = true
@@ -190,27 +171,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    */
   templatePrimitives: TemplatePrimitiveRegistry = ERB_PRIMITIVE_EMIT_MAP
 
-  private componentName: string = ''
   private options: Required<ErbAdapterOptions>
-  private errors: CompilerError[] = []
-  /**
-   * SolidJS-style props identifier (`function(props: P)`) and the
-   * analyzer-extracted prop names. Stashed at `generate()` entry so the
-   * per-attribute `emitSpread` callback can build a propsObject spread bag
-   * as an inline Ruby Hash literal without re-walking the IR.
-   */
-  private propsObjectName: string | null = null
-  /**
-   * Name of the destructured `...rest` binding (`function X({ ...rest })`),
-   * if any. A closed-type rest-expanded attribute's expression is
-   * `${restPropsName}.${key}` (`expandSpreadAttribute`, #3057) — stripping
-   * this prefix the same way `propsObjectName.` is stripped below lets the
-   * nullable-optional-props nil-guard recognise it as a bare optional
-   * reference instead of falling through to unconditional emission.
-   */
-  private restPropsName: string | null = null
-  private propsParams: { name: string; optional: boolean }[] = []
-  private booleanTypedProps: Set<string> = new Set()
   /**
    * Names that resolve to a real SSR template var (via `v[:name]`) — prop
    * param, signal getter, or memo. A `<Ctx.Provider value>` member
@@ -219,94 +180,6 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * un-seeded vars-Hash key, so it's lowered to `nil` instead.
    */
   private providerDataNames: Set<string> = new Set()
-  /**
-   * Names (signal getters + props) whose value is a string. Ruby's `==`
-   * doesn't drive equality-operator selection the way Perl's `eq`/`ne`
-   * split does (see `props/prop-classes.ts`), but this set still gates
-   * index-access Hash-vs-Array lowering (`expr/operand.ts`).
-   */
-  private stringValueNames: Set<string> = new Set()
-  /**
-   * Local binding names the request-scoped `searchParams()` env signal is
-   * imported under (handles `import { searchParams as sp }`). When
-   * non-empty the emitter lowers a `<binding>().get(k)` call to a real
-   * method call on the reserved `v[:search_params]` reader instead of the
-   * generic Hash lookup. Set at `generate()` entry from `ir.metadata.imports`;
-   * read by the top-level ParsedExpr emitter.
-   */
-  private _searchParamsLocals: Set<string> = new Set()
-
-  /**
-   * Call-lowering matchers active for this component. Bound at
-   * `generate()` entry via `prepareLoweringMatchers` and read by the
-   * top-level emitter. Covers both userland plugins and the compiler's
-   * built-in plugins (e.g. `queryHref` → `bf.query`) — one uniform path,
-   * no per-API branch.
-   */
-  private _loweringMatchers: LoweringMatcher[] = []
-  /** The component's computed consts, inlined where a template reads them (#3494). */
-  private computedConsts: ComputedConstContext | null = null
-  /**
-   * Module-scope pure string-literal constants (`const X = 'literal'` at
-   * file top-level), keyed by name → resolved literal value. Populated at
-   * `generate()` entry from `ir.metadata.localConstants`. When an
-   * identifier in an expression resolves to one of these, the adapter
-   * inlines the literal instead of emitting `v[:X]` against a vars-Hash key
-   * that is never seeded (a module const isn't a prop, signal, or local —
-   * the value would render empty).
-   */
-  private moduleStringConsts: Map<string, string> = new Map()
-  /**
-   * Full local-constant metadata from the entry IR, kept so spread
-   * lowering can resolve a bare-identifier spread (`{...sizeAttrs}`) to
-   * its initializer text and a `Record[propKey]` spread value to the
-   * module-const object literal it indexes. Populated at `generate()`
-   * entry alongside `moduleStringConsts`.
-   */
-  private localConstants: IRMetadata['localConstants'] = []
-  /**
-   * The one canonical, position-accurate "names bound by an enclosing loop
-   * callback" service (#2482 Stage 2) — replaces the ref-counted
-   * `Map<string, number>` this adapter used to push/pop around
-   * `renderLoop`'s body. Load-bearing for TWO things in the ERB adapter
-   * (more than the Mojo original, which only used it to guard
-   * const-inlining): it also decides the fundamental `v[:name]` vs
-   * bare-Ruby-local rendering choice in `ErbTopLevelEmitter.identifier` —
-   * see `emit-context.ts`'s `isLoopBoundName` docstring for why ERB's
-   * two-locals model needs this where Perl's uniform `$name` sigil does
-   * not. Threaded via save/restore-by-reference around
-   * `renderChildren(loop.children)` in `renderLoop` (immutable — no
-   * ref-count bookkeeping), mirroring the Stage 1a/1b `ctx.scope`
-   * precedent in `jsx-to-ir.ts`. `IRLoop` already structurally satisfies
-   * `LoopBindingSource` (`param`/`index`/`paramBindings`/`preamble`), so
-   * `renderLoop` passes the loop node straight to `enterLoopRow`.
-   */
-  private scope: BindingScope = BindingScope.EMPTY
-  /**
-   * Prop names whose value is `nil` in the template body when the caller
-   * omits them — so a bare-reference attribute should be dropped rather
-   * than rendered as `attr=""`. See `props/prop-classes.ts`'s
-   * `collectNullableOptionalProps` for the exact population criterion.
-   * Used by `elementAttrEmitter.emitExpression` to guard such an attribute
-   * with a Ruby nil-check (`<textarea>` omits `rows`), matching Hono's
-   * nullish-attribute omission.
-   */
-  private nullableOptionalProps: Set<string> = new Set()
-  /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
-  private nullableSignalGetters: Set<string> = new Set()
-  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
-  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
-  /**
-   * Local alias -> declared/exported name for imported components (#2822,
-   * the SSR-side counterpart of #2777's client-JS registry-key fix). A
-   * child referenced under an import alias (`import { Foo as Bar }`,
-   * `<Bar/>`) must build its cross-template `render_child` call against
-   * the child's own declared name (`Foo`, what `foo.tsx` registers its ERB
-   * partial as) — never the caller-local binding. Built once per compile
-   * from `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `childTemplateName`.
-   */
-  private importAliases: Map<string, string> = new Map()
 
   constructor(options: ErbAdapterOptions = {}) {
     super()
@@ -316,95 +189,28 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     }
   }
 
-  generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
-    this.componentName = ir.metadata.componentName
-    this.propsObjectName = ir.metadata.propsObjectName ?? null
-    this.restPropsName = ir.metadata.restPropsName ?? null
-    // Enumerate inherited-attribute accesses for the props-object pattern
-    // (`function Checkbox(props: CheckboxProps)`) before deriving
-    // `nullableOptionalProps`, so a bare optional attribute like
-    // `id={props.id}` gets the Ruby nil-guard (Hono-style omission).
-    // Shared with the Go/Mojo adapters (single source of truth in
-    // `@barefootjs/jsx`).
-    augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
-    // Per-compile prop classifications (see `props/prop-classes.ts`).
+  protected readonly loopChildDiagnosticName = 'ERB'
+
+  /**
+   * Names (signal getters + props) whose value is a string. Ruby's `==`
+   * doesn't drive equality-operator selection the way Perl's `eq`/`ne`
+   * split does (see `props/prop-classes.ts`), but this set still gates
+   * index-access Hash-vs-Array lowering (`expr/operand.ts`).
+   */
+  protected stringValueNamesFor(ir: ComponentIR): Set<string> {
+    return collectStringValueNames(ir)
+  }
+
+  protected override resetAdapterState(ir: ComponentIR): void {
     this.providerDataNames = collectProviderDataNames(ir)
-    this.booleanTypedProps = collectBooleanTypedProps(ir)
-    this.nullableOptionalProps = collectNullableOptionalProps(ir)
-    this.nullableSignalGetters = collectNullableSignalGetters(ir)
-    this.nullishAttrCtx = collectNullishAttrContext(ir)
-    this.stringValueNames = collectStringValueNames(ir)
-    this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
-    this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
-    this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
-    this.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
-    this.localConstants = ir.metadata.localConstants ?? []
-    this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
-    this.scope = BindingScope.EMPTY
-    this.errors = []
-    this.childrenCaptureCounter = 0
+  }
 
-    // Mirror of the Go/Mojo adapters' BF103 check: when a child component
-    // referenced inside a loop body is imported from a sibling .tsx, the
-    // ERB adapter emits a `<%= bf.render_child(...) %>`-style cross-
-    // template call that resolves only if the user has compiled the
-    // sibling file and registered the resulting template alongside the
-    // parent. When that doesn't happen the failure is silent at build time
-    // and surfaces at request time — surface it loudly here so the user
-    // can act on it. Suppressed when the caller (e.g. the barefoot CLI)
-    // guarantees that all sibling templates are registered on the same
-    // template instance at render time.
-    if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'ERB'))
-    }
+  protected contextConsumerSeed(ir: ComponentIR): string {
+    return generateContextConsumerSeed(ir)
+  }
 
-    const templateBody = ir.root.type === 'if-statement'
-      ? this.renderIfStatement(ir.root as IRIfStatement)
-      : this.renderNode(ir.root)
-
-    // Generate script registration
-    const scriptReg = options?.skipScriptRegistration
-      ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
-
-    // SSR context consumers (`const x = useContext(Ctx)`): seed each local
-    // from the active provider value (or the `createContext` default) so
-    // the body's `v[:x]` resolves. The provider side pushes the value via
-    // `emitProvider`; here the consumer reads it.
-    const ctxSeed = generateContextConsumerSeed(ir)
-
-    // Prop/signal-derived memos that aren't statically evaluable (e.g.
-    // `createMemo(() => props.value * 10)`) have a `null` SSR default, so
-    // their `v[:x]` would render empty. Compute them in-template from the
-    // already-seeded prop/signal vars — mirroring Go's generated child
-    // constructor that evaluates the memo from the passed prop.
-    const memoSeed = generateDerivedMemoSeed(this.memoCtx, ir)
-
-    const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
-
-    // Merge collected errors into IR errors
-    if (this.errors.length > 0) {
-      ir.errors.push(...this.errors)
-    }
-
-    // ERB templates have no JS-style imports / types / default-export
-    // sections. The `templatesPerComponent` mode emits one file per
-    // component using the raw `template` value; sections are populated for
-    // contract uniformity so the compiler never has to fall back to
-    // string-parsing the template.
-    const sections: TemplateSections = {
-      imports: '',
-      types: '',
-      component: template,
-      defaultExport: '',
-    }
-
-    return {
-      template,
-      sections,
-      extension: this.extension,
-    }
+  protected derivedMemoSeed(ir: ComponentIR): string {
+    return generateDerivedMemoSeed(this.memoCtx, ir)
   }
 
   /**
@@ -480,7 +286,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(
+  protected generateScriptRegistrations(
     ir: ComponentIR,
     scriptBaseName?: string,
     scriptAssets?: string[],
@@ -1319,13 +1125,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     const propsHash = parts.length > 0 ? `{ ${parts.join(', ')} }` : '{}'
     return `${captures.join('')}<%= bf.render_child('${tplName}', ${propsHash}) %>`
   }
-
-  private childrenCaptureCounter = 0
   // ===========================================================================
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
 
-  private renderIfStatement(ifStmt: IRIfStatement): string {
+  protected renderIfStatement(ifStmt: IRIfStatement): string {
     const condition = this.convertExpressionToRuby(ifStmt.condition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)

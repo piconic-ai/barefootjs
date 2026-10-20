@@ -7,7 +7,6 @@
 import ts from 'typescript'
 import type {
   ComponentIR,
-  IRMetadata,
   IRNode,
   IRElement,
   IRText,
@@ -23,17 +22,13 @@ import type {
   IRProp,
   IRTemplatePart,
   AttrValue,
-  CompilerError,
   TypeInfo,
   TemplatePrimitiveRegistry,
   LoopBindingPathSegment,
 } from '@barefootjs/jsx'
 import {
   collectBooleanValueNames,
-  BaseAdapter,
-  type AdapterOutput,
-  type AdapterGenerateOptions,
-  type TemplateSections,
+  DslTemplateAdapter,
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
@@ -47,16 +42,12 @@ import {
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
-  augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   extractArrowBodyExpression,
   collectContextConsumers,
   type ContextConsumer,
-  collectModuleStringConsts,
   lookupStaticRecordLiteral,
   lookupLiteralConst,
-  searchParamsLocalNames,
-  prepareLoweringMatchers,
   isLowerableLoopDestructure,
   childTemplateName,
   isEmptyComponentProps,
@@ -67,21 +58,12 @@ import {
   planComponentProps,
   spellComponentProps,
   renameFreeIdentifiers,
-  BindingScope,
-  rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
-  buildImportAliasMap,
-  collectNullableSignalGetters,
   attrValueMayBeNullish,
-  collectNullishAttrContext,
-  type NullishAttrContext,
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
   lowerCallbackMethod,
   emitCallbackEval,
   arithmeticOperandCoercion,
@@ -90,13 +72,11 @@ import {
   renderDangerousInnerHtml,
   unsupportedAttrExpressionError,
   type ElementShellSpelling,
-  computedConstContext,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  type ComputedConstContext,
   missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
-import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
@@ -169,7 +149,7 @@ function perlStringLiteral(s: string): string {
  * @since 0.1.0
  * @stability alpha
  */
-export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
+export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'
   templatesPerComponent = true
@@ -188,28 +168,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   templatePrimitives: TemplatePrimitiveRegistry = MOJO_PRIMITIVE_EMIT_MAP
 
-  private componentName: string = ''
   private options: Required<MojoAdapterOptions>
-  private errors: CompilerError[] = []
-  /**
-   * SolidJS-style props identifier (`function(props: P)`) and the
-   * analyzer-extracted prop names. Stashed at `generate()` entry so
-   * the per-attribute `emitSpread` callback can build a propsObject
-   * spread bag as an inline Perl hashref literal without re-walking
-   * the IR (#1407 follow-up).
-   */
-  private propsObjectName: string | null = null
-  /**
-   * Name of the destructured `...rest` binding (`function X({ ...rest })`),
-   * if any. A closed-type rest-expanded attribute's expression is
-   * `${restPropsName}.${key}` (`expandSpreadAttribute`, #3057) — stripping
-   * this prefix the same way `propsObjectName.` is stripped below lets the
-   * nullable-optional-props guard recognise it as a bare optional
-   * reference instead of falling through to unconditional emission.
-   */
-  private restPropsName: string | null = null
-  private propsParams: { name: string; optional: boolean }[] = []
-  private booleanTypedProps: Set<string> = new Set()
   /**
    * (#1971) Names that resolve to a real SSR template var — prop param, signal
    * getter, or memo. A `<Ctx.Provider value>` member referencing a name NOT in
@@ -218,104 +177,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * emit an undeclared `$var`, so it's lowered to `undef` instead.
    */
   private providerDataNames: Set<string> = new Set()
-  /**
-   * Names (signal getters + props) whose value is a string, so `===`/`!==`
-   * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
-   * Perl's numeric `==` coerces non-numeric strings to 0, making `"b" == "a"`
-   * true — selecting the string operator from the operand's type avoids that.
-   */
-  private stringValueNames: Set<string> = new Set()
   private booleanValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
-  /**
-   * (#1922) Local binding names the request-scoped `searchParams()` env signal
-   * is imported under (handles `import { searchParams as sp }`). When non-empty
-   * the emitter lowers a `<binding>().get(k)` call to a real method call on the
-   * per-request `$searchParams` reader (`$searchParams->get('sort')`) instead of
-   * the generic hash deref. Set at `generate()` entry from `ir.metadata.imports`;
-   * read by the top-level ParsedExpr emitter.
-   */
-  private _searchParamsLocals: Set<string> = new Set()
-
-  /**
-   * Call-lowering matchers active for this component (#2057). Bound at
-   * `generate()` entry via `prepareLoweringMatchers` and read by the top-level
-   * emitter. Covers both userland plugins and the compiler's built-in plugins
-   * (e.g. `queryHref` → `bf->query`, #2042) — one uniform path, no per-API branch.
-   */
-  private _loweringMatchers: LoweringMatcher[] = []
-  /** The component's computed consts, inlined where a template reads them (#3494). */
-  private computedConsts: ComputedConstContext | null = null
-  /**
-   * Module-scope pure string-literal constants (`const X = 'literal'` at
-   * file top-level), keyed by name → resolved literal value. Populated at
-   * `generate()` entry from `ir.metadata.localConstants`. When an identifier
-   * in an expression resolves to one of these, the adapter inlines the
-   * literal instead of emitting `$X` against a stash variable that is never
-   * bound (a module const isn't a prop, signal, or local — the value would
-   * render empty). Hono inlines it for free; this restores parity. Only
-   * module-scope pure string literals qualify (see `collectModuleStringConsts`).
-   */
-  private moduleStringConsts: Map<string, string> = new Map()
-  /**
-   * Full local-constant metadata from the entry IR, kept so spread
-   * lowering can resolve a bare-identifier spread (`{...sizeAttrs}`) to
-   * its initializer text and a `Record[propKey]` spread value to the
-   * module-const object literal it indexes (#checkbox / icon). Populated
-   * at `generate()` entry alongside `moduleStringConsts`.
-   */
-  private localConstants: IRMetadata['localConstants'] = []
-  /** Each prop's collision-free root alias (#3314), decided once per component. */
-  private rootPropAliases: ReadonlyMap<string, string> = new Map()
-  /**
-   * The one canonical, position-accurate "names bound by an enclosing loop
-   * callback" service (#2482 Stage 2) — replaces the ref-counted
-   * `Map<string, number>` this adapter used to push/pop around
-   * `renderLoop`'s body (the `my $<param>` / `my $<index>` bindings it
-   * introduces). `resolveModuleStringConst` consults this so a loop
-   * variable whose name happens to match a module string const is NOT
-   * inlined as the const literal (mirrors the Go adapter's loop-param /
-   * loop-var shadowing guards). (#1749 review) Threaded via
-   * save/restore-by-reference around `renderChildren(loop.children)` in
-   * `renderLoop` (immutable — no ref-count bookkeeping), mirroring the
-   * Stage 1a/1b `ctx.scope` precedent in `jsx-to-ir.ts`. `IRLoop` already
-   * structurally satisfies `LoopBindingSource`
-   * (`param`/`index`/`paramBindings`/`preamble`), so `renderLoop` passes
-   * the loop node straight to `enterLoopRow`.
-   */
-  private scope: BindingScope = BindingScope.EMPTY
-  /**
-   * Prop names whose value is `undef` in the template body when the caller
-   * omits them — so a bare-reference attribute should be dropped rather
-   * than rendered as `attr=""`. The actual population criterion (see
-   * `generate()`) is: NO destructure default (`defaultValue === undefined`)
-   * AND non-rest (`!isRest`) AND non-primitive type (`type.kind !==
-   * 'primitive'`). It deliberately does NOT consult `p.optional`: the
-   * analyzer derives `optional` from the presence of a default initializer,
-   * not the `?` token, so it's not the right witness here. Excluding
-   * concrete primitives (`string`/`number`/`boolean`) mirrors the Go
-   * adapter's scope, which guards only `interface{}` (nillable) fields.
-   * Used by `elementAttrEmitter.emitExpression` to guard such an attribute
-   * with a Perl `defined $x` check (`<textarea>` omits `rows`), matching
-   * Hono's nullish-attribute omission. Concrete/defaulted props are
-   * excluded and always emit unconditionally.
-   */
-  private nullableOptionalProps: Set<string> = new Set()
-  /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
-  private nullableSignalGetters: Set<string> = new Set()
-  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
-  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
-
-  /**
-   * Local alias -> declared/exported name for imported components (#2822,
-   * the SSR-side counterpart of #2777's client-JS registry-key fix). A
-   * child referenced under an import alias (`import { Foo as Bar }`,
-   * `<Bar/>`) must build its cross-template call against the child's own
-   * declared name (`Foo`, what `foo.tsx` registers its Mojo partial as) —
-   * never the caller-local binding. Built once per compile from
-   * `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `childTemplateName`.
-   */
-  private importAliases: Map<string, string> = new Map()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -325,100 +187,30 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
   }
 
-  generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
-    this.componentName = ir.metadata.componentName
-    this.propsObjectName = ir.metadata.propsObjectName ?? null
-    this.restPropsName = ir.metadata.restPropsName ?? null
-    // (#checkbox) Enumerate inherited-attribute accesses for the props-object
-    // pattern (`function Checkbox(props: CheckboxProps)`) before deriving
-    // `nullableOptionalProps`, so a bare optional attribute like
-    // `id={props.id}` gets the Perl `defined`-guard (Hono-style omission).
-    // Shared with the Go adapter (single source of truth in `@barefootjs/jsx`).
-    // The harness separately declares the matching stash vars (Pass-1 IR
-    // serialization happens before `generate`, so this mutation doesn't reach it).
-    augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
-    // Per-compile prop classifications (see `props/prop-classes.ts`).
-    this.providerDataNames = collectProviderDataNames(ir)
-    this.booleanTypedProps = collectBooleanTypedProps(ir)
-    this.nullableOptionalProps = collectNullableOptionalProps(ir)
-    this.nullableSignalGetters = collectNullableSignalGetters(ir)
-    this.nullishAttrCtx = collectNullishAttrContext(ir)
-    this.stringValueNames = collectStringValueNames(ir)
-    this.booleanValueNames = collectBooleanValueNames(ir.metadata)
-    this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
-    this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
-    this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
-    this.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
-    this.localConstants = ir.metadata.localConstants ?? []
-    this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
-    this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
-    this.scope = BindingScope.EMPTY
-    this.errors = []
-    this.childrenCaptureCounter = 0
+  protected readonly loopChildDiagnosticName = 'Mojo'
 
-    // Mirror of the Go adapter's BF103 check (#1266): when a child
-    // component referenced inside a loop body is imported from a
-    // sibling .tsx, the Mojo adapter emits a `<%== bf->render(...)
-    // %>`-style cross-template call that resolves only if the user
-    // has compiled the sibling file and registered the resulting
-    // template alongside the parent. When that doesn't happen the
-    // failure is silent at build time and surfaces at request time —
-    // surface it loudly here so the user can act on it. Suppressed
-    // when the caller (e.g. the barefoot CLI) guarantees that all
-    // sibling templates are registered on the same template instance
-    // at render time.
-    if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Mojo'))
-    }
-
-    const templateBody = ir.root.type === 'if-statement'
-      ? this.renderIfStatement(ir.root as IRIfStatement)
-      : this.renderNode(ir.root)
-
-    // Generate script registration
-    const scriptReg = options?.skipScriptRegistration
-      ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
-
-    // SSR context consumers (`const x = useContext(Ctx)`): seed each local
-    // from the active provider value (or the `createContext` default) so the
-    // body's `$x` resolves. The provider side pushes the value via
-    // `emitProvider`; here the consumer reads it. (#1297)
-    const ctxSeed = generateContextConsumerSeed(ir)
-
-    // Prop/signal-derived memos that aren't statically evaluable (e.g.
-    // `createMemo(() => props.value * 10)`) have a `null` SSR default, so
-    // their `$x` would render empty. Compute them in-template from the
-    // already-seeded prop/signal vars — mirroring Go's generated child
-    // constructor that evaluates the memo from the passed prop. (#1297)
-    const memoSeed = generateDerivedMemoSeed(this.memoCtx, ir)
-
-    const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
-
-    // Merge collected errors into IR errors
-    if (this.errors.length > 0) {
-      ir.errors.push(...this.errors)
-    }
-
-    // Mojo templates have no JS-style imports / types / default-export sections.
-    // The `templatesPerComponent` mode emits one file per component using the
-    // raw `template` value; sections are populated for contract uniformity so
-    // the compiler never has to fall back to string-parsing the template.
-    const sections: TemplateSections = {
-      imports: '',
-      types: '',
-      component: template,
-      defaultExport: '',
-    }
-
-    return {
-      template,
-      sections,
-      extension: this.extension,
-    }
+  /**
+   * Names (signal getters + props) whose value is a string, so `===`/`!==`
+   * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
+   * Perl's numeric `==` coerces non-numeric strings to 0, making `"b" == "a"`
+   * true — selecting the string operator from the operand's type avoids that.
+   */
+  protected stringValueNamesFor(ir: ComponentIR): Set<string> {
+    return collectStringValueNames(ir)
   }
 
+  protected override resetAdapterState(ir: ComponentIR): void {
+    this.providerDataNames = collectProviderDataNames(ir)
+    this.booleanValueNames = collectBooleanValueNames(ir.metadata)
+  }
+
+  protected contextConsumerSeed(ir: ComponentIR): string {
+    return generateContextConsumerSeed(ir)
+  }
+
+  protected derivedMemoSeed(ir: ComponentIR): string {
+    return generateDerivedMemoSeed(this.memoCtx, ir)
+  }
 
   /**
    * Resolve an identifier to its inlined Perl single-quoted string literal
@@ -484,7 +276,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(
+  protected generateScriptRegistrations(
     ir: ComponentIR,
     scriptBaseName?: string,
     scriptAssets?: string[],
@@ -1218,8 +1010,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return `${captures.join('')}<%== bf->render_child('${tplName}'${propsStr}) %>`
   }
 
-  private childrenCaptureCounter = 0
-
   /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
    *  presence-folded attrs in one template don't collide. */
   private presenceVarCounter = 0
@@ -1227,7 +1017,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
 
-  private renderIfStatement(ifStmt: IRIfStatement): string {
+  protected renderIfStatement(ifStmt: IRIfStatement): string {
     const condition = this.convertExpressionToPerl(ifStmt.condition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)

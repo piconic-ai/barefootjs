@@ -36,18 +36,13 @@ import type {
   IRAsync,
   IRProp,
   IRTemplatePart,
-  CompilerError,
   TypeInfo,
   TemplatePrimitiveRegistry,
-  IRMetadata,
   LoopBindingPathSegment,
 } from '@barefootjs/jsx'
 import {
   collectBooleanValueNames,
-  BaseAdapter,
-  type AdapterOutput,
-  type AdapterGenerateOptions,
-  type TemplateSections,
+  DslTemplateAdapter,
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
@@ -61,16 +56,12 @@ import {
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
-  augmentInheritedPropAccesses,
   parseRecordIndexAccess,
-  collectModuleStringConsts,
   extractArrowBodyExpression,
   collectContextConsumers,
   type ContextConsumer,
   lookupStaticRecordLiteral,
   lookupLiteralConst,
-  searchParamsLocalNames,
-  prepareLoweringMatchers,
   isLowerableLoopDestructure,
   childTemplateName,
   isEmptyComponentProps,
@@ -80,22 +71,13 @@ import {
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  BindingScope,
   type ScopeFrame,
-  rootPropAliasNames,
   rootPropAliasesForLoop,
   rootPropReadName,
-  buildImportAliasMap,
-  collectNullableSignalGetters,
   attrValueMayBeNullish,
-  collectNullishAttrContext,
-  type NullishAttrContext,
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  collectImportedLoopChildComponentErrors,
-  collectBooleanTypedProps,
-  collectNullableOptionalProps,
   emitCallbackEval,
   arithmeticOperandCoercion,
   renderElementShell,
@@ -103,14 +85,12 @@ import {
   renderDangerousInnerHtml,
   unsupportedAttrExpressionError,
   type ElementShellSpelling,
-  computedConstContext,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  type ComputedConstContext,
   missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
-import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
@@ -191,7 +171,7 @@ const KOLON_LITERAL = /^(?:'(?:[^'\\]|\\.)*'|-?\d+(?:\.\d+)?)$/
  * @since 0.9.1
  * @stability alpha
  */
-export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRenderCtx> {
+export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<XslateRenderCtx> {
   name = 'xslate'
   extension = '.tx'
   templatesPerComponent = true
@@ -204,126 +184,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   templatePrimitives: TemplatePrimitiveRegistry = XSLATE_PRIMITIVE_EMIT_MAP
 
-  private componentName: string = ''
   private options: Required<XslateAdapterOptions>
-  private errors: CompilerError[] = []
   private inLoop: boolean = false
-  /**
-   * SolidJS-style props identifier (`function(props: P)`) and the
-   * analyzer-extracted prop names. Stashed at `generate()` entry so the
-   * per-attribute `emitSpread` callback can build a propsObject spread bag as
-   * an inline Kolon hashref literal without re-walking the IR.
-   */
-  private propsObjectName: string | null = null
-  /**
-   * Name of the destructured `...rest` binding (`function X({ ...rest })`),
-   * if any. A closed-type rest-expanded attribute's expression is
-   * `${restPropsName}.${key}` (`expandSpreadAttribute`, #3057) — stripping
-   * this prefix the same way `propsObjectName.` is stripped below lets the
-   * nullable-optional-props guard recognise it as a bare optional
-   * reference instead of falling through to unconditional emission.
-   */
-  private restPropsName: string | null = null
-  private propsParams: { name: string; optional: boolean }[] = []
-  private booleanTypedProps: Set<string> = new Set()
-  /**
-   * Names (signal getters + props) whose value is a string. In the Mojo
-   * adapter this drives choosing Perl `eq`/`ne` over numeric `==`/`!=` for a
-   * string `===`/`!==`. The Kolon emitters do NOT consume this: Kolon's
-   * `==`/`!=` are value-equality operators that compare strings and numbers
-   * correctly, so `===`/`!==` always map to `==`/`!=`. The set is populated
-   * and threaded for parity with the Mojo adapter (and as groundwork for a
-   * shared Perl-family codegen surface), not because Kolon needs it today.
-   */
-  private stringValueNames: Set<string> = new Set()
   private booleanValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
-
-  /**
-   * Module-scope pure-string consts (`const x = 'literal'`), keyed by name →
-   * unescaped value. A className template literal that references such a const
-   * (`className={`${x} ${className}`}`) must inline the literal: the const is
-   * module-scope, so it never reaches the per-render template stash and a bare
-   * `$x` reference would render empty. Mirrors the Mojo adapter's
-   * `moduleStringConsts` fix.
-   */
-  private moduleStringConsts: Map<string, string> = new Map()
-
-  /**
-   * (#1922) Local binding names the request-scoped `searchParams()` env signal
-   * is imported under (handles `import { searchParams as sp }`). When non-empty
-   * the emitter lowers a `<binding>().get(k)` call to a real method call on the
-   * per-request `$searchParams` reader (`$searchParams.get('sort')`) instead of
-   * the generic dot deref. Set at `generate()` entry from `ir.metadata.imports`;
-   * read by the top-level ParsedExpr emitter.
-   */
-  private _searchParamsLocals: Set<string> = new Set()
-
-  /**
-   * Call-lowering matchers active for this component (#2057). Bound at
-   * `generate()` entry via `prepareLoweringMatchers` and read by the top-level
-   * emitter. Covers both userland plugins and the compiler's built-in plugins
-   * (e.g. `queryHref` → `$bf.query`, #2042) — one uniform path, no per-API branch.
-   */
-  private _loweringMatchers: LoweringMatcher[] = []
-  /** The component's computed consts, inlined where a template reads them (#3494). */
-  private computedConsts: ComputedConstContext | null = null
-
-  /**
-   * Local + module constants from the IR, used by the conditional-spread and
-   * `Record<staticKeys, scalar>[propKey]` lowering paths (#textarea / #checkbox).
-   * Stashed at `generate()` entry so `emitSpread` can resolve a bare local
-   * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
-   */
-  private localConstants: IRMetadata['localConstants'] = []
-  /** Each prop's collision-free root alias (#3314), decided once per component. */
-  private rootPropAliases: ReadonlyMap<string, string> = new Map()
-
-  /**
-   * The one canonical, position-accurate "names bound by an enclosing loop
-   * callback" service (#2482 Stage 2) — replaces the two ad-hoc devices
-   * this adapter used to carry side by side: a coarse whole-component
-   * shadow-name Set (built once at `generate()` entry, used only to guard
-   * static-const inlining) and a ref-counted, position-accurate live map
-   * (pushed/popped around `renderLoop`'s body, used for the boolean-prop/
-   * nullable-optional classification sites (#2488) and `emitSpread`'s
-   * local-const fallback (#2489)). Both consulted the "is this name
-   * loop-bound" question with DIFFERENT meanings — the coarse/live drift
-   * #2482 Stage 2 ends. Every shadow-guard site now reads this ONE
-   * threaded, immutable scope: `enterLoopRow`/pop-by-reference around
-   * `renderChildren(loop.children)` in `renderLoop`, mirroring the Stage
-   * 1a/1b `ctx.scope` precedent in `jsx-to-ir.ts`. `IRLoop` already
-   * structurally satisfies `LoopBindingSource`
-   * (`param`/`index`/`paramBindings`/`preamble`), so `renderLoop` passes
-   * the loop node straight to `enterLoopRow`.
-   */
-  private scope: BindingScope = BindingScope.EMPTY
-
-  /**
-   * Optional, no-default props that are `undef` when the caller omits them.
-   * Their bare-reference attribute emission is guarded with Kolon `defined` so
-   * the attribute DROPS rather than rendering `attr=""` (Hono-style nullish
-   * omission, e.g. textarea's `rows`). The filter excludes destructure-
-   * defaulted, rest, and concrete-primitive props.
-   */
-  private nullableOptionalProps: Set<string> = new Set()
-  /** Getters of nullable signals (`collectNullableSignalGetters`, #3304). */
-  private nullableSignalGetters: Set<string> = new Set()
-  /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
-  private nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
-
-  /**
-   * Local alias -> declared/exported name for imported components (#2822,
-   * the SSR-side counterpart of #2777's client-JS registry-key fix). A
-   * child referenced under an import alias (`import { Foo as Bar }`,
-   * `<Bar/>`) must build its cross-template call against the child's own
-   * declared name (`Foo`, what `foo.tsx` registers its Kolon partial as) —
-   * never the caller-local binding. Xslate's unresolved-reference case
-   * silently drops the child rather than raising, so this was the worst
-   * variant of the bug class. Built once per compile from
-   * `ir.metadata.imports` via the shared `buildImportAliasMap`
-   * (`@barefootjs/jsx`) and read by `childTemplateName`.
-   */
-  private importAliases: Map<string, string> = new Map()
 
   constructor(options: XslateAdapterOptions = {}) {
     super()
@@ -333,100 +196,41 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     }
   }
 
-  generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
-    this.componentName = ir.metadata.componentName
-    this.propsObjectName = ir.metadata.propsObjectName ?? null
-    this.restPropsName = ir.metadata.restPropsName ?? null
-    // (#checkbox) Enumerate the props-object pattern's inherited attribute
-    // accesses (`props.className`/`id`/`disabled`) into propsParams via the
-    // shared helper, before deriving `nullableOptionalProps` below.
-    augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
-    // Props whose declared TS type is boolean — a bare binding of one
-    // (`data-active={props.isActive}`) must stringify as JS
-    // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
-    // (#1897, pagination's data-active).
-    // Per-compile prop classifications (see `props/prop-classes.ts`).
-    this.booleanTypedProps = collectBooleanTypedProps(ir)
-    this.localConstants = ir.metadata.localConstants ?? []
-    this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
-    this.scope = BindingScope.EMPTY
-    this.nullableOptionalProps = collectNullableOptionalProps(ir)
-    this.nullableSignalGetters = collectNullableSignalGetters(ir)
-    this.nullishAttrCtx = collectNullishAttrContext(ir)
-    this.stringValueNames = collectStringValueNames(ir)
+  protected readonly loopChildDiagnosticName = 'Xslate'
+
+  /**
+   * Names (signal getters + props) whose value is a string. In the Mojo
+   * adapter this drives choosing Perl `eq`/`ne` over numeric `==`/`!=` for a
+   * string `===`/`!==`. The Kolon emitters do NOT consume this: Kolon's
+   * `==`/`!=` are value-equality operators that compare strings and numbers
+   * correctly, so `===`/`!==` always map to `==`/`!=`. The set is populated
+   * and threaded for parity with the Mojo adapter (and as groundwork for a
+   * shared Perl-family codegen surface), not because Kolon needs it today.
+   */
+  protected stringValueNamesFor(ir: ComponentIR): Set<string> {
+    return collectStringValueNames(ir)
+  }
+
+  protected override resetAdapterState(ir: ComponentIR): void {
     this.booleanValueNames = collectBooleanValueNames(ir.metadata)
-    this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
-    this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
-    this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
-    this.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
-    this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
-    this.errors = []
-    this.childrenCaptureCounter = 0
     // Before any body rendering: memo reads in the body must use the same
     // local the memo seed declares (#3369).
     this.memoKolonNames = collectMemoKolonRenames(ir)
+  }
 
-    // Mirror of the Mojo adapter's BF103 check: a child component referenced
-    // inside a loop body that is imported from a sibling .tsx emits a
-    // cross-template `$bf.render_child(...)` call that resolves only if the
-    // sibling template is registered alongside the parent at render time.
-    // Surface it loudly here. Suppressed when the caller guarantees that all
-    // sibling templates are registered on the same instance at render time.
-    if (!options?.siblingTemplatesRegistered) {
-      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, 'Xslate'))
-    }
+  protected contextConsumerSeed(ir: ComponentIR): string {
+    return generateContextConsumerSeed(ir)
+  }
 
-    const templateBody = ir.root.type === 'if-statement'
-      ? this.renderIfStatement(ir.root as IRIfStatement)
-      : this.renderNode(ir.root)
-
-    // Generate script registration
-    const scriptReg = options?.skipScriptRegistration
-      ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
-
-    // SSR context consumers (`const x = useContext(Ctx)`): seed each local
-    // from the active provider value (or the `createContext` default). The
-    // provider side pushes the value via `emitProvider`. (#1297)
-    const ctxSeed = generateContextConsumerSeed(ir)
-
-    // Prop/signal-derived memos with a `null` static SSR default (e.g.
-    // `createMemo(() => props.value * 10)`) are computed in-template from the
-    // already-seeded prop/signal vars — mirroring Go's generated child
-    // constructor. (#1297)
-    const memoSeed = generateDerivedMemoSeed(this.memoCtx, ir)
-
-    const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
-
-    // Merge collected errors into IR errors
-    if (this.errors.length > 0) {
-      ir.errors.push(...this.errors)
-    }
-
-    // Kolon templates have no JS-style imports / types / default-export
-    // sections. The `templatesPerComponent` mode emits one file per component
-    // using the raw `template` value; sections are populated for contract
-    // uniformity so the compiler never has to string-parse the template.
-    const sections: TemplateSections = {
-      imports: '',
-      types: '',
-      component: template,
-      defaultExport: '',
-    }
-
-    return {
-      template,
-      sections,
-      extension: this.extension,
-    }
+  protected derivedMemoSeed(ir: ComponentIR): string {
+    return generateDerivedMemoSeed(this.memoCtx, ir)
   }
 
   // ===========================================================================
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(
+  protected generateScriptRegistrations(
     ir: ComponentIR,
     scriptBaseName?: string,
     scriptAssets?: string[],
@@ -1212,8 +1016,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
   }
-
-  private childrenCaptureCounter = 0
   /** Memos declared under a renamed Kolon local (`collectMemoKolonRenames`, #3369). */
   private memoKolonNames: Map<string, string> = new Map()
   /**
@@ -1231,7 +1033,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // If-Statement (Conditional Return) Rendering
   // ===========================================================================
 
-  private renderIfStatement(ifStmt: IRIfStatement): string {
+  protected renderIfStatement(ifStmt: IRIfStatement): string {
     const condition = this.convertExpressionToKolon(ifStmt.condition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
