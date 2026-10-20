@@ -297,7 +297,7 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
   const propTypeOverrides = buildPropTypeOverrides(ctx, ir)
   for (const signal of ir.metadata.signals) {
     const resolvedParsed = resolveSignalParsedThroughSeedPlan(ctx.state, signal)
-    let match = ctx.extractPropFallback(signal.initialValue, resolvedParsed)
+    let match = ctx.extractPropFallbackFromParsed(resolvedParsed)
     // #2683: the idempotent fold above declines a non-idempotent
     // derivation (`(props.count ?? 1) * 2`) at the top level. When that
     // signal's Go field name COLLIDES with the prop's own field — the
@@ -421,7 +421,7 @@ export function signalSeedGo(
   if (computed !== null) return computed
   // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
   // one value.
-  const fallbackMatch = ctx.extractPropFallback(signal.initialValue, resolveSignalParsedThroughSeedPlan(ctx.state, signal))
+  const fallbackMatch = ctx.extractPropFallbackFromParsed(resolveSignalParsedThroughSeedPlan(ctx.state, signal))
   const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
   if (hoisted) return hoisted.varName
   // A nillable seed (#3323) stays whole only into an `interface{}`

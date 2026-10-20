@@ -275,7 +275,7 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
     // `collectPropFallbackVars`'s identical extraction disagreeing on
     // whether the prop needs the nillable flip.
     const resolvedParsed = resolveSignalParsedThroughSeedPlan(ctx.state, signal)
-    let match = ctx.extractPropFallback(signal.initialValue, resolvedParsed)
+    let match = ctx.extractPropFallbackFromParsed(resolvedParsed)
     // #2683: the idempotent fold above declines a non-idempotent derivation
     // (`(props.count ?? 1) * 2`) at the top level. When that signal's Go
     // field name COLLIDES with the prop's own field, the props-struct

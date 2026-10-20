@@ -1710,12 +1710,12 @@ export function collectPropsReadByCtorInit(
 }
 
 /**
- * The `props.X ?? fallback` a memo's body expression reads, matched on the
- * analyzer's `MemoInfo.bodyExpr` (#3510), or null.
+ * The `props.X ?? fallback` a memo's value reads, matched on the analyzer's
+ * parsed tree (`MemoInfo.parsed`), or null.
  */
 export function memoPropFallback(
   ctx: GoEmitContext,
-  memo: { bodyExpr?: string },
-): ReturnType<GoEmitContext['extractPropFallback']> {
-  return memo.bodyExpr === undefined ? null : ctx.extractPropFallback(memo.bodyExpr)
+  memo: { parsed?: ParsedExpr },
+): ReturnType<GoEmitContext['extractPropFallbackFromParsed']> {
+  return ctx.extractPropFallbackFromParsed(memo.parsed)
 }
