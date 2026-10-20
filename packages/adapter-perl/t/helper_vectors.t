@@ -69,9 +69,9 @@ my %UNSUPPORTED = %{ $divergences_doc->{unsupported} };
 # One binding per canonical helper id in the spec catalogue, bound to
 # the exact code shape compiled templates execute on the Perl backends.
 # Where the adapters lower an operation to a native Perl operator
-# (`%`, unary `-`), the binding IS that operator rather than a
-# BarefootJS.pm method; `+ - * /` go through `add` / `subtract` /
-# `multiply` / `divide` (#3454). Per the spec, a
+# (unary `-`), the binding IS that operator rather than a
+# BarefootJS.pm method; `+ - * / %` go through `add` / `subtract` /
+# `multiply` / `divide` / `mod` (#3454, #3474). Per the spec, a
 # vector with no binding here fails the test — the Perl backend must
 # not silently fall behind the catalogue.
 my %bindings = (
@@ -79,7 +79,7 @@ my %bindings = (
     sub => sub { $bf->subtract($_[0], $_[1]) },
     mul => sub { $bf->multiply($_[0], $_[1]) },
     div => sub { $bf->divide($_[0], $_[1]) },
-    mod => sub { $_[0] % $_[1] },
+    mod => sub { $bf->mod($_[0], $_[1]) },
     neg => sub { -$_[0] },
 
     string => sub { $bf->string($_[0]) },

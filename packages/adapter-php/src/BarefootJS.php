@@ -824,10 +824,17 @@ final class BarefootJS
 
     /** JS `%`: remainder with the dividend's sign. PHP's `fmod` already
      * implements C-style fmod semantics matching JS `%` for every case
-     * (zero divisor, infinite/NaN operands all yield NaN natively). */
-    public function mod($a, $b): float
+     * (zero divisor, infinite/NaN operands all yield NaN natively).
+     *
+     * A zero remainder of two int operands is the int `0`, so it still
+     * indexes a list: Blade's `data_get` reads the float `-0.0` that
+     * `fmod(-4, 2)` gives as the key `"-0"`. That drops JS's sign
+     * (`-4 % 2` is `-0`, so `1 / (-4 % 2)` is `-Infinity`); PHP has no
+     * negative-zero int to carry both. */
+    public function mod($a, $b): int|float
     {
-        return fmod($this->number($a), $this->number($b));
+        $r = fmod($this->number($a), $this->number($b));
+        return $r === 0.0 && is_int($a) && is_int($b) ? 0 : $r;
     }
 
     public function floor($value): float

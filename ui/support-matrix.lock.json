@@ -2929,6 +2929,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -2947,9 +2953,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -3135,6 +3141,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3153,9 +3165,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -3235,6 +3247,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3250,6 +3268,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -3599,6 +3623,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3617,9 +3647,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -3714,12 +3744,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -3926,6 +3950,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -3956,9 +3986,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -4378,6 +4408,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4420,9 +4456,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -4628,6 +4664,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4655,6 +4697,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -5490,6 +5538,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5520,9 +5574,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -5737,12 +5791,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -6310,6 +6358,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -6346,9 +6400,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -6882,6 +6936,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -6930,9 +6990,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -7186,6 +7246,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -7219,6 +7285,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -8264,6 +8336,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -8300,9 +8378,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -8571,12 +8649,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -8901,6 +8973,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -8937,9 +9015,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -9329,6 +9407,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -9371,9 +9455,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -9555,6 +9639,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -9588,6 +9678,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -10321,6 +10417,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -10357,9 +10459,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -10544,12 +10646,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -11071,6 +11167,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -11098,6 +11200,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -11535,6 +11643,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -11574,6 +11688,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -11791,6 +11911,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -11818,6 +11944,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -12701,6 +12833,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -12728,6 +12866,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -13556,9 +13700,21 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]
@@ -13582,9 +13738,21 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]
@@ -13598,9 +13766,21 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]
@@ -13656,9 +13836,21 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]
@@ -15849,9 +16041,9 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             }
           ]
@@ -15860,37 +16052,37 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             }
           ]
         },
-        "jinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "minijinja": {},
         "mojolicious": {},
         "pebble": {},
         "twig": {
           "gaps": [
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             }
           ]
         },
-        "xslate": {
-          "gaps": [
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
-              ]
-            }
-          ]
-        }
+        "xslate": {}
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -16270,14 +16462,74 @@
     "binary:/": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "erb": {},
-        "go-template": {},
-        "jinja": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "minijinja": {},
         "mojolicious": {},
         "pebble": {},
-        "twig": {},
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "xslate": {}
       },
       "source": {
@@ -17419,6 +17671,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -17455,9 +17713,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -17637,6 +17895,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -17673,9 +17937,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -17749,6 +18013,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -17782,6 +18052,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -18137,6 +18413,12 @@
               ]
             },
             {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18173,9 +18455,9 @@
               ]
             },
             {
-              "fixture": "remainder-nan-operand",
+              "fixture": "remainder-negative-zero-quotient",
               "limitations": [
-                "remainder-nan-operand"
+                "division-zero-divisor"
               ]
             },
             {
@@ -18270,12 +18552,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-nan-operand",
-              "limitations": [
-                "remainder-nan-operand"
               ]
             },
             {
@@ -20342,14 +20618,74 @@
     "unary:-": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "erb": {},
-        "go-template": {},
-        "jinja": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "minijinja": {},
         "mojolicious": {},
         "pebble": {},
-        "twig": {},
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "number-division-zero-divisor",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-quotient",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "xslate": {}
       },
       "source": {

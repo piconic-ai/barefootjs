@@ -79,10 +79,9 @@ class HelperVectorsTest < Minitest::Test
     # +-Infinity / NaN for a zero divisor instead of raising.
     'div' => ->(a, b) { a.fdiv(b) },
     # Ruby's native `%` follows the DIVISOR's sign (Python-style); JS `%`
-    # keeps the DIVIDEND's sign (C fmod-style). `Numeric#remainder` is
-    # Ruby's fmod-equivalent and matches JS exactly, for both Integer and
-    # Float operands, with no truncation.
-    'mod' => ->(a, b) { a.remainder(b) },
+    # keeps the DIVIDEND's sign (C fmod-style). Templates call `bf.mod`,
+    # the evaluator's JS remainder (#3474).
+    'mod' => ->(a, b) { BF.mod(a, b) },
     'neg' => ->(a) { -a },
 
     'string' => ->(v) { BF.string(v) },

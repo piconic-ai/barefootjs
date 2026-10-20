@@ -47,9 +47,9 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
-  // `%` over a `NaN` operand: Kolon's `%` is Perl's integer modulus, so
-  // `NaN % 2` renders an integer where JS gives `NaN`.
-  'remainder-nan-operand': { limitation: 'remainder-nan-operand' },
+  // `remainder-nan-operand` used to sit here: Kolon's `%` is Perl's integer
+  // modulus, so `NaN % 2` rendered an integer. `%` now goes through the
+  // runtime's `mod`, JS's truncated remainder (#3474).
   // `boolean-logical-stringify` used to sit here: a stringified `&&` / `||`
   // over a boolean prop and a computed boolean rendered the native `1` its
   // last operand evaluates to. A name declared `boolean` now counts as a
