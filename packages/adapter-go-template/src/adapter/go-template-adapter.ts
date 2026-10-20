@@ -264,39 +264,92 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
  * a string concat, which `bf_string` passes through unchanged). */
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
 
+type PropsFieldMeta = Pick<ComponentIR['metadata'], 'propsParams' | 'signals' | 'memos'>
+
+/** The field name `Children`, which only the children prop may hold. */
+const CHILDREN_FIELD = capitalizeFieldName('children')
+
 /**
- * The Props struct field a props param is held in: its LOCAL binding
- * (`{ n: count }` → `Count`), what the template reads. The children prop is
- * the exception: it is always `Children`, renamed or not
- * (`{ children: kids }`, #3572), because that is the field the parent's
- * children reach it through (`bf_with_children` sets `Children` by name,
- * and `New<Comp>Props` copies the caller's `Input.Children`). The
- * template's reads of the renamed binding resolve to it through
- * `propDestructureAliases`.
+ * The Props struct field each props param is held in, by local binding.
+ *
+ * - The children prop is always `Children`, renamed or not
+ *   (`{ children: kids }`, #3572): that is the field the parent's children
+ *   reach it through (`bf_with_children` sets `Children` by name, and
+ *   `New<Comp>Props` copies the caller's `Input.Children`).
+ * - Any other param is held in its LOCAL binding's field (`{ n: count }` →
+ *   `Count`), what the template reads, unless that field is `Children`
+ *   (`{ label: children }`): `Children` is reserved for the children
+ *   payload, so the binding takes its caller-facing key's field instead
+ *   (`Label`), with `_` appended while another prop, signal or memo field
+ *   already has that name.
+ *
+ * The template's reads of a binding whose field is not its local's resolve
+ * through `propDestructureAliases` (`propFieldAliases`).
  */
-function propsFieldName(param: { name: string; sourceName?: string }): string {
-  return capitalizeFieldName(isChildrenPropParam(param) ? 'children' : param.name)
+function propsFieldNames(meta: PropsFieldMeta): ReadonlyMap<string, string> {
+  const fields = new Map<string, string>()
+  const displaced: { name: string; sourceName?: string }[] = []
+  const taken = new Set<string>([
+    ...(meta.signals ?? []).map(sig => capitalizeFieldName(sig.getter)),
+    ...(meta.memos ?? []).map(m => capitalizeFieldName(m.name)),
+  ])
+  for (const param of meta.propsParams ?? []) {
+    const field = isChildrenPropParam(param) ? CHILDREN_FIELD : capitalizeFieldName(param.name)
+    if (field === CHILDREN_FIELD && !isChildrenPropParam(param)) {
+      displaced.push(param)
+      continue
+    }
+    fields.set(param.name, field)
+    taken.add(field)
+  }
+  taken.add(CHILDREN_FIELD)
+  for (const param of displaced) {
+    let field = capitalizeFieldName(param.sourceName ?? param.name)
+    while (taken.has(field)) field = `${field}_`
+    fields.set(param.name, field)
+    taken.add(field)
+  }
+  return fields
+}
+
+/** The Props struct field `param` is held in (`propsFieldNames`). */
+function propsFieldName(param: { name: string; sourceName?: string }, meta: PropsFieldMeta): string {
+  return propsFieldNames(meta).get(param.name) ?? capitalizeFieldName(param.name)
 }
 
 /**
- * Local names whose template reads resolve to another prop's field
+ * Local names whose template reads resolve to another field than their own
  * (`rootFieldRef`): a bare-props-form body destructure's renamed prop
- * (`const { children: kids } = props`, #2788), and the children prop
- * renamed in the parameter destructure (`{ children: kids }`, #3572), whose
- * Props field is `Children` (`propsFieldName`).
+ * (`const { children: kids } = props`, #2788, resolved to the prop key),
+ * and a param destructure binding whose Props field is not named after its
+ * local (`propsFieldNames`: `{ children: kids }` → `Children`,
+ * `{ label: children }` → `Label`, #3572), resolved to that field.
  */
 function propFieldAliases(ir: ComponentIR): Map<string, string> {
   const aliases = resolveBodyDestructuredPropAliases(ir.metadata.localConstants ?? [], ir.metadata.propsObjectName)
-  for (const p of ir.metadata.propsParams ?? []) {
-    if (p.name !== 'children' && isChildrenPropParam(p)) aliases.set(p.name, 'children')
+  for (const [local, field] of propsFieldNames(ir.metadata)) {
+    if (field !== capitalizeFieldName(local)) aliases.set(local, field)
   }
   return aliases
+}
+
+/** Caller-facing prop key → its Props field (`CompileState.propKeyFields`). */
+function propKeyFields(ir: ComponentIR): Map<string, string> {
+  const fields = new Map<string, string>()
+  const byLocal = propsFieldNames(ir.metadata)
+  for (const p of ir.metadata.propsParams ?? []) {
+    if (p.isRest) continue
+    const key = p.sourceName ?? p.name
+    const field = byLocal.get(p.name)
+    if (field && !fields.has(key)) fields.set(key, field)
+  }
+  return fields
 }
 
 /** Go field names a derived-const field must not take: props, signals and memos already own them. */
 function derivedConstTakenFieldNames(ir: ComponentIR): Set<string> {
   return new Set<string>([
-    ...ir.metadata.propsParams.map(propsFieldName),
+    ...ir.metadata.propsParams.map(p => propsFieldName(p, ir.metadata)),
     ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
     ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
   ])
@@ -726,6 +779,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // above, different terminal set (a prop key here, a signal/memo
     // getter there).
     this.state.propDestructureAliases = propFieldAliases(ir)
+    this.state.propKeyFields = propKeyFields(ir)
     // #2208 fable review: every name a `.map()`/`.filter()` loop callback
     // binds as its item/index parameter anywhere in the component. Static
     // loop-source resolution (`getBakedStaticChildLoop` /
@@ -1250,7 +1304,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // gates (see `childPropFieldNames`).
     const fieldNames = new Map<string, string>()
     for (const p of ir.metadata.propsParams ?? []) {
-      fieldNames.set(p.sourceName ?? p.name, propsFieldName(p))
+      fieldNames.set(p.sourceName ?? p.name, propsFieldName(p, ir.metadata))
     }
     this.childPropFieldNames.set(name, fieldNames)
     const deps = new Map<string, ReadonlySet<string>>()
@@ -1759,7 +1813,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.childRepropsReady.set(componentName, {
       params: params.map(p => ({
-        propsField: propsFieldName(p),
+        propsField: propsFieldName(p, ir.metadata),
         inputField: capitalizeFieldName(p.sourceName ?? p.name),
       })),
       usesSearchParams: this.usesSearchParams(ir),
@@ -2712,7 +2766,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // `interface{}` fields take the fold (the latter via the nil-tolerant
       // wrapper below), so restrict here.
       const param = ir.metadata.propsParams.find(
-        p => propsFieldName(p) === capitalizeFieldName(memo.name),
+        p => propsFieldName(p, ir.metadata) === capitalizeFieldName(memo.name),
       )
       if (!param) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
@@ -2723,10 +2777,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const propFieldNames = new Set<string>()
     for (const param of ir.metadata.propsParams) {
       // Props field: LOCAL binding, what the template reads (`{{.X}}`),
-      // except the children prop (`propsFieldName`).
+      // except where `propsFieldNames` moves it (the children prop, a
+      // local named `children`).
       // Everything on the right of `:` below reads `in.<inputField>`
       // (caller-facing), never `in.<fieldName>` (local).
-      const fieldName = propsFieldName(param)
+      const fieldName = propsFieldName(param, ir.metadata)
       const inputField = capitalizeFieldName(param.sourceName ?? param.name)
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const hoisted = propFallbackVars.get(param.name)
@@ -4883,7 +4938,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const propFieldNames = new Set<string>()
 
     for (const param of ir.metadata.propsParams) {
-      const fieldName = propsFieldName(param)
+      const fieldName = propsFieldName(param, ir.metadata)
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       // Children are already rendered in the DOM; serialising them into bf-p
@@ -6605,6 +6660,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * through Go template's `$` (the top-level argument to Execute), which never
    * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
    */
+  /**
+   * The root field of the nillable prop `propName` names, for the
+   * `{{if ne .X nil}}` attribute-omission guard, or null when it is not a
+   * nillable prop. A bare name a loop row binds (`isBareName`, as in
+   * `rows.map(children => <li key={children}>)`) is the row value, not the
+   * prop. The prop's field is a root field, reached through `$.` inside a
+   * loop (#3572).
+   */
+  private nillablePropFieldRef(propName: string, isBareName: boolean): string | null {
+    if (!this.state.nillablePropNames.has(propName)) return null
+    if (isBareName && this.scope.lookup(propName) !== null) return null
+    return `${this.inLoop ? '$.' : '.'}${capitalizeFieldName(propName)}`
+  }
+
+  /**
+   * Root field reference for a read of the props object's own key
+   * (`props.<key>`): the field the prop with that caller-facing key is held
+   * in (`CompileState.propKeyFields`), not a local alias of the same name.
+   */
+  private propKeyFieldRef(key: string): string {
+    this.state.templateReadRootFields.add(key)
+    const prefix = this.inLoop ? '$.' : '.'
+    return `${prefix}${this.state.propKeyFields.get(key) ?? capitalizeFieldName(key)}`
+  }
+
   private rootFieldRef(name: string): string {
     const resolved = this.resolveRootFieldAlias(name)
     this.state.templateReadRootFields.add(resolved)
@@ -6933,7 +7013,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // SolidJS-style props pattern: props.xxx -> .Xxx (or $.Xxx inside a loop,
     // since props live on the root data struct, not the iteration element).
     if (object.kind === 'identifier' && this.state.propsObjectName && object.name === this.state.propsObjectName) {
-      return this.rootFieldRef(property)
+      return this.propKeyFieldRef(property)
     }
 
     // A member access on the component's own destructured rest binding
@@ -9107,7 +9187,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
 
         if (expr.object.kind === 'identifier' && this.state.propsObjectName && expr.object.name === this.state.propsObjectName) {
-          return plain(this.rootFieldRef(expr.property))
+          return plain(this.propKeyFieldRef(expr.property))
         }
 
         // A numeric index reads an element, not a field (#3497): it takes the
@@ -10431,8 +10511,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.state.propsObjectName && bareId.startsWith(`${this.state.propsObjectName}.`)
           ? bareId.slice(this.state.propsObjectName.length + 1)
           : bareId
-      if (/^[A-Za-z_$][\w$]*$/.test(propName) && this.state.nillablePropNames.has(propName)) {
-        const field = `.${capitalizeFieldName(propName)}`
+      const field = /^[A-Za-z_$][\w$]*$/.test(propName) ? this.nillablePropFieldRef(propName, propName === bareId) : null
+      if (field !== null) {
         return `{{if ne ${field} nil}}${nameTok}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
       }
       // The same omission for a bare read of a nullable signal (`title={s()}`

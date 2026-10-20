@@ -2266,6 +2266,50 @@
           }
         }
       },
+      "children-alias-hop-shadowed-intermediate": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        }
+      },
       "component-spread-explicit-null": {
         "blade": {
           "kind": "render",
@@ -7494,6 +7538,10 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
+      "children-alias-hop-shadowed-intermediate": {
+        "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts"
+      },
       "component-spread-explicit-null": {
         "description": "A props spread whose explicit null overrides an earlier explicit prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
@@ -8280,6 +8328,25 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "loop-shadowed-const-alias-hop": {
+      "title": "A const alias hop read in a loop row that shadows a name the hop passes through",
+      "kind": "silent",
+      "given": "a component-scope const alias chain (`const a = children; const b = a`, `const c = children`) read inside a `.map()` row whose parameter has a name the chain passes through (`rows.map(a => …{b}…)`, `rows.map((children, i) => …{c}…)`)",
+      "expected": "the read renders the value the const chain holds (here the passed children, as markup)",
+      "actual": "renders nothing, or fails to render: the template reads the const as a variable that is never set",
+      "fixtures": [
+        "children-alias-hop-shadowed-intermediate"
+      ],
+      "adapters": [
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "xslate"
       ]
     },
     "module-scope-helper-call": {

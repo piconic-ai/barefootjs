@@ -874,9 +874,6 @@
       "resolveCallbackMethodFunctionReferences/visit": [
         29
       ],
-      "transformExpressionInner": [
-        26
-      ],
       "tryResolveTemplateSpanFromConst": [
         43
       ]

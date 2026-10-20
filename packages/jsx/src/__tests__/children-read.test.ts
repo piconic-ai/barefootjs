@@ -174,6 +174,25 @@ export function Box(props: { children?: unknown }) {
 `)).toEqual(['bare', 'or-fallback', 'bare'])
   })
 
+  test('a loop row shadowing a name an outer alias resolves through does not change the alias', () => {
+    // The initializer `props.children` and the hop through `a` resolve in
+    // the component scope; only the name read at the use site is checked
+    // against the loop rows.
+    expect(childrenReads(`
+export function Box(props: { children?: unknown; rows: string[][] }) {
+  const { children: c } = props
+  return <ul>{props.rows.map((props, i) => <li key={i}>{c}{props.map((props, j) => <i key={j}>{c}</i>)}</li>)}</ul>
+}
+`)).toEqual(['bare', 'bare'])
+    expect(childrenReads(`
+export function Box({ children, rows }: { children?: unknown; rows: string[] }) {
+  const a = children
+  const b = a
+  return <ul>{rows.map(a => <li key={a}>{b}{a}</li>)}{rows.map((children, i) => <li key={i}>{b}{children}</li>)}</ul>
+}
+`)).toEqual(['bare', undefined, 'bare', undefined])
+  })
+
   test('a let alias of the children prop is not a children read', () => {
     expect(childrenReads(`
 export function Box({ children }: { children?: unknown }) {

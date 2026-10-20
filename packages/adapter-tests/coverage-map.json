@@ -1508,6 +1508,30 @@
         "text"
       ]
     },
+    "children-alias-hop-shadowed-intermediate": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "children-alias-loop-shadow": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",
@@ -1557,6 +1581,18 @@
       ]
     },
     "children-named-loop-row-escaped": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "children-named-loop-row-key": {
       "kinds": [
         "identifier",
         "member"
@@ -1657,6 +1693,16 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "children-renamed-beside-children-local": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

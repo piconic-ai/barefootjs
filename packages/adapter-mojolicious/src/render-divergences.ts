@@ -27,6 +27,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A const alias chain (`const a = children; const b = a`) read in a loop
+  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
+  // the template cannot inline the const through the shadowed name, and the
+  // const itself is never set, so the read renders nothing.
+  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

@@ -1097,6 +1097,10 @@ import { fixture as childrenRenamedParamConditional } from './children-renamed-p
 import { fixture as childrenLocalBindsOtherProp } from './children-local-binds-other-prop'
 import { fixture as childrenAliasHop } from './children-alias-hop'
 import { fixture as childrenAliasHopFragmentRoot } from './children-alias-hop-fragment-root'
+import { fixture as childrenRenamedBesideChildrenLocal } from './children-renamed-beside-children-local'
+import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow'
+import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
+import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
 import { fixture as filterPredicateShapeLoop } from './filter-predicate-shape-loop'
 import { fixture as filterPredicateShapeLoopClient } from './filter-predicate-shape-loop-client'
@@ -1874,6 +1878,10 @@ export const jsxFixtures: JSXFixture[] = [
   childrenLocalBindsOtherProp,
   childrenAliasHop,
   childrenAliasHopFragmentRoot,
+  childrenRenamedBesideChildrenLocal,
+  childrenAliasLoopShadow,
+  childrenAliasHopShadowedIntermediate,
+  childrenNamedLoopRowKey,
   childrenPreambleLocalEscaped,
   filterPredicateShapeLoop,
   filterPredicateShapeLoopClient,
