@@ -121,7 +121,7 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
       scrollNext,
       canScrollPrev,
       canScrollNext,
-      setApi: (api) => { emblaApi = api },
+      setApi: (api: EmblaCarouselType) => { emblaApi = api },
       setCanScrollPrev,
       setCanScrollNext,
     }, <><div data-slot="carousel" role="region" aria-roledescription="carousel" className={`${carouselClasses} ${props.className ?? ''}`} tabindex={0} data-orientation={orientation()} data-opts={props.opts ? JSON.stringify(props.opts) : undefined} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div></>)}</>

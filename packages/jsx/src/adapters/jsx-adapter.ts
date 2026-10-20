@@ -564,8 +564,15 @@ export abstract class JsxAdapter extends BaseAdapter {
    * `expr` (a presence peel, a prop-ref rewrite) fails the identity check
    * and wins, so this can only ever add the annotation, never undo a
    * downstream edit.
+   *
+   * The same identity rule brings back the author's own type syntax
+   * (`value={store as never}`, #2573): `typed.tsx` is written only while
+   * `expr` is still the text it was captured beside.
    */
   protected expressionValueToJs(value: Extract<AttrValue, { kind: 'expression' }>): string {
+    if (this.jsxConfig.preserveTypes && value.typed && value.expr === value.typed.forExpr) {
+      return value.typed.tsx
+    }
     if (
       this.jsxConfig.preserveTypes &&
       value.parts &&

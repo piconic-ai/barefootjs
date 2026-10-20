@@ -1389,6 +1389,21 @@ export interface ExpressionAttr {
    * props.
    */
   parts?: IRTemplatePart[]
+  /**
+   * The author's source for `expr` with its TypeScript syntax intact
+   * (`store as never`, `value!`, `(v: string) => …`), for adapters that emit
+   * type-checked TSX (`preserveTypes`). Set only when `expr` came from a
+   * type-stripped read of the source and the two texts differ. `forExpr` is
+   * the `expr` it was captured beside: a later rewrite of `expr` makes them
+   * differ, and the adapter then falls back to `expr`.
+   */
+  typed?: TypedExprSource
+}
+
+/** See {@link ExpressionAttr.typed}. */
+export interface TypedExprSource {
+  tsx: TsxSourceText
+  forExpr: JsSourceText
 }
 
 export interface BooleanAttr {
@@ -1446,7 +1461,12 @@ export const AttrValueOf = {
   },
   expression(
     expr: string,
-    opts?: { templateExpr?: string; presenceOrUndefined?: boolean; parts?: IRTemplatePart[] },
+    opts?: {
+      templateExpr?: string
+      presenceOrUndefined?: boolean
+      parts?: IRTemplatePart[]
+      typed?: TypedExprSource
+    },
   ): ExpressionAttr {
     return {
       kind: 'expression',
@@ -1454,6 +1474,7 @@ export const AttrValueOf = {
       ...(opts?.templateExpr !== undefined && { templateExpr: opts.templateExpr }),
       ...(opts?.presenceOrUndefined !== undefined && { presenceOrUndefined: opts.presenceOrUndefined }),
       ...(opts?.parts !== undefined && { parts: opts.parts }),
+      ...(opts?.typed !== undefined && { typed: opts.typed }),
     }
   },
   booleanAttr(): BooleanAttr {

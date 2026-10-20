@@ -66,6 +66,7 @@ export type {
   AttrValue,
   LiteralAttr,
   ExpressionAttr,
+  TypedExprSource,
   BooleanAttr,
   BooleanShorthandAttr,
   TemplateAttr,
