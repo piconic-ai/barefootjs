@@ -1339,18 +1339,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -6136,9 +6124,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -6416,9 +6404,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -6666,21 +6654,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
-              ]
-            },
-            {
-              "fixture": "component-spread-props-then-explicit",
-              "limitations": [
-                "component-prop-spread"
-              ]
-            },
-            {
-              "fixture": "component-spread-rest",
-              "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -6717,18 +6693,6 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -7030,9 +6994,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -7304,9 +7268,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -7578,9 +7542,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -7834,9 +7798,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -8108,9 +8072,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -8388,9 +8352,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -8805,6 +8769,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -8995,6 +8965,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -9179,6 +9155,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -9200,18 +9182,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -9447,6 +9417,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -9631,6 +9607,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -9812,6 +9794,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -10005,6 +9993,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -10186,6 +10180,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -10376,6 +10376,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -10585,6 +10591,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10606,6 +10618,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10635,15 +10653,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-computed-array",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -10675,6 +10687,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10696,6 +10714,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10719,6 +10743,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10740,6 +10770,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10763,6 +10799,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10784,6 +10826,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -10811,9 +10859,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
       },
       "example": {
-        "fixture": "destructure-default-array-child",
-        "description": "An array prop defaulted to an earlier array prop reaches a child as passed, or as the earlier prop when omitted",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-array-child.ts"
+        "fixture": "nullish-coalesce-empty-array",
+        "description": "`??` keeps a present empty array instead of taking the fallback",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
+        "code": "props.c ?? props.a"
       }
     },
     "member": {
@@ -10855,9 +10904,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -11087,9 +11136,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -11289,21 +11338,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
-              ]
-            },
-            {
-              "fixture": "component-spread-props-then-explicit",
-              "limitations": [
-                "component-prop-spread"
-              ]
-            },
-            {
-              "fixture": "component-spread-rest",
-              "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -11328,18 +11365,6 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -11587,9 +11612,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -11819,9 +11844,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -12051,9 +12076,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -12265,9 +12290,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -12497,9 +12522,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -12729,9 +12754,9 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-then-props",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "component-prop-spread"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -15159,18 +15184,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "destructure-default-body-renamed-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -17505,18 +17518,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -18266,6 +18267,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -18384,6 +18391,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -18499,6 +18512,12 @@
               "fixture": "children-renamed-param",
               "limitations": [
                 "renamed-children-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -18668,6 +18687,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -18786,6 +18811,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -18901,6 +18932,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -19028,6 +19065,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -19146,6 +19189,12 @@
               ]
             },
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -19261,6 +19310,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -19504,6 +19559,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -19519,6 +19580,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -19542,15 +19609,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-computed-array",
+              "fixture": "component-spread-explicit-null",
               "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-param-computed-array",
-              "limitations": [
-                "destructure-default-computed-array"
+                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -19576,6 +19637,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -19591,6 +19658,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -19608,6 +19681,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -19623,6 +19702,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -19640,6 +19725,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -19655,6 +19746,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -19676,9 +19773,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "destructure-default-array-child",
-        "description": "An array prop defaulted to an earlier array prop reaches a child as passed, or as the earlier prop when omitted",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-array-child.ts"
+        "fixture": "nullish-coalesce-empty-array",
+        "description": "`??` keeps a present empty array instead of taking the fallback",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalesce-empty-array.ts",
+        "code": "props.c ?? props.a"
       }
     },
     "logical:||": {

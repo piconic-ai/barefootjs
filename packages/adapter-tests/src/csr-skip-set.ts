@@ -4,10 +4,6 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
-  // `component-prop-spread` (#3479): the CSR template drops a props spread
-  // onto a child component when the call also passes explicit props.
-  'component-spread-props-then-explicit',
-  'component-spread-explicit-then-props',
   // The client-directive escape intentionally elides the outer loop's
   // SSR rows. Its native-element CSR template eagerly creates those rows,
   // so comparing it with the empty SSR placeholder is not its contract.
@@ -195,6 +191,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  'component-spread-props-then-explicit': { limitation: 'csr-component-prop-spread' },
+  'component-spread-explicit-then-props': { limitation: 'csr-component-prop-spread' },
+  'component-spread-props-subset': { limitation: 'csr-component-prop-spread' },
+  'component-spread-props-rest-bag': { limitation: 'csr-component-prop-spread' },
+  // The client template drops the spread (`csr-component-prop-spread`), so
+  // the earlier explicit prop is kept: the same output the template backends
+  // render for this fixture.
+  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // The renamed param is a reactive slot, and a slotted read escapes the
   // children markup (`escapeTextOrMarkup`).
   'children-renamed-param': { limitation: 'renamed-children-param' },

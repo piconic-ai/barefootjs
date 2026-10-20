@@ -41,8 +41,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A props spread onto a child component: a key the spread omits erases an earlier explicit prop (#3479).
-  'component-spread-explicit-then-props': { limitation: 'component-prop-spread' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).
@@ -50,6 +48,11 @@ export const renderDivergences: RenderDivergences = {
   // omitted prop and a `null` one as the same nil, and the type admits both,
   // so the nil reads as `null` (`0`) where JS reads `undefined` (`NaN`).
   'omitted-optional-nullable-number-arithmetic': { limitation: 'omitted-optional-nullable-number-arithmetic' },
+  // An explicit `null` carried by a `{...props}` spread onto a child: the
+  // engine holds it and an omitted prop as the same nil, so the spread
+  // carries the key only when it is not nil and an earlier explicit prop
+  // keeps its value where JS overrides it with `null`.
+  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // `%` over a `NaN` operand: PHP's `%` converts both operands to
   // integers, so `NaN % 2` renders an integer where JS gives `NaN`.
   'remainder-nan-operand': { limitation: 'remainder-nan-operand' },

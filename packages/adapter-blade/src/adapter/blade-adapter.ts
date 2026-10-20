@@ -395,7 +395,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
    * reference instead of falling through to unconditional emission.
    */
   private restPropsName: string | null = null
-  private propsParams: { name: string }[] = []
+  private propsParams: { name: string; optional: boolean }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props) whose value is a string. Carried for
@@ -510,7 +510,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // accesses (`props.className`/`id`/`disabled`) into propsParams via the
     // shared helper, before deriving `nullableOptionalProps` below.
     augmentInheritedPropAccesses(ir)
-    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name, optional: p.optional }))
     // Props whose declared TS type is boolean — a bare binding of one
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), not PHP's `(string) bool`
@@ -1363,6 +1363,8 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
         }
       },
       spread: (value) => `$bf->omit(${this.convertExpressionToBlade(value.expr)}, [])`,
+      // `isset` is false for an unset variable and for `null` alike.
+      presentParam: (name) => `(isset(${bladeVar(name)}) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{!! $bf->render_child('${tplName}'${dict}) !!}`

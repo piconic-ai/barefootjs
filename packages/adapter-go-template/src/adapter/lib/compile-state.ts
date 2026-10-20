@@ -352,6 +352,15 @@ export class CompileState {
   presenceCheckedPropNames: Set<string> = new Set()
 
   /**
+   * Prop names a `{...props}` spread onto a child component forwards
+   * (`collectPropsSpreadForwardedParams`, #3530). Same `resolvePropGoType`
+   * flip: an omitted prop has to reach the child as nil, and a key the
+   * spread carries only when passed keeps an earlier prop's value only if
+   * an omitted prop reads as nil.
+   */
+  propsSpreadForwardedPropNames: Set<string> = new Set()
+
+  /**
    * String-typed signal getter / prop names (#2168 string-concat-plus).
    * Feeds `isStringName` for `isStringConcatBinary`, which decides whether a
    * JS `+` operand chain is string concatenation rather than numeric

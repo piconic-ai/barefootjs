@@ -212,6 +212,9 @@ import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
 import { fixture as componentSpreadRest } from './component-spread-rest'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
+import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
+import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
+import { fixture as componentSpreadExplicitNull } from './component-spread-explicit-null'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
 import { fixture as omittedOptionalNumberArithmeticDestructured } from './omitted-optional-number-arithmetic-destructured'
@@ -1180,6 +1183,9 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadRest,
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
+  componentSpreadPropsSubset,
+  componentSpreadPropsRestBag,
+  componentSpreadExplicitNull,
   nullishOperandArithmeticMatrix,
   omittedOptionalNumberArithmetic,
   omittedOptionalNumberArithmeticDestructured,

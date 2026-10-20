@@ -8,6 +8,8 @@ import { describe, test, expect } from 'bun:test'
 import {
   isEmptyComponentProps,
   planComponentProps,
+  propsSpreadParam,
+  resolveComponentPropKeys,
   spellComponentProps,
   type ComponentPropEntry,
   type ComponentPropsOptions,
@@ -64,6 +66,7 @@ function spell(comp: IRComponent, options = noProps): string[] {
   return spellComponentProps(planComponentProps(comp, options), {
     entry: describe,
     spread: (value) => value.expr,
+    presentParam: (name) => `${name}?=$${name}`,
   }).map((segment) => (segment.kind === 'spread' ? `...${segment.expr}` : `{${segment.parts.join(', ')}}`))
 }
 
@@ -101,8 +104,30 @@ describe('planComponentProps', () => {
   test('a repeated key keeps its first position and takes the later value', () => {
     const later = component([prop('', spread('props')), prop('tone', literal('explicit'))])
     expect(spell(later, withProps)).toEqual([`{tone='explicit', size=$size, _bf_slot='s0'}`])
+  })
+
+  test('{...props} after an explicit prop carries that key only when the caller passed it', () => {
     const earlier = component([prop('tone', literal('first')), prop('', spread('props'))])
-    expect(spell(earlier, withProps)).toEqual([`{tone=$tone, size=$size, _bf_slot='s0'}`])
+    expect(spell(earlier, withProps)).toEqual([`{tone='first'}`, '...tone?=$tone', `{size=$size, _bf_slot='s0'}`])
+  })
+
+  test('{...props} after a spread of unknown keys carries every key only when passed', () => {
+    const comp = component([prop('', spread('rest')), prop('', spread('props'))], { slotId: null })
+    expect(spell(comp, withProps)).toEqual(['{}', '...rest', '...tone?=$tone', '...size?=$size'])
+  })
+
+  test('a required param always wins: the caller always passes it', () => {
+    const required: ComponentPropsOptions = {
+      propsObjectName: 'props',
+      propsParams: [{ name: 'tone', optional: false }, { name: 'size', optional: true }],
+    }
+    const comp = component([prop('tone', literal('first')), prop('size', literal('s')), prop('', spread('props'))])
+    expect(spell(comp, required)).toEqual([`{tone=$tone, size='s'}`, '...size?=$size', `{_bf_slot='s0'}`])
+  })
+
+  test('an explicit prop after the spread replaces a passed-only key', () => {
+    const comp = component([prop('tone', literal('a')), prop('', spread('props')), prop('tone', literal('z'))])
+    expect(spell(comp, withProps)).toEqual([`{tone='a'}`, '...tone?=$tone', `{size=$size, tone='z', _bf_slot='s0'}`])
   })
 
   test('a key repeated across a spread stays twice: the spread may set it in between', () => {
@@ -124,6 +149,47 @@ describe('planComponentProps', () => {
   })
 })
 
+describe('propsSpreadParam', () => {
+  const none = { keys: new Set<string>(), spread: false }
+  test('nothing earlier sets the key: an ordinary entry', () => {
+    expect(propsSpreadParam({ name: 'tone' }, none)).toBe('entry')
+  })
+  test('an earlier entry or an earlier spread may set the key: only when passed', () => {
+    expect(propsSpreadParam({ name: 'tone' }, { keys: new Set(['tone']), spread: false })).toBe('present')
+    expect(propsSpreadParam({ name: 'tone', optional: true }, { keys: new Set(), spread: true })).toBe('present')
+  })
+  test('a required param is always passed, so it always wins', () => {
+    expect(propsSpreadParam({ name: 'tone', optional: false }, { keys: new Set(['tone']), spread: true })).toBe('entry')
+  })
+})
+
+describe('resolveComponentPropKeys', () => {
+  test('per key, in first-set order: the passed param over the latest unconditional entry', () => {
+    const comp = component([prop('tone', literal('first')), prop('size', literal('s')), prop('', spread('props'))], {
+      slotId: null,
+    })
+    const resolved = resolveComponentPropKeys(planComponentProps(comp, withProps))!
+    expect(resolved.map((r) => [r.key, r.base?.kind, r.presentParams])).toEqual([
+      ['tone', 'value', ['tone']],
+      ['size', 'value', ['size']],
+    ])
+  })
+
+  test('a later entry clears the passed-only params before it', () => {
+    const comp = component([prop('tone', literal('a')), prop('', spread('props')), prop('tone', literal('z'))], {
+      slotId: null,
+    })
+    const tone = resolveComponentPropKeys(planComponentProps(comp, withProps))!.find((r) => r.key === 'tone')!
+    expect(tone.presentParams).toEqual([])
+    expect(tone.base).toEqual({ kind: 'value', name: 'tone', value: literal('z') })
+  })
+
+  test('a spread of unknown keys cannot be resolved at compile time', () => {
+    const comp = component([prop('', spread('rest')), prop('', spread('props'))])
+    expect(resolveComponentPropKeys(planComponentProps(comp, withProps))).toBeNull()
+  })
+})
+
 describe('spellComponentProps', () => {
   test('spells entries in source order and drops an empty part', () => {
     const order: string[] = []
@@ -136,6 +202,7 @@ describe('spellComponentProps', () => {
         return entry.kind === 'value' ? '' : 'part'
       },
       spread: () => '',
+      presentParam: () => '',
     })
     expect(order).toEqual(['a', 'b', 'c', 'slot-id', 'children'])
     expect(segments).toEqual([{ kind: 'entries', parts: ['part', 'part', 'part', 'part'] }])
