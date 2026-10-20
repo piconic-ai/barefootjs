@@ -142,3 +142,75 @@ describe('Math.max / Math.min seeds type as a number (#3540)', () => {
     expect(types).toMatch(/^\s+V float64 /m)
   })
 })
+
+function constructorOf(body: string, params = 'props: { a?: string; b?: string }'): string {
+  const src = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T(${params}) {
+${body}
+}
+`
+  const adapter = new GoTemplateAdapter()
+  const result = compileJSX(src.trimStart(), 'T.tsx', { adapter, outputIR: true })
+  const irFile = result.files.find(f => f.type === 'ir')
+  if (!irFile) throw new Error('no IR')
+  return adapter.generate(JSON.parse(irFile.content) as ComponentIR).types
+}
+
+describe('a `??` seed over another prop, and a hoisted fallback local read elsewhere (#3577)', () => {
+  test.each([
+    [PROPS, 'props.label ?? props.n'],
+    [PROPS, "props.label ?? props.n ?? 'z'"],
+    [DESTRUCTURED, 'label ?? n'],
+  ])('%s: %s is evaluated', (params, init) => {
+    expect(seedOf(params, init)).toContain('bf.EvalExpr(')
+  })
+
+  test('a seed whose literal differs from the hoisted local is evaluated', () => {
+    const types = constructorOf(`  const { b: local = 'x' } = props
+  const [s] = createSignal(local)
+  const [r] = createSignal(props.b ?? 'raw-missing')
+  return <p data-s={s()} data-r={r()}>x</p>`)
+    expect(types).toMatch(/^\s+var b string = "x"$/m)
+    expect(types).toMatch(/^\s+S: b,$/m)
+    expect(types).toMatch(/^\s+R: bf\.String\(bf\.EvalExpr\(.*raw-missing/m)
+  })
+
+  test('the prop field stays the prop when no signal shares it', () => {
+    const types = constructorOf(`  const [s] = createSignal(props.b ?? 'y')
+  return <p data-s={s()} data-b={props.b}>x</p>`)
+    expect(types).toMatch(/^\s+B: in\.B,$/m)
+    expect(types).toMatch(/^\s+S: b,$/m)
+  })
+
+  test('an evaluated seed over a dependent default hoists no local; a seed that reads its local still does', () => {
+    const types = constructorOf(
+      `  const [s] = createSignal(b ?? 'x')
+  const [t] = createSignal(c ?? 'y')
+  return <p data-s={s()} data-t={t()}>x</p>`,
+      "{ a = 'a', b = a, c }: { a?: string; b?: string; c?: string }",
+    )
+    expect(types).not.toMatch(/^\s+var b /m)
+    expect(types).toMatch(/^\s+S: bf\.String\(bf\.EvalExpr\(/m)
+    expect(types).toMatch(/^\s+var c string = "y"$/m)
+    expect(types).toMatch(/^\s+T: c,$/m)
+  })
+
+  test('a seed whose field is another prop’s hoists no local; a later seed of the same prop does', () => {
+    const alone = constructorOf(`  const [label] = createSignal(props.b ?? 'y')
+  return <p>{label()}</p>`, 'props: { b?: string; label?: string }')
+    expect(alone).not.toMatch(/^\s+var b /m)
+    const later = constructorOf(`  const [label] = createSignal(props.b ?? 'y')
+  const [t] = createSignal(props.b ?? 'y')
+  return <p data-t={t()}>{label()}</p>`, 'props: { b?: string; label?: string }')
+    expect(later).toMatch(/^\s+var b string = "y"$/m)
+    expect(later).toMatch(/^\s+T: b,$/m)
+  })
+
+  test('a signal sharing the prop field keeps the hoisted local on it', () => {
+    const types = constructorOf(`  const [b] = createSignal(props.b ?? 'y')
+  return <p data-b={b()}>x</p>`)
+    expect(types).toMatch(/^\s+B: b,$/m)
+  })
+})

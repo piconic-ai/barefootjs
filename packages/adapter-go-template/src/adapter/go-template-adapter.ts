@@ -182,7 +182,7 @@ import {
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
-import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
+import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, sharedFieldFallbackVar, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
@@ -2752,9 +2752,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
     // Props params (field names tracked to skip duplicate signal assignments).
-    // A JSX-declared default (`variant = 'default'`) or signal-side fallback
-    // (`props.X ?? N`, via the hoisted var) is baked in so a Go zero value can't
-    // shadow it. A memo shadowing a same-named prop
+    // A JSX-declared default (`variant = 'default'`) is baked in so a Go zero
+    // value can't shadow it, and so is the signal-side fallback (`props.X ??
+    // N`, via the hoisted var) of a signal sharing the field
+    // (`sharedFieldFallbackVar`). A memo shadowing a same-named prop
     // (`const className = createMemo(() => props.className ?? '')`) shares the
     // prop's field, so its `?? fallback` folds into the prop initializer.
     const memoFallbacks = new Map<string, { goFallback: string; goType: string }>()
@@ -2784,7 +2785,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const fieldName = propsFieldName(param, ir.metadata)
       const inputField = capitalizeFieldName(param.sourceName ?? param.name)
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
-      const hoisted = propFallbackVars.get(param.name)
+      const hoisted = sharedFieldFallbackVar(ir, param.name, propFallbackVars)
       if (hoisted) {
         // #2683: a `collisionWrap` entry means this field is ALSO a
         // colliding signal's shared field — `hoisted.varName` alone only
