@@ -41,8 +41,6 @@ const UI_LIB = join(REPO, 'ui/lib')
 const KNOWN_DIAGNOSTICS: Record<string, number> = {
   // Author `data-key={props.dataKey}` beside the synthesized loop-row `data-key`.
   'chart TS17001': 6,
-  // A `string | null` computed field on a non-nullable SVG attribute.
-  'chart TS2322': 2,
   // The source provides an `InternalFlowStore<NodeType, EdgeType>` to the non-generic `FlowContext`.
   'xyflow TS2345': 1,
 }
