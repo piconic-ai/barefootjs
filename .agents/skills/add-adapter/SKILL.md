@@ -31,9 +31,13 @@ Pick the closest existing adapter and copy its skeleton; do not design from scra
 | Target runtime | Copy from | Base class |
 |---|---|---|
 | Full JS engine template (can run JS at SSR) | `packages/adapter-hono` | `JsxAdapter` |
-| String-template DSL, compiled language | `packages/adapter-go-template`, `adapter-rust` | `BaseAdapter` |
-| String-template DSL, dynamic language | `packages/adapter-erb`, `adapter-jinja`, `adapter-twig`, `adapter-blade` | `BaseAdapter` |
-| Perl family | `packages/adapter-mojolicious`, `adapter-xslate`, `adapter-perl` | `BaseAdapter` |
+| String-template DSL, compiled language | `packages/adapter-go-template`, `adapter-rust` | `BaseAdapter` (Go), `DslTemplateAdapter` (Rust) |
+| String-template DSL, dynamic language | `packages/adapter-erb`, `adapter-jinja`, `adapter-twig`, `adapter-blade` | `DslTemplateAdapter` |
+| Perl family | `packages/adapter-mojolicious`, `adapter-xslate`, `adapter-perl` | `DslTemplateAdapter` |
+
+`DslTemplateAdapter` (`packages/jsx/src/adapters/dsl-template-adapter.ts`) owns `generate()` and
+the per-compile state it resets; the adapter supplies its diagnostic name, its reserved-name
+spelling, any extra state (`resetAdapterState`), its script registrations and its two seeds.
 
 Decide and record:
 - **Runtime model**: JS-engine (`clientShimSource`, `acceptsTemplateCall`) vs DSL
