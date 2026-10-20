@@ -149,6 +149,25 @@ func TestMod(t *testing.T) {
 	if got := Mod(7, math.Inf(1)); got != float64(7) {
 		t.Errorf("Mod(7, +Inf) = %v, want 7", got)
 	}
+	// A zero remainder of a negative dividend is -0, as in JS, so
+	// `1 / (-4 % 2)` is -Infinity; it still prints "0" and indexes as 0.
+	for _, tt := range [][2]any{{-4, 2}, {-4, -2}, {-4.0, 2}, {math.Copysign(0, -1), 3}} {
+		got, ok := Mod(tt[0], tt[1]).(float64)
+		if !ok || got != 0 || !math.Signbit(got) {
+			t.Errorf("Mod(%v, %v) = %v, want -0", tt[0], tt[1], got)
+		}
+	}
+	negZero := Mod(-4, 2)
+	if s := String(negZero); s != "0" {
+		t.Errorf("String(Mod(-4, 2)) = %q, want \"0\"", s)
+	}
+	if got := getFieldValue([]string{"a", "b"}, negZero); got != "a" {
+		t.Errorf("bf_get with Mod(-4, 2) = %v, want a", got)
+	}
+	// A non-negative dividend keeps the int 0.
+	if got := Mod(4, -2); got != 0 {
+		t.Errorf("Mod(4, -2) = %v (%T), want int 0", got, got)
+	}
 }
 
 func TestNeg(t *testing.T) {

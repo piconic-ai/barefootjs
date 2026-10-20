@@ -7847,6 +7847,25 @@
         "text"
       ]
     },
+    "number-division-zero-divisor": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:/",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "number-tofixed": {
       "kinds": [
         "array-method",
@@ -9153,6 +9172,52 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "remainder-negative-zero": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:%",
+        "binary:/",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "remainder-negative-zero-quotient": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:/",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

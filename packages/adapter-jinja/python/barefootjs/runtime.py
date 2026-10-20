@@ -144,6 +144,26 @@ def _is_int(v: Any) -> bool:
     return isinstance(v, int) and not isinstance(v, bool)
 
 
+class _NegativeZero(int):
+    """JS `-0` from an integer remainder (`-4 % 2`). It is the int `0`, so
+    it indexes a list (Jinja's `items[i]` takes no float) and prints and
+    JSON-encodes as `0`, as JS's `String(-0)` does, but converts to the
+    float `-0.0`, so the sign survives later arithmetic: `1 / (-4 % 2)` is
+    `-Infinity`. Arithmetic on it with Python's own operators gives a
+    plain int."""
+
+    __slots__ = ()
+
+    def __new__(cls) -> "_NegativeZero":
+        return super().__new__(cls, 0)
+
+    def __float__(self) -> float:
+        return -0.0
+
+
+NEGATIVE_ZERO = _NegativeZero()
+
+
 def _format_js_number(n: float) -> str:
     if n != n:
         return "NaN"
@@ -987,9 +1007,13 @@ class BarefootJS:
         operands (sign-of-dividend remainder); domain errors (zero divisor,
         infinite dividend) map to NaN, matching JS. Two int operands with a
         non-zero divisor keep an int result, as Python's own `%` did, so a
-        template-emitted remainder (#3474) still indexes a list."""
+        template-emitted remainder (#3474) still indexes a list. A zero
+        remainder of a negative dividend is JS's `-0`, the int
+        `NEGATIVE_ZERO`."""
         if _is_int(a) and _is_int(b) and b != 0:
             r = abs(a) % abs(b)
+            if r == 0 and (a < 0 or isinstance(a, _NegativeZero)):
+                return NEGATIVE_ZERO
             return -r if a < 0 else r
         an, bn = js_number(a), js_number(b)
         try:

@@ -290,15 +290,20 @@ module BarefootJS
     # (`-7 % 2` -> -1) and keeps a fraction (`7.5 % 2` -> 1.5); Ruby's `%`
     # floors instead (`-7 % 2` -> 1). A zero divisor, or a NaN / infinite
     # dividend, gives NaN. Two Integer operands keep an Integer result, as
-    # Ruby's own `%` did. Shared by callback-body evaluation (`binary`) and
-    # the template-emitted remainder (`Context#mod`, #3474).
+    # Ruby's own `%` did, except for a zero remainder of a negative dividend:
+    # JS gives -0 there (`-4 % 2`), which only shows through later
+    # arithmetic (`1 / (-4 % 2)` is -Infinity), so it is the Float -0.0. An
+    # Array still takes it as index 0 and `number_to_string` spells it "0".
+    # Shared by callback-body evaluation (`binary`) and the template-emitted
+    # remainder (`Context#mod`, #3474).
     def remainder(l, r)
       ln = to_number(l)
       rn = to_number(r)
       return Float::NAN if rn.zero?
-      return ln.remainder(rn) if ln.is_a?(Integer) && rn.is_a?(Integer)
+      return ln.to_f.remainder(rn.to_f) unless ln.is_a?(Integer) && rn.is_a?(Integer)
 
-      ln.to_f.remainder(rn.to_f)
+      m = ln.remainder(rn)
+      m.zero? && ln.negative? ? -0.0 : m
     end
 
     def binary(op, l, r)

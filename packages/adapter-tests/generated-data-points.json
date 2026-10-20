@@ -5763,6 +5763,20 @@
       }
     }
   ],
+  "number-division-zero-divisor": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890
+      }
+    }
+  ],
   "number-tofixed": [
     {
       "name": "gen:price:negative",
@@ -7110,6 +7124,46 @@
       "props": {
         "a": -7,
         "b": 1234567890
+      }
+    }
+  ],
+  "remainder-negative-zero": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "remainder-negative-zero-quotient": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
       }
     }
   ],

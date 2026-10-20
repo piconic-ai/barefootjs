@@ -118,6 +118,10 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
+  // `/` over a zero divisor: `bf_div` gives `0` where JS gives `Infinity` /
+  // `-Infinity` / `NaN`.
+  'number-division-zero-divisor': { limitation: 'division-zero-divisor' },
+  'remainder-negative-zero-quotient': { limitation: 'division-zero-divisor' },
   // `remainder-nan-operand` used to sit here: `bf_mod` converted both
   // operands to `int`, so `NaN % 2` rendered an integer. It now computes
   // JS's truncated remainder (#3474).

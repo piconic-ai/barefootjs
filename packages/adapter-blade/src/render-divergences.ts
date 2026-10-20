@@ -53,6 +53,12 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
+  // `/` over a zero divisor: PHP's `/` throws `DivisionByZeroError`, so the
+  // render fails where JS gives `Infinity` / `-Infinity` / `NaN`. Past that,
+  // the runtime's `mod` keeps an int `0` for `-4 % 2` so the remainder still
+  // indexes a list through `data_get`, which drops JS's `-0` sign.
+  'number-division-zero-divisor': { limitation: 'division-zero-divisor' },
+  'remainder-negative-zero-quotient': { limitation: 'division-zero-divisor' },
   // `remainder-nan-operand` used to sit here: PHP's `%` converted both
   // operands to integers, so `NaN % 2` rendered an integer. `%` now goes
   // through the runtime's `mod`, PHP's `fmod` (#3474).

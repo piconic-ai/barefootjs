@@ -45,6 +45,22 @@ class BfModTest < Minitest::Test
     assert_equal '7', text(7, Float::INFINITY)
   end
 
+  # JS gives -0 for a zero remainder of a negative dividend. It prints "0"
+  # and still indexes an Array as 0, but the sign shows through a later
+  # division: `1 / (-4 % 2)` is -Infinity.
+  def test_a_zero_remainder_of_a_negative_dividend_is_negative_zero
+    [[-4, 2], [-4, -2], [-4.0, 2], [-0.0, 3]].each do |left, right|
+      result = @bf.mod(left, right)
+      assert_kind_of Float, result
+      assert_equal(-Float::INFINITY, 1 / result, "#{left.inspect} % #{right.inspect}")
+    end
+    assert_equal '0', text(-4, 2)
+    assert_equal 'a', %w[a b][@bf.mod(-4, 2)]
+    assert_equal '-Infinity', @bf.string(@bf.div(1, @bf.mod(-4, 2)))
+    assert_equal 'Infinity', @bf.string(@bf.div(1, @bf.mod(4, 2)))
+    assert_kind_of Integer, @bf.mod(4, -2)
+  end
+
   def test_a_nil_operand_reads_as_zero
     assert_equal '0', text(nil, 3)
   end
@@ -53,7 +69,7 @@ class BfModTest < Minitest::Test
   # share one implementation, so moving a remainder between the two never
   # changes its result.
   def test_template_and_callback_remainder_agree
-    operands = [[-7, 2], [7, -2], [-7, -2], [7.5, 2], [7, 0], [nil, 3], ['7', 2]]
+    operands = [[-7, 2], [7, -2], [-7, -2], [-4, 2], [7.5, 2], [7, 0], [nil, 3], ['7', 2]]
     operands.each do |left, right|
       node = {
         kind: 'binary', op: '%',

@@ -532,15 +532,10 @@ final class Evaluator
             return self::toNumber($l) * self::toNumber($r);
         }
         if ($op === '/') {
-            $ln = self::toNumber($l);
-            $rn = self::toNumber($r);
-            if ($rn === 0.0) {
-                if ($ln === 0.0 || is_nan($ln)) {
-                    return NAN;
-                }
-                return $ln > 0 ? INF : -INF;
-            }
-            return $ln / $rn;
+            // `fdiv` is IEEE division: a zero divisor gives NaN or an
+            // infinity signed by both operands, the zero's included
+            // (`1 / -0` is -Infinity), where `/` throws.
+            return fdiv(self::toNumber($l), self::toNumber($r));
         }
         if ($op === '%') {
             $rn = self::toNumber($r);
