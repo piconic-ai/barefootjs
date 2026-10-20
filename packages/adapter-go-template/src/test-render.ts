@@ -433,49 +433,65 @@ ${propsLines.length > 0 ? propsLines.join('\n') + '\n' : ''}	if err := tmpl.Exec
       throw new GoNotAvailableError('go command not found — skipping Go Template rendering')
     }
 
-    // Run `go run .`
+    // Build into the temp dir, then run the binary. Not `go run .`: since Go
+    // 1.24 it caches every linked executable in GOCACHE, and each fixture's
+    // main.go is unique, so a full conformance run used to leave several GB of
+    // never-reused binaries behind. `go build -o` caches only the compiled
+    // packages; the binary lives in tempDir and goes with it in `finally`.
     // GOTOOLCHAIN=local prevents Go from downloading a newer toolchain
     // when go.mod specifies a patch version newer than the installed one.
     // Honour a caller-supplied GOTOOLCHAIN env var so CI / dev environments
     // with an older system Go can opt into Go's auto-download behaviour
     // (e.g. `GOTOOLCHAIN=go1.25.6 bun test`).
-    const proc = Bun.spawn(['go', 'run', '.'], {
-      cwd: tempDir,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      env: { ...process.env, GOTOOLCHAIN: process.env.GOTOOLCHAIN ?? 'local' },
-    })
-
-    const [stdout, stderr] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ])
-
-    const exitCode = await proc.exited
-    if (exitCode !== 0) {
-      // Append the offending `types.go` lines (with two lines of context)
-      // for each `./types.go:NN` the compiler reported — the temp dir is
-      // deleted in `finally`, so without this the merged unit that
-      // actually failed is unrecoverable (#1896 debugging aid).
-      const typeLines = goTypes.split('\n')
-      const context: string[] = []
-      const seen = new Set<number>()
-      for (const m of stderr.matchAll(/\.\/types\.go:(\d+)/g)) {
-        const n = Number(m[1])
-        for (let i = Math.max(1, n - 2); i <= Math.min(typeLines.length, n + 2); i++) {
-          if (seen.has(i)) continue
-          seen.add(i)
-          context.push(`${i === n ? '>' : ' '} types.go:${i}: ${typeLines[i - 1]}`)
-        }
-      }
-      const detail = context.length > 0 ? `\n${context.join('\n')}` : ''
-      throw new Error(`go run failed (exit ${exitCode}):\n${stderr}${detail}`)
+    const env = { ...process.env, GOTOOLCHAIN: process.env.GOTOOLCHAIN ?? 'local' }
+    const binPath = resolve(tempDir, 'render')
+    const build = await spawnCollect(['go', 'build', '-o', binPath, '.'], tempDir, env)
+    if (build.exitCode !== 0) {
+      throw new Error(`go build failed (exit ${build.exitCode}):\n${build.stderr}${typesGoContext(build.stderr, goTypes)}`)
+    }
+    const run = await spawnCollect([binPath], tempDir, env)
+    if (run.exitCode !== 0) {
+      throw new Error(`go render program failed (exit ${run.exitCode}):\n${run.stderr}`)
     }
 
-    return stdout
+    return run.stdout
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
+}
+
+async function spawnCollect(
+  cmd: string[],
+  cwd: string,
+  env: Record<string, string | undefined>,
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  const proc = Bun.spawn(cmd, { cwd, stdout: 'pipe', stderr: 'pipe', env })
+  const [stdout, stderr] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ])
+  return { stdout, stderr, exitCode: await proc.exited }
+}
+
+/**
+ * The offending `types.go` lines (with two lines of context) for each
+ * `./types.go:NN` the compiler reported — the temp dir is deleted in
+ * `finally`, so without this the merged unit that actually failed is
+ * unrecoverable (#1896 debugging aid).
+ */
+function typesGoContext(stderr: string, goTypes: string): string {
+  const typeLines = goTypes.split('\n')
+  const context: string[] = []
+  const seen = new Set<number>()
+  for (const m of stderr.matchAll(/\.\/types\.go:(\d+)/g)) {
+    const n = Number(m[1])
+    for (let i = Math.max(1, n - 2); i <= Math.min(typeLines.length, n + 2); i++) {
+      if (seen.has(i)) continue
+      seen.add(i)
+      context.push(`${i === n ? '>' : ' '} types.go:${i}: ${typeLines[i - 1]}`)
+    }
+  }
+  return context.length > 0 ? `\n${context.join('\n')}` : ''
 }
 
 /**

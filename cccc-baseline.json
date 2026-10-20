@@ -208,7 +208,7 @@
         31
       ],
       "renderGoTemplateComponent": [
-        73
+        59
       ]
     },
     "packages/adapter-hono/src/adapter/hono-adapter.ts": {
