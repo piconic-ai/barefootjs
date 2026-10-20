@@ -222,6 +222,7 @@ import { fixture as optionalNumberArithmeticMatrix } from './optional-number-ari
 import { fixture as remainderNanOperand } from './remainder-nan-operand'
 import { fixture as remainderNegativeOperands } from './remainder-negative-operands'
 import { fixture as remainderFractionZeroDivisor } from './remainder-fraction-zero-divisor'
+import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
 import { fixture as callbackIndexParam } from './callback-index-param'
@@ -1183,6 +1184,7 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNanOperand,
   remainderNegativeOperands,
   remainderFractionZeroDivisor,
+  unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,
   callbackIndexParam,

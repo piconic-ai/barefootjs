@@ -7127,7 +7127,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (op === '-') {
       return arithmeticOperandCoercion(op, argument, undefined, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined'
         ? `bf_neg (bf_number ${wrapIfMultiToken(arg)})`
-        : `bf_neg ${arg}`
+        : `bf_neg ${wrapIfMultiToken(arg)}`
     }
     return arg
   }
@@ -8242,7 +8242,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (arg === null) return null
         if (expr.op === '!') return lowerJsNot(expr.argument, arg)
         if (expr.op === '-') {
-          return `bf_neg ${arg}`
+          return `bf_neg ${wrapIfMultiToken(arg)}`
         }
         return arg
       }

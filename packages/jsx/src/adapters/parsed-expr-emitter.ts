@@ -349,6 +349,17 @@ export function groupBinaryOperand(operand: ParsedExpr, emitted: string): string
 }
 
 /**
+ * Wrap an emitted unary-minus OPERAND in parentheses where the target's
+ * prefix `-` would otherwise bind to only part of it (#3474): a compound
+ * operand for the reason {@link groupBinaryOperand} gives (`-(a + b)`
+ * re-emitted as `-a + b`), and a nested unary operand, since `--x` is a
+ * decrement in PHP and Perl. A leaf operand stays unwrapped.
+ */
+export function groupUnaryOperand(operand: ParsedExpr, emitted: string): string {
+  return operand.kind === 'unary' ? `(${emitted})` : groupBinaryOperand(operand, emitted)
+}
+
+/**
  * Split an `object-literal`'s (order-preserving) `properties` into rendered
  * SEGMENTS an adapter's `objectLiteral()` folds with its own merge idiom
  * (#2696 Step 2): each maximal run of consecutive `prop` entries collapses

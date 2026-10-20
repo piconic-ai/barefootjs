@@ -51,6 +51,7 @@
 import {
   arithmeticHelper,
   groupBinaryOperand,
+  groupUnaryOperand,
   literalMemberIndex,
   type ParsedExprEmitter,
   type ArrayMethod,
@@ -219,7 +220,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
-    if (op === '-') return `-${emit(argument)}`
+    if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
 
@@ -514,7 +515,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const arg = emit(argument)
+      const arg = groupUnaryOperand(argument, emit(argument))
       const operand = this.coerceNullishOperand(op, argument, undefined, arg)
       return operand === arg ? `-${arg}` : `-(${operand})`
     }

@@ -11,7 +11,7 @@
  *     the adapter only through the narrow `XslateEmitContext` seam.
  */
 
-import { arithmeticHelper, groupBinaryOperand,
+import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   isBooleanResultParsed,
   literalMemberIndex,
   groupObjectLiteralSegments,
@@ -188,7 +188,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
       const needsParens = argument.kind === 'binary' || argument.kind === 'logical'
       return needsParens ? `!(${arg})` : `!${arg}`
     }
-    if (op === '-') return `-${arg}`
+    if (op === '-') return `-${groupUnaryOperand(argument, arg)}`
     return arg
   }
 
@@ -489,8 +489,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `!${arg}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
-      return operand === arg ? `-${arg}` : `-(${operand})`
+      const grouped = groupUnaryOperand(argument, arg)
+      const operand = this.coerceUndefinedOperand(op, argument, undefined, grouped)
+      return operand === grouped ? `-${grouped}` : `-(${operand})`
     }
     return arg
   }
