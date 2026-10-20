@@ -363,7 +363,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertConditionToGo(jsCondition, preParsed),
     computedSignalSeed: (signal, propsParams, propFallbackVars, concreteDest) =>
       this.computedSignalSeed(signal, propsParams, propFallbackVars, concreteDest),
-    extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
+    extractPropFallbackFromParsed: (parsed) => this.extractPropFallbackFromParsed(parsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
     resolveModuleConstAsGo: (name, target) => this.resolveModuleConstAsGo(name, target),
@@ -5881,49 +5881,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Parse a signal-time initial value of the form `props.X ?? <literal>` —
-   * or, for destructured components, `x ?? <literal>` — into the source prop
-   * name and the Go-formatted fallback. Returns null when the expression
-   * isn't that shape or the fallback isn't a simple literal `goPropDefault`
-   * can translate.
-   *
-   * `preParsed` (the signal's best-effort `ParsedExpr`) is matched
-   * structurally when available; the regex handles only the props-object
-   * member form for callers without a tree (memo computations). A bare
-   * identifier can shadow a same-named prop (loop/callback params — the
-   * `collectNullishConsumedPropNames` limitation class), so every caller
-   * validates the returned name against `ir.metadata.propsParams`.
+   * Match a signal's or memo's parsed value of the form `props.X ?? <literal>`
+   * — or, for destructured components, `x ?? <literal>` — into the source
+   * prop name and the Go-formatted fallback. Returns null when there is no
+   * tree, the tree isn't that shape, or the fallback isn't a literal
+   * `goPropDefault` can translate. A bare identifier can shadow a same-named
+   * prop (loop/callback params — the `collectNullishConsumedPropNames`
+   * limitation class), so every caller validates the returned name against
+   * `ir.metadata.propsParams`.
    *
    * Keeps the original prop reference (not just the resolved value) so
    * caller-supplied non-zero inputs are honoured.
    */
-  private extractPropFallback(
-    initialValue: JsSourceText,
-    preParsed?: ParsedExpr,
-  ): { propName: string; goFallback: string } | null {
-    const structural = preParsed ? this.extractPropFallbackFromParsed(preParsed) : null
-    if (structural) return structural
-
-    // Regex fallback for callers without a tree (memo computation strings)
-    // and for props-object shapes the structural match doesn't model.
-    if (!this.state.propsObjectName) return null
-    const trimmed = initialValue.trim()
-    const name = this.state.propsObjectName
-
-    // `props.X ?? <rhs>` — capture RHS greedily up to end of string.
-    const re = new RegExp(`^${name}\\.(\\w+)\\s*\\?\\?\\s*(.+)$`)
-    const m = trimmed.match(re)
-    if (!m) return null
-    const goFallback = goPropDefault(m[2].trim())
-    if (goFallback === null) return null
-    return { propName: m[1], goFallback }
-  }
-
-  /** Structural half of {@link extractPropFallback}. */
   private extractPropFallbackFromParsed(
-    preParsed: ParsedExpr,
+    preParsed: ParsedExpr | undefined,
   ): { propName: string; goFallback: string } | null {
-    if (preParsed.kind !== 'logical' || preParsed.op !== '??') return null
+    if (!preParsed || preParsed.kind !== 'logical' || preParsed.op !== '??') return null
     const left = preParsed.left
     const propName =
       left.kind === 'identifier' && !this.state.propsObjectName

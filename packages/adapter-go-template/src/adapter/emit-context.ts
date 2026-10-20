@@ -59,14 +59,13 @@ export interface GoEmitContext {
   ): string | null
 
   /**
-   * Parse a signal-time initial value `props.X ?? <literal>` (or the
-   * destructured `x ?? <literal>` form when `preParsed` is given) into the
-   * source prop name and the Go-formatted fallback, or null when it isn't
-   * that shape. Callers validate the name against `propsParams`.
+   * Match a signal's or memo's parsed value `props.X ?? <literal>` (or the
+   * destructured `x ?? <literal>` form) into the source prop name and the
+   * Go-formatted fallback, or null when there is no tree or it isn't that
+   * shape. Callers validate the name against `propsParams`.
    */
-  extractPropFallback(
-    initialValue: JsSourceText,
-    preParsed?: ParsedExpr,
+  extractPropFallbackFromParsed(
+    parsed: ParsedExpr | undefined,
   ): { propName: string; goFallback: string } | null
 
   /**
@@ -74,7 +73,7 @@ export interface GoEmitContext {
    * <int>` against an already-resolved `ParsedExpr` — the ONE non-idempotent
    * form this adapter faithfully lowers when a signal's Go field name
    * collides with its own prop's field. Composes
-   * {@link extractPropFallback}'s structural presence-check recognition
+   * {@link extractPropFallbackFromParsed}'s presence-check recognition
    * (applied to the embedded `??` subtree) with the same non-negative-
    * integer arithmetic wrap the memo-computation emitter already supports
    * for a bare `props.X <op> N`. Returns null for any other shape.
