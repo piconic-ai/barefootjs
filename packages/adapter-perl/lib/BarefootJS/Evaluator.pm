@@ -421,11 +421,7 @@ sub _binary ($op, $l, $r) {
     if ($op eq '/') {
         return _divide(_to_number($l), _to_number($r));
     }
-    if ($op eq '%') {
-        my $rn = _to_number($r);
-        return _nan() if $rn == 0;
-        return POSIX::fmod(_to_number($l), $rn);
-    }
+    return _remainder(_to_number($l), _to_number($r)) if $op eq '%';
     return _relational($op, $l, $r) if $op eq '<' || $op eq '<=' || $op eq '>' || $op eq '>=';
     return _bool(_strict_eq($l, $r))  if $op eq '===';
     return _bool(!_strict_eq($l, $r)) if $op eq '!==';
@@ -444,6 +440,16 @@ sub _divide ($ln, $rn) {
         return $negative ? -(9**9**9) : 9**9**9;
     }
     return _double($ln / $rn);
+}
+
+# _remainder: JS `%` over two numbers, the truncated remainder: it takes the
+# dividend's sign (`-7 % 2` is -1) and keeps a fraction (`7.5 % 2` is 1.5),
+# where Perl's native `%` floors and works on integers. A zero divisor, or a
+# NaN / infinite dividend, gives NaN. Shared with the template runtime's
+# `mod` (#3474).
+sub _remainder ($ln, $rn) {
+    return _nan() if $rn == 0;
+    return POSIX::fmod($ln, $rn);
 }
 
 sub _relational ($op, $l, $r) {

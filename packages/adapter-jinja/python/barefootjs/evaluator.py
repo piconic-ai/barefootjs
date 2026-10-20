@@ -342,7 +342,9 @@ def _binary(op: str, l: Any, r: Any) -> Any:
         if rn == 0:
             if ln == 0 or ln != ln:
                 return _nan()
-            return float("inf") if ln > 0 else float("-inf")
+            # The infinity takes the sign of both operands, the zero's
+            # included: `1 / -0` is -Infinity.
+            return math.copysign(math.inf, ln) * math.copysign(1.0, rn)
         return ln / rn
     if op == "%":
         rn = _to_number(r)

@@ -55,6 +55,23 @@ function bfp_is_nan($n): bool
 // json / string / number / floor / ceil / round
 // -----------------------------------------------------------------
 
+bf_test('mod', function () use ($bf) {
+    // JS `%` takes the dividend's sign and keeps a fraction.
+    bf_assert_eq($bf->mod(-7, 2), -1.0);
+    bf_assert_eq($bf->mod(7, -2), 1.0);
+    bf_assert_eq($bf->mod(-7.5, 2), -1.5);
+    bf_assert_nan($bf->mod(7, 0));
+    // A zero remainder of two ints is the int 0, so it still indexes a list
+    // through Blade's `data_get`, which reads the float -0.0 as the key "-0".
+    bf_assert_eq($bf->mod(-4, 2), 0);
+    bf_assert_eq($bf->mod(4, 2), 0);
+    bf_assert_eq($bf->string($bf->mod(-4, 2)), '0');
+    // A float dividend keeps fmod's -0.0, which prints "0".
+    $negZero = $bf->mod(-4.0, 2);
+    bf_assert(is_float($negZero) && fdiv(1, $negZero) === -INF, 'expected -0.0 for -4.0 % 2');
+    bf_assert_eq($bf->string($negZero), '0');
+});
+
 bf_test('json', function () use ($bf) {
     bf_assert_eq($bf->json(['a' => 1]), '{"a":1}');
     bf_assert_eq($bf->json([1, 2, 3]), '[1,2,3]');

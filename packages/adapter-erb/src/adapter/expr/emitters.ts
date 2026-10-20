@@ -33,6 +33,7 @@
  */
 
 import {
+  arithmeticHelper,
   literalMemberIndex,
   type ParsedExprEmitter,
   type ArrayMethod,
@@ -260,6 +261,9 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // Ruby `/` on two Integers is integer division; JS `/` keeps the
     // fractional quotient (#3328).
     if (op === '/') return `bf.div(${l}, ${r})`
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -606,6 +610,9 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // Ruby `/` on two Integers is integer division; JS `/` keeps the
     // fractional quotient (#3328).
     if (op === '/') return `bf.div(${l}, ${r})`
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

@@ -465,6 +465,33 @@ subtest 'division by a signed zero (#3454)' => sub {
         '-Infinity', 'evaluator: 1 / (-1e-300 * 1e-300)');
 };
 
+subtest 'remainder takes the dividend sign (#3474)' => sub {
+    # JS `%` truncates: the result takes the dividend's sign and keeps a
+    # fraction, where Perl's native `%` floors and works on integers. The
+    # template runtime's `mod` shares the decision with the evaluator.
+    require BarefootJS;
+    my $bf = bless {}, 'BarefootJS';
+    is($bf->string($bf->mod(-7, 2)),   '-1',  'runtime: -7 % 2');
+    is($bf->string($bf->mod(7, -2)),   '1',   'runtime: 7 % -2');
+    is($bf->string($bf->mod(-7, -2)),  '-1',  'runtime: -7 % -2');
+    is($bf->string($bf->mod(7.5, 2)),  '1.5', 'runtime: 7.5 % 2');
+    is($bf->string($bf->mod(7, 0)),    'NaN', 'runtime: 7 % 0');
+    is($bf->string($bf->mod($bf->number(undef), 2)), 'NaN', 'runtime: NaN % 2');
+    is($bf->string($bf->mod(9**9**9, 2)), 'NaN', 'runtime: Infinity % 2');
+    is($bf->string($bf->mod(undef, 2)), '0',  'runtime: a nil operand reads as 0');
+    my $num = sub { { kind => 'literal', value => $_[0], literalType => 'number' } };
+    is(BarefootJS::Evaluator::_format_number(BarefootJS::Evaluator::evaluate(nbin('%', $num->(-7), $num->(2)), {})),
+        '-1', 'evaluator: -7 % 2');
+    # A zero remainder of a negative dividend is -0: it prints "0", and the
+    # sign shows through a later division.
+    is($bf->string($bf->mod(-4, 2)), '0', 'runtime: -4 % 2 prints 0');
+    is($bf->string($bf->divide(1, $bf->mod(-4, 2))), '-Infinity', 'runtime: 1 / (-4 % 2)');
+    is($bf->string($bf->divide(1, $bf->mod(4, 2))),  'Infinity',  'runtime: 1 / (4 % 2)');
+    is(BarefootJS::Evaluator::_format_number(BarefootJS::Evaluator::evaluate(
+        nbin('/', $num->(1), nbin('%', $num->(-4), $num->(2))), {})),
+        '-Infinity', 'evaluator: 1 / (-4 % 2)');
+};
+
 subtest 'number notation at the 1e-6 / 1e21 boundaries (#3380)' => sub {
     # JS prints decimal within [1e-6, 1e21) and an unpadded lower-case
     # exponent outside it; Perl's own `%.15g` pads the exponent and drops

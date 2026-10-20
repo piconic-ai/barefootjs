@@ -11,7 +11,7 @@
  *     adapter only through the narrow `MojoEmitContext` seam.
  */
 
-import { groupBinaryOperand,
+import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   isBooleanResultParsed,
   literalMemberIndex,
   isStringTypedOperand,
@@ -273,7 +273,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
       const needsParens = argument.kind === 'binary' || argument.kind === 'logical'
       return needsParens ? `!(${arg})` : `!${arg}`
     }
-    if (op === '-') return `-${arg}`
+    if (op === '-') return `-${groupUnaryOperand(argument, arg)}`
     return arg
   }
 
@@ -304,6 +304,9 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
       return `${l} . ${r}`
     }
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf->${helper}(${l}, ${r})`
     // JS `+ - * /` over numbers goes through the runtime, which computes
     // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
     // yields Infinity / NaN for a zero divisor (#3454).
@@ -626,8 +629,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `!${arg}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
-      return operand === arg ? `-${arg}` : `-(${operand})`
+      const grouped = groupUnaryOperand(argument, arg)
+      const operand = this.coerceUndefinedOperand(op, argument, undefined, grouped)
+      return operand === grouped ? `-${grouped}` : `-(${operand})`
     }
     return arg
   }
@@ -669,6 +673,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))) {
       return `${l} . ${r}`
     }
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf->${helper}(${l}, ${r})`
     // JS `+ - * /` over numbers goes through the runtime, which computes
     // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
     // yields Infinity / NaN for a zero divisor (#3454).

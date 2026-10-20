@@ -5498,6 +5498,32 @@
           ]
         }
       },
+      "number-division-zero-divisor": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "division-zero-divisor"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "division-zero-divisor"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "division-zero-divisor"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "division-zero-divisor"
+          ]
+        }
+      },
       "omitted-optional-nullable-number-arithmetic": {
         "blade": {
           "kind": "render",
@@ -6269,29 +6295,29 @@
           ]
         }
       },
-      "remainder-nan-operand": {
+      "remainder-negative-zero-quotient": {
         "blade": {
           "kind": "render",
           "limitations": [
-            "remainder-nan-operand"
+            "division-zero-divisor"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "remainder-nan-operand"
+            "division-zero-divisor"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "division-zero-divisor"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "remainder-nan-operand"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "remainder-nan-operand"
+            "division-zero-divisor"
           ]
         }
       },
@@ -7628,6 +7654,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "number-division-zero-divisor": {
+        "description": "Division by zero renders Infinity, -Infinity or NaN",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-division-zero-divisor.ts"
+      },
       "omitted-optional-nullable-number-arithmetic": {
         "description": "Arithmetic over an omitted optional prop typed number | null (undefined → NaN)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-arithmetic.ts"
@@ -7664,9 +7694,9 @@
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       },
-      "remainder-nan-operand": {
-        "description": "Remainder over a NaN operand (NaN % 2 → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-nan-operand.ts"
+      "remainder-negative-zero-quotient": {
+        "description": "Dividing by the -0 remainder of a negative dividend gives -Infinity (1 / (-4 % 2))",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-quotient.ts"
       },
       "reserved-name-and-internal-twin": {
         "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
@@ -8179,6 +8209,23 @@
         "BF101"
       ]
     },
+    "division-zero-divisor": {
+      "title": "Division by a zero divisor in a template expression",
+      "kind": "silent",
+      "given": "`/` in a template expression whose divisor is zero (`1 / props.zero`), including the `-0` remainder of a negative dividend (`1 / (n % 2)` for `n = -4`)",
+      "expected": "IEEE division: `1 / 0` is `Infinity`, `-1 / 0` and `1 / -0` are `-Infinity`, and `0 / 0` is `NaN`",
+      "actual": "renders `0`, or the render fails: the engine's `/` raises on a zero divisor",
+      "fixtures": [
+        "number-division-zero-divisor",
+        "remainder-negative-zero-quotient"
+      ],
+      "adapters": [
+        "blade",
+        "go-template",
+        "jinja",
+        "twig"
+      ]
+    },
     "fragment-wrapped-conditional-return-branch-scope": {
       "title": "Fragment-wrapped branch of a conditional return is never hydrated",
       "kind": "refusal",
@@ -8465,22 +8512,6 @@
       ],
       "diagnostics": [
         "BF063"
-      ]
-    },
-    "remainder-nan-operand": {
-      "title": "Remainder over a NaN operand",
-      "kind": "silent",
-      "given": "`%` whose left operand is `NaN`, such as a signal created with no initial value (`n() % 2`)",
-      "expected": "the floating-point remainder: `NaN % 2` is `NaN`",
-      "actual": "renders an integer: the engine truncates the `NaN` operand to an integer before taking the remainder",
-      "fixtures": [
-        "remainder-nan-operand"
-      ],
-      "adapters": [
-        "blade",
-        "go-template",
-        "twig",
-        "xslate"
       ]
     },
     "renamed-children-param": {

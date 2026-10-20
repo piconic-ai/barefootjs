@@ -117,20 +117,56 @@ func TestMax(t *testing.T) {
 }
 
 func TestMod(t *testing.T) {
+	// JS `%`: the truncated remainder, which takes the dividend's sign.
 	tests := []struct {
 		a, b any
-		want int
+		want any
 	}{
 		{10, 3, 1},
 		{10, 5, 0},
-		{10, 0, 0}, // Mod by zero returns 0
+		{-7, 2, -1},          // a floored remainder would give 1
+		{7, -2, 1},           // a floored remainder would give -1
+		{-7, -2, -1},         // int operands keep an int result
+		{7.5, 2, 1.5},        // a fraction is kept, not truncated to an int
+		{-7.5, 2, -1.5},      // a fractional dividend keeps its sign
+		{nil, 3, float64(0)}, // a nil operand reads as 0
 	}
 
 	for _, tt := range tests {
 		got := Mod(tt.a, tt.b)
 		if got != tt.want {
-			t.Errorf("Mod(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+			t.Errorf("Mod(%v, %v) = %v (%T), want %v (%T)", tt.a, tt.b, got, got, tt.want, tt.want)
 		}
+	}
+
+	// A zero divisor, a NaN dividend and an infinite dividend give NaN.
+	for _, tt := range [][2]any{{10, 0}, {7.5, 0.0}, {math.NaN(), 2}, {math.Inf(1), 2}} {
+		if got, ok := Mod(tt[0], tt[1]).(float64); !ok || !math.IsNaN(got) {
+			t.Errorf("Mod(%v, %v) = %v, want NaN", tt[0], tt[1], got)
+		}
+	}
+	// A finite dividend over an infinite divisor is the dividend.
+	if got := Mod(7, math.Inf(1)); got != float64(7) {
+		t.Errorf("Mod(7, +Inf) = %v, want 7", got)
+	}
+	// A zero remainder of a negative dividend is -0, as in JS, so
+	// `1 / (-4 % 2)` is -Infinity; it still prints "0" and indexes as 0.
+	for _, tt := range [][2]any{{-4, 2}, {-4, -2}, {-4.0, 2}, {math.Copysign(0, -1), 3}} {
+		got, ok := Mod(tt[0], tt[1]).(float64)
+		if !ok || got != 0 || !math.Signbit(got) {
+			t.Errorf("Mod(%v, %v) = %v, want -0", tt[0], tt[1], got)
+		}
+	}
+	negZero := Mod(-4, 2)
+	if s := String(negZero); s != "0" {
+		t.Errorf("String(Mod(-4, 2)) = %q, want \"0\"", s)
+	}
+	if got := getFieldValue([]string{"a", "b"}, negZero); got != "a" {
+		t.Errorf("bf_get with Mod(-4, 2) = %v, want a", got)
+	}
+	// A non-negative dividend keeps the int 0.
+	if got := Mod(4, -2); got != 0 {
+		t.Errorf("Mod(4, -2) = %v (%T), want int 0", got, got)
 	}
 }
 
