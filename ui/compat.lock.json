@@ -2782,6 +2782,158 @@
           ]
         }
       },
+      "destructure-default-body-callback": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        }
+      },
+      "destructure-default-body-renamed-callback": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        }
+      },
+      "destructure-default-body-renamed-callback-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "destructure-default-body-renamed-callback-earlier": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "destructure-default-body-renamed-callback-memo": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-memo-read"
+          ]
+        }
+      },
+      "destructure-default-body-renamed-callback-positions": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "destructure-default-body-renamed-callback-shadow": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-computed-array"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "destructure-default-body-renamed-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -2808,6 +2960,50 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "destructure-default-param-renamed-callback": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
         }
       },
       "embedded-prop-member-signal-seed": {
@@ -7534,6 +7730,34 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
+      "destructure-default-body-callback": {
+        "description": "A body destructure default holding a callback renders its value when the prop is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-callback.ts"
+      },
+      "destructure-default-body-renamed-callback": {
+        "description": "A renamed body destructure default holding a callback renders its value when the prop is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback.ts"
+      },
+      "destructure-default-body-renamed-callback-child": {
+        "description": "A renamed body destructure default holding a callback reaches a child component prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-child.ts"
+      },
+      "destructure-default-body-renamed-callback-earlier": {
+        "description": "A renamed body destructure default filtering an earlier binding with a callback takes the filtered…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-earlier.ts"
+      },
+      "destructure-default-body-renamed-callback-memo": {
+        "description": "A renamed body destructure default holding a callback, read through a memo, renders its value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo.ts"
+      },
+      "destructure-default-body-renamed-callback-positions": {
+        "description": "A renamed body destructure default holding a callback renders in an attribute and a condition",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-positions.ts"
+      },
+      "destructure-default-body-renamed-callback-shadow": {
+        "description": "A callback parameter in a renamed body destructure default shadows a signal getter of the same name",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-shadow.ts"
+      },
       "destructure-default-body-renamed-computed-array": {
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
@@ -7541,6 +7765,10 @@
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
+      },
+      "destructure-default-param-renamed-callback": {
+        "description": "A renamed parameter destructure default holding a callback renders its value when the prop is…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-renamed-callback.ts"
       },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
@@ -8192,13 +8420,60 @@
         "BF101"
       ]
     },
+    "destructure-default-callback-memo-read": {
+      "title": "A destructure default holding a callback, read through a memo",
+      "kind": "silent",
+      "given": "a renamed body destructure binding whose default passes a callback to a call (`const { b: local = ['y', ''].filter((x) => x !== '') } = props`), read only through a memo (`createMemo(() => local.length)`), with the prop omitted",
+      "expected": "the memo reads the default value",
+      "actual": "renders the memo read without the default: empty, or computed over the omitted prop",
+      "fixtures": [
+        "destructure-default-body-renamed-callback-memo"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "destructure-default-callback-unseeded": {
+      "title": "A destructure default that calls a callback and reads no earlier prop",
+      "kind": "silent",
+      "given": "a props destructure default that passes a callback to a call and reads no earlier binding of the pattern (`{ b = ['y', ''].filter((x) => x !== '') }`), in the parameter, body or renamed body destructure, with the prop omitted",
+      "expected": "the omitted prop takes the default value",
+      "actual": "renders the omitted prop as an empty value, without its default",
+      "fixtures": [
+        "destructure-default-body-callback",
+        "destructure-default-body-renamed-callback",
+        "destructure-default-param-renamed-callback"
+      ],
+      "adapters": [
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "xslate"
+      ]
+    },
     "destructure-default-computed-array": {
       "title": "A destructure default computing an array from an earlier prop",
       "kind": "refusal",
-      "given": "a props destructure default that computes an array from an earlier binding of the same pattern (`{ a, b = a.slice(1) }`), in the parameter or a renamed body destructure",
+      "given": "a props destructure default that computes an array from an earlier binding of the same pattern (`{ a, b = a.slice(1) }`, `{ a, b = a.filter((x) => …) }`), in the parameter or a renamed body destructure",
       "expected": "the omitted prop takes the computed array",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "destructure-default-body-renamed-callback-child",
+        "destructure-default-body-renamed-callback-earlier",
+        "destructure-default-body-renamed-callback-positions",
+        "destructure-default-body-renamed-callback-shadow",
         "destructure-default-body-renamed-computed-array",
         "destructure-default-param-computed-array"
       ],

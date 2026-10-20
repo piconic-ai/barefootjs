@@ -102,6 +102,16 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
 export const renderDivergences: RenderDivergences = {
+  // A destructure default that calls a callback and reads no earlier prop
+  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the SSR seed has no
+  // static value for it and the template applies no default, so an omitted
+  // prop renders empty.
+  'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  // The same default read only through a memo: the memo reads the prop
+  // without it.
+  'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },
   // A children prop renamed in the parameter destructure (`{ children: kids }`):
   // the renamed `Kids` field reads nil when the parent passes children, so
   // present children are dropped and the `??` fallback renders.

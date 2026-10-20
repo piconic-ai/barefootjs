@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { analyzeComponent } from '../analyzer.ts'
-import { isPropsAliasConst } from '../props-binding.ts'
+import { isPropsAliasConst, isRenamedBodyPropParam } from '../props-binding.ts'
 
 /**
  * Whether a const reads as its own prop (#3501): a bare `props.X` read, or
@@ -61,5 +61,43 @@ describe('isPropsAliasConst', () => {
 
   test('no props object means no alias', () => {
     expect(isPropsAliasConst(constOf('const label = props.label').c, null)).toBe(false)
+  })
+})
+
+/**
+ * Whether a renamed body destructure binding reads as a prop under its local
+ * name (#3579): only one with a default, which the analyzer gives its own
+ * `ParamInfo` (`name: other`, `sourceName: label`).
+ */
+describe('isRenamedBodyPropParam', () => {
+  function renamedOf(body: string, name: string): boolean {
+    const ctx = analyzeComponent(
+      `'use client'\nexport function S(props: { label?: string; text?: string }) {\n  ${body}\n  return <p>{${name}}</p>\n}`,
+      'S.tsx',
+    )
+    return isRenamedBodyPropParam(ctx.localConstants.find(x => x.name === name)!, ctx.propsParams)
+  }
+
+  test('a renamed binding with a default is the prop under its local name', () => {
+    expect(renamedOf("const { label: other = 'Default' } = props", 'other')).toBe(true)
+    expect(renamedOf("const { label: other = ['y', ''].filter((x) => x !== '').join() } = props", 'other')).toBe(true)
+  })
+
+  test('a renamed binding without a default is not', () => {
+    expect(renamedOf('const { label: other } = props', 'other')).toBe(false)
+  })
+
+  test('an un-renamed binding is left to isPropsAliasConst', () => {
+    expect(renamedOf("const { label = 'Default' } = props", 'label')).toBe(false)
+  })
+
+  test('a renamed binding named like another prop does not take that prop entry', () => {
+    // `text` is also a type member, so the analyzer adds no entry for the
+    // renamed binding, and `text`'s own entry reads `props.text`.
+    expect(renamedOf("const { label: text = 'Default' } = props", 'text')).toBe(false)
+  })
+
+  test('a hand-written `?? default` const is not', () => {
+    expect(renamedOf("const other = props.label ?? 'Default'", 'other')).toBe(false)
   })
 })
