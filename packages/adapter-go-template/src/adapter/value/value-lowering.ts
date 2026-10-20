@@ -515,6 +515,22 @@ export function objectLiteralToGoMap(
 }
 
 /**
+ * The hoisted `props.X ?? N` local (`collectPropFallbackVars`) that seeds
+ * `parsed`: only when `parsed` is `props.X ?? N` with that local's own `N`.
+ * The local is keyed by prop, so another seed of the same prop with another
+ * fallback, or a bare read of it, is not its value (#3577).
+ */
+export function seedFallbackVar(
+  ctx: GoEmitContext,
+  parsed: ParsedExpr | undefined,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): PropFallbackVar | undefined {
+  const match = ctx.extractPropFallbackFromParsed(parsed)
+  const hoisted = match ? propFallbackVars.get(match.propName) : undefined
+  return hoisted !== undefined && hoisted.goFallback === match?.goFallback ? hoisted : undefined
+}
+
+/**
  * Get a signal's initial value as Go code — a literal, or a props reference
  * (`in.<Field>`, or the hoisted fallback var when `props.X ?? N` has one).
  * Unrecognized values default to `0`.
@@ -549,17 +565,15 @@ export function getSignalInitialValueAsGo(
       ? nillableAwarePropRef(ctx, param, signalType)
       : `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
 
+  // A bare prop read is the prop itself, not a sibling seed's hoisted
+  // `x ?? N` local (#3577).
   const directParam = propsParams.find(p => p.name === initialValue)
-  if (directParam) {
-    const hoisted = propFallbackVars.get(initialValue)
-    if (hoisted) return hoisted.varName
-    return propRef(directParam)
-  }
+  if (directParam) return propRef(directParam)
 
   const propName = seedPassthroughPropName(ctx, parsed)
   const param = propName ? propsParams.find(p => p.name === propName) : undefined
   if (param) {
-    const hoisted = propFallbackVars.get(propName!)
+    const hoisted = seedFallbackVar(ctx, parsed, propFallbackVars)
     if (hoisted) return hoisted.varName
     return propRef(param)
   }

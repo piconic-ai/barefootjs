@@ -163,6 +163,12 @@ import { fixture as textEscape } from './text-escape'
 import { fixture as signalWithFallback } from './signal-with-fallback'
 import { fixture as signalSeedAbsentOptionalPropAttr } from './signal-seed-absent-optional-prop-attr'
 import { fixture as signalSeedAbsentOptionalPropChild } from './signal-seed-absent-optional-prop-child'
+import { fixture as signalSeedPropNullishPropFallback } from './signal-seed-prop-nullish-prop-fallback'
+import { fixture as signalSeedPropNullishPropFallbackDestructured } from './signal-seed-prop-nullish-prop-fallback-destructured'
+import { fixture as signalSeedRenamedDefaultBesideRawNullish } from './signal-seed-renamed-default-beside-raw-nullish'
+import { fixture as memoPropReadBesideSignalNullishSeed } from './memo-prop-read-beside-signal-nullish-seed'
+import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
+import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
@@ -1146,6 +1152,12 @@ export const jsxFixtures: JSXFixture[] = [
   signalWithFallback,
   signalSeedAbsentOptionalPropAttr,
   signalSeedAbsentOptionalPropChild,
+  signalSeedPropNullishPropFallback,
+  signalSeedPropNullishPropFallbackDestructured,
+  signalSeedRenamedDefaultBesideRawNullish,
+  memoPropReadBesideSignalNullishSeed,
+  signalSeedDependentDefaultNullishLiteral,
+  signalSeedDependentDefaultNullishLiteralBody,
   signalSeedLocalHelperCall,
   signalDefaultFromJsx,
   controlledSignal,
