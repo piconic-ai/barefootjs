@@ -677,7 +677,7 @@
     },
     "packages/jsx/src/free-refs.ts": {
       "resolveFreeRefsInternal": [
-        48
+        44
       ]
     },
     "packages/jsx/src/ir-to-client-js/build-references.ts": {

@@ -2266,14 +2266,6 @@
           }
         }
       },
-      "children-renamed-param": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "renamed-children-param"
-          ]
-        }
-      },
       "component-spread-explicit-null": {
         "blade": {
           "kind": "render",
@@ -7476,10 +7468,6 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
-      "children-renamed-param": {
-        "description": "A children prop renamed in the parameter destructure renders present children as markup",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
-      },
       "component-spread-explicit-null": {
         "description": "A props spread whose explicit null overrides an earlier explicit prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
@@ -8479,28 +8467,6 @@
       "adapters": [
         "blade",
         "go-template",
-        "twig",
-        "xslate"
-      ]
-    },
-    "renamed-children-param": {
-      "title": "A children prop renamed in the parameter destructure",
-      "kind": "silent",
-      "given": "a component whose parameter destructure renames the children prop (`({ children: kids })`) and reads it (`{kids}`, `{kids ?? '<b>x</b>'}`) with children passed",
-      "expected": "the present children render as markup; an absent read renders nothing, or the escaped fallback",
-      "actual": "drops the present children (the fallback renders instead), or renders them as escaped visible text instead of markup",
-      "fixtures": [
-        "children-renamed-param"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
         "twig",
         "xslate"
       ]

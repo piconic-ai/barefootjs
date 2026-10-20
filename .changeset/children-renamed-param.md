@@ -1,0 +1,6 @@
+---
+"@barefootjs/jsx": patch
+"@barefootjs/go-template": patch
+---
+
+A read of the component's own `children` prop through another binding is now treated as the children prop, the same as `{children}`. This covers a binding renamed in the parameter destructure (`function Box({ children: kids })`), a const alias of it (`const c = children`, `const d = c`), and a `.children` read through a const alias of the props object (`const p = props; p.children`). In the client template these reads used to escape present children into visible `&lt;span&gt;` text, either through a reactive text slot (the renamed binding and the props-object alias) or through the escaped-text path (the const alias of the children prop); they are now spliced as markup, and only a `??` / `||` fallback is escaped. A fragment root that only passes such a read through (`<>{kids}</>`) is transparent like `<>{children}</>`. On Go templates, the renamed binding reads the `Children` field that the parent's children fill, where it used to read a separate `Kids` field that was never set, so present children were dropped. The SSR output of a renamed children read no longer carries text-slot markers. A local named `children` that binds another prop (`{ label: children }`) is now read as that prop.

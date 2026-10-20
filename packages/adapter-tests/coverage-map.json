@@ -1478,6 +1478,36 @@
         "attribute"
       ]
     },
+    "children-alias-hop": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-alias-hop-fragment-root": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",
@@ -1494,6 +1524,15 @@
       ]
     },
     "children-jsx-expression": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-local-binds-other-prop": {
       "kinds": [
         "identifier"
       ],
@@ -1630,6 +1669,32 @@
       "axes": [
         "literal:string",
         "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-renamed-param-conditional": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "children-renamed-param-fallback-shapes": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
       ],
       "contexts": [
         "text"

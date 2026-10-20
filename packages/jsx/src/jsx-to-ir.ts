@@ -39,6 +39,7 @@ import {
   type OriginInfo,
   type IRMetadata,
   isReactiveOrigin,
+  isChildrenPropParam,
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
@@ -54,7 +55,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveBodyPropAliases, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -797,7 +798,7 @@ export function createTransformContext(analyzer: AnalyzerContext): TransformCont
   // Shared by `patterns.props` (regex matching) and `boundPropNames`
   // (exact-name binding checks, #2835) so both agree on which prop
   // params are in play — `children` excluded from both the same way.
-  const propsParamsForMatching = analyzer.propsParams.filter(p => p.name !== 'children')
+  const propsParamsForMatching = analyzer.propsParams.filter(p => !isChildrenPropParam(p))
   return {
     analyzer,
     sourceFile: analyzer.sourceFile,
@@ -967,6 +968,7 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
     memos: a.memos,
     propsParams: a.propsParams,
     propsObjectName: a.propsObjectName,
+    propsObjectAliases: propsObjectAliasNames(a, ctx.scope),
     restPropsName: a.restPropsName,
     localConstants: a.localConstants,
     localFunctions: a.localFunctions,
@@ -1002,20 +1004,92 @@ function parseValueExpr(trimmed: string): ParsedExpr {
   return parseExpression(trimmed.startsWith('{') ? `(${trimmed})` : trimmed)
 }
 
-const childrenAliasCache = new WeakMap<AnalyzerContext, ReadonlySet<string>>()
+const childrenHopCache = new WeakMap<AnalyzerContext, ReadonlyMap<string, ParsedExpr | undefined>>()
 
 /**
- * The body locals that alias the children prop with no default
- * (`const { children: kids } = props`, `const kids = props.children`).
+ * The component-scope consts a read of the children prop may hop through,
+ * by name, with their parsed initializers: a `const` that is not module
+ * scope and is not mutated after its declaration, so it holds the one value
+ * it was declared with (`const c = children`, `const p = props`,
+ * `const { children: kids } = props`).
  */
-function childrenAliasNames(analyzer: AnalyzerContext): ReadonlySet<string> {
-  let names = childrenAliasCache.get(analyzer)
-  if (!names) {
-    const aliases = resolveBodyPropAliases(analyzer.localConstants, analyzer.propsObjectName)
-    names = new Set([...aliases].filter(([, a]) => a.key === 'children' && !a.hasDefault).map(([local]) => local))
-    childrenAliasCache.set(analyzer, names)
+function childrenHopConstants(analyzer: AnalyzerContext): ReadonlyMap<string, ParsedExpr | undefined> {
+  let consts = childrenHopCache.get(analyzer)
+  if (!consts) {
+    const map = new Map<string, ParsedExpr | undefined>()
+    for (const c of analyzer.localConstants) {
+      if (c.isModule || c.declarationKind !== 'const' || c.mutatedAfterDeclaration || map.has(c.name)) continue
+      map.set(c.name, c.parsed)
+    }
+    consts = map
+    childrenHopCache.set(analyzer, consts)
+  }
+  return consts
+}
+
+/**
+ * {@link childrenHopConstants} as the identifier hops `resolveAliasOrigin`
+ * walks (`const c = children` → `children`), leaving out a name the
+ * enclosing loop rows bind (`scope`): that name is the row's, not the
+ * component-scope const it shadows.
+ */
+function childrenAliasHops(analyzer: AnalyzerContext, scope: BindingScope): ReadonlyMap<string, string | undefined> {
+  const hops = new Map<string, string | undefined>()
+  for (const [name, parsed] of childrenHopConstants(analyzer)) {
+    if (!scope.isBound(name)) hops.set(name, parsed?.kind === 'identifier' ? parsed.name : undefined)
+  }
+  return hops
+}
+
+/** Whether `name` holds the props object: the props param, or a const alias of it (`const p = props`). */
+function isPropsObjectBinding(name: string, analyzer: AnalyzerContext, scope: BindingScope): boolean {
+  const propsObjectName = analyzer.propsObjectName
+  if (propsObjectName === null || scope.isBound(name)) return false
+  return resolveAliasOrigin(childrenAliasHops(analyzer, scope), name, n => (n === propsObjectName ? true : null)) === true
+}
+
+/**
+ * The component-scope consts that alias the props object (`const p =
+ * props`), for the free-reference walk's `p.children` exemption
+ * (`BindingEnvironment.propsObjectAliases`). Leaves out a name the
+ * enclosing loop rows bind.
+ */
+function propsObjectAliasNames(analyzer: AnalyzerContext, scope: BindingScope): ReadonlySet<string> {
+  const names = new Set<string>()
+  if (analyzer.propsObjectName === null) return names
+  for (const name of childrenHopConstants(analyzer).keys()) {
+    if (isPropsObjectBinding(name, analyzer, scope)) names.add(name)
   }
   return names
+}
+
+/** Whether `parsed` is `<props object>.children` (`props.children`, `p.children` for `const p = props`). */
+function isPropsChildrenMember(parsed: ParsedExpr | undefined, analyzer: AnalyzerContext, scope: BindingScope): boolean {
+  return (
+    parsed?.kind === 'member' &&
+    !parsed.computed &&
+    parsed.property === 'children' &&
+    parsed.object.kind === 'identifier' &&
+    isPropsObjectBinding(parsed.object.name, analyzer, scope)
+  )
+}
+
+/**
+ * Whether the name `name` holds the component's own children prop with no
+ * default: the props param that binds it, renamed or not (`{ children }`,
+ * `{ children: kids }`, `isChildrenPropParam`), a body destructure or member
+ * read of it (`const { children: kids } = props`, `const kids =
+ * p.children`), or a const alias hop of any of these (`const c = children`,
+ * #3572).
+ */
+function isChildrenBinding(name: string, analyzer: AnalyzerContext, scope: BindingScope): boolean {
+  if (scope.isBound(name)) return false
+  const consts = childrenHopConstants(analyzer)
+  const terminal = (n: string): true | null => {
+    if (consts.has(n)) return isPropsChildrenMember(consts.get(n), analyzer, scope) ? true : null
+    return analyzer.propsParams.some(p => p.name === n && isChildrenPropParam(p)) ? true : null
+  }
+  return resolveAliasOrigin(childrenAliasHops(analyzer, scope), name, terminal) === true
 }
 
 /** `''`, or a `??` chain of `''` (`'' ?? ''`). */
@@ -1028,8 +1102,10 @@ function isEmptyStringFallback(fallback: ParsedExpr): boolean {
 
 /**
  * How `parsed` reads the component's own `children` prop
- * (`IRExpression.childrenRead`, #3539): a bare `children` the props
- * destructure binds or `<propsObject>.children`, that read on the left of
+ * (`IRExpression.childrenRead`, #3539): a name holding the prop
+ * (`isChildrenBinding`: `children`, a renamed `{ children: kids }`, a body
+ * alias, or a const alias hop of one, #3572) or `<propsObject>.children`
+ * (through a const alias of the props object too), that read on the left of
  * `?? ''`, on the left of another `?? fallback`, or on the left of
  * `|| fallback` (#3554). A chained
  * `(children ?? '<b>x</b>') ?? ''` reads as `children ?? ('<b>x</b>' ?? '')`
@@ -1051,19 +1127,8 @@ function childrenReadOf(
   }
   const orChain = fallbackChainParts(parsed, '||')
   if (orChain) return childrenReadOf(orChain.head, analyzer, scope) === 'bare' ? 'or-fallback' : null
-  if (parsed.kind === 'identifier') {
-    if (scope.isBound(parsed.name)) return null
-    const isProp = analyzer.propsParams.some(p => p.name === parsed.name && (p.sourceName ?? p.name) === 'children')
-    return isProp || childrenAliasNames(analyzer).has(parsed.name) ? 'bare' : null
-  }
-  const isPropsMember =
-    parsed.kind === 'member' &&
-    !parsed.computed &&
-    parsed.property === 'children' &&
-    parsed.object.kind === 'identifier' &&
-    parsed.object.name === analyzer.propsObjectName &&
-    !scope.isBound(parsed.object.name)
-  return isPropsMember ? 'bare' : null
+  if (parsed.kind === 'identifier') return isChildrenBinding(parsed.name, analyzer, scope) ? 'bare' : null
+  return isPropsChildrenMember(parsed, analyzer, scope) ? 'bare' : null
 }
 
 /**
@@ -2258,7 +2323,8 @@ function transformSelfClosingComponent(
 
 /**
  * Check if a fragment is "transparent" (just passes through children).
- * Pattern: <>{children}</> or <>{props.children}</>
+ * Pattern: <>{children}</>, <>{props.children}</>, or the children prop
+ * through another binding (`<>{kids}</>` for `{ children: kids }`).
  * Transparent fragments don't need scope markers on their children.
  */
 function isTransparentFragment(
@@ -2282,19 +2348,11 @@ function isTransparentFragment(
   if (!ts.isJsxExpression(child)) return false
   if (!child.expression) return false
 
-  const exprText = child.expression.getText(ctx.sourceFile)
-
-  // Check for children patterns
-  if (exprText === 'children') return true
-  if (exprText === 'props.children') return true
-
-  // Check for custom props object name (e.g., p.children)
-  const propsName = ctx.analyzer.propsObjectName
-  if (propsName && exprText === `${propsName}.children`) {
-    return true
-  }
-
-  return false
+  // A bare read of the component's own children prop, through whichever
+  // binding reads it (`childrenReadOf`, #3572): the same answer the
+  // expression node itself gets.
+  const parsed = parseExpression(child.expression.getText(ctx.sourceFile).trim())
+  return childrenReadOf(parsed, ctx.analyzer, ctx.scope) === 'bare'
 }
 
 // #1335: a fragment-wrapped jsx-children prop value lands as

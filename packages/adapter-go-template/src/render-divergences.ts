@@ -101,11 +101,12 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`evaluated-nullish-absent-prop`): an optional prop under `??` in an
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
+//
+// #3572 graduated `children-renamed-param` (`renamed-children-param`): a
+// children prop renamed in the parameter destructure (`{ children: kids }`)
+// is held in the `Children` field the parent's children populate, not in a
+// never-set field named after the local (`Kids`).
 export const renderDivergences: RenderDivergences = {
-  // A children prop renamed in the parameter destructure (`{ children: kids }`):
-  // the renamed `Kids` field reads nil when the parent passes children, so
-  // present children are dropped and the `??` fallback renders.
-  'children-renamed-param': { limitation: 'renamed-children-param' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

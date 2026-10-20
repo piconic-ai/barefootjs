@@ -97,6 +97,7 @@ import {
   resolveGetterAliases,
   collectAliasableGetterNames,
   resolveBodyDestructuredPropAliases,
+  isChildrenPropParam,
   analyzeComponent,
   buildMetadata,
   listComponentFunctions,
@@ -263,10 +264,39 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
  * a string concat, which `bf_string` passes through unchanged). */
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
 
+/**
+ * The Props struct field a props param is held in: its LOCAL binding
+ * (`{ n: count }` → `Count`), what the template reads. The children prop is
+ * the exception: it is always `Children`, renamed or not
+ * (`{ children: kids }`, #3572), because that is the field the parent's
+ * children reach it through (`bf_with_children` sets `Children` by name,
+ * and `New<Comp>Props` copies the caller's `Input.Children`). The
+ * template's reads of the renamed binding resolve to it through
+ * `propDestructureAliases`.
+ */
+function propsFieldName(param: { name: string; sourceName?: string }): string {
+  return capitalizeFieldName(isChildrenPropParam(param) ? 'children' : param.name)
+}
+
+/**
+ * Local names whose template reads resolve to another prop's field
+ * (`rootFieldRef`): a bare-props-form body destructure's renamed prop
+ * (`const { children: kids } = props`, #2788), and the children prop
+ * renamed in the parameter destructure (`{ children: kids }`, #3572), whose
+ * Props field is `Children` (`propsFieldName`).
+ */
+function propFieldAliases(ir: ComponentIR): Map<string, string> {
+  const aliases = resolveBodyDestructuredPropAliases(ir.metadata.localConstants ?? [], ir.metadata.propsObjectName)
+  for (const p of ir.metadata.propsParams ?? []) {
+    if (p.name !== 'children' && isChildrenPropParam(p)) aliases.set(p.name, 'children')
+  }
+  return aliases
+}
+
 /** Go field names a derived-const field must not take: props, signals and memos already own them. */
 function derivedConstTakenFieldNames(ir: ComponentIR): Set<string> {
   return new Set<string>([
-    ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+    ...ir.metadata.propsParams.map(propsFieldName),
     ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
     ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
   ])
@@ -695,10 +725,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // kids } = props`) — same alias-resolution need as `getterAliases`
     // above, different terminal set (a prop key here, a signal/memo
     // getter there).
-    this.state.propDestructureAliases = resolveBodyDestructuredPropAliases(
-      ir.metadata.localConstants ?? [],
-      ir.metadata.propsObjectName,
-    )
+    this.state.propDestructureAliases = propFieldAliases(ir)
     // #2208 fable review: every name a `.map()`/`.filter()` loop callback
     // binds as its item/index parameter anywhere in the component. Static
     // loop-source resolution (`getBakedStaticChildLoop` /
@@ -1223,7 +1250,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // gates (see `childPropFieldNames`).
     const fieldNames = new Map<string, string>()
     for (const p of ir.metadata.propsParams ?? []) {
-      fieldNames.set(p.sourceName ?? p.name, capitalizeFieldName(p.name))
+      fieldNames.set(p.sourceName ?? p.name, propsFieldName(p))
     }
     this.childPropFieldNames.set(name, fieldNames)
     const deps = new Map<string, ReadonlySet<string>>()
@@ -1732,7 +1759,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.childRepropsReady.set(componentName, {
       params: params.map(p => ({
-        propsField: capitalizeFieldName(p.name),
+        propsField: propsFieldName(p),
         inputField: capitalizeFieldName(p.sourceName ?? p.name),
       })),
       usesSearchParams: this.usesSearchParams(ir),
@@ -2685,7 +2712,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // `interface{}` fields take the fold (the latter via the nil-tolerant
       // wrapper below), so restrict here.
       const param = ir.metadata.propsParams.find(
-        p => capitalizeFieldName(p.name) === capitalizeFieldName(memo.name),
+        p => propsFieldName(p) === capitalizeFieldName(memo.name),
       )
       if (!param) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
@@ -2695,10 +2722,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const propFieldNames = new Set<string>()
     for (const param of ir.metadata.propsParams) {
-      // Props field: LOCAL binding, what the template reads (`{{.X}}`).
+      // Props field: LOCAL binding, what the template reads (`{{.X}}`),
+      // except the children prop (`propsFieldName`).
       // Everything on the right of `:` below reads `in.<inputField>`
       // (caller-facing), never `in.<fieldName>` (local).
-      const fieldName = capitalizeFieldName(param.name)
+      const fieldName = propsFieldName(param)
       const inputField = capitalizeFieldName(param.sourceName ?? param.name)
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const hoisted = propFallbackVars.get(param.name)
@@ -2922,7 +2950,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
     const { lines: normalization, rawLocals, unsupported } = dependentDefaultNormalization(
       this.emitCtx, ir.metadata.propsParams, propTypeOverrides,
-      param => param.name !== 'children' && !this.isNestedArrayShadowed(param, nestedArrayFields),
+      param => !isChildrenPropParam(param) && !this.isNestedArrayShadowed(param, nestedArrayFields),
     )
     lines.push(...normalization)
     this.dependentDefaultRawLocals = rawLocals
@@ -2966,7 +2994,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const param of ir.metadata.propsParams) {
       // Children are DOM content, not hydration data (#1952) — excluded the
       // same way `emitPropsDataFields` excludes them from the Props struct.
-      if (param.name === 'children') continue
+      if (isChildrenPropParam(param)) continue
       // Shadowed by its own driving nested-array field (#2672/#2525) — no
       // Input field exists for it at all; handled below via the array local.
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
@@ -4855,7 +4883,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const propFieldNames = new Set<string>()
 
     for (const param of ir.metadata.propsParams) {
-      const fieldName = capitalizeFieldName(param.name)
+      const fieldName = propsFieldName(param)
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       // Children are already rendered in the DOM; serialising them into bf-p
@@ -4868,7 +4896,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // wrong key. Props are emitted FIRST into `takenJsonTags`, so a prop
       // always wins a tag collision against a later signal/memo/etc field.
       const jsonTag =
-        param.name === 'children'
+        isChildrenPropParam(param)
           ? '-'
           : this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), takenJsonTags)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
