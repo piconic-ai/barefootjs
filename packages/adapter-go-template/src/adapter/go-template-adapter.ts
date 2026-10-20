@@ -143,7 +143,7 @@ import {
   emitPredicateEval,
   emitFlatMapEval,
   emitMapEval,
-  goComparisonCall,
+  goBinaryHelperCall,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
@@ -7087,8 +7087,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         : w
     const wl = undefinedOperand(left, right, wrapIfMultiToken(l))
     const wr = undefinedOperand(right, left, wrapIfMultiToken(r))
-    const comparison = goComparisonCall(op, wl, wr, [left, right])
-    if (comparison !== null) return comparison
+    const call = goBinaryHelperCall(op, wl, wr, [left, right])
+    if (call !== null) return call
     switch (op) {
       case '+':
         return this._emitPlus(left, right, wl, wr)
@@ -7098,8 +7098,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return `bf_mul ${wl} ${wr}`
       case '/':
         return `bf_div ${wl} ${wr}`
-      case '%':
-        return `bf_mod ${wl} ${wr}`
       default:
         return `${l} ${op} ${r}`
     }
@@ -7155,7 +7153,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (op === '-') {
       return arithmeticOperandCoercion(op, argument, undefined, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined'
         ? `bf_neg (bf_number ${wrapIfMultiToken(arg)})`
-        : `bf_neg ${arg}`
+        : `bf_neg ${wrapIfMultiToken(arg)}`
     }
     return arg
   }
@@ -8270,7 +8268,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (arg === null) return null
         if (expr.op === '!') return lowerJsNot(expr.argument, arg)
         if (expr.op === '-') {
-          return `bf_neg ${arg}`
+          return `bf_neg ${wrapIfMultiToken(arg)}`
         }
         return arg
       }
@@ -8294,8 +8292,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const wl = wrapIfMultiToken(left)
         const wr = wrapIfMultiToken(right)
 
-        const comparison = goComparisonCall(expr.op, wl, wr, [expr.left, expr.right])
-        if (comparison !== null) return comparison
+        const call = goBinaryHelperCall(expr.op, wl, wr, [expr.left, expr.right])
+        if (call !== null) return call
         switch (expr.op) {
           case '+':
             return this._emitPlus(expr.left, expr.right, wl, wr)
@@ -8305,13 +8303,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             return `bf_mul ${wl} ${wr}`
           case '/':
             return `bf_div ${wl} ${wr}`
-          case '%':
-            // #2873: mirrors the general binary emitter's `%` case (below,
-            // `bf_mod`) — this switch previously had no `%` case, so the
-            // `default` arm emitted a literal ` % ` into the template text,
-            // which `html/template` can't parse (`unexpected "%" in
-            // operand`).
-            return `bf_mod ${wl} ${wr}`
           default:
             return `${left} ${expr.op} ${right}`
         }
@@ -9168,9 +9159,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const preamble = leftResult.preamble + rightResult.preamble
 
         let result: string
-        const comparison = goComparisonCall(expr.op, left, right, [expr.left, expr.right])
-        if (comparison !== null) {
-          result = comparison
+        const call = goBinaryHelperCall(expr.op, left, right, [expr.left, expr.right])
+        if (call !== null) {
+          result = call
         } else switch (expr.op) {
           case '+':
             result = this._emitPlus(expr.left, expr.right, left, right); break
@@ -9180,13 +9171,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             result = `bf_mul ${left} ${right}`; break
           case '/':
             result = `bf_div ${left} ${right}`; break
-          case '%':
-            // #2873: this switch had no `%` case, so the `default` arm below
-            // emitted a literal ` % ` into a ternary/condition's template text,
-            // which `html/template` can't parse (`unexpected "%" in operand`).
-            // Mirrors the general binary emitter's `%` case (`bf_mod`, outside
-            // condition position).
-            result = `bf_mod ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
         }

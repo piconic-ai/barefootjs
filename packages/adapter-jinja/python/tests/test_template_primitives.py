@@ -10,9 +10,11 @@ never alias the caller's), and the structured `sort` comparator dispatch.
 from __future__ import annotations
 
 import json
+import math
 import unittest
 
 from barefootjs import BarefootJS
+from barefootjs import evaluator as _evaluator
 
 
 class _PureBackend:
@@ -36,6 +38,43 @@ def _is_nan(n):
 class TemplatePrimitivesTest(unittest.TestCase):
     def setUp(self):
         self.bf = BarefootJS(None, {"backend": _PureBackend()})
+
+    def test_mod_is_the_js_remainder(self):
+        # JS `%` takes the dividend's sign; Python's `%` floors (#3474).
+        self.assertEqual(self.bf.mod(-7, 2), -1)
+        self.assertEqual(self.bf.mod(7, -2), 1)
+        self.assertEqual(self.bf.mod(-7, -2), -1)
+        self.assertEqual(self.bf.mod(-7.5, 2), -1.5)
+        # Two int operands keep an int result, so it still indexes a list.
+        self.assertIs(type(self.bf.mod(-7, 2)), int)
+        self.assertTrue(_is_nan(self.bf.mod(7, 0)))
+        self.assertTrue(_is_nan(self.bf.mod(float("nan"), 2)))
+        self.assertTrue(_is_nan(self.bf.mod(float("inf"), 2)))
+
+    def test_mod_keeps_the_sign_of_a_negative_zero_remainder(self):
+        # JS gives -0 for a zero remainder of a negative dividend. It prints
+        # "0" and indexes a list as 0, but converts to -0.0, so a later
+        # division is -Infinity.
+        for a, b in ((-4, 2), (-4, -2), (-4.0, 2), (self.bf.mod(-4, 2), 3)):
+            r = self.bf.mod(a, b)
+            self.assertEqual(math.copysign(1.0, float(r)), -1.0, f"{a!r} % {b!r}")
+        r = self.bf.mod(-4, 2)
+        self.assertIsInstance(r, int)
+        self.assertEqual(["a", "b"][r], "a")
+        self.assertEqual(self.bf.string(r), "0")
+        self.assertEqual(json.dumps(r), "0")
+        self.assertEqual(self.bf.number(r), 0.0)
+        self.assertEqual(math.copysign(1.0, self.bf.number(r)), -1.0)
+        # A non-negative dividend keeps the plain int 0.
+        self.assertEqual(math.copysign(1.0, float(self.bf.mod(4, -2))), 1.0)
+
+    def test_evaluator_division_by_a_signed_zero(self):
+        # `1 / (-4 % 2)` in a callback body: the infinity takes the zero's sign.
+        num = lambda v: {"kind": "literal", "value": v, "literalType": "number"}
+        rem = {"kind": "binary", "op": "%", "left": num(-4), "right": num(2)}
+        quotient = {"kind": "binary", "op": "/", "left": num(1), "right": rem}
+        self.assertEqual(_evaluator.evaluate(quotient, {}), float("-inf"))
+        self.assertEqual(_evaluator.evaluate({**quotient, "left": num(-1)}, {}), float("inf"))
 
     def test_json(self):
         self.assertEqual(self.bf.json({"a": 1}), '{"a":1}')

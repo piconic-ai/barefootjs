@@ -1356,13 +1356,27 @@ func Max(a, b any) any {
 	return r
 }
 
-// Mod returns a % b (modulo). Supports int only.
-func Mod(a, b any) int {
-	av, bv := toInt(a), toInt(b)
-	if bv == 0 {
-		return 0
+// Mod returns JS `a % b`, the truncated remainder (#3474, #3574): the result
+// takes the dividend's sign (`-7 % 2` is -1), keeps a fraction (`7.5 % 2` is
+// 1.5), and is NaN for a zero divisor or a NaN / infinite dividend, as
+// `math.Mod` computes. Two int-like operands with a non-zero divisor keep
+// Go's int `%`, which truncates too, so the result stays an int like `Sub`'s
+// and `Mul`'s, except for a zero remainder of a negative dividend: JS gives
+// -0 there (`-4 % 2`), which shows through later arithmetic (`1 / (-4 % 2)`
+// is -Infinity), so it is the float64 -0. `bf_get` still takes it as index
+// 0 and `numberString` spells it "0". A nil operand reads as 0, as in the
+// other arithmetic helpers.
+func Mod(a, b any) any {
+	if isIntLike(a) && isIntLike(b) {
+		if bv := toInt(b); bv != 0 {
+			av := toInt(a)
+			if r := av % bv; r != 0 || av >= 0 {
+				return r
+			}
+			return math.Copysign(0, -1)
+		}
 	}
-	return av % bv
+	return math.Mod(toFloat64(a), toFloat64(b))
 }
 
 // Neg returns -a (negation).

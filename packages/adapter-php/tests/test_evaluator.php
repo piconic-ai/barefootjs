@@ -109,6 +109,13 @@ bf_test('non-finite division and JS stringification', function () {
     bf_assert_eq($div(-1, 0), -INF);
     $nan = $div(0, 0);
     bf_assert(is_float($nan) && is_nan($nan), 'expected NaN for 0/0');
+    // The infinity takes the zero divisor's sign too: `1 / (-4 % 2)` is
+    // `1 / -0`, -Infinity in JS.
+    bf_assert_eq($div(1, -0.0), -INF);
+    bf_assert_eq($div(-1, -0.0), INF);
+    $rem = bft_bin('%', bft_id('a'), bft_id('b'));
+    bf_assert_eq(Evaluator::evaluate(bft_bin('/', bft_num(1), $rem), ['a' => -4, 'b' => 2]), -INF);
+    bf_assert_eq(Evaluator::evaluate(bft_bin('/', bft_num(1), $rem), ['a' => 4, 'b' => 2]), INF);
 
     // _to_string is private; exercise the same paths via `String()` builtin call.
     $toString = fn ($v) => Evaluator::evaluate(['kind' => 'call', 'callee' => bft_id('String'), 'args' => [bft_num($v)]], []);

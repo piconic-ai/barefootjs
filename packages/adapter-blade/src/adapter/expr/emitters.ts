@@ -83,7 +83,9 @@
  */
 
 import {
+  arithmeticHelper,
   groupBinaryOperand,
+  groupUnaryOperand,
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
@@ -246,7 +248,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     if (op === '!') return `!${truthyTest(argument, emit(argument))}`
-    if (op === '-') return `-${emit(argument)}`
+    if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
 
@@ -267,6 +269,9 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
       return `${l} . ${r}`
     }
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `$bf->${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*', '/': '/',
@@ -538,7 +543,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `!${truthyTest(argument, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const arg = emit(argument)
+      const arg = groupUnaryOperand(argument, emit(argument))
       const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
       return operand === arg ? `-${arg}` : `-(${operand})`
     }
@@ -571,6 +576,9 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
       return `${l} . ${r}`
     }
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `$bf->${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

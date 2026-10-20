@@ -530,6 +530,15 @@ module BarefootJS
       Evaluator.divide(left, right)
     end
 
+    # JS `%`: the truncated remainder, which takes the dividend's sign
+    # (`-7 % 2` -> -1). Ruby's `%` floors (`-7 % 2` -> 1), so
+    # template-emitted remainders go through the shared evaluator's JS
+    # remainder instead: a fraction is kept, and a zero divisor gives NaN
+    # rather than raising (#3474).
+    def mod(left, right)
+      Evaluator.remainder(left, right)
+    end
+
     # JS truthiness (falsy: false, nil, 0, NaN, ""). Delegates to the
     # shared evaluator so template-emitted conditionals
     # (`if bf.truthy?(x)`) and callback-body evaluation agree byte-for-byte.

@@ -49,7 +49,9 @@
  */
 
 import {
+  arithmeticHelper,
   groupBinaryOperand,
+  groupUnaryOperand,
   literalMemberIndex,
   groupObjectLiteralSegments,
   type ParsedExprEmitter,
@@ -226,7 +228,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
-    if (op === '-') return `-${emit(argument)}`
+    if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
 
@@ -239,6 +241,9 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // Jinja's `==` / `!=` are value-equality operators that compare strings
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Same reasoning as Kolon.
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*', '/': '/',
@@ -534,7 +539,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const arg = emit(argument)
+      const arg = groupUnaryOperand(argument, emit(argument))
       const operand = this.coerceNullishOperand(op, argument, undefined, arg)
       return operand === arg ? `-${arg}` : `-(${operand})`
     }
@@ -558,6 +563,9 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     const r = this.coerceNullishOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     // Jinja's `==` / `!=` handle both strings and numbers (unlike Perl's
     // numeric `==`), so all equality comparisons stay on `==` / `!=`.
+    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    const helper = arithmeticHelper(op)
+    if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

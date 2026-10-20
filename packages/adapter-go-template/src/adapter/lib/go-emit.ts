@@ -5,7 +5,7 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
+import { arithmeticHelper, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -376,6 +376,24 @@ export function goComparisonCall(
     return `${helper} ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
   }
   return `${helper} ${l} ${r}`
+}
+
+/**
+ * The prefix call for a binary operator that a runtime helper computes
+ * whole: a comparison ({@link goComparisonCall}), or an arithmetic operator
+ * the shared lowering routes to a helper (`arithmeticHelper`: `%` is
+ * `bf_mod`, JS's truncated remainder, #3474). `null` for any other
+ * operator. Before #2873 the filter-predicate and condition emitters had no
+ * `%` case and spliced a literal ` % `, which `html/template` can't parse;
+ * every binary emitter now asks here first.
+ */
+export function goBinaryHelperCall(
+  op: string, l: string, r: string, operands?: readonly [ParsedExpr, ParsedExpr],
+): string | null {
+  const comparison = goComparisonCall(op, l, r, operands)
+  if (comparison !== null) return comparison
+  const helper = arithmeticHelper(op)
+  return helper ? `bf_${helper} ${l} ${r}` : null
 }
 
 // Generic remediation appended to BF101 / BF102 diagnostics whose reason

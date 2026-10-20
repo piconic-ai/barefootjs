@@ -5819,6 +5819,20 @@
       }
     }
   ],
+  "number-division-zero-divisor": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890
+      }
+    }
+  ],
   "number-tofixed": [
     {
       "name": "gen:price:negative",
@@ -7115,6 +7129,97 @@
       "name": "gen:nums:empty",
       "props": {
         "nums": []
+      }
+    }
+  ],
+  "remainder-fraction-zero-divisor": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890
+      }
+    }
+  ],
+  "remainder-negative-operands": [
+    {
+      "name": "gen:a:zero",
+      "props": {
+        "a": 0,
+        "b": -2
+      }
+    },
+    {
+      "name": "gen:a:large",
+      "props": {
+        "a": 1234567890,
+        "b": -2
+      }
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "a": -7,
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "a": -7,
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "a": -7,
+        "b": 1234567890
+      }
+    }
+  ],
+  "remainder-negative-zero": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "remainder-negative-zero-quotient": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
       }
     }
   ],
@@ -9350,6 +9455,50 @@
       "props": {
         "toggleItems": [],
         "__instanceId": "Toggle_test"
+      }
+    }
+  ],
+  "unary-minus-compound-operand": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:m:zero",
+      "props": {
+        "n": 5,
+        "m": 0
+      }
+    },
+    {
+      "name": "gen:m:negative",
+      "props": {
+        "n": 5,
+        "m": -7
+      }
+    },
+    {
+      "name": "gen:m:large",
+      "props": {
+        "n": 5,
+        "m": 1234567890
       }
     }
   ],

@@ -8,10 +8,6 @@
       "expect": 0,
       "reason": "bf.Div degrades to 0 so a template render survives instead of emitting +Inf"
     },
-    "mod/float remainder": {
-      "expect": 1,
-      "reason": "bf.Mod truncates operands to integers"
-    },
     "number/empty string coerces to 0": {
       "expect": { "$num": "NaN" },
       "reason": "deliberate: empty input must not silently zero downstream arithmetic"

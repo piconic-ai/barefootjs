@@ -52,6 +52,10 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
+  // `/` over a zero divisor: Python's `/` raises `ZeroDivisionError`, so
+  // the render fails where JS gives `Infinity` / `-Infinity` / `NaN`.
+  'number-division-zero-divisor': { limitation: 'division-zero-divisor' },
+  'remainder-negative-zero-quotient': { limitation: 'division-zero-divisor' },
   // `object-length-property-filter` used to sit here: an object row's own
   // `length` property read 0 in an inline filter predicate. The runtime
   // length helper now reads the object's property (#3449).
