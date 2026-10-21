@@ -1,6 +1,7 @@
 /**
  * `props-extraction` phase — emit the one surviving one-time prop
- * extraction, `const children = _p.children [?? <default>]`.
+ * extraction, `const children = _p.children [?? <default>]` (or
+ * `const kids = _p.children` for a renamed `{ children: kids }`).
  *
  * `children` must stay a ONE-TIME read: a prop's slot-children value is a
  * getter that INSTANTIATES child components when read (see
@@ -18,13 +19,10 @@
  * downstream code there reads `_p.X` directly via the late-stage rename.
  */
 
-import type { PropUsage } from '../../types.ts'
+import { type PropUsage, isChildrenPropParam } from '../../types.ts'
 import { computePropsUsedAsConditions } from '../compute-prop-usage.ts'
 import { propReadBase, propReadFallback } from '../../props-binding.ts'
 import type { ClientJsContext } from '../types.ts'
-import { PROPS_PARAM } from '../utils.ts'
-
-const CHILDREN = 'children'
 
 export function emitPropsExtraction(
   lines: string[],
@@ -33,16 +31,19 @@ export function emitPropsExtraction(
   propUsage: Map<string, PropUsage>,
 ): void {
   if (ctx.propsObjectName) return
-  if (!neededProps.has(CHILDREN)) return
+  // The children prop's local binding: `children`, or the renamed local of
+  // `{ children: kids }` (`isChildrenPropParam`, #3572), which reads
+  // `_p.children` the same one-time way. A local named `children` that binds
+  // another prop (`{ items: children }`) is an ordinary prop, read live.
+  // `neededProps` holds only props-param locals, so a component with no
+  // children param has nothing to extract.
+  const prop = ctx.propsParams.find(isChildrenPropParam)
+  if (!prop) return
+  const local = prop.name
+  if (!neededProps.has(local)) return
 
-  const prop = ctx.propsParams.find(p => p.name === CHILDREN)
-  if (!prop) {
-    lines.push(`  const ${CHILDREN} = ${PROPS_PARAM}.${CHILDREN}`, '')
-    return
-  }
-
-  const usedAsCondition = computePropsUsedAsConditions(ctx, neededProps).has(CHILDREN)
-  const fallback = propReadFallback(prop, propUsage.get(CHILDREN), usedAsCondition)
+  const usedAsCondition = computePropsUsedAsConditions(ctx, neededProps).has(local)
+  const fallback = propReadFallback(prop, propUsage.get(local), usedAsCondition)
   const read = propReadBase(prop) + (fallback === null ? '' : ` ?? ${fallback}`)
-  lines.push(`  const ${CHILDREN} = ${read}`, '')
+  lines.push(`  const ${local} = ${read}`, '')
 }

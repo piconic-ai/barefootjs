@@ -27,13 +27,14 @@ import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { goPropDefault } from '../lib/go-emit.ts'
 import { GO_KEYWORDS, capitalizeFieldName } from '../lib/go-naming.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
+import { propsFieldName } from '../lib/props-field-names.ts'
 import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isBoxedNumericMemoBody, isEvaluatedMemo, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
-import { convertInitialValue } from '../value/value-lowering.ts'
+import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
 
 /** The minimal signal shape these decisions read (the IR's `SignalInfo` is not exported). */
@@ -282,8 +283,10 @@ export function inferMemoType(
 
 /**
  * Walk signals to collect prop fallbacks: `createSignal(props.X ?? N)`
- * hoists `N` as a local so the signal, any derived memo, and the prop field
- * share one fallback-applied value. Skips props that already have a
+ * hoists `N` as a local so the signal, any derived memo, and a prop field the
+ * signal shares ({@link sharedFieldFallbackVar}) share one fallback-applied
+ * value. The first seed per prop wins; a later seed with another fallback is
+ * evaluated instead of reusing it (#3577). Skips props that already have a
  * destructure-side default (`{ X = N }`) or signals whose fallback resolves
  * to the type's Go zero value (no-op).
  */
@@ -324,7 +327,7 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
       }
     }
     if (!match) continue
-    if (result.has(match.propName)) continue
+    if (!hoistsFallbackVar(ctx, ir, signal, match.propName, result)) continue
     const param = ir.metadata.propsParams.find(p => p.name === match.propName)
     if (!param) continue
     // A destructure default already wins via applyGoFallback.
@@ -377,6 +380,53 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
 }
 
 /**
+ * Whether `signal`'s `props.X ?? N` seed hoists the local for `propName`:
+ * no earlier seed hoisted one, and the constructor line this signal owns
+ * reads it, so the local is never declared unused (#3577 review). That line
+ * is the Props field the signal shares with a prop
+ * ({@link sharedFieldFallbackVar}), which reads the local only when the
+ * prop is `propName` itself, or else the signal's own field
+ * ({@link signalSeedGo}), which reads it unless the seed is evaluated (a
+ * seed over a boxed dependent-default prop, #3531). A seed that would not
+ * read it leaves the prop to a later seed; other readers (a memo seed, a
+ * child prop) use the local only when it exists.
+ */
+function hoistsFallbackVar(
+  ctx: GoEmitContext,
+  ir: ComponentIR,
+  signal: ComponentIR['metadata']['signals'][number],
+  propName: string,
+  hoisted: ReadonlyMap<string, PropFallbackVar>,
+): boolean {
+  if (hoisted.has(propName)) return false
+  const fieldName = capitalizeFieldName(signal.getter)
+  const sharedProp = ir.metadata.propsParams.find(p => propsFieldName(p, ir.metadata) === fieldName)
+  if (sharedProp) return sharedProp.name === propName
+  return ctx.computedSignalSeed(signal, ir.metadata.propsParams, hoisted) === null
+}
+
+/**
+ * The hoisted `props.X ?? N` local the prop's own Props field takes, else
+ * undefined. The local is a signal's value, so it belongs on the prop's
+ * field only when a signal shares that field
+ * (`const [x] = createSignal(props.x ?? N)`). Otherwise the field is the
+ * prop itself, which a template read such as `props.x ?? 'd'` or a bare
+ * `props.x` reads (#3577).
+ */
+export function sharedFieldFallbackVar(
+  ir: ComponentIR,
+  propName: string,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): PropFallbackVar | undefined {
+  // The prop's own Props field (`propsFieldName`), which may not be named
+  // after its local (`{ label: children }` is held in `Label`, #3572).
+  const param = ir.metadata.propsParams.find(p => p.name === propName)
+  const fieldName = param ? propsFieldName(param, ir.metadata) : capitalizeFieldName(propName)
+  if (!ir.metadata.signals.some(s => capitalizeFieldName(s.getter) === fieldName)) return undefined
+  return propFallbackVars.get(propName)
+}
+
+/**
  * The Go zero literal for a fallback's literal shape, or null when the
  * fallback is not a hoistable literal. Bool fallbacks (`?? true`) hoist
  * against the `false` zero — the same Go-zero conflation the int / string
@@ -420,9 +470,8 @@ export function signalSeedGo(
   const computed = ctx.computedSignalSeed(signal, propsParams, propFallbackVars, !nillableDest)
   if (computed !== null) return computed
   // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
-  // one value.
-  const fallbackMatch = ctx.extractPropFallbackFromParsed(resolveSignalParsedThroughSeedPlan(ctx.state, signal))
-  const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
+  // one value, only when that var carries this seed's own `N` (#3577).
+  const hoisted = seedFallbackVar(ctx, resolveSignalParsedThroughSeedPlan(ctx.state, signal), propFallbackVars)
   if (hoisted) return hoisted.varName
   // A nillable seed (#3323) stays whole only into an `interface{}`
   // destination: the signal's own field, or a child Input the child itself

@@ -5,7 +5,7 @@
  */
 
 import ts from 'typescript'
-import type { AttrMeta, IRMetadata } from '../types.ts'
+import { type AttrMeta, type IRMetadata, isChildrenPropParam } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
@@ -327,7 +327,7 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
   const propAliases = new Map<string, string>()
   const propsByName = new Map<string, ClientJsContext['propsParams'][number]>()
   for (const prop of ctx.propsParams) {
-    if (prop.name === 'children') continue
+    if (isChildrenPropParam(prop)) continue
     propNames.add(prop.name)
     propsByName.set(prop.name, prop)
     // `_p` is always keyed by the caller-facing name (#2524 CSR half).

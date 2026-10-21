@@ -1803,6 +1803,18 @@ export function isElidedFactoryGetter(signal: Pick<SignalInfo, 'factory' | 'gett
 }
 
 /**
+ * Whether a props param binds the component's own `children` prop. Keyed by
+ * the caller-facing key (`sourceName ?? name`), so a binding renamed in the
+ * destructure (`{ children: kids }`) is the children prop exactly as
+ * `{ children }` is (#3572). The one answer for every site that sets the
+ * children prop apart from the data props: it is content the parent
+ * renders, not a reactive value, a client-side prop read or hydration data.
+ */
+export function isChildrenPropParam(p: Pick<ParamInfo, 'name' | 'sourceName'>): boolean {
+  return (p.sourceName ?? p.name) === 'children'
+}
+
+/**
  * The async reactive factory call a signal's value comes from (#3165). Every
  * backend that re-emits the declaration reads this instead of assuming
  * `createSignal`: client JS re-emits `<callee>(<argsText>)` (the request

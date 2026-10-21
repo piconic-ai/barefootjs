@@ -23,7 +23,7 @@ import type {
   SourceLocation,
   OriginInfo,
 } from './types.ts'
-import { isElidedFactoryGetter } from './types.ts'
+import { isElidedFactoryGetter, isChildrenPropParam } from './types.ts'
 import { analyzeComponent, listComponentFunctions } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
 import { buildMetadata } from './compiler.ts'
@@ -411,7 +411,7 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   // `reactive: true` (#2903). The collector therefore returns the prop NAMES
   // (not a boolean), so a prop read lands in `DomBinding.deps` on the same
   // footing as a signal or memo read.
-  const destructuredPropNames = new Set(meta.propsParams.map(p => p.name).filter(n => n !== 'children'))
+  const destructuredPropNames = new Set(meta.propsParams.filter(p => !isChildrenPropParam(p)).map(p => p.name))
   const propsObjectName = meta.propsObjectName
   const propMemberDep = (member: string): string => `${propsObjectName}.${member}`
 

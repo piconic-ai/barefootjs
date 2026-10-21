@@ -3141,6 +3141,12 @@
               ]
             },
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "number-division-zero-divisor",
               "limitations": [
                 "division-zero-divisor"
@@ -4387,6 +4393,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {
@@ -6238,6 +6250,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -6530,6 +6548,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -6780,6 +6804,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "children-renamed-param",
               "limitations": [
                 "renamed-children-param"
@@ -6978,6 +7008,12 @@
               ]
             },
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7147,6 +7183,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -7442,6 +7484,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7722,6 +7770,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7981,6 +8035,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8261,6 +8321,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8553,6 +8619,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -9518,6 +9590,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {
@@ -10983,6 +11061,12 @@
               ]
             },
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -11263,6 +11347,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11513,6 +11603,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11721,6 +11817,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11889,6 +11991,12 @@
               ]
             },
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "number-division-zero-divisor",
               "limitations": [
                 "division-zero-divisor"
@@ -12022,6 +12130,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -12275,6 +12389,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12513,6 +12633,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12730,6 +12856,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -12968,6 +13100,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -13221,6 +13359,12 @@
               ]
             },
             {
+              "fixture": "children-alias-hop-shadowed-intermediate",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -13451,10 +13595,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
-        "fixture": "children-named-loop-row-escaped",
-        "description": "A loop row named children is escaped text, not the children prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-named-loop-row-escaped.ts",
-        "code": "props.kids"
+        "fixture": "children-alias-hop-shadowed-intermediate",
+        "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts",
+        "code": "rows.map"
       }
     },
     "object-literal": {
@@ -16410,6 +16554,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18165,6 +18315,12 @@
               ]
             },
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -19270,6 +19426,12 @@
               ]
             },
             {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -20319,6 +20481,12 @@
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "memo-prop-read-beside-signal-nullish-seed",
+              "limitations": [
+                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {

@@ -2,7 +2,7 @@
  * Reactivity detection: reactive expression checking, event/ref collection.
  */
 
-import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types.ts'
+import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin, isChildrenPropParam } from '../types.ts'
 import type {
   ClientJsContext,
   ConditionalBranchEvent,
@@ -237,7 +237,7 @@ function needsEffectWrapperCore(
   // Check individual prop names (excluding children which is server-rendered
   // and should not trigger effect wrapping on the client)
   for (const prop of ctx.propsParams) {
-    if (prop.name === 'children') continue
+    if (isChildrenPropParam(prop)) continue
     if (freeIdentifiers ? freeIdentifiers.has(prop.name) : tokenContainsIdent(expr, prop.name)) {
       return true
     }
