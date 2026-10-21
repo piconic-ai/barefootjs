@@ -466,7 +466,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
  * (a module const referencing `props` isn't legal JS — `props` is a
  * function parameter), so it can never contribute a prop reference here.
  */
-function localConstValuesByName(metadata: IRMetadata): ReadonlyMap<string, string> {
+export function localConstValuesByName(metadata: Pick<IRMetadata, 'localConstants'>): ReadonlyMap<string, string> {
   const out = new Map<string, string>()
   for (const c of metadata.localConstants ?? []) {
     if (c.isModule || c.value === undefined) continue
@@ -484,8 +484,13 @@ function localConstValuesByName(metadata: IRMetadata): ReadonlyMap<string, strin
  * (never a bespoke walker — see the CLAUDE.md rule this file already
  * follows for `props.X` collection) and just checks membership of the one
  * name we care about.
+ *
+ * Also the analyzer's test for which same-named signal/memo keeps sharing
+ * the prop's template variable (`separateSignalPropBindings`): a binding
+ * this answers `false` for is renamed before IR is built, so the two
+ * callers cannot disagree about which collisions stay collapsed.
  */
-function referencesOwnProp(
+export function referencesOwnProp(
   expr: string | undefined,
   propsObjectName: string,
   name: string,

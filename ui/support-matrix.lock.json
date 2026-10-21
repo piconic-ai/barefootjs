@@ -3998,6 +3998,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4197,6 +4203,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -4474,6 +4486,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -4718,6 +4736,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4938,6 +4962,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5137,6 +5167,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -5357,6 +5393,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -5592,6 +5634,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5803,6 +5851,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -6436,6 +6490,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6683,6 +6743,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -7032,6 +7098,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -7348,6 +7420,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7628,6 +7706,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7875,6 +7959,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -8170,6 +8260,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8462,6 +8558,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8721,6 +8823,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -9093,6 +9201,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9274,6 +9388,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -9539,6 +9659,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -9765,6 +9891,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9955,6 +10087,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10136,6 +10274,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -10338,6 +10482,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -10543,6 +10693,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10727,6 +10883,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10801,6 +10963,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10826,6 +10994,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -10881,6 +11055,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10906,6 +11086,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -10937,6 +11123,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10962,6 +11154,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -10993,6 +11191,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -11021,6 +11225,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -11046,6 +11256,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -11311,6 +11527,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11516,6 +11738,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -11805,6 +12033,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -12079,6 +12313,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12317,6 +12557,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12522,6 +12768,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -12775,6 +13027,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13025,6 +13283,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13242,6 +13506,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -18854,6 +19124,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18969,6 +19245,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -19138,6 +19420,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -19274,6 +19562,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -19398,6 +19692,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -19513,6 +19813,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -19652,6 +19958,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -19776,6 +20088,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -19891,6 +20209,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -20062,6 +20386,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20081,6 +20411,12 @@
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -20130,6 +20466,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20149,6 +20491,12 @@
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -20174,6 +20522,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20193,6 +20547,12 @@
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {
@@ -20218,6 +20578,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20240,6 +20606,12 @@
               ]
             },
             {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20259,6 +20631,12 @@
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "signal-from-same-named-prop-raw-read",
+              "limitations": [
+                "signal-from-same-named-prop-raw-read"
               ]
             },
             {

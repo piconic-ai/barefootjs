@@ -303,8 +303,12 @@ describe('extractSsrDefaults', () => {
       }
     `)
 
+    // Not self-derived, so the analyzer renames the getter apart from the
+    // prop (`separateSignalPropBindings`): the signal keeps a plain entry
+    // under its own name, and the prop keeps its prop entry.
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ value: null })
+    expect(defaults?.bfSignal_label).toEqual({ value: null })
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
   })
 
   test('aliased destructured prop (#2460): `propName` is the CALLER-facing key, not the local binding', () => {

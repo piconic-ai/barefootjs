@@ -197,10 +197,14 @@ describe('a `??` seed over another prop, and a hoisted fallback local read elsew
     expect(types).toMatch(/^\s+T: c,$/m)
   })
 
-  test('a seed whose field is another prop’s hoists no local; a later seed of the same prop does', () => {
+  test('a signal named like another prop gets its own field and reads the hoisted local; a later seed of the same prop reuses it', () => {
+    // The analyzer renames the getter apart from the `label` prop
+    // (`separateSignalPropBindings`), so it no longer shares `Label`.
     const alone = constructorOf(`  const [label] = createSignal(props.b ?? 'y')
   return <p>{label()}</p>`, 'props: { b?: string; label?: string }')
-    expect(alone).not.toMatch(/^\s+var b /m)
+    expect(alone).toMatch(/^\s+var b string = "y"$/m)
+    expect(alone).toMatch(/^\s+BfSignal_label: b,$/m)
+    expect(alone).toMatch(/^\s+Label: in\.Label,$/m)
     const later = constructorOf(`  const [label] = createSignal(props.b ?? 'y')
   const [t] = createSignal(props.b ?? 'y')
   return <p data-t={t()}>{label()}</p>`, 'props: { b?: string; label?: string }')

@@ -304,6 +304,13 @@ import { fixture as eventDelegationContainerHandler } from './event-delegation-c
 import { fixture as defaultProps } from './default-props'
 import { fixture as untypedPropsReads } from './untyped-props-reads'
 import { fixture as bareTextOptionalScalar } from './bare-text-optional-scalar'
+import { fixture as signalNamedLikeProp } from './signal-named-like-prop'
+import { fixture as signalNamedLikeRenamedProp } from './signal-named-like-renamed-prop'
+import { fixture as signalNamedLikeNumberProp } from './signal-named-like-number-prop'
+import { fixture as signalNamedLikePropPositions } from './signal-named-like-prop-positions'
+import { fixture as signalNamedLikePropCaseFold } from './signal-named-like-prop-case-fold'
+import { fixture as signalFromSameNamedPropRawRead } from './signal-from-same-named-prop-raw-read'
+import { fixture as memoNamedLikeProp } from './memo-named-like-prop'
 import { fixture as namespaceImportPrimitive } from './namespace-import-primitive'
 import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-import-primitive-named-escape'
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
@@ -1298,6 +1305,13 @@ export const jsxFixtures: JSXFixture[] = [
   defaultProps,
   untypedPropsReads,
   bareTextOptionalScalar,
+  signalNamedLikeProp,
+  signalNamedLikeRenamedProp,
+  signalNamedLikeNumberProp,
+  signalNamedLikePropPositions,
+  signalNamedLikePropCaseFold,
+  signalFromSameNamedPropRawRead,
+  memoNamedLikeProp,
   namespaceImportPrimitive,
   namespaceImportPrimitiveNamedEscape,
   nullishCoalescingText,
