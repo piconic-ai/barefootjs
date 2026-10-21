@@ -107,6 +107,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // is held in the `Children` field the parent's children populate, not in a
 // never-set field named after the local (`Kids`).
 export const renderDivergences: RenderDivergences = {
+  // A signal seeded from its own same-named prop keeps the prop's template
+  // variable, so a raw `props.<name>` read beside it sees the derived value.
+  'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the

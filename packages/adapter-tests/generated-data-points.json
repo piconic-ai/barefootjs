@@ -4710,6 +4710,94 @@
       }
     }
   ],
+  "memo-named-like-prop": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "count": 5,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "count": 5,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "count": 5,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "count": 5,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:count:absent",
+      "props": {
+        "label": "P",
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "label": "P",
+        "count": 0,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "label": "P",
+        "count": -7,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "label": "P",
+        "count": 1234567890,
+        "b": 4
+      }
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "label": "P",
+        "count": 5,
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "label": "P",
+        "count": 5,
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "label": "P",
+        "count": 5,
+        "b": 1234567890
+      }
+    }
+  ],
   "memo-prop-read-beside-signal-nullish-seed": [
     {
       "name": "gen:b:absent",
@@ -7918,6 +8006,26 @@
       }
     }
   ],
+  "signal-from-same-named-prop-raw-read": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "signal-literal-prop-fractional-collision": [
     {
       "name": "gen:count:negative",
@@ -7951,6 +8059,240 @@
       "name": "gen:count:large",
       "props": {
         "count": 1234567890
+      }
+    }
+  ],
+  "signal-named-like-number-prop": [
+    {
+      "name": "gen:count:absent",
+      "props": {
+        "b": 2
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "count": 0,
+        "b": 2
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7,
+        "b": 2
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890,
+        "b": 2
+      }
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "count": 5,
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "count": 5,
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "count": 5,
+        "b": 1234567890
+      }
+    }
+  ],
+  "signal-named-like-prop": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "label": "P",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "label": "P",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "label": "P",
+        "b": "日本語"
+      }
+    }
+  ],
+  "signal-named-like-prop-case-fold": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "label": "P",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "label": "P",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "label": "P",
+        "b": "日本語"
+      }
+    }
+  ],
+  "signal-named-like-prop-positions": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "label": "P",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "label": "P",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "label": "P",
+        "b": "日本語"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "P",
+        "b": "B",
+        "items": []
+      }
+    }
+  ],
+  "signal-named-like-renamed-prop": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "b": "B"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "label": "P",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "label": "P",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "label": "P",
+        "b": "日本語"
       }
     }
   ],

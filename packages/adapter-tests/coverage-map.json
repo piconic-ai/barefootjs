@@ -7006,6 +7006,25 @@
         "text"
       ]
     },
+    "memo-named-like-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo-prop-read-beside-signal-nullish-seed": {
       "kinds": [
         "binary",
@@ -10364,6 +10383,23 @@
         "condition"
       ]
     },
+    "signal-from-same-named-prop-raw-read": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "signal-literal-prop-fractional-collision": {
       "kinds": [
         "binary",
@@ -10436,6 +10472,93 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "signal-named-like-number-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-named-like-prop-case-fold": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-named-like-prop-positions": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "signal-named-like-renamed-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
