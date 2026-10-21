@@ -6810,12 +6810,6 @@
               ]
             },
             {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -9443,12 +9437,6 @@
               ]
             },
             {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -11030,12 +11018,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
             {
               "fixture": "component-spread-explicit-null",
               "limitations": [
@@ -19306,12 +19288,6 @@
               ]
             },
             {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -20459,12 +20435,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "children-renamed-param",
-              "limitations": [
-                "renamed-children-param"
-              ]
-            },
             {
               "fixture": "component-spread-explicit-null",
               "limitations": [

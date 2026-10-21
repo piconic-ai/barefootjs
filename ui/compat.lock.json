@@ -2322,14 +2322,6 @@
           ]
         }
       },
-      "children-renamed-param": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "renamed-children-param"
-          ]
-        }
-      },
       "component-spread-explicit-null": {
         "blade": {
           "kind": "render",
@@ -7625,10 +7617,6 @@
       "children-alias-hop-shadowed-intermediate": {
         "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts"
-      },
-      "children-renamed-param": {
-        "description": "A children prop renamed in the parameter destructure renders present children as markup",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-renamed-param.ts"
       },
       "component-spread-explicit-null": {
         "description": "A props spread whose explicit null overrides an earlier explicit prop",

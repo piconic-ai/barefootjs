@@ -110,10 +110,6 @@ export const renderDivergences: RenderDivergences = {
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
-  // A children prop renamed in the parameter destructure (`{ children: kids }`):
-  // the renamed `Kids` field reads nil when the parent passes children, so
-  // present children are dropped and the `??` fallback renders.
-  'children-renamed-param': { limitation: 'renamed-children-param' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the
