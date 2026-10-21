@@ -480,7 +480,7 @@ function populateCsrInlinable(
       // sees `props.X` and can detect bridged-arg calls. The final
       // emit-time substitution applies the bare-prop rewrite.
       const source = c.value!.trim()
-      const { rewritten, freeIdentifiers } = csrSubstitute(source, env)
+      const { rewritten, freeIdentifiers, writes } = csrSubstitute(source, env)
 
       // If the rewrite still references any unresolved local constant
       // by name, defer to a later iteration — its substitution may
@@ -505,7 +505,7 @@ function populateCsrInlinable(
       // `rewritePropsObjectRef` doesn't need to redo the AST work. The
       // free identifiers are re-extracted from the bridged form so
       // the post-substitution unsafe-name check stays exact.
-      const bridgedRewritten = bridgedCsrForm(rewritten, source, env, relocateEnv, receivers)
+      const bridgedRewritten = bridgedCsrForm(rewritten, writes, source, env, relocateEnv, receivers)
       if (bridgedRewritten === null) {
         ctx.csrInlinable.set(c.name, null)
       } else {
@@ -552,15 +552,18 @@ function hasNoCsrSubstitute(c: ConstantInfo): boolean {
 
 /**
  * The bridged CSR form of a const whose substituted text is `rewritten`, or
- * null when it isn't safe in template scope.
+ * null when it isn't safe in template scope. A value that writes a binding
+ * (`writes`, see `csrSubstitute`) runs only where it is declared.
  */
 function bridgedCsrForm(
   rewritten: string,
+  writes: ReadonlySet<string>,
   source: string,
   env: CsrEnv,
   relocateEnv: RelocateEnv,
   receivers: ReturnType<typeof inlinedReceiverCheck>,
 ): string | null {
+  if (writes.size > 0) return null
   const inlineResult = isInlinableInTemplate(rewritten, relocateEnv)
   return inlineResult.ok ? inlineResult.rewrittenValue : receivers.check(source, env)
 }

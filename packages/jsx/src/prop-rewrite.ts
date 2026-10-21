@@ -21,6 +21,7 @@
 import ts from 'typescript'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
+import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 
 /** Collect every name introduced by a binding name (identifier or pattern). */
 function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
@@ -37,32 +38,41 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
  * Names bound by `n` for its subtree, or null when `n` introduces no
  * scope. Function-likes bind their parameters (and a function
  * expression its own name); blocks bind their statement-level
- * variable/function declarations; catch clauses bind their variable.
+ * variable/function declarations; a `for` head binds its `let` / `const`;
+ * catch clauses bind their variable.
  */
 function scopeFrameOf(n: ts.Node): Set<string> | null {
-  if (ts.isFunctionLike(n)) {
-    const frame = new Set<string>()
-    for (const p of n.parameters) collectBindingNames(p.name, frame)
-    if ((ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n)) && n.name) frame.add(n.name.text)
-    return frame.size > 0 ? frame : null
-  }
-  if (ts.isBlock(n)) {
-    const frame = new Set<string>()
-    for (const st of n.statements) {
-      if (ts.isVariableStatement(st)) {
-        for (const d of st.declarationList.declarations) collectBindingNames(d.name, frame)
-      } else if (ts.isFunctionDeclaration(st) && st.name) {
-        frame.add(st.name.text)
-      }
+  const frame = new Set<string>()
+  if (ts.isFunctionLike(n)) collectFunctionBindings(n, frame)
+  else if (ts.isBlock(n)) collectBlockBindings(n, frame)
+  else if (ts.isForStatement(n) || ts.isForOfStatement(n) || ts.isForInStatement(n)) collectForHeadBindings(n, frame)
+  else if (ts.isCatchClause(n) && n.variableDeclaration) collectBindingNames(n.variableDeclaration.name, frame)
+  return frame.size > 0 ? frame : null
+}
+
+function collectFunctionBindings(n: ts.SignatureDeclaration, frame: Set<string>): void {
+  for (const p of n.parameters) collectBindingNames(p.name, frame)
+  if ((ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n)) && n.name) frame.add(n.name.text)
+}
+
+function collectBlockBindings(n: ts.Block, frame: Set<string>): void {
+  for (const st of n.statements) {
+    if (ts.isVariableStatement(st)) {
+      for (const d of st.declarationList.declarations) collectBindingNames(d.name, frame)
+    } else if (ts.isFunctionDeclaration(st) && st.name) {
+      frame.add(st.name.text)
     }
-    return frame.size > 0 ? frame : null
   }
-  if (ts.isCatchClause(n) && n.variableDeclaration) {
-    const frame = new Set<string>()
-    collectBindingNames(n.variableDeclaration.name, frame)
-    return frame.size > 0 ? frame : null
-  }
-  return null
+}
+
+/**
+ * A `for` head's `let` / `const` binds for the loop (`for (let i = 0; …;
+ * i++)`, `for (const x of xs)`): its condition, incrementor and body read
+ * the loop variable, not an outer prop of the same name.
+ */
+function collectForHeadBindings(n: ts.ForStatement | ts.ForOfStatement | ts.ForInStatement, frame: Set<string>): void {
+  if (!n.initializer || !ts.isVariableDeclarationList(n.initializer)) return
+  for (const d of n.initializer.declarations) collectBindingNames(d.name, frame)
 }
 
 /**
@@ -149,6 +159,22 @@ export function collectAstPropRefs(
 }
 
 /**
+ * The identifiers below `node` that write a name in `names`
+ * (`isAssignmentTargetIdentifier`: an assignment, an update, a destructuring
+ * assignment or a `for … of/in` head), nested functions included. A write to
+ * a name an inner binding shadows (a handler's own `let start`, a
+ * `for (let i …)`) is that binding's, not the outer one's, and is left out.
+ */
+export function collectAssignmentTargets(node: ts.Node, names: ReadonlySet<string>): ts.Identifier[] {
+  const targets: ts.Identifier[] = []
+  walkWithScope(node, (n, _parent, shadowed) => {
+    if (shadowed || !names.has(n.text)) return
+    if (isAssignmentTargetIdentifier(n)) targets.push(n)
+  })
+  return targets
+}
+
+/**
  * Scope-aware rewrite: parse `text` as an expression, walk it with the
  * binding stack, and splice `replacementFor(name)` onto exactly the
  * identifier references that are (a) in `names` and (b) not shadowed by
@@ -194,6 +220,9 @@ export function rewriteScopedValueRefs(
   walkWithScope(sf, (n, parent, shadowed) => {
     if (shadowed || !names.has(n.text)) return
     if (isNonValuePosition(n, parent)) return
+    // A written name (`++title`, `title = x`) keeps its binding: a
+    // replacement value is not an assignment target.
+    if (isAssignmentTargetIdentifier(n)) return
     const start = n.getStart(sf) - usedPrefix.length
     const end = n.getEnd() - usedPrefix.length
     if (start < 0 || end > text.length) return
@@ -235,6 +264,7 @@ export function splitScopedValueRefs(text: string, names: ReadonlySet<string>): 
   walkWithScope(sf, (n, parent, shadowed) => {
     if (shadowed || !names.has(n.text)) return
     if (isNonValuePosition(n, parent)) return
+    if (isAssignmentTargetIdentifier(n)) return
     const start = n.getStart(sf) - prefix.length
     const end = n.getEnd() - prefix.length
     if (start < 0 || end > text.length) return

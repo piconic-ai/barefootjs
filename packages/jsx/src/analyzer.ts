@@ -12,7 +12,8 @@ import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiv
 import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
-import { rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
+import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
+import { isEventHandlerName } from './event-handler-name.ts'
 import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -4705,6 +4706,7 @@ function validateContext(ctx: AnalyzerContext): void {
   // `localConstants` binding after its declaration — flag those bindings so
   // downstream inlining never re-embeds their stale initializer text (#2910).
   markMutatedConstants(ctx)
+  markWrittenBindings(ctx)
 
   // BF052: init statements that write to an identifier with no visible
   // declaration cause a ReferenceError in ESM strict mode. Flag them
@@ -5011,6 +5013,69 @@ function markMutatedConstants(ctx: AnalyzerContext): void {
   for (const constant of ctx.localConstants) {
     if (mutatedNames.has(constant.name)) constant.mutatedAfterDeclaration = true
   }
+}
+
+/**
+ * Flag the component-scope bindings the component writes anywhere in its
+ * body, nested functions and markup included (`collectAssignmentTargets`),
+ * which `markMutatedConstants` does not see: it reads only the top-level
+ * statements, up to the first nested function.
+ *
+ *   - A destructured prop parameter that is written gets
+ *     `ParamInfo.reassigned`: it is a local the component owns, so the
+ *     client never rewrites it into a live prop read (`++start` would become
+ *     `++(_p.start ?? 0)`, a SyntaxError).
+ *   - A `localConstants` binding a write changes during render (a markup
+ *     expression, not an event handler) gets `mutatedAfterDeclaration`, like
+ *     a top-level statement's write: its declared value is no longer what a
+ *     later read sees, so nothing inlines it (`{++nextId}` would become
+ *     `++(0)`). A write in an event handler or another callback leaves the
+ *     declared value in place for render, so the binding stays inlinable.
+ */
+function markWrittenBindings(ctx: AnalyzerContext): void {
+  const node = ctx.componentNode
+  const body = node?.body
+  if (!body) return
+  const params = ctx.propsObjectName === null ? ctx.propsParams.filter(p => !p.isRest) : []
+  const names = new Set<string>([...params.map(p => p.name), ...ctx.localConstants.map(c => c.name)])
+  if (names.size === 0) return
+
+  const written = new Map<string, 'render' | 'deferred'>()
+  const roots: readonly ts.Node[] = ts.isBlock(body) ? body.statements : [body]
+  for (const root of roots) {
+    for (const id of collectAssignmentTargets(root, names)) {
+      if (written.get(id.text) === 'render') continue
+      written.set(id.text, writesDuringRender(id, root) ? 'render' : 'deferred')
+    }
+  }
+  if (written.size === 0) return
+
+  for (const p of params) {
+    if (written.has(p.name)) p.reassigned = true
+  }
+  for (const c of ctx.localConstants) {
+    if (written.get(c.name) === 'render') c.mutatedAfterDeclaration = true
+  }
+}
+
+/**
+ * Whether the write `id` (inside the component-body statement `root`) runs
+ * while the component renders. Markup runs during render, so a write inside
+ * a markup expression does, a callback it hands to `.map()` or a child prop
+ * included, unless an event-handler attribute (`onClick={…}`) encloses it:
+ * that runs on the event. Outside markup, a write runs during render unless
+ * a function literal encloses it (a handler `const add = () => ++nextId`).
+ */
+function writesDuringRender(id: ts.Identifier, root: ts.Node): boolean {
+  let inFunction = false
+  let inMarkup = false
+  for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
+    const parent = n.parent
+    if (ts.isJsxAttribute(parent) && ts.isIdentifier(parent.name) && isEventHandlerName(parent.name.text)) return false
+    if (ts.isJsxExpression(parent) || ts.isJsxSpreadAttribute(parent)) inMarkup = true
+    if (isFunctionScope(parent)) inFunction = true
+  }
+  return inMarkup || !inFunction
 }
 
 function validateInitStatementReferences(ctx: AnalyzerContext): void {

@@ -757,7 +757,7 @@
     },
     "packages/jsx/src/ir-to-client-js/csr-substitute.ts": {
       "csrSubstituteOnce/visit": [
-        37
+        29
       ]
     },
     "packages/jsx/src/ir-to-client-js/declaration-sort.ts": {
@@ -897,11 +897,6 @@
       ],
       "buildProfileReport": [
         55
-      ]
-    },
-    "packages/jsx/src/prop-rewrite.ts": {
-      "scopeFrameOf": [
-        27
       ]
     },
     "packages/jsx/src/relocate.ts": {

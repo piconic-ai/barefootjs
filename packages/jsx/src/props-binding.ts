@@ -327,6 +327,19 @@ export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> 
 const EMPTY_SET: ReadonlySet<string> = new Set()
 
 /**
+ * Whether client JS reads a destructured prop parameter as the live prop
+ * (`_p.<key> ?? <default>`) at each reference. Not when the component writes
+ * the binding (`ParamInfo.reassigned`): a write needs a local, so the init
+ * body declares one (`emitPropsExtraction`) and keeps every reference to it.
+ * The one rule for the init body's live-read rewrite
+ * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
+ * (`rewriteDestructuredPropsInExpr`) and that declaration.
+ */
+export function readsAsLiveProp(p: Pick<ParamInfo, 'reassigned'>): boolean {
+  return p.reassigned !== true
+}
+
+/**
  * The subset of `ParamInfo` a live prop read actually needs. A body-level
  * pure-alias local (`resolveBodyPropAliases`) has no real `ParamInfo` — it
  * never bound a parameter — so callers synthesize one of these instead of a
