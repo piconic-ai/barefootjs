@@ -115,6 +115,16 @@ export const renderDivergences: RenderDivergences = {
   // the template cannot inline the const through the shadowed name, and the
   // const itself is never set, so the read renders nothing.
   'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
+  // A destructure default that calls a callback and reads no earlier prop
+  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the SSR seed has no
+  // static value for it and the template applies no default, so an omitted
+  // prop renders empty.
+  'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  // The same default read only through a memo: the memo reads the prop
+  // without it.
+  'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

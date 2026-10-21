@@ -2772,6 +2772,38 @@
       }
     }
   ],
+  "destructure-default-body-renamed-callback-child": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    }
+  ],
+  "destructure-default-body-renamed-callback-earlier": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    }
+  ],
+  "destructure-default-body-renamed-callback-positions": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    }
+  ],
+  "destructure-default-body-renamed-callback-shadow": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    }
+  ],
   "destructure-default-body-renamed-computed-array": [
     {
       "name": "gen:a:empty",
