@@ -35,6 +35,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A const alias chain (`const a = children; const b = a`) read in a loop
+  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
+  // the template cannot inline the const through the shadowed name, and the
+  // const itself is never set, so the read renders nothing.
+  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the SSR seed has no
   // static value for it and the template applies no default, so an omitted

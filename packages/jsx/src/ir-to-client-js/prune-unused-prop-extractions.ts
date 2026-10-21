@@ -40,7 +40,7 @@ import { PROPS_PARAM } from './utils.ts'
  * Does `init` read `<objectName>.<key>` or `<objectName>.<key> ?? <fallback>`?
  * The one recognizer for "a prop read initializer", shared by
  * `propExtractionName` below (which additionally requires the bound name to
- * equal `key`, and always reads off `_p`), `rewriteBodyAliasReads`
+ * equal `key` unless `key` is `children`, and always reads off `_p`), `rewriteBodyAliasReads`
  * (`rewrite-destructured-props.ts`, which does not require the name match —
  * a renamed alias's bound name differs from `key` by definition, but also
  * always reads off `_p`), and `resolveBodyPropAliases` (`props-binding.ts`,
@@ -66,8 +66,11 @@ export function parsePropReadInitializer(
 }
 
 /** Is `stmt` a single-declarator `const X = _p.X…` prop extraction whose
- * initializer is `_p.X` or `_p.X ?? <default>`? Returns the bound name, or
- * null when the statement is anything else. */
+ * initializer is `_p.X` or `_p.X ?? <default>`? The children prop's
+ * extraction may bind another name (`const kids = _p.children`, a renamed
+ * `{ children: kids }`, #3572): its eager read is the hazard this pass
+ * removes, so it matches under any name. Returns the bound name, or null
+ * when the statement is anything else. */
 function propExtractionName(stmt: ts.Statement): string | null {
   if (!ts.isVariableStatement(stmt)) return null
   const decls = stmt.declarationList.declarations
@@ -76,7 +79,7 @@ function propExtractionName(stmt: ts.Statement): string | null {
   if (!ts.isIdentifier(decl.name) || !decl.initializer) return null
 
   const parsed = parsePropReadInitializer(decl.initializer)
-  if (parsed === null || parsed.key !== decl.name.text) return null
+  if (parsed === null || (parsed.key !== decl.name.text && parsed.key !== 'children')) return null
   return decl.name.text
 }
 

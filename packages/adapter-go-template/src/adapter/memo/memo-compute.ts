@@ -30,6 +30,7 @@ import {
   getSignalInitialValueAsGo,
   mapJoinChainToGo,
   matchMapJoinChain,
+  seedFallbackVar,
   unboxToGoScalar,
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
@@ -482,17 +483,23 @@ function signalSeedValueGo(
 }
 
 /**
- * Seed shapes that compute a value; a top-level `??` keeps its hoisted prop
- * fallback. A call (`Math.max(props.n ?? 0, 1)`, `(props.label ?? 'x')
- * .toUpperCase()`) computes one too (#3540), and so does a member read off a
- * computed value (`(props.label ?? '').length`, `[props.n].length`). A member
- * chain rooted at a name (`props.label`, `initial.address.city`) is a prop
- * passthrough or a prop member seed, resolved to its Input field elsewhere.
+ * Seed shapes that compute a value; a top-level `??` keeps its own path
+ * unless {@link isComputedNullishSeed} says otherwise. A call
+ * (`Math.max(props.n ?? 0, 1)`, `(props.label ?? 'x').toUpperCase()`)
+ * computes one too (#3540), and so does a member read off a computed value
+ * (`(props.label ?? '').length`, `[props.n].length`). A member chain rooted
+ * at a name (`props.label`, `initial.address.city`) is a prop passthrough or
+ * a prop member seed, resolved to its Input field elsewhere.
  */
-function isComputedSeedShape(e: ParsedExpr): boolean {
+function isComputedSeedShape(
+  ctx: GoEmitContext,
+  e: ParsedExpr,
+  propsParams: readonly { name: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): boolean {
   switch (e.kind) {
     case 'logical':
-      return e.op !== '??'
+      return e.op !== '??' || isComputedNullishSeed(ctx, e, propsParams, propFallbackVars)
     case 'binary':
     case 'conditional':
     case 'unary':
@@ -526,16 +533,49 @@ export function computedPropSeedGo(
   if (!parsed) return null
   // A seed reading a boxed dependent-default prop is evaluated whatever its
   // shape, a bare read included, so it converts to the seed's type (#3531).
-  if (!isComputedSeedShape(parsed) && !readsBoxedDependentDefaultProp(ctx, parsed)) return null
+  if (!isComputedSeedShape(ctx, parsed, propsParams, propFallbackVars) && !readsBoxedDependentDefaultProp(ctx, parsed)) return null
   // A prop member chain inside the seed keeps its own refusal (#3142).
   if (embeddedPropMemberChain(ctx, parsed, propsParams)) return null
-  // `freeIdentifiers`, not `freeVarsInBody`: the latter skips the receiver
-  // of a string method (`(props.label ?? 'x').toUpperCase()`).
-  const readsProp = [...(freeIdentifiers(parsed) ?? [])].some(
+  if (!readsPropName(ctx, parsed, propsParams)) return null
+  return evalExprGo(ctx, parsed, [], propsParams, propFallbackVars, new Set())
+}
+
+/**
+ * Whether `e` reads the props object or a prop binding. `freeIdentifiers`,
+ * not `freeVarsInBody`: the latter skips the receiver of a string method
+ * (`(props.label ?? 'x').toUpperCase()`).
+ */
+function readsPropName(ctx: GoEmitContext, e: ParsedExpr, propsParams: readonly { name: string }[]): boolean {
+  return [...(freeIdentifiers(e) ?? [])].some(
     name => name === ctx.state.propsObjectName || propsParams.some(p => p.name === name),
   )
-  if (!readsProp) return null
-  return evalExprGo(ctx, parsed, [], propsParams, propFallbackVars, new Set())
+}
+
+/**
+ * Whether a top-level `??` seed is evaluated (#3577) instead of seeding the
+ * left prop through its hoisted fallback local or its Input field:
+ *
+ * - a fallback operand reads a prop (`props.b ?? props.a`,
+ *   `props.b ?? props.a ?? 'z'`), which the field path drops, seeding
+ *   `in.B` alone;
+ * - `props.X ?? <literal>` while the prop's hoisted local carries a
+ *   different literal: that local is another seed's value, such as a
+ *   sibling `props.X ?? 'y'` or a destructure default the seed plan inlined
+ *   (`const { x: local = 'd' } = props` reads as `props.x ?? 'd'`).
+ */
+function isComputedNullishSeed(
+  ctx: GoEmitContext,
+  e: Extract<ParsedExpr, { kind: 'logical' }>,
+  propsParams: readonly { name: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): boolean {
+  let operand: ParsedExpr = e
+  while (operand.kind === 'logical' && operand.op === '??') {
+    if (readsPropName(ctx, operand.right, propsParams)) return true
+    operand = operand.left
+  }
+  const match = ctx.extractPropFallbackFromParsed(e)
+  return match !== null && propFallbackVars.has(match.propName) && seedFallbackVar(ctx, e, propFallbackVars) === undefined
 }
 
 /**

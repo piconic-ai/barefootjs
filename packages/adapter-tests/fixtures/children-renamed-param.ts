@@ -34,12 +34,12 @@ export function Leaf() {
   expectedHtml: `
     <main bf-s="test">
       <div bf-s="test_s1" class="renamed">
-        <p bf="s1"><!--bf:s0--><span bf-s="test_s0" class="leaf">leaf</span><!--/--></p>
-        <p bf="s3"><!--bf:s2--><span bf-s="test_s0" class="leaf">leaf</span><!--/--></p>
+        <p><span bf-s="test_s0" class="leaf">leaf</span></p>
+        <p><span bf-s="test_s0" class="leaf">leaf</span></p>
       </div>
       <div bf-s="test_s2" class="renamed">
-        <p bf="s1"><!--bf:s0--><!--/--></p>
-        <p bf="s3"><!--bf:s2-->&lt;b&gt;fallback&lt;/b&gt;<!--/--></p>
+        <p></p>
+        <p>&lt;b&gt;fallback&lt;/b&gt;</p>
       </div>
     </main>
   `,

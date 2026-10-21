@@ -199,9 +199,6 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // the earlier explicit prop is kept: the same output the template backends
   // render for this fixture.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
-  // The renamed param is a reactive slot, and a slotted read escapes the
-  // children markup (`escapeTextOrMarkup`).
-  'children-renamed-param': { limitation: 'renamed-children-param' },
   // The memo body reads the binding as a const, which the client template
   // cannot inline while its default holds a callback.
   'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },

@@ -1478,6 +1478,60 @@
         "attribute"
       ]
     },
+    "children-alias-hop": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-alias-hop-fragment-root": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "children-alias-hop-shadowed-intermediate": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "children-alias-loop-shadow": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",
@@ -1502,6 +1556,29 @@
         "text"
       ]
     },
+    "children-local-binds-other-prop": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-local-nullable-attr": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "children-named-local-escaped": {
       "kinds": [
         "array-method",
@@ -1518,6 +1595,18 @@
       ]
     },
     "children-named-loop-row-escaped": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "children-named-loop-row-key": {
       "kinds": [
         "identifier",
         "member"
@@ -1621,6 +1710,16 @@
         "text"
       ]
     },
+    "children-renamed-beside-children-local": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-renamed-param": {
       "kinds": [
         "identifier",
@@ -1630,6 +1729,32 @@
       "axes": [
         "literal:string",
         "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-renamed-param-conditional": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "children-renamed-param-fallback-shapes": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
       ],
       "contexts": [
         "text"
@@ -6881,6 +7006,26 @@
         "text"
       ]
     },
+    "memo-prop-read-beside-signal-nullish-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo-string-concat-signal": {
       "kinds": [
         "binary",
@@ -10479,6 +10624,43 @@
         "text"
       ]
     },
+    "signal-seed-dependent-default-nullish-literal": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-dependent-default-nullish-literal-body": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "signal-seed-local-helper-call": {
       "kinds": [
         "arrow",
@@ -10495,6 +10677,56 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "signal-seed-prop-nullish-prop-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-prop-nullish-prop-fallback-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-renamed-default-beside-raw-nullish": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
       ]
     },
     "signal-with-fallback": {

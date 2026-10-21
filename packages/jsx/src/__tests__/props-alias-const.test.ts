@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { analyzeComponent } from '../analyzer.ts'
 import { isPropsAliasConst, isRenamedBodyPropParam } from '../props-binding.ts'
+import { isChildrenPropParam } from '../types.ts'
 
 /**
  * Whether a const reads as its own prop (#3501): a bare `props.X` read, or
@@ -99,5 +100,16 @@ describe('isRenamedBodyPropParam', () => {
 
   test('a hand-written `?? default` const is not', () => {
     expect(renamedOf("const other = props.label ?? 'Default'", 'other')).toBe(false)
+  })
+
+  test('a renamed binding of the children prop reads as the children prop', () => {
+    const ctx = analyzeComponent(
+      "'use client'\nexport function S(props: { children?: unknown }) {\n  const { children: kids = 'none' } = props\n  return <p>{kids}</p>\n}",
+      'S.tsx',
+    )
+    const kids = ctx.localConstants.find(x => x.name === 'kids')!
+    expect(isRenamedBodyPropParam(kids, ctx.propsParams)).toBe(true)
+    const entry = ctx.propsParams.find(p => p.name === 'kids')!
+    expect(isChildrenPropParam(entry)).toBe(true)
   })
 })

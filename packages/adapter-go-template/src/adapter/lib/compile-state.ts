@@ -113,6 +113,16 @@ export class CompileState {
   propDestructureAliases: Map<string, string> = new Map()
 
   /**
+   * Caller-facing prop key → the Props field the prop is held in
+   * (`propsFieldNames`), for a `props.<key>` read (`propKeyFieldRef`). A
+   * key is not a local name, so it never goes through
+   * `propDestructureAliases`: a body local named like the key
+   * (`const { label: children } = props` beside `props.children`) is a
+   * different value (#3572).
+   */
+  propKeyFields: Map<string, string> = new Map()
+
+  /**
    * Every name a `.map()`/`.filter()` loop callback binds as its item/index
    * parameter anywhere in the component (#2208 fable review). Consulted by
    * static loop-source resolution (`getBakedStaticChildLoop`) so a const

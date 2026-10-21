@@ -25,7 +25,7 @@
  */
 
 import ts from 'typescript'
-import type { PropUsage } from '../types.ts'
+import { type PropUsage, isChildrenPropParam } from '../types.ts'
 import { computePropsUsedAsConditions } from './compute-prop-usage.ts'
 import { boundPropLocalNames, livePropReadExpr, resolveBodyPropAliases, type LivePropReadInfo } from '../props-binding.ts'
 import { parsePropReadInitializer } from './prune-unused-prop-extractions.ts'
@@ -54,7 +54,8 @@ export function rewriteDestructuredPropReads(
  * handler-local `const title = 'local'` keep their own binding even when
  * `title` is also a prop name.
  *
- * Excluding `children`: reading `_p.children` live re-invokes a getter that
+ * Excluding the children prop (`isChildrenPropParam`, renamed or not):
+ * reading `_p.children` live re-invokes a getter that
  * instantiates child components (see `emitPropsExtraction`) — `children`
  * must stay a captured-once read, by design.
  *
@@ -74,7 +75,7 @@ function rewriteParamDestructuredReads(
   propUsage: ReadonlyMap<string, PropUsage>,
 ): string {
   const names = new Set(boundPropLocalNames(ctx))
-  names.delete('children')
+  for (const p of ctx.propsParams) if (isChildrenPropParam(p)) names.delete(p.name)
   if (names.size === 0) return code
 
   const propsUsedAsConditions = computePropsUsedAsConditions(ctx, names)

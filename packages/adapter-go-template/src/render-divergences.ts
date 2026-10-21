@@ -101,7 +101,17 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`evaluated-nullish-absent-prop`): an optional prop under `??` in an
 // evaluated seed takes the nillable field, so the evaluator gets `nil` for an
 // absent one.
+//
+// #3572 graduated `children-renamed-param` (`renamed-children-param`): a
+// children prop renamed in the parameter destructure (`{ children: kids }`)
+// is held in the `Children` field the parent's children populate, not in a
+// never-set field named after the local (`Kids`).
 export const renderDivergences: RenderDivergences = {
+  // A const alias chain (`const a = children; const b = a`) read in a loop
+  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
+  // the template cannot inline the const through the shadowed name, and the
+  // const itself is never set, so the read renders nothing.
+  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the SSR seed has no
   // static value for it and the template applies no default, so an omitted
@@ -112,10 +122,6 @@ export const renderDivergences: RenderDivergences = {
   // The same default read only through a memo: the memo reads the prop
   // without it.
   'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },
-  // A children prop renamed in the parameter destructure (`{ children: kids }`):
-  // the renamed `Kids` field reads nil when the parent passes children, so
-  // present children are dropped and the `??` fallback renders.
-  'children-renamed-param': { limitation: 'renamed-children-param' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).
@@ -135,6 +141,11 @@ export const renderDivergences: RenderDivergences = {
   // `remainder-nan-operand` used to sit here: `bf_mod` converted both
   // operands to `int`, so `NaN % 2` rendered an integer. It now computes
   // JS's truncated remainder (#3474).
+  // A memo reading an optional prop raw (`props.b`, `props.n * 2`) beside a
+  // signal seeded by `props.b ?? 'y'`: the memo seed reads the hoisted
+  // fallback local (`propFallbackVars`), so an omitted prop renders the
+  // signal's fallback instead of `undefined` / `NaN`.
+  'memo-prop-read-beside-signal-nullish-seed': { limitation: 'memo-prop-read-takes-signal-nullish-fallback' },
   // `object-signal-field-length` used to sit here: `.length` on a loop
   // item's field inside a `.filter()` predicate never matched. It now reads
   // through `bf_length` inline and the evaluator counts a typed slice (#3447).
@@ -256,4 +267,6 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   'destructure-default-param-chain-order:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
   'destructure-default-body-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
   'destructure-default-param-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'signal-seed-dependent-default-nullish-literal:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  'signal-seed-dependent-default-nullish-literal-body:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
 }

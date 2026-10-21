@@ -40,6 +40,18 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A destructure default that calls a callback and reads no earlier prop
+  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the SSR seed has no
+  // static value for it and the template applies no default, so an omitted
+  // prop renders empty.
+  'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  // A const alias chain (`const a = children; const b = a`) read in a loop
+  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
+  // the template cannot inline the const through the shadowed name, and the
+  // const itself is never set, so the read renders nothing.
+  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).
