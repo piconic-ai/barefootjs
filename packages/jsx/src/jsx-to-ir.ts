@@ -55,7 +55,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, isRenamedBodyPropParam, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, isRenamedBodyPropParam, keepsDeclaredValue, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -776,6 +776,12 @@ function propShadowingNames(analyzer: AnalyzerContext): Set<string> {
   }
   for (const m of analyzer.memos) shadowed.add(m.name)
   for (const c of analyzer.localConstants) {
+    // A body destructure binding that is reassigned or mutated no longer
+    // holds its prop, renamed or not, so the template keeps it a local.
+    if (c.propsDestructure && !keepsDeclaredValue(c)) {
+      shadowed.add(c.name)
+      continue
+    }
     if (isPropsAliasConst(c, analyzer.propsObjectName)) continue
     // A renamed body binding with a default reads as its own prop entry,
     // like the parameter form (#3579).

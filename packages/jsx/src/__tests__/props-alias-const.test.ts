@@ -84,6 +84,15 @@ describe('isRenamedBodyPropParam', () => {
     expect(renamedOf("const { label: other = ['y', ''].filter((x) => x !== '').join() } = props", 'other')).toBe(true)
   })
 
+  test('a renamed let binding is not, reassigned or not', () => {
+    expect(renamedOf("let { label: other = 'Default' } = props", 'other')).toBe(false)
+    expect(renamedOf("let { label: other = 'Default' } = props\n  other = other + '!'", 'other')).toBe(false)
+  })
+
+  test('a renamed binding mutated in place is not', () => {
+    expect(renamedOf("const { label: other = ['x'] } = props\n  other.push('y')", 'other')).toBe(false)
+  })
+
   test('a renamed binding without a default is not', () => {
     expect(renamedOf('const { label: other } = props', 'other')).toBe(false)
   })
