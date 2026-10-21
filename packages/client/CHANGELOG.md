@@ -1,5 +1,12 @@
 # @barefootjs/client
 
+## 0.39.8
+
+### Patch Changes
+
+- 64c90f4: A text update on a comment-scoped component whose root also carries its own scope now lands in that component's own text slot. Before, `$t` could pick a same-numbered slot inside a nested child component and write the update there; it now uses the same ownership rule as slot claiming.
+- @barefootjs/shared@0.39.8
+
 ## 0.39.7
 
 ### Patch Changes
