@@ -3,7 +3,7 @@
  * `const children = _p.children [?? <default>]` (or `const kids =
  * _p.children` for a renamed `{ children: kids }`), and `let start =
  * _p.start [?? <default>]` for each prop the component writes
- * (`ParamInfo.reassigned`, see `readsAsLiveProp`).
+ * (`ParamInfo.reassigned`, see `keepsDeclaredValue`).
  *
  * `children` must stay a ONE-TIME read: a prop's slot-children value is a
  * getter that INSTANTIATES child components when read (see
@@ -23,7 +23,7 @@
 
 import { type PropUsage, isChildrenPropParam } from '../../types.ts'
 import { computePropsUsedAsConditions } from '../compute-prop-usage.ts'
-import { propReadBase, propReadFallback, readsAsLiveProp } from '../../props-binding.ts'
+import { propReadBase, propReadFallback, keepsDeclaredValue } from '../../props-binding.ts'
 import type { ClientJsContext } from '../types.ts'
 
 export function emitPropsExtraction(
@@ -49,7 +49,7 @@ export function emitPropsExtraction(
   const fallback = propReadFallback(prop, propUsage.get(local), usedAsCondition)
   const read = propReadBase(prop) + (fallback === null ? '' : ` ?? ${fallback}`)
   // A children binding the component writes needs a `let` to take the write.
-  lines.push(`  ${readsAsLiveProp(prop) ? 'const' : 'let'} ${local} = ${read}`, '')
+  lines.push(`  ${keepsDeclaredValue(prop) ? 'const' : 'let'} ${local} = ${read}`, '')
 }
 
 /**
@@ -59,7 +59,7 @@ export function emitPropsExtraction(
  * since a write is itself a use.
  */
 function emitWrittenPropLocals(lines: string[], ctx: ClientJsContext, propUsage: Map<string, PropUsage>): void {
-  const written = ctx.propsParams.filter(p => !p.isRest && !isChildrenPropParam(p) && !readsAsLiveProp(p))
+  const written = ctx.propsParams.filter(p => !p.isRest && !isChildrenPropParam(p) && !keepsDeclaredValue(p))
   if (written.length === 0) return
   const usedAsCondition = computePropsUsedAsConditions(ctx, new Set(written.map(p => p.name)))
   for (const prop of written) {

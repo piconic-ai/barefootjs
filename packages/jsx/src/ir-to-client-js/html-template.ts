@@ -18,7 +18,7 @@ import { BindingScope } from '../scope/binding-scope.ts'
 import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, withOuterBindings, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
-import { readsAsLiveProp } from '../props-binding.ts'
+import { keepsDeclaredValue } from '../props-binding.ts'
 
 /**
  * Split a template literal body into static segments and `${...}` interpolations,
@@ -2367,7 +2367,10 @@ function propResolvesUnsafe(
   switch (prop.value.kind) {
     case 'expression':
     case 'spread':
-      source = prop.value.expr
+      // The same text the CSR `component` emit reads (`transformExpr(expr,
+      // templateExpr)`): a prop read Phase 1 already lowered to
+      // `_p.<key> ?? <default>` in `templateExpr` names no init local (#3579).
+      source = prop.value.templateExpr ?? prop.value.expr
       break
     case 'template':
       source = attrValueToString(prop.value, { useTemplate: true }) ?? undefined
@@ -2406,7 +2409,7 @@ export function computeDeferredChildSlots(
   // A prop can also be dropped for writing a binding (`get={() => ++start}`,
   // see `transformExpr`), which only a prop the component writes can do
   // once its written locals are already in `unsafeLocalNames`.
-  const writesProp = ctx.propsParams.some(p => !readsAsLiveProp(p))
+  const writesProp = ctx.propsParams.some(p => !keepsDeclaredValue(p))
   if (!writesProp && (!unsafeLocalNames || unsafeLocalNames.size === 0)) return deferred
   const unsafe = unsafeLocalNames ?? new Set<string>()
   const env = buildCsrEnvForCtx(ctx, inlinableConstants, propsObjectName)

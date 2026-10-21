@@ -1042,6 +1042,14 @@ import { fixture as destructureDefaultBodyRenamed } from './destructure-default-
 import { fixture as destructureDefaultParamRenamed } from './destructure-default-param-renamed'
 import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
 import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
+import { fixture as destructureDefaultBodyRenamedCallback } from './destructure-default-body-renamed-callback'
+import { fixture as destructureDefaultBodyRenamedCallbackPositions } from './destructure-default-body-renamed-callback-positions'
+import { fixture as destructureDefaultBodyRenamedCallbackChild } from './destructure-default-body-renamed-callback-child'
+import { fixture as destructureDefaultBodyRenamedCallbackShadow } from './destructure-default-body-renamed-callback-shadow'
+import { fixture as destructureDefaultBodyRenamedCallbackEarlier } from './destructure-default-body-renamed-callback-earlier'
+import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destructure-default-body-renamed-callback-memo'
+import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
+import { fixture as destructureDefaultParamRenamedCallback } from './destructure-default-param-renamed-callback'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
 import { fixture as objectSignalFieldLength } from './object-signal-field-length'
@@ -1805,6 +1813,14 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultParamRenamed,
   destructureDefaultBodyRenamedComputedArray,
   destructureDefaultParamComputedArray,
+  destructureDefaultBodyRenamedCallback,
+  destructureDefaultBodyRenamedCallbackPositions,
+  destructureDefaultBodyRenamedCallbackChild,
+  destructureDefaultBodyRenamedCallbackShadow,
+  destructureDefaultBodyRenamedCallbackEarlier,
+  destructureDefaultBodyRenamedCallbackMemo,
+  destructureDefaultBodyCallback,
+  destructureDefaultParamRenamedCallback,
   capturedMarkupEscaping,
   optionalChainMethodCall,
   objectSignalFieldLength,

@@ -23,6 +23,8 @@ import ts from 'typescript'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { isAssignmentTargetIdentifier } from '../assignment-target'
+import { analyzeComponent } from '../analyzer'
+import { keepsDeclaredValue } from '../props-binding'
 
 const adapter = new TestAdapter()
 const transpiler = new Bun.Transpiler({ loader: 'js' })
@@ -250,5 +252,32 @@ describe('isAssignmentTargetIdentifier', () => {
     ]) {
       expect({ code, t: targets(code, 'x').every(t => !t) }).toEqual({ code, t: true })
     }
+  })
+})
+
+describe('one notion of a written binding', () => {
+  test('a binding the analyzer marks written fails keepsDeclaredValue, a prop and a body binding alike', () => {
+    const ctx = analyzeComponent(
+      `'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function C({ start = 0, step = 1 }: { start?: number; step?: number }) {
+        const [n, setN] = createSignal(0)
+        let nextId = 0
+        const label = 'x'
+        const add = () => { start += step; setN(++nextId) }
+        return <div><button onClick={add}>{label}</button><p>{n()}</p></div>
+      }`,
+      'C.tsx',
+    )
+    const param = (name: string) => ctx.propsParams.find(p => p.name === name)!
+    const local = (name: string) => ctx.localConstants.find(c => c.name === name)!
+    expect(param('start').reassigned).toBe(true)
+    expect(keepsDeclaredValue(param('start'))).toBe(false)
+    expect(keepsDeclaredValue(param('step'))).toBe(true)
+    expect(local('nextId').reassigned).toBe(true)
+    expect(keepsDeclaredValue(local('nextId'))).toBe(false)
+    // A handler's write leaves the declared value for render.
+    expect(local('nextId').mutatedAfterDeclaration).toBeUndefined()
+    expect(keepsDeclaredValue(local('label'))).toBe(true)
   })
 })

@@ -5021,10 +5021,10 @@ function markMutatedConstants(ctx: AnalyzerContext): void {
  * which `markMutatedConstants` does not see: it reads only the top-level
  * statements, up to the first nested function.
  *
- *   - A destructured prop parameter that is written gets
- *     `ParamInfo.reassigned`: it is a local the component owns, so the
- *     client never rewrites it into a live prop read (`++start` would become
- *     `++(_p.start ?? 0)`, a SyntaxError).
+ *   - Every written binding gets `reassigned` (`ParamInfo` and
+ *     `ConstantInfo` alike), so it fails `keepsDeclaredValue`: it is a local
+ *     the component owns, never rewritten into a live prop read (`++start`
+ *     would become `++(_p.start ?? 0)`, a SyntaxError).
  *   - A `localConstants` binding a write changes during render (a markup
  *     expression, not an event handler) gets `mutatedAfterDeclaration`, like
  *     a top-level statement's write: its declared value is no longer what a
@@ -5054,7 +5054,9 @@ function markWrittenBindings(ctx: AnalyzerContext): void {
     if (written.has(p.name)) p.reassigned = true
   }
   for (const c of ctx.localConstants) {
-    if (written.get(c.name) === 'render') c.mutatedAfterDeclaration = true
+    const when = written.get(c.name)
+    if (when) c.reassigned = true
+    if (when === 'render') c.mutatedAfterDeclaration = true
   }
 }
 

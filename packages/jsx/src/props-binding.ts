@@ -97,6 +97,61 @@ export function isPropsAliasConst(
 }
 
 /**
+ * Whether a component-scope binding keeps the value its declaration gives
+ * it, so it may be read as the prop it was destructured from (a live
+ * `_p.<key> ?? <default>` read).
+ *
+ *   - A body binding (`ConstantInfo`) must be a `const` nothing mutates
+ *     after the declaration. A `let` may be reassigned (`local =
+ *     ['changed']`, or a folded `if (!local) local = 'y'`) and a mutated
+ *     value (`items.push(x)`, `markMutatedConstants`) has changed.
+ *   - A destructured prop parameter (`ParamInfo`, no declaration kind)
+ *     keeps the value the caller passed unless the component writes it.
+ *
+ * Either way a binding the component writes anywhere (`reassigned`, set on
+ * both by `markWrittenBindings`, analyzer.ts) does not: a write needs a
+ * local, so the init body declares one (`emitPropsExtraction`) and keeps
+ * every reference to it. The one rule for every site that turns a props
+ * binding into a live prop read: the init body's alias rewrite
+ * (`resolveBodyPropAliases`) and parameter rewrite
+ * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
+ * (`rewriteDestructuredPropsInExpr`), and the template's prop shadow guard
+ * (`propShadowingNames`, `jsx-to-ir.ts`, #3579).
+ */
+export function keepsDeclaredValue(
+  b: { declarationKind?: ConstantInfo['declarationKind']; mutatedAfterDeclaration?: boolean; reassigned?: boolean },
+): boolean {
+  if (b.reassigned === true || b.mutatedAfterDeclaration === true) return false
+  return b.declarationKind === undefined || b.declarationKind === 'const'
+}
+
+/**
+ * Whether a renamed binding of a body destructure (`const { b: local = d } =
+ * props`) is a prop under its local name: the analyzer gives such a binding
+ * with a default its own `ParamInfo` (`name: local`, `sourceName: b`, the
+ * default's fields), the same entry the parameter form `function C({ b:
+ * local = d })` has. A template then reads the prop through that entry
+ * (`livePropReadExpr`), default included, instead of inlining the const.
+ *
+ * Only a binding that keeps its declared value (`keepsDeclaredValue`): a
+ * reassigned or mutated one stays a local and keeps the unsafe-local path
+ * (an empty slot, a deferred child).
+ *
+ * Kept apart from `isPropsAliasConst`: that one also decides relocate's
+ * binding kind, whose `prop` lift reads `_p.<key>` without a default, so a
+ * renamed binding classified there would lose its default.
+ */
+export function isRenamedBodyPropParam(
+  c: Pick<ConstantInfo, 'name' | 'propsDestructure' | 'declarationKind' | 'mutatedAfterDeclaration' | 'reassigned'>,
+  propsParams: readonly ParamInfo[],
+): boolean {
+  const key = c.propsDestructure?.sourceKey
+  if (key === undefined || key === c.name) return false
+  if (!keepsDeclaredValue(c)) return false
+  return propsParams.some(p => !p.isRest && p.name === c.name && p.sourceName === key)
+}
+
+/**
  * How a parsed signal initializer reads a prop: a member chain rooted at the
  * props object (`props.<name>`, `props.row.count`, `props.items[0]`) or a
  * destructured binding `<name>`, bare or under a `??` / `||` fallback chain
@@ -276,7 +331,7 @@ export function resolveBodyPropAliases(
   if (propsObjectName === null) return aliases
   for (const c of localConstants) {
     if (c.isModule || !c.value) continue
-    if (requireLiveRewriteSafe && (c.declarationKind !== 'const' || c.mutatedAfterDeclaration)) continue
+    if (requireLiveRewriteSafe && !keepsDeclaredValue(c)) continue
     // Re-parse `value` (rather than walking `c.parsed`) so the default's
     // SOURCE TEXT is available verbatim — `ParsedExpr` structures the
     // default but doesn't retain its original formatting, and this reuses
@@ -326,18 +381,6 @@ export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> 
 
 const EMPTY_SET: ReadonlySet<string> = new Set()
 
-/**
- * Whether client JS reads a destructured prop parameter as the live prop
- * (`_p.<key> ?? <default>`) at each reference. Not when the component writes
- * the binding (`ParamInfo.reassigned`): a write needs a local, so the init
- * body declares one (`emitPropsExtraction`) and keeps every reference to it.
- * The one rule for the init body's live-read rewrite
- * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
- * (`rewriteDestructuredPropsInExpr`) and that declaration.
- */
-export function readsAsLiveProp(p: Pick<ParamInfo, 'reassigned'>): boolean {
-  return p.reassigned !== true
-}
 
 /**
  * The subset of `ParamInfo` a live prop read actually needs. A body-level
