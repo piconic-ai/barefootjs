@@ -1,5 +1,11 @@
 # @barefootjs/chart
 
+## 0.39.8
+
+### Patch Changes
+
+- 2edbca9: `buildPieSlices` accepts an absent `nameKey`, matching the optional `<Pie nameKey>` prop that passes it through. Without one, every slice stays unnamed, as before.
+
 ## 0.39.7
 
 No changes in this release.
