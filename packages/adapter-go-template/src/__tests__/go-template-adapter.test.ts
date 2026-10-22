@@ -248,7 +248,8 @@ export function Label() {
 `, adapter)
     const { template } = adapter.generate(ir)
     expect(template).not.toContain('{{count: ')
-    expect(template).toContain('count: {{.N}}')
+    // A `number` signal prints through `bf_string` (JS number spelling).
+    expect(template).toContain('count: {{bf_string .N}}')
   })
 
   // A bare string literal that merely *contains* `{{` (NOT a template literal)
@@ -599,14 +600,32 @@ export function N(props: { value: number }) {
     expect(template).toContain('v={{bf_string (bf_mul .Value 2)}}')
   })
 
-  test('a plain prop read and a string concat are left alone or harmlessly wrapped', () => {
+  test('a plain number prop read is wrapped; a string read is left alone and a string concat harmlessly wrapped', () => {
+    // A `number` prop is a `float64` field, which `fmt.Sprint` would print
+    // as `1.5e+06` from a million on.
     const { template } = compileAndGenerate(`
 export function N(props: { value: number; a: string; b: string }) {
-  return <div><i>{props.value}</i><b>{props.a + props.b}</b></div>
+  return <div><i>{props.value}</i><b>{props.a + props.b}</b><s>{props.a}</s></div>
 }
 `)
-    expect(template).toContain('{{bfTextStart "s0"}}{{.Value}}{{bfTextEnd}}')
+    expect(template).toContain('{{bfTextStart "s0"}}{{bf_string .Value}}{{bfTextEnd}}')
     expect(template).toContain('{{bf_string (bf_concat_str .A .B)}}')
+    expect(template).toContain('{{bfTextStart "s4"}}{{.A}}{{bfTextEnd}}')
+  })
+
+  test('a useContext local with a number default is a float64 printed through bf_string', () => {
+    const { template, types } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const LimitContext = createContext(1500000)
+export function LimitLabel() {
+  const limit = useContext(LimitContext)
+  return <span data-limit={limit}>{limit}</span>
+}
+`)
+    expect(types).toMatch(/^\s+Limit float64\b/m)
+    expect(template).toContain('data-limit="{{bf_string .Limit}}"')
+    expect(template).toContain('{{bf_string .Limit}}')
   })
 })
 
@@ -744,8 +763,8 @@ export function Counter(props: { initial?: number }) {
       expect(result.types).toContain('package components')
       expect(result.types).toContain('type CounterProps struct')
       expect(result.types).toContain('ScopeID string')
-      expect(result.types).toContain('Initial int')
-      expect(result.types).toContain('Count int')
+      expect(result.types).toContain('Initial float64')
+      expect(result.types).toContain('Count float64')
     })
 
     test('module pure-string const referenced in className inlines the literal (#1467 Phase 2b)', () => {
@@ -826,12 +845,12 @@ export function TodoApp(props: { initial?: Todo[] }) {
       expect(result.types).toContain('props.TodoItems[i].BfMount =')
     })
 
-    test('signal initialized via `(props.X ?? []).length` lands as int, not []T (#1442 echo TodoApp repro)', () => {
+    test('signal initialized via `(props.X ?? []).length` lands as a number, not []T (#1442 echo TodoApp repro)', () => {
       // Regression: the seed's prop passthrough (now `seedPassthroughPropName`) greedily matched
       // any `(props.X ?? Y).<something>` shape and propagated the prop's
       // Go type ([]Todo) to the signal field, even when the trailing
       // accessor (`.length`) transformed the expression to a number.
-      // The signal was `Seq []Todo` instead of `Seq int`, which is
+      // The signal was `Seq []Todo` instead of a number, which is
       // technically a Go compile error if the field is consumed
       // arithmetically — runtime behaviour was a silent wrong-type
       // initialisation.
@@ -851,8 +870,9 @@ export function TodoApp(props: { initial?: Todo[] }) {
 }
 `)
       const result = adapter.generate(ir)
-      // Signal seeded from `.length` of an array → number → Go int.
-      expect(result.types).toContain('Seq int')
+      // Signal seeded from `.length` of an array → number → Go float64,
+      // the Go type of every TS `number` signal.
+      expect(result.types).toContain('Seq float64')
       // Memos whose body is a `.length` chain → also int (analyzer
       // now runs inferTypeFromValue on the arrow body for memos).
       expect(result.types).toContain('Remaining int')
@@ -891,8 +911,8 @@ export function Counter(props: { initial?: number }) {
       // The fallback applies only when the prop is ABSENT: an explicit
       // `Initial: 0` is honoured (JS `0 ?? 99` is `0`, #2248).
       expect(types).toContain('Initial interface{}')
-      expect(types).toContain('var initial int = 99')
-      expect(types).toMatch(/if in\.Initial != nil \{\s*initial = bf\.ToInt\(in\.Initial\)\s*\}/)
+      expect(types).toContain('var initial float64 = 99')
+      expect(types).toMatch(/if in\.Initial != nil \{\s*initial = bf\.ToFloat64\(in\.Initial\)\s*\}/)
 
       // Signal and memo reference the hoisted variable; the prop field keeps
       // the caller's value, since no signal shares it (#3577).
@@ -1012,8 +1032,8 @@ export function Counter({ size }: { size?: number }) {
       const result = adapter.generate(ir)
       const types = result.types!
       expect(types).toContain('Size interface{}')
-      expect(types).toContain('var size int = 1')
-      expect(types).toMatch(/if in\.Size != nil \{\s*size = bf\.ToInt\(in\.Size\)\s*\}/)
+      expect(types).toContain('var size float64 = 1')
+      expect(types).toMatch(/if in\.Size != nil \{\s*size = bf\.ToFloat64\(in\.Size\)\s*\}/)
       expect(types).toContain('Size: in.Size,')
       expect(types).toContain('Count: size,')
     })
@@ -1036,7 +1056,7 @@ export function Counter({ size }: { size?: number }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      expect(types).toContain('Size int')
+      expect(types).toContain('Size float64')
       expect(types).not.toContain('Size interface{}')
       expect(types).toContain('Size: in.Size,')
       expect(types).toContain('Count: in.Size,')
@@ -1063,7 +1083,7 @@ export function Counter(${params}) {
 `, adapter)
         const types = adapter.generate(ir).types!
         expect(types).toContain('Size interface{}')
-        expect(types).toContain('var size int = -1')
+        expect(types).toContain('var size float64 = -1')
         expect(types).toContain('Count: size,')
       }
     })
@@ -1100,9 +1120,9 @@ export function Counter({ size = 5 }: { size?: number }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      expect(types).toContain('Size int')
+      expect(types).toContain('Size float64')
       expect(types).not.toContain('Size interface{}')
-      expect(types).toContain('Size: func() int { if in.Size == 0 { return 5 }; return in.Size }(),')
+      expect(types).toContain('Size: func() float64 { if in.Size == 0 { return 5 }; return in.Size }(),')
     })
 
     test('skips hoist for zero-equivalent string and float fallbacks (#1423 review)', () => {
@@ -1236,8 +1256,9 @@ export function List() {
 }
 `)
       const types = adapter.generate(ir).types!
-      // A struct is synthesised with one field per inferred key + Go type.
-      expect(types).toMatch(/type \w+ struct \{[\s\S]*ID string[\s\S]*N int[\s\S]*Ok bool[\s\S]*\}/)
+      // A struct is synthesised with one field per inferred key + Go type
+      // (a `number` key is `float64` whatever its literals).
+      expect(types).toMatch(/type \w+ struct \{[\s\S]*ID string[\s\S]*N float64[\s\S]*Ok bool[\s\S]*\}/)
       // The signal field is a slice of the synthesised struct, not []interface{}.
       // Excluded from bf-p (json:"-") — component-internal signal state (#2672).
       expect(types).toMatch(/Items \[\]\w+ `json:"-"`/)
@@ -1308,7 +1329,7 @@ export function NestedRefConst() {
       )
     })
 
-    test('recurses to arbitrary depth, widening a numeric field at the innermost level (#2800)', () => {
+    test('recurses to arbitrary depth, typing a numeric field at the innermost level (#2800)', () => {
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -1323,7 +1344,7 @@ export function Depth3() {
 `)
       const types = adapter.generate(ir).types!
       expect(types).toContain('type Depth3ItemsItemKidsItemGrandItem struct')
-      expect(types).toMatch(/type Depth3ItemsItemKidsItemGrandItem struct \{\n\tID int[\s\S]*\tN float64/)
+      expect(types).toMatch(/type Depth3ItemsItemKidsItemGrandItem struct \{\n\tID float64[\s\S]*\tN float64/)
       expect(types).toContain('Kids []Depth3ItemsItemKidsItem')
       expect(types).toContain('Grand []Depth3ItemsItemKidsItemGrandItem')
       expect(types).not.toContain('Items: nil,')
@@ -1361,10 +1382,10 @@ export function List() {
       expect(adapter.generate(ir).types!).toContain('Items: nil,')
     })
 
-    test('widens mixed int/float keys to float64 and keeps negatives (#1680)', () => {
-      // A key seen as both an integer and a fractional literal across elements
-      // can't be `int`; widen it to `float64`. Negative numeric literals keep
-      // their sign in the baked value.
+    test('types number keys float64 whatever their literals and keeps negatives (#1680)', () => {
+      // A `number` key is a `float64`, whether its literals are integers
+      // (`y`) or not (`x`). Negative numeric literals keep their sign in the
+      // baked value.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -1376,8 +1397,8 @@ export function List() {
 }
 `)
       const types = adapter.generate(ir).types!
-      // x mixes 1 and 2.5 → float64; y stays int (both integer literals).
-      expect(types).toMatch(/X float64[\s\S]*Y int/)
+      // x mixes 1 and 2.5, y holds integers: both are float64.
+      expect(types).toMatch(/X float64[\s\S]*Y float64/)
       expect(types).toContain('{X: 1, Y: -2}')
       expect(types).toContain('{X: 2.5, Y: -3}')
     })
@@ -4482,8 +4503,9 @@ function Item(props: ItemProps) {
 
   test('loop-child init stamps BfDataKey from the loop key (item.Label)', () => {
     const { types } = compileAndGenerate(source)
-    expect(types).toContain('[i].BfDataKey = fmt.Sprint(item.Label)')
-    expect(types).toContain('\t"fmt"')
+    // `bf.String`, not `fmt.Sprint`: a `number` key is a float64, which
+    // `fmt.Sprint` would spell `1.7e+12`.
+    expect(types).toContain('[i].BfDataKey = bf.String(item.Label)')
   })
 
   test('child component root emits data-key from BfDataKey', () => {
@@ -6113,13 +6135,13 @@ export function Badge({ text, n: count }: { text: string; n: number }) {
     // Input struct: caller-facing field, no json tag (Input is never
     // marshalled).
     expect(types).toContain('type BadgeInput struct {')
-    // Exact-field match (not `.toContain('N int')`, which also matches
-    // `N interface{}`) — tightened to match the adjacent negative's style.
-    expect(types).toContain('\tN int\n')
-    expect(types).not.toContain('Count int\n')
+    // Exact-field match (not `.toContain('N float64')` alone) — tightened
+    // to match the adjacent negative's style.
+    expect(types).toContain('\tN float64\n')
+    expect(types).not.toContain('Count float64\n')
     // Props struct: LOCAL field, json tag flipped to the caller-facing key.
     expect(types).toContain('type BadgeProps struct {')
-    expect(types).toContain('Count int `json:"n"`')
+    expect(types).toContain('Count float64 `json:"n"`')
     expect(types).not.toContain('json:"count"')
     // NewBadgeProps bridges Props(local) from Input(caller-facing).
     expect(types).toContain('Count: in.N,')
@@ -6286,13 +6308,13 @@ export function Counter({ count: initialCount }: { count: number }) {
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const types = result.files.find(f => f.type === 'types')!.content
     // The prop keeps the shared "count" wire key...
-    expect(types).toContain('InitialCount int `json:"count"`')
+    expect(types).toContain('InitialCount float64 `json:"count"`')
     // ...and the colliding signal field falls back to `json:"-"` instead of
     // silently carrying the same tag. Leading `\t` (not `.toContain('Count
-    // int ...')`) so the assertion doesn't false-match inside
-    // "InitialCount int ..." above.
-    expect(types).toContain('\tCount int `json:"-"`')
-    expect(types).not.toContain('\tCount int `json:"count"`')
+    // float64 ...')`) so the assertion doesn't false-match inside
+    // "InitialCount float64 ..." above.
+    expect(types).toContain('\tCount float64 `json:"-"`')
+    expect(types).not.toContain('\tCount float64 `json:"count"`')
     // Exactly one field claims "count".
     expect((types.match(/json:"count"/g) ?? []).length).toBe(1)
   })
@@ -6558,9 +6580,9 @@ export function C(props: { count?: number }) {
     const newProps = types.slice(types.indexOf('func NewCProps'))
     // The presence-check fold (`extractPropFallbackFromParsed`'s shape,
     // reused unchanged) hoists the RAW coalesced value into a local...
-    expect(newProps).toContain('var count int = 1')
+    expect(newProps).toContain('var count float64 = 1')
     expect(newProps).toContain('if in.Count != nil {')
-    expect(newProps).toContain('count = bf.ToInt(in.Count)')
+    expect(newProps).toContain('count = bf.ToFloat64(in.Count)')
     // ...and the shared field carries the FULLY DERIVED value — the local
     // with the surrounding `* 2` composed back on, not just the coalesce
     // result.
@@ -6649,7 +6671,7 @@ export function NonCollide(props: { count?: number }) {
     // apply (it used to read as 0 and seed 0 instead of 2).
     expect(types).toContain('Count interface{}')
     const newProps = types.slice(types.indexOf('func NewNonCollideProps'))
-    expect(newProps).not.toContain('var count int')
+    expect(newProps).not.toContain('var count float64')
     expect(newProps).toContain('Count: in.Count,')
     expect(newProps).toContain('bf.EvalExpr(')
   })
@@ -7188,7 +7210,8 @@ export function List() {
     // The range establishes a real per-iteration dot context — both the
     // `data-key` attribute and the text position must resolve the shadowed
     // `count` through it.
-    expect(template).toContain('{{range $_, $count := .Nums}}<li data-key="{{.}}">')
+    // A `number[]` row is a number, spelled the JS way through `bf_string`.
+    expect(template).toContain('{{range $_, $count := .Nums}}<li data-key="{{bf_string .}}">')
     expect(template).toContain('{{bf_string (bf_mul . 3)}}')
     // Never the outer `const count = 7` literal.
     expect(template).not.toContain('{{7}}')
@@ -7208,8 +7231,9 @@ export function List() {
   return <ul>{items().map(({ id }) => <li key={id}>{id}</li>)}</ul>
 }
 `)
-    expect(template).toContain('data-key="{{$__bf_item0.ID}}"')
-    expect(template).toContain('{{$__bf_item0.ID}}{{bfTextEnd}}')
+    // The `number` row field prints through `bf_string`.
+    expect(template).toContain('data-key="{{bf_string $__bf_item0.ID}}"')
+    expect(template).toContain('{{bf_string $__bf_item0.ID}}{{bfTextEnd}}')
     expect(template).not.toContain('{{7}}')
   })
 
@@ -7309,7 +7333,7 @@ export function Foo({ items }: { items: number[] }) {
     expect(template).toContain('data-key="{{9}}"')
     // Inside the loop, the shadowed occurrence still resolves to the loop
     // value, not the outer literal.
-    expect(template).toContain('{{range $_, $count := .Items}}<li data-key="{{.}}">')
+    expect(template).toContain('{{range $_, $count := .Items}}<li data-key="{{bf_string .}}">')
   })
 
   // Slice B's guard, by contrast, is the coarse #2212 trade-off (a flat,

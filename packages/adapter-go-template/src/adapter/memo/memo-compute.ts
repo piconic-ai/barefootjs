@@ -363,10 +363,10 @@ const STRING_METHOD_HELPER: Readonly<Record<string, string>> = {
 
 /**
  * Whether `expr` is an integer whatever its inputs: an integer literal, a
- * `.length` read, or `+` / `-` / `*` / `%` / unary sign / a ternary over
- * such operands.
+ * `.length` read, or `+` / `-` / `*` / `%` / unary sign / a ternary / a
+ * `??` or `||` over such operands.
  */
-function isIntegerValued(expr: ParsedExpr): boolean {
+export function isIntegerValued(expr: ParsedExpr): boolean {
   switch (expr.kind) {
     case 'literal':
       return typeof expr.value === 'number' && Number.isInteger(expr.value)
@@ -378,29 +378,11 @@ function isIntegerValued(expr: ParsedExpr): boolean {
       return ['+', '-', '*', '%'].includes(expr.op) && isIntegerValued(expr.left) && isIntegerValued(expr.right)
     case 'conditional':
       return isIntegerValued(expr.consequent) && isIntegerValued(expr.alternate)
+    case 'logical':
+      return expr.op !== '&&' && isIntegerValued(expr.left) && isIntegerValued(expr.right)
     default:
       return false
   }
-}
-
-/**
- * Whether a memo's SSR value comes from the evaluator fallback and can be
- * a fraction: no catalogue shape computes it, {@link evalExprGo} does, and
- * the body isn't structurally an integer (`items().filter(…).length`). Such
- * a `number` memo keeps an `interface{}` field instead of the `int` its
- * declared type infers, which would drop the fraction (`u().age! * 3` over
- * `2.5` is `7.5`, #3438).
- */
-export function isEvaluatedMemo(
-  ctx: GoEmitContext,
-  memo: MemoInfo,
-  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
-  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
-): boolean {
-  if (!memo.parsed || isIntegerValued(memo.parsed)) return false
-  const resolving = new Set([memo.name])
-  if (computeMemoInitialValueOrNull(ctx, memo, signals, propsParams, EMPTY_PROP_FALLBACK_VARS, resolving) !== null) return false
-  return evalExprGo(ctx, memo.parsed, signals, propsParams, EMPTY_PROP_FALLBACK_VARS, resolving) !== null
 }
 
 /**

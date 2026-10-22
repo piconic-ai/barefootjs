@@ -170,7 +170,7 @@ const (
 type sessionState struct {
 	mu     sync.Mutex
 	todos  []Todo
-	nextID int
+	nextID float64
 }
 
 type sessionStoreT struct {
@@ -576,7 +576,7 @@ func updateTodoAPI(w http.ResponseWriter, req *http.Request) {
 	defer state.mu.Unlock()
 
 	for i, todo := range state.todos {
-		if todo.ID == id {
+		if todo.ID == float64(id) {
 			if input.Text != nil {
 				state.todos[i].Text = *input.Text
 			}
@@ -603,7 +603,7 @@ func deleteTodoAPI(w http.ResponseWriter, req *http.Request) {
 	defer state.mu.Unlock()
 
 	for i, todo := range state.todos {
-		if todo.ID == id {
+		if todo.ID == float64(id) {
 			state.todos = append(state.todos[:i], state.todos[i+1:]...)
 			w.WriteHeader(http.StatusNoContent)
 			return
