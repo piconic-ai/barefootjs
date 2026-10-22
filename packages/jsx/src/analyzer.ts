@@ -5098,7 +5098,8 @@ function writeTiming(id: ts.Identifier, root: ts.Node): 'markup' | 'statement' |
  *     event-handler attribute included (`onClick={(++id, () => {})}`);
  *   - F found: follow how F's value is used (`valueUseOf`: parentheses,
  *     casts, a conditional's branches, `&&` / `||` / `??`, a comma's last
- *     operand, object / array literal members and spreads), then
+ *     operand, object / array literal members — not a spread, which runs
+ *     getters or iterates), then
  *       - the callee of a call (an IIFE, `(c ? f : g)()`): F runs when that
  *         call is evaluated — the same rule from the call;
  *       - directly a JSX attribute's value (a child prop, a context value's
@@ -5146,8 +5147,8 @@ function isEventHandlerValue(call: ts.CallExpression): boolean {
 /**
  * The outermost expression that carries `node`'s value unchanged: through
  * parentheses, casts, a conditional's branches (not its condition), `&&` /
- * `||` / `??`, a comma's last operand, and object / array literal members
- * and spreads.
+ * `||` / `??`, a comma's last operand, and object / array literal members.
+ * Not through a spread, which consumes the value (`passesValueOn`).
  */
 function valueUseOf(node: ts.Node): ts.Node {
   let v = node
@@ -5163,7 +5164,11 @@ function passesValueOn(v: ts.Node): boolean {
   if (ts.isConditionalExpression(p)) return p.condition !== v
   if (ts.isBinaryExpression(p)) return isValuePassingOperator(p, v)
   if (ts.isPropertyAssignment(p)) return p.initializer === v
-  return ts.isObjectLiteralExpression(p) || ts.isArrayLiteralExpression(p) || ts.isSpreadElement(p) || ts.isSpreadAssignment(p)
+  // A spread consumes its operand instead of passing it on: an object
+  // spread runs the operand's getters, an array / argument spread iterates
+  // it (a custom iterator may run anything). So the walk stops there, and
+  // the rule applies from the spread site.
+  return ts.isObjectLiteralExpression(p) || ts.isArrayLiteralExpression(p)
 }
 
 function isValuePassingOperator(p: ts.BinaryExpression, v: ts.Node): boolean {

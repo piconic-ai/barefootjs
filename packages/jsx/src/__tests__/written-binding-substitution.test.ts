@@ -265,6 +265,20 @@ describe('BF065: a client component markup that writes a binding while it render
     expect(codesOf(`let id = 0\n      return <div><button onClick={((f: () => void) => f)(() => { ++id })}>{id}</button></div>`)).not.toContain('BF065')
   })
 
+  test('is refused for a getter a spread runs while the markup renders', () => {
+    const SHOW_VALUE = 'function Show(props: { value: { x: number } }) { return <i>{props.value.x}</i> }'
+    // The object spread runs the getter while rendering: `<b>{id}</b>` reads 1.
+    expect(codesOf(`let id = 0\n      return <div><Show value={{ ...{ get x() { return ++id } } }} /><b>{id}</b></div>`, '', SHOW_VALUE)).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <p>{[...{ *[Symbol.iterator]() { yield ++id } }].join(',')}</p>`)).toContain('BF065')
+    // An object literal with a getter or a method passed directly is handed on.
+    expect(codesOf(`let id = 0\n      return <div><Show value={{ get x() { return ++id } }} /></div>`, '', SHOW_VALUE)).not.toContain('BF065')
+    expect(codesOf(
+      `let api = null\n      return <Ctx.Provider value={{ setApi(a: unknown) { api = a }, set current(a: unknown) { api = a } }}><i /></Ctx.Provider>`,
+      '',
+      "import { createContext } from '@barefootjs/client'\n    const Ctx = createContext<unknown>(null)",
+    )).not.toContain('BF065')
+  })
+
   test('is not raised for a callback a conditional selects as a child prop, and the closure keeps working', () => {
     const CHILD_GET = 'function Show(props: { get: () => number }) { return <i>{props.get()}</i> }'
     const body = `const [n, setN] = createSignal(0)
