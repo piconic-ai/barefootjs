@@ -26,6 +26,18 @@ export const conformancePins: ConformancePins = {
   'destructure-default-param-computed-array': [
     { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
   ],
+  'destructure-default-body-renamed-callback-earlier': [
+    { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
+  ],
+  'destructure-default-body-renamed-callback-positions': [
+    { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
+  ],
+  'destructure-default-body-renamed-callback-child': [
+    { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
+  ],
+  'destructure-default-body-renamed-callback-shadow': [
+    { code: 'BF101', severity: 'error', limitation: 'destructure-default-computed-array', unescapable: true },
+  ],
   'callback-index-param': [{ code: 'BF101', severity: 'error', limitation: 'callback-index-param' }],
   'filter-index-param-loop': [{ code: 'BF021', severity: 'error', limitation: 'callback-index-param' }],
   'sort-opaque-comparator': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],

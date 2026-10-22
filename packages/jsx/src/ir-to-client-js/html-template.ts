@@ -2367,7 +2367,10 @@ function propResolvesUnsafe(
   switch (prop.value.kind) {
     case 'expression':
     case 'spread':
-      source = prop.value.expr
+      // The same text the CSR `component` emit reads (`transformExpr(expr,
+      // templateExpr)`): a prop read Phase 1 already lowered to
+      // `_p.<key> ?? <default>` in `templateExpr` names no init local (#3579).
+      source = prop.value.templateExpr ?? prop.value.expr
       break
     case 'template':
       source = attrValueToString(prop.value, { useTemplate: true }) ?? undefined
