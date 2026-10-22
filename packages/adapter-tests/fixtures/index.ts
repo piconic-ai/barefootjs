@@ -1136,6 +1136,7 @@ import { fixture as filterNestedCallbackReadsOuterParamClient } from './filter-n
 // written only by handlers keeps its declared value in the template.
 import { fixture as reassignedPropCounter } from './reassigned-prop-counter'
 import { fixture as handlerWrittenLocals } from './handler-written-locals'
+import { fixture as reassignedPropStateless } from './reassigned-prop-stateless'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1941,4 +1942,5 @@ export const jsxFixtures: JSXFixture[] = [
   filterNestedCallbackReadsOuterParamClient,
   reassignedPropCounter,
   handlerWrittenLocals,
+  reassignedPropStateless,
 ]

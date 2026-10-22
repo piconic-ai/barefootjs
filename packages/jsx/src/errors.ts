@@ -181,6 +181,13 @@ export const ErrorCodes = {
   // back to its row, so its delegated event handlers would stop running
   // after hydration (#3318). A keyed top-level row is supported.
   ROW_PORTAL_UNPAIRABLE: 'BF064',
+  // A `'use client'` component's markup writes a component binding while it
+  // renders (`{++nextId}`, a `.map()` row incrementing a counter), outside
+  // any callback it hands on. The client template runs at module scope
+  // and cannot write the binding, and init re-evaluates only reactive
+  // positions, so a client-side mount would silently lose the written
+  // value. Refused instead (`markWrittenBindings`, analyzer.ts).
+  STAGE_WRITE_IN_MARKUP: 'BF065',
 
   // Inline JSX-callback synthesis errors (BF080-BF089) — raised by the
   // preprocess-inline-jsx-callbacks pass (#1211) when an inline JSX-
@@ -320,6 +327,8 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.ROW_PORTAL_UNPAIRABLE]:
     'A ref callback portals an element out of a .map() row that hydration cannot pair with the element (the row root itself, a nested or unkeyed loop, an element inside a reactive conditional in the row, or an element inside a child component\'s children), so its event handlers would stop running after hydration.',
+  [ErrorCodes.STAGE_WRITE_IN_MARKUP]:
+    "A client component's markup writes a component binding while it renders (an assignment or ++/-- outside an event handler), which the client template cannot reproduce.",
 
   [ErrorCodes.INLINE_JSX_CALLBACK_CAPTURE]:
     "Inline JSX-returning arrow function captures a non-module identifier. Extract the callback into a top-level 'use client' component (e.g. `function MyNode(n) { return <div/> }` then `renderNode={MyNode}`) or pass captured values via component props.",

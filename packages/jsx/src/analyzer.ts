@@ -13,7 +13,6 @@ import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefault
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
-import { isEventHandlerName } from './event-handler-name.ts'
 import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -5033,51 +5032,116 @@ function markMutatedConstants(ctx: AnalyzerContext): void {
  *     declared value in place for render, so the binding stays inlinable.
  */
 function markWrittenBindings(ctx: AnalyzerContext): void {
-  const node = ctx.componentNode
-  const body = node?.body
+  const body = ctx.componentNode?.body
   if (!body) return
   const params = ctx.propsObjectName === null ? ctx.propsParams.filter(p => !p.isRest) : []
   const names = new Set<string>([...params.map(p => p.name), ...ctx.localConstants.map(c => c.name)])
   if (names.size === 0) return
 
-  const written = new Map<string, 'render' | 'deferred'>()
-  const roots: readonly ts.Node[] = ts.isBlock(body) ? body.statements : [body]
-  for (const root of roots) {
-    for (const id of collectAssignmentTargets(root, names)) {
-      if (written.get(id.text) === 'render') continue
-      written.set(id.text, writesDuringRender(id, root) ? 'render' : 'deferred')
-    }
-  }
-  if (written.size === 0) return
-
+  const { written, writingInitializers } = collectBindingWrites(ctx, body, names)
   for (const p of params) {
     if (written.has(p.name)) p.reassigned = true
   }
   for (const c of ctx.localConstants) {
     const when = written.get(c.name)
     if (when) c.reassigned = true
-    if (when === 'render') c.mutatedAfterDeclaration = true
+    // A const whose initializer writes (`const label = ++start`) must run
+    // once, where it is declared: inlining its value anywhere else would
+    // repeat the write, or carry it into the template's module scope.
+    if (when === 'render' || writingInitializers.has(c.name)) c.mutatedAfterDeclaration = true
   }
 }
 
 /**
- * Whether the write `id` (inside the component-body statement `root`) runs
- * while the component renders. Markup runs during render, so a write inside
- * a markup expression does, a callback it hands to `.map()` or a child prop
- * included, unless an event-handler attribute (`onClick={…}`) encloses it:
- * that runs on the event. Outside markup, a write runs during render unless
- * a function literal encloses it (a handler `const add = () => ++nextId`).
+ * Every write `markWrittenBindings` acts on, by binding: whether one runs
+ * during render, and which top-level declarations' initializers write. A
+ * markup write is reported (BF065) on the way.
  */
-function writesDuringRender(id: ts.Identifier, root: ts.Node): boolean {
-  let inFunction = false
-  let inMarkup = false
+function collectBindingWrites(
+  ctx: AnalyzerContext,
+  body: ts.Node,
+  names: ReadonlySet<string>,
+): { written: Map<string, 'render' | 'deferred'>; writingInitializers: Set<string | undefined> } {
+  const written = new Map<string, 'render' | 'deferred'>()
+  const writingInitializers = new Set<string | undefined>()
+  const roots: readonly ts.Node[] = ts.isBlock(body) ? body.statements : [body]
+  for (const root of roots) {
+    for (const id of collectAssignmentTargets(root, names)) {
+      const when = writeTiming(id, root)
+      if (when === 'markup') reportMarkupWrite(ctx, id)
+      if (when === 'statement') writingInitializers.add(declaredByInitializer(id, root))
+      if (written.get(id.text) !== 'render') written.set(id.text, when === 'deferred' ? 'deferred' : 'render')
+    }
+  }
+  return { written, writingInitializers }
+}
+
+/**
+ * When the write `id` (inside the component-body statement `root`) runs.
+ *
+ * A function literal on the way up decides it unless it is invoked in place
+ * (a `.map()` / `.filter()` callback, an IIFE), which runs where it stands:
+ * any other function (an event handler, a `const add = () => ++nextId`, a
+ * callback handed to a child prop or a context value) runs later, when its
+ * receiver calls it — `'deferred'`. Otherwise the write runs during render:
+ * `'markup'` when a markup expression evaluates it (`{++nextId}`, a `.map()`
+ * row that increments a counter), else `'statement'` (a top-level
+ * statement, which init runs too).
+ */
+function writeTiming(id: ts.Identifier, root: ts.Node): 'markup' | 'statement' | 'deferred' {
   for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
     const parent = n.parent
-    if (ts.isJsxAttribute(parent) && ts.isIdentifier(parent.name) && isEventHandlerName(parent.name.text)) return false
-    if (ts.isJsxExpression(parent) || ts.isJsxSpreadAttribute(parent)) inMarkup = true
-    if (isFunctionScope(parent)) inFunction = true
+    if (ts.isJsxExpression(parent) || ts.isJsxSpreadAttribute(parent)) return 'markup'
+    if (isFunctionScope(parent) && !isInvokedInPlace(parent)) return 'deferred'
   }
-  return inMarkup || !inFunction
+  return 'statement'
+}
+
+/** Whether a function literal is called where it stands: a call's argument or callee (`xs.map(cb)`, `(() => …)()`). */
+function isInvokedInPlace(fn: ts.Node): boolean {
+  let node = fn
+  while (ts.isParenthesizedExpression(node.parent)) node = node.parent
+  const call = node.parent
+  return ts.isCallExpression(call) && (call.expression === node || call.arguments.some(arg => arg === node))
+}
+
+/**
+ * The name a top-level declaration binds when the write `id` sits in its
+ * initializer (`const label = ++start` → `label`), or undefined.
+ */
+function declaredByInitializer(id: ts.Identifier, root: ts.Node): string | undefined {
+  for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
+    const parent = n.parent
+    if (ts.isVariableDeclaration(parent) && parent.initializer === n && ts.isIdentifier(parent.name)) return parent.name.text
+  }
+  return undefined
+}
+
+/**
+ * BF065: a client component's markup writes a component binding while it
+ * renders (`{++nextId}`, a `.map()` row that increments a counter). A
+ * callback the markup hands on (an event handler, a child prop, a context
+ * value) is not: it runs when called. The client renders markup in two places that
+ * cannot share that write: the client template, which runs at module scope
+ * with no binding to write, and init, which re-evaluates only reactive
+ * positions. A client-side mount would lose the written value, so the
+ * shape is refused rather than rendered empty. A server-only component has
+ * no client side and renders it as JavaScript does.
+ */
+function reportMarkupWrite(ctx: AnalyzerContext, id: ts.Identifier): void {
+  if (!ctx.hasUseClientDirective) return
+  ctx.errors.push(
+    createError(ErrorCodes.STAGE_WRITE_IN_MARKUP, getSourceLocation(id, ctx.sourceFile, ctx.filePath), {
+      message:
+        `The markup writes '${id.text}' while it renders. The client template cannot write a component binding, ` +
+        'so a client-side mount would lose the written value.',
+      suggestion: {
+        message:
+          `Compute the value before the return (\`const label = ++${id.text}\`) and render that, ` +
+          'or keep the value in a signal and update it from an event handler.',
+      },
+    }),
+  )
 }
 
 function validateInitStatementReferences(ctx: AnalyzerContext): void {

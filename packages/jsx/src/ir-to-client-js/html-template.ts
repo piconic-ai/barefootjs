@@ -18,7 +18,7 @@ import { BindingScope } from '../scope/binding-scope.ts'
 import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, withOuterBindings, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
-import { keepsDeclaredValue } from '../props-binding.ts'
+import { writesAnyBinding } from '../props-binding.ts'
 
 /**
  * Split a template literal body into static segments and `${...}` interpolations,
@@ -2406,11 +2406,9 @@ export function computeDeferredChildSlots(
   propsObjectName?: string | null,
 ): Set<string> {
   const deferred = new Set<string>()
-  // A prop can also be dropped for writing a binding (`get={() => ++start}`,
-  // see `transformExpr`), which only a prop the component writes can do
-  // once its written locals are already in `unsafeLocalNames`.
-  const writesProp = ctx.propsParams.some(p => !keepsDeclaredValue(p))
-  if (!writesProp && (!unsafeLocalNames || unsafeLocalNames.size === 0)) return deferred
+  // A prop can also be dropped for writing a binding (`get={() => ++id}`,
+  // see `transformExpr`), which only a component that writes one can have.
+  if (!writesAnyBinding(ctx) && (!unsafeLocalNames || unsafeLocalNames.size === 0)) return deferred
   const unsafe = unsafeLocalNames ?? new Set<string>()
   const env = buildCsrEnvForCtx(ctx, inlinableConstants, propsObjectName)
 

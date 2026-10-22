@@ -7289,6 +7289,30 @@
       }
     }
   ],
+  "reassigned-prop-stateless": [
+    {
+      "name": "gen:start:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:start:zero",
+      "props": {
+        "start": 0
+      }
+    },
+    {
+      "name": "gen:start:negative",
+      "props": {
+        "start": -7
+      }
+    },
+    {
+      "name": "gen:start:large",
+      "props": {
+        "start": 1234567890
+      }
+    }
+  ],
   "reduce-concat": [
     {
       "name": "gen:items:empty",

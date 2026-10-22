@@ -254,7 +254,7 @@ export function Both(props: { loop: string; other: string }) {
 
 ---
 
-## Component Errors (BF044–BF064)
+## Component Errors (BF044–BF065)
 
 <a id="bf044"></a>
 
@@ -433,6 +433,34 @@ export function List(props: { rows: string[] }) {
 
 Key the top-level row (`<li key={r}>`) and portal an element inside it rather than the row root, render the element directly in the row rather than inside a reactive conditional or a child component's `children`, or move the portal outside the loop.
 
+<a id="bf065"></a>
+
+### BF065 — Markup Writes a Binding While It Renders
+
+A `'use client'` component's markup assigns or updates a component binding while it renders: `{++nextId}`, or a `.map()` row that increments a counter. The client renders markup in two places that cannot share the write: the client template, which runs at module scope where the binding does not exist, and init, which re-evaluates only reactive positions. A client-side mount would lose the written value, so the compiler refuses the shape. A write inside a callback the markup hands on (an event handler `onClick={() => nextId++}`, a child prop, a context value) runs when it is called, and a write in a statement before the `return` runs in init too: both are fine. A component without `'use client'` has no client side and is not affected.
+
+```tsx
+// ❌ BF065
+'use client'
+export function Rows() {
+  let nextId = 0
+  return <ul>{['a', 'b'].map(label => <li key={label}>{++nextId}: {label}</li>)}</ul>
+}
+```
+
+#### Fix
+
+Compute the values before the `return` and render them, or keep the value in a signal and update it from an event handler:
+
+```tsx
+// ✅ Fixed
+'use client'
+export function Rows() {
+  const rows = ['a', 'b'].map((label, i) => ({ id: i + 1, label }))
+  return <ul>{rows.map(row => <li key={row.label}>{row.id}: {row.label}</li>)}</ul>
+}
+```
+
 ---
 
 ## Quick Reference
@@ -453,6 +481,7 @@ Key the top-level row (`<li key={r}>`) and portal an element inside it rather th
 | BF057 | Module-level name collides with a runtime helper |
 | BF063 | Ref callback writes an attribute the JSX never renders |
 | BF064 | Portaled `.map()` row element cannot be paired with its row |
+| BF065 | Markup writes a component binding while it renders |
 | BF101 | No template-language lowering for the expression |
 | BF102 | Adapter-specific condition not supported |
 | BF105 | Two names become the same template variable |

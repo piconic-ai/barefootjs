@@ -957,6 +957,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF062 | AwaitExpression in template scope (staged-IR; reserved for Phase 1 dispatcher) |
 | BF063 | A `ref` callback unconditionally writes an attribute on mount (`el.setAttribute('<name>', …)` / `el.dataset.<key> = …`) that the element's JSX never renders — a ref never runs at SSR, so the attribute is always absent from the server HTML and added at hydration. See "Ref-Written Attribute Absent at SSR (BF063)" below. |
 | BF064 | A `ref` callback portals an element out of a `.map()` row that hydration cannot pair with the element: the element is the row root, the loop is nested or unkeyed, or the element sits inside a reactive conditional in the row or is forwarded as a child component's `children`. A keyed top-level row's portaled element carries the row key (`IRElement.keyAttr`) so hydration pairs it with its row (#3318). |
+| BF065 | A `'use client'` component's markup assigns or updates a component binding while it renders (`{++nextId}`, a `.map()` row counter), outside any callback it hands on (an event handler, a child prop, a context value). The client template runs at module scope with no binding to write and init re-evaluates only reactive positions, so a client-side mount would lose the value (`markWrittenBindings`, analyzer.ts). |
 
 ### Error Format
 

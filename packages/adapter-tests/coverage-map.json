@@ -9245,6 +9245,18 @@
         "text"
       ]
     },
+    "reassigned-prop-stateless": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "record-index-lookup": {
       "kinds": [
         "literal",

@@ -11,11 +11,13 @@
  *   - A destructured prop the component writes anywhere (`ParamInfo.reassigned`)
  *     is a local: init declares `let start = _p.start ?? 0` once and keeps
  *     every reference to it.
- *   - A local a markup expression writes during render is not inlined
- *     (`mutatedAfterDeclaration`); a write in an event handler leaves the
- *     declared value inlinable, since render sees that value.
+ *   - A client component's markup that writes a binding while it renders
+ *     (`{++nextId}`) is refused with BF065: no client path could keep the
+ *     written value. A write in an event handler leaves the declared value
+ *     inlinable, since render sees that value.
  *   - A client-template expression that writes a binding (a memo body, a
- *     child's arrow prop) is left to init.
+ *     const whose initializer writes) is left to init, on every template
+ *     path: a component that writes a binding never takes the static one.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -49,6 +51,35 @@ function templateOf(js: string): string {
   const line = js.split('\n').find(l => l.includes("hydrate('C'"))
   expect(line).toBeDefined()
   return line!
+}
+
+
+/** The diagnostics' codes for `body` compiled as component `C`. */
+function codesOf(body: string, params = '', extra = '', directive = "'use client'"): string[] {
+  const source = `
+    ${directive}
+    import { createSignal } from '@barefootjs/client'
+    ${extra}
+    export function C(${params}) {
+      ${body}
+    }
+  `
+  return compileJSX(source, 'C.tsx', { adapter }).errors.map(e => e.code)
+}
+
+/**
+ * Run the registration template of `C` (`template: (_p) => \`…\``) with
+ * `props`, the runtime's escape helpers stubbed as plain string coercion.
+ */
+function runTemplate(js: string, props: Record<string, unknown>): string {
+  const line = templateOf(js)
+  const start = line.indexOf('template: ') + 'template: '.length
+  const end = line.lastIndexOf(' })')
+  const helperNames = (js.match(/^import \{ ([^}]+) \} from '@barefootjs\/client\/runtime'/m)?.[1] ?? '')
+    .split(',').map(n => n.trim()).filter(Boolean)
+  const stub = (v: unknown) => (v == null ? '' : String(v))
+  const template = new Function(...helperNames, `return ${line.slice(start, end)}`)(...helperNames.map(() => stub))
+  return template(props)
 }
 
 describe('a destructured prop the component writes is an init local', () => {
@@ -125,26 +156,6 @@ describe('a destructured prop the component writes is an init local', () => {
     expect(js).toContain('let start = 1; start++')
   })
 
-  test('a markup write leaves the template slot to init', () => {
-    const js = clientJs(
-      `const [n, setN] = createSignal(0)
-      return <div><button onClick={() => setN(n() + 1)}>add</button><p>{n()}:{++start}</p></div>`,
-      P,
-    )
-    expect(js).toContain('const __val = ++start')
-    expect(templateOf(js)).not.toContain('++')
-  })
-
-  test('a child arrow prop that writes it defers the child to init', () => {
-    const js = clientJs(
-      `const [n, setN] = createSignal(0)
-      return <div><button onClick={() => setN(n() + 1)}>add</button><p>{n()}</p><Show get={() => ++start} /></div>`,
-      P,
-      'function Show(props: { get: () => number }) { return <i>{props.get()}</i> }',
-    )
-    expect(templateOf(js)).toContain('data-bf-ph')
-    expect(js).toContain('return () => ++start')
-  })
 })
 
 describe('a `for (let …)` head shadows a prop of the same name', () => {
@@ -171,25 +182,6 @@ describe('a written local in the client template', () => {
     expect(templateOf(js)).toContain('<p>${escapeText((0))}</p>')
   })
 
-  test('a markup update is not inlined', () => {
-    const js = clientJs(
-      `let nextId = 0
-      return <div><p>{++nextId}</p><p>{nextId++}</p></div>`,
-    )
-    const t = templateOf(js)
-    expect(t).not.toContain('(0)')
-    expect(t).not.toContain('++')
-  })
-
-  test('a counter a loop row increments is not inlined', () => {
-    const js = clientJs(
-      `const [items, setItems] = createSignal<string[]>(['a', 'b'])
-      let count = 0
-      return <ul><button onClick={() => setItems([...items(), 'c'])}>add</button>{items().map(i => <li key={i}>{i}{++count}</li>)}</ul>`,
-    )
-    expect(templateOf(js)).not.toContain('++(0)')
-  })
-
   test("a memo body's own loop variable and block locals are not binding writes", () => {
     const js = clientJs(
       `const [n, setN] = createSignal(3)
@@ -210,16 +202,76 @@ describe('a written local in the client template', () => {
     expect(templateOf(js)).not.toContain('(0)++')
   })
 
-  test('a child arrow prop that writes a local defers the child', () => {
+})
+
+describe('every template path leaves a write to init', () => {
+  test('a stateless component writing a prop in a handler renders the prop from its template', () => {
+    const js = clientJs(`return <button onClick={() => start++}>{start}</button>`, '{ start = 0 }: { start?: number }')
+    expect(js).toContain('let start = _p.start ?? 0')
+    expect(runTemplate(js, { start: 5 })).toContain('5')
+    expect(runTemplate(js, {})).toContain('0')
+  })
+
+  test('a const whose initializer writes a prop is not inlined into a stateless template', () => {
+    const js = clientJs(`const label = ++start\n      return <p>{label}:{start}</p>`, '{ start = 0 }: { start?: number }')
+    expect(js).toContain('const label = ++start')
+    expect(templateOf(js)).not.toContain('++start')
+    expect(() => runTemplate(js, { start: 5 })).not.toThrow()
+    // init runs the write once and repaints the slot.
+    expect(js).toContain('const __val = label')
+  })
+})
+
+describe('BF065: a client component markup that writes a binding while it renders', () => {
+  const CHILD = 'function Show(props: { get: () => number }) { return <i>{props.get()}</i> }'
+
+  test('is refused for a local, a prop and a counter a `.map()` row increments', () => {
+    expect(codesOf(`let id = 0\n      return <p>{++id}</p>`)).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <p>{id++}</p>`)).toContain('BF065')
+    expect(codesOf(`return <p>{++start}</p>`, '{ start = 0 }: { start?: number }')).toContain('BF065')
+    expect(codesOf(`let count = 0\n      return <ul>{['a', 'b'].map(i => <li key={i}>{++count}</li>)}</ul>`)).toContain('BF065')
+    expect(codesOf(`let count = 0\n      return <ul>{['a', 'b'].map(i => { count++; return <li key={i}>{count}</li> })}</ul>`)).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <p>{(() => ++id)()}</p>`)).toContain('BF065')
+  })
+
+  test('is not raised for a callback the markup hands on, or a top-level statement', () => {
+    expect(codesOf(`let id = 0\n      return <button onClick={() => { id++ }}>{id}</button>`)).not.toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <div><Show get={() => ++id} /></div>`, '', CHILD)).not.toContain('BF065')
+    expect(codesOf(
+      `let api = null\n      return <Ctx.Provider value={{ setApi: (a: unknown) => { api = a } }}><i /></Ctx.Provider>`,
+      '',
+      "import { createContext } from '@barefootjs/client'\n    const Ctx = createContext<unknown>(null)",
+    )).not.toContain('BF065')
+    expect(codesOf(`let id = 0\n      id++\n      return <p>{id}</p>`)).not.toContain('BF065')
+  })
+
+  test('a child prop that writes a local renders the child from init, not the template', () => {
     const js = clientJs(
       `const [n, setN] = createSignal(0)
       let nextId = 0
       return <div><button onClick={() => setN(n() + 1)}>add</button><p>{n()}</p><Show get={() => ++nextId} /></div>`,
       '',
-      'function Show(props: { get: () => number }) { return <i>{props.get()}</i> }',
+      CHILD,
     )
     expect(templateOf(js)).toContain('data-bf-ph')
-    expect(templateOf(js)).not.toContain('++(0)')
+    expect(templateOf(js)).not.toContain('++')
+    expect(js).toContain('return () => ++nextId')
+  })
+
+  test('a child prop that writes a prop renders the child from init, not the template', () => {
+    const js = clientJs(
+      `const [n, setN] = createSignal(0)
+      return <div><button onClick={() => setN(n() + 1)}>add</button><p>{n()}</p><Show get={() => ++start} /></div>`,
+      '{ start = 0 }: { start?: number }',
+      CHILD,
+    )
+    expect(templateOf(js)).toContain('data-bf-ph')
+    expect(js).toContain('let start = _p.start ?? 0')
+    expect(js).toContain('return () => ++start')
+  })
+
+  test('is not raised for a server-only component, which has no client template', () => {
+    expect(codesOf(`let id = 0\n      return <p>{++id}</p>`, '', '', '')).not.toContain('BF065')
   })
 })
 

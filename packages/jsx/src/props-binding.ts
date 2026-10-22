@@ -126,6 +126,22 @@ export function keepsDeclaredValue(
 }
 
 /**
+ * Whether the component writes any of its bindings (`reassigned`, set by
+ * `markWrittenBindings`): a prop parameter or a component-scope `let`. Such
+ * a component's client template has to check each expression for a write
+ * (`csrSubstitute`'s `writes`), which only the CSR template emitter does, so
+ * it never takes the static template fast path (`emit-registration.ts`),
+ * and a child whose prop writes a binding is deferred to init
+ * (`computeDeferredChildSlots`).
+ */
+export function writesAnyBinding(b: {
+  propsParams: readonly Pick<ParamInfo, 'reassigned'>[]
+  localConstants: readonly Pick<ConstantInfo, 'reassigned'>[]
+}): boolean {
+  return b.propsParams.some(p => p.reassigned === true) || b.localConstants.some(c => c.reassigned === true)
+}
+
+/**
  * Whether a renamed binding of a body destructure (`const { b: local = d } =
  * props`) is a prop under its local name: the analyzer gives such a binding
  * with a default its own `ParamInfo` (`name: local`, `sourceName: b`, the
