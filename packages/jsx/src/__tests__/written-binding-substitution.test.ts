@@ -245,6 +245,35 @@ describe('BF065: a client component markup that writes a binding while it render
     expect(codesOf(`let id = 0\n      id++\n      return <p>{id}</p>`)).not.toContain('BF065')
   })
 
+  test('is not raised for a handler wrapped by another call, which may run it later', () => {
+    const wrap = 'const wrap = (fn: () => void) => fn'
+    const body = (handler: string) =>
+      `const [n, setN] = createSignal(0)
+      let count = 0
+      return <div><button onClick={${handler}}>add</button><p>{n()}</p></div>`
+    const wrapped = body('wrap(() => { ++count; setN(count) })')
+    expect(codesOf(wrapped, '', wrap)).not.toContain('BF065')
+    expect(codesOf(body('() => { ++count; setN(count) }'), '', wrap)).not.toContain('BF065')
+    expect(codesOf(body('debounce(() => { count++ }, 100)'), '', 'declare function debounce(fn: () => void, ms: number): () => void')).not.toContain('BF065')
+    // The control: a `.map()` callback runs in place, so its write is still refused.
+    expect(codesOf(`let count = 0\n      return <ul>{['a'].map(i => { count++; return <li key={i}>{count}</li> })}</ul>`)).toContain('BF065')
+
+    // The wrapped listener keeps the init local and increments it.
+    const js = clientJs(body('wrap(() => { ++count; setN(count) })'), '', wrap)
+    expect(js).toContain('let count = 0')
+    const listener = js.split('\n').find(l => l.includes("addEventListener('click', "))!
+    const handlerText = listener.slice(listener.indexOf("'click', ") + "'click', ".length, listener.lastIndexOf(')'))
+    expect(handlerText).toBe('wrap(() => { ++count; setN(count) })')
+    // Run the emitted listener expression against an init-scope `count`.
+    const calls: number[] = []
+    const count = new Function('wrap', 'setN', `let count = 0; const h = ${handlerText}; h(); h(); return count`)(
+      (fn: () => void) => fn,
+      (v: number) => calls.push(v),
+    )
+    expect(count).toBe(2)
+    expect(calls).toEqual([1, 2])
+  })
+
   test('a child prop that writes a local renders the child from init, not the template', () => {
     const js = clientJs(
       `const [n, setN] = createSignal(0)

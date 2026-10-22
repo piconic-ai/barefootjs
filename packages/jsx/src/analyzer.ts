@@ -10,7 +10,7 @@ import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
+import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
 import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
@@ -5080,7 +5080,7 @@ function collectBindingWrites(
  * When the write `id` (inside the component-body statement `root`) runs.
  *
  * A function literal on the way up decides it unless it is invoked in place
- * (a `.map()` / `.filter()` callback, an IIFE), which runs where it stands:
+ * (`isInvokedInPlace`: a `.map()` / `.filter()` callback, an IIFE), which runs where it stands:
  * any other function (an event handler, a `const add = () => ++nextId`, a
  * callback handed to a child prop or a context value) runs later, when its
  * receiver calls it — `'deferred'`. Otherwise the write runs during render:
@@ -5097,12 +5097,28 @@ function writeTiming(id: ts.Identifier, root: ts.Node): 'markup' | 'statement' |
   return 'statement'
 }
 
-/** Whether a function literal is called where it stands: a call's argument or callee (`xs.map(cb)`, `(() => …)()`). */
+/**
+ * Whether a function literal is called where it stands: the callee of a call
+ * (an IIFE, `(() => …)()`), or the callback of an array iteration method,
+ * which calls it before returning (`xs.map(cb)`, the higher-order methods of
+ * `CALLBACK_METHODS`, plus `forEach`). A function handed to any other call
+ * (`wrap(() => ++count)`, a `debounce`) may run at any later time, so it is
+ * not: its writes are deferred like an event handler's.
+ */
 function isInvokedInPlace(fn: ts.Node): boolean {
   let node = fn
   while (ts.isParenthesizedExpression(node.parent)) node = node.parent
   const call = node.parent
-  return ts.isCallExpression(call) && (call.expression === node || call.arguments.some(arg => arg === node))
+  if (!ts.isCallExpression(call)) return false
+  if (call.expression === node) return true
+  return call.arguments[0] === node && isArrayIterationCallee(call.expression)
+}
+
+/** `<receiver>.<method>` where `method` is an array iteration method that calls its callback in place. */
+function isArrayIterationCallee(callee: ts.Expression): boolean {
+  if (!ts.isPropertyAccessExpression(callee)) return false
+  const method = callee.name.text
+  return CALLBACK_METHODS.has(method) || method === 'forEach'
 }
 
 /**
