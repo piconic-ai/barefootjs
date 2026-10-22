@@ -5078,60 +5078,112 @@ function collectBindingWrites(
 }
 
 /**
- * When the write `id` (inside the component-body statement `root`) runs,
- * decided by where it sits rather than by what a callee does with a
- * callback.
- *
- *   - Under an event-handler attribute (`on[A-Z]…`, `isEventHandlerName`) it
- *     runs on the event, through any wrapper (`onClick={wrap(() => ++n)}`,
- *     `onInput={debounce(…)}`) — `'deferred'`.
- *   - In a function handed on as a markup value — directly an attribute's
- *     or child prop's value, or a property of an object literal that is one
- *     (a context value's `setApi: (api) => { emblaApi = api }`) — it runs
- *     when the receiver calls it — `'deferred'`.
- *   - Otherwise inside a markup expression it runs while the markup renders,
- *     a callback passed to any call there included (`.map()`, an IIFE,
- *     `Array.from(xs, () => ++n)`, `s.replace(re, () => ++n)`): a callee the
- *     compiler cannot see may run it in place — `'markup'`.
- *   - Outside markup, a top-level statement runs during render
- *     (`'statement'`) unless a function encloses the write that is not
- *     invoked where it stands (`isInvokedInPlace`) — `'deferred'`.
+ * When the write `id` (inside the component-body statement `root`) runs:
+ * `'markup'` while a markup expression renders, `'statement'` while a
+ * top-level statement runs (init runs it too), `'deferred'` later.
+ * `markupTiming` decides a write that markup reaches; any other write keeps
+ * the statement rule (`statementTiming`).
  */
 function writeTiming(id: ts.Identifier, root: ts.Node): 'markup' | 'statement' | 'deferred' {
-  let invokedInPlace = true
-  for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
-    const parent = n.parent
-    if (ts.isJsxAttribute(parent)) return isEventHandlerAttribute(parent) ? 'deferred' : 'markup'
-    if (ts.isJsxExpression(parent) && !ts.isJsxAttribute(parent.parent)) return 'markup'
-    if (ts.isJsxSpreadAttribute(parent)) return 'markup'
-    if (!isFunctionScope(parent)) continue
-    if (isHandedOnAsMarkupValue(parent)) return 'deferred'
-    if (!isInvokedInPlace(parent)) invokedInPlace = false
-  }
-  return invokedInPlace ? 'statement' : 'deferred'
-}
-
-function isEventHandlerAttribute(attr: ts.JsxAttribute): boolean {
-  return ts.isIdentifier(attr.name) && isEventHandlerName(attr.name.text)
+  const inMarkup = markupTiming(id, root)
+  return inMarkup === 'outside' ? statementTiming(id, root) : inMarkup
 }
 
 /**
- * Whether a function literal is a markup value the receiver calls later:
- * directly a JSX attribute's value (`get={() => …}`), or a property of an
- * object literal that is one (`value={{ setApi: (api) => { … } }}`).
+ * The one compositional rule for a write markup reaches. From the write
+ * site, climb to the nearest enclosing function literal F:
+ *
+ *   - none before a markup expression (`JsxExpression` / spread attribute):
+ *     the write runs while that expression renders — `'markup'`, an
+ *     event-handler attribute included (`onClick={(++id, () => {})}`);
+ *   - F found: follow how F's value is used (`valueUseOf`: parentheses,
+ *     casts, a conditional's branches, `&&` / `||` / `??`, a comma's last
+ *     operand, object / array literal members and spreads), then
+ *       - the callee of a call (an IIFE, `(c ? f : g)()`): F runs when that
+ *         call is evaluated — the same rule from the call;
+ *       - directly a JSX attribute's value (a child prop, a context value's
+ *         `setApi`, an event handler): handed on, it runs when the receiver
+ *         calls it — `'deferred'`;
+ *       - an argument of a call: `'deferred'` only when that call is, by the
+ *         same value walk and through further wrapper calls, an
+ *         event-handler attribute's value (`onClick={wrap(() => ++n)}`,
+ *         `onInput={debounce(…)}`); otherwise the callee may run it while
+ *         rendering (`Array.from(xs, () => ++n)`, `.map`, `.replace`), so
+ *         the same rule from the call;
+ *       - anything else (stored in a variable, a JSX child): the same rule
+ *         from where its value lands, so unknown use inside markup refuses.
+ *
+ * `'outside'` when the climb reaches the component-body statement without
+ * meeting markup.
  */
-function isHandedOnAsMarkupValue(fn: ts.Node): boolean {
-  let node = fn
-  for (;;) {
-    while (ts.isParenthesizedExpression(node.parent)) node = node.parent
-    const parent = node.parent
-    if (ts.isJsxExpression(parent)) return ts.isJsxAttribute(parent.parent)
-    const isPropertyValue =
-      (ts.isPropertyAssignment(parent) && parent.initializer === node) ||
-      (node === fn && ts.isObjectLiteralElement(node))
-    if (!isPropertyValue) return false
-    node = ts.isObjectLiteralElement(node) ? node.parent : parent.parent
+function markupTiming(site: ts.Node, root: ts.Node): 'markup' | 'deferred' | 'outside' {
+  for (let n: ts.Node = site; n !== root && n.parent; n = n.parent) {
+    const parent = n.parent
+    if (ts.isJsxExpression(parent) || ts.isJsxSpreadAttribute(parent)) return 'markup'
+    if (isFunctionScope(parent)) return functionUseTiming(parent, root)
   }
+  return 'outside'
+}
+
+function functionUseTiming(fn: ts.Node, root: ts.Node): 'markup' | 'deferred' | 'outside' {
+  const use = valueUseOf(fn)
+  const parent = use.parent
+  if (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent)) return 'deferred'
+  if (ts.isCallExpression(parent) && parent.expression !== use && isEventHandlerValue(parent)) return 'deferred'
+  return markupTiming(ts.isCallExpression(parent) ? parent : use, root)
+}
+
+/** Whether `call` is, through value-passing wrappers and further calls, an event-handler attribute's value. */
+function isEventHandlerValue(call: ts.CallExpression): boolean {
+  const use = valueUseOf(call)
+  const parent = use.parent
+  if (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent)) {
+    return ts.isIdentifier(parent.parent.name) && isEventHandlerName(parent.parent.name.text)
+  }
+  return ts.isCallExpression(parent) && parent.expression !== use && isEventHandlerValue(parent)
+}
+
+/**
+ * The outermost expression that carries `node`'s value unchanged: through
+ * parentheses, casts, a conditional's branches (not its condition), `&&` /
+ * `||` / `??`, a comma's last operand, and object / array literal members
+ * and spreads.
+ */
+function valueUseOf(node: ts.Node): ts.Node {
+  let v = node
+  while (passesValueOn(v)) v = v.parent
+  return v
+}
+
+function passesValueOn(v: ts.Node): boolean {
+  const p = v.parent
+  if (!p) return false
+  if (ts.isParenthesizedExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p)) return true
+  if (ts.isNonNullExpression(p) || ts.isTypeAssertionExpression(p)) return true
+  if (ts.isConditionalExpression(p)) return p.condition !== v
+  if (ts.isBinaryExpression(p)) return isValuePassingOperator(p, v)
+  if (ts.isPropertyAssignment(p)) return p.initializer === v
+  return ts.isObjectLiteralExpression(p) || ts.isArrayLiteralExpression(p) || ts.isSpreadElement(p) || ts.isSpreadAssignment(p)
+}
+
+function isValuePassingOperator(p: ts.BinaryExpression, v: ts.Node): boolean {
+  const op = p.operatorToken.kind
+  if (op === ts.SyntaxKind.CommaToken) return p.right === v
+  return op === ts.SyntaxKind.AmpersandAmpersandToken || op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken
+}
+
+/**
+ * The statement rule for a write no markup reaches: a top-level statement
+ * runs during render (`'statement'`) unless a function encloses the write
+ * that is not invoked where it stands (`isInvokedInPlace`) — `'deferred'`.
+ * That only decides whether a later read may inline the binding's declared
+ * value (`mutatedAfterDeclaration`).
+ */
+function statementTiming(id: ts.Identifier, root: ts.Node): 'statement' | 'deferred' {
+  for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
+    if (isFunctionScope(n.parent) && !isInvokedInPlace(n.parent)) return 'deferred'
+  }
+  return 'statement'
 }
 
 /**

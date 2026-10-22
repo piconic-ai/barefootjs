@@ -258,6 +258,29 @@ describe('BF065: a client component markup that writes a binding while it render
     expect(codesOf(`let id = 0\n      return <p>{(() => ++id)()}</p>`)).toContain('BF065')
   })
 
+  test('is refused for a write an event attribute evaluates eagerly', () => {
+    // The IIFE and the comma operand run while the attribute renders, not on click.
+    expect(codesOf(`let id = 0\n      return <div><button onClick={(() => { ++id; return () => {} })()}>x</button><b>{id}</b></div>`)).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <div><button onClick={(++id, () => {})}>x</button><b>{id}</b></div>`)).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <div><button onClick={((f: () => void) => f)(() => { ++id })}>{id}</button></div>`)).not.toContain('BF065')
+  })
+
+  test('is not raised for a callback a conditional selects as a child prop, and the closure keeps working', () => {
+    const CHILD_GET = 'function Show(props: { get: () => number }) { return <i>{props.get()}</i> }'
+    const body = `const [n, setN] = createSignal(0)
+      const enabled = true
+      let id = 0
+      return <div><button onClick={() => setN(n() + 1)}>add</button><p>{n()}</p><Show get={enabled ? () => ++id : () => id} /></div>`
+    expect(codesOf(body, '', CHILD_GET)).not.toContain('BF065')
+    const js = clientJs(body, '', CHILD_GET)
+    expect(js).toContain('let id = 0')
+    expect(templateOf(js)).toContain('data-bf-ph')
+    const getter = js.split('\n').find(l => l.includes('get get() { return '))!
+    const getterText = getter.slice(getter.indexOf('get get() { return ') + 'get get() { return '.length, getter.indexOf(' }', getter.indexOf('get get()')))
+    const calls = new Function(`const enabled = true; let id = 0; const g = ${getterText}; return [g(), g(), id]`)()
+    expect(calls).toEqual([1, 2, 2])
+  })
+
   test('is not raised for a handler wrapped by another call, which may run it later', () => {
     const wrap = 'const wrap = (fn: () => void) => fn'
     const body = (handler: string) =>
