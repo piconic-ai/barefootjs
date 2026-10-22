@@ -245,6 +245,19 @@ describe('BF065: a client component markup that writes a binding while it render
     expect(codesOf(`let id = 0\n      id++\n      return <p>{id}</p>`)).not.toContain('BF065')
   })
 
+  test('is refused for a callback any call in markup may run in place', () => {
+    // `Array.from`'s mapper runs while the markup renders: `<b>{id}</b>` reads 2, not 0.
+    expect(codesOf(`let id = 0\n      return <div><p>{Array.from([1, 2], () => ++id).join(',')}</p><b>{id}</b></div>`)).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <p>{'a-b'.replace(/-/g, () => String(++id))}</p>`)).toContain('BF065')
+    // A computed child-prop value is evaluated while rendering too.
+    expect(codesOf(
+      `let id = 0\n      return <div><List items={Array.from([1, 2], () => ++id)} /></div>`,
+      '',
+      'function List(props: { items: number[] }) { return <i>{props.items.length}</i> }',
+    )).toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <p>{(() => ++id)()}</p>`)).toContain('BF065')
+  })
+
   test('is not raised for a handler wrapped by another call, which may run it later', () => {
     const wrap = 'const wrap = (fn: () => void) => fn'
     const body = (handler: string) =>
@@ -254,7 +267,13 @@ describe('BF065: a client component markup that writes a binding while it render
     const wrapped = body('wrap(() => { ++count; setN(count) })')
     expect(codesOf(wrapped, '', wrap)).not.toContain('BF065')
     expect(codesOf(body('() => { ++count; setN(count) }'), '', wrap)).not.toContain('BF065')
-    expect(codesOf(body('debounce(() => { count++ }, 100)'), '', 'declare function debounce(fn: () => void, ms: number): () => void')).not.toContain('BF065')
+    const debounce = 'declare function debounce(fn: () => void, ms: number): () => void'
+    expect(codesOf(body('debounce(() => { count++ }, 100)'), '', debounce)).not.toContain('BF065')
+    expect(codesOf(
+      `let count = 0\n      return <input onInput={debounce(() => { count++ }, 100)} />`,
+      '',
+      debounce,
+    )).not.toContain('BF065')
     // The control: a `.map()` callback runs in place, so its write is still refused.
     expect(codesOf(`let count = 0\n      return <ul>{['a'].map(i => { count++; return <li key={i}>{count}</li> })}</ul>`)).toContain('BF065')
 

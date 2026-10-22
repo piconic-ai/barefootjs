@@ -13,6 +13,7 @@ import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefault
 import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
+import { isEventHandlerName } from './event-handler-name.ts'
 import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -5077,33 +5078,69 @@ function collectBindingWrites(
 }
 
 /**
- * When the write `id` (inside the component-body statement `root`) runs.
+ * When the write `id` (inside the component-body statement `root`) runs,
+ * decided by where it sits rather than by what a callee does with a
+ * callback.
  *
- * A function literal on the way up decides it unless it is invoked in place
- * (`isInvokedInPlace`: a `.map()` / `.filter()` callback, an IIFE), which runs where it stands:
- * any other function (an event handler, a `const add = () => ++nextId`, a
- * callback handed to a child prop or a context value) runs later, when its
- * receiver calls it — `'deferred'`. Otherwise the write runs during render:
- * `'markup'` when a markup expression evaluates it (`{++nextId}`, a `.map()`
- * row that increments a counter), else `'statement'` (a top-level
- * statement, which init runs too).
+ *   - Under an event-handler attribute (`on[A-Z]…`, `isEventHandlerName`) it
+ *     runs on the event, through any wrapper (`onClick={wrap(() => ++n)}`,
+ *     `onInput={debounce(…)}`) — `'deferred'`.
+ *   - In a function handed on as a markup value — directly an attribute's
+ *     or child prop's value, or a property of an object literal that is one
+ *     (a context value's `setApi: (api) => { emblaApi = api }`) — it runs
+ *     when the receiver calls it — `'deferred'`.
+ *   - Otherwise inside a markup expression it runs while the markup renders,
+ *     a callback passed to any call there included (`.map()`, an IIFE,
+ *     `Array.from(xs, () => ++n)`, `s.replace(re, () => ++n)`): a callee the
+ *     compiler cannot see may run it in place — `'markup'`.
+ *   - Outside markup, a top-level statement runs during render
+ *     (`'statement'`) unless a function encloses the write that is not
+ *     invoked where it stands (`isInvokedInPlace`) — `'deferred'`.
  */
 function writeTiming(id: ts.Identifier, root: ts.Node): 'markup' | 'statement' | 'deferred' {
+  let invokedInPlace = true
   for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
     const parent = n.parent
-    if (ts.isJsxExpression(parent) || ts.isJsxSpreadAttribute(parent)) return 'markup'
-    if (isFunctionScope(parent) && !isInvokedInPlace(parent)) return 'deferred'
+    if (ts.isJsxAttribute(parent)) return isEventHandlerAttribute(parent) ? 'deferred' : 'markup'
+    if (ts.isJsxExpression(parent) && !ts.isJsxAttribute(parent.parent)) return 'markup'
+    if (ts.isJsxSpreadAttribute(parent)) return 'markup'
+    if (!isFunctionScope(parent)) continue
+    if (isHandedOnAsMarkupValue(parent)) return 'deferred'
+    if (!isInvokedInPlace(parent)) invokedInPlace = false
   }
-  return 'statement'
+  return invokedInPlace ? 'statement' : 'deferred'
+}
+
+function isEventHandlerAttribute(attr: ts.JsxAttribute): boolean {
+  return ts.isIdentifier(attr.name) && isEventHandlerName(attr.name.text)
 }
 
 /**
- * Whether a function literal is called where it stands: the callee of a call
- * (an IIFE, `(() => …)()`), or the callback of an array iteration method,
- * which calls it before returning (`xs.map(cb)`, the higher-order methods of
- * `CALLBACK_METHODS`, plus `forEach`). A function handed to any other call
- * (`wrap(() => ++count)`, a `debounce`) may run at any later time, so it is
- * not: its writes are deferred like an event handler's.
+ * Whether a function literal is a markup value the receiver calls later:
+ * directly a JSX attribute's value (`get={() => …}`), or a property of an
+ * object literal that is one (`value={{ setApi: (api) => { … } }}`).
+ */
+function isHandedOnAsMarkupValue(fn: ts.Node): boolean {
+  let node = fn
+  for (;;) {
+    while (ts.isParenthesizedExpression(node.parent)) node = node.parent
+    const parent = node.parent
+    if (ts.isJsxExpression(parent)) return ts.isJsxAttribute(parent.parent)
+    const isPropertyValue =
+      (ts.isPropertyAssignment(parent) && parent.initializer === node) ||
+      (node === fn && ts.isObjectLiteralElement(node))
+    if (!isPropertyValue) return false
+    node = ts.isObjectLiteralElement(node) ? node.parent : parent.parent
+  }
+}
+
+/**
+ * Whether a function literal outside markup is called where it stands: the
+ * callee of a call (an IIFE, `(() => …)()`), or the callback of an array
+ * iteration method, which calls it before returning (`xs.map(cb)`, the
+ * higher-order methods of `CALLBACK_METHODS`, plus `forEach`). Any other
+ * function there is deferred, which only decides whether a later read may
+ * inline the binding's declared value (`mutatedAfterDeclaration`).
  */
 function isInvokedInPlace(fn: ts.Node): boolean {
   let node = fn

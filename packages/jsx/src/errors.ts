@@ -182,8 +182,10 @@ export const ErrorCodes = {
   // after hydration (#3318). A keyed top-level row is supported.
   ROW_PORTAL_UNPAIRABLE: 'BF064',
   // A `'use client'` component's markup writes a component binding while it
-  // renders (`{++nextId}`, a `.map()` row incrementing a counter), outside
-  // any callback it hands on. The client template runs at module scope
+  // renders (`{++nextId}`, a `.map()` row incrementing a counter, a
+  // callback any call in the markup may run in place), outside an
+  // event-handler attribute or a function handed on as an attribute / prop
+  // value (`writeTiming`). The client template runs at module scope
   // and cannot write the binding, and init re-evaluates only reactive
   // positions, so a client-side mount would silently lose the written
   // value. Refused instead (`markWrittenBindings`, analyzer.ts).
