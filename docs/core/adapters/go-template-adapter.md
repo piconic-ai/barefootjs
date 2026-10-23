@@ -106,14 +106,14 @@ type CounterInput struct {
     ScopeID  string // Optional: if empty, a random ID is generated
     BfParent string // Optional: parent scope id
     BfMount  string // Optional: slot id in parent
-    Initial  int
+    Initial  float64
 }
 
 // The props type the template receives; hydration fields are `json:"-"`.
 type CounterProps struct {
     ScopeID string `json:"-"`
     Scripts *bf.ScriptCollector `json:"-"`
-    Initial int    `json:"initial"`
+    Initial float64 `json:"initial"`
     // ... BfIsRoot, BfIsChild, BfParent, BfMount, BfDataKey, Portals, BfCallerProps (all `json:"-"`)
 }
 
@@ -123,7 +123,7 @@ func NewCounterProps(input CounterInput) CounterProps
 | TypeScript | Go |
 |-----------|-----|
 | `string` | `string` |
-| `number` | `int` (or `float64` for decimals) |
+| `number` | `float64` (printed as JS does: `3`, `1.5`, `1500000`) |
 | `boolean` | `bool` |
 | `T[]` | `[]T` |
 | `T \| undefined` | Pointer type `*T` or zero value |

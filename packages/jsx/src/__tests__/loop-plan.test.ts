@@ -6,7 +6,7 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
-import { planLoop, type LoopPlanContext } from '../adapters/loop-plan'
+import { planLoop, spellDestructureLocals, type LoopPlanContext } from '../adapters/loop-plan'
 import { BindingScope } from '../scope/binding-scope'
 import type { IRLoop, IRNode } from '../types'
 
@@ -46,6 +46,9 @@ describe('planLoop', () => {
       unresolvableConst: null,
       sort: null,
       captureAliases: [],
+      itemVar: 'x',
+      indexLocal: null,
+      destructureLocals: [],
     })
   })
 
@@ -100,5 +103,51 @@ describe('planLoop', () => {
       return <ul>{props.items.filter(x => x.id !== id).map(id => <li key={id.id}>{id.id}</li>)}</ul>
     }`)
     expect(captured.captureAliases).toEqual([{ name: 'id', alias: expect.stringMatching(/^__bf_cap_\w+_id$/) }])
+  })
+
+  test('the row binds its index through a local, except in an object iteration', () => {
+    expect(plan(`export function Test(props: { items: string[] }) { return <ul>{props.items.map((x, i) => <li key={x}>{i}</li>)}</ul> }`)).toMatchObject({
+      itemVar: 'x',
+      indexLocal: 'i',
+    })
+    expect(plan(`export function Test(props: { items: string[] }) { return <ul>{props.items.keys().map(k => <li key={k}>{k}</li>)}</ul> }`)).toMatchObject({
+      itemVar: '__bf_item',
+      indexLocal: 'k',
+    })
+    expect(plan(`export function Test(props: { m: Record<string, string> }) { return <ul>{Object.entries(props.m).map(([k, v]) => <li key={k}>{v}</li>)}</ul> }`)).toMatchObject({
+      indexLocal: null,
+      destructureLocals: [],
+    })
+  })
+
+  test('a lowered destructure binds one local per binding off the item', () => {
+    const lowered = plan(`export function Test(props: { rows: { id: string; user: { name: string }; tags: string[]; on: boolean }[] }) {
+      return <ul>{props.rows.map(({ id, user: { name }, ...rest }) => <li key={id} data-on={rest.on}>{name}</li>)}</ul>
+    }`)
+    expect(lowered.itemVar).toBe('__bf_item')
+    expect(lowered.destructureLocals).toEqual([
+      { name: 'id', value: { kind: 'path', segments: [{ kind: 'field', key: 'id', isIdent: true }] } },
+      { name: 'name', value: { kind: 'path', segments: [{ kind: 'field', key: 'user', isIdent: true }, { kind: 'field', key: 'name', isIdent: true }] } },
+      { name: 'rest', value: { kind: 'omit', segments: [], exclude: ['id', 'user'] } },
+    ])
+    const tuple = plan(`export function Test(props: { rows: string[][] }) { return <ul>{props.rows.map(([head, ...tail]) => <li key={head}>{tail.length}</li>)}</ul> }`)
+    expect(tuple.destructureLocals).toEqual([
+      { name: 'head', value: { kind: 'path', segments: [{ kind: 'index', index: 0 }] } },
+      { name: 'tail', value: { kind: 'slice', segments: [], from: 1 } },
+    ])
+    const spelled = spellDestructureLocals(tuple, 'it', {
+      accessor: (item, segments) => item + segments.map((s) => (s.kind === 'index' ? `[${s.index}]` : `.${s.key}`)).join(''),
+      slice: (parent, from) => `slice(${parent}, ${from})`,
+      omit: (parent, keys) => `omit(${parent}, ${keys.join('|')})`,
+    })
+    expect(spelled).toEqual([
+      { name: 'head', value: 'it[0]' },
+      { name: 'tail', value: 'slice(it, 1)' },
+    ])
+  })
+
+  test('an unlowerable destructure binds no locals', () => {
+    const refused = plan(`export function Test(props: { rows: { a: string; b: string }[] }) { return <ul>{props.rows.map(({ a, ...rest }) => <li key={a}>{String(rest)}</li>)}</ul> }`)
+    expect(refused).toMatchObject({ destructure: 'unlowerable', destructureLocals: [] })
   })
 })

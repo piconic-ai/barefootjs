@@ -83,6 +83,8 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  spellDestructureLocals,
+  type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -149,6 +151,29 @@ function rubyAccessorFromSegments(base: string, segments: readonly LoopBindingPa
     accessor += seg.kind === 'index' ? `[${seg.index}]` : `[${rubySymbolLiteral(seg.key)}]`
   }
   return accessor
+}
+
+/**
+ * How a lowered loop destructure binding reads off the row item. `segments`
+ * is a fixed binding's full path from the item, or a rest binding's PARENT
+ * prefix (possibly empty, at the loop root).
+ */
+const DESTRUCTURE_SPELLING: DestructureSpelling = {
+  accessor: rubyAccessorFromSegments,
+  // Native Ruby range-slice has different past-end nil semantics than JS
+  // `Array.prototype.slice` (`arr[4..]` is `nil` where `arr.slice(4)` is
+  // `[]`) — route through the runtime's `slice` helper (barefoot_js.rb) so
+  // both edge cases (`from` at or past length) return `[]` like JS, matching
+  // the Go/Perl ports.
+  slice: (parent, from) => `bf.slice(${parent}, ${from})`,
+  // A TRUE residual Hash (not an alias of the parent) via native
+  // `Hash#except` (Ruby >= 3.0; CI pins 3.3) — so a member read (`rest.flag`
+  // → `rest[:flag]`, `ErbTopLevelEmitter#member`) and the existing
+  // `{...rest}` spread emit (`bf.spread_attrs`) both see only the
+  // non-destructured keys, same as the Hono/CSR IIFE. Symbol keys match the
+  // vars-Hash convention: every item Hash is built by
+  // `JSON.parse(..., symbolize_names: true)`.
+  omit: (parent, keys) => `${parent}.except(${keys.map((k) => rubySymbolLiteral(k)).join(', ')})`,
 }
 
 /**
@@ -689,7 +714,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToRuby,
     })
-    const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
@@ -792,7 +816,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // opens, so a nested loop's own array expression (e.g. `item.children`)
     // still resolves against the OUTER `item` even when the inner loop binds
     // a same-named fresh one.
-    const itemParam = supportableDestructure ? '__bf_item' : rubyLocal(param)
+    const itemParam = loopPlan.destructure === 'lowerable' ? '__bf_item' : rubyLocal(param)
     const blockParams: string = loop.objectIteration
       ? loop.objectIteration === 'entries'
         ? `${rubyLocal(loop.index ?? param)}, ${rubyLocal(param)}`
@@ -814,8 +838,8 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // only read an EARLIER preamble local (already block-local by then) or
     // the param/index (also block parameters).
     const blockLocals = new Set<string>()
-    if (!loop.objectIteration && loop.iterationShape !== 'keys' && supportableDestructure) {
-      for (const b of loop.paramBindings ?? []) blockLocals.add(rubyLocal(b.name))
+    if (!loop.objectIteration && loop.iterationShape !== 'keys') {
+      for (const { name } of loopPlan.destructureLocals) blockLocals.add(rubyLocal(name))
     }
     for (const d of preambleDecls) blockLocals.add(rubyLocal(d.name))
     // Never list a name that's ALSO a block parameter above — Ruby rejects
@@ -904,38 +928,12 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       // assignment) — see this method's `blockParams`/`blockLocals` setup
       // above for why (#2922).
       lines.push(`<%- ${array}.each_with_index do ${blockHeader} -%>`)
-      if (supportableDestructure) {
-        // One local per binding, built off the binding's structured
-        // `segments` path (never `b.path` — repo rule: no string-parsing of
-        // a JS-shaped accessor). See `rubyAccessorFromSegments`. `__bf_item`
-        // itself is now the loop's own block parameter (`itemParam` above).
-        for (const b of loop.paramBindings ?? []) {
-          // Fixed bindings: `segments` is the FULL accessor path from the
-          // item to this binding. Rest bindings: `segments` is the PARENT
-          // prefix (possibly empty, at the loop root) — the accessor below
-          // is the rest's parent object/array, not the rest binding itself.
-          const accessor = rubyAccessorFromSegments('__bf_item', b.segments ?? [])
-          if (b.rest?.kind === 'array') {
-            // Native Ruby range-slice has different past-end nil semantics
-            // than JS `Array.prototype.slice` (`arr[4..]` is `nil` where
-            // `arr.slice(4)` is `[]`) — route through the runtime's `slice`
-            // helper (barefoot_js.rb) so both edge cases (`from` at or past
-            // length) return `[]` like JS, matching the Go/Perl ports.
-            lines.push(`<%- ${rubyLocal(b.name)} = bf.slice(${accessor}, ${b.rest.from}) -%>`)
-          } else if (b.rest?.kind === 'object') {
-            // A TRUE residual Hash (not an alias of the parent) via native
-            // `Hash#except` (Ruby >= 3.0; CI pins 3.3) — so a member read
-            // (`rest.flag` → `rest[:flag]`, `ErbTopLevelEmitter#member`) and
-            // the existing `{...rest}` spread emit (`bf.spread_attrs`) both
-            // see only the non-destructured keys, same as the Hono/CSR IIFE.
-            // Symbol keys match the vars-Hash convention: every item Hash is
-            // built by `JSON.parse(..., symbolize_names: true)`.
-            const excludeSyms = b.rest.exclude.map(k => rubySymbolLiteral(k.key)).join(', ')
-            lines.push(`<%- ${rubyLocal(b.name)} = ${accessor}.except(${excludeSyms}) -%>`)
-          } else {
-            lines.push(`<%- ${rubyLocal(b.name)} = ${accessor} -%>`)
-          }
-        }
+      // One local per lowered destructure binding, built off its structured
+      // `segments` path (never `b.path` — repo rule: no string-parsing of a
+      // JS-shaped accessor). `__bf_item` itself is the loop's own block
+      // parameter (`itemParam` above).
+      for (const { name, value } of spellDestructureLocals(loopPlan, '__bf_item', DESTRUCTURE_SPELLING)) {
+        lines.push(`<%- ${rubyLocal(name)} = ${value} -%>`)
       }
     }
 

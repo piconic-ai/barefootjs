@@ -23,9 +23,9 @@
  *
  * Deliberate v1 exclusions (each is a catalogue extension, not a
  * redesign):
- * - non-integer numbers — a bare `number` prop lowers to Go `int`
- *   absent other evidence (#2168), so fractional values would fail at
- *   the harness, not as a semantic divergence;
+ * - non-integer numbers — excluded while a bare `number` prop lowered
+ *   to Go `int` (#2168) and a fraction failed at the harness; it is a
+ *   `float64` now, so fractions are a pending catalogue extension;
  * - astral-plane strings — pinned per-adapter by hand (#2255); the
  *   catalogue stays BMP so a new string prop doesn't mint eight skips;
  * - function-typed props — no value to synthesize (a function can't cross

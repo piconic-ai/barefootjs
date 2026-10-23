@@ -229,6 +229,17 @@ import { fixture as remainderNanOperand } from './remainder-nan-operand'
 import { fixture as remainderNegativeOperands } from './remainder-negative-operands'
 import { fixture as remainderFractionZeroDivisor } from './remainder-fraction-zero-divisor'
 import { fixture as remainderNegativeZero } from './remainder-negative-zero'
+import { fixture as numberPropFractionSeedMemo } from './number-prop-fraction-seed-memo'
+import { fixture as numberPropIntegralSeedMemo } from './number-prop-integral-seed-memo'
+import { fixture as numberPropFractionRemainder } from './number-prop-fraction-remainder'
+import { fixture as numberPropFractionDefault } from './number-prop-fraction-default'
+import { fixture as numberPropIndex } from './number-prop-index'
+import { fixture as numberPropLargeInteger } from './number-prop-large-integer'
+import { fixture as numberPropIntegerArgs } from './number-prop-integer-args'
+import { fixture as numberRowKeyChildLoop } from './number-row-key-child-loop'
+import { fixture as numberSynthRowKey } from './number-synth-row-key'
+import { fixture as numberPreambleAlias } from './number-preamble-alias'
+import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
@@ -1250,6 +1261,17 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeOperands,
   remainderFractionZeroDivisor,
   remainderNegativeZero,
+  numberPropFractionSeedMemo,
+  numberPropIntegralSeedMemo,
+  numberPropFractionRemainder,
+  numberPropFractionDefault,
+  numberPropIndex,
+  numberPropLargeInteger,
+  numberPropIntegerArgs,
+  numberRowKeyChildLoop,
+  numberSynthRowKey,
+  numberPreambleAlias,
+  numberPropNamedLength,
   remainderNegativeZeroQuotient,
   numberDivisionZeroDivisor,
   unaryMinusCompoundOperand,

@@ -6035,6 +6035,342 @@
       }
     }
   ],
+  "number-preamble-alias": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "number-prop-fraction-default": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "number-prop-fraction-remainder": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "number-prop-fraction-seed-memo": [
+    {
+      "name": "gen:b:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "b": 1234567890
+      }
+    }
+  ],
+  "number-prop-index": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "flags": [
+          false,
+          true
+        ],
+        "i": 1
+      }
+    },
+    {
+      "name": "gen:flags:empty",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "flags": [],
+        "i": 1
+      }
+    },
+    {
+      "name": "gen:i:zero",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "flags": [
+          false,
+          true
+        ],
+        "i": 0
+      }
+    },
+    {
+      "name": "gen:i:negative",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "flags": [
+          false,
+          true
+        ],
+        "i": -7
+      }
+    },
+    {
+      "name": "gen:i:large",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "flags": [
+          false,
+          true
+        ],
+        "i": 1234567890
+      }
+    }
+  ],
+  "number-prop-integer-args": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "n": 2,
+        "price": 2.5
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "n": 0,
+        "price": 2.5
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "n": -7,
+        "price": 2.5
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "n": 1234567890,
+        "price": 2.5
+      }
+    },
+    {
+      "name": "gen:price:zero",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "n": 2,
+        "price": 0
+      }
+    },
+    {
+      "name": "gen:price:negative",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "n": 2,
+        "price": -7
+      }
+    },
+    {
+      "name": "gen:price:large",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "n": 2,
+        "price": 1234567890
+      }
+    }
+  ],
+  "number-prop-integral-seed-memo": [
+    {
+      "name": "gen:b:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "b": 1234567890
+      }
+    }
+  ],
+  "number-prop-large-integer": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "rows": [
+          {
+            "id": 1700000000000,
+            "label": "a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "rows": [
+          {
+            "id": 1700000000000,
+            "label": "a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "rows": [
+          {
+            "id": 1700000000000,
+            "label": "a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "n": 1500000,
+        "rows": []
+      }
+    }
+  ],
+  "number-prop-named-length": [
+    {
+      "name": "gen:length:zero",
+      "props": {
+        "length": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:length:negative",
+      "props": {
+        "length": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:length:large",
+      "props": {
+        "length": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "length": 1500000,
+        "items": []
+      }
+    }
+  ],
   "number-tofixed": [
     {
       "name": "gen:price:negative",
