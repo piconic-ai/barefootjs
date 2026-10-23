@@ -63,6 +63,7 @@ describe('compileForCompat', () => {
           'derived-object-literal-signal',
           'destructure-default-computed-array',
           'loop-row-child-children-attrs-frozen',
+          'loop-row-child-scalar-row-nested-component',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
           'off-subset-callback-body',

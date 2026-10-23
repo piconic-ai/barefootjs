@@ -4900,6 +4900,20 @@
           }
         }
       },
+      "loop-row-child-scalar-row-wrapper-nested-component": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-child-scalar-row-nested-component"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "go-template": {
           "kind": "refusal",
@@ -8044,6 +8058,10 @@
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
+      "loop-row-child-scalar-row-wrapper-nested-component": {
+        "description": "A wrapper component loop row over a string array prop whose forwarded children nest a component…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-scalar-row-wrapper-nested-component.ts"
+      },
       "loop-row-child-untyped-array-mismatched-keys": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows have…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-mismatched-keys.ts"
@@ -8796,6 +8814,22 @@
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "loop-row-child-children-attrs"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "loop-row-child-scalar-row-nested-component": {
+      "title": "A scalar loop row's forwarded children can't nest a component at SSR",
+      "kind": "refusal",
+      "given": "a `.map()` over an array of strings or numbers whose row is a child component passing JSX children, where those children render another component (e.g. `props.picks.map(g => <Tag key={g}><Badge label={g} /></Tag>)`)",
+      "expected": "every row renders its wrapper with the nested component's markup inside it",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "loop-row-child-scalar-row-wrapper-nested-component"
       ],
       "adapters": [
         "go-template"

@@ -7812,6 +7812,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-scalar-row-wrapper-nested-component",
+              "limitations": [
+                "loop-row-child-scalar-row-nested-component"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -13350,6 +13356,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-scalar-row-wrapper-nested-component",
+              "limitations": [
+                "loop-row-child-scalar-row-nested-component"
               ]
             },
             {
