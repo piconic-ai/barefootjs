@@ -7842,6 +7842,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-scalar-row-wrapper-nested-component",
+              "limitations": [
+                "loop-row-child-scalar-row-nested-component"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -13404,6 +13410,12 @@
               "fixture": "loop-row-child-children-inner-loop-shadow",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-scalar-row-wrapper-nested-component",
+              "limitations": [
+                "loop-row-child-scalar-row-nested-component"
               ]
             },
             {
