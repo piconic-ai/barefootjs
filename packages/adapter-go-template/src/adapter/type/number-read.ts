@@ -16,7 +16,7 @@
  * "provably not a number" half.
  */
 
-import type { BindingScope, ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import { isChildrenPropParam, type BindingScope, type ParsedExpr, type TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { collapseLiteralUnion } from './type-codegen.ts'
@@ -69,12 +69,26 @@ export function isKnownNonNumber(ctx: GoEmitContext, expr: ParsedExpr, scope: Bi
       }
       break
     case 'member':
-      // `.length` is the int `bf_len` / `len` returns.
-      if (!expr.computed && expr.property === 'length') return true
+      if (!expr.computed && expr.property === 'length') return isIntLength(ctx, expr, scope)
       break
   }
+  // The component's own `children` is rendered markup (a `template.HTML`
+  // field), never a number, whatever its declared type.
+  const prop = propRead(ctx, expr, scope)
+  if (prop !== null && isChildrenPropParam(prop)) return true
   const type = valueType(ctx, expr, scope)
   return type !== null && isNonNumberType(type)
+}
+
+/**
+ * A `.length` read is the int `bf_len` / `len` returns, except on a field
+ * that is itself named `length` (`props: { length: number }`): when the
+ * member's own declared type is known, that type decides as for any other
+ * read. Only an untyped `.length` is taken for the int length.
+ */
+function isIntLength(ctx: GoEmitContext, expr: Extract<ParsedExpr, { kind: 'member' }>, scope: BindingScope): boolean {
+  const own = valueType(ctx, expr, scope)
+  return own === null || isNonNumberType(own)
 }
 
 /**

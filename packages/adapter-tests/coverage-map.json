@@ -8350,6 +8350,17 @@
         "text"
       ]
     },
+    "number-prop-named-length": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "number-row-key-child-loop": {
       "kinds": [
         "identifier",

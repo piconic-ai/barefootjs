@@ -6274,6 +6274,45 @@
       }
     }
   ],
+  "number-prop-named-length": [
+    {
+      "name": "gen:length:zero",
+      "props": {
+        "length": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:length:negative",
+      "props": {
+        "length": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:length:large",
+      "props": {
+        "length": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "length": 1500000,
+        "items": []
+      }
+    }
+  ],
   "number-tofixed": [
     {
       "name": "gen:price:negative",

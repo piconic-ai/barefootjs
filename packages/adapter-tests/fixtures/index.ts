@@ -239,6 +239,7 @@ import { fixture as numberPropIntegerArgs } from './number-prop-integer-args'
 import { fixture as numberRowKeyChildLoop } from './number-row-key-child-loop'
 import { fixture as numberSynthRowKey } from './number-synth-row-key'
 import { fixture as numberPreambleAlias } from './number-preamble-alias'
+import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
@@ -1266,6 +1267,7 @@ export const jsxFixtures: JSXFixture[] = [
   numberRowKeyChildLoop,
   numberSynthRowKey,
   numberPreambleAlias,
+  numberPropNamedLength,
   remainderNegativeZeroQuotient,
   numberDivisionZeroDivisor,
   unaryMinusCompoundOperand,
