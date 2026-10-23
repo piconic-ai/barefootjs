@@ -1141,6 +1141,12 @@ import { fixture as stringLiteralUnionAliasSignalSeeds } from './string-literal-
 import { fixture as filterParamSigilInString } from './filter-param-sigil-in-string'
 import { fixture as filterNestedCallbackReadsOuterParam } from './filter-nested-callback-reads-outer-param'
 import { fixture as filterNestedCallbackReadsOuterParamClient } from './filter-nested-callback-reads-outer-param-client'
+// A binding the component writes is never substituted at the write: a
+// destructured prop written by handlers is an init local, and a `let`
+// written only by handlers keeps its declared value in the template.
+import { fixture as reassignedPropCounter } from './reassigned-prop-counter'
+import { fixture as handlerWrittenLocals } from './handler-written-locals'
+import { fixture as reassignedPropStateless } from './reassigned-prop-stateless'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1954,4 +1960,7 @@ export const jsxFixtures: JSXFixture[] = [
   filterParamSigilInString,
   filterNestedCallbackReadsOuterParam,
   filterNestedCallbackReadsOuterParamClient,
+  reassignedPropCounter,
+  handlerWrittenLocals,
+  reassignedPropStateless,
 ]

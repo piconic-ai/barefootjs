@@ -5053,6 +5053,28 @@
         "text"
       ]
     },
+    "handler-written-locals": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "template-literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string",
+        "unary:unknown"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "html-entity-text": {
       "kinds": [],
       "axes": [],
@@ -9368,6 +9390,39 @@
       "axes": [
         "binary:*",
         "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reassigned-prop-counter": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string",
+        "unary:unknown"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reassigned-prop-stateless": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
         "literal:number"
       ],
       "contexts": [

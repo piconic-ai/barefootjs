@@ -1,7 +1,9 @@
 /**
- * `props-extraction` phase — emit the one surviving one-time prop
- * extraction, `const children = _p.children [?? <default>]` (or
- * `const kids = _p.children` for a renamed `{ children: kids }`).
+ * `props-extraction` phase — emit the one-time prop extractions:
+ * `const children = _p.children [?? <default>]` (or `const kids =
+ * _p.children` for a renamed `{ children: kids }`), and `let start =
+ * _p.start [?? <default>]` for each prop the component writes
+ * (`ParamInfo.reassigned`, see `keepsDeclaredValue`).
  *
  * `children` must stay a ONE-TIME read: a prop's slot-children value is a
  * getter that INSTANTIATES child components when read (see
@@ -21,7 +23,7 @@
 
 import { type PropUsage, isChildrenPropParam } from '../../types.ts'
 import { computePropsUsedAsConditions } from '../compute-prop-usage.ts'
-import { propReadBase, propReadFallback } from '../../props-binding.ts'
+import { propReadBase, propReadFallback, keepsDeclaredValue } from '../../props-binding.ts'
 import type { ClientJsContext } from '../types.ts'
 
 export function emitPropsExtraction(
@@ -31,6 +33,7 @@ export function emitPropsExtraction(
   propUsage: Map<string, PropUsage>,
 ): void {
   if (ctx.propsObjectName) return
+  emitWrittenPropLocals(lines, ctx, propUsage)
   // The children prop's local binding: `children`, or the renamed local of
   // `{ children: kids }` (`isChildrenPropParam`, #3572), which reads
   // `_p.children` the same one-time way. A local named `children` that binds
@@ -45,5 +48,23 @@ export function emitPropsExtraction(
   const usedAsCondition = computePropsUsedAsConditions(ctx, neededProps).has(local)
   const fallback = propReadFallback(prop, propUsage.get(local), usedAsCondition)
   const read = propReadBase(prop) + (fallback === null ? '' : ` ?? ${fallback}`)
-  lines.push(`  const ${local} = ${read}`, '')
+  // A children binding the component writes needs a `let` to take the write.
+  lines.push(`  ${keepsDeclaredValue(prop) ? 'const' : 'let'} ${local} = ${read}`, '')
+}
+
+/**
+ * A prop the component writes (`++start`, `start = clamp(start)`) is a
+ * local it owns, as in JS: declared once from the prop, then read and
+ * written in place. It is declared whether or not `neededProps` lists it,
+ * since a write is itself a use.
+ */
+function emitWrittenPropLocals(lines: string[], ctx: ClientJsContext, propUsage: Map<string, PropUsage>): void {
+  const written = ctx.propsParams.filter(p => !p.isRest && !isChildrenPropParam(p) && !keepsDeclaredValue(p))
+  if (written.length === 0) return
+  const usedAsCondition = computePropsUsedAsConditions(ctx, new Set(written.map(p => p.name)))
+  for (const prop of written) {
+    const fallback = propReadFallback(prop, propUsage.get(prop.name), usedAsCondition.has(prop.name))
+    lines.push(`  let ${prop.name} = ${propReadBase(prop)}${fallback === null ? '' : ` ?? ${fallback}`}`)
+  }
+  lines.push('')
 }

@@ -14,6 +14,7 @@ import { csrSubstitute, type CsrEnv } from './csr-substitute.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { resolveRestSpreadNames } from './prop-handling.ts'
+import { writesAnyBinding } from '../props-binding.ts'
 
 /**
  * Resolve chained references within a constants map.
@@ -191,7 +192,11 @@ export function emitRegistrationAndHydration(
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: ${initFunctionName(name)}`]
-  if (canGenerateStaticTemplate(_ir.root, reactiveGetterNames, inlinableConstants, unsafeLocalNames)) {
+  // A component that writes a binding (`writesAnyBinding`) always takes the
+  // CSR template below: only that emitter checks each expression for a
+  // write (`csrSubstitute`'s `writes`) and leaves it to init, so no template
+  // path can carry `++start` into module scope, where `start` does not exist.
+  if (!writesAnyBinding(ctx) && canGenerateStaticTemplate(_ir.root, reactiveGetterNames, inlinableConstants, unsafeLocalNames)) {
     const markupSlotIds = markupSlotIdsOf(ctx)
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
     if (templateHtml) {

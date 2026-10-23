@@ -10,9 +10,10 @@ import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
+import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
-import { rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
+import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
+import { isEventHandlerName } from './event-handler-name.ts'
 import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -4705,6 +4706,7 @@ function validateContext(ctx: AnalyzerContext): void {
   // `localConstants` binding after its declaration — flag those bindings so
   // downstream inlining never re-embeds their stale initializer text (#2910).
   markMutatedConstants(ctx)
+  markWrittenBindings(ctx)
 
   // BF052: init statements that write to an identifier with no visible
   // declaration cause a ReferenceError in ESM strict mode. Flag them
@@ -5011,6 +5013,285 @@ function markMutatedConstants(ctx: AnalyzerContext): void {
   for (const constant of ctx.localConstants) {
     if (mutatedNames.has(constant.name)) constant.mutatedAfterDeclaration = true
   }
+}
+
+/**
+ * Flag the component-scope bindings the component writes anywhere in its
+ * body, nested functions and markup included (`collectAssignmentTargets`),
+ * which `markMutatedConstants` does not see: it reads only the top-level
+ * statements, up to the first nested function.
+ *
+ *   - Every written binding gets `reassigned` (`ParamInfo` and
+ *     `ConstantInfo` alike), so it fails `keepsDeclaredValue`: it is a local
+ *     the component owns, never rewritten into a live prop read (`++start`
+ *     would become `++(_p.start ?? 0)`, a SyntaxError).
+ *   - A `localConstants` binding a write changes during render (a markup
+ *     expression, not an event handler) gets `mutatedAfterDeclaration`, like
+ *     a top-level statement's write: its declared value is no longer what a
+ *     later read sees, so nothing inlines it (`{++nextId}` would become
+ *     `++(0)`). A write in an event handler or another callback leaves the
+ *     declared value in place for render, so the binding stays inlinable.
+ */
+function markWrittenBindings(ctx: AnalyzerContext): void {
+  const body = ctx.componentNode?.body
+  if (!body) return
+  const params = ctx.propsObjectName === null ? ctx.propsParams.filter(p => !p.isRest) : []
+  const names = new Set<string>([...params.map(p => p.name), ...ctx.localConstants.map(c => c.name)])
+  if (names.size === 0) return
+
+  const { written, writingInitializers } = collectBindingWrites(ctx, body, names)
+  for (const p of params) {
+    if (written.has(p.name)) p.reassigned = true
+  }
+  for (const c of ctx.localConstants) {
+    const when = written.get(c.name)
+    if (when) c.reassigned = true
+    // A const whose initializer writes (`const label = ++start`) must run
+    // once, where it is declared: inlining its value anywhere else would
+    // repeat the write, or carry it into the template's module scope.
+    if (when === 'render' || writingInitializers.has(c.name)) c.mutatedAfterDeclaration = true
+  }
+}
+
+/**
+ * Every write `markWrittenBindings` acts on, by binding: whether one runs
+ * during render, and which top-level declarations' initializers write. A
+ * markup write is reported (BF065) on the way.
+ */
+function collectBindingWrites(
+  ctx: AnalyzerContext,
+  body: ts.Node,
+  names: ReadonlySet<string>,
+): { written: Map<string, 'render' | 'deferred'>; writingInitializers: Set<string | undefined> } {
+  const written = new Map<string, 'render' | 'deferred'>()
+  const writingInitializers = new Set<string | undefined>()
+  const roots: readonly ts.Node[] = ts.isBlock(body) ? body.statements : [body]
+  for (const root of roots) {
+    for (const id of collectAssignmentTargets(root, names)) {
+      const when = writeTiming(id, root)
+      if (when === 'markup') reportMarkupWrite(ctx, id)
+      if (when === 'statement') writingInitializers.add(declaredByInitializer(id, root))
+      if (written.get(id.text) !== 'render') written.set(id.text, when === 'deferred' ? 'deferred' : 'render')
+    }
+  }
+  return { written, writingInitializers }
+}
+
+/**
+ * When the write `id` (inside the component-body statement `root`) runs:
+ * `'markup'` while a markup expression renders, `'statement'` while a
+ * top-level statement runs (init runs it too), `'deferred'` later.
+ * `markupTiming` decides a write that markup reaches; any other write keeps
+ * the statement rule (`statementTiming`).
+ */
+function writeTiming(id: ts.Identifier, root: ts.Node): 'markup' | 'statement' | 'deferred' {
+  const inMarkup = markupTiming(id, root)
+  return inMarkup === 'outside' ? statementTiming(id, root) : inMarkup
+}
+
+/**
+ * The one compositional rule for a write markup reaches. From the write
+ * site, climb to the nearest enclosing function literal F:
+ *
+ *   - none before a markup expression (`JsxExpression` / spread attribute):
+ *     the write runs while that expression renders — `'markup'`, an
+ *     event-handler attribute included (`onClick={(++id, () => {})}`);
+ *   - F found: follow how F's value is used (`valueUseOf`: parentheses,
+ *     casts, a conditional's branches, `&&` / `||` / `??`, a comma's last
+ *     operand, object / array literal members — not a spread, which runs
+ *     getters or iterates), then
+ *       - the callee of a call (an IIFE, `(c ? f : g)()`): F runs when that
+ *         call is evaluated — the same rule from the call;
+ *       - directly a JSX attribute's value (a child prop, a context value's
+ *         `setApi`, an event handler): handed on, it runs when the receiver
+ *         calls it — `'deferred'`;
+ *       - an argument of a call: `'deferred'` only when that call is, by the
+ *         same value walk and through further wrapper calls, an
+ *         event-handler attribute's value (`onClick={wrap(() => ++n)}`,
+ *         `onInput={debounce(…)}`); otherwise the callee may run it while
+ *         rendering (`Array.from(xs, () => ++n)`, `.map`, `.replace`), so
+ *         the same rule from the call;
+ *       - anything else (stored in a variable, a JSX child): the same rule
+ *         from where its value lands, so unknown use inside markup refuses.
+ *
+ * `'outside'` when the climb reaches the component-body statement without
+ * meeting markup.
+ */
+function markupTiming(site: ts.Node, root: ts.Node): 'markup' | 'deferred' | 'outside' {
+  for (let n: ts.Node = site; n !== root && n.parent; n = n.parent) {
+    const parent = n.parent
+    if (ts.isJsxExpression(parent) || ts.isJsxSpreadAttribute(parent)) return 'markup'
+    if (isFunctionScope(parent)) return functionUseTiming(parent, root)
+  }
+  return 'outside'
+}
+
+function functionUseTiming(fn: ts.Node, root: ts.Node): 'markup' | 'deferred' | 'outside' {
+  const { use, dropped } = valueWalk(fn)
+  // A setter an object spread meets is neither copied nor called.
+  if (dropped) return 'deferred'
+  const parent = use.parent
+  if (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent)) return 'deferred'
+  if (ts.isCallExpression(parent) && parent.expression !== use && isEventHandlerValue(parent)) return 'deferred'
+  return markupTiming(ts.isCallExpression(parent) ? parent : use, root)
+}
+
+/** Whether `call` is, through value-passing wrappers and further calls, an event-handler attribute's value. */
+function isEventHandlerValue(call: ts.CallExpression): boolean {
+  const use = valueUseOf(call)
+  const parent = use.parent
+  if (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent)) {
+    return ts.isIdentifier(parent.parent.name) && isEventHandlerName(parent.parent.name.text)
+  }
+  return ts.isCallExpression(parent) && parent.expression !== use && isEventHandlerValue(parent)
+}
+
+/**
+ * The outermost expression that carries `node`'s value unchanged: through
+ * parentheses, casts, a conditional's branches (not its condition), `&&` /
+ * `||` / `??`, a comma's last operand, object / array literal members, and a
+ * spread that copies it (`spreadPassesOn`).
+ */
+function valueUseOf(node: ts.Node): ts.Node {
+  return valueWalk(node).use
+}
+
+/**
+ * `valueUseOf`'s walk. `dropped`: the value is a setter an object spread
+ * meets, which the spread neither copies nor calls.
+ */
+function valueWalk(node: ts.Node): { use: ts.Node; dropped: boolean } {
+  let v = node
+  let member: ts.Node | undefined
+  for (;;) {
+    const p = v.parent
+    if (!p) return { use: v, dropped: false }
+    if (ts.isSpreadAssignment(p) || ts.isSpreadElement(p)) {
+      const spread = spreadPassesOn(p, v, member)
+      if (spread === 'dropped') return { use: v, dropped: true }
+      if (spread === 'consumed') return { use: v, dropped: false }
+    } else if (!passesValueOn(v)) {
+      return { use: v, dropped: false }
+    }
+    if (ts.isObjectLiteralExpression(p)) member = v
+    v = p
+  }
+}
+
+/**
+ * What a spread does with its operand `v`, per JavaScript:
+ *
+ *   - an object spread copies the operand literal's data properties and
+ *     methods (`'passes'`), calls its getters (`'consumed'`: the rule
+ *     applies from the spread site) and skips its setters (`'dropped'`);
+ *     `member` is the operand member the walk came through;
+ *   - an array or argument spread of an array literal copies its elements
+ *     (`'passes'`); of anything else it runs the operand's iterator, which may
+ *     run any function in it (`'consumed'`).
+ */
+function spreadPassesOn(
+  p: ts.SpreadAssignment | ts.SpreadElement,
+  v: ts.Node,
+  member: ts.Node | undefined,
+): 'passes' | 'consumed' | 'dropped' {
+  if (ts.isSpreadElement(p)) return ts.isArrayLiteralExpression(v) ? 'passes' : 'consumed'
+  if (!ts.isObjectLiteralExpression(v)) return 'consumed'
+  if (member && ts.isGetAccessorDeclaration(member)) return 'consumed'
+  if (member && ts.isSetAccessorDeclaration(member)) return 'dropped'
+  return 'passes'
+}
+
+function passesValueOn(v: ts.Node): boolean {
+  const p = v.parent
+  if (ts.isParenthesizedExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p)) return true
+  if (ts.isNonNullExpression(p) || ts.isTypeAssertionExpression(p)) return true
+  if (ts.isConditionalExpression(p)) return p.condition !== v
+  if (ts.isBinaryExpression(p)) return isValuePassingOperator(p, v)
+  if (ts.isPropertyAssignment(p)) return p.initializer === v
+  return ts.isObjectLiteralExpression(p) || ts.isArrayLiteralExpression(p)
+}
+
+function isValuePassingOperator(p: ts.BinaryExpression, v: ts.Node): boolean {
+  const op = p.operatorToken.kind
+  if (op === ts.SyntaxKind.CommaToken) return p.right === v
+  return op === ts.SyntaxKind.AmpersandAmpersandToken || op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken
+}
+
+/**
+ * The statement rule for a write no markup reaches: a top-level statement
+ * runs during render (`'statement'`) unless a function encloses the write
+ * that is not invoked where it stands (`isInvokedInPlace`) — `'deferred'`.
+ * That only decides whether a later read may inline the binding's declared
+ * value (`mutatedAfterDeclaration`).
+ */
+function statementTiming(id: ts.Identifier, root: ts.Node): 'statement' | 'deferred' {
+  for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
+    if (isFunctionScope(n.parent) && !isInvokedInPlace(n.parent)) return 'deferred'
+  }
+  return 'statement'
+}
+
+/**
+ * Whether a function literal outside markup is called where it stands: the
+ * callee of a call (an IIFE, `(() => …)()`), or the callback of an array
+ * iteration method, which calls it before returning (`xs.map(cb)`, the
+ * higher-order methods of `CALLBACK_METHODS`, plus `forEach`). Any other
+ * function there is deferred, which only decides whether a later read may
+ * inline the binding's declared value (`mutatedAfterDeclaration`).
+ */
+function isInvokedInPlace(fn: ts.Node): boolean {
+  let node = fn
+  while (ts.isParenthesizedExpression(node.parent)) node = node.parent
+  const call = node.parent
+  if (!ts.isCallExpression(call)) return false
+  if (call.expression === node) return true
+  return call.arguments[0] === node && isArrayIterationCallee(call.expression)
+}
+
+/** `<receiver>.<method>` where `method` is an array iteration method that calls its callback in place. */
+function isArrayIterationCallee(callee: ts.Expression): boolean {
+  if (!ts.isPropertyAccessExpression(callee)) return false
+  const method = callee.name.text
+  return CALLBACK_METHODS.has(method) || method === 'forEach'
+}
+
+/**
+ * The name a top-level declaration binds when the write `id` sits in its
+ * initializer (`const label = ++start` → `label`), or undefined.
+ */
+function declaredByInitializer(id: ts.Identifier, root: ts.Node): string | undefined {
+  for (let n: ts.Node = id; n !== root && n.parent; n = n.parent) {
+    const parent = n.parent
+    if (ts.isVariableDeclaration(parent) && parent.initializer === n && ts.isIdentifier(parent.name)) return parent.name.text
+  }
+  return undefined
+}
+
+/**
+ * BF065: a client component's markup writes a component binding while it
+ * renders (`{++nextId}`, a `.map()` row that increments a counter). A
+ * callback the markup hands on (an event handler, a child prop, a context
+ * value) is not: it runs when called. The client renders markup in two places that
+ * cannot share that write: the client template, which runs at module scope
+ * with no binding to write, and init, which re-evaluates only reactive
+ * positions. A client-side mount would lose the written value, so the
+ * shape is refused rather than rendered empty. A server-only component has
+ * no client side and renders it as JavaScript does.
+ */
+function reportMarkupWrite(ctx: AnalyzerContext, id: ts.Identifier): void {
+  if (!ctx.hasUseClientDirective) return
+  ctx.errors.push(
+    createError(ErrorCodes.STAGE_WRITE_IN_MARKUP, getSourceLocation(id, ctx.sourceFile, ctx.filePath), {
+      message:
+        `The markup writes '${id.text}' while it renders. The client template cannot write a component binding, ` +
+        'so a client-side mount would lose the written value.',
+      suggestion: {
+        message:
+          `Compute the value before the return (\`const label = ++${id.text}\`) and render that, ` +
+          'or keep the value in a signal and update it from an event handler.',
+      },
+    }),
+  )
 }
 
 function validateInitStatementReferences(ctx: AnalyzerContext): void {

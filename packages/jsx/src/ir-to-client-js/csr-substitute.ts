@@ -32,6 +32,7 @@ import type { ConstantInfo, MemoInfo, SignalInfo } from '../types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveAliasOrigin } from '../props-binding.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
+import { isAssignmentTargetIdentifier } from '../assignment-target.ts'
 
 /**
  * CSR-substituted const value: the const's initializer with every
@@ -141,9 +142,9 @@ export function csrSubstitute(
   value: string,
   env: CsrEnv,
   enclosingScope?: BindingScope,
-): { rewritten: string; freeIdentifiers: ReadonlySet<string> } {
+): CsrSubstituteResult {
   if (!value || value.trim().length === 0) {
-    return { rewritten: value, freeIdentifiers: new Set() }
+    return { rewritten: value, freeIdentifiers: new Set(), writes: new Set() }
   }
 
   // Fixed-point iteration handles substitutions whose replacements
@@ -153,22 +154,39 @@ export function csrSubstitute(
   const maxIter = env.substitutions.size + 1
   let current = value
   let lastFreeIdentifiers: ReadonlySet<string> = new Set()
+  const writes = new Set<string>()
   for (let i = 0; i < maxIter; i++) {
     const step = csrSubstituteOnce(current, env, enclosingScope)
     lastFreeIdentifiers = step.freeIdentifiers
+    for (const name of step.writes) writes.add(name)
     if (step.rewritten === current) break
     current = step.rewritten
   }
-  return { rewritten: current, freeIdentifiers: lastFreeIdentifiers }
+  return { rewritten: current, freeIdentifiers: lastFreeIdentifiers, writes }
+}
+
+/**
+ * `csrSubstitute`'s result. `writes` names the free identifiers the
+ * expression assigns or updates (`++nextId`, `start += 1`, `[a, b] = …`),
+ * including those inside a spliced memo body or a nested arrow. Such a name
+ * is never substituted (`++(0)` is a SyntaxError) and the template lambda,
+ * which runs at module scope, has no binding to write, so a caller treats a
+ * non-empty set like an unsafe local: the template leaves the position to
+ * init.
+ */
+export interface CsrSubstituteResult {
+  rewritten: string
+  freeIdentifiers: ReadonlySet<string>
+  writes: ReadonlySet<string>
 }
 
 function csrSubstituteOnce(
   value: string,
   env: CsrEnv,
   enclosingScope?: BindingScope,
-): { rewritten: string; freeIdentifiers: ReadonlySet<string> } {
+): CsrSubstituteResult {
   if (!value || value.trim().length === 0) {
-    return { rewritten: value, freeIdentifiers: new Set() }
+    return { rewritten: value, freeIdentifiers: new Set(), writes: new Set() }
   }
   const sourceFile = ts.createSourceFile(
     '__csr_substitute__.ts',
@@ -179,7 +197,7 @@ function csrSubstituteOnce(
   )
   const stmt = sourceFile.statements[0]
   if (!stmt || !ts.isExpressionStatement(stmt)) {
-    return { rewritten: value, freeIdentifiers: extractFreeIdentifiersFromText(value) }
+    return { rewritten: value, freeIdentifiers: extractFreeIdentifiersFromText(value), writes: new Set() }
   }
   const exprNode = ts.isParenthesizedExpression(stmt.expression)
     ? stmt.expression.expression
@@ -192,6 +210,7 @@ function csrSubstituteOnce(
 
   type Splice = { start: number; end: number; text: string }
   const splices: Splice[] = []
+  const writes = new Set<string>()
 
   // Track the bound names in nested arrow/function scopes so we don't
   // substitute identifiers shadowed by a parameter or local binding.
@@ -217,6 +236,34 @@ function csrSubstituteOnce(
   // (#2924).
   const bareReplacementText = (sub: CsrSubstitution): string =>
     sub.kind === 'call' ? `(() => (${sub.replacement}))` : `(${sub.replacement})`
+
+  // The substitution for a free reference `id`, or undefined. A written
+  // name (`++nextId`, `({ x } = obj)`) is recorded in `writes` and never
+  // substituted: a value is not an assignment target (`++(0)` is a
+  // SyntaxError).
+  const readSubstitution = (id: ts.Identifier): CsrSubstitution | undefined => {
+    if (isBound(id.text)) return undefined
+    if (isAssignmentTargetIdentifier(id)) {
+      if (!isFunctionLocal(id.text)) writes.add(id.text)
+      return undefined
+    }
+    return env.substitutions.get(id.text)
+  }
+
+  // Every name a function inside `value` declares anywhere in its body
+  // (`for (let i …)`, a nested block's `let`, a catch variable), innermost
+  // last. `boundStack` binds only a body's top-level declarations, which
+  // is all substitution needs; a write to one of these is the function's
+  // own, never a write to a component binding.
+  const functionLocalStack: Array<Set<string>> = []
+  const isFunctionLocal = (name: string): boolean => functionLocalStack.some(frame => frame.has(name))
+  const collectFunctionLocals = (n: ts.Node, out: Set<string>): void => {
+    ts.forEachChild(n, child => {
+      if (ts.isVariableDeclaration(child)) collectBindingNames(child.name, out)
+      else if (ts.isFunctionDeclaration(child) && child.name) out.add(child.name.text)
+      if (!ts.isFunctionLike(child)) collectFunctionLocals(child, out)
+    })
+  }
 
   const collectBindingNames = (name: ts.BindingName, out: Set<string>): void => {
     if (ts.isIdentifier(name)) out.add(name.text)
@@ -286,18 +333,16 @@ function csrSubstituteOnce(
     // `call`-kind entry needs the thunk form too (#2924) — same as the
     // bare-identifier branch below.
     if (ts.isShorthandPropertyAssignment(node)) {
-      if (ts.isIdentifier(node.name) && !isBound(node.name.text)) {
-        const sub = env.substitutions.get(node.name.text)
-        if (sub) {
-          // The shorthand expands to a key-value pair when we substitute,
-          // so emit `name: (replacement)` to keep the object literal
-          // grammatical. Position spans the whole shorthand.
-          splices.push({
-            start: node.getStart(sourceFile) - OFFSET,
-            end: node.getEnd() - OFFSET,
-            text: `${node.name.text}: ${bareReplacementText(sub)}`,
-          })
-        }
+      const sub = readSubstitution(node.name)
+      if (sub) {
+        // The shorthand expands to a key-value pair when we substitute,
+        // so emit `name: (replacement)` to keep the object literal
+        // grammatical. Position spans the whole shorthand.
+        splices.push({
+          start: node.getStart(sourceFile) - OFFSET,
+          end: node.getEnd() - OFFSET,
+          text: `${node.name.text}: ${bareReplacementText(sub)}`,
+        })
       }
       return
     }
@@ -321,8 +366,12 @@ function csrSubstituteOnce(
       if (node.body && ts.isBlock(node.body)) {
         collectBlockDeclarations(node.body, bound)
       }
+      const locals = new Set(bound)
+      collectFunctionLocals(node.body, locals)
       boundStack.push(bound)
-      if (node.body) visit(node.body)
+      functionLocalStack.push(locals)
+      visit(node.body)
+      functionLocalStack.pop()
       boundStack.pop()
       return
     }
@@ -340,8 +389,7 @@ function csrSubstituteOnce(
     // getter) substitutes to a thunk over its value here, not the value
     // itself — the bare form is the accessor, not a read of it (#2924).
     if (ts.isIdentifier(node)) {
-      if (isBound(node.text)) return
-      const sub = env.substitutions.get(node.text)
+      const sub = readSubstitution(node)
       if (sub) {
         splices.push({
           start: node.getStart(sourceFile) - OFFSET,
@@ -396,7 +444,7 @@ function csrSubstituteOnce(
       if (enclosingScope.isBound(name)) freeIdentifiers.delete(name)
     }
   }
-  return { rewritten, freeIdentifiers }
+  return { rewritten, freeIdentifiers, writes }
 }
 
 export function extractFreeIdentifiersFromText(text: string): Set<string> {
