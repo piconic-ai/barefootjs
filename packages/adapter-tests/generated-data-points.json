@@ -4096,6 +4096,64 @@
       }
     }
   ],
+  "loop-param-named-props": [
+    {
+      "name": "gen:suffix:empty",
+      "props": {
+        "suffix": "",
+        "step": 2,
+        "__instanceId": "LoopParamNamedProps_test"
+      }
+    },
+    {
+      "name": "gen:suffix:markup",
+      "props": {
+        "suffix": "<b>&\"'</b>",
+        "step": 2,
+        "__instanceId": "LoopParamNamedProps_test"
+      }
+    },
+    {
+      "name": "gen:suffix:multibyte",
+      "props": {
+        "suffix": "日本語",
+        "step": 2,
+        "__instanceId": "LoopParamNamedProps_test"
+      }
+    },
+    {
+      "name": "gen:step:zero",
+      "props": {
+        "suffix": "!",
+        "step": 0,
+        "__instanceId": "LoopParamNamedProps_test"
+      }
+    },
+    {
+      "name": "gen:step:negative",
+      "props": {
+        "suffix": "!",
+        "step": -7,
+        "__instanceId": "LoopParamNamedProps_test"
+      }
+    },
+    {
+      "name": "gen:step:large",
+      "props": {
+        "suffix": "!",
+        "step": 1234567890,
+        "__instanceId": "LoopParamNamedProps_test"
+      }
+    }
+  ],
+  "loop-param-named-props-member": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-param-prop-alias-name-collision": [
     {
       "name": "gen:values:empty",

@@ -4836,6 +4836,56 @@
           ]
         }
       },
+      "loop-param-named-props-member": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-param-named-props-member"
+          ]
+        }
+      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -7986,6 +8036,10 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "loop-param-named-props-member": {
+        "description": "A .map() row parameter named props reads its own item members, not the component props",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-member.ts"
+      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
@@ -8712,6 +8766,26 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-param-named-props-member": {
+      "title": "A member read of a loop row parameter named `props`",
+      "kind": "silent",
+      "given": "a `.map()` row whose parameter is named `props` reading a member of it (`rows.map((props) => <li>{props.label}</li>)`)",
+      "expected": "each row renders its own item's member (`props.label` of that row)",
+      "actual": "renders the component's prop of that name instead (empty when there is none): the template reads `props.<member>` as a root prop",
+      "fixtures": [
+        "loop-param-named-props-member"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",

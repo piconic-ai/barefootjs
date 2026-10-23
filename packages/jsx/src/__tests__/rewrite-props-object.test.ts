@@ -120,4 +120,36 @@ describe('rewritePropsObjectRef', () => {
     const out = rewritePropsObjectRef('const x = propsX.name', 'props')
     expect(out).toBe('const x = propsX.name')
   })
+
+  describe('an inner binding of the same name shadows the props object', () => {
+    // The client JS reads the component's props through `_p`. A callback
+    // parameter or local spelled like the props object belongs to its own
+    // binding inside its scope: renaming it too would make every `_p.<prop>`
+    // read the compiler emits inside that scope (a destructured prop, a
+    // forwarded child prop) read the parameter instead.
+    test('a loop row callback param keeps its name; the outer `_p` read stays outer', () => {
+      const code = 'mapArray(() => items(), el, (props) => String(props.id), (props) => props().label + _p.suffix)'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+
+    test('a row accessor `const props = () => __e.item` keeps its name', () => {
+      const code = 'const row = (__e) => {\n  const props = () => __e.item\n  return props().label + _p.suffix\n}'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+
+    test('a handler arrow param and a nested function param keep their names', () => {
+      const code = 'const bump = (props) => set(props.by * _p.step)\nfunction describe(props) { return props.label + _p.suffix }'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+
+    test('references outside the shadowing scope are still rewritten', () => {
+      const out = rewritePropsObjectRef('const a = props.x\nconst f = (props) => props.y\nconst b = props.z', 'props')
+      expect(out).toBe('const a = _p.x\nconst f = (props) => props.y\nconst b = _p.z')
+    })
+
+    test('a rest binding name is shadowed the same way', () => {
+      const out = rewritePropsObjectRef('const a = rest\nconst f = (rest) => rest.y', null, 'rest')
+      expect(out).toBe('const a = _p\nconst f = (rest) => rest.y')
+    })
+  })
 })

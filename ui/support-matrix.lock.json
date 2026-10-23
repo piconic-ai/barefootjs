@@ -7144,6 +7144,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -7439,6 +7445,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -8158,6 +8170,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8474,6 +8492,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8757,6 +8781,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -9064,6 +9094,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -9365,6 +9401,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -9675,6 +9717,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -12739,6 +12787,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -12992,6 +13046,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -13609,6 +13669,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -13883,6 +13949,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -14124,6 +14196,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -14389,6 +14467,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -14648,6 +14732,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -14916,6 +15006,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
