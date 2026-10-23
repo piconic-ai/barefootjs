@@ -30,10 +30,22 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
 
 /**
  * Names bound by `n` for its subtree, or null when `n` introduces no
- * scope. Function-likes bind their parameters (and a function
- * expression its own name); blocks bind their statement-level
- * variable/function declarations; a `for` head binds its `let` / `const`;
- * catch clauses bind their variable.
+ * scope. The frames follow JS's two scoping rules:
+ *
+ * - Function scope: a function-like binds its parameters, a function
+ *   expression's own name, and every `var` declared anywhere in its body —
+ *   inside nested blocks and loop heads too (`if (c) { var x }` and
+ *   `for (var x …)` are visible to the whole function), but not inside a
+ *   nested function, which owns its own `var`s.
+ * - Block scope: a block binds its statement-level `let` / `const`, class
+ *   and function declarations (the emitted client JS is a module, so it is
+ *   strict code: a function declared in a block is scoped to that block);
+ *   a `for` head binds its `let` / `const`; a catch clause binds its
+ *   variable.
+ *
+ * A `var` with no enclosing function in the walked text binds at its top
+ * level, where no frame is pushed — the same as any other top-level
+ * declaration.
  */
 function scopeFrameOf(n: ts.Node): Set<string> | null {
   const frame = new Set<string>()
@@ -47,13 +59,34 @@ function scopeFrameOf(n: ts.Node): Set<string> | null {
 function collectFunctionBindings(n: ts.SignatureDeclaration, frame: Set<string>): void {
   for (const p of n.parameters) collectBindingNames(p.name, frame)
   if ((ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n)) && n.name) frame.add(n.name.text)
+  const body = (n as { body?: ts.Node }).body
+  if (body) collectVarBindings(body, frame)
+}
+
+/** True for a `let` / `const` (and `using`) declaration list; false for `var`. */
+function isBlockScopedList(list: ts.VariableDeclarationList): boolean {
+  return (list.flags & ts.NodeFlags.BlockScoped) !== 0
+}
+
+/**
+ * Every `var`-declared name under `n`, through blocks and loop heads but not
+ * into nested function-likes (each binds its own `var`s).
+ */
+function collectVarBindings(n: ts.Node, frame: Set<string>): void {
+  if (ts.isVariableDeclarationList(n) && !isBlockScopedList(n)) {
+    for (const d of n.declarations) collectBindingNames(d.name, frame)
+  }
+  ts.forEachChild(n, child => {
+    if (!ts.isFunctionLike(child)) collectVarBindings(child, frame)
+  })
 }
 
 function collectBlockBindings(n: ts.Block, frame: Set<string>): void {
   for (const st of n.statements) {
     if (ts.isVariableStatement(st)) {
+      if (!isBlockScopedList(st.declarationList)) continue
       for (const d of st.declarationList.declarations) collectBindingNames(d.name, frame)
-    } else if (ts.isFunctionDeclaration(st) && st.name) {
+    } else if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name) {
       frame.add(st.name.text)
     }
   }
@@ -66,6 +99,8 @@ function collectBlockBindings(n: ts.Block, frame: Set<string>): void {
  */
 function collectForHeadBindings(n: ts.ForStatement | ts.ForOfStatement | ts.ForInStatement, frame: Set<string>): void {
   if (!n.initializer || !ts.isVariableDeclarationList(n.initializer)) return
+  // A `for (var …)` binds in the enclosing function (`collectVarBindings`).
+  if (!isBlockScopedList(n.initializer)) return
   for (const d of n.initializer.declarations) collectBindingNames(d.name, frame)
 }
 

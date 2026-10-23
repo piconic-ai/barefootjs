@@ -9,7 +9,9 @@
 //     forwarded child prop),
 //   - a handler's `(props) => …` arrow reading `step`,
 //   - a `.filter((props) => …)` callback inside a handler reading `step`,
-//   - a nested `function describe(props)` reading `suffix`.
+//   - a nested `function describe(props)` reading `suffix`,
+//   - a `var props` declared in a nested block of a handler: `var` binds in
+//     the whole handler, so the read after the block is that local.
 // `Tag` is a props-object child: its own `props` is the renamed object.
 // The rendered row reads its `props` item bare (string rows): a
 // `props.<member>` read in a rendered row is `loop-param-named-props-member`.
@@ -36,6 +38,18 @@ export function LoopParamNamedProps({ suffix, step }: { suffix: string; step: nu
       <button type="button" className="bump" onClick={() => bump({ by: 2 })}>bump</button>
       <button type="button" className="drop" onClick={() => setItems(items().filter((props) => props !== items()[step - 1]))}>drop</button>
       <button type="button" className="say" onClick={() => setLast(describe({ label: 'x' }))}>say</button>
+      <button
+        type="button"
+        className="hoist"
+        onClick={() => {
+          if (step > 0) {
+            var props = { by: 10 }
+          }
+          setTotal(total() + props.by * step)
+        }}
+      >
+        hoist
+      </button>
       <ul className="rows">
         {items().map((props) => (
           <li key={props}>

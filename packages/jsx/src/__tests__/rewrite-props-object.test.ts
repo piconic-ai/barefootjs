@@ -152,4 +152,21 @@ describe('rewritePropsObjectRef', () => {
       expect(out).toBe('const a = _p\nconst f = (rest) => rest.y')
     })
   })
+
+  describe('`var` is function-scoped', () => {
+    test('a `var props` in a nested block binds for the whole enclosing function', () => {
+      const code = 'const f = () => { if (c) { var props = { by: 2 } } return props.by }\nconst g = props.x'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { if (c) { var props = { by: 2 } } return props.by }\nconst g = _p.x')
+    })
+
+    test('a `for (var props …)` head binds after the loop, but not outside its function', () => {
+      const code = 'function f() { for (var props = 0; props < 3; props++) {} return props }\nconst g = props.x'
+      expect(rewritePropsObjectRef(code, null)).toBe('function f() { for (var props = 0; props < 3; props++) {} return props }\nconst g = _p.x')
+    })
+
+    test('a `var` inside a nested function does not leak into the outer one', () => {
+      const code = 'const f = () => { const h = () => { var props = 1; return props }; return props.x }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { const h = () => { var props = 1; return props }; return _p.x }')
+    })
+  })
 })

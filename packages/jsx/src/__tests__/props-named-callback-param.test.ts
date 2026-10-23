@@ -14,6 +14,7 @@
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+import { rewriteScopedValueRefs } from '../prop-rewrite'
 
 const adapter = new TestAdapter()
 
@@ -134,5 +135,73 @@ describe('a callback param named `props` keeps its binding in the client JS', ()
       }
     `))
     expect(body).toContain('(_p).delta')
+  })
+})
+
+describe('a `var` binds in its whole function, not just its block', () => {
+  test('a `var props` in a nested block shadows the props rename for the whole handler', () => {
+    const body = initBody(clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function A({ step }: { step: number }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => { if (step > 0) { var props = { by: 2 } } setN(n() + props.by * step) }}>{n()}</button>
+      }
+    `))
+    expect(body).toContain('{ var props = { by: 2 } } setN(n() + props.by * _p.step)')
+  })
+
+  test('a `for (var props …)` head shadows the props rename after the loop', () => {
+    const body = initBody(clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function B({ step }: { step: number }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => { for (var props = 0; props < step; props++) {} setN(n() + props) }}>{n()}</button>
+      }
+    `))
+    expect(body).toContain('for (var props = 0; props < _p.step; props++) {} setN(n() + props)')
+  })
+
+  test('a block-nested `var` named like a destructured prop is not rewritten to the prop', () => {
+    const body = initBody(clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function C({ step }: { step: number }) {
+        const [n, setN] = createSignal(0)
+        return <button data-step={step} onClick={() => { if (n() >= 0) { var step = 5 } setN(n() + step) }}>{n()}</button>
+      }
+    `))
+    expect(body).toContain('{ var step = 5 } setN(n() + step)')
+  })
+
+  test('a `let` in a nested block still binds only inside that block', () => {
+    const body = initBody(clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function D({ step }: { step: number }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => { if (n() >= 0) { let step = 5; setN(step) } setN(n() + step) }}>{n()}</button>
+      }
+    `))
+    expect(body).toContain('{ let step = 5; setN(step) } setN(n() + _p.step)')
+  })
+})
+
+describe('the Phase-1 prop rewrite shares the same `var` scoping', () => {
+  const toProp = (name: string) => `_p.${name}`
+  test('a block-nested `var` binds for the whole arrow', () => {
+    const out = rewriteScopedValueRefs('() => { if (c) { var step = 5 } return step }', new Set(['step']), toProp)
+    expect(out).toBe('() => { if (c) { var step = 5 } return step }')
+  })
+
+  test('a `for (var …)` head binds after the loop', () => {
+    const out = rewriteScopedValueRefs('() => { for (var step = 0; step < 3; step++) {} return step }', new Set(['step']), toProp)
+    expect(out).toBe('() => { for (var step = 0; step < 3; step++) {} return step }')
+  })
+
+  test('a `let` stays block-scoped', () => {
+    const out = rewriteScopedValueRefs('() => { if (c) { let step = 5 } return step }', new Set(['step']), toProp)
+    expect(out).toBe('() => { if (c) { let step = 5 } return _p.step }')
   })
 })
