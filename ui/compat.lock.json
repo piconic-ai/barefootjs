@@ -4900,6 +4900,14 @@
           }
         }
       },
+      "loop-row-child-children-inner-loop-shadow": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "signal-loop-row-child-children-unseeded"
+          ]
+        }
+      },
       "loop-row-child-scalar-row-wrapper-nested-component": {
         "go-template": {
           "kind": "refusal",
@@ -6955,6 +6963,14 @@
           ]
         }
       },
+      "signal-loop-row-child-children": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "signal-loop-row-child-children-unseeded"
+          ]
+        }
+      },
       "signal-object-spread-init": {
         "go-template": {
           "kind": "refusal",
@@ -8058,6 +8074,10 @@
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
+      "loop-row-child-children-inner-loop-shadow": {
+        "description": "An inner loop in a loop-row child's forwarded children shadows the outer row's index, item and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-inner-loop-shadow.ts"
+      },
       "loop-row-child-scalar-row-wrapper-nested-component": {
         "description": "A wrapper component loop row over a string array prop whose forwarded children nest a component…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-scalar-row-wrapper-nested-component.ts"
@@ -8165,6 +8185,10 @@
       "signal-from-same-named-prop-raw-read": {
         "description": "A signal seeded from its same-named prop, read beside the raw prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-from-same-named-prop-raw-read.ts"
+      },
+      "signal-loop-row-child-children": {
+        "description": "A signal-array loop whose row is a child component with forwarded JSX children renders each row at…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-loop-row-child-children.ts"
       },
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
@@ -9158,6 +9182,20 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "signal-loop-row-child-children-unseeded": {
+      "title": "A signal-array loop whose row is a child component with forwarded JSX children",
+      "kind": "silent",
+      "given": "a `.map()` over a signal's array whose row is a child component receiving JSX children (`rows().map((o) => <Chip key={o.id}><b>{o.id}</b></Chip>)`), rendered at SSR",
+      "expected": "one child component per array item, each with its forwarded children, from the signal's initial value",
+      "actual": "renders the loop container with no rows",
+      "fixtures": [
+        "loop-row-child-children-inner-loop-shadow",
+        "signal-loop-row-child-children"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "signal-read-in-nested-static-loop": {

@@ -6076,6 +6076,24 @@
         "text"
       ]
     },
+    "loop-row-child-children-inner-loop-shadow": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-nested-client-prop": {
       "kinds": [
         "array-literal",
@@ -10812,6 +10830,23 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
         "text"
       ]
     },

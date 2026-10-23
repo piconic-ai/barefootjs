@@ -7,6 +7,7 @@ import ts from 'typescript'
 import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR, JsSourceText } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
 import { isNonReferenceIdentifierPosition } from '../analyzer.ts'
+import { walkWithScope } from '../scope/lexical-scope-walk.ts'
 import { BindingScope, type LoopBindingSource } from '../scope/binding-scope.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
@@ -795,34 +796,15 @@ export function wrapIndexParamAsAccessor(expr: string, indexParam: string): stri
  * of those positions a type of AST node this function can name and skip,
  * instead of a regex guessing from surrounding characters.
  *
- * A nested declaration that re-binds `name` (a parameter, a `const`/`let`,
- * or a destructured local) is deliberately NOT skipped, unlike
- * `analyzer.ts`'s rename `classify()`: this rewrite has no scope tracking,
- * so it cannot tell a reference to the shadowing local from a reference to
- * the outer loop param past that point, and silently wrapping only the
- * OUTER-scope references while leaving the shadowed ones alone (or vice
- * versa) would just move the #3239 bug rather than fix it. Wrapping the
- * shadowing declaration's own name is always a syntax break at the
- * declaration site itself (`const name = 1` → `const name() = 1`, `(name)
- * => …` → `(name()) => …` — a call can't legally appear where a binding
- * name is expected), so the module fails to parse instead of silently
- * running with the wrong value — the same loud, build-time failure the old
- * regex produced for this shape (it had no shadow-awareness either).
- *
- * A NAMED function expression is the one shadowing shape this function
- * skips wholesale rather than leaving loud: `(function name() { ... })`'s
- * own name is scoped to exactly that expression's body and nowhere else, so
- * `visit` never descends into it at all once it sees the self-shadowing
- * name — no reference inside can possibly mean the outer `name`. A
- * `function`/`class` DECLARATION's name is different: its binding reaches
- * into the surrounding scope too (a function declaration's name is hoisted
- * above it; a class declaration's own static/instance members can
- * self-reference it), so the same whole-subtree skip isn't sound here —
- * a self-reference to a `function`/`class` declaration whose name happens
- * to match `name` is still silently misrewritten, an accepted
- * pre-existing-shaped gap the old regex had too (the "followed by `(`"
- * exclusion below only protects the declaration's OWN name token, not
- * references reachable from within or after it).
+ * A name an inner binding re-binds — a nested callback's parameter (an inner
+ * `.map((tag, i) => …)` reusing the outer index name, #3595), a
+ * `const`/`let`, a destructured local, a `function`/`class` declaration, a
+ * named function expression's own name — is that binding's, not the outer
+ * loop param's, for the binding's whole scope. The walk follows the shared
+ * lexical-scope model (`walkWithScope`, `scope/lexical-scope-walk.ts`, the
+ * same frames the props rewrites use), so it never rewrites the binder
+ * itself (`(tag, i()) =>` is not a binding pattern) and leaves every
+ * reference the binder shadows alone.
  */
 function rewriteIdentifierAsAccessor(expr: string, name: string): string {
   return rewriteIdentifierReferences(expr, new Map([[name, `${name}()`]]), { skipCallee: true })
@@ -837,14 +819,13 @@ function rewriteIdentifierAsAccessor(expr: string, name: string): string {
  * reference and why; both callers answer that question here, so they cannot
  * drift apart (#3260).
  *
- * `skipCallee` leaves `name()` / `new name()` and a `function name()`
- * declaration's own name alone. It is the accessor rewrite's no-double-wrap
- * rule (#2592): there `name()` already IS the accessor call, and the old
- * regex's "followed by (" lookahead skipped all three. A destructured
- * binding has no such shape — `handler()` with `({ handler })` calls the
- * item's field, so it must become `__bfItem().handler()` — and its caller
- * passes `false`, which also leaves a shadowing function declaration to
- * fail loudly, as it did under the old destructured regex.
+ * `skipCallee` leaves `name()` / `new name()` alone. It is the accessor
+ * rewrite's no-double-wrap rule (#2592): there `name()` already IS the
+ * accessor call. A destructured binding has no such shape — `handler()` with
+ * `({ handler })` calls the item's field, so it must become
+ * `__bfItem().handler()` — and its caller passes `false`. A nested
+ * `function name() {}` declaration needs neither rule: it binds `name` for
+ * its block, so the scope walk leaves its name and its calls alone.
  *
  * One pass over the AST, so a replacement is never re-scanned: a binding
  * `a` with path `.a` cannot cascade into `__bfItem().__bfItem().a`.
@@ -868,66 +849,29 @@ function rewriteIdentifierReferences(
   const sf = ts.createSourceFile('__bf_expr.ts', wrapped, ts.ScriptTarget.Latest, /* setParentNodes */ true)
   const edits: Array<{ start: number; end: number; replacement: string }> = []
 
-  const visit = (node: ts.Node, active: ReadonlyMap<string, string>): void => {
-    // A named function expression's own name is scoped to exactly its own
-    // body, so nothing reachable inside it can refer to the outer binding of
-    // that name — drop it for the whole subtree instead of only its
-    // declaration-name identifier (see `rewriteIdentifierAsAccessor`'s
-    // docstring for why a `function`/`class` DECLARATION can't get the same
-    // treatment this cheaply). Other names stay active inside.
-    if (ts.isFunctionExpression(node) && node.name && active.has(node.name.text)) {
-      const inner = new Map(active)
-      inner.delete(node.name.text)
-      if (inner.size === 0) return
-      ts.forEachChild(node, child => visit(child, inner))
-      return
-    }
+  walkWithScope(sf, (node, p, shadowed) => {
+    // An inner binding of the name — the binder itself and every reference
+    // it shadows — is not the outer loop param (#3595).
+    if (shadowed) return
+    const replacement = replacements.get(node.text)
+    if (replacement === undefined || !p) return
+    // Pure-key / non-reference positions — never rewrite. Shared with
+    // `analyzer.ts`'s factory-rename `classify()`, which answers the same
+    // "is this identifier actually a value reference" question.
+    if (isNonReferenceIdentifierPosition(node)) return
+    // Accessor mode only: `name()` already IS the accessor call (#2592), and
+    // `new name()` has the same "followed by (" shape. A destructured binding
+    // called as a function (`handler()` with `({ handler })`) calls the
+    // item's field, so it must become `__bfItem().handler()`.
+    if (opts.skipCallee && (ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === node) return
 
-    if (ts.isIdentifier(node)) {
-      const replacement = active.get(node.text)
-      if (replacement === undefined) return
-      const p = node.parent
-      // Pure-key / non-reference positions — never rewrite. Shared with
-      // `analyzer.ts`'s factory-rename `classify()`, which answers the same
-      // "is this identifier actually a value reference" question.
-      if (isNonReferenceIdentifierPosition(node)) return
-      // A function declaration's own name is always followed by `(` in
-      // valid source, which is exactly the shape the old
-      // `\bname\b(?!\s*\()`-style regex used to recognize and skip. Leaving
-      // it unwrapped (rather than declining loudly, as the shadowing
-      // declarations below do) matches the old behavior instead of
-      // regressing code that used to compile. A `class name {}`
-      // declaration's name is followed by `{`/`extends`, not `(`, so the
-      // old regex did NOT protect it either — wrapping it is a pre-existing
-      // syntax break, not a regression, so it's left to the shadowing-decl
-      // path below like any other declaration name.
-      //
-      // Accessor mode only: the old destructured-binding regex had no such
-      // exemption, so there a shadowing `function color() {}` broke the
-      // declaration loudly. Skipping its name here would keep the local
-      // function while rewriting its calls to `__bfItem().color()` — valid
-      // JS that calls the wrong value (#3260 review).
-      if (opts.skipCallee) {
-        if (ts.isFunctionDeclaration(p) && p.name === node) return
-        if (ts.isCallExpression(p) && p.expression === node) return // already `name()` — no double-wrap (#2592)
-        if (ts.isNewExpression(p) && p.expression === node) return // `new name()` — same "followed by (" shape as a call
-      }
-
-      // Shorthand property (`{ name }`) expands key + rewrites value in one
-      // edit (#1244). Every other reachable position here is a genuine
-      // value reference — OR a shadowing declaration name (nested
-      // parameter/`const`/`let`/destructured local): both get rewritten,
-      // per `rewriteIdentifierAsAccessor`'s docstring on why a shadow is
-      // left to fail loudly rather than silently misrewritten.
-      const isShorthand = ts.isShorthandPropertyAssignment(p) && p.name === node
-      const start = node.getStart(sf) - 1
-      const end = node.getEnd() - 1
-      edits.push({ start, end, replacement: isShorthand ? `${node.text}: ${replacement}` : replacement })
-      return
-    }
-    ts.forEachChild(node, child => visit(child, active))
-  }
-  visit(sf, replacements)
+    // Shorthand property (`{ name }`) expands key + rewrites value in one
+    // edit (#1244).
+    const isShorthand = ts.isShorthandPropertyAssignment(p) && p.name === node
+    const start = node.getStart(sf) - 1
+    const end = node.getEnd() - 1
+    edits.push({ start, end, replacement: isShorthand ? `${node.text}: ${replacement}` : replacement })
+  })
 
   if (edits.length === 0) return expr
   // Apply right-to-left so earlier offsets stay valid as later ones grow.
