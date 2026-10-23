@@ -131,6 +131,8 @@ import { loopDrivingProp, nestedRowsFieldName, reservedRowsFieldNames } from './
 
 /** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
 const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
+/** The wrapper field that carries a scalar wrapper row's bare value (`wrapperRowScalarItemGoType`). */
+const SCALAR_ROW_ITEM_FIELD = 'BfLoopItem'
 import {
   escapeGoString,
   wrapIfMultiToken,
@@ -6593,6 +6595,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return hit !== null && hit.depth === 0 && hit.binding.source === 'item'
   }
 
+  /**
+   * On a scalar wrapper row (`scalarWrapperRowLoops`) the range variable
+   * holds the row wrapper; rebind it to the bare value (`.BfLoopItem`) at the
+   * top of the row, so a `$g` read anywhere in the calling template — a
+   * nested callback in the filter predicate, a preamble local — sees the
+   * value, as `currentLoopItemRef` does for the dot.
+   */
+  private scalarWrapperRowValueDecl(loop: IRLoop, rangeValue: string): string {
+    if (rangeValue === '_' || !this.state.scalarWrapperRowLoops.has(loop.markerId)) return ''
+    return `{{$${rangeValue} := .${SCALAR_ROW_ITEM_FIELD}}}`
+  }
+
   /** A loop over a primitive-literal array, or a scalar wrapper row (`scalarWrapperRowLoops`). */
   private isScalarItemLoop(loop: IRLoop): boolean {
     return this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null || this.state.scalarWrapperRowLoops.has(loop.markerId)
@@ -6600,7 +6614,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** The current row value (`isCurrentLoopItem`): `.`, or `.BfLoopItem` on a scalar wrapper row's call site. */
   private currentLoopItemRef(): string {
-    return this.scalarWrapperRowCallSite ? '.BfLoopItem' : '.'
+    return this.scalarWrapperRowCallSite ? `.${SCALAR_ROW_ITEM_FIELD}` : '.'
+  }
+
+  /**
+   * `name` is the current row (`isCurrentLoopItem`) and its fields are fields
+   * of `.` (`row.label` → `.Label`). Not on a scalar wrapper row's call site:
+   * `.` is the wrapper and the row is a bare value on `.BfLoopItem`, so a
+   * member read (`g.length`) goes through the generic path over
+   * `currentLoopItemRef` (`bf_length .BfLoopItem`).
+   */
+  private isCurrentLoopRecord(name: string): boolean {
+    return this.isCurrentLoopItem(name) && !this.scalarWrapperRowCallSite
   }
 
   /**
@@ -7052,7 +7077,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // template syntax, let alone a reachable field (PR #2089 review). For
     // identifier keys (snake_case included) the two functions agree, so
     // nothing previously reachable changes shape.
-    if (object.kind === 'identifier' && this.isCurrentLoopItem(object.name) && !elementIndex) {
+    if (object.kind === 'identifier' && this.isCurrentLoopRecord(object.name) && !elementIndex) {
       return `.${goFieldNameForKey(property)}`
     }
 
@@ -8214,6 +8239,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     //   `t.done`     → `${paramPrefix}.Done`  (`.Todo.Done` / `.Done`)
     const paramPrefix = datumField ? `.${datumField}` : ''
     const paramDot = paramPrefix || '.'
+    // A scalar wrapper row's value has no fields: `g.length` goes through the
+    // generic member path over `paramDot` (`bf_length .BfLoopItem`).
+    const paramHasFields = datumField !== SCALAR_ROW_ITEM_FIELD
     switch (expr.kind) {
       case 'identifier': {
         if (expr.name === param) {
@@ -8274,7 +8302,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'member': {
         // t.done -> .Done (or .Todo.Done under a wrapper struct, #2228)
-        if (expr.object.kind === 'identifier' && expr.object.name === param) {
+        if (paramHasFields && expr.object.kind === 'identifier' && expr.object.name === param) {
           if ((expr.optional || expr.computed) && expr.property !== 'length') {
             return `(${this.renderOptionalMember(paramDot, expr.property)})`
           }
@@ -8326,7 +8354,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'call': {
         // `t.isDone()` -> `.IsDone` (or `.Todo.IsDone` under a wrapper, #2228)
-        if (expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
+        if (paramHasFields && expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
           return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
         }
         // Signal calls: `filter()` -> `$.Filter`. Same registration-only
@@ -9169,7 +9197,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // A numeric index reads an element, not a field (#3497): it takes the
         // `bf_get` arm below, the row itself rendering as `.`.
         const elementIndex = isElementIndex(expr.computed, expr.property)
-        if (expr.object.kind === 'identifier' && this.isCurrentLoopItem(expr.object.name) && !elementIndex) {
+        if (expr.object.kind === 'identifier' && this.isCurrentLoopRecord(expr.object.name) && !elementIndex) {
           return plain(`.${capitalizeFieldName(expr.property)}`)
         }
 
@@ -9447,8 +9475,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private wrapperDatumField(loop: {
     childComponent?: IRLoopChildComponent
     param: string
+    markerId: string
   }): string | null {
     if (!loop.childComponent) return null
+    // A scalar wrapper row carries the bare value itself (`scalarWrapperRowLoops`).
+    if (this.state.scalarWrapperRowLoops.has(loop.markerId)) return SCALAR_ROW_ITEM_FIELD
     for (const prop of loop.childComponent.props) {
       if (prop.isEventHandler) continue
       if (prop.value.kind !== 'expression') continue
@@ -9811,6 +9842,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       goArray = `(${sorted})`
     }
 
+    const rowValueDecl = this.scalarWrapperRowValueDecl(loop, rangeValue)
+
     // filter().map(): gate the body on an `{{if}}` condition.
     if (loop.filterPredicate) {
       let filterCond: string
@@ -9867,10 +9900,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // The preamble assignments sit INSIDE the `{{if}}`, matching JS
       // evaluation order: a `.filter(p).map(cb)` chain never runs `cb`'s
       // body for a filtered-out item.
-      return `{{bfComment "loop:${loop.markerId}"}}${captureDecls}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}{{if ${filterCond}}}${preambleAssignments}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
+      return `{{bfComment "loop:${loop.markerId}"}}${captureDecls}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${rowValueDecl}{{if ${filterCond}}}${preambleAssignments}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
     }
 
-    return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${preambleAssignments}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
+    return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${rowValueDecl}${preambleAssignments}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
   }
 
   /**
@@ -10184,7 +10217,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // instead so it can rebind the row variables above, it ranges once over
     // the value (`bf_arr`, so a falsy `0`/`""`/`false` still renders).
     if (this.wrapperRowScalar && varsPrefix) {
-      return `${varsPrefix}{{range bf_arr .BfLoopItem}}${prefix}${itemPrefix}${content}{{end}}`
+      return `${varsPrefix}{{range bf_arr .${SCALAR_ROW_ITEM_FIELD}}}${prefix}${itemPrefix}${content}{{end}}`
     }
     return prefix + itemPrefix + varsPrefix + content
   }
@@ -10310,7 +10343,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const bodyData = rowVars.length > 0
           ? `(bf_with_props . "BfRowVars" (bf_map ${rowVars.map(v => `${JSON.stringify(v)} $${v}`).join(' ')}))`
           : this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
-            ? '.BfLoopItem'
+            ? `.${SCALAR_ROW_ITEM_FIELD}`
             : '.'
         templateCall = `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
       } else {

@@ -6,8 +6,10 @@ import { createFixture } from '../src/types'
  * (`props.picks.map(g => <Tag key={g}><i>{g}</i></Tag>)`). Covers a string
  * row (as an element's text and as the bare children), a number row
  * (`0` and a fraction), a row reading its index, a prop of the row
- * component reading the row, and a row read from an inner loop inside the
- * forwarded children. Every row renders its own wrapper.
+ * component reading the row or a member of it (`size={w.length}`), a
+ * preamble local reading a member of the row, a fused `.filter()` on the
+ * row value and on a member of it, and a row read from an inner loop inside
+ * the forwarded children. Every kept row renders its own wrapper.
  */
 export const fixture = createFixture({
   id: 'loop-row-child-scalar-row-wrapper',
@@ -35,6 +37,22 @@ function Hue({ tone, children }: { tone: string; children?: any }) {
   return <span class={tone}>{children}</span>
 }
 
+function Kept({ children }: { children?: any }) {
+  return <span class="kept">{children}</span>
+}
+
+function Long({ children }: { children?: any }) {
+  return <span class="long">{children}</span>
+}
+
+function Sized({ size, children }: { size: number; children?: any }) {
+  return <span class="sized" data-size={size}>{children}</span>
+}
+
+function Measured({ children }: { children?: any }) {
+  return <span class="measured">{children}</span>
+}
+
 function Group({ children }: { children?: any }) {
   return <span class="group">{children}</span>
 }
@@ -43,6 +61,7 @@ export function LoopRowChildScalarRowWrapper(props: {
   picks: string[]
   counts: number[]
   tones: string[]
+  words: string[]
   sections: string[]
 }) {
   return (
@@ -52,6 +71,15 @@ export function LoopRowChildScalarRowWrapper(props: {
       <p class="numbers">{props.counts.map(n => <Num key={n}><b>{n}</b></Num>)}</p>
       <p class="index">{props.picks.map((g, i) => <Pos key={g}><i>{g}-{i}</i></Pos>)}</p>
       <p class="prop">{props.tones.map(t => <Hue key={t} tone={t}><i>{t}</i></Hue>)}</p>
+      <p class="filter">{props.words.filter(w => w !== 'abc').map(w => <Kept key={w}><i>{w}</i></Kept>)}</p>
+      <p class="filter-member">{props.words.filter(w => w.length > 2).map(w => <Long key={w}><i>{w}</i></Long>)}</p>
+      <p class="member-prop">{props.words.map(w => <Sized key={w} size={w.length}><i>{w}</i></Sized>)}</p>
+      <p class="member-local">
+        {props.words.map(w => {
+          const size = w.length
+          return <Measured key={w}><i>{w}:{size}</i></Measured>
+        })}
+      </p>
       <p class="nested">
         {props.sections.map(g => (
           <Group key={g}>
@@ -67,6 +95,7 @@ export function LoopRowChildScalarRowWrapper(props: {
     picks: ['a', 'b'],
     counts: [0, 2.5],
     tones: ['warm', 'cool'],
+    words: ['abc', 'de'],
     sections: ['p', 'q'],
   },
   expectedHtml: `
@@ -91,9 +120,19 @@ export function LoopRowChildScalarRowWrapper(props: {
         <span bf-s="Hue_*" bf="s0" class="warm" data-key="warm"><i><!--bf:^s13-->warm<!--/--></i></span>
         <span bf-s="Hue_*" bf="s0" class="cool" data-key="cool"><i><!--bf:^s13-->cool<!--/--></i></span>
       </p>
-      <p bf="s20" class="nested">
-        <span bf-s="Group_*" class="group" data-key="p"><ul bf="^s18"><li data-key-1="x"><!--bf:^s16-->p<!--/-->-<!--bf:^s17-->x<!--/--></li><li data-key-1="y"><!--bf:^s16-->p<!--/-->-<!--bf:^s17-->y<!--/--></li></ul></span>
-        <span bf-s="Group_*" class="group" data-key="q"><ul bf="^s18"><li data-key-1="x"><!--bf:^s16-->q<!--/-->-<!--bf:^s17-->x<!--/--></li><li data-key-1="y"><!--bf:^s16-->q<!--/-->-<!--bf:^s17-->y<!--/--></li></ul></span>
+      <p bf="s18" class="filter"><span bf-s="Kept_*" class="kept" data-key="de"><i><!--bf:^s16-->de<!--/--></i></span></p>
+      <p bf="s21" class="filter-member"><span bf-s="Long_*" class="long" data-key="abc"><i><!--bf:^s19-->abc<!--/--></i></span></p>
+      <p bf="s24" class="member-prop">
+        <span bf-s="Sized_*" bf="s0" class="sized" data-key="abc" data-size="3"><i><!--bf:^s22-->abc<!--/--></i></span>
+        <span bf-s="Sized_*" bf="s0" class="sized" data-key="de" data-size="2"><i><!--bf:^s22-->de<!--/--></i></span>
+      </p>
+      <p bf="s27" class="member-local">
+        <span bf-s="Measured_*" class="measured" data-key="abc"><i><!--bf:^s25-->abc<!--/-->:3</i></span>
+        <span bf-s="Measured_*" class="measured" data-key="de"><i><!--bf:^s25-->de<!--/-->:2</i></span>
+      </p>
+      <p bf="s32" class="nested">
+        <span bf-s="Group_*" class="group" data-key="p"><ul bf="^s30"><li data-key-1="x"><!--bf:^s28-->p<!--/-->-<!--bf:^s29-->x<!--/--></li><li data-key-1="y"><!--bf:^s28-->p<!--/-->-<!--bf:^s29-->y<!--/--></li></ul></span>
+        <span bf-s="Group_*" class="group" data-key="q"><ul bf="^s30"><li data-key-1="x"><!--bf:^s28-->q<!--/-->-<!--bf:^s29-->x<!--/--></li><li data-key-1="y"><!--bf:^s28-->q<!--/-->-<!--bf:^s29-->y<!--/--></li></ul></span>
       </p>
     </div>
   `,
