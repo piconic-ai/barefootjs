@@ -1094,6 +1094,7 @@ import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-s
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
 import { fixture as loopRowChildScalarRowWrapper } from './loop-row-child-scalar-row-wrapper'
 import { fixture as loopRowChildScalarRowWrapperNestedComponent } from './loop-row-child-scalar-row-wrapper-nested-component'
+import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
 // A component loop row with forwarded children over an array prop, and its
@@ -1878,6 +1879,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildScalarRowKey,
   loopRowChildScalarRowWrapper,
   loopRowChildScalarRowWrapperNestedComponent,
+  loopRowScalarMemberLength,
   loopRowChildKeyShapes,
   loopRowChildPropDestinations,
   loopRowChildChildrenPropArray,
