@@ -133,6 +133,23 @@ import { loopDrivingProp, nestedRowsFieldName, reservedRowsFieldNames } from './
 const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
 /** The wrapper field that carries a scalar wrapper row's bare value (`wrapperRowScalarItemGoType`). */
 const SCALAR_ROW_ITEM_FIELD = 'BfLoopItem'
+
+/** A loop row's value type, structurally (`TypeInfo` or the scope's `LoopValueType`). */
+interface RowValueType {
+  readonly primitive?: string
+  readonly unionTypes?: readonly RowValueType[]
+}
+
+/**
+ * A row whose value is a string, number or boolean (or a union of them) has
+ * no fields: `g.length` on it reads the value (`bf_length .`), never a
+ * `.Length` field of a row record. Unknown types keep the field reading.
+ */
+function isFieldlessRowType(type: RowValueType | null | undefined): boolean {
+  if (!type) return false
+  if (type.primitive !== undefined) return true
+  return type.unionTypes !== undefined && type.unionTypes.length > 0 && type.unionTypes.every(isFieldlessRowType)
+}
 import {
   escapeGoString,
   wrapIfMultiToken,
@@ -6622,10 +6639,56 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * of `.` (`row.label` → `.Label`). Not on a scalar wrapper row's call site:
    * `.` is the wrapper and the row is a bare value on `.BfLoopItem`, so a
    * member read (`g.length`) goes through the generic path over
-   * `currentLoopItemRef` (`bf_length .BfLoopItem`).
+   * `currentLoopItemRef` (`bf_length .BfLoopItem`). Nor on a plain row whose
+   * value is a scalar (`isFieldlessRowType` of the row's type): `.` is the
+   * value itself, so `g.length` reads `bf_length .`.
    */
   private isCurrentLoopRecord(name: string): boolean {
-    return this.isCurrentLoopItem(name) && !this.scalarWrapperRowCallSite
+    return this.isCurrentLoopItem(name) && !this.scalarWrapperRowCallSite && !this.isScalarRowItem(name)
+  }
+
+  /** `name` is a loop row's own item (any depth) whose value is a scalar (`isFieldlessRowType`). */
+  private isScalarRowItem(name: string): boolean {
+    const hit = this.scope.lookup(name)
+    return hit?.binding.source === 'item' && isFieldlessRowType(hit.binding.row?.itemType)
+  }
+
+  /**
+   * The function a condition's `.length` read lowers to. `len` counts a
+   * string's bytes; `bf_length` counts its UTF-16 code units as JS does and
+   * reads nil as 0. A `?.length` receiver can be nil, and a scalar row
+   * (`isScalarRowItem`, or a scalar wrapper row's value) is a string whose
+   * multibyte value `len` would over-count, so both take `bf_length`.
+   */
+  private conditionLengthFn(expr: Extract<ParsedExpr, { kind: 'member' }>): 'len' | 'bf_length' {
+    if (expr.optional || expr.object.kind !== 'identifier') return expr.optional ? 'bf_length' : 'len'
+    const name = expr.object.name
+    const scalarRow = this.isScalarRowItem(name) || (this.isCurrentLoopItem(name) && this.scalarWrapperRowCallSite)
+    return scalarRow ? 'bf_length' : 'len'
+  }
+
+  /**
+   * The type a rendered loop's row bindings carry: Phase 1's scalar
+   * `itemType` (the callback param's checked type) when present, else the
+   * array's declared element type (`loopRowType`), so a text sink can tell a
+   * string row field from a number (`isKnownNonNumber`). The scalar answer
+   * wins because a declared element type the adapter can't read
+   * (`(string | null)[]`) would otherwise hide that the row is a scalar with
+   * no fields (`isFieldlessRowType`).
+   */
+  private renderLoopRowType(loop: IRLoop): TypeInfo | null {
+    return loop.itemType ?? loopRowType(this.emitCtx, loop, this.scope)
+  }
+
+  /**
+   * The loop's row value has no fields: a scalar wrapper row
+   * (`scalarWrapperRowLoops`), or a row typed as a scalar
+   * (`isFieldlessRowType` of `rowType`, as the row's scope binding is
+   * typed). A fused filter predicate's `w.length` then reads the value, not
+   * a `.Length` field.
+   */
+  private isFieldlessLoopRow(loop: IRLoop, rowType: TypeInfo | null): boolean {
+    return this.state.scalarWrapperRowLoops.has(loop.markerId) || isFieldlessRowType(rowType)
   }
 
   /**
@@ -8170,8 +8233,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `html/template` can't resolve on the wrapper Props struct. `undefined` for
    * a non-wrapper (plain-element-body) loop, where `.` already IS the datum.
    */
-  private renderPredicateCondition(pred: ParsedExpr, param: string, datumField?: string | null): string {
-    return this.renderFilterExpr(pred, param, new Map(), datumField ?? undefined) ?? 'false'
+  private renderPredicateCondition(pred: ParsedExpr, param: string, datumField?: string | null, fieldlessParam = false): string {
+    return this.renderFilterExpr(pred, param, new Map(), datumField ?? undefined, fieldlessParam) ?? 'false'
   }
 
   /**
@@ -8216,9 +8279,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     expr: ParsedExpr,
     param: string,
     localVarMap: Map<string, string> = new Map(),
-    datumField?: string
+    datumField?: string,
+    fieldlessParam = false,
   ): string | null {
-    return this.renderFilterExprNode(expr, param, localVarMap, datumField)
+    return this.renderFilterExprNode(expr, param, localVarMap, datumField, fieldlessParam)
   }
 
   /** One node of {@link renderFilterExpr}; children recurse through it. */
@@ -8226,7 +8290,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     expr: ParsedExpr,
     param: string,
     localVarMap: Map<string, string>,
-    datumField?: string
+    datumField?: string,
+    fieldlessParam = false,
   ): string | null {
     // #2228: `paramPrefix` prepends the wrapper's datum-carrying field to a
     // loop-param access (`.Todo` under a wrapper, `''` otherwise). Two derived
@@ -8237,9 +8302,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     //   `t.done`     → `${paramPrefix}.Done`  (`.Todo.Done` / `.Done`)
     const paramPrefix = datumField ? `.${datumField}` : ''
     const paramDot = paramPrefix || '.'
-    // A scalar wrapper row's value has no fields: `g.length` goes through the
-    // generic member path over `paramDot` (`bf_length .BfLoopItem`).
-    const paramHasFields = datumField !== SCALAR_ROW_ITEM_FIELD
+    // A scalar row's value has no fields (`isFieldlessLoopRow`): `g.length`
+    // goes through the generic member path over `paramDot` (`bf_length .`,
+    // or `bf_length .BfLoopItem` on a scalar wrapper row).
+    const paramHasFields = !fieldlessParam
     switch (expr.kind) {
       case 'identifier': {
         if (expr.name === param) {
@@ -8329,13 +8395,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const innerHO = this.higherOrderShapeOf(expr.object)
           if (innerHO && innerHO.method === 'filter') {
             const lenExpr = this.renderFilterLengthExpr(innerHO, e =>
-              this.renderFilterExpr(e, param, localVarMap, datumField) ?? 'false',
+              this.renderFilterExpr(e, param, localVarMap, datumField, fieldlessParam) ?? 'false',
             )
             if (lenExpr) return `(${lenExpr})`
           }
         }
         // Nested member access or local var.prop.
-        const obj = this.renderFilterExpr(expr.object, param, localVarMap, datumField)
+        const obj = this.renderFilterExpr(expr.object, param, localVarMap, datumField, fieldlessParam)
         if (obj === null) return null
         // JS `.length` on a field (`i.name.length`, `i.tags.length`, #3447):
         // `bf_length` counts a string's UTF-16 code units or a slice's
@@ -8372,11 +8438,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (asCallbackMethodCall(expr) !== null) {
           return this.refuseFilterExprNode(expr)
         }
-        return this.renderFilterExpr(expr.callee, param, localVarMap, datumField)
+        return this.renderFilterExpr(expr.callee, param, localVarMap, datumField, fieldlessParam)
       }
 
       case 'unary': {
-        const arg = this.renderFilterExpr(expr.argument, param, localVarMap, datumField)
+        const arg = this.renderFilterExpr(expr.argument, param, localVarMap, datumField, fieldlessParam)
         if (arg === null) return null
         if (expr.op === '!') return lowerJsNot(expr.argument, arg)
         if (expr.op === '-') {
@@ -8386,9 +8452,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'binary': {
-        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField)
+        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField, fieldlessParam)
         if (left === null) return null
-        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField)
+        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField, fieldlessParam)
         if (right === null) return null
         // #2873 (pullfrog review, PR #2882): every case below is a prefix
         // function call (`bf_mod a b`, `eq a b`, …), so a COMPOUND operand —
@@ -8419,9 +8485,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'logical': {
-        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField)
+        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField, fieldlessParam)
         if (left === null) return null
-        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField)
+        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField, fieldlessParam)
         if (right === null) return null
         if (expr.op === '&&') {
           return `and (${left}) (${right})`
@@ -9206,9 +9272,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // or Go reads it as extra sibling args of `len` (#3249).
           // A `?.length` receiver can be nil (an absent optional prop is
           // `interface{}`, #3422), which `len` refuses at execution time;
-          // `bf_length` reads nil as 0, the same falsy answer as `undefined`.
-          const lengthFn = expr.optional ? 'bf_length' : 'len'
-          return { preamble: obj.preamble, expr: `${lengthFn} ${wrapIfMultiToken(obj.expr)}` }
+          // `bf_length` reads nil as 0, the same falsy answer as `undefined`
+          // (`conditionLengthFn`).
+          return { preamble: obj.preamble, expr: `${this.conditionLengthFn(expr)} ${wrapIfMultiToken(obj.expr)}` }
         }
         // A `?.`-written member hop must use the same nil-safe, case-tolerant
         // runtime getter as the value-position emitter. In particular, an
@@ -9733,9 +9799,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // migration.
     // The keys-shape param is the range *index*, so it binds as `index`: still
     // the nearest binding for a shadowed outer name (#3392), never the dot.
-    // `rowType` types the row bindings from the array's declared type, so a
-    // text sink can tell a string row field from a number (`isKnownNonNumber`).
-    const rowType = loopRowType(this.emitCtx, loop, this.scope)
+    // `rowType` types the row bindings (`renderLoopRowType`).
+    const rowType = this.renderLoopRowType(loop)
     const scopeLoop: LoopBindingSource =
       loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : { ...loop, rowType }
     const prevScope = this.scope
@@ -9871,7 +9936,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           filterCond = this.renderPredicateCondition(
             loop.filterPredicate.predicate,
             loop.filterPredicate.param,
-            datumField
+            datumField,
+            this.isFieldlessLoopRow(loop, rowType),
           )
         } finally {
           this.filterCaptureAliases = prevAliases

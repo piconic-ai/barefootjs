@@ -6625,6 +6625,29 @@
         "text"
       ]
     },
+    "loop-row-scalar-member-length": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-static-conditional": {
       "kinds": [
         "call",
