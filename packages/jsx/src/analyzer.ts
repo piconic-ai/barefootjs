@@ -5127,7 +5127,9 @@ function markupTiming(site: ts.Node, root: ts.Node): 'markup' | 'deferred' | 'ou
 }
 
 function functionUseTiming(fn: ts.Node, root: ts.Node): 'markup' | 'deferred' | 'outside' {
-  const use = valueUseOf(fn)
+  const { use, dropped } = valueWalk(fn)
+  // A setter an object spread meets is neither copied nor called.
+  if (dropped) return 'deferred'
   const parent = use.parent
   if (ts.isJsxExpression(parent) && ts.isJsxAttribute(parent.parent)) return 'deferred'
   if (ts.isCallExpression(parent) && parent.expression !== use && isEventHandlerValue(parent)) return 'deferred'
@@ -5147,27 +5149,65 @@ function isEventHandlerValue(call: ts.CallExpression): boolean {
 /**
  * The outermost expression that carries `node`'s value unchanged: through
  * parentheses, casts, a conditional's branches (not its condition), `&&` /
- * `||` / `??`, a comma's last operand, and object / array literal members.
- * Not through a spread, which consumes the value (`passesValueOn`).
+ * `||` / `??`, a comma's last operand, object / array literal members, and a
+ * spread that copies it (`spreadPassesOn`).
  */
 function valueUseOf(node: ts.Node): ts.Node {
+  return valueWalk(node).use
+}
+
+/**
+ * `valueUseOf`'s walk. `dropped`: the value is a setter an object spread
+ * meets, which the spread neither copies nor calls.
+ */
+function valueWalk(node: ts.Node): { use: ts.Node; dropped: boolean } {
   let v = node
-  while (passesValueOn(v)) v = v.parent
-  return v
+  let member: ts.Node | undefined
+  for (;;) {
+    const p = v.parent
+    if (!p) return { use: v, dropped: false }
+    if (ts.isSpreadAssignment(p) || ts.isSpreadElement(p)) {
+      const spread = spreadPassesOn(p, v, member)
+      if (spread === 'dropped') return { use: v, dropped: true }
+      if (spread === 'consumed') return { use: v, dropped: false }
+    } else if (!passesValueOn(v)) {
+      return { use: v, dropped: false }
+    }
+    if (ts.isObjectLiteralExpression(p)) member = v
+    v = p
+  }
+}
+
+/**
+ * What a spread does with its operand `v`, per JavaScript:
+ *
+ *   - an object spread copies the operand literal's data properties and
+ *     methods (`'passes'`), calls its getters (`'consumed'`: the rule
+ *     applies from the spread site) and skips its setters (`'dropped'`);
+ *     `member` is the operand member the walk came through;
+ *   - an array or argument spread of an array literal copies its elements
+ *     (`'passes'`); of anything else it runs the operand's iterator, which may
+ *     run any function in it (`'consumed'`).
+ */
+function spreadPassesOn(
+  p: ts.SpreadAssignment | ts.SpreadElement,
+  v: ts.Node,
+  member: ts.Node | undefined,
+): 'passes' | 'consumed' | 'dropped' {
+  if (ts.isSpreadElement(p)) return ts.isArrayLiteralExpression(v) ? 'passes' : 'consumed'
+  if (!ts.isObjectLiteralExpression(v)) return 'consumed'
+  if (member && ts.isGetAccessorDeclaration(member)) return 'consumed'
+  if (member && ts.isSetAccessorDeclaration(member)) return 'dropped'
+  return 'passes'
 }
 
 function passesValueOn(v: ts.Node): boolean {
   const p = v.parent
-  if (!p) return false
   if (ts.isParenthesizedExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p)) return true
   if (ts.isNonNullExpression(p) || ts.isTypeAssertionExpression(p)) return true
   if (ts.isConditionalExpression(p)) return p.condition !== v
   if (ts.isBinaryExpression(p)) return isValuePassingOperator(p, v)
   if (ts.isPropertyAssignment(p)) return p.initializer === v
-  // A spread consumes its operand instead of passing it on: an object
-  // spread runs the operand's getters, an array / argument spread iterates
-  // it (a custom iterator may run anything). So the walk stops there, and
-  // the rule applies from the spread site.
   return ts.isObjectLiteralExpression(p) || ts.isArrayLiteralExpression(p)
 }
 

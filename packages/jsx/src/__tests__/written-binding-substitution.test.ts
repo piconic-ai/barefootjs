@@ -265,11 +265,21 @@ describe('BF065: a client component markup that writes a binding while it render
     expect(codesOf(`let id = 0\n      return <div><button onClick={((f: () => void) => f)(() => { ++id })}>{id}</button></div>`)).not.toContain('BF065')
   })
 
-  test('is refused for a getter a spread runs while the markup renders', () => {
+  test('is refused for a getter or an iterator a spread runs while the markup renders, not for what a spread copies', () => {
     const SHOW_VALUE = 'function Show(props: { value: { x: number } }) { return <i>{props.value.x}</i> }'
+    const NEXT = 'function Show(props: { value: object }) { return <i>{String(Object.keys(props.value).length)}</i> }'
     // The object spread runs the getter while rendering: `<b>{id}</b>` reads 1.
     expect(codesOf(`let id = 0\n      return <div><Show value={{ ...{ get x() { return ++id } } }} /><b>{id}</b></div>`, '', SHOW_VALUE)).toContain('BF065')
     expect(codesOf(`let id = 0\n      return <p>{[...{ *[Symbol.iterator]() { yield ++id } }].join(',')}</p>`)).toContain('BF065')
+    // A spread copies a data callback, a method and an array literal's elements: handed on.
+    expect(codesOf(`let id = 0\n      return <div><Show value={{ ...{ next: () => ++id } }} /></div>`, '', NEXT)).not.toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <div><Show value={{ ...{ next() { return ++id } } }} /></div>`, '', NEXT)).not.toContain('BF065')
+    expect(codesOf(`let id = 0\n      return <div><Show value={{ ...{ set x(v: number) { id = v } } }} /></div>`, '', NEXT)).not.toContain('BF065')
+    expect(codesOf(
+      `let id = 0\n      return <div><Fns fns={[...[() => ++id]]} /></div>`,
+      '',
+      'function Fns(props: { fns: Array<() => number> }) { return <i>{props.fns.length}</i> }',
+    )).not.toContain('BF065')
     // An object literal with a getter or a method passed directly is handed on.
     expect(codesOf(`let id = 0\n      return <div><Show value={{ get x() { return ++id } }} /></div>`, '', SHOW_VALUE)).not.toContain('BF065')
     expect(codesOf(
