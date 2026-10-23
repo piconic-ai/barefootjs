@@ -5,17 +5,18 @@
  * spells a line of template: whether its destructure pattern lowers (BF104),
  * whether the source is a static literal, whether it names a computed const
  * no template binds (BF101), how its `.sort` comparator lowers, and which
- * filter captures need an alias. {@link planLoop} makes those decisions once,
- * against the scope outside the loop. The adapter keeps the spelling: the
- * loop header, the row bindings, the diagnostics' wording, and the order it
- * emits them in.
+ * filter captures need an alias, and which locals the row binds for its
+ * index and its destructure bindings. {@link planLoop} makes those decisions
+ * once, against the scope outside the loop. The adapter keeps the spelling:
+ * the loop header, the row bindings, the diagnostics' wording, and the order
+ * it emits them in.
  */
 
 import { parseExpression } from '../expression-parser.ts'
 import { isLowerableLoopDestructure } from '../loop-destructure.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveStaticLoopSource } from '../static-literal.ts'
-import type { ConstantInfo, IRLoop } from '../types.ts'
+import type { ConstantInfo, IRLoop, LoopBindingPathSegment } from '../types.ts'
 import { type CallbackLoweringOptions, type CallbackPlan, lowerCallbackMethod } from './callback-method.ts'
 import { filterCaptureCollisions } from './filter-capture-collisions.ts'
 
@@ -51,6 +52,54 @@ export interface LoopPlan<Spelled> {
   sort: CallbackPlan | null
   /** The filter predicate's captures that a row binding would shadow, each with its alias. */
   captureAliases: Array<{ name: string; alias: string }>
+  /**
+   * The for-target of an array iteration: the param itself, or the synthetic
+   * `__bf_item` when the param is not the item (a `.keys()` iteration, whose
+   * param is the index, or a lowered destructure, whose bindings read off it).
+   */
+  itemVar: string
+  /**
+   * The name a local binds to the row's 0-based index in an array iteration:
+   * a `.keys()` iteration's param, else the explicit index param. `null` for
+   * an object iteration, whose key the header binds.
+   */
+  indexLocal: string | null
+  /** One local per binding of a lowered destructure, in pattern order. */
+  destructureLocals: Array<{ name: string; value: DestructureValue }>
+}
+
+/**
+ * What a lowered destructure binding reads off the row item: the value at
+ * `segments`, or for a rest binding the residual of the value there (the
+ * array from `from` on, or the object without the `exclude` keys).
+ */
+export type DestructureValue =
+  | { kind: 'path'; segments: readonly LoopBindingPathSegment[] }
+  | { kind: 'slice'; segments: readonly LoopBindingPathSegment[]; from: number }
+  | { kind: 'omit'; segments: readonly LoopBindingPathSegment[]; exclude: readonly string[] }
+
+/** An adapter's spelling of a {@link DestructureValue}. */
+export interface DestructureSpelling {
+  /** The value at `segments` off `item`. */
+  accessor(item: string, segments: readonly LoopBindingPathSegment[]): string
+  /** The array `parent` from index `from` on. */
+  slice(parent: string, from: number): string
+  /** The object `parent` without the `keys`. */
+  omit(parent: string, keys: readonly string[]): string
+}
+
+/** Spell each destructure local's value off the row item `item`. */
+export function spellDestructureLocals(
+  plan: Pick<LoopPlan<unknown>, 'destructureLocals'>,
+  item: string,
+  spelling: DestructureSpelling,
+): Array<{ name: string; value: string }> {
+  return plan.destructureLocals.map(({ name, value }) => {
+    const parent = spelling.accessor(item, value.segments)
+    if (value.kind === 'slice') return { name, value: spelling.slice(parent, value.from) }
+    if (value.kind === 'omit') return { name, value: spelling.omit(parent, value.exclude) }
+    return { name, value: parent }
+  })
 }
 
 /** Plan a loop against the scope outside it. */
@@ -59,13 +108,31 @@ export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): 
     isNameShadowed: ctx.scope.asShadowPredicate(),
   })
   const staticSource = staticItems !== null ? ctx.spellStatic(staticItems) : null
+  const destructure = destructureKind(loop)
   return {
-    destructure: destructureKind(loop),
+    destructure,
     staticSource,
     unresolvableConst: staticSource === null ? unresolvableConst(loop, ctx) : null,
     sort: loop.sortComparator ? lowerCallbackMethod('sort', loop.sortComparator.arrow, [], ctx.callbackLowering) : null,
     captureAliases: filterCaptureCollisions(loop).map((name) => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` })),
+    itemVar: loop.iterationShape === 'keys' || destructure === 'lowerable' ? '__bf_item' : loop.param,
+    indexLocal: indexLocal(loop),
+    destructureLocals: destructure === 'lowerable' ? destructureLocals(loop) : [],
   }
+}
+
+function indexLocal(loop: IRLoop): string | null {
+  if (loop.objectIteration) return null
+  return loop.iterationShape === 'keys' ? loop.param : loop.index
+}
+
+function destructureLocals(loop: IRLoop): LoopPlan<unknown>['destructureLocals'] {
+  return (loop.paramBindings ?? []).map((b) => {
+    const segments = b.segments ?? []
+    if (b.rest?.kind === 'array') return { name: b.name, value: { kind: 'slice', segments, from: b.rest.from } }
+    if (b.rest?.kind === 'object') return { name: b.name, value: { kind: 'omit', segments, exclude: b.rest.exclude.map((k) => k.key) } }
+    return { name: b.name, value: { kind: 'path', segments } }
+  })
 }
 
 function destructureKind(loop: IRLoop): LoopPlan<unknown>['destructure'] {

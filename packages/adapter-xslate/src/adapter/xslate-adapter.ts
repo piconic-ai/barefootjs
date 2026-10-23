@@ -68,6 +68,8 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  spellDestructureLocals,
+  type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -164,6 +166,13 @@ function kolonStringLiteral(s: string): string {
 
 /** A Kolon string or number literal, the whole of a lowered value. */
 const KOLON_LITERAL = /^(?:'(?:[^'\\]|\\.)*'|-?\d+(?:\.\d+)?)$/
+
+/** How a lowered loop destructure binding reads off the row item. */
+const DESTRUCTURE_SPELLING: DestructureSpelling = {
+  accessor: kolonSegmentAccessor,
+  slice: (parent, from) => `$bf.slice(${parent}, ${from}, nil)`,
+  omit: (parent, keys) => `$bf.omit(${parent}, [${keys.map(kolonStringLiteral).join(', ')}])`,
+}
 
 /**
  * The `XslateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
@@ -603,7 +612,6 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToKolon,
     })
-    const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
@@ -690,40 +698,29 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // needed (`.keys().map(k => ...)` or an explicit `index` param), comes
     // from Text::Xslate's loop variable `$~param.index`.
 
-    // For `keys`-shape iterations the callback param IS the index. We iterate
-    // the array but bind the loop var to a throwaway and expose the index as
-    // `$param`. Kolon's `$~loopvar.index` provides the 0-based index.
+    // An array iteration's for-target is `loopPlan.itemVar`: a throwaway item
+    // var when the param is not the item (a `.keys()` param is the index, a
+    // lowered destructure's bindings read off the item). An entries iteration
+    // walks `.kv()` pairs; `.keys()` / `.values()` yield the param directly.
     let loopVar = loop.objectIteration === 'entries'
       ? '__bf_pair'
       : loop.objectIteration
         ? param
-        : loop.iterationShape === 'keys'
-          ? '__bf_item'
-          : supportableDestructure ? '__bf_item' : param
+        : loopPlan.itemVar
 
-    // Index alias: when an explicit `index` param is present (`.map((x, i) =>
-    // ...)`) or the iteration is `keys`-shaped, expose it via a `: my` Kolon
-    // local bound to the loop variable's `.index` accessor. A supported
-    // destructure param adds one `: my` local per binding, walking each
-    // binding's `segments` path (#2087 Phase B):
-    //   - fixed (`b.rest` unset): the FULL accessor from `$__bf_item`.
-    //   - array-rest: `$bf.slice(parent, from, nil)` — the same runtime
-    //     helper `.slice()` JS-method calls lower to (see `array-method.ts`),
-    //     so the "no end → to length" arithmetic stays in one place. Kolon's
-    //     undefined literal is `nil`, not Perl's `undef`.
-    //   - object-rest: `$bf.omit(parent, [...excluded keys...])` — a TRUE
-    //     residual hashref (not the whole item aliased), so both
-    //     `$rest.flag` (member-access use) and `$bf.spread_attrs($rest)`
-    //     (spread-onto-element use) see only the non-destructured keys.
-    // `parent` is `$__bf_item` walked through the binding's PARENT-prefix
-    // `segments` (empty at the loop root, per the `LoopParamBinding` jsdoc) —
-    // NOT the same as a fixed binding's full-accessor segments.
+    // The row's `: my` locals: an entries iteration's key and value off the
+    // pair, the index local (a `.keys()` param or an explicit index param)
+    // off the loop variable's `$~loopvar.index`, and one local per lowered
+    // destructure binding, walking its `segments` path (#2087 Phase B) — the
+    // full accessor for a fixed binding, `$bf.slice(parent, from, nil)` /
+    // `$bf.omit(parent, [keys])` for an array / object rest (the same runtime
+    // helpers the `.slice()` method lowers to; Kolon's undefined is `nil`),
+    // a true residual rather than the whole item aliased.
     // A `my` local named like an enclosing row's binding is renamed (#3392).
     const myBoundNames = [
       ...(loop.objectIteration === 'entries' ? [loop.index ?? param, param] : []),
-      ...(!loop.objectIteration && loop.iterationShape === 'keys' ? [param] : []),
-      ...(!loop.objectIteration && loop.iterationShape !== 'keys' && loop.index ? [loop.index] : []),
-      ...(supportableDestructure ? (loop.paramBindings ?? []).map(b => b.name) : []),
+      ...(loopPlan.indexLocal ? [loopPlan.indexLocal] : []),
+      ...loopPlan.destructureLocals.map(local => local.name),
       ...(loop.preamble?.declarations ?? []).map(d => d.name),
     ]
     const rowNames = new Map<string, string>()
@@ -739,33 +736,12 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const my = (name: string) => rowNames.get(name) ?? name
     const indexLocalLines: string[] = []
     if (loop.objectIteration === 'entries') {
-      // `key`/`value` bind off the `.kv()` pair (see the for-header below)
-      // — no derived `.index` local needed, unlike the array
-      // `iterationShape` cases.
       indexLocalLines.push(`: my $${my(loop.index ?? param)} = $${loopVar}.key;`)
       indexLocalLines.push(`: my $${my(param)} = $${loopVar}.value;`)
-    } else if (loop.objectIteration) {
-      // 'keys'/'values': `.keys()`/`.values()` already yield the bound
-      // value directly — no derived local needed either.
-    } else if (loop.iterationShape === 'keys') {
-      indexLocalLines.push(`: my $${my(param)} = $~${loopVar}.index;`)
-    } else if (loop.index) {
-      indexLocalLines.push(`: my $${my(loop.index)} = $~${loopVar}.index;`)
     }
-    if (supportableDestructure) {
-      for (const b of loop.paramBindings ?? []) {
-        const parent = kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])
-        if (b.rest?.kind === 'object') {
-          const exclude = b.rest.exclude.map(k => kolonStringLiteral(k.key)).join(', ')
-          indexLocalLines.push(`: my $${my(b.name)} = $bf.omit(${parent}, [${exclude}]);`)
-        } else if (b.rest?.kind === 'array') {
-          indexLocalLines.push(`: my $${my(b.name)} = $bf.slice(${parent}, ${b.rest.from}, nil);`)
-        } else {
-          indexLocalLines.push(
-            `: my $${my(b.name)} = ${kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])};`,
-          )
-        }
-      }
+    if (loopPlan.indexLocal) indexLocalLines.push(`: my $${my(loopPlan.indexLocal)} = $~${loopVar}.index;`)
+    for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopVar}`, DESTRUCTURE_SPELLING)) {
+      indexLocalLines.push(`: my $${my(name)} = ${value};`)
     }
 
     const prevInLoop = this.inLoop

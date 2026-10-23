@@ -54,6 +54,8 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  spellDestructureLocals,
+  type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -141,6 +143,13 @@ function perlSegmentAccessor(base: string, segments: readonly LoopBindingPathSeg
  */
 function perlStringLiteral(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+}
+
+/** How a lowered loop destructure binding reads off the row item. */
+const DESTRUCTURE_SPELLING: DestructureSpelling = {
+  accessor: perlSegmentAccessor,
+  slice: (parent, from) => `bf->slice(${parent}, ${from}, undef)`,
+  omit: (parent, keys) => `bf->omit(${parent}, [${keys.map(perlStringLiteral).join(', ')}])`,
 }
 
 /**
@@ -646,7 +655,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToPerl,
     })
-    const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
@@ -826,35 +834,15 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     } else {
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
     if (loop.iterationShape !== 'keys') {
-      if (supportableDestructure) {
-        // Per-item var + one `my` local per binding, walking each binding's
-        // `segments` path (#2087 Phase B):
-        //   - fixed (`b.rest` unset): the FULL accessor from `$__bf_item`.
-        //   - array-rest: `bf->slice(parent, from, undef)` — the same
-        //     runtime helper `.slice()` JS-method calls lower to (see
-        //     `array-method.ts`), so the "no end → to length" arithmetic
-        //     stays in one place.
-        //   - object-rest: `bf->omit(parent, [...excluded keys...])` — a
-        //     TRUE residual hashref (not the whole item aliased), so both
-        //     `$rest->{flag}` (member-access use) and `bf->spread_attrs($rest)`
-        //     (spread-onto-element use) see only the non-destructured keys.
-        // `parent` is `$__bf_item` walked through the binding's PARENT-prefix
-        // `segments` (empty at the loop root, per the `LoopParamBinding`
-        // jsdoc) — NOT the same as a fixed binding's full-accessor segments.
-        lines.push(`% my $__bf_item = ${array}->[${indexVar}];`)
-        for (const b of loop.paramBindings ?? []) {
-          const parent = perlSegmentAccessor('$__bf_item', b.segments ?? [])
-          if (b.rest?.kind === 'object') {
-            const exclude = b.rest.exclude.map(k => perlStringLiteral(k.key)).join(', ')
-            lines.push(`% my $${b.name} = bf->omit(${parent}, [${exclude}]);`)
-          } else if (b.rest?.kind === 'array') {
-            lines.push(`% my $${b.name} = bf->slice(${parent}, ${b.rest.from}, undef);`)
-          } else {
-            lines.push(`% my $${b.name} = ${perlSegmentAccessor('$__bf_item', b.segments ?? [])};`)
-          }
-        }
-      } else {
-        lines.push(`% my $${param} = ${array}->[${indexVar}];`)
+      // The row item, under the param or, for a lowered destructure, the
+      // per-item var `$__bf_item` with one `my` local per binding walking
+      // its `segments` path (#2087 Phase B): the full accessor for a fixed
+      // binding, `bf->slice(parent, from, undef)` / `bf->omit(parent, [keys])`
+      // for an array / object rest (the same runtime helpers the `.slice()`
+      // method lowers to), a true residual rather than the whole item aliased.
+      lines.push(`% my $${loopPlan.itemVar} = ${array}->[${indexVar}];`)
+      for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopPlan.itemVar}`, DESTRUCTURE_SPELLING)) {
+        lines.push(`% my $${name} = ${value};`)
       }
     }
     }
