@@ -405,6 +405,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -444,6 +450,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -5002,6 +5014,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5107,6 +5125,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -7108,6 +7132,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -7397,6 +7427,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -7758,6 +7794,18 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-scalar-row-wrapper-nested-component",
+              "limitations": [
+                "loop-row-child-scalar-row-nested-component"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -7893,6 +7941,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -8119,6 +8173,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -8426,6 +8486,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8709,6 +8775,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -9016,6 +9088,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -9320,6 +9398,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -9621,6 +9705,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -10523,6 +10613,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -10628,6 +10724,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -12667,6 +12769,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -12914,6 +13022,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -13215,6 +13329,18 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-scalar-row-wrapper-nested-component",
+              "limitations": [
+                "loop-row-child-scalar-row-nested-component"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -13314,6 +13440,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -13534,6 +13666,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -13799,6 +13937,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -14040,6 +14184,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -14305,6 +14455,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -14564,6 +14720,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
               ]
             },
             {
@@ -14829,6 +14991,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-member",
+              "limitations": [
+                "loop-param-named-props-member"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -15001,6 +15169,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -15016,6 +15190,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -21007,6 +21187,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-inner-loop-shadow",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -21046,6 +21232,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-loop-row-child-children",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {

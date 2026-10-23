@@ -815,9 +815,6 @@
     "packages/jsx/src/ir-to-client-js/utils.ts": {
       "collectIrFreeIds": [
         33
-      ],
-      "rewriteIdentifierReferences/visit": [
-        26
       ]
     },
     "packages/jsx/src/ir-to-client-js/walker.ts": {

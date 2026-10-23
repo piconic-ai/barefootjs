@@ -981,6 +981,8 @@ import { fixture as loopRowChildChildrenNestedReactiveProp } from './loop-row-ch
 import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-children-nested-row-prop'
 import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
+import { fixture as loopRowChildChildrenInnerLoopShadow } from './loop-row-child-children-inner-loop-shadow'
+import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
 import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
 import { fixture as loopRowChildChildrenNestedRowVarShapes } from './loop-row-child-children-nested-row-var-shapes'
 import { fixture as loopRowChildChildrenFilterCapturesRow } from './loop-row-child-children-filter-captures-row'
@@ -1091,6 +1093,8 @@ import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-
 import { fixture as loopRowChildKeyNotAProp } from './loop-row-child-key-not-a-prop'
 import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-shadowed-by-prop'
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
+import { fixture as loopRowChildScalarRowWrapper } from './loop-row-child-scalar-row-wrapper'
+import { fixture as loopRowChildScalarRowWrapperNestedComponent } from './loop-row-child-scalar-row-wrapper-nested-component'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
 // A component loop row with forwarded children over an array prop, and its
@@ -1151,6 +1155,10 @@ import { fixture as filterNestedCallbackReadsOuterParamClient } from './filter-n
 import { fixture as reassignedPropCounter } from './reassigned-prop-counter'
 import { fixture as handlerWrittenLocals } from './handler-written-locals'
 import { fixture as reassignedPropStateless } from './reassigned-prop-stateless'
+// Callback parameters named `props` keep their own binding beside outer
+// destructured-prop reads in the same scope.
+import { fixture as loopParamNamedProps } from './loop-param-named-props'
+import { fixture as loopParamNamedPropsMember } from './loop-param-named-props-member'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1796,6 +1804,8 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedRowProp,
   loopRowChildChildrenOwnReactiveProp,
   loopRowChildChildrenNestedIndexProp,
+  loopRowChildChildrenInnerLoopShadow,
+  signalLoopRowChildChildren,
   loopRowChildChildrenNestedPreambleProp,
   loopRowChildChildrenNestedRowVarShapes,
   loopRowChildChildrenFilterCapturesRow,
@@ -1868,6 +1878,8 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildKeyNotAProp,
   loopRowChildKeyShadowedByProp,
   loopRowChildScalarRowKey,
+  loopRowChildScalarRowWrapper,
+  loopRowChildScalarRowWrapperNestedComponent,
   loopRowChildKeyShapes,
   loopRowChildPropDestinations,
   loopRowChildChildrenPropArray,
@@ -1971,4 +1983,6 @@ export const jsxFixtures: JSXFixture[] = [
   reassignedPropCounter,
   handlerWrittenLocals,
   reassignedPropStateless,
+  loopParamNamedProps,
+  loopParamNamedPropsMember,
 ]

@@ -65,16 +65,6 @@ function assertParses(clientJs: string): void {
   expect(syntaxErrorsOf(clientJs)).toHaveLength(0)
 }
 
-/**
- * The counterpart to `assertParses`: a nested declaration that shadows the
- * loop param (see the `rewriteIdentifierAsAccessor` docstring in
- * `ir-to-client-js/utils.ts`) is expected to fail loudly at this
- * parse-check rather than silently emit a value that's wrong at runtime.
- */
-function assertDoesNotParse(clientJs: string): void {
-  expect(syntaxErrorsOf(clientJs).length).toBeGreaterThan(0)
-}
-
 describe('.map() row: object-literal key / shorthand / member positions vs. the loop param (#3239)', () => {
   test('shorthand property `{ choice }` expands to `{ choice: choice() }`, not `{ choice() }`', () => {
     const source = `
@@ -361,18 +351,14 @@ describe('.map() row: declaration/member positions the old regex skipped via its
   })
 })
 
-describe('.map() row: a nested scope that shadows the loop param fails loudly instead of silently misrewriting', () => {
-  // `rewriteIdentifierAsAccessor` has no scope tracking (see its docstring
-  // in ir-to-client-js/utils.ts): once a nested scope re-binds the loop
-  // param's name, the rewrite can no longer tell a reference to the outer
-  // item from a reference to the shadowing local, so it deliberately wraps
-  // the shadowing declaration's own name too. That's always a syntax break
-  // at the declaration site, so the module fails a syntax check instead of
-  // silently compiling into a runtime `TypeError` against the wrong value
-  // — matching what the pre-#3239 regex already did for this shape (it had
-  // no shadow-awareness either).
+describe('.map() row: a nested scope that shadows the loop param keeps its own binding (#3595)', () => {
+  // The accessor rewrite walks the text with the shared lexical-scope model
+  // (`walkWithScope`): an inner binding of the loop param's name — its binder
+  // and every reference it shadows — is the inner binding's, so neither is
+  // wrapped. Before #3595 the rewrite had no scope tracking and wrapped the
+  // binder too (`(choice()) =>`, `const choice() = 1`), a syntax error.
 
-  test('a nested `.map(choice => ...)` that reuses the outer loop param name fails to parse', () => {
+  test('a nested `.map(choice => ...)` that reuses the outer loop param name reads the inner param', () => {
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -388,10 +374,11 @@ describe('.map() row: a nested scope that shadows the loop param fails loudly in
       }
     `
     const js = getClientJs(source)
-    assertDoesNotParse(js)
+    assertParses(js)
+    expect(js).toContain("choice().split('').map(choice => choice.toUpperCase())")
   })
 
-  test('a nested `const choice = ...` that reuses the outer loop param name fails to parse', () => {
+  test('a nested `const choice = ...` that reuses the outer loop param name reads the local', () => {
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -407,7 +394,73 @@ describe('.map() row: a nested scope that shadows the loop param fails loudly in
       }
     `
     const js = getClientJs(source)
-    assertDoesNotParse(js)
+    assertParses(js)
+    expect(js).toContain('const choice = 1; return choice })()')
+  })
+
+  test('an inner callback that reuses the index name reads its own index', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['ab', 'cd'])
+        return (
+          <div>
+            {items().map((choice, i) => (
+              <b key={choice}>{String(i) + choice.split('').map((c, i) => c + i).join('')}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    // A lazy row hands the index as a plain number (`const i = __e.index`);
+    // the inner `(c, i)` keeps its binder either way.
+    expect(js).toContain("String(i) + choice().split('').map((c, i) => c + i)")
+    expect(js).not.toContain('(c, i())')
+  })
+
+  test('a named class expression binds its own name inside the class body', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{String((class choice { static n = choice.name }).n)}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('class choice { static n = choice.name }')
+  })
+
+  test('a computed method key reads the outer item; the method body reads its own param', () => {
+    // The key is evaluated in the enclosing scope, before the method's
+    // parameters exist, so only the body's `choice` is the inner binding.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{Object.keys({ [choice](choice) { return choice } }).join('')}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('{ [choice()](choice) { return choice } }')
   })
 })
 
@@ -481,12 +534,18 @@ describe('destructured loop-param path (rewriteLoopBindingRefs) shares the plain
     expect(js).toContain('(function color() { return __bfItem().label })()')
   })
 
-  test('a nested function declaration shadowing a binding fails to parse instead of calling the item field', () => {
-    // Keeping `function color() {}` while rewriting its call to
-    // `__bfItem().color()` would compile and then call the wrong value at
-    // hydration. Rewriting the declaration name too breaks it loudly, as the
-    // old destructured regex did (#3260 review).
+  test('a nested function declaration shadowing a binding is called as the local function', () => {
+    // `function color() {}` binds `color` for its block, so both the
+    // declaration and its call stay local (#3595); before, the rewrite had no
+    // scope tracking and broke the declaration name to fail loudly (#3260).
     const js = compileRow("<b key={label}>{(() => { function color() { return 'blue' } return color() })()}</b>")
-    assertDoesNotParse(js)
+    assertParses(js)
+    expect(js).toContain("function color() { return 'blue' } return color() })()")
+  })
+
+  test('a nested callback rebinding a destructured name reads the inner param (#3595)', () => {
+    const js = compileRow("<b key={label}>{[1, 2].map((label) => label * 2).join(label)}</b>")
+    assertParses(js)
+    expect(js).toContain('[1, 2].map((label) => label * 2).join(__bfItem().label)')
   })
 })

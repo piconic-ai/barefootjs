@@ -5722,6 +5722,40 @@
         "text"
       ]
     },
+    "loop-param-named-props": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-named-props-member": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-prop-alias-name-collision": {
       "kinds": [
         "identifier",
@@ -6032,6 +6066,24 @@
         "identifier",
         "literal",
         "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-inner-loop-shadow": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
       ],
       "axes": [
         "literal:string"
@@ -6418,6 +6470,37 @@
       ]
     },
     "loop-row-child-scalar-row-key": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-scalar-row-wrapper": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-scalar-row-wrapper-nested-component": {
       "kinds": [
         "identifier",
         "member"
@@ -10766,6 +10849,23 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
         "text"
       ]
     },

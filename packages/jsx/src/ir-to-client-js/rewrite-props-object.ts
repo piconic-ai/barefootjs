@@ -27,6 +27,7 @@ import ts from 'typescript'
 import { PROPS_PARAM } from './utils.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
+import { walkWithScope } from '../scope/lexical-scope-walk.ts'
 
 export interface PropsObjectRewriteOptions {
   /**
@@ -105,15 +106,20 @@ function rewriteOneName(code: string, srcPropsName: string): string {
   // Spans are sorted by `start` ascending in the order TS visits them
   // (depth-first, source order), so we can apply replacements right-to-
   // left without re-sorting.
+  //
+  // Only references that resolve to the component's props binding are
+  // renamed. An identifier an inner binding of the same spelling shadows
+  // (`.map((props) => …)` row callbacks and their `const props = () =>
+  // __e.item` accessors, a handler's own `(props) => …` parameter, a nested
+  // `function f(props)`) belongs to that binding: renaming it — binder and
+  // references alike — to `_p` would capture every compiler-emitted
+  // `_p.<prop>` read of the OUTER props object inside that scope (a
+  // destructured prop referenced in the row, a forwarded child prop).
   const spans: Array<readonly [number, number]> = []
-
-  function visit(node: ts.Node): void {
-    if (ts.isIdentifier(node) && node.text === srcPropsName && shouldRewrite(node)) {
-      spans.push([node.getStart(sourceFile), node.getEnd()])
-    }
-    ts.forEachChild(node, visit)
-  }
-  visit(sourceFile)
+  walkWithScope(sourceFile, (node, _parent, shadowed) => {
+    if (shadowed || node.text !== srcPropsName || !shouldRewrite(node)) return
+    spans.push([node.getStart(sourceFile), node.getEnd()])
+  })
 
   if (spans.length === 0) return code
 
