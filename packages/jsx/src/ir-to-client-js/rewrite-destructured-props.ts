@@ -27,7 +27,7 @@
 import ts from 'typescript'
 import { type PropUsage, isChildrenPropParam } from '../types.ts'
 import { computePropsUsedAsConditions } from './compute-prop-usage.ts'
-import { boundPropLocalNames, livePropReadExpr, resolveBodyPropAliases, type LivePropReadInfo } from '../props-binding.ts'
+import { boundPropLocalNames, livePropReadExpr, keepsDeclaredValue, resolveBodyPropAliases, type LivePropReadInfo } from '../props-binding.ts'
 import { parsePropReadInitializer } from './prune-unused-prop-extractions.ts'
 import { rewriteScopedValueRefs } from '../prop-rewrite.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
@@ -75,7 +75,7 @@ function rewriteParamDestructuredReads(
   propUsage: ReadonlyMap<string, PropUsage>,
 ): string {
   const names = new Set(boundPropLocalNames(ctx))
-  for (const p of ctx.propsParams) if (isChildrenPropParam(p)) names.delete(p.name)
+  for (const p of ctx.propsParams) if (isChildrenPropParam(p) || !keepsDeclaredValue(p)) names.delete(p.name)
   if (names.size === 0) return code
 
   const propsUsedAsConditions = computePropsUsedAsConditions(ctx, names)

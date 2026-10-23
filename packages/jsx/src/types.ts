@@ -129,6 +129,18 @@ export interface ParamInfo {
   /** When true, the parameter is a rest spread (`...args`) — emit must prepend `...`. */
   isRest?: boolean
   /**
+   * Set when the component writes the destructured binding anywhere in its
+   * body (`++start`, `start = clamp(start)`, `[a, b] = [b, a]`,
+   * `for (start of …)`), event handlers and other callbacks included. The
+   * binding is then a local the component owns, as in JS, not the prop: the
+   * client init body declares it once (`let start = _p.start ?? 0`) and reads
+   * and writes that local instead of the live prop read `_p.start ?? 0`,
+   * which no write can take (`++(_p.start ?? 0)` is a SyntaxError). Set by
+   * `markWrittenBindings` (analyzer.ts); read through `keepsDeclaredValue`
+   * (props-binding.ts).
+   */
+  reassigned?: boolean
+  /**
    * Source property name for an aliased destructured prop (`{ createdAt: c }`
    * → name: 'c', sourceName: 'createdAt'). Set ONLY when the binding renames —
    * an un-aliased binding leaves it unset so existing IR shapes/snapshots are
@@ -2270,7 +2282,10 @@ export interface ConstantInfo {
    * (the declaration's initializer text) no longer reflects what the
    * binding actually holds by the time the rest of the component runs
    * (#2910). Set by `markMutatedConstants` (analyzer.ts) from
-   * `InitStatementInfo.mutatedIdentifiers`/`assignedIdentifiers`.
+   * `InitStatementInfo.mutatedIdentifiers`/`assignedIdentifiers`, and for
+   * a binding a markup expression writes during render (`{++nextId}`, a
+   * `.map()` callback that increments a counter) — not an event handler,
+   * which runs after render.
    *
    * Every consumer that would otherwise re-inline `value` verbatim in
    * place of a bare reference to `name` — `expandDynamicPropValue`,
@@ -2282,6 +2297,15 @@ export interface ConstantInfo {
    * was supposed to do.
    */
   mutatedAfterDeclaration?: boolean
+  /**
+   * Set when the component writes the binding anywhere in its body, event
+   * handlers and other callbacks included — the same fact
+   * `ParamInfo.reassigned` records for a destructured prop, from the same
+   * pass (`markWrittenBindings`, analyzer.ts). A written binding fails
+   * `keepsDeclaredValue` (props-binding.ts), the one rule for whether a
+   * binding may be read as the prop it was destructured from.
+   */
+  reassigned?: boolean
   /** The kind of system construct, if the initializer is createContext() or new WeakMap(). */
   systemConstructKind?: 'createContext' | 'weakMap'
   /** Value with destructured prop refs rewritten to _p.propName, for template inlining. */

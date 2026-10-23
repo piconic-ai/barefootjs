@@ -18,6 +18,7 @@ import { BindingScope } from '../scope/binding-scope.ts'
 import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, withOuterBindings, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
+import { writesAnyBinding } from '../props-binding.ts'
 
 /**
  * Split a template literal body into static segments and `${...}` interpolations,
@@ -2362,7 +2363,6 @@ function propResolvesUnsafe(
   env: CsrEnv,
   unsafeLocalNames: ReadonlySet<string>,
 ): boolean {
-  if (unsafeLocalNames.size === 0) return false
   let source: string | undefined
   switch (prop.value.kind) {
     case 'expression':
@@ -2380,8 +2380,8 @@ function propResolvesUnsafe(
       return false
   }
   if (!source) return false
-  const { freeIdentifiers } = csrSubstitute(source, env)
-  return setIntersects(freeIdentifiers, unsafeLocalNames)
+  const { freeIdentifiers, writes } = csrSubstitute(source, env)
+  return writes.size > 0 || setIntersects(freeIdentifiers, unsafeLocalNames)
 }
 
 /**
@@ -2406,7 +2406,10 @@ export function computeDeferredChildSlots(
   propsObjectName?: string | null,
 ): Set<string> {
   const deferred = new Set<string>()
-  if (!unsafeLocalNames || unsafeLocalNames.size === 0) return deferred
+  // A prop can also be dropped for writing a binding (`get={() => ++id}`,
+  // see `transformExpr`), which only a component that writes one can have.
+  if (!writesAnyBinding(ctx) && (!unsafeLocalNames || unsafeLocalNames.size === 0)) return deferred
+  const unsafe = unsafeLocalNames ?? new Set<string>()
   const env = buildCsrEnvForCtx(ctx, inlinableConstants, propsObjectName)
 
   const visit = (n: IRNode): void => {
@@ -2428,7 +2431,7 @@ export function computeDeferredChildSlots(
             if (p.name === 'ref') return false
             if (isEventHandlerName(p.name)) return false
             if (p.clientOnly) return false
-            return propResolvesUnsafe(p, env, unsafeLocalNames)
+            return propResolvesUnsafe(p, env, unsafe)
           })
           if (dropped) deferred.add(n.slotId)
         }
@@ -2471,7 +2474,12 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // the IR — emit does no string transformation of its own (#1277).
     const source = templateExpr ?? expr
     if (!source) return source
-    const { rewritten, freeIdentifiers } = csrSubstitute(source, env, opts.scope)
+    const { rewritten, freeIdentifiers, writes } = csrSubstitute(source, env, opts.scope)
+
+    // An expression that writes a binding (`{++nextId}`, a child prop
+    // `() => ++start`) cannot run here: the template has no binding to
+    // write, and the write belongs to init's run of the component.
+    if (writes.size > 0) return UNSAFE_TEMPLATE_EXPR
 
     // The CSR template runs at module scope, so any post-substitution
     // free identifier that lands in `unsafeLocalNames` (init-body-only

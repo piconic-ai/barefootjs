@@ -17,7 +17,7 @@ import { toLocaleDatePlugin, foldedArgToClientJs } from '../to-locale-date-lower
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 import { rewriteBarePropRefs } from '../prop-rewrite.ts'
-import { livePropReadExpr } from '../props-binding.ts'
+import { livePropReadExpr, keepsDeclaredValue } from '../props-binding.ts'
 
 /**
  * Profile mode (#1690, SR3/SR4): the id appended to a DOM-binding effect so the
@@ -327,7 +327,7 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
   const propAliases = new Map<string, string>()
   const propsByName = new Map<string, ClientJsContext['propsParams'][number]>()
   for (const prop of ctx.propsParams) {
-    if (isChildrenPropParam(prop)) continue
+    if (isChildrenPropParam(prop) || !keepsDeclaredValue(prop)) continue
     propNames.add(prop.name)
     propsByName.set(prop.name, prop)
     // `_p` is always keyed by the caller-facing name (#2524 CSR half).

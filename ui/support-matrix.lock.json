@@ -23264,6 +23264,30 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-negation.ts",
         "code": "-props.zero"
       }
+    },
+    "unary:unknown": {
+      "cells": {
+        "hono": {},
+        "blade": {},
+        "erb": {},
+        "go-template": {},
+        "jinja": {},
+        "minijinja": {},
+        "mojolicious": {},
+        "pebble": {},
+        "twig": {},
+        "xslate": {}
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 159,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L159"
+      },
+      "example": {
+        "fixture": "reassigned-prop-counter",
+        "description": "a destructured prop written by event handlers (++start, start += …, start = …) is a local the client declares once, not a live prop read",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reassigned-prop-counter.ts"
+      }
     }
   }
 }

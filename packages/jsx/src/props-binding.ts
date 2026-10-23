@@ -98,16 +98,47 @@ export function isPropsAliasConst(
 
 /**
  * Whether a component-scope binding keeps the value its declaration gives
- * it: a `const` that nothing mutates after the declaration. A `let` may be
- * reassigned (`local = ['changed']`, or a folded `if (!local) local = 'y'`)
- * and a mutated value (`items.push(x)`, `markMutatedConstants`) has changed,
- * so neither may be read as the prop it was destructured from. The one rule
- * for every site that turns a props binding into a live prop read: the init
- * body's alias rewrite (`resolveBodyPropAliases`) and the template's prop
- * shadow guard (`propShadowingNames`, `jsx-to-ir.ts`, #3579).
+ * it, so it may be read as the prop it was destructured from (a live
+ * `_p.<key> ?? <default>` read).
+ *
+ *   - A body binding (`ConstantInfo`) must be a `const` nothing mutates
+ *     after the declaration. A `let` may be reassigned (`local =
+ *     ['changed']`, or a folded `if (!local) local = 'y'`) and a mutated
+ *     value (`items.push(x)`, `markMutatedConstants`) has changed.
+ *   - A destructured prop parameter (`ParamInfo`, no declaration kind)
+ *     keeps the value the caller passed unless the component writes it.
+ *
+ * Either way a binding the component writes anywhere (`reassigned`, set on
+ * both by `markWrittenBindings`, analyzer.ts) does not: a write needs a
+ * local, so the init body declares one (`emitPropsExtraction`) and keeps
+ * every reference to it. The one rule for every site that turns a props
+ * binding into a live prop read: the init body's alias rewrite
+ * (`resolveBodyPropAliases`) and parameter rewrite
+ * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
+ * (`rewriteDestructuredPropsInExpr`), and the template's prop shadow guard
+ * (`propShadowingNames`, `jsx-to-ir.ts`, #3579).
  */
-export function keepsDeclaredValue(c: Pick<ConstantInfo, 'declarationKind' | 'mutatedAfterDeclaration'>): boolean {
-  return c.declarationKind === 'const' && !c.mutatedAfterDeclaration
+export function keepsDeclaredValue(
+  b: { declarationKind?: ConstantInfo['declarationKind']; mutatedAfterDeclaration?: boolean; reassigned?: boolean },
+): boolean {
+  if (b.reassigned === true || b.mutatedAfterDeclaration === true) return false
+  return b.declarationKind === undefined || b.declarationKind === 'const'
+}
+
+/**
+ * Whether the component writes any of its bindings (`reassigned`, set by
+ * `markWrittenBindings`): a prop parameter or a component-scope `let`. Such
+ * a component's client template has to check each expression for a write
+ * (`csrSubstitute`'s `writes`), which only the CSR template emitter does, so
+ * it never takes the static template fast path (`emit-registration.ts`),
+ * and a child whose prop writes a binding is deferred to init
+ * (`computeDeferredChildSlots`).
+ */
+export function writesAnyBinding(b: {
+  propsParams: readonly Pick<ParamInfo, 'reassigned'>[]
+  localConstants: readonly Pick<ConstantInfo, 'reassigned'>[]
+}): boolean {
+  return b.propsParams.some(p => p.reassigned === true) || b.localConstants.some(c => c.reassigned === true)
 }
 
 /**
@@ -127,7 +158,7 @@ export function keepsDeclaredValue(c: Pick<ConstantInfo, 'declarationKind' | 'mu
  * renamed binding classified there would lose its default.
  */
 export function isRenamedBodyPropParam(
-  c: Pick<ConstantInfo, 'name' | 'propsDestructure' | 'declarationKind' | 'mutatedAfterDeclaration'>,
+  c: Pick<ConstantInfo, 'name' | 'propsDestructure' | 'declarationKind' | 'mutatedAfterDeclaration' | 'reassigned'>,
   propsParams: readonly ParamInfo[],
 ): boolean {
   const key = c.propsDestructure?.sourceKey
@@ -365,6 +396,7 @@ export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> 
 }
 
 const EMPTY_SET: ReadonlySet<string> = new Set()
+
 
 /**
  * The subset of `ParamInfo` a live prop read actually needs. A body-level

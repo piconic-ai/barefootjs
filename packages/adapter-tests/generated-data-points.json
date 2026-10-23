@@ -7236,6 +7236,83 @@
       }
     }
   ],
+  "reassigned-prop-counter": [
+    {
+      "name": "gen:start:absent",
+      "props": {
+        "__instanceId": "ReassignedPropCounter_test"
+      }
+    },
+    {
+      "name": "gen:start:zero",
+      "props": {
+        "start": 0,
+        "__instanceId": "ReassignedPropCounter_test"
+      }
+    },
+    {
+      "name": "gen:start:negative",
+      "props": {
+        "start": -7,
+        "__instanceId": "ReassignedPropCounter_test"
+      }
+    },
+    {
+      "name": "gen:start:large",
+      "props": {
+        "start": 1234567890,
+        "__instanceId": "ReassignedPropCounter_test"
+      }
+    },
+    {
+      "name": "gen:step:zero",
+      "props": {
+        "start": 10,
+        "__instanceId": "ReassignedPropCounter_test",
+        "step": 0
+      }
+    },
+    {
+      "name": "gen:step:negative",
+      "props": {
+        "start": 10,
+        "__instanceId": "ReassignedPropCounter_test",
+        "step": -7
+      }
+    },
+    {
+      "name": "gen:step:large",
+      "props": {
+        "start": 10,
+        "__instanceId": "ReassignedPropCounter_test",
+        "step": 1234567890
+      }
+    }
+  ],
+  "reassigned-prop-stateless": [
+    {
+      "name": "gen:start:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:start:zero",
+      "props": {
+        "start": 0
+      }
+    },
+    {
+      "name": "gen:start:negative",
+      "props": {
+        "start": -7
+      }
+    },
+    {
+      "name": "gen:start:large",
+      "props": {
+        "start": 1234567890
+      }
+    }
+  ],
   "reduce-concat": [
     {
       "name": "gen:items:empty",
