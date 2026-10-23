@@ -10,9 +10,11 @@
  * (`./binding-scope.ts`) answers; this module answers the complementary
  * question for binders that live inside the text itself.
  *
- * Shared by the prop-reference rewrites in `prop-rewrite.ts` and the
- * props-object rename in `ir-to-client-js/rewrite-props-object.ts`, so
- * both agree on which identifiers an inner binding shadows.
+ * Shared by the prop-reference rewrites in `prop-rewrite.ts`, the
+ * props-object rename in `ir-to-client-js/rewrite-props-object.ts` and the
+ * loop-param accessor rewrite in `ir-to-client-js/utils.ts`
+ * (`rewriteIdentifierReferences`, #3595), so all of them agree on which
+ * identifiers an inner binding shadows.
  */
 
 import ts from 'typescript'
@@ -40,7 +42,9 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
  *   nested blocks and loop heads too (`if (c) { var x }` and `for (var x …)`
  *   are visible to the whole body), but not inside a nested function, which
  *   owns its own `var`s. A concise arrow body declares nothing. A class
- *   `static { … }` block is a var scope of its own in the same way.
+ *   `static { … }` block is a var scope of its own in the same way. A named
+ *   class expression binds its own name inside the class, as a named
+ *   function expression does.
  * - Block scope: a block binds its statement-level `let` / `const`, class
  *   and function declarations (the emitted client JS is a module, so it is
  *   strict code: a function declared in a block is scoped to that block);
@@ -60,6 +64,7 @@ function scopeFrameOf(n: ts.Node, parent: ts.Node | undefined): Set<string> | nu
   }
   else if (ts.isForStatement(n) || ts.isForOfStatement(n) || ts.isForInStatement(n)) collectForHeadBindings(n, frame)
   else if (ts.isCatchClause(n) && n.variableDeclaration) collectBindingNames(n.variableDeclaration.name, frame)
+  else if (ts.isClassExpression(n) && n.name) frame.add(n.name.text)
   return frame.size > 0 ? frame : null
 }
 
