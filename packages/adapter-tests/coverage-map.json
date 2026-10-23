@@ -6004,6 +6004,28 @@
         "text"
       ]
     },
+    "loop-row-child-children-filter-captures-row": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-fn-scope-array": {
       "kinds": [
         "array-literal",

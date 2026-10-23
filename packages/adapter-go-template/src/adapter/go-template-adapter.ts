@@ -10085,9 +10085,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * ones its lowering resolved a read to (`wrapperRowReads`). Its data is
    * the row wrapper (the loop's own define, or a companion define it
    * executes with that same `.`), so a destructured row's range variable
-   * (`$__bf_item0.Tone`) is `.` itself (#3313), and the loop's index or a
-   * callback local is one `{{$v := index .BfRowVars "v"}}`, recorded so the
-   * call site hands it over (`wrapperRowVars`).
+   * (`$__bf_item0.Tone`) and the row value's own variable (`$o`, read
+   * from a nested loop where `.` is the inner row, #3596) are `.` itself
+   * (#3313), and the loop's index or a callback local is one
+   * `{{$v := index .BfRowVars "v"}}`, recorded so the call site hands it
+   * over (`wrapperRowVars`).
    */
   private renderWrapperRowDefine(children: IRNode[]): string {
     const wasReads = this.wrapperRowReads
@@ -10105,6 +10107,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const frame = this.wrapperRowFrame
     if (rangeVar && [...reads].some(name => frame?.bindings.get(name)?.source === 'destructure')) {
       prefix += `{{$${rangeVar} := .}}`
+    }
+    // The row value itself, read as its range variable where `.` is
+    // something else — a nested loop's predicate or body (`t !== o.label`,
+    // #3596) — is the define's `.` too.
+    for (const name of [...reads].filter(n => frame?.bindings.get(n)?.source === 'item')) {
+      prefix += `{{$${name} := .}}`
     }
     const rowVars = this.wrapperRowVars
     for (const v of rowVars ? [...rowVars.names].filter(name => reads.has(name)) : []) {
