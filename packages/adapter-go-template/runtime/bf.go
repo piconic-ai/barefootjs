@@ -69,6 +69,7 @@ func FuncMap() template.FuncMap {
 		"bf_pad_start":   PadStart,
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
+		"bf_text":        Text,
 		"bf_raw_html":    RawHTML,
 		"bf_ternary":     Ternary,
 		"bf_truthy":      Truthy,
@@ -1629,6 +1630,22 @@ func Ternary(cond bool, a, b any) any {
 		return a
 	}
 	return b
+}
+
+// Text is the text and attribute sink for a value whose Go type the
+// compiler cannot pin down: a float64 (any TS `number` field) is spelled
+// as JS `String(n)` does (`1500000`, not `fmt`'s `1.5e+06`), and every
+// other value is returned unchanged, so html/template prints it exactly as
+// it would print the bare value (a `template.HTML` stays trusted markup, a
+// nil stays nil, a string is escaped as before).
+func Text(v any) any {
+	switch n := v.(type) {
+	case float64:
+		return numberString(n)
+	case float32:
+		return numberString(float64(n))
+	}
+	return v
 }
 
 // String returns the string form of v. Mirrors JS `String(v)` for

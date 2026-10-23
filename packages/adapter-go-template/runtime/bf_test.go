@@ -413,6 +413,34 @@ func TestIntegerArgsFromFloat64(t *testing.T) {
 	}
 }
 
+// Text spells a float as JS does and passes every other value through
+// unchanged, so the template prints it as it would print the bare value.
+func TestText(t *testing.T) {
+	if got := Text(1500000.0); got != "1500000" {
+		t.Errorf("Text(1500000.0) = %#v, want \"1500000\"", got)
+	}
+	if got := Text(float32(2.5)); got != "2.5" {
+		t.Errorf("Text(float32(2.5)) = %#v, want \"2.5\"", got)
+	}
+	if got := Text(3); got != 3 {
+		t.Errorf("Text(3) = %#v, want 3", got)
+	}
+	if got := Text(template.HTML("<b>x</b>")); got != template.HTML("<b>x</b>") {
+		t.Errorf("Text(HTML) = %#v, want the HTML unchanged", got)
+	}
+	if got := Text(nil); got != nil {
+		t.Errorf("Text(nil) = %#v, want nil", got)
+	}
+	var buf bytes.Buffer
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(`{{bf_text .N}}|{{bf_text .H}}|{{bf_text .S}}`))
+	if err := tmpl.Execute(&buf, map[string]any{"N": 1.7e12, "H": template.HTML("<i>h</i>"), "S": "<s>"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := buf.String(); got != "1700000000000|<i>h</i>|&lt;s&gt;" {
+		t.Errorf("template = %q", got)
+	}
+}
+
 // A float64 (a TS `number` field) in a spread bag or a style object
 // prints as JS `String(n)` does, not in Go's `%v` exponent form.
 func TestSpreadAndStyleFloat64(t *testing.T) {

@@ -8187,6 +8187,23 @@
         "text"
       ]
     },
+    "number-preamble-alias": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "number-prop-fraction-default": {
       "kinds": [
         "binary",
@@ -8317,6 +8334,25 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "number-synth-row-key": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",

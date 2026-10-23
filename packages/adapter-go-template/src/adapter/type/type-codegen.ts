@@ -116,8 +116,8 @@ function inferGoTypeFromParsed(expr: ParsedExpr): string | null {
  * A TS `number` is a JS double, so it is a Go `float64` whatever literal
  * seeds or defaults it: an integral `2` is no evidence that the value is
  * always an integer (`props.b ?? 2` with `b: 1.5`). The text and attribute
- * sinks print a `float64` read through `bf_string` (`readsGoFloat`), which
- * spells it as JS does (`3`, `1500000`).
+ * sinks print a value that can be a `float64` through `bf_text`
+ * (`isKnownNonNumber`), which spells it as JS does (`3`, `1500000`).
  *
  * @param defaultValue used to infer the type when `typeInfo.kind` is
  *   `unknown`

@@ -181,7 +181,7 @@ import {
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
-import { loopRowType, readsGoFloat } from "./type/number-read.ts"
+import { isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, sharedFieldFallbackVar, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
@@ -265,6 +265,18 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
 /** Binary operators whose Go lowering yields a boxed number (`+` may also be
  * a string concat, which `bf_string` passes through unchanged). */
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
+
+/** A lowered value that is a Go constant (an inlined const, a string
+ * literal): it prints as written, so the text sink needs no `bf_text`. */
+function isGoConstant(goExpr: string): boolean {
+  if (goExpr === 'true' || goExpr === 'false' || /^-?\d+$/.test(goExpr)) return true
+  if (!goExpr.startsWith('"') || !goExpr.endsWith('"')) return false
+  try {
+    return typeof JSON.parse(goExpr) === 'string'
+  } catch {
+    return false
+  }
+}
 
 /**
  * Local names whose template reads resolve to another field than their own
@@ -7300,16 +7312,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * is boxed `any` — prints through `bf_string`, whose `numberString` spells
    * it as JS does (`1234567890.5`); html/template's own `fmt.Sprint` would
    * print `1.2345678905e+09`. `bf_string` leaves an int or a string (a
-   * string-concat `+`) unchanged. */
+   * string-concat `+`) unchanged. Any other value read prints through
+   * `bf_text` unless it provably holds no number (`isKnownNonNumber`): a TS
+   * `number` is a Go `float64` wherever it lives (a prop, a signal, a
+   * synthesized row struct, a `.map()` preamble local, a context value), and
+   * `bf_text` spells a float64 as JS does while passing every other value
+   * through unchanged. */
   private numericTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
-    return this.isNumericTextValue(expr) ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+    if (this.isNumericTextValue(expr)) return `bf_string ${wrapIfMultiToken(goExpr)}`
+    if (!expr || isGoConstant(goExpr) || isKnownNonNumber(this.emitCtx, expr, this.scope)) return goExpr
+    return `bf_text ${wrapIfMultiToken(goExpr)}`
   }
 
   private isNumericTextValue(expr: ParsedExpr | undefined): boolean {
     if (!expr) return false
-    // A read of a `float64` field (a `number` prop, signal, memo or row
-    // field): `fmt.Sprint` would print `1500000` as `1.5e+06`.
-    if (readsGoFloat(this.emitCtx, expr, this.scope)) return true
     if (expr.kind === 'binary') return ARITHMETIC_OPS.has(expr.op)
     if (expr.kind === 'unary') return expr.op === '-' || expr.op === '+'
     // A ternary whose taken branch can be a boxed number (`c ? n + 0.5 : 'x'`).
@@ -9625,7 +9641,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // The keys-shape param is the range *index*, so it binds as `index`: still
     // the nearest binding for a shadowed outer name (#3392), never the dot.
     // `rowType` types the row bindings from the array's declared type, so a
-    // text sink can tell a `number` row field (`readsGoFloat`).
+    // text sink can tell a string row field from a number (`isKnownNonNumber`).
     const rowType = loopRowType(this.emitCtx, loop, this.scope)
     const scopeLoop: LoopBindingSource =
       loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : { ...loop, rowType }

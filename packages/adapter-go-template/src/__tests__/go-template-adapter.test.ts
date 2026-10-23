@@ -180,7 +180,7 @@ export function SortLabel() {
 }
 `, adapter)
     const { template, types } = adapter.generate(ir)
-    expect(template).toContain('{{or (.SearchParams.Get "sort") "none"}}')
+    expect(template).toContain('{{bf_text (or (.SearchParams.Get "sort") "none")}}')
     expect(types).toContain('SearchParams bf.SearchParams')
     expect(types).toContain('SearchParams: in.SearchParams')
   })
@@ -198,7 +198,7 @@ export function SortLabel() {
 }
 `, adapter)
     const { template, types } = adapter.generate(ir)
-    expect(template).toContain('{{or (.SearchParams.Get "sort") "none"}}')
+    expect(template).toContain('{{bf_text (or (.SearchParams.Get "sort") "none")}}')
     expect(template).not.toContain('.Sp.Get')
     expect(types).toContain('SearchParams bf.SearchParams')
   })
@@ -248,8 +248,8 @@ export function Label() {
 `, adapter)
     const { template } = adapter.generate(ir)
     expect(template).not.toContain('{{count: ')
-    // A `number` signal prints through `bf_string` (JS number spelling).
-    expect(template).toContain('count: {{bf_string .N}}')
+    // A `number` signal prints through `bf_text` (JS number spelling).
+    expect(template).toContain('count: {{bf_text .N}}')
   })
 
   // A bare string literal that merely *contains* `{{` (NOT a template literal)
@@ -271,7 +271,7 @@ export function Label() {
   test('template literal expression is emitted as-is via renderExpression', () => {
     const adapter = new GoTemplateAdapter()
     const out = adapter.renderExpression({ expr: '`a #${tag}`' } as IRExpression)
-    expect(out).toBe('a #{{.Tag}}')
+    expect(out).toBe('a #{{bf_text .Tag}}')
   })
 
   // Attribute context: when a `${...}` interpolation lowers to a template
@@ -397,7 +397,7 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   // `bf_concat_str` runtime helper JS string-concat `+` already uses (#2168).
   test('a multi-part template-literal branch folds to a bf_concat_str chain, not a raw fragment (#2863)', () => {
     expect(render('end ? `${start}-${end}` : start')).toBe(
-      '{{(bf_ternary (bf_truthy .End) (bf_concat_str (bf_concat_str .Start "-") .End) .Start)}}',
+      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str (bf_concat_str .Start "-") .End) .Start)}}',
     )
   })
 
@@ -409,19 +409,19 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   })
 
   test('a single-part template-literal branch reduces to the bare value, no bf_concat_str wrap (#2863)', () => {
-    expect(render('end ? `${start}` : end')).toBe('{{(bf_ternary (bf_truthy .End) .Start .End)}}')
+    expect(render('end ? `${start}` : end')).toBe('{{bf_text (bf_ternary (bf_truthy .End) .Start .End)}}')
   })
 
   test('static text in a template-literal branch is an escaped Go string literal (#2863)', () => {
     expect(render('end ? `say "hi" ${start}` : end')).toBe(
-      '{{(bf_ternary (bf_truthy .End) (bf_concat_str "say \\"hi\\" " .Start) .End)}}',
+      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str "say \\"hi\\" " .Start) .End)}}',
     )
   })
 
   test('a nested ternary inside a template-literal branch still lowers to bf_ternary, not {{if}} (#2863)', () => {
     const out = render('end ? `x ${flag ? \'a\' : \'b\'}` : end')
     expect(out).toBe(
-      '{{(bf_ternary (bf_truthy .End) (bf_concat_str "x " (bf_ternary (bf_truthy .Flag) "a" "b")) .End)}}',
+      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str "x " (bf_ternary (bf_truthy .Flag) "a" "b")) .End)}}',
     )
     expect(out).not.toContain('{{if')
   })
@@ -600,7 +600,7 @@ export function N(props: { value: number }) {
     expect(template).toContain('v={{bf_string (bf_mul .Value 2)}}')
   })
 
-  test('a plain number prop read is wrapped; a string read is left alone and a string concat harmlessly wrapped', () => {
+  test('a plain number prop read goes through bf_text; a string read is left alone and a string concat harmlessly wrapped', () => {
     // A `number` prop is a `float64` field, which `fmt.Sprint` would print
     // as `1.5e+06` from a million on.
     const { template } = compileAndGenerate(`
@@ -608,12 +608,12 @@ export function N(props: { value: number; a: string; b: string }) {
   return <div><i>{props.value}</i><b>{props.a + props.b}</b><s>{props.a}</s></div>
 }
 `)
-    expect(template).toContain('{{bfTextStart "s0"}}{{bf_string .Value}}{{bfTextEnd}}')
+    expect(template).toContain('{{bfTextStart "s0"}}{{bf_text .Value}}{{bfTextEnd}}')
     expect(template).toContain('{{bf_string (bf_concat_str .A .B)}}')
     expect(template).toContain('{{bfTextStart "s4"}}{{.A}}{{bfTextEnd}}')
   })
 
-  test('a useContext local with a number default is a float64 printed through bf_string', () => {
+  test('a useContext local with a number default is a float64 printed through bf_text', () => {
     const { template, types } = compileAndGenerate(`
 'use client'
 import { createContext, useContext } from '@barefootjs/client'
@@ -624,8 +624,8 @@ export function LimitLabel() {
 }
 `)
     expect(types).toMatch(/^\s+Limit float64\b/m)
-    expect(template).toContain('data-limit="{{bf_string .Limit}}"')
-    expect(template).toContain('{{bf_string .Limit}}')
+    expect(template).toContain('data-limit="{{bf_text .Limit}}"')
+    expect(template).toContain('{{bf_text .Limit}}')
   })
 })
 
@@ -5308,7 +5308,7 @@ export function C(props: Props) {
     // `[UNSUPPORTED: …]` marker text, which would break `text/template` parsing
     // once spliced as an operand. `??` on a nillable prop lowers to the
     // nil-testing `bf_nullish` (#2248), equally valid template syntax.
-    expect(template).toContain('{{bf_nullish .Config ""}}')
+    expect(template).toContain('{{bf_text (bf_nullish .Config "")}}')
     expect(template).not.toContain('UNSUPPORTED')
   })
 
@@ -5410,7 +5410,7 @@ export function Root(props: Props) {
     // (case-tolerant `getFieldValue`), not a plain `.Ctx.Config.Label` dot
     // chain — the latter would require an exact-cased struct/map field that
     // never exists and crashes real `go run` execution.
-    expect(consumerTemplate).toContain('{{or (bf_get (bf_get .Ctx "config") "label") "none"}}')
+    expect(consumerTemplate).toContain('{{bf_text (or (bf_get (bf_get .Ctx "config") "label") "none")}}')
     expect(consumerTemplate).not.toContain('.Ctx.Config')
   })
 
@@ -7210,8 +7210,8 @@ export function List() {
     // The range establishes a real per-iteration dot context — both the
     // `data-key` attribute and the text position must resolve the shadowed
     // `count` through it.
-    // A `number[]` row is a number, spelled the JS way through `bf_string`.
-    expect(template).toContain('{{range $_, $count := .Nums}}<li data-key="{{bf_string .}}">')
+    // A `number[]` row is a number, spelled the JS way through `bf_text`.
+    expect(template).toContain('{{range $_, $count := .Nums}}<li data-key="{{bf_text .}}">')
     expect(template).toContain('{{bf_string (bf_mul . 3)}}')
     // Never the outer `const count = 7` literal.
     expect(template).not.toContain('{{7}}')
@@ -7231,9 +7231,9 @@ export function List() {
   return <ul>{items().map(({ id }) => <li key={id}>{id}</li>)}</ul>
 }
 `)
-    // The `number` row field prints through `bf_string`.
-    expect(template).toContain('data-key="{{bf_string $__bf_item0.ID}}"')
-    expect(template).toContain('{{bf_string $__bf_item0.ID}}{{bfTextEnd}}')
+    // The `number` row field prints through `bf_text`.
+    expect(template).toContain('data-key="{{bf_text $__bf_item0.ID}}"')
+    expect(template).toContain('{{bf_text $__bf_item0.ID}}{{bfTextEnd}}')
     expect(template).not.toContain('{{7}}')
   })
 
@@ -7333,7 +7333,7 @@ export function Foo({ items }: { items: number[] }) {
     expect(template).toContain('data-key="{{9}}"')
     // Inside the loop, the shadowed occurrence still resolves to the loop
     // value, not the outer literal.
-    expect(template).toContain('{{range $_, $count := .Items}}<li data-key="{{bf_string .}}">')
+    expect(template).toContain('{{range $_, $count := .Items}}<li data-key="{{bf_text .}}">')
   })
 
   // Slice B's guard, by contrast, is the coarse #2212 trade-off (a flat,

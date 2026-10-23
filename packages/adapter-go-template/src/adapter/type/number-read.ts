@@ -1,22 +1,25 @@
 /**
- * Which value reads hold a Go `float64`.
+ * Which text and attribute values can be a Go `float64`.
  *
  * A TS `number` is a JS double, so its Go field is a `float64` whatever
  * literal seeds it (`typeInfoToGo`). html/template prints a `float64` with
  * `fmt.Sprint`, which switches to exponent notation from `1e6` on
- * (`1.5e+06`) where JS prints `1500000`. The text and attribute sinks
- * route such a read through `bf_string`, whose `numberString` spells a
- * number as JS `String(n)` does. This module answers the "is it such a
- * read" half of that decision for a direct read: a prop, a signal or memo
- * getter, a `useContext` local, a loop row or a field of it, and a `??` /
- * `||` / `&&` over those.
+ * (`1.5e+06`) where JS prints `1500000`. A number reaches a sink through
+ * many shapes — a prop, a signal or memo (a synthesized row struct's field
+ * included), a loop row, a `.map()` preamble local (`const id = row.id`),
+ * a `useContext` local, a child's own prop — so the sink does not try to
+ * prove that a value IS a number. It routes every value read through the
+ * runtime's `bf_text` (a float64 spelled as JS does, anything else passed
+ * through unchanged) unless the value is provably NOT a number: a literal,
+ * a comparison, a string method, or a read whose declared type is a
+ * string, a boolean, an array or an object. This module answers that
+ * "provably not a number" half.
  */
 
-import { BindingScope, type ParsedExpr, type TypeInfo } from '@barefootjs/jsx'
+import type { BindingScope, ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { collapseLiteralUnion, typeInfoToGo } from './type-codegen.ts'
-import { inferMemoType, signalFieldGoType } from './state-fields.ts'
+import { collapseLiteralUnion } from './type-codegen.ts'
 
 type RowSegment = { kind: 'field'; key: string; isIdent: boolean } | { kind: 'index'; index: number }
 
@@ -25,50 +28,53 @@ const SAME_ELEMENT_METHODS: ReadonlySet<string> = new Set([
   'filter', 'slice', 'sort', 'toSorted', 'reverse', 'toReversed', 'concat',
 ])
 
-/** Whether `expr` reads a value whose Go representation is a `float64`. */
-export function readsGoFloat(
-  ctx: GoEmitContext,
-  expr: ParsedExpr,
-  scope: BindingScope,
-  seen: ReadonlySet<string> = new Set(),
-): boolean {
-  if (expr.kind === 'logical') return readsGoFloat(ctx, expr.left, scope, seen) || readsGoFloat(ctx, expr.right, scope, seen)
-  // A declared `number` also covers a field that holds it boxed: a nillable
-  // `interface{}` prop, or a getter whose name collides with a prop's field.
-  // An undeclared getter is a number when its body or seed is one.
-  const getter = getterRead(ctx, expr, scope)
-  if (getter !== null) {
-    if (isNumberType(getter.type) || getter.goType() === 'float64') return true
-    return getter.type.kind === 'unknown' && getter.body !== undefined && !seen.has(getter.name) &&
-      isNumberValued(ctx, getter.body, new Set([...seen, getter.name]))
-  }
-  // A `useContext` local whose context default is a number (a `float64` field).
-  if (expr.kind === 'identifier' && !scope.isBound(expr.name) &&
-      ctx.state.contextConsumers.some(c => c.localName === expr.name && typeof c.defaultValue === 'number')) {
-    return true
-  }
-  const prop = propRead(ctx, expr, scope)
-  if (prop !== null) {
-    return isNumberType(prop.type) ||
-      (ctx.state.propTypeOverrides.get(prop.name) ?? typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed)) === 'float64'
-  }
-  const type = valueType(ctx, expr, scope)
-  return type !== null && isNumberType(type)
-}
+/** Methods whose result is a string or a boolean, never a number. */
+const NON_NUMBER_METHODS: ReadonlySet<string> = new Set([
+  'join', 'toUpperCase', 'toLowerCase', 'trim', 'trimStart', 'trimEnd', 'padStart', 'padEnd',
+  'repeat', 'replace', 'replaceAll', 'toFixed', 'toString', 'charAt',
+  'includes', 'startsWith', 'endsWith', 'some', 'every', 'isArray',
+])
+
+/** Binary operators whose result is a boolean. */
+const BOOLEAN_OPS: ReadonlySet<string> = new Set([
+  '===', '!==', '==', '!=', '<', '<=', '>', '>=', 'in', 'instanceof',
+])
 
 /**
- * Whether a getter's body or seed (component scope) computes a number: JS
- * arithmetic other than a string `+`, a unary sign, or a number read.
+ * Whether `expr` provably holds no number, so its sink can print it bare.
+ * False (wrap it in `bf_text`) whenever the type can't be told.
  */
-function isNumberValued(ctx: GoEmitContext, expr: ParsedExpr, seen: ReadonlySet<string>): boolean {
-  if (expr.kind === 'unary') return expr.op === '-' || expr.op === '+'
-  if (expr.kind === 'binary') {
-    if (['-', '*', '/', '%', '**'].includes(expr.op)) return true
-    return expr.op === '+' && isNumberValued(ctx, expr.left, seen) && isNumberValued(ctx, expr.right, seen)
+export function isKnownNonNumber(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): boolean {
+  switch (expr.kind) {
+    case 'literal':
+      // A literal prints as Go's constant does; only a computed float can
+      // take `fmt`'s exponent form.
+      return true
+    case 'template-literal':
+      return true
+    case 'binary':
+      return BOOLEAN_OPS.has(expr.op)
+    case 'unary':
+      return expr.op === '!'
+    case 'logical':
+      return isKnownNonNumber(ctx, expr.left, scope) && isKnownNonNumber(ctx, expr.right, scope)
+    case 'conditional':
+      return isKnownNonNumber(ctx, expr.consequent, scope) && isKnownNonNumber(ctx, expr.alternate, scope)
+    case 'array-method':
+      if (NON_NUMBER_METHODS.has(expr.method)) return true
+      break
+    case 'call':
+      if (expr.callee.kind === 'member' && !expr.callee.computed && NON_NUMBER_METHODS.has(expr.callee.property)) {
+        return true
+      }
+      break
+    case 'member':
+      // `.length` is the int `bf_len` / `len` returns.
+      if (!expr.computed && expr.property === 'length') return true
+      break
   }
-  if (expr.kind === 'literal') return expr.literalType === 'number'
-  if (expr.kind === 'conditional') return isNumberValued(ctx, expr.consequent, seen) && isNumberValued(ctx, expr.alternate, seen)
-  return readsGoFloat(ctx, expr, BindingScope.EMPTY, seen)
+  const type = valueType(ctx, expr, scope)
+  return type !== null && isNonNumberType(type)
 }
 
 /**
@@ -92,13 +98,8 @@ export function loopRowType(
 /** The declared TS type of a value expression; null when it can't be told. */
 function valueType(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): TypeInfo | null {
   switch (expr.kind) {
-    case 'identifier': {
-      const row = scope.lookup(expr.name)?.binding.row
-      // The scope carries the row's item type structurally (it stays free of
-      // IR imports); this adapter enters a loop with an IR `TypeInfo`.
-      if (row) return pathType(ctx, row.itemType as TypeInfo, row.segments)
-      return propRead(ctx, expr, scope)?.type ?? null
-    }
+    case 'identifier':
+      return identifierType(ctx, expr, scope)
     case 'member': {
       if (expr.computed) return null
       const prop = propRead(ctx, expr, scope)
@@ -110,14 +111,8 @@ function valueType(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): T
       const object = valueType(ctx, expr.object, scope)
       return object?.kind === 'array' ? object.elementType ?? null : null
     }
-    case 'call': {
-      const getter = getterRead(ctx, expr, scope)
-      if (getter !== null) return getter.type
-      if (expr.callee.kind === 'member' && !expr.callee.computed && SAME_ELEMENT_METHODS.has(expr.callee.property)) {
-        return valueType(ctx, expr.callee.object, scope)
-      }
-      return null
-    }
+    case 'call':
+      return callType(ctx, expr, scope)
     case 'array-method':
       return SAME_ELEMENT_METHODS.has(expr.method) ? valueType(ctx, expr.object, scope) : null
     default:
@@ -125,25 +120,37 @@ function valueType(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): T
   }
 }
 
-/** A no-argument signal or memo getter call: its declared type and its Props field's Go type. */
-function getterRead(
-  ctx: GoEmitContext,
-  expr: ParsedExpr,
-  scope: BindingScope,
-): { name: string; type: TypeInfo; body: ParsedExpr | undefined; goType: () => string } | null {
-  if (expr.kind !== 'call' || expr.callee.kind !== 'identifier' || expr.args.length !== 0) return null
-  if (scope.isBound(expr.callee.name)) return null
-  const name = ctx.state.getterAliases.get(expr.callee.name) ?? expr.callee.name
-  const propsParamMap = () => new Map(ctx.state.currentPropsParams.map(p => [p.name, p]))
-  const signal = ctx.state.currentSignals.find(s => s.getter === name)
-  if (signal) {
-    return { name, type: signal.type, body: signal.parsed, goType: () => signalFieldGoType(ctx, signal, propsParamMap()) }
+/** A loop row binding's type along its path, or a destructured prop's type. */
+function identifierType(ctx: GoEmitContext, expr: Extract<ParsedExpr, { kind: 'identifier' }>, scope: BindingScope): TypeInfo | null {
+  const hit = scope.lookup(expr.name)
+  if (!hit) return propRead(ctx, expr, scope)?.type ?? null
+  const row = hit.binding.row
+  // The scope carries the row's item type structurally (it stays free of
+  // IR imports); this adapter enters a loop with an IR `TypeInfo`.
+  return row ? pathType(ctx, row.itemType as TypeInfo, row.segments) : null
+}
+
+/** A signal or memo getter's type, or the receiver's type through a same-element array method. */
+function callType(ctx: GoEmitContext, expr: Extract<ParsedExpr, { kind: 'call' }>, scope: BindingScope): TypeInfo | null {
+  const callee = expr.callee
+  if (callee.kind === 'identifier' && expr.args.length === 0 && !scope.isBound(callee.name)) {
+    const name = ctx.state.getterAliases.get(callee.name) ?? callee.name
+    const getter = ctx.state.currentSignals.find(s => s.getter === name) ?? ctx.state.currentMemos.find(m => m.name === name)
+    return getter ? declaredGetterType(ctx, name, getter.type) : null
   }
-  const memo = ctx.state.currentMemos.find(m => m.name === name)
-  if (memo) {
-    return { name, type: memo.type, body: memo.parsed, goType: () => inferMemoType(ctx, memo, ctx.state.currentSignals, propsParamMap()) }
+  if (callee.kind === 'member' && !callee.computed && SAME_ELEMENT_METHODS.has(callee.property)) {
+    return valueType(ctx, callee.object, scope)
   }
   return null
+}
+
+/**
+ * A getter's type: the struct synthesized for an untyped object-literal
+ * signal (`createSignal([{ id: 1 }])`, whose analyzer type carries no field
+ * shape) when there is one, else its declared type.
+ */
+function declaredGetterType(ctx: GoEmitContext, name: string, declared: TypeInfo): TypeInfo {
+  return ctx.state.synthStructTypes.get(name) ?? declared
 }
 
 /** The prop `props.x` or a destructured, unshadowed `x` reads; null for anything else. */
@@ -181,12 +188,18 @@ function pathType(ctx: GoEmitContext, type: TypeInfo, segments: readonly RowSegm
   return current ?? null
 }
 
-/** A `number` (or a number literal union), possibly unioned with `null` / `undefined`. */
-function isNumberType(type: TypeInfo): boolean {
+/**
+ * A string, a boolean (or a literal union of one of them), an array or an
+ * object, possibly unioned with `null` / `undefined`: a type no Go `float64`
+ * field can hold. A named type counts only when the file defines it as a
+ * struct or a string union.
+ */
+function isNonNumberType(type: TypeInfo): boolean {
   const members = type.kind === 'union' && type.unionTypes
     ? type.unionTypes.filter(m => !(m.kind === 'primitive' && (m.primitive === 'null' || m.primitive === 'undefined')))
     : [type]
   if (members.length === 0) return false
   const collapsed = collapseLiteralUnion(members.length === 1 ? members[0] : { ...type, unionTypes: members })
-  return collapsed.kind === 'primitive' && collapsed.primitive === 'number'
+  if (collapsed.kind === 'primitive') return collapsed.primitive === 'string' || collapsed.primitive === 'boolean'
+  return collapsed.kind === 'array' || collapsed.kind === 'object'
 }

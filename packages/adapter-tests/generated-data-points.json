@@ -5977,6 +5977,14 @@
       }
     }
   ],
+  "number-preamble-alias": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "number-prop-fraction-default": [
     {
       "name": "gen:n:absent",
