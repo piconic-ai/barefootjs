@@ -358,6 +358,103 @@ func TestRepeat(t *testing.T) {
 	}
 }
 
+// A TS `number` reaches a template as a float64 field, so the helpers that
+// take a JS integer argument read it as ToIntegerOrInfinity: a fraction
+// truncates toward zero, NaN is 0, an infinity clamps past any length.
+func TestIntegerArgsFromFloat64(t *testing.T) {
+	items := []any{"a", "b", "c"}
+	if got := Slice(items, 0.0, 2.0); !reflect.DeepEqual(got, []any{"a", "b"}) {
+		t.Errorf("Slice(items, 0.0, 2.0) = %v, want [a b]", got)
+	}
+	if got := Slice(items, 1.0, 2.9); !reflect.DeepEqual(got, []any{"b"}) {
+		t.Errorf("Slice(items, 1.0, 2.9) = %v, want [b]", got)
+	}
+	if got := Slice(items, -1.5); !reflect.DeepEqual(got, []any{"c"}) {
+		t.Errorf("Slice(items, -1.5) = %v, want [c]", got)
+	}
+	if got := Slice(items, 0.0, math.Inf(1)); !reflect.DeepEqual(got, items) {
+		t.Errorf("Slice(items, 0, Infinity) = %v, want %v", got, items)
+	}
+	if got := Slice("hello", 1.0, 3.0); got != "el" {
+		t.Errorf(`Slice("hello", 1.0, 3.0) = %v, want "el"`, got)
+	}
+	if got := At(items, 1.0); got != "b" {
+		t.Errorf("At(items, 1.0) = %v, want b", got)
+	}
+	if got := At(items, -1.0); got != "c" {
+		t.Errorf("At(items, -1.0) = %v, want c", got)
+	}
+	if got := At(items, math.NaN()); got != "a" {
+		t.Errorf("At(items, NaN) = %v, want a", got)
+	}
+	if got := Repeat("ab", 2.0); got != "abab" {
+		t.Errorf(`Repeat("ab", 2.0) = %q, want "abab"`, got)
+	}
+	if got := Repeat("ab", 2.7); got != "abab" {
+		t.Errorf(`Repeat("ab", 2.7) = %q, want "abab"`, got)
+	}
+	if got := PadStart("7", 3.0, "0"); got != "007" {
+		t.Errorf(`PadStart("7", 3.0, "0") = %q, want "007"`, got)
+	}
+	if got := PadEnd("7", 3.0, "0"); got != "700" {
+		t.Errorf(`PadEnd("7", 3.0, "0") = %q, want "700"`, got)
+	}
+	if got := ToFixed(2.5, 2.0); got != "2.50" {
+		t.Errorf("ToFixed(2.5, 2.0) = %q, want 2.50", got)
+	}
+	if got := Split("a,b,c", ",", 2.0); !reflect.DeepEqual(got, []any{"a", "b"}) {
+		t.Errorf(`Split("a,b,c", ",", 2.0) = %v, want [a b]`, got)
+	}
+	if !StartsWith("abc", "b", 1.0) {
+		t.Errorf(`StartsWith("abc", "b", 1.0) = false, want true`)
+	}
+	if !EndsWith("abc", "b", 2.0) {
+		t.Errorf(`EndsWith("abc", "b", 2.0) = false, want true`)
+	}
+}
+
+// Text spells a float as JS does and passes every other value through
+// unchanged, so the template prints it as it would print the bare value.
+func TestText(t *testing.T) {
+	if got := Text(1500000.0); got != "1500000" {
+		t.Errorf("Text(1500000.0) = %#v, want \"1500000\"", got)
+	}
+	if got := Text(float32(2.5)); got != "2.5" {
+		t.Errorf("Text(float32(2.5)) = %#v, want \"2.5\"", got)
+	}
+	if got := Text(3); got != 3 {
+		t.Errorf("Text(3) = %#v, want 3", got)
+	}
+	if got := Text(template.HTML("<b>x</b>")); got != template.HTML("<b>x</b>") {
+		t.Errorf("Text(HTML) = %#v, want the HTML unchanged", got)
+	}
+	if got := Text(nil); got != nil {
+		t.Errorf("Text(nil) = %#v, want nil", got)
+	}
+	var buf bytes.Buffer
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(`{{bf_text .N}}|{{bf_text .H}}|{{bf_text .S}}`))
+	if err := tmpl.Execute(&buf, map[string]any{"N": 1.7e12, "H": template.HTML("<i>h</i>"), "S": "<s>"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := buf.String(); got != "1700000000000|<i>h</i>|&lt;s&gt;" {
+		t.Errorf("template = %q", got)
+	}
+}
+
+// A float64 (a TS `number` field) in a spread bag or a style object
+// prints as JS `String(n)` does, not in Go's `%v` exponent form.
+func TestSpreadAndStyleFloat64(t *testing.T) {
+	if got := string(SpreadAttrs(map[string]any{"data-n": 1500000.0})); got != `data-n="1500000"` {
+		t.Errorf(`SpreadAttrs(1500000.0) = %q, want data-n="1500000"`, got)
+	}
+	if got, _ := StyleToCss(map[string]any{"width": 1500000.0}); got != "width:1500000" {
+		t.Errorf("StyleToCss(width: 1500000.0) = %q, want width:1500000", got)
+	}
+	if got, _ := StyleToCss(1500000.0); got != "1500000" {
+		t.Errorf("StyleToCss(1500000.0) = %q, want 1500000", got)
+	}
+}
+
 func TestPadStart(t *testing.T) {
 	if got := PadStart("42", 5, "0"); got != "00042" {
 		t.Errorf(`PadStart("42", 5, "0") = %q, want "00042"`, got)

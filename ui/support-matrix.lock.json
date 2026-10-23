@@ -18181,10 +18181,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "remainder-nan-operand",
-        "description": "Remainder over a NaN operand (NaN % 2 → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-nan-operand.ts",
-        "code": "n() % 2"
+        "fixture": "number-prop-fraction-remainder",
+        "description": "A fractional number prop used only under `%` keeps its fraction (7.5 % 2 → 1.5)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-prop-fraction-remainder.ts",
+        "code": "props.n % 2"
       }
     },
     "binary:*": {
@@ -18293,10 +18293,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "fractional-number-array-row-ops",
-        "description": "Fractional number-array elements work in row comparisons and arithmetic",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fractional-number-array-row-ops.ts",
-        "code": "value * 2"
+        "fixture": "number-prop-fraction-default",
+        "description": "A fractional number prop with an integer destructure default keeps its fraction (1.5, 4.5)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-prop-fraction-default.ts",
+        "code": "n * 3"
       }
     },
     "binary:+": {
@@ -18660,10 +18660,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "number-arithmetic-attr-forms",
-        "description": "Attribute arithmetic keeps JavaScript number spelling for negative, integral, ternary and memo values",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-arithmetic-attr-forms.ts",
-        "code": "props.value < 0"
+        "fixture": "number-prop-index",
+        "description": "A number prop indexes an array prop (value and condition) and compares with its length",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-prop-index.ts",
+        "code": "props.i < props.items.length"
       }
     },
     "binary:===": {

@@ -71,7 +71,7 @@ describe('computed signal seed (#3519)', () => {
   })
 
   test.each([
-    ['props.n * 2', '{props.n}', 'int'],
+    ['props.n * 2', '{props.n}', 'float64'],
     ['props.n * 2', '{props.n.toFixed(1)}', 'float64'],
     ['props.n * 1.5', '{props.n}', 'float64'],
     ['props.n % 3', '{props.n}', 'interface{}'],
@@ -122,19 +122,19 @@ describe('an absent prop under `??` in an evaluated seed (#3532)', () => {
   test('the prop takes the nillable field, so the evaluator gets nil', () => {
     const { types } = generate(PROPS, '(props.n ?? 1) * 2')
     expect(types).toMatch(/^\s+N interface\{\} /m)
-    expect(types).toMatch(/^\s+V int /m)
+    expect(types).toMatch(/^\s+V float64 /m)
   })
 
   test('a zero-equivalent default keeps the concrete field', () => {
     const { types } = generate(PROPS, '(props.n ?? 0) * 2')
-    expect(types).toMatch(/^\s+N int /m)
+    expect(types).toMatch(/^\s+N float64 /m)
   })
 })
 
 describe('Math.max / Math.min seeds type as a number (#3540)', () => {
-  test('over int operands the field is int, so a large value prints in full', () => {
+  test('over integer operands the field is float64, a TS number', () => {
     const { types } = generate(PROPS, 'Math.max(props.n ?? 0, 1)')
-    expect(types).toMatch(/^\s+V int /m)
+    expect(types).toMatch(/^\s+V float64 /m)
   })
 
   test('a fractional operand widens the field to float64', () => {

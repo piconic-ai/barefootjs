@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 
 	bf "github.com/barefootjs/runtime/bf"
@@ -20,7 +19,7 @@ func randomID(n int) string {
 
 // Message represents a message.
 type Message struct {
-	ID int `json:"id"`
+	ID float64 `json:"id"`
 	Role string `json:"role"`
 	Content string `json:"content"`
 }
@@ -54,7 +53,7 @@ type BodyLiveChildInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Value int
+	Value float64
 	Label string
 	OnPick interface{}
 }
@@ -70,10 +69,10 @@ type BodyLiveChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Value int `json:"value"`
+	Value float64 `json:"value"`
 	Label string `json:"label"`
 	OnPick interface{} `json:"onPick"`
-	Seen int `json:"-"`
+	Seen float64 `json:"-"`
 	Doubled interface{} `json:"-"`
 }
 
@@ -95,8 +94,8 @@ type BodyDestructuredPropsLiveProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Count int `json:"-"`
-	Picked int `json:"-"`
+	Count float64 `json:"-"`
+	Picked float64 `json:"-"`
 	Named bool `json:"-"`
 	BodyLiveChildSlot6 BodyLiveChildProps `json:"-"`
 }
@@ -142,7 +141,7 @@ type ConditionalReturnProps struct {
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Variant string `json:"variant"`
-	Count int `json:"-"`
+	Count float64 `json:"-"`
 }
 
 // CounterInput is the user-facing input type.
@@ -150,7 +149,7 @@ type CounterInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Initial int
+	Initial float64
 }
 
 // CounterProps is the props type for the Counter component.
@@ -164,9 +163,9 @@ type CounterProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Initial int `json:"initial"`
-	Count int `json:"-"`
-	Doubled int `json:"-"`
+	Initial float64 `json:"initial"`
+	Count float64 `json:"-"`
+	Doubled float64 `json:"-"`
 }
 
 // LiveChildInput is the user-facing input type.
@@ -174,7 +173,7 @@ type LiveChildInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Value int
+	Value float64
 	Label string
 	OnPick interface{}
 }
@@ -190,10 +189,10 @@ type LiveChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Value int `json:"value"`
+	Value float64 `json:"value"`
 	Label string `json:"label"`
 	OnPick interface{} `json:"onPick"`
-	Seen int `json:"-"`
+	Seen float64 `json:"-"`
 	Doubled interface{} `json:"-"`
 }
 
@@ -215,8 +214,8 @@ type DestructuredPropsLiveProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Count int `json:"-"`
-	Picked int `json:"-"`
+	Count float64 `json:"-"`
+	Picked float64 `json:"-"`
 	Named bool `json:"-"`
 	LiveChildSlot6 LiveChildProps `json:"-"`
 }
@@ -339,7 +338,7 @@ type ReactiveChildInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Value int
+	Value float64
 	Label string
 	OnIncrement interface{}
 }
@@ -355,7 +354,7 @@ type ReactiveChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Value int `json:"value"`
+	Value float64 `json:"value"`
 	Label string `json:"label"`
 	OnIncrement interface{} `json:"onIncrement"`
 }
@@ -378,8 +377,8 @@ type ReactivePropsProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Count int `json:"-"`
-	Doubled int `json:"-"`
+	Count float64 `json:"-"`
+	Doubled float64 `json:"-"`
 	ReactiveChildSlot5 ReactiveChildProps `json:"-"`
 	ReactiveChildSlot6 ReactiveChildProps `json:"-"`
 }
@@ -389,7 +388,7 @@ type PropsStyleChildInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Value int
+	Value float64
 	Label string
 }
 
@@ -404,7 +403,7 @@ type PropsStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Value int `json:"value"`
+	Value float64 `json:"value"`
 	Label string `json:"label"`
 	DisplayValue interface{} `json:"-"`
 }
@@ -414,7 +413,7 @@ type DestructuredStyleChildInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Value int
+	Value float64
 	Label string
 }
 
@@ -429,7 +428,7 @@ type DestructuredStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Value int `json:"value"`
+	Value float64 `json:"value"`
 	Label string `json:"label"`
 	DisplayValue interface{} `json:"-"`
 }
@@ -452,7 +451,7 @@ type PropsReactivityComparisonProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Count int `json:"-"`
+	Count float64 `json:"-"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
 	DestructuredStyleChildSlot4 DestructuredStyleChildProps `json:"-"`
 }
@@ -505,19 +504,19 @@ type TextEscapeProps struct {
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Label string `json:"label"`
-	Count int `json:"-"`
+	Count float64 `json:"-"`
 }
 
 // TodoAppInitialTodosItem is a synthesised type for an anonymous object type (#2674).
 type TodoAppInitialTodosItem struct {
-	ID int `json:"id"`
+	ID float64 `json:"id"`
 	Text string `json:"text"`
 	Done bool `json:"done"`
 }
 
 // Todo represents a todo.
 type Todo struct {
-	ID int `json:"id"`
+	ID float64 `json:"id"`
 	Text string `json:"text"`
 	Done bool `json:"done"`
 	Editing bool `json:"editing"`
@@ -554,7 +553,7 @@ type TodoAppProps struct {
 
 // TodoAppSSRInitialTodosItem is a synthesised type for an anonymous object type (#2674).
 type TodoAppSSRInitialTodosItem struct {
-	ID int `json:"id"`
+	ID float64 `json:"id"`
 	Text string `json:"text"`
 	Done bool `json:"done"`
 }
@@ -680,7 +679,7 @@ type LikeButtonProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Likes int `json:"-"`
+	Likes float64 `json:"-"`
 }
 
 // NowPlayingInput is the user-facing input type.
@@ -702,7 +701,7 @@ type NowPlayingProps struct {
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Playing bool `json:"-"`
-	Elapsed int `json:"-"`
+	Elapsed float64 `json:"-"`
 }
 
 // PageShellInput is the user-facing input type.
@@ -738,8 +737,8 @@ type PostArticleInput struct {
 	Date string
 	Tags []string
 	Body []string
-	Position int
-	Total int
+	Position float64
+	Total float64
 	Base string
 	PrevSlug string
 	PrevTitle interface{}
@@ -763,8 +762,8 @@ type PostArticleProps struct {
 	Date string `json:"date"`
 	Tags []string `json:"tags"`
 	Body []string `json:"body"`
-	Position int `json:"position"`
-	Total int `json:"total"`
+	Position float64 `json:"position"`
+	Total float64 `json:"total"`
 	Base string `json:"base"`
 	PrevSlug string `json:"prevSlug"`
 	PrevTitle interface{} `json:"prevTitle"`
@@ -865,7 +864,7 @@ type ReaderToolbarProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Level int `json:"-"`
+	Level float64 `json:"-"`
 }
 
 // ReadingTimerInput is the user-facing input type.
@@ -886,7 +885,7 @@ type ReadingTimerProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Secs int `json:"-"`
+	Secs float64 `json:"-"`
 }
 
 // SidebarInput is the user-facing input type.
@@ -907,7 +906,7 @@ type SidebarProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Pins int `json:"-"`
+	Pins float64 `json:"-"`
 }
 
 // ThemeToggleInput is the user-facing input type.
@@ -1308,7 +1307,7 @@ func NewReactivePropsProps(in ReactivePropsInput) ReactivePropsProps {
 			ScopeID: scopeID + "_s6",
 			BfParent: scopeID,
 			BfMount: "s6",
-			Value: 0 * 2,
+			Value: bf.Number(0 * 2),
 			Label: "Child B (doubled)",
 		}),
 	}
@@ -1564,7 +1563,7 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 		toggleItems[i] = NewToggleItemProps(item)
 		toggleItems[i].BfParent = scopeID
 		toggleItems[i].BfMount = "s0"
-		toggleItems[i].BfDataKey = fmt.Sprint(item.Label)
+		toggleItems[i].BfDataKey = bf.String(item.Label)
 	}
 
 	bfCallerProps := map[string]interface{}{}

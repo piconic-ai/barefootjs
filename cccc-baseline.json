@@ -148,9 +148,6 @@
       ]
     },
     "packages/adapter-go-template/src/adapter/props/prop-types.ts": {
-      "buildPropTypeOverrides": [
-        28
-      ],
       "collectOmittableAttrConsumedPropNames/walk": [
         32
       ]
@@ -173,7 +170,7 @@
     },
     "packages/adapter-go-template/src/adapter/type/type-codegen.ts": {
       "typeInfoToGo": [
-        39
+        26
       ]
     },
     "packages/adapter-go-template/src/adapter/value/parsed-literal-to-go.ts": {
@@ -182,12 +179,6 @@
       ]
     },
     "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {
-      "collectFractionalChildProps/mayBeFractional": [
-        28
-      ],
-      "collectFractionalChildProps/visit": [
-        28
-      ],
       "collectNullableSeedStructFields": [
         30
       ]
@@ -208,7 +199,7 @@
         31
       ],
       "renderGoTemplateComponent": [
-        59
+        58
       ]
     },
     "packages/adapter-hono/src/adapter/hono-adapter.ts": {

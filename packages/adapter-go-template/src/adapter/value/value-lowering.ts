@@ -97,9 +97,8 @@ function nillableAwarePropRef(
 /**
  * A flipped `interface{}` member (#3323) unboxed into the concrete scalar a
  * non-nillable destination declares — `typeInfoToGo`'s choice, so a
- * `number` lands as the `int` a bare numeric field gets, or `float64`. A
- * number arrives boxed as `float64` (JSON-decoded input) or `int` (a Go
- * caller's literal); either converts. Nil or a mismatched value takes the
+ * `number` lands as `float64`. A number arrives boxed as `float64`
+ * (JSON-decoded input) or `int` (a Go caller's literal); either converts. Nil or a mismatched value takes the
  * zero value.
  */
 function unboxMemberScalar(ctx: GoEmitContext, ref: string, expectedType: TypeInfo): string | null {

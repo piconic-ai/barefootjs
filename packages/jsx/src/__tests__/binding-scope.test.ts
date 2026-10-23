@@ -226,6 +226,35 @@ describe('scoped string value types', () => {
   })
 })
 
+describe('row types', () => {
+  test('a plain item carries the row type and an empty path; rowType wins over itemType without changing string typing', () => {
+    const rowType = { kind: 'interface', raw: 'Row' } as { primitive?: string }
+    const scope = BindingScope.EMPTY.enterLoopRow({ param: 'r', itemType: null, rowType })
+    expect(scope.lookup('r')?.binding.row).toEqual({ itemType: rowType, segments: [] })
+    expect(scope.isStringValueName('r', () => false)).toBe(false)
+    const scalar = BindingScope.EMPTY.enterLoopRow({ param: 'n', itemType: { primitive: 'number' } })
+    expect(scalar.lookup('n')?.binding.row).toEqual({ itemType: { primitive: 'number' }, segments: [] })
+    expect(BindingScope.EMPTY.enterLoopRow({ param: 'x' }).lookup('x')?.binding.row).toBeUndefined()
+  })
+
+  test('a destructured binding carries its path; a rest binding carries none', () => {
+    const rowType = { kind: 'interface', raw: 'Row' } as { primitive?: string }
+    const scope = BindingScope.EMPTY.enterLoopRow({
+      param: '{ id, ...rest }',
+      rowType,
+      paramBindings: [
+        { name: 'id', segments: [{ kind: 'field', key: 'id', isIdent: true }] },
+        { name: 'rest', segments: [], rest: { kind: 'object', exclude: [] } },
+      ],
+    })
+    expect(scope.lookup('id')?.binding).toEqual({
+      source: 'destructure',
+      row: { itemType: rowType, segments: [{ kind: 'field', key: 'id', isIdent: true }] },
+    })
+    expect(scope.lookup('rest')?.binding).toEqual({ source: 'destructure' })
+  })
+})
+
 describe('enterAliases (#3402)', () => {
   test('binds each alias like the name it stands for', () => {
     const row = BindingScope.EMPTY.enterLoopRow({ param: 'name', itemType: { primitive: 'string' } })

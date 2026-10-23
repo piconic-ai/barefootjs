@@ -181,6 +181,7 @@ import {
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
+import { isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, sharedFieldFallbackVar, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
@@ -188,7 +189,7 @@ import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo, memoPropFallback } from "./memo/memo-compute.ts"
-import { collectFractionalChildProps, collectFractionalSeedStructFields, collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
+import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { collectPropsSpreadForwardedParams, isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from "./props/props-spread.ts"
 import { buildPropTypeOverrides, defaultedBindingGo, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
@@ -264,6 +265,18 @@ function rowsShareKeys(rows: ParsedExpr[]): boolean {
 /** Binary operators whose Go lowering yields a boxed number (`+` may also be
  * a string concat, which `bf_string` passes through unchanged). */
 const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**'])
+
+/** A lowered value that is a Go constant (an inlined const, a string
+ * literal): it prints as written, so the text sink needs no `bf_text`. */
+function isGoConstant(goExpr: string): boolean {
+  if (goExpr === 'true' || goExpr === 'false' || /^-?\d+$/.test(goExpr)) return true
+  if (!goExpr.startsWith('"') || !goExpr.endsWith('"')) return false
+  try {
+    return typeof JSON.parse(goExpr) === 'string'
+  } catch {
+    return false
+  }
+}
 
 /**
  * Local names whose template reads resolve to another field than their own
@@ -600,14 +613,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private dependentDefaultRawLocals: Map<string, string> = new Map()
 
-  /** See `fileNullableSeedStructFields`: the `float64` flip for a fractional seed (#3438). */
-  private fileFractionalSeedStructFields: Set<string> = new Set()
-
-  /** See `fileNullableSeedStructFields`: child props a caller passes a fraction (#3459). */
-  private fileFractionalChildProps: Set<string> = new Set()
-  /** Components seen as callers, re-walked until `fileFractionalChildProps` settles. */
-  private fractionalCallers: Map<string, Pick<ComponentIR, 'metadata' | 'root'>> = new Map()
-
   /**
    * See `crossFileTypeAliases`. The DEFINING component's own `TypeDefinition`
    * (carrying `properties`, so each field's declared `TypeInfo` — not just
@@ -815,9 +820,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.propsSpreadForwardedPropNames = collectPropsSpreadForwardedParams(this.emitCtx, ir)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
-    for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
-    this.state.fractionalSeedStructFields = this.fileFractionalSeedStructFields
-    this.propagateFractionalChildProps(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     ir = withInlinedMemoBodies(ir, bakesField)
@@ -1274,43 +1276,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
   }
 
-  /**
-   * Record `ir` as a caller and grow the file's fractional child props to a
-   * fixed point (#3459): a component that forwards a prop it receives a
-   * fraction for (`<Price value={value} />` inside `Relay`) makes the next
-   * child's prop fractional too, whatever order the components register
-   * in. A child shape registered before its prop turned fractional holds
-   * an `int` param type, which is widened in place; a later one reads the
-   * set through `buildPropTypeOverrides`.
-   */
-  private propagateFractionalChildProps(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
-    this.fractionalCallers.set(ir.metadata.componentName ?? '', ir)
-    let changed = true
-    while (changed) {
-      changed = false
-      for (const caller of this.fractionalCallers.values()) {
-        const keys = collectFractionalChildProps(
-          caller.metadata, caller.root, this.fileFractionalSeedStructFields, this.fileFractionalChildProps,
-        )
-        for (const key of keys) {
-          if (this.fileFractionalChildProps.has(key)) continue
-          this.fileFractionalChildProps.add(key)
-          changed = true
-          const dot = key.indexOf('.')
-          const paramGoTypes = this.childComponentShapes.get(key.slice(0, dot))?.paramGoTypes as Map<string, string> | undefined
-          if (paramGoTypes?.get(key.slice(dot + 1)) === 'int') paramGoTypes.set(key.slice(dot + 1), 'float64')
-        }
-      }
-    }
-    this.state.fractionalChildProps = this.fileFractionalChildProps
-  }
-
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
-    for (const key of collectFractionalSeedStructFields(ir.metadata)) this.fileFractionalSeedStructFields.add(key)
-    this.propagateFractionalChildProps(ir)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
     // `sourceName ?? name` — identity for an un-aliased param, the original
@@ -1484,7 +1453,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** Go type for a context-consumer field, from its `createContext` default's type. */
   private contextConsumerGoType(c: ContextConsumer): string {
-    if (typeof c.defaultValue === 'number') return 'int'
+    if (typeof c.defaultValue === 'number') return 'float64'
     if (typeof c.defaultValue === 'boolean') return 'bool'
     // An OBJECT-shaped default (`createContext<{ config: X }>({ config: {} })`,
     // #2087) needs a real map type, not the scalar `string` fallback below: a
@@ -2022,9 +1991,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         } else if (prevShape.kind !== 'scalar') {
           return null
         } else {
-          const merged = this.mergeScalarGoType(prevShape.goType, goType)
-          if (!merged) return null
-          shapes.set(key, { kind: 'scalar', goType: merged })
+          if (prevShape.goType !== goType) return null
         }
       }
       // A first-element key missing here → shape differs.
@@ -2115,32 +2082,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Go type for a scalar-literal `ParsedExpr` field value, else `null` (caller
    * bails out of synthesis). string/no-substitution template → `string`;
-   * numeric (optionally negated) → int/float64; boolean → `bool`.
+   * numeric (optionally negated) → `float64`, a TS `number` whatever its
+   * literal; boolean → `bool`.
    */
   private scalarParsedGoType(value: ParsedExpr): string | null {
     // `-5` is a unary minus over a numeric literal; classify by the inner one.
     if (value.kind === 'unary' && value.op === '-' && value.argument.kind === 'literal') {
-      const inner = value.argument
-      if (inner.literalType === 'number') return this.numericLiteralGoType(inner.raw ?? String(inner.value))
-      return null
+      return value.argument.literalType === 'number' ? 'float64' : null
     }
     if (value.kind !== 'literal') return null
     if (value.literalType === 'string') return 'string'
-    if (value.literalType === 'number') return this.numericLiteralGoType(value.raw ?? String(value.value))
+    if (value.literalType === 'number') return 'float64'
     if (value.literalType === 'boolean') return 'bool'
-    return null
-  }
-
-  /** `float64` when the literal has a fraction or exponent, else `int`. */
-  private numericLiteralGoType(text: string): string {
-    return /[.eE]/.test(text) && !text.startsWith('0x') ? 'float64' : 'int'
-  }
-
-  /** Reconcile two per-key Go types: equal stays; mixed numeric widens to float64; else null. */
-  private mergeScalarGoType(a: string, b: string): string | null {
-    if (a === b) return a
-    const numeric = new Set(['int', 'float64'])
-    if (numeric.has(a) && numeric.has(b)) return 'float64'
     return null
   }
 
@@ -2592,8 +2545,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
       const keyField = this.childInputRowKeyField(nested)
       if (keyField) {
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-        this.state.usesFmt = true
+        lines.push(`\t\t${varName}[i].BfDataKey = bf.String(${keyField})`)
       } else if (nested.loopKey && rowItemPath(parseExpression(nested.loopKey), { param: nested.loopParam, paramBindings: nested.loopParamBindings })) {
         // A row-read key with no carrier on the child's Input: rendering the
         // rows without their `data-key` would silently diverge.
@@ -3161,9 +3113,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // LOCAL/Props field for `loopRowChildPropOverrides`'s different
       // struct.
       const fieldName = capitalizeFieldName(jsxName)
-      // A `float64` field (a `number` prop widened for a fractional caller,
-      // #3459) also takes this caller's `int` value: `bf.Number` converts
-      // any numeric Go value. A numeric literal assigns as is.
+      // A `float64` field (a `number` prop) also takes this caller's `int`
+      // value (a `.length` memo, a loop index): `bf.Number` converts any
+      // numeric Go value. A numeric literal assigns as is.
       const numeric = childShape?.paramGoTypes.get(jsxName) === 'float64' &&
         !/^-?\d+(\.\d+)?$/.test(goValue) && !goValue.startsWith('bf.Number(')
       fields.push({ goField: fieldName, goValue: numeric ? `bf.Number(${goValue})` : goValue })
@@ -3938,8 +3890,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         { scalar: !!scalarLoopType && datumFields.length === 0 },
       )
       if (keyField) {
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-        this.state.usesFmt = true
+        lines.push(`\t\t${varName}[i].BfDataKey = bf.String(${keyField})`)
       }
       lines.push('\t}')
       lines.push('')
@@ -3991,8 +3942,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t}`)
       const keyField = loopKeyToGoRowExpr(nested.loopKey, { param: nested.loopParam, paramBindings: nested.loopParamBindings })
       if (keyField) {
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-        this.state.usesFmt = true
+        lines.push(`\t\t${varName}[i].BfDataKey = bf.String(${keyField})`)
       }
       lines.push(`\t}`)
       lines.push('')
@@ -4607,8 +4557,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const f of fields) lines.push(`\t\t\t${f.goField}: ${f.goValue},`)
     lines.push(`\t\t})`)
     if (keyExpr) {
-      lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyExpr})`)
-      this.state.usesFmt = true
+      lines.push(`\t\t${varName}[i].BfDataKey = bf.String(${keyExpr})`)
     }
     lines.push('\t}')
     lines.push('')
@@ -7363,9 +7312,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * is boxed `any` — prints through `bf_string`, whose `numberString` spells
    * it as JS does (`1234567890.5`); html/template's own `fmt.Sprint` would
    * print `1.2345678905e+09`. `bf_string` leaves an int or a string (a
-   * string-concat `+`) unchanged. */
+   * string-concat `+`) unchanged. Any other value read prints through
+   * `bf_text` unless it provably holds no number (`isKnownNonNumber`): a TS
+   * `number` is a Go `float64` wherever it lives (a prop, a signal, a
+   * synthesized row struct, a `.map()` preamble local, a context value), and
+   * `bf_text` spells a float64 as JS does while passing every other value
+   * through unchanged. */
   private numericTextExpression(goExpr: string, expr: ParsedExpr | undefined): string {
-    return this.isNumericTextValue(expr) ? `bf_string ${wrapIfMultiToken(goExpr)}` : goExpr
+    if (this.isNumericTextValue(expr)) return `bf_string ${wrapIfMultiToken(goExpr)}`
+    if (!expr || isGoConstant(goExpr) || isKnownNonNumber(this.emitCtx, expr, this.scope)) return goExpr
+    return `bf_text ${wrapIfMultiToken(goExpr)}`
   }
 
   private isNumericTextValue(expr: ParsedExpr | undefined): boolean {
@@ -9187,14 +9143,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'index-access': {
-        // Go's `index` builtin: `index $arr $i`. A multi-token operand
+        // `bf_get $arr $i`, as in value position: Go's `index` builtin
+        // refuses a `float64` index (a TS `number` field) and fails on an
+        // out-of-range one, where JS reads `undefined`. A multi-token operand
         // (`bf_add $i 1`) must be parenthesised or Go parses it as extra
-        // `index` arguments.
+        // arguments.
         const obj = this.renderConditionExpr(expr.object)
         const idx = this.renderConditionExpr(expr.index)
         return {
           preamble: obj.preamble + idx.preamble,
-          expr: `index ${wrapIfMultiToken(obj.expr)} ${wrapIfMultiToken(idx.expr)}`,
+          expr: `bf_get ${wrapIfMultiToken(obj.expr)} ${wrapIfMultiToken(idx.expr)}`,
         }
       }
 
@@ -9682,8 +9640,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // migration.
     // The keys-shape param is the range *index*, so it binds as `index`: still
     // the nearest binding for a shadowed outer name (#3392), never the dot.
+    // `rowType` types the row bindings from the array's declared type, so a
+    // text sink can tell a string row field from a number (`isKnownNonNumber`).
+    const rowType = loopRowType(this.emitCtx, loop, this.scope)
     const scopeLoop: LoopBindingSource =
-      loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : loop
+      loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : { ...loop, rowType }
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(scopeLoop)
     // Track Go template loop variables. The range *index* variable needs
@@ -9871,7 +9832,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // destructured or `.keys()`-shape param, so `loop` binds via `enterLoopRow`
     // unadjusted — always a plain item (#2482 Stage 3).
     const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
+    this.scope = prevScope.enterLoopRow({ ...loop, rowType: loopRowType(this.emitCtx, loop, prevScope) })
 
     let body = ''
     for (const item of items) {

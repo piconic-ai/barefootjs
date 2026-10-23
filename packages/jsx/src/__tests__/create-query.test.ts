@@ -362,7 +362,7 @@ export function C(props: { tracker: Tracker }) {
     expect(result.errors.map((e) => e.code)).toEqual([])
     const template = result.files.find((f) => f.type === 'markedTemplate')?.content ?? ''
     expect(template).toContain('<div aria-busy="{{false}}"')
-    expect(template).toContain('<span aria-busy="{{.Tracker.IsPending}}"')
+    expect(template).toContain('<span aria-busy="{{bf_text .Tracker.IsPending}}"')
     expect(template.match(/\{\{false\}\}/g)).toHaveLength(1)
     expect(template).not.toContain('FetchPosts')
   })

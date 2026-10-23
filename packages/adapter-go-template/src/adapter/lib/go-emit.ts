@@ -455,7 +455,7 @@ export function applyGoFallback(ref: string, fallback: string): string {
   }
   if (/^-?\d+(\.\d+)?$/.test(fallback)) {
     if (fallback === '0') return ref
-    return `func() int { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
+    return `func() float64 { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
   }
   // String fallback (quoted).
   return `func() string { if ${ref} == "" { return ${fallback} }; return ${ref} }()`

@@ -272,4 +272,7 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   'destructure-default-param-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
   'signal-seed-dependent-default-nullish-literal:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
   'signal-seed-dependent-default-nullish-literal-body:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
+  // An explicit `0` for a prop with a number destructure default (`n = 2`)
+  // reads as absent the same way, so the field takes the default.
+  'number-prop-fraction-default:gen:n:zero': { limitation: 'defaulted-prop-explicit-empty' },
 }
