@@ -8262,6 +8262,33 @@ export function Row() {
     expect(result.errors.filter(e => e.code === 'BF101')).toEqual([])
   })
 
+  // Inside a nested loop of the forwarded children the dot is the inner
+  // row, so the calling row is read through its own range variable (`$o`),
+  // which the define binds to its data, the row wrapper (#3596). A read
+  // outside a nested loop is the dot itself and binds nothing.
+  test('the row value read from a nested filter predicate is rebound to the define\'s dot', () => {
+    const compileDefine = (body: string) => {
+      const result = compileJSX(`
+'use client'
+function Chip({ children }: { children?: any }) {
+  return <span class="chip">{children}</span>
+}
+type Row = { id: string; label: string; tags: string[] }
+export function Rows(props: { rows: Row[] }) {
+  return <div>{props.rows.map((o) => (<Chip key={o.id}>${body}</Chip>))}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+      expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+      const template = result.files.find(f => f.type === 'markedTemplate')!.content
+      return template.split('\n').find(l => l.includes('{{define "Rows__loop_children_'))!
+    }
+    const nested = compileDefine('<ul>{o.tags.filter(t => t !== o.label).map(t => <li key={t}>{t}</li>)}</ul>')
+    expect(nested).toContain('{{define "Rows__loop_children_s2"}}{{$o := .}}')
+    expect(nested).toContain('{{if bf_ne . $o.Label}}')
+    const direct = compileDefine('<a title={o.id}>{o.label}</a>')
+    expect(direct).not.toContain('$o')
+   }, 30_000)
+
   // The row wrapper carries no field for the parent's own state, so a prop
   // that reads the index AND an outer signal (the data-table selection
   // demo's `checked={selected()[index]}`) can't be evaluated inside the
