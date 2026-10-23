@@ -21,6 +21,8 @@ export interface DslAdapterCase {
   make: () => TemplateAdapter
   /** The text before a runtime helper's name (`bf.join(` → `bf.`). */
   prefix: string
+  /** Helpers whose runtime spells them under another name (`divide` for `div`), by that name. */
+  helperNames?: Record<string, string>
   /** Helpers this adapter lowers to a native operator, and how to find each call. */
   native?: Record<string, RegExp>
   /** The adapter lowers a predicate the evaluator cannot model natively. */
@@ -43,13 +45,21 @@ export const DSL_ADAPTERS: readonly DslAdapterCase[] = [
     displayName: 'Mojo',
     make: () => new MojoAdapter(),
     prefix: 'bf->',
+    helperNames: { divide: 'div' },
     native: { lc: /(?<![\w>$])lc\(/g, uc: /(?<![\w>$])uc\(/g },
     nativePredicate: true,
   },
   { name: 'pebble', displayName: 'Pebble', make: () => new PebbleAdapter(), prefix: 'bf.' },
   { name: 'rust', displayName: 'MiniJinja', make: () => new MinijinjaAdapter(), prefix: 'bf.' },
   { name: 'twig', displayName: 'Twig', make: () => new TwigAdapter(), prefix: 'bf.' },
-  { name: 'xslate', displayName: 'Xslate', make: () => new XslateAdapter(), prefix: '$bf.', nativePredicate: true },
+  {
+    name: 'xslate',
+    displayName: 'Xslate',
+    make: () => new XslateAdapter(),
+    prefix: '$bf.',
+    helperNames: { divide: 'div' },
+    nativePredicate: true,
+  },
 ]
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -75,13 +85,19 @@ export function operandCount(src: string, open: number): number {
 
 /** The calls of `helpers` in `src`, as `helper/operands`, in source order. */
 export function helperCalls(src: string, adapter: DslAdapterCase, helpers: ReadonlySet<string>): string[] {
+  return helperCallsAt(src, adapter, helpers).map(([, call]) => call)
+}
+
+/** {@link helperCalls}, with the offset of each call in `src`. */
+export function helperCallsAt(src: string, adapter: DslAdapterCase, helpers: ReadonlySet<string>): Array<[number, string]> {
   const calls: Array<[number, string]> = []
   const prefixed = new RegExp(`(?<![\\w$])${escapeRe(adapter.prefix)}(\\w+)\\(`, 'g')
   for (const m of src.matchAll(prefixed)) {
-    if (helpers.has(m[1]!)) calls.push([m.index!, `${m[1]}/${operandCount(src, m.index! + m[0].length - 1)}`])
+    const helper = adapter.helperNames?.[m[1]!] ?? m[1]!
+    if (helpers.has(helper)) calls.push([m.index!, `${helper}/${operandCount(src, m.index! + m[0].length - 1)}`])
   }
   for (const [helper, re] of Object.entries(adapter.native ?? {})) {
     if (helpers.has(helper)) for (const m of src.matchAll(re)) calls.push([m.index!, `${helper}/1`])
   }
-  return calls.sort((a, b) => a[0] - b[0]).map(([, call]) => call)
+  return calls.sort((a, b) => a[0] - b[0])
 }

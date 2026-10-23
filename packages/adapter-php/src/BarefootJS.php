@@ -822,6 +822,21 @@ final class BarefootJS
         return Evaluator::truthy($value);
     }
 
+    /** JS `/` (#3474): IEEE division. The quotient keeps its fraction, and
+     * a zero divisor gives `NaN` or an infinity signed by both operands
+     * (`1 / -0` is `-Infinity`), where PHP's `/` throws `DivisionByZeroError`.
+     * Two int operands and a non-zero divisor keep PHP's own `/`, whose
+     * exact quotient stays an int and so still indexes a list. A nil
+     * operand reads as `0`, as with PHP's `/`: the adapters spell JS's
+     * `null` operand as the nil itself. */
+    public function div($a, $b): int|float
+    {
+        if (is_int($a) && is_int($b) && $b !== 0) {
+            return $a / $b;
+        }
+        return fdiv($this->number($a ?? 0), $this->number($b ?? 0));
+    }
+
     /** JS `%`: remainder with the dividend's sign. PHP's `fmod` already
      * implements C-style fmod semantics matching JS `%` for every case
      * (zero divisor, infinite/NaN operands all yield NaN natively).
@@ -830,10 +845,13 @@ final class BarefootJS
      * indexes a list: Blade's `data_get` reads the float `-0.0` that
      * `fmod(-4, 2)` gives as the key `"-0"`. That drops JS's sign
      * (`-4 % 2` is `-0`, so `1 / (-4 % 2)` is `-Infinity`); PHP has no
-     * negative-zero int to carry both. */
+     * negative-zero int to carry both.
+     *
+     * A nil operand reads as `0`, as with `div`: the adapters spell JS's
+     * `null` operand as the nil itself (`null % 2` is `0`). */
     public function mod($a, $b): int|float
     {
-        $r = fmod($this->number($a), $this->number($b));
+        $r = fmod($this->number($a ?? 0), $this->number($b ?? 0));
         return $r === 0.0 && is_int($a) && is_int($b) ? 0 : $r;
     }
 

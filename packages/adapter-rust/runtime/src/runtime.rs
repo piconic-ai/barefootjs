@@ -1522,6 +1522,7 @@ impl Object for BfInstance {
             "json" => Ok(MjValue::from(backend_minijinja::encode_json(a(0)))),
             "number" => Ok(MjValue::from(js_number(a(0)))),
             "truthy" => Ok(MjValue::from(js_truthy(a(0)))),
+            "div" => Ok(MjValue::from(num::js_div(js_number(a(0)), js_number(a(1))))),
             "mod" => Ok(MjValue::from(num::js_mod(js_number(a(0)), js_number(a(1))))),
             "floor" => Ok(MjValue::from(num::js_floor(js_number(a(0))))),
             "ceil" => Ok(MjValue::from(num::js_ceil(js_number(a(0))))),

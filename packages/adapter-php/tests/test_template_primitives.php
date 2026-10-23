@@ -70,6 +70,29 @@ bf_test('mod', function () use ($bf) {
     $negZero = $bf->mod(-4.0, 2);
     bf_assert(is_float($negZero) && fdiv(1, $negZero) === -INF, 'expected -0.0 for -4.0 % 2');
     bf_assert_eq($bf->string($negZero), '0');
+    // A nil operand reads as 0, as with `div` (#3474).
+    bf_assert_eq($bf->mod(null, 2), 0.0);
+    bf_assert_nan($bf->mod(2, null));
+});
+
+bf_test('div', function () use ($bf) {
+    // JS `/` keeps the fraction; an exact quotient of two ints stays an int,
+    // as with PHP's own `/`, so it still indexes a list.
+    bf_assert_eq($bf->div(7, 2), 3.5);
+    bf_assert_eq($bf->div(6, 2), 3);
+    bf_assert_eq($bf->div('6', 4), 1.5);
+    // A zero divisor gives an infinity signed by both operands, or NaN,
+    // where PHP's `/` throws DivisionByZeroError (#3474).
+    bf_assert_eq($bf->div(1, 0), INF);
+    bf_assert_eq($bf->div(-1, 0), -INF);
+    bf_assert_eq($bf->div(1, -0.0), -INF);
+    bf_assert_eq($bf->div(1, $bf->mod(-4.0, 2)), -INF);
+    bf_assert_nan($bf->div(0, 0));
+    // A nil operand reads as 0, as with PHP's `/`: the adapters leave JS's
+    // `null` operand to the engine.
+    bf_assert_eq($bf->div(null, 2), 0.0);
+    bf_assert_eq($bf->div(2, null), INF);
+    bf_assert_nan($bf->div($bf->number(null), 2));
 });
 
 bf_test('json', function () use ($bf) {
