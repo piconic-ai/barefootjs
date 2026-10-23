@@ -5,7 +5,7 @@
   "files": {
     "packages/adapter-blade/src/adapter/blade-adapter.ts": {
       "renderLoop": [
-        52
+        38
       ]
     },
     "packages/adapter-blade/src/test-render.ts": {
@@ -18,7 +18,7 @@
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "renderLoop": [
-        64
+        52
       ]
     },
     "packages/adapter-erb/src/test-render.ts": {
@@ -219,7 +219,7 @@
     },
     "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
       "renderLoop": [
-        49
+        35
       ]
     },
     "packages/adapter-jinja/src/test-render.ts": {
@@ -232,7 +232,7 @@
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
       "renderLoop": [
-        58
+        43
       ]
     },
     "packages/adapter-mojolicious/src/test-render.ts": {
@@ -248,7 +248,7 @@
     },
     "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
       "renderLoop": [
-        64
+        44
       ]
     },
     "packages/adapter-pebble/src/test-render.ts": {
@@ -261,7 +261,7 @@
     },
     "packages/adapter-rust/src/adapter/minijinja-adapter.ts": {
       "renderLoop": [
-        49
+        35
       ]
     },
     "packages/adapter-rust/src/test-render.ts": {
@@ -310,7 +310,7 @@
     },
     "packages/adapter-twig/src/adapter/twig-adapter.ts": {
       "renderLoop": [
-        57
+        42
       ]
     },
     "packages/adapter-twig/src/test-render.ts": {
@@ -323,7 +323,7 @@
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
       "renderLoop": [
-        75
+        51
       ]
     },
     "packages/adapter-xslate/src/test-render.ts": {

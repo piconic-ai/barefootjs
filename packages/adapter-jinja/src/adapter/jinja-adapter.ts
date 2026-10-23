@@ -135,6 +135,8 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  spellDestructureLocals,
+  type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -185,6 +187,13 @@ import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { JinjaAdapterOptions } from './lib/types.ts'
 import type { JinjaAdapterOptions } from './lib/types.ts'
+
+/** How a lowered loop destructure binding reads off the row item. */
+const DESTRUCTURE_SPELLING: DestructureSpelling = {
+  accessor: jinjaAccessorFromSegments,
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, none)`,
+  omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => jinjaHashKey(k)).join(', ')}])`,
+}
 
 /**
  * The `JinjaAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
@@ -591,7 +600,6 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToJinja,
     })
-    const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
@@ -676,57 +684,20 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     // comes from Jinja's own loop object (`loop.index0`, 0-based) — no
     // Kolon-style `$~loopvar.index` indirection needed.
 
-    // For `keys`-shape iterations the callback param IS the index. We iterate
-    // the array but bind the loop var to a throwaway and expose the index as
-    // the param name via Jinja's built-in `loop.index0`.
-    const loopVar = loop.iterationShape === 'keys'
-      ? '__bf_item'
-      : supportableDestructure ? '__bf_item' : param
-
-    // Index alias: when an explicit `index` param is present (`.map((x, i) =>
-    // ...)`) or the iteration is `keys`-shaped, expose it via a `{% set %}`
-    // local bound to Jinja's `loop.index0`. A supported destructure param
-    // adds one `{% set %}` local per binding, built from the binding's
-    // structured `segments` path (#2087 Phase B — never string-parse
-    // `b.path`):
-    //
-    //   - fixed binding: a native accessor walking `segments` off the
-    //     per-item var (`.field` / `[index]`, any depth).
-    //   - array-rest binding: `bf.slice(<parent accessor>, from, none)` —
-    //     the exact JS slice, so every read of the binding (including
-    //     `.length` via the shared member emitter's `bf.length` routing)
-    //     matches JS semantics with no adapter-side special-casing.
-    //   - object-rest binding: `bf.omit(<parent accessor>, [<excluded
-    //     sibling keys>])` — a TRUE residual dict (not an alias to the
-    //     whole item), so `rest.flag` member reads and the existing
-    //     `{...rest}` → `bf.spread_attrs(rest)` emit path both see only the
-    //     keys NOT already destructured.
+    // A `.keys()` iteration's param is the index and a lowered destructure's
+    // bindings read off the item, so either iterates a throwaway item var
+    // (`loopPlan.itemVar`). The index local (a `.keys()` param or an explicit
+    // index param) reads Jinja's `loop.index0`. Each destructure binding is a
+    // local off the item var, spelled from its structured `segments` path
+    // (#2087 Phase B, never `b.path`): a native accessor for a fixed binding,
+    // the runtime's slice / omit for an array / object rest — a true
+    // residual, not an alias of the whole item. An object iteration's key and value
+    // bind through the for-header below instead.
+    const loopVar = loopPlan.itemVar
     const indexLocalLines: string[] = []
-    if (loop.objectIteration) {
-      // `key`/`value` bind directly in the for-header (see `array` below)
-      // via Jinja's own dict iteration — no derived `loop.index0` local
-      // needed, unlike the array `iterationShape` cases.
-    } else if (loop.iterationShape === 'keys') {
-      indexLocalLines.push(`{% set ${jinjaIdent(param)} = loop.index0 %}`)
-    } else if (loop.index) {
-      indexLocalLines.push(`{% set ${jinjaIdent(loop.index)} = loop.index0 %}`)
-    }
-    if (supportableDestructure) {
-      for (const b of loop.paramBindings ?? []) {
-        const parentAccessor = jinjaAccessorFromSegments(jinjaIdent(loopVar), b.segments ?? [])
-        if (!b.rest) {
-          indexLocalLines.push(`{% set ${jinjaIdent(b.name)} = ${parentAccessor} %}`)
-        } else if (b.rest.kind === 'array') {
-          indexLocalLines.push(
-            `{% set ${jinjaIdent(b.name)} = bf.slice(${parentAccessor}, ${b.rest.from}, none) %}`,
-          )
-        } else {
-          const excludeKeys = b.rest.exclude.map(k => jinjaHashKey(k.key)).join(', ')
-          indexLocalLines.push(
-            `{% set ${jinjaIdent(b.name)} = bf.omit(${parentAccessor}, [${excludeKeys}]) %}`,
-          )
-        }
-      }
+    if (loopPlan.indexLocal) indexLocalLines.push(`{% set ${jinjaIdent(loopPlan.indexLocal)} = loop.index0 %}`)
+    for (const { name, value } of spellDestructureLocals(loopPlan, jinjaIdent(loopVar), DESTRUCTURE_SPELLING)) {
+      indexLocalLines.push(`{% set ${jinjaIdent(name)} = ${value} %}`)
     }
 
     const prevInLoop = this.inLoop
