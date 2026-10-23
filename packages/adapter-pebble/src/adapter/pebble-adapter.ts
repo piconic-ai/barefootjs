@@ -236,6 +236,8 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  spellDestructureLocals,
+  type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -286,6 +288,13 @@ import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { PebbleAdapterOptions } from './lib/types.ts'
 import type { PebbleAdapterOptions } from './lib/types.ts'
+
+/** How a lowered loop destructure binding reads off the row item. */
+const DESTRUCTURE_SPELLING: DestructureSpelling = {
+  accessor: pebbleAccessorFromSegments,
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, null)`,
+  omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => pebbleHashKey(k)).join(', ')}])`,
+}
 
 export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<PebbleRenderCtx> {
   name = 'pebble'
@@ -699,7 +708,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToPebble,
     })
-    const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
@@ -786,58 +794,20 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // is Pebble-specific, matching neither Jinja's `loop.index0` nor
     // Twig's).
 
-    // For `keys`-shape iterations the callback param IS the index. We iterate
-    // the array but bind the loop var to a throwaway and expose the index as
-    // the param name via Pebble's built-in `loop.index`.
-    const loopVar = loop.iterationShape === 'keys'
-      ? '__bf_item'
-      : supportableDestructure ? '__bf_item' : param
-
-    // Index alias: when an explicit `index` param is present (`.map((x, i) =>
-    // ...)`) or the iteration is `keys`-shaped, expose it via a `{% set %}`
-    // local bound to Pebble's `loop.index`. A supported destructure param
-    // adds one `{% set %}` local per binding, built from the binding's
-    // structured `segments` path (#2087 Phase B — never string-parse
-    // `b.path`):
-    //
-    //   - fixed binding: a native accessor walking `segments` off the
-    //     per-item var (`.field` / `[index]`, any depth — see
-    //     `lib/pebble-naming.ts`'s `pebbleAccessorFromSegments`).
-    //   - array-rest binding: `bf.slice(<parent accessor>, from, null)` —
-    //     the exact JS slice, so every read of the binding (including
-    //     `.length` via the shared member emitter's `bf.length` routing)
-    //     matches JS semantics with no adapter-side special-casing.
-    //   - object-rest binding: `bf.omit(<parent accessor>, [<excluded
-    //     sibling keys>])` — a TRUE residual map (not an alias to the
-    //     whole item), so `rest.flag` member reads and the existing
-    //     `{...rest}` → `bf.spread_attrs(rest)` emit path both see only the
-    //     keys NOT already destructured.
+    // A `.keys()` iteration's param is the index and a lowered destructure's
+    // bindings read off the item, so either iterates a throwaway item var
+    // (`loopPlan.itemVar`). The index local (a `.keys()` param or an explicit
+    // index param) reads Pebble's `loop.index`. Each destructure binding is a
+    // local off the item var, spelled from its structured `segments` path
+    // (#2087 Phase B, never `b.path`): a native accessor for a fixed binding,
+    // the runtime's slice / omit for an array / object rest — a true
+    // residual, not an alias of the whole item. An object iteration's key and value
+    // bind through the for-header below instead.
+    const loopVar = loopPlan.itemVar
     const indexLocalLines: string[] = []
-    if (loop.objectIteration) {
-      // `key`/`value` bind via the `bf.entries`/`bf.keys`/`bf.values`
-      // for-header below (see the file header, divergence 8) — no derived
-      // `loop.index` local needed, unlike the array `iterationShape` cases.
-    } else if (loop.iterationShape === 'keys') {
-      indexLocalLines.push(`{% set ${pebbleIdent(param)} = loop.index %}`)
-    } else if (loop.index) {
-      indexLocalLines.push(`{% set ${pebbleIdent(loop.index)} = loop.index %}`)
-    }
-    if (supportableDestructure) {
-      for (const b of loop.paramBindings ?? []) {
-        const parentAccessor = pebbleAccessorFromSegments(pebbleIdent(loopVar), b.segments ?? [])
-        if (!b.rest) {
-          indexLocalLines.push(`{% set ${pebbleIdent(b.name)} = ${parentAccessor} %}`)
-        } else if (b.rest.kind === 'array') {
-          indexLocalLines.push(
-            `{% set ${pebbleIdent(b.name)} = bf.slice(${parentAccessor}, ${b.rest.from}, null) %}`,
-          )
-        } else {
-          const excludeKeys = b.rest.exclude.map(k => pebbleHashKey(k.key)).join(', ')
-          indexLocalLines.push(
-            `{% set ${pebbleIdent(b.name)} = bf.omit(${parentAccessor}, [${excludeKeys}]) %}`,
-          )
-        }
-      }
+    if (loopPlan.indexLocal) indexLocalLines.push(`{% set ${pebbleIdent(loopPlan.indexLocal)} = loop.index %}`)
+    for (const { name, value } of spellDestructureLocals(loopPlan, pebbleIdent(loopVar), DESTRUCTURE_SPELLING)) {
+      indexLocalLines.push(`{% set ${pebbleIdent(name)} = ${value} %}`)
     }
 
     const prevInLoop = this.inLoop
@@ -936,11 +906,9 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     if (loop.objectIteration === 'entries') {
       setBoundNames.add(loop.index ?? param)
       setBoundNames.add(param)
-    } else if (!loop.objectIteration) {
-      if (loop.iterationShape === 'keys') setBoundNames.add(param)
-      else if (loop.index) setBoundNames.add(loop.index)
     }
-    if (supportableDestructure) for (const b of loop.paramBindings ?? []) setBoundNames.add(b.name)
+    if (loopPlan.indexLocal) setBoundNames.add(loopPlan.indexLocal)
+    for (const { name } of loopPlan.destructureLocals) setBoundNames.add(name)
     for (const d of loop.preamble?.declarations ?? []) setBoundNames.add(d.name)
     const savedNames = [...setBoundNames]
       .filter(name => this.templateLevelNames.has(name) || prevScope.isBound(name))

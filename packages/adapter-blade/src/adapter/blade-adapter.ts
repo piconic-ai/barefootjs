@@ -283,6 +283,8 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  spellDestructureLocals,
+  type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -334,6 +336,13 @@ import { collectStringValueNames } from './props/prop-classes.ts'
 
 export type { BladeAdapterOptions } from './lib/types.ts'
 import type { BladeAdapterOptions } from './lib/types.ts'
+
+/** How a lowered loop destructure binding reads off the row item. */
+const DESTRUCTURE_SPELLING: DestructureSpelling = {
+  accessor: bladeLoopBindingAccessor,
+  slice: (parent, from) => `$bf->slice(${parent}, ${from}, null)`,
+  omit: (parent, keys) => `$bf->omit(${parent}, [${keys.map((k) => `'${escapeBladeSingleQuoted(k)}'`).join(', ')}])`,
+}
 
 /**
  * The `BladeAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
@@ -748,7 +757,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToBlade,
     })
-    const supportableDestructure = loopPlan.destructure === 'lowerable'
     if (loopPlan.destructure === 'unlowerable') {
       this.errors.push({
         code: 'BF104',
@@ -839,56 +847,20 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // see this file's header, divergence 10) — no Kolon-style `$~loopvar.index`
     // indirection needed.
 
-    // For `keys`-shape iterations the callback param IS the index. We iterate
-    // the array but bind the loop var to a throwaway and expose the index as
-    // the param name via Blade's built-in `$loop->index`.
-    const loopVar = loop.iterationShape === 'keys'
-      ? '__bf_item'
-      : supportableDestructure ? '__bf_item' : param
-
-    // Index alias: when an explicit `index` param is present (`.map((x, i) =>
-    // ...)`) or the iteration is `keys`-shaped, expose it via a `@php(...)`
-    // local bound to Blade's `$loop->index`. A supported destructure param adds
-    // one `@php(...)` local per binding, built from the binding's structured
-    // `segments` path (never `b.path` verbatim — see `bladeLoopBindingAccessor`
-    // for why a naive JS-accessor splice mis-lowers on Blade/stdClass):
-    //   - fixed binding: the full accessor off the per-item var.
-    //   - array-rest (`[first, ...tail]`): `$bf->slice(parent, from, null)` —
-    //     `parent` is the accessor for `segments` (the rest token's PARENT
-    //     prefix, empty at the loop root), `from` is the rest's start index.
-    //   - object-rest (`{ id, ...rest }`): `$bf->omit(parent, [excludeKeys])` —
-    //     a TRUE residual hash (not an alias of the whole item), so a use
-    //     other than member-access / spread (already refused by the gate)
-    //     can't observe a sibling field the pattern destructured explicitly.
+    // A `.keys()` iteration's param is the index and a lowered destructure's
+    // bindings read off the item, so either iterates a throwaway item var
+    // (`loopPlan.itemVar`). The index local (a `.keys()` param or an explicit
+    // index param) reads Blade's `$loop->index`. Each destructure binding is a
+    // local off the item var, spelled from its structured `segments` path
+    // (#2087 Phase B, never `b.path`): a native accessor for a fixed binding,
+    // the runtime's slice / omit for an array / object rest — a true
+    // residual, not an alias of the whole item. An object iteration's key and value
+    // bind through the for-header below instead.
+    const loopVar = loopPlan.itemVar
     const indexLocalLines: string[] = []
-    if (loop.objectIteration) {
-      // `key`/`value` bind directly in the `@foreach` header (see below)
-      // via `$bf->entries`/`$bf->keys`/`$bf->values` — no derived
-      // `$loop->index` local needed, unlike the array `iterationShape` cases.
-    } else if (loop.iterationShape === 'keys') {
-      indexLocalLines.push(`@php(${bladeVar(param)} = $loop->index)`)
-    } else if (loop.index) {
-      indexLocalLines.push(`@php(${bladeVar(loop.index)} = $loop->index)`)
-    }
-    if (supportableDestructure) {
-      const loopVarRef = bladeVar(loopVar)
-      for (const b of loop.paramBindings ?? []) {
-        const parentAccessor = bladeLoopBindingAccessor(loopVarRef, b.segments ?? [])
-        if (b.rest?.kind === 'array') {
-          indexLocalLines.push(
-            `@php(${bladeVar(b.name)} = $bf->slice(${parentAccessor}, ${b.rest.from}, null))`,
-          )
-        } else if (b.rest?.kind === 'object') {
-          const excludeList = b.rest.exclude
-            .map(k => `'${escapeBladeSingleQuoted(k.key)}'`)
-            .join(', ')
-          indexLocalLines.push(
-            `@php(${bladeVar(b.name)} = $bf->omit(${parentAccessor}, [${excludeList}]))`,
-          )
-        } else {
-          indexLocalLines.push(`@php(${bladeVar(b.name)} = ${parentAccessor})`)
-        }
-      }
+    if (loopPlan.indexLocal) indexLocalLines.push(`@php(${bladeVar(loopPlan.indexLocal)} = $loop->index)`)
+    for (const { name, value } of spellDestructureLocals(loopPlan, bladeVar(loopVar), DESTRUCTURE_SPELLING)) {
+      indexLocalLines.push(`@php(${bladeVar(name)} = ${value})`)
     }
 
     const prevInLoop = this.inLoop
