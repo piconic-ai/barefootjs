@@ -369,6 +369,11 @@ export class CompileState {
    *  slice's length instead of a nil/unset memo field. */
   memoBackedLoopSlice: Map<string, string> = new Map()
 
+  /** Marker ids of the loops whose forwarded-children wrapper row carries
+   *  the bare row value on `BfLoopItem` (`wrapperRowScalarItemGoType`), so
+   *  the template feeds the row's children define `.BfLoopItem`. */
+  scalarWrapperRowLoops: Set<string> = new Set()
+
   // --- Reset at the start of `generateTypes()` ------------------------------
 
   /** Set during type generation when any emit references

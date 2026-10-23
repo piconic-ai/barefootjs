@@ -260,6 +260,12 @@ export const conformancePins: ConformancePins = {
   'loop-row-child-children-attrs': [
     { code: 'BF101', severity: 'error', limitation: 'loop-row-child-children-attrs-frozen', unescapable: true },
   ],
+  // A scalar row's forwarded-children define runs with the bare row value
+  // as its data, so a nested component's slot field on the row wrapper is
+  // out of reach there (`bodyChildrenReferenceOuterReactiveState`).
+  'loop-row-child-scalar-row-wrapper-nested-component': [
+    { code: 'BF101', severity: 'error', limitation: 'loop-row-child-scalar-row-nested-component', unescapable: true },
+  ],
   // #3063: a client-interactive component with a multi-return chain
   // where one branch is a bare JSX fragment refuses ahead of
   // `adapter.generate()` in the shared jsx-to-ir.ts phase (the client
