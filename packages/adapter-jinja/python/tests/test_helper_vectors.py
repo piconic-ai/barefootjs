@@ -6,7 +6,7 @@ the JS reference implementations (spec/template-helpers.md) -- against this
 package's `BarefootJS` runtime. One binding per canonical helper id in the
 spec catalogue, bound to the exact code shape a compiled Jinja template
 would execute (a `bf.<method>(...)` call, or the native Python operator the
-adapter emits for `add`/`sub`/`mul`/`div`/`neg`, mirroring how
+adapter emits for `add`/`sub`/`mul`/`neg`, mirroring how
 `helper_vectors.t` binds those to native Perl operators).
 
 Per spec/template-helpers.md's "Adapter status model", this backend's
@@ -115,17 +115,16 @@ def _bind_flat_map_tuple(recv, *flat):
     return bf.flat_map_tuple(recv, *specs)
 
 
-# One binding per canonical helper id. `add`/`sub`/`mul`/`div`/`neg` are not
-# BarefootJS methods (matching the Perl port -- the adapter lowers JS
-# `+`/`-`/`*`/`/`/unary `-` to the native template-language operator, not a
-# `bf.` call); `mod` DOES route through `bf.mod` since the plan requires the
-# Jinja emitter to use `bf.mod` for JS `%` (Python `%` differs from JS `%` on
-# negative operands, unlike native `+`/`-`/`*`/`/`).
+# One binding per canonical helper id. `add`/`sub`/`mul`/`neg` are not
+# BarefootJS methods -- the adapter lowers JS `+`/`-`/`*`/unary `-` to the
+# native template-language operator, not a `bf.` call. `div` and `mod` DO
+# route through `bf.div` / `bf.mod`, as the Jinja emitter does for JS `/`
+# and `%` (#3474): Python's `/` raises on a zero divisor, and its `%` floors.
 BINDINGS = {
     "add": lambda a, b: a + b,
     "sub": lambda a, b: a - b,
     "mul": lambda a, b: a * b,
-    "div": lambda a, b: a / b,
+    "div": lambda a, b: bf.div(a, b),
     "mod": lambda a, b: bf.mod(a, b),
     "neg": lambda a: -a,
     "string": bf.string,

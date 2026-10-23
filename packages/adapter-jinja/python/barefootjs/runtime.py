@@ -1001,6 +1001,19 @@ class BarefootJS:
     def truthy(self, value: Any) -> bool:
         return js_truthy(value)
 
+    def div(self, a: Any, b: Any) -> float:
+        """JS `/` (#3474): IEEE division. The quotient keeps its fraction,
+        and a zero divisor gives NaN or an infinity signed by both operands,
+        the zero's included (`1 / -0` is -Infinity, and the int
+        `NEGATIVE_ZERO` converts to -0.0), where Python's `/` raises
+        `ZeroDivisionError`."""
+        an, bn = js_number(a), js_number(b)
+        if bn == 0:
+            if an == 0 or an != an:
+                return float("nan")
+            return math.copysign(math.inf, an) * math.copysign(1.0, bn)
+        return an / bn
+
     def mod(self, a: Any, b: Any) -> Any:
         """JS `%`: remainder with the dividend's sign. Python's `math.fmod`
         implements the same C-style fmod semantics as JS `%` for finite

@@ -12,7 +12,7 @@ declare(strict_types=1);
  * this package's BarefootJS runtime. One binding per canonical helper id in
  * the spec catalogue, bound to the exact code shape a compiled Twig
  * template would execute (a `bf.<method>(...)` call, or the native PHP
- * operator the adapter emits for add/sub/mul/div/neg).
+ * operator the adapter emits for add/sub/mul/neg).
  *
  * Per spec/template-helpers.md's "Adapter status model", this backend's
  * divergences from the JS-normative expect live in
@@ -154,7 +154,7 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'add': return $args[0] + $args[1];
         case 'sub': return $args[0] - $args[1];
         case 'mul': return $args[0] * $args[1];
-        case 'div': return $args[0] / $args[1];
+        case 'div': return $bf->div($args[0], $args[1]);
         case 'mod': return $bf->mod($args[0], $args[1]);
         case 'neg': return -$args[0];
         case 'string': return $bf->string($args[0]);

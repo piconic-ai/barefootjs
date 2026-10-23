@@ -8,11 +8,6 @@
       "expect": 9007199254740993,
       "reason": "Python int arithmetic is exact (arbitrary precision), not double-rounded"
     },
-    "div/zero divisor yields Infinity": {
-      "throws": true,
-      "exception": "ZeroDivisionError",
-      "reason": "Python native / raises ZeroDivisionError on a zero divisor"
-    },
     "number/empty string coerces to 0": {
       "expect": { "$num": "NaN" },
       "reason": "deliberate: empty input must not silently zero downstream arithmetic (matches the Perl port)"

@@ -381,9 +381,9 @@ export function goComparisonCall(
 /**
  * The prefix call for a binary operator that a runtime helper computes
  * whole: a comparison ({@link goComparisonCall}), or an arithmetic operator
- * the shared lowering routes to a helper (`arithmeticHelper`: `%` is
- * `bf_mod`, JS's truncated remainder, #3474). `null` for any other
- * operator. Before #2873 the filter-predicate and condition emitters had no
+ * the shared lowering routes to a helper (`arithmeticHelper`: `/` is
+ * `bf_div` and `%` is `bf_mod`, JS's truncated remainder, #3474). `null`
+ * for any other operator. Before #2873 the filter-predicate and condition emitters had no
  * `%` case and spliced a literal ` % `, which `html/template` can't parse;
  * every binary emitter now asks here first.
  */

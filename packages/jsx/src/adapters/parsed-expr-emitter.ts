@@ -307,14 +307,18 @@ export function isNumericArithmeticResult(
 
 /** A runtime helper of the template-helper catalogue (`spec/template-helpers.md`)
  * that a binary arithmetic operator lowers to. */
-export type ArithmeticHelper = 'mod'
+export type ArithmeticHelper = 'mod' | 'div'
 
 /**
  * The runtime helper a JS binary arithmetic operator lowers to on every
  * template backend, or `null` when the backend spells the operator itself
  * (#3474). The adapter only spells the call, in its own syntax
- * (`bf.mod(a, b)`, `$bf->mod(a, b)`, `bf_mod a b`), over operands already
- * coerced (`arithmeticOperandCoercion`) and grouped ({@link groupBinaryOperand}).
+ * (`bf.mod(a, b)`, `$bf->mod(a, b)`, `bf_mod a b`), and the helper's name
+ * where its runtime names it differently (Perl's `divide`), over operands
+ * already coerced (`arithmeticOperandCoercion`) and grouped
+ * ({@link groupBinaryOperand}). Where the adapter leaves the `null`
+ * coercion unspelled because the engine's native operator reads nil as `0`
+ * (PHP, Perl), the helper reads nil as `0` too.
  *
  * `%` is JS's truncated remainder: the result takes the dividend's sign
  * (`-7 % 2` is `-1`, `7 % -2` is `1`), keeps a fraction (`7.5 % 2` is `1.5`),
@@ -323,9 +327,16 @@ export type ArithmeticHelper = 'mod'
  * quotient (`-7 % 2` is `1`), MiniJinja takes the Euclidean remainder, PHP,
  * Perl and Kolon convert the operands to integers first (`NaN % 2` is `0`),
  * and an integer zero divisor raises in Java, PHP and MiniJinja (#3574).
+ *
+ * `/` is IEEE division: the quotient keeps its fraction (`7 / 2` is `3.5`),
+ * and a zero divisor gives an infinity signed by both operands (`1 / -0` is
+ * `-Infinity`) or `NaN` (`0 / 0`). Ruby's `/` on two integers truncates, and
+ * Python's and PHP's raise on a zero divisor.
  */
 export function arithmeticHelper(op: string): ArithmeticHelper | null {
-  return op === '%' ? 'mod' : null
+  if (op === '%') return 'mod'
+  if (op === '/') return 'div'
+  return null
 }
 
 /**

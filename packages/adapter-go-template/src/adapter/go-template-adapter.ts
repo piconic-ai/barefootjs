@@ -7263,8 +7263,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return `bf_sub ${wl} ${wr}`
       case '*':
         return `bf_mul ${wl} ${wr}`
-      case '/':
-        return `bf_div ${wl} ${wr}`
       default:
         return `${l} ${op} ${r}`
     }
@@ -8481,8 +8479,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             return `bf_sub ${wl} ${wr}`
           case '*':
             return `bf_mul ${wl} ${wr}`
-          case '/':
-            return `bf_div ${wl} ${wr}`
           default:
             return `${left} ${expr.op} ${right}`
         }
@@ -9348,8 +9344,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             result = `bf_sub ${left} ${right}`; break
           case '*':
             result = `bf_mul ${left} ${right}`; break
-          case '/':
-            result = `bf_div ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
         }

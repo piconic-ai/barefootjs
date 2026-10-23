@@ -121,19 +121,18 @@ fn bind_flat_map_tuple(recv: &JsValue, flat_args: &[JsValue]) -> JsValue {
     runtime::flat_map_tuple(recv, &specs)
 }
 
-/// One binding per canonical helper id. `add`/`sub`/`mul`/`div`/`neg` are
-/// not `runtime` functions (the adapter lowers JS `+`/`-`/`*`/`/`/unary
-/// `-` to the native minijinja operator, not a `bf.` call, mirroring the
-/// Perl/Python ports); `mod` DOES route through `runtime::js_mod`-backed
-/// dispatch since the plan requires the minijinja emitter to use `bf.mod`
-/// for JS `%`.
+/// One binding per canonical helper id. `add`/`sub`/`mul`/`neg` are not
+/// `runtime` functions (the adapter lowers JS `+`/`-`/`*`/unary `-` to the
+/// native minijinja operator, not a `bf.` call); `div` and `mod` DO route
+/// through `num::js_div` / `num::js_mod`-backed dispatch since the
+/// minijinja emitter uses `bf.div` / `bf.mod` for JS `/` and `%` (#3474).
 fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
     let a = |i: usize| args.get(i).cloned().unwrap_or(JsValue::Null);
     Some(match fn_name {
         "add" => JsValue::Number(num::to_f64(&a(0)) + num::to_f64(&a(1))),
         "sub" => JsValue::Number(num::to_f64(&a(0)) - num::to_f64(&a(1))),
         "mul" => JsValue::Number(num::to_f64(&a(0)) * num::to_f64(&a(1))),
-        "div" => JsValue::Number(num::to_f64(&a(0)) / num::to_f64(&a(1))),
+        "div" => JsValue::Number(num::js_div(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
         "mod" => JsValue::Number(num::js_mod(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
         "neg" => JsValue::Number(-num::to_f64(&a(0))),
         "string" => JsValue::String(runtime::js_string(&a(0))),

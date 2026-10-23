@@ -7,8 +7,12 @@ describe('arithmeticHelper (#3474)', () => {
     expect(arithmeticHelper('%')).toBe('mod')
   })
 
+  test('`/` lowers to the runtime\'s JS division', () => {
+    expect(arithmeticHelper('/')).toBe('div')
+  })
+
   test('the other operators are spelled by the adapter', () => {
-    for (const op of ['+', '-', '*', '/', '**', '===', '<']) expect(arithmeticHelper(op)).toBeNull()
+    for (const op of ['+', '-', '*', '**', '===', '<']) expect(arithmeticHelper(op)).toBeNull()
   })
 })
 

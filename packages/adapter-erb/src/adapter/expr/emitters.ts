@@ -258,10 +258,9 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // never coerces between mismatched types — `"b" == "a"` and
     // `"b" == 0` are both correctly `false` with no operator selection
     // needed. JS `===`/`!==` map straight onto Ruby `==`/`!=`.
-    // Ruby `/` on two Integers is integer division; JS `/` keeps the
-    // fractional quotient (#3328).
-    if (op === '/') return `bf.div(${l}, ${r})`
-    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    // `/` and `%` go through the runtime's JS division and remainder
+    // (#3474): Ruby `/` on two Integers truncates (#3328), and Ruby `%`
+    // floors (#3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
@@ -607,10 +606,9 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = this.coerceNullishOperand(op, left, right, emit(left))
     const r = this.coerceNullishOperand(op, right, left, emit(right))
-    // Ruby `/` on two Integers is integer division; JS `/` keeps the
-    // fractional quotient (#3328).
-    if (op === '/') return `bf.div(${l}, ${r})`
-    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    // `/` and `%` go through the runtime's JS division and remainder
+    // (#3474): Ruby `/` on two Integers truncates (#3328), and Ruby `%`
+    // floors (#3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {

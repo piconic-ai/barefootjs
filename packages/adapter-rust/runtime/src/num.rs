@@ -416,6 +416,14 @@ pub fn js_abs(n: f64) -> f64 {
     n.abs()
 }
 
+/// JS `/` (#3474): IEEE division. Rust's `/` on `f64` already gives JS's
+/// quotient, including an infinity signed by both operands for a zero
+/// divisor (`1 / -0` is -Infinity) and NaN for `0 / 0`; the template
+/// routes `/` here so every backend lowers it through the same helper.
+pub fn js_div(a: f64, b: f64) -> f64 {
+    a / b
+}
+
 /// JS `%`: remainder with the dividend's sign. Rust's `%` on `f64` already
 /// implements C `fmod` semantics (IEEE-754 remainder), so this is a
 /// documentation-only wrapper -- see the module docstring for why no
