@@ -37,7 +37,9 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
  * - Function scope: a function-like binds its parameters and a function
  *   expression's own name; this frame covers the parameter list, so a
  *   default initializer sees the parameters but none of the body's
- *   declarations. The function's body block binds, on top of its own
+ *   declarations. A method's or accessor's computed name (`[k](k) { … }`)
+ *   sits outside this frame: it is evaluated in the enclosing scope. The
+ *   function's body block binds, on top of its own
  *   `let` / `const`, every `var` declared anywhere in the body — inside
  *   nested blocks and loop heads too (`if (c) { var x }` and `for (var x …)`
  *   are visible to the whole body), but not inside a nested function, which
@@ -129,6 +131,13 @@ function collectForHeadBindings(n: ts.ForStatement | ts.ForOfStatement | ts.ForI
   for (const d of n.initializer.declarations) collectBindingNames(d.name, frame)
 }
 
+/** The computed property name of a function-like (`[k](k) { … }`), if any. */
+function computedNameOf(n: ts.Node): ts.ComputedPropertyName | undefined {
+  if (!ts.isFunctionLike(n)) return undefined
+  const name = (n as { name?: ts.Node }).name
+  return name && ts.isComputedPropertyName(name) ? name : undefined
+}
+
 /**
  * Depth-first walk that maintains the binding stack described above and
  * reports every identifier along with whether a binding within `root`
@@ -142,9 +151,16 @@ export function walkWithScope(
   const isShadowed = (name: string) => scopeStack.some(frame => frame.has(name))
   function rec(n: ts.Node, parent?: ts.Node) {
     const frame = scopeFrameOf(n, parent)
+    // A method's / accessor's computed name (`{ [k](k) { … } }`) is evaluated
+    // in the enclosing scope, before the parameters exist: walk it outside
+    // the function's frame.
+    const outerName = frame ? computedNameOf(n) : undefined
+    if (outerName) rec(outerName, n)
     if (frame) scopeStack.push(frame)
     if (ts.isIdentifier(n)) visit(n, parent, isShadowed(n.text))
-    ts.forEachChild(n, child => rec(child, n))
+    ts.forEachChild(n, child => {
+      if (child !== outerName) rec(child, n)
+    })
     if (frame) scopeStack.pop()
   }
   rec(root)

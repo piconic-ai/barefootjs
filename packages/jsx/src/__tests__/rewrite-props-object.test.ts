@@ -198,4 +198,16 @@ describe('rewritePropsObjectRef', () => {
       expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { class C { m() { var props = 1; return props } g = () => { var props = 2; return props } }; return _p.x }')
     })
   })
+
+  describe('a computed method name is read in the enclosing scope', () => {
+    test('the key reads the props object; the body reads the parameter', () => {
+      const code = 'const o = { [props.k](props) { return props } }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const o = { [_p.k](props) { return props } }')
+    })
+
+    test('the same holds for a class method and an accessor', () => {
+      const code = 'class C { [props.a](props) { return props } get [props.b]() { const props = 1; return props } }'
+      expect(rewritePropsObjectRef(code, null)).toBe('class C { [_p.a](props) { return props } get [_p.b]() { const props = 1; return props } }')
+    })
+  })
 })

@@ -440,6 +440,28 @@ describe('.map() row: a nested scope that shadows the loop param keeps its own b
     assertParses(js)
     expect(js).toContain('class choice { static n = choice.name }')
   })
+
+  test('a computed method key reads the outer item; the method body reads its own param', () => {
+    // The key is evaluated in the enclosing scope, before the method's
+    // parameters exist, so only the body's `choice` is the inner binding.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function App() {
+        const [items] = createSignal(['a', 'b'])
+        return (
+          <div>
+            {items().map(choice => (
+              <b key={choice}>{Object.keys({ [choice](choice) { return choice } }).join('')}</b>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = getClientJs(source)
+    assertParses(js)
+    expect(js).toContain('{ [choice()](choice) { return choice } }')
+  })
 })
 
 describe('destructured loop-param path (rewriteLoopBindingRefs) shares the plain-param AST rewrite (#3260)', () => {
