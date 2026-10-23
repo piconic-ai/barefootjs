@@ -5076,7 +5076,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private extractHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
     if (children.every(c => c.type === 'text')) return null
-    const html = this.renderChildren(children)
+    // Speculative: the result is used only when it carries no action, so no
+    // row variable read here ever reaches a define (`wrapperRowReads`).
+    const html = this.withoutWrapperRowReads(() => this.renderChildren(children))
     if (html.includes('{{')) return null
     return html
   }
@@ -5142,7 +5144,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * that separate template can't see as `$i`/`$t`. The call site hands them
    * over in the row wrapper's `BfRowVars` map, and every define executed
    * with that wrapper as its data rebinds the ones it reads
-   * (`bindWrapperRowVars`), so a nested prop or text reading them lowers
+   * (`renderWrapperRowDefine`), so a nested prop or text reading them lowers
    * exactly as it does in the calling template. Null otherwise — including
    * a scalar row, whose define gets the bare value (`.BfLoopItem`), not the
    * wrapper.
@@ -5152,9 +5154,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * While a wrapper-row forwarded-children define renders: the calling
    * loop's synthetic destructure range variable (`__bf_item0`), which every
    * define executed with the row wrapper as its data rebinds to `.`
-   * (`bindWrapperRowVars`). Null when the row isn't destructured.
+   * (`renderWrapperRowDefine`). Null when the row isn't destructured.
    */
   private wrapperRowDestructureVar: string | null = null
+  /**
+   * While a wrapper-row forwarded-children define renders: the calling
+   * loop's row frame in `scope` — the frame whose bindings (index, callback
+   * locals, destructured names) the define has to rebind when it reads them.
+   * Null otherwise.
+   */
+  private wrapperRowFrame: ScopeFrame | null = null
+  /**
+   * The names of `wrapperRowFrame`'s bindings the define currently being
+   * rendered (`renderWrapperRowDefine`) lowered to a `{{range}}`/preamble
+   * variable — recorded by `noteWrapperRowRead` at the point the lowering
+   * resolves the identifier, so which variables to rebind is read off the
+   * scope resolution, never off the rendered text. Null outside such a
+   * define, and while rendering output that is discarded or lands outside
+   * it (`extractHtmlChildren`'s speculative render).
+   */
+  private wrapperRowReads: Set<string> | null = null
   /** Per wrapper-row forwarded-children define: the row variables it (or a define it calls) reads. */
   private wrapperRowVarsByDefine = new Map<string, readonly string[]>()
 
@@ -5165,7 +5184,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.bakingStaticChildren = true
     let html: string
     try {
-      html = this.renderChildren(children)
+      // Speculative, like `extractHtmlChildren`'s render.
+      html = this.withoutWrapperRowReads(() => this.renderChildren(children))
     } finally {
       this.bakingStaticChildren = prevBaking
     }
@@ -6382,7 +6402,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // this runs *before* module-const inlining so a binding whose name collides
     // with a module string const still resolves to the loop item.
     const acc = this.lookupDestructureBinding(name)
-    if (acc !== undefined) return acc
+    if (acc !== undefined) return this.noteWrapperRowRead(name, acc)
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
     // Literal-initialized const, module or function scope (`const TRACK = 8`,
@@ -6397,8 +6417,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
     // the Go range variable `$name` declared by that loop's `{{range … := …}}`;
     // the inner dot no longer refers to it, and it's not a root field.
-    if (this.isOuterLoopParam(name)) return `$${name}`
-    if (this.loopVarRefCount.has(name)) return `$${name}`
+    if (this.isOuterLoopParam(name) || this.loopVarRefCount.has(name)) return this.rowVarRef(name)
     // A bare reference to a component-scope derived const (e.g. `root`) lowers to
     // `.Root`; note it so `generateTypes` emits a computed field.
     if (this.state.localConstants.some(c => c.name === name && !c.isModule && !c.containsArrow)) {
@@ -8171,8 +8190,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const captured = this.filterCaptureAliases.get(expr.name)
           if (captured !== undefined) return `$${captured}`
           const acc = this.lookupDestructureBinding(expr.name)
-          if (acc !== undefined) return acc
-          if (this.isOuterRowItem(expr.name) || this.loopVarRefCount.has(expr.name)) return `$${expr.name}`
+          if (acc !== undefined) return this.noteWrapperRowRead(expr.name, acc)
+          if (this.isOuterRowItem(expr.name) || this.loopVarRefCount.has(expr.name)) return this.rowVarRef(expr.name)
         }
         // Any other identifier reaching here is ALSO a root-scope
         // reference (a memo, a plain derived const, or — #2857 — a
@@ -8996,18 +9015,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // binding whose name collides with a module string const still
           // resolves to the loop item — same ordering as `identifier` above.
           const acc = this.lookupDestructureBinding(expr.name)
-          if (acc !== undefined) return plain(acc)
+          if (acc !== undefined) return plain(this.noteWrapperRowRead(expr.name, acc))
           const inlined = this.resolveModuleStringConst(expr.name) ?? this.resolveLiteralConstAsGo(expr.name)
           if (inlined !== null) return plain(inlined)
           if (this.isCurrentLoopItem(expr.name)) {
             return plain('.')
           }
           // Outer loop value variable (nested loop) → its range var `$name`.
-          if (this.isOuterLoopParam(expr.name)) {
-            return plain(`$${expr.name}`)
-          }
-          if (this.loopVarRefCount.has(expr.name)) {
-            return plain(`$${expr.name}`)
+          if (this.isOuterLoopParam(expr.name) || this.loopVarRefCount.has(expr.name)) {
+            return plain(this.rowVarRef(expr.name))
           }
         }
         return plain(this.rootFieldRef(expr.name))
@@ -9793,7 +9809,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         })
         filterCond = 'true'
       }
-      const captureDecls = [...captureAliases].map(([name, alias]) => `{{$${alias} := $${name}}}`).join('')
+      const captureDecls = [...captureAliases].map(([name, alias]) => `{{$${alias} := ${this.rowVarRef(name)}}}`).join('')
 
       // The preamble assignments sit INSIDE the `{{if}}`, matching JS
       // evaluation order: a `.filter(p).map(cb)` chain never runs `cb`'s
@@ -9908,7 +9924,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
       this.state.pendingChildrenDefines.push({
         name,
-        content: this.bindWrapperRowVars(this.renderChildren(effectiveChildren)),
+        content: this.renderWrapperRowDefine(effectiveChildren),
       })
     }
     return name
@@ -9952,7 +9968,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
         this.state.pendingChildrenDefines.push({
           name,
-          content: this.bindWrapperRowVars(this.renderChildren(children)),
+          content: this.renderWrapperRowDefine(children),
         })
       }
       // A prop routed into the child's rest bag (no declared param —
@@ -10015,14 +10031,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const wasWrapperRow = this.renderingWrapperRowChildren
       const wasRowVars = this.wrapperRowVars
       const wasDestructureVar = this.wrapperRowDestructureVar
+      const wasRowFrame = this.wrapperRowFrame
       this.inLoop = false
       this.renderingWrapperRowChildren = wrapperRow
       const scalarRow = this.loopScalarItemStack[this.loopScalarItemStack.length - 1] ?? false
       const rowVarNames = wrapperRow && !scalarRow ? this.innermostRowVarNames() : []
       this.wrapperRowVars = rowVarNames.length > 0 ? { names: new Set(rowVarNames), used: new Set() } : null
       this.wrapperRowDestructureVar = wrapperRow ? this.innermostDestructureRangeVar : null
+      this.wrapperRowFrame = wrapperRow ? this.innermostRowFrame() : null
       try {
-        const content = this.bindWrapperRowVars(this.renderChildren(effectiveChildren))
+        const content = this.renderWrapperRowDefine(effectiveChildren)
         this.state.pendingChildrenDefines.push({ name, content })
         const used = this.wrapperRowVars ? rowVarNames.filter(v => this.wrapperRowVars!.used.has(v)) : []
         if (used.length > 0) this.wrapperRowVarsByDefine.set(name, used)
@@ -10032,6 +10050,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.renderingWrapperRowChildren = wasWrapperRow
         this.wrapperRowVars = wasRowVars
         this.wrapperRowDestructureVar = wasDestructureVar
+        this.wrapperRowFrame = wasRowFrame
       }
     }
     return name
@@ -10050,28 +10069,80 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     })
   }
 
+  /** The innermost loop's row frame in `scope`, or null when it binds nothing. */
+  private innermostRowFrame(): ScopeFrame | null {
+    for (const name of this.scope.boundNames()) {
+      const hit = this.scope.lookup(name)
+      if (hit !== null && hit.depth === 0) return hit.frame
+    }
+    return null
+  }
+
   /**
-   * Rebind, at the top of a define rendered for a wrapper row's forwarded
-   * children, the calling `{{range}}`'s variables it reads — the define is
-   * a separate template that can't see them. Its data is the row wrapper
-   * (the loop's own define, or a companion define it executes with that
-   * same `.`), so a destructured row's range variable (`$__bf_item0.Tone`)
-   * is `.` itself (#3313), and the loop's index or a callback local is one
-   * `{{$v := index .BfRowVars "v"}}`, recorded so the call site hands it
-   * over (`wrapperRowVars`).
+   * Render `children` as the body of a companion define. For a wrapper
+   * row's forwarded children the define is a separate template that can't
+   * see the calling `{{range}}`'s variables, so it rebinds, at its top, the
+   * ones its lowering resolved a read to (`wrapperRowReads`). Its data is
+   * the row wrapper (the loop's own define, or a companion define it
+   * executes with that same `.`), so a destructured row's range variable
+   * (`$__bf_item0.Tone`) is `.` itself (#3313), and the loop's index or a
+   * callback local is one `{{$v := index .BfRowVars "v"}}`, recorded so the
+   * call site hands it over (`wrapperRowVars`).
    */
-  private bindWrapperRowVars(content: string): string {
+  private renderWrapperRowDefine(children: IRNode[]): string {
+    const wasReads = this.wrapperRowReads
+    const reads = new Set<string>()
+    this.wrapperRowReads = this.renderingWrapperRowChildren ? reads : null
+    let content: string
+    try {
+      content = this.renderChildren(children)
+    } finally {
+      this.wrapperRowReads = wasReads
+    }
     if (!this.renderingWrapperRowChildren) return content
-    const reads = (v: string): boolean => new RegExp(`\\$${v}(?![\\w])`).test(content)
     let prefix = ''
     const rangeVar = this.wrapperRowDestructureVar
-    if (rangeVar && reads(rangeVar)) prefix += `{{$${rangeVar} := .}}`
+    const frame = this.wrapperRowFrame
+    if (rangeVar && [...reads].some(name => frame?.bindings.get(name)?.source === 'destructure')) {
+      prefix += `{{$${rangeVar} := .}}`
+    }
     const rowVars = this.wrapperRowVars
-    for (const v of rowVars ? [...rowVars.names].filter(reads) : []) {
+    for (const v of rowVars ? [...rowVars.names].filter(name => reads.has(name)) : []) {
       rowVars!.used.add(v)
       prefix += `{{$${v} := index .BfRowVars ${JSON.stringify(v)}}}`
     }
     return prefix + content
+  }
+
+  /**
+   * Record that the lowering just resolved `name` to `rendered` — a
+   * `{{range}}`/preamble variable or a destructure accessor over the range
+   * variable — for the wrapper-row define being rendered, when `name` is
+   * bound by that define's calling row (`wrapperRowFrame`); an inner loop's
+   * binding of the same name is its own `{{range}}` variable and needs no
+   * rebinding. Returns `rendered`.
+   */
+  private noteWrapperRowRead(name: string, rendered: string): string {
+    if (this.wrapperRowReads && this.wrapperRowFrame && this.scope.lookup(name)?.frame === this.wrapperRowFrame) {
+      this.wrapperRowReads.add(name)
+    }
+    return rendered
+  }
+
+  /** A loop variable read as its `$name` template variable (`noteWrapperRowRead`). */
+  private rowVarRef(name: string): string {
+    return this.noteWrapperRowRead(name, `$${name}`)
+  }
+
+  /** Run `render` with its row variable reads kept out of `wrapperRowReads`. */
+  private withoutWrapperRowReads<T>(render: () => T): T {
+    const wasReads = this.wrapperRowReads
+    this.wrapperRowReads = null
+    try {
+      return render()
+    } finally {
+      this.wrapperRowReads = wasReads
+    }
   }
 
   /**
@@ -10157,7 +10228,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // bare range value) so `{n}` → `{{.}}` renders it; object loops keep `.`
         // (the wrapper, whose embedded fields the body reads as `.Field`).
         // A define reading the loop's index or a callback local gets them in
-        // the wrapper's `BfRowVars` (`bindWrapperRowVars`).
+        // the wrapper's `BfRowVars` (`renderWrapperRowDefine`).
         const rowVars = this.wrapperRowVarsByDefine.get(loopBodyDefine) ?? []
         const bodyData = this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
           ? '.BfLoopItem'
@@ -10528,7 +10599,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const restInfo = this.lookupRestExclude(trimmed)
         if (restInfo) {
           const excludeArgs = restInfo.excludeKeys.map(k => JSON.stringify(k)).join(' ')
-          const omitArgs = excludeArgs ? `${restInfo.parent} ${excludeArgs}` : restInfo.parent
+          const parent = this.noteWrapperRowRead(trimmed, restInfo.parent)
+          const omitArgs = excludeArgs ? `${parent} ${excludeArgs}` : parent
           return `{{bf_spread_attrs (bf_omit ${omitArgs})}}`
         }
         // A field/member read off the loop row (`{...g.extra}`) — same

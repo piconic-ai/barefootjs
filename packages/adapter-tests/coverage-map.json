@@ -6192,6 +6192,21 @@
         "text"
       ]
     },
+    "loop-row-child-children-nested-row-var-literal": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-nested-row-var-shapes": {
       "kinds": [
         "array-literal",
