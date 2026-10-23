@@ -169,4 +169,33 @@ describe('rewritePropsObjectRef', () => {
       expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { const h = () => { var props = 1; return props }; return _p.x }')
     })
   })
+
+  describe('a parameter default does not see the body\'s declarations', () => {
+    test('a default reads the props object despite a same-named body `var`', () => {
+      const code = 'const f = (v = props.x) => { var props = 1; return v + props }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = (v = _p.x) => { var props = 1; return v + props }')
+    })
+
+    test('a default reads the props object despite a same-named body `let`', () => {
+      const code = 'function f(v = props.x) { let props = 1; return v + props }'
+      expect(rewritePropsObjectRef(code, null)).toBe('function f(v = _p.x) { let props = 1; return v + props }')
+    })
+
+    test('a default sees an earlier parameter of the same name, not the props object', () => {
+      const code = 'const f = (props, v = props.x) => v'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+  })
+
+  describe('a class static block owns its `var`s', () => {
+    test('a read inside the block is local; a read after the class is the props object', () => {
+      const code = 'const f = () => { class C { static { var props = 1; C.p = props } }; return props.x }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { class C { static { var props = 1; C.p = props } }; return _p.x }')
+    })
+
+    test('a `var` in a method or a field-initializer arrow does not leak into the enclosing function', () => {
+      const code = 'const f = () => { class C { m() { var props = 1; return props } g = () => { var props = 2; return props } }; return props.x }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { class C { m() { var props = 1; return props } g = () => { var props = 2; return props } }; return _p.x }')
+    })
+  })
 })

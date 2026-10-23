@@ -32,11 +32,15 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
  * Names bound by `n` for its subtree, or null when `n` introduces no
  * scope. The frames follow JS's two scoping rules:
  *
- * - Function scope: a function-like binds its parameters, a function
- *   expression's own name, and every `var` declared anywhere in its body —
- *   inside nested blocks and loop heads too (`if (c) { var x }` and
- *   `for (var x …)` are visible to the whole function), but not inside a
- *   nested function, which owns its own `var`s.
+ * - Function scope: a function-like binds its parameters and a function
+ *   expression's own name; this frame covers the parameter list, so a
+ *   default initializer sees the parameters but none of the body's
+ *   declarations. The function's body block binds, on top of its own
+ *   `let` / `const`, every `var` declared anywhere in the body — inside
+ *   nested blocks and loop heads too (`if (c) { var x }` and `for (var x …)`
+ *   are visible to the whole body), but not inside a nested function, which
+ *   owns its own `var`s. A concise arrow body declares nothing. A class
+ *   `static { … }` block is a var scope of its own in the same way.
  * - Block scope: a block binds its statement-level `let` / `const`, class
  *   and function declarations (the emitted client JS is a module, so it is
  *   strict code: a function declared in a block is scoped to that block);
@@ -47,10 +51,13 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
  * level, where no frame is pushed — the same as any other top-level
  * declaration.
  */
-function scopeFrameOf(n: ts.Node): Set<string> | null {
+function scopeFrameOf(n: ts.Node, parent: ts.Node | undefined): Set<string> | null {
   const frame = new Set<string>()
   if (ts.isFunctionLike(n)) collectFunctionBindings(n, frame)
-  else if (ts.isBlock(n)) collectBlockBindings(n, frame)
+  else if (ts.isBlock(n)) {
+    if (parent && isFunctionBody(n, parent)) collectVarBindings(n, frame)
+    collectBlockBindings(n, frame)
+  }
   else if (ts.isForStatement(n) || ts.isForOfStatement(n) || ts.isForInStatement(n)) collectForHeadBindings(n, frame)
   else if (ts.isCatchClause(n) && n.variableDeclaration) collectBindingNames(n.variableDeclaration.name, frame)
   return frame.size > 0 ? frame : null
@@ -59,8 +66,21 @@ function scopeFrameOf(n: ts.Node): Set<string> | null {
 function collectFunctionBindings(n: ts.SignatureDeclaration, frame: Set<string>): void {
   for (const p of n.parameters) collectBindingNames(p.name, frame)
   if ((ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n)) && n.name) frame.add(n.name.text)
-  const body = (n as { body?: ts.Node }).body
-  if (body) collectVarBindings(body, frame)
+}
+
+/**
+ * A var-scope boundary: a function-like (function declaration / expression,
+ * arrow, method, accessor, constructor) or a class `static { … }` block. Each
+ * owns the `var`s declared in it. A class field initializer is an
+ * expression, so a `var` can only sit inside one of these boundaries there.
+ */
+function isVarScopeBoundary(n: ts.Node): n is ts.SignatureDeclaration | ts.ClassStaticBlockDeclaration {
+  return ts.isFunctionLike(n) || ts.isClassStaticBlockDeclaration(n)
+}
+
+/** True when `block` is the body of the var-scope boundary `parent`. */
+function isFunctionBody(block: ts.Block, parent: ts.Node): boolean {
+  return isVarScopeBoundary(parent) && (parent as { body?: ts.Node }).body === block
 }
 
 /** True for a `let` / `const` (and `using`) declaration list; false for `var`. */
@@ -70,14 +90,14 @@ function isBlockScopedList(list: ts.VariableDeclarationList): boolean {
 
 /**
  * Every `var`-declared name under `n`, through blocks and loop heads but not
- * into nested function-likes (each binds its own `var`s).
+ * into a nested var-scope boundary (each binds its own `var`s).
  */
 function collectVarBindings(n: ts.Node, frame: Set<string>): void {
   if (ts.isVariableDeclarationList(n) && !isBlockScopedList(n)) {
     for (const d of n.declarations) collectBindingNames(d.name, frame)
   }
   ts.forEachChild(n, child => {
-    if (!ts.isFunctionLike(child)) collectVarBindings(child, frame)
+    if (!isVarScopeBoundary(child)) collectVarBindings(child, frame)
   })
 }
 
@@ -116,7 +136,7 @@ export function walkWithScope(
   const scopeStack: Set<string>[] = []
   const isShadowed = (name: string) => scopeStack.some(frame => frame.has(name))
   function rec(n: ts.Node, parent?: ts.Node) {
-    const frame = scopeFrameOf(n)
+    const frame = scopeFrameOf(n, parent)
     if (frame) scopeStack.push(frame)
     if (ts.isIdentifier(n)) visit(n, parent, isShadowed(n.text))
     ts.forEachChild(n, child => rec(child, n))

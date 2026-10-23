@@ -205,3 +205,52 @@ describe('the Phase-1 prop rewrite shares the same `var` scoping', () => {
     expect(out).toBe('() => { if (c) { let step = 5 } return _p.step }')
   })
 })
+
+describe('a parameter default does not see the body\'s declarations', () => {
+  const toProp = (name: string) => `_p.${name}`
+  test('Phase-1 rewrite: a default reads the prop despite a same-named body `var`', () => {
+    const out = rewriteScopedValueRefs('(value = step) => { var step = 0; return value }', new Set(['step']), toProp)
+    expect(out).toBe('(value = _p.step) => { var step = 0; return value }')
+  })
+
+  test('Phase-1 rewrite: a default reads the prop despite a same-named body `let`', () => {
+    const out = rewriteScopedValueRefs('(value = step) => { let step = 0; return value + step }', new Set(['step']), toProp)
+    expect(out).toBe('(value = _p.step) => { let step = 0; return value + step }')
+  })
+
+  test('a handler-local arrow whose default reads a destructured prop shadowed in its body', () => {
+    const body = initBody(clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function E({ step }: { step: number }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => { const f = (value = step) => { var step = 0; return value + step }; setN(f()) }}>{n()}</button>
+      }
+    `))
+    expect(body).toContain('const f = (value = _p.step) => { var step = 0; return value + step }')
+  })
+})
+
+describe('a class static block owns its `var`s', () => {
+  const toProp = (name: string) => `_p.${name}`
+  test('Phase-1 rewrite: a read inside the static block is local, a read after the class is the prop', () => {
+    const out = rewriteScopedValueRefs(
+      '() => { class C { static { var step = 0; C.s = step } }; return step }',
+      new Set(['step']),
+      toProp,
+    )
+    expect(out).toBe('() => { class C { static { var step = 0; C.s = step } }; return _p.step }')
+  })
+
+  test('a handler whose class static block declares a `var` named like a destructured prop', () => {
+    const body = initBody(clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function F({ step }: { step: number }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => { class C { static { var step = 0; C.s = step } }; setN(n() + step) }}>{n()}</button>
+      }
+    `))
+    expect(body).toContain('class C { static { var step = 0; C.s = step } }; setN(n() + _p.step)')
+  })
+})
