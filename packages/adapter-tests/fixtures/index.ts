@@ -1150,6 +1150,10 @@ import { fixture as filterNestedCallbackReadsOuterParamClient } from './filter-n
 import { fixture as reassignedPropCounter } from './reassigned-prop-counter'
 import { fixture as handlerWrittenLocals } from './handler-written-locals'
 import { fixture as reassignedPropStateless } from './reassigned-prop-stateless'
+// Callback parameters named `props` keep their own binding beside outer
+// destructured-prop reads in the same scope.
+import { fixture as loopParamNamedProps } from './loop-param-named-props'
+import { fixture as loopParamNamedPropsMember } from './loop-param-named-props-member'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1969,4 +1973,6 @@ export const jsxFixtures: JSXFixture[] = [
   reassignedPropCounter,
   handlerWrittenLocals,
   reassignedPropStateless,
+  loopParamNamedProps,
+  loopParamNamedPropsMember,
 ]

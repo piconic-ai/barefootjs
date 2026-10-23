@@ -120,4 +120,82 @@ describe('rewritePropsObjectRef', () => {
     const out = rewritePropsObjectRef('const x = propsX.name', 'props')
     expect(out).toBe('const x = propsX.name')
   })
+
+  describe('an inner binding of the same name shadows the props object', () => {
+    // The client JS reads the component's props through `_p`. A callback
+    // parameter or local spelled like the props object belongs to its own
+    // binding inside its scope: renaming it too would make every `_p.<prop>`
+    // read the compiler emits inside that scope (a destructured prop, a
+    // forwarded child prop) read the parameter instead.
+    test('a loop row callback param keeps its name; the outer `_p` read stays outer', () => {
+      const code = 'mapArray(() => items(), el, (props) => String(props.id), (props) => props().label + _p.suffix)'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+
+    test('a row accessor `const props = () => __e.item` keeps its name', () => {
+      const code = 'const row = (__e) => {\n  const props = () => __e.item\n  return props().label + _p.suffix\n}'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+
+    test('a handler arrow param and a nested function param keep their names', () => {
+      const code = 'const bump = (props) => set(props.by * _p.step)\nfunction describe(props) { return props.label + _p.suffix }'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+
+    test('references outside the shadowing scope are still rewritten', () => {
+      const out = rewritePropsObjectRef('const a = props.x\nconst f = (props) => props.y\nconst b = props.z', 'props')
+      expect(out).toBe('const a = _p.x\nconst f = (props) => props.y\nconst b = _p.z')
+    })
+
+    test('a rest binding name is shadowed the same way', () => {
+      const out = rewritePropsObjectRef('const a = rest\nconst f = (rest) => rest.y', null, 'rest')
+      expect(out).toBe('const a = _p\nconst f = (rest) => rest.y')
+    })
+  })
+
+  describe('`var` is function-scoped', () => {
+    test('a `var props` in a nested block binds for the whole enclosing function', () => {
+      const code = 'const f = () => { if (c) { var props = { by: 2 } } return props.by }\nconst g = props.x'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { if (c) { var props = { by: 2 } } return props.by }\nconst g = _p.x')
+    })
+
+    test('a `for (var props …)` head binds after the loop, but not outside its function', () => {
+      const code = 'function f() { for (var props = 0; props < 3; props++) {} return props }\nconst g = props.x'
+      expect(rewritePropsObjectRef(code, null)).toBe('function f() { for (var props = 0; props < 3; props++) {} return props }\nconst g = _p.x')
+    })
+
+    test('a `var` inside a nested function does not leak into the outer one', () => {
+      const code = 'const f = () => { const h = () => { var props = 1; return props }; return props.x }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { const h = () => { var props = 1; return props }; return _p.x }')
+    })
+  })
+
+  describe('a parameter default does not see the body\'s declarations', () => {
+    test('a default reads the props object despite a same-named body `var`', () => {
+      const code = 'const f = (v = props.x) => { var props = 1; return v + props }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = (v = _p.x) => { var props = 1; return v + props }')
+    })
+
+    test('a default reads the props object despite a same-named body `let`', () => {
+      const code = 'function f(v = props.x) { let props = 1; return v + props }'
+      expect(rewritePropsObjectRef(code, null)).toBe('function f(v = _p.x) { let props = 1; return v + props }')
+    })
+
+    test('a default sees an earlier parameter of the same name, not the props object', () => {
+      const code = 'const f = (props, v = props.x) => v'
+      expect(rewritePropsObjectRef(code, null)).toBe(code)
+    })
+  })
+
+  describe('a class static block owns its `var`s', () => {
+    test('a read inside the block is local; a read after the class is the props object', () => {
+      const code = 'const f = () => { class C { static { var props = 1; C.p = props } }; return props.x }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { class C { static { var props = 1; C.p = props } }; return _p.x }')
+    })
+
+    test('a `var` in a method or a field-initializer arrow does not leak into the enclosing function', () => {
+      const code = 'const f = () => { class C { m() { var props = 1; return props } g = () => { var props = 2; return props } }; return props.x }'
+      expect(rewritePropsObjectRef(code, null)).toBe('const f = () => { class C { m() { var props = 1; return props } g = () => { var props = 2; return props } }; return _p.x }')
+    })
+  })
 })
