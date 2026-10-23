@@ -37,6 +37,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
+  type ArithmeticHelper,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -57,7 +58,12 @@ const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
   '+': 'add',
   '-': 'subtract',
   '*': 'multiply',
-  '/': 'divide',
+}
+
+/** The Perl runtime's name for each shared arithmetic helper (#3474). */
+const PERL_ARITHMETIC_HELPER: Readonly<Record<ArithmeticHelper, string>> = {
+  mod: 'mod',
+  div: 'divide',
 }
 
 /**
@@ -224,10 +230,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
     // operator at all, so string comparisons stay on `==` / `!=` here.
-    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    // `/` and `%` go through the runtime's JS division and remainder
+    // (#3474, #3574).
     const helper = arithmeticHelper(op)
-    if (helper) return `$bf.${helper}(${l}, ${r})`
-    // JS `+ - * /` over numbers goes through the runtime, which computes
+    if (helper) return `$bf.${PERL_ARITHMETIC_HELPER[helper]}(${l}, ${r})`
+    // JS `+ - *` over numbers goes through the runtime, which computes
     // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
     // yields Infinity / NaN for a zero divisor (#3454).
     const arithmetic = ARITHMETIC_HELPERS[op]
@@ -542,10 +549,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
     // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all
     // equality comparisons — string or numeric — stay on `==` / `!=`.
-    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    // `/` and `%` go through the runtime's JS division and remainder
+    // (#3474, #3574).
     const helper = arithmeticHelper(op)
-    if (helper) return `$bf.${helper}(${l}, ${r})`
-    // JS `+ - * /` over numbers goes through the runtime, which computes
+    if (helper) return `$bf.${PERL_ARITHMETIC_HELPER[helper]}(${l}, ${r})`
+    // JS `+ - *` over numbers goes through the runtime, which computes
     // the IEEE double JS does (a 64-bit IV or a wider NV would not) and
     // yields Infinity / NaN for a zero divisor (#3454).
     const arithmetic = ARITHMETIC_HELPERS[op]

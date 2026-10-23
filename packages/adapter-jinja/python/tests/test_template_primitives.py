@@ -68,6 +68,19 @@ class TemplatePrimitivesTest(unittest.TestCase):
         # A non-negative dividend keeps the plain int 0.
         self.assertEqual(math.copysign(1.0, float(self.bf.mod(4, -2))), 1.0)
 
+    def test_div_is_the_js_division(self):
+        # JS `/` keeps the fraction; a zero divisor gives an infinity signed
+        # by both operands, or NaN, where Python's `/` raises (#3474).
+        self.assertEqual(self.bf.div(7, 2), 3.5)
+        self.assertEqual(self.bf.div("6", 4), 1.5)
+        self.assertEqual(self.bf.div(1, 0), math.inf)
+        self.assertEqual(self.bf.div(-1, 0), -math.inf)
+        self.assertEqual(self.bf.div(1, -0.0), -math.inf)
+        self.assertEqual(self.bf.div(1, self.bf.mod(-4, 2)), -math.inf)
+        self.assertTrue(_is_nan(self.bf.div(0, 0)))
+        self.assertTrue(_is_nan(self.bf.div(float("nan"), 0)))
+        self.assertTrue(_is_nan(self.bf.div(None, 2)))
+
     def test_evaluator_division_by_a_signed_zero(self):
         # `1 / (-4 % 2)` in a callback body: the infinity takes the zero's sign.
         num = lambda v: {"kind": "literal", "value": v, "literalType": "number"}

@@ -8051,6 +8051,25 @@
         "text"
       ]
     },
+    "nullish-operand-division-remainder": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:/",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nullish-optional-member-attr": {
       "kinds": [
         "call",

@@ -8,11 +8,6 @@
       "expect": 9007199254740993,
       "reason": "PHP int arithmetic is exact (64-bit), not double-rounded"
     },
-    "div/zero divisor yields Infinity": {
-      "throws": true,
-      "exception": "DivisionByZeroError",
-      "reason": "PHP native / throws DivisionByZeroError on a zero divisor (PHP 8+)"
-    },
     "number/empty string coerces to 0": {
       "expect": { "$num": "NaN" },
       "reason": "deliberate: empty input must not silently zero downstream arithmetic (matches the Perl/Python ports)"

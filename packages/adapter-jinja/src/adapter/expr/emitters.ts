@@ -241,12 +241,13 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // Jinja's `==` / `!=` are value-equality operators that compare strings
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Same reasoning as Kolon.
-    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    // `/` and `%` go through the runtime's JS division and remainder
+    // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*', '/': '/',
+      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
   }
@@ -563,7 +564,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     const r = this.coerceNullishOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     // Jinja's `==` / `!=` handle both strings and numbers (unlike Perl's
     // numeric `==`), so all equality comparisons stay on `==` / `!=`.
-    // `%` goes through the runtime's JS remainder (#3474, #3574).
+    // `/` and `%` go through the runtime's JS division and remainder
+    // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     const opMap: Record<string, string> = {
