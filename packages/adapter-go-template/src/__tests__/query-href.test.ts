@@ -289,7 +289,7 @@ export function P(props: { base: string; tag: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('title="pre {{bf_query .Base (true) "tag" .Tag}}"')
+    expect(template).toContain('title="pre {{bf_text (bf_query .Base (true) "tag" .Tag)}}"')
     expect(template).not.toContain('.QueryHref')
   })
 

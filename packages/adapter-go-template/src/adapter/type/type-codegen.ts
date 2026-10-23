@@ -20,11 +20,9 @@ import type { GoEmitContext } from '../emit-context.ts'
  * keep the same representation in caller-provided and compiler-baked rows.
  * `owner` is the struct the field belongs to: an optional scalar field a
  * nullable signal seeds from (`nullableSeedStructFields`, #3323) is
- * `interface{}` so an omitted member stays `nil`, and a `number` field a seed
- * gives a fraction (`fractionalSeedStructFields`, #3438) is `float64`. */
+ * `interface{}` so an omitted member stays `nil`. */
 export function propertyInfoToGo(ctx: GoEmitContext, property: PropertyInfo, owner?: string): string {
   if (owner !== undefined && ctx.state.nullableSeedStructFields.has(`${owner}.${property.name}`)) return 'interface{}'
-  if (owner !== undefined && ctx.state.fractionalSeedStructFields.has(`${owner}.${property.name}`)) return 'float64'
   const base = typeInfoToGo(ctx, property.type)
   return property.optional && ctx.state.localStructFields.has(base) ? `*${base}` : base
 }
@@ -102,8 +100,7 @@ export function literalNumberValue(expr: ParsedExpr): number | null {
  * caller falling back to the text path for those sees identical results).
  */
 function inferGoTypeFromParsed(expr: ParsedExpr): string | null {
-  const n = literalNumberValue(expr)
-  if (n !== null) return Number.isInteger(n) ? 'int' : 'float64'
+  if (literalNumberValue(expr) !== null) return 'float64'
   if (expr.kind === 'literal') {
     if (expr.literalType === 'boolean') return 'bool'
     if (expr.literalType === 'string') return 'string'
@@ -116,11 +113,14 @@ function inferGoTypeFromParsed(expr: ParsedExpr): string | null {
 /**
  * Convert a `TypeInfo` to a Go type string.
  *
+ * A TS `number` is a JS double, so it is a Go `float64` whatever literal
+ * seeds or defaults it: an integral `2` is no evidence that the value is
+ * always an integer (`props.b ?? 2` with `b: 1.5`). The text and attribute
+ * sinks print a value that can be a `float64` through `bf_text`
+ * (`isKnownNonNumber`), which spells it as JS does (`3`, `1500000`).
+ *
  * @param defaultValue used to infer the type when `typeInfo.kind` is
- *   `unknown`, and to distinguish `int` vs `float64` when `kind` is
- *   `primitive`/`number` (#2168 math-methods/number-tofixed — a bare TS
- *   `number` blindly mapped to Go `int`, so a fractional signal initial
- *   value like `-7.6` silently truncated to the Go zero value)
+ *   `unknown`
  * @param preParsed the SAME default/initial value as `defaultValue`, already
  *   parsed to structure (`SignalInfo.parsed` / `ParamInfo.parsed`) — preferred
  *   over regexing `defaultValue`'s text when present. Callers with no
@@ -140,11 +140,8 @@ export function typeInfoToGo(
       switch (typeInfo.primitive) {
         case 'string':
           return 'string'
-        case 'number': {
-          const n = preParsed ? literalNumberValue(preParsed) : null
-          if (n !== null) return Number.isInteger(n) ? 'int' : 'float64'
-          return defaultValue !== undefined ? numberPrimitiveGoType(defaultValue) : 'int'
-        }
+        case 'number':
+          return 'float64'
         case 'boolean':
           return 'bool'
         default:
@@ -152,11 +149,9 @@ export function typeInfoToGo(
       }
     case 'array':
       if (typeInfo.elementType) {
-        // A `number[]` element is `interface{}`, not `int` (#3310): a scalar
-        // `number` falls back to `int`, but an array's elements come from the
-        // caller with no default to say int vs fraction, and `[]int` rejects
-        // `1.5` outright. An integer element still arrives as a Go int, so
-        // integer data prints and compares exactly as before.
+        // A `number[]` element is `interface{}` (#3310), so a Go caller's
+        // `[]interface{}{1, 1.5}` and JSON-decoded `float64`s both fit; the
+        // runtime helpers read either numeric kind.
         const element = collapseLiteralUnion(typeInfo.elementType)
         if (element.kind === 'primitive' && element.primitive === 'number') return '[]interface{}'
         return `[]${typeInfoToGo(ctx, typeInfo.elementType)}`
@@ -239,21 +234,6 @@ export function tsTypeStringToGo(ctx: GoEmitContext, tsType: string): string {
 }
 
 /**
- * Distinguish Go `int` vs `float64` for a `number`-typed field from the
- * literal source text of its default/initial value. TEXT FALLBACK: used only
- * when `typeInfoToGo`'s caller has no structural `ParsedExpr` for the same
- * value to pass as `preParsed` (see `inferGoTypeFromParsed`/`literalNumberValue`
- * above, which this mirrors on parsed structure). Falls back to `int` when
- * `value` isn't recognizably a bare numeric literal (e.g. a destructured
- * default that's itself an expression, `props.initial ?? 0`) — `int` remains
- * the blind fallback for `kind: 'primitive'`; only a literal fractional value
- * (`-7.6`) is positive enough evidence to widen to `float64`.
- */
-function numberPrimitiveGoType(value: string): string {
-  return /^-?\d+\.\d+$/.test(value) ? 'float64' : 'int'
-}
-
-/**
  * Infer a Go type from a JS value literal's source TEXT; `interface{}` when
  * unrecognized. TEXT FALLBACK: mirrors `inferGoTypeFromParsed` above on raw
  * text, used only when `typeInfoToGo`'s caller has no structural `ParsedExpr`
@@ -261,8 +241,7 @@ function numberPrimitiveGoType(value: string): string {
  */
 export function inferTypeFromValue(value: string): string {
   if (value === 'true' || value === 'false') return 'bool'
-  if (/^-?\d+$/.test(value)) return 'int'
-  if (/^-?\d+\.\d+$/.test(value)) return 'float64'
+  if (/^-?\d+(\.\d+)?$/.test(value)) return 'float64'
   if ((value.startsWith("'") && value.endsWith("'")) ||
       (value.startsWith('"') && value.endsWith('"'))) {
     return 'string'

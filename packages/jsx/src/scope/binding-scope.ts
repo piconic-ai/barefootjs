@@ -40,6 +40,14 @@ export type ScopeBindingSource = 'item' | 'index' | 'destructure' | 'preamble' |
 export interface ScopeBinding {
   readonly source: ScopeBindingSource
   readonly stringValue?: boolean
+  /**
+   * The row a `'item'` / `'destructure'` binding reads: the loop's item type
+   * and the accessor path from the item to the binding (empty for the plain
+   * item). Absent when the loop has no item type or the binding is a rest
+   * element. Lets a typed backend resolve the type of a row read
+   * (`row.id`, a destructured `id`) at the read.
+   */
+  readonly row?: { readonly itemType: LoopValueType; readonly segments: readonly RowPathSegment[] }
 }
 
 export interface ScopeFrame {
@@ -56,15 +64,31 @@ export interface ScopeFrame {
 export interface LoopBindingSource {
   readonly param: string
   readonly itemType?: LoopValueType | null
+  /**
+   * The item type a binding's `row` carries, when the caller knows more than
+   * `itemType` (which is scalar evidence only): a backend that resolves an
+   * object row's type from the loop's array source. Defaults to `itemType`.
+   */
+  readonly rowType?: LoopValueType | null
   readonly index?: string | null
-  readonly paramBindings?: readonly { readonly name: string }[]
+  readonly paramBindings?: readonly {
+    readonly name: string
+    readonly segments?: readonly RowPathSegment[]
+    readonly rest?: unknown
+  }[]
   readonly preamble?: { readonly declaredNames: readonly string[] } | null
 }
 
-interface LoopValueType {
+/** Structural pick of `TypeInfo` (`packages/jsx/src/types.ts`). */
+export interface LoopValueType {
   readonly primitive?: string
   readonly unionTypes?: readonly LoopValueType[]
 }
+
+/** Structural copy of `LoopBindingPathSegment` (`packages/jsx/src/types.ts`). */
+export type RowPathSegment =
+  | { readonly kind: 'field'; readonly key: string; readonly isIdent: boolean }
+  | { readonly kind: 'index'; readonly index: number }
 
 function isStringLoopValue(type: LoopValueType): boolean {
   return type.primitive === 'string' ||
@@ -121,12 +145,19 @@ export class BindingScope {
    */
   enterLoopRow(loop: LoopBindingSource): BindingScope {
     const bindings = new Map<string, ScopeBinding>()
+    const rowType = loop.rowType ?? loop.itemType
     if (loop.paramBindings && loop.paramBindings.length > 0) {
-      for (const b of loop.paramBindings) bindings.set(b.name, { source: 'destructure' })
+      for (const b of loop.paramBindings) {
+        bindings.set(b.name, {
+          source: 'destructure',
+          ...(rowType && b.segments && b.rest === undefined ? { row: { itemType: rowType, segments: b.segments } } : {}),
+        })
+      }
     } else {
       bindings.set(loop.param, {
         source: 'item',
         ...(loop.itemType ? { stringValue: isStringLoopValue(loop.itemType) } : {}),
+        ...(rowType ? { row: { itemType: rowType, segments: [] } } : {}),
       })
     }
     if (loop.index != null) bindings.set(loop.index, { source: 'index' })

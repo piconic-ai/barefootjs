@@ -5,7 +5,7 @@
  * generators and the nillable-field set so they can't drift.
  */
 
-import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
+import type { ComponentIR, IRMetadata, ParsedExpr } from '@barefootjs/jsx'
 import {
   arithmeticOperandCoercion,
   asCallbackMethodCall,
@@ -71,97 +71,7 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
     }
   }
 
-  // A bare `number`-typed prop with no other evidence resolves to Go `int`
-  // (`typeInfoToGo`'s blind default) — but `.toFixed()` can only be called on
-  // a real JS number, and the runtime value it formats (e.g. a price, 19.5)
-  // may be fractional, which a Go `int` struct field can't hold (assigning a
-  // fractional untyped constant to it is a compile error: #2168
-  // number-tofixed). Unlike a signal's fractional LITERAL initial value
-  // (rescued by `typeInfoToGo`'s own `defaultValue` consultation — the
-  // math-methods half of the same divergence), a prop with no default has no
-  // literal to read the fraction off of; the usage of `.toFixed()` itself is
-  // the only available evidence, so it's collected by walking the JSX tree.
-  for (const propName of collectToFixedPropNames(ir.root, ctx.state.propsObjectName)) {
-    const param = ir.metadata.propsParams.find(p => p.name === propName)
-    if (!param) continue
-    const resolved = overrides.get(propName) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
-    if (resolved === 'int') {
-      overrides.set(propName, 'float64')
-    }
-  }
-
-  // A caller in the file passes this prop a value that can be fractional
-  // (`collectFractionalChildProps`, #3459): `int` can't hold it either.
-  for (const param of ir.metadata.propsParams) {
-    if (!ctx.state.fractionalChildProps.has(`${ir.metadata.componentName}.${param.sourceName ?? param.name}`)) continue
-    const resolved = overrides.get(param.name) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
-    if (resolved === 'int') overrides.set(param.name, 'float64')
-  }
-
   return overrides
-}
-
-/**
- * Names of identifiers used as the receiver of `.toFixed(...)` anywhere in
- * the component's JSX tree (text expressions, conditions, and attribute
- * values). Deliberately narrow — `.toFixed()` is the one number-shape usage
- * that needs this rescue (see `buildPropTypeOverrides` above); it isn't a
- * general "infer number-ness from usage" walker.
- *
- * KNOWN LIMITATION: only a DIRECT prop receiver in the JSX tree is caught
- * (`{price.toFixed(2)}`, `{props.price?.toFixed(2)}`, also under `??`). A bare `number` prop with no default is
- * still silently typed `int` — and hits the exact same `go run` compile
- * failure (#2168 number-tofixed) on a fractional runtime value — if the
- * fraction only surfaces indirectly (`.toFixed()` inside a signal's
- * initial value or a memo's computation, reached via `ir.metadata` rather
- * than `ir.root`) or via any OTHER fraction-producing operation on the
- * same bare prop (division, `Math.round`/`Math.floor`, etc. — none of
- * which carry the same unambiguous "this must be a real JS number" signal
- * `.toFixed()` does). Widening this walker to those cases is a real,
- * currently-unaddressed gap, not a hypothetical one — flag it rather than
- * treating a future occurrence as a fresh regression.
- */
-function collectToFixedPropNames(root: IRNode, propsObject: string | null | undefined): Set<string> {
-  const names = new Set<string>()
-  const checkExpr = (expr: ParsedExpr | undefined) => {
-    if (!expr) return
-    if (expr.kind === 'array-method' && expr.method === 'toFixed') {
-      const recv = expr.object
-      if (recv.kind === 'identifier') names.add(recv.name)
-      else if (recv.kind === 'member' && !recv.computed && recv.object.kind === 'identifier' && recv.object.name === propsObject) {
-        names.add(recv.property)
-      }
-    }
-    // An optional-chained call `props.x?.toFixed(2)` reaches here as a
-    // nullish guard around the call (#3435), and `??` wraps it again.
-    if (expr.kind === 'conditional') {
-      checkExpr(expr.consequent)
-      checkExpr(expr.alternate)
-    }
-    if (expr.kind === 'logical') {
-      checkExpr(expr.left)
-      checkExpr(expr.right)
-    }
-  }
-  const walk = (node: IRNode | null | undefined) => {
-    if (!node) return
-    if (node.type === 'expression') checkExpr(node.parsed)
-    if (node.type === 'conditional') {
-      checkExpr(node.parsedCondition)
-      walk(node.whenTrue)
-      walk(node.whenFalse)
-    }
-    if (node.type === 'element') {
-      for (const attr of node.attrs) {
-        if (attr.value.kind === 'expression') checkExpr(attr.value.parsed)
-      }
-    }
-    if ('children' in node && Array.isArray(node.children)) {
-      node.children.forEach(walk)
-    }
-  }
-  walk(root)
-  return names
 }
 
 /**
@@ -571,8 +481,8 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
  * reads as `undefined` (`props.n * 2`, `n + 1`, `-n` with `n?: number`)
  * anywhere in the component's element tree (#3533). The shared decision
  * (`arithmeticOperandCoercion`) routes the operand through `bf_number`,
- * which maps nil to `NaN` as JS `ToNumber(undefined)` does. A concrete `int`
- * field reads an omitted prop as `0`, so these props take the same
+ * which maps nil to `NaN` as JS `ToNumber(undefined)` does. A concrete
+ * `float64` field reads an omitted prop as `0`, so these props take the same
  * `interface{}` flip as `??`/attribute/text consumption
  * (`resolvePropGoType`). Same shadowing caveat as the sibling collectors: a
  * same-named loop/callback param can misattribute, making the flip merely

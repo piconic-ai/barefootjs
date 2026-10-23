@@ -334,13 +334,13 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // contract: `inputLines` complete the caller's Input before the
     // constructor runs, `propsLines` fill a handler-populated Props slice
     // after it — see buildDynamicChildLoopSeeding's docstring.
-    const { inputLines, propsLines, needsFmt } = buildDynamicChildLoopSeeding(ir, template, goTypes, props)
+    const { inputLines, propsLines } = buildDynamicChildLoopSeeding(ir, template, goTypes, props)
 
     // main.go — render program
     const mainGo = `package main
 
 import (
-${needsFmt ? '\t"fmt"\n' : ''}	"html/template"
+	"html/template"
 	"math/rand"
 	"os"
 
@@ -837,7 +837,7 @@ function buildDynamicChildLoopSeeding(
   template: string,
   goTypes: string,
   props?: Record<string, unknown>,
-): { inputLines: string[]; propsLines: string[]; needsFmt: boolean } {
+): { inputLines: string[]; propsLines: string[] } {
   const signalGetters = new Set(ir.metadata.signals.map(s => s.getter))
   // A memo's seeded Go field is a datum source just like a signal's, when it
   // is a typed slice (an untyped memo's `interface{}` field can't be ranged).
@@ -850,7 +850,6 @@ function buildDynamicChildLoopSeeding(
   const propsParams = ir.metadata.propsParams
   const inputLines: string[] = []
   const propsLines: string[] = []
-  let needsFmt = false
   const rowsReserved = reservedRowsFieldNames(
     findNestedComponents(ir.root).map(n => n.name),
     [...ir.metadata.signals.map(s => s.getter), ...ir.metadata.memos.map(m => m.name)],
@@ -930,12 +929,11 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t\tprops.${rowsField}[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
     const keyField = loopKeyToGoRowExpr(nested.loopKey, row)
     if (keyField) {
-      propsLines.push(`\t\tprops.${rowsField}[i].BfDataKey = fmt.Sprint(${keyField})`)
-      needsFmt = true
+      propsLines.push(`\t\tprops.${rowsField}[i].BfDataKey = bf.String(${keyField})`)
     }
     propsLines.push(`\t}`)
   }
-  return { inputLines, propsLines, needsFmt }
+  return { inputLines, propsLines }
 }
 
 /** Whether the generated `<Component>Input` struct declares `field`. */

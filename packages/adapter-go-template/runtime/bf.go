@@ -69,6 +69,7 @@ func FuncMap() template.FuncMap {
 		"bf_pad_start":   PadStart,
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
+		"bf_text":        Text,
 		"bf_raw_html":    RawHTML,
 		"bf_ternary":     Ternary,
 		"bf_truthy":      Truthy,
@@ -833,8 +834,9 @@ func StyleToCss(v any) (string, bool) {
 	}
 	if rv.Kind() != reflect.Map {
 		// Non-object: stringify and return as-is, matching the JS
-		// `typeof value !== 'object'` branch.
-		s := fmt.Sprint(v)
+		// `typeof value !== 'object'` branch. `String` spells a float64 (a
+		// TS `number` field) as JS does.
+		s := String(v)
 		if s == "" {
 			return "", false
 		}
@@ -862,7 +864,7 @@ func StyleToCss(v any) (string, bool) {
 			val = val.Elem()
 		}
 		prop := toAttrName(k)
-		parts = append(parts, fmt.Sprintf("%s:%v", prop, val.Interface()))
+		parts = append(parts, prop+":"+String(val.Interface()))
 	}
 	if len(parts) == 0 {
 		return "", false
@@ -980,10 +982,11 @@ func SpreadAttrs(bag any) template.HTMLAttr {
 			parts = append(parts, fmt.Sprintf(`style="%s"`, template.HTMLEscapeString(css)))
 			continue
 		}
-		// Stringify and escape. fmt.Sprint handles numbers, bools-as-
-		// strings, and arbitrary stringer types the same way the JS
-		// `String(value)` coercion does for the analogous cases.
-		s := fmt.Sprint(v.Interface())
+		// Stringify and escape. `String` spells numbers as JS does (a
+		// float64 TS `number` field never in exponent form below 1e21) and
+		// otherwise prints bools and arbitrary stringer types the way the
+		// JS `String(value)` coercion does for the analogous cases.
+		s := String(v.Interface())
 		parts = append(parts, fmt.Sprintf(`%s="%s"`, toAttrName(key), template.HTMLEscapeString(s)))
 	}
 	if len(parts) == 0 {
@@ -1448,11 +1451,13 @@ func Contains(recv any, substr string) bool {
 // ignored (JS would also return every piece — its ToUint32 wrap makes
 // the limit effectively unbounded). The no-separator form is handled by
 // the adapter (it emits `bf_arr` for the whole-string single element).
-func Split(recv any, sep string, limit ...int) []any {
+func Split(recv any, sep string, limit ...any) []any {
 	s := String(recv)
 	parts := strings.Split(s, sep)
-	if len(limit) > 0 && limit[0] >= 0 && limit[0] < len(parts) {
-		parts = parts[:limit[0]]
+	if len(limit) > 0 {
+		if l := integerArg(limit[0]); l >= 0 && l < len(parts) {
+			parts = parts[:l]
+		}
 	}
 	out := make([]any, len(parts))
 	for i, p := range parts {
@@ -1466,10 +1471,10 @@ func Split(recv any, sep string, limit ...int) []any {
 // true (JS parity). The optional `position` re-anchors the test to start
 // at that index (clamped to `[0, len]` so it never panics), matching JS
 // `"abc".startsWith("b", 1) === true`.
-func StartsWith(recv any, prefix string, position ...int) bool {
+func StartsWith(recv any, prefix string, position ...any) bool {
 	s := String(recv)
 	if len(position) > 0 {
-		p := position[0]
+		p := integerArg(position[0])
 		if p < 0 {
 			p = 0
 		}
@@ -1486,10 +1491,10 @@ func StartsWith(recv any, prefix string, position ...int) bool {
 // true (JS parity). The optional `endPosition` treats the string as if
 // it were only that many bytes long (clamped to `[0, len]`), matching JS
 // `"abc".endsWith("b", 2) === true`.
-func EndsWith(recv any, suffix string, endPosition ...int) bool {
+func EndsWith(recv any, suffix string, endPosition ...any) bool {
 	s := String(recv)
 	if len(endPosition) > 0 {
-		e := endPosition[0]
+		e := integerArg(endPosition[0])
 		if e < 0 {
 			e = 0
 		}
@@ -1529,8 +1534,9 @@ func ReplaceAll(recv any, old, new string) string {
 // count and `strings.Repeat` panics, so a negative count clamps to the
 // empty string — SSR templates degrade rather than crash the render.
 // A zero count is the empty string (JS parity).
-func Repeat(recv any, n int) string {
+func Repeat(recv any, count any) string {
 	s := String(recv)
+	n := integerArg(count)
 	if n <= 0 {
 		return ""
 	}
@@ -1571,23 +1577,23 @@ func padTo(s string, target int, pad string, atStart bool) string {
 
 // PadStart lowers `String.prototype.padStart(target, pad?)` (#1448 Tier
 // B). The pad string defaults to a single space when omitted.
-func PadStart(recv any, target int, pad ...string) string {
+func PadStart(recv any, target any, pad ...string) string {
 	s := String(recv)
 	p := " "
 	if len(pad) > 0 {
 		p = pad[0]
 	}
-	return padTo(s, target, p, true)
+	return padTo(s, integerArg(target), p, true)
 }
 
 // PadEnd lowers `String.prototype.padEnd(target, pad?)` (#1448 Tier B).
-func PadEnd(recv any, target int, pad ...string) string {
+func PadEnd(recv any, target any, pad ...string) string {
 	s := String(recv)
 	p := " "
 	if len(pad) > 0 {
 		p = pad[0]
 	}
-	return padTo(s, target, p, false)
+	return padTo(s, integerArg(target), p, false)
 }
 
 // Join concatenates elements of a slice with sep. Accepts both
@@ -1624,6 +1630,22 @@ func Ternary(cond bool, a, b any) any {
 		return a
 	}
 	return b
+}
+
+// Text is the text and attribute sink for a value whose Go type the
+// compiler cannot pin down: a float64 (any TS `number` field) is spelled
+// as JS `String(n)` does (`1500000`, not `fmt`'s `1.5e+06`), and every
+// other value is returned unchanged, so html/template prints it exactly as
+// it would print the bare value (a `template.HTML` stays trusted markup, a
+// nil stays nil, a string is escaped as before).
+func Text(v any) any {
+	switch n := v.(type) {
+	case float64:
+		return numberString(n)
+	case float32:
+		return numberString(float64(n))
+	}
+	return v
 }
 
 // String returns the string form of v. Mirrors JS `String(v)` for
@@ -1767,7 +1789,8 @@ func Abs(v any) float64 {
 // is "3"); bare `fmt.Sprintf("%.*f")` rounds half-to-even ("2"), so we
 // scale, round with `Floor(x + 0.5)` (matching `Round`), then format
 // the exact multiple. #1897.
-func ToFixed(v any, digits int) string {
+func ToFixed(v any, fractionDigits any) string {
+	digits := integerArg(fractionDigits)
 	if digits < 0 {
 		digits = 0
 	}
@@ -1928,7 +1951,8 @@ func Len(v any) int {
 // At returns the element at index i from a slice.
 // Supports negative indices (e.g., -1 for last element).
 // Returns nil if index is out of bounds.
-func At(items any, index int) any {
+func At(items any, at any) any {
+	index := integerArg(at)
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
@@ -2075,7 +2099,7 @@ func Concat(a, b any) []any {
 //   - end < 0            → length + end
 //   - start < 0 after clamp → 0
 //   - end > length       → length
-func clampSliceRange(length, start int, end []int) (int, int) {
+func clampSliceRange(length, start int, end []any) (int, int) {
 	if start < 0 {
 		start = length + start
 	}
@@ -2088,7 +2112,7 @@ func clampSliceRange(length, start int, end []int) (int, int) {
 
 	stop := length
 	if len(end) > 0 {
-		stop = end[0]
+		stop = integerArg(end[0])
 		if stop < 0 {
 			stop = length + stop
 		}
@@ -2118,8 +2142,9 @@ func clampSliceRange(length, start int, end []int) (int, int) {
 // (after clamping) returns an empty result for either receiver.
 //
 // Any other receiver kind returns an empty `[]any`.
-func Slice(items any, start int, end ...int) any {
+func Slice(items any, begin any, end ...any) any {
 	v := reflect.ValueOf(items)
+	start := integerArg(begin)
 
 	if v.Kind() == reflect.String {
 		runes := []rune(v.String())
@@ -4341,6 +4366,27 @@ func toInt(v any) int {
 	default:
 		return 0
 	}
+}
+
+// integerArg reads an integer argument of a JS method (`slice`'s start,
+// `repeat`'s count, `toFixed`'s digits, …) as `ToIntegerOrInfinity` does:
+// a TS `number` reaches the template as a float64 field, so a fraction
+// truncates toward zero, NaN is 0, and an infinity clamps to a bound past
+// any length. Go ints pass through.
+func integerArg(v any) int {
+	if isIntLike(v) {
+		return toInt(v)
+	}
+	n := Number(v)
+	switch {
+	case math.IsNaN(n):
+		return 0
+	case n >= 1<<53:
+		return 1 << 53
+	case n <= -(1 << 53):
+		return -(1 << 53)
+	}
+	return int(n)
 }
 
 func isIntLike(v any) bool {

@@ -322,7 +322,7 @@ export function List(props: { items: { id: string; label: string }[] }) {
     const { types, bf101 } = compile(source('label={item.label}'))
     expect(bf101).toEqual([])
     expect(types).toContain('for i, item := range in.Items {')
-    expect(types).toContain('badges[i].BfDataKey = fmt.Sprint(item.ID)')
+    expect(types).toContain('badges[i].BfDataKey = bf.String(item.ID)')
     expect(types).not.toContain('Badges []BadgeInput')
   })
 
@@ -330,7 +330,7 @@ export function List(props: { items: { id: string; label: string }[] }) {
     const { types, bf101 } = compile(source('id={item.id} label={item.label.toUpperCase()}'))
     expect(bf101).toEqual([])
     expect(types).toContain('Badges []BadgeInput')
-    expect(types).toContain('badges[i].BfDataKey = fmt.Sprint(item.ID)')
+    expect(types).toContain('badges[i].BfDataKey = bf.String(item.ID)')
   })
 
   test('a computed prop and no prop carrying the key is refused', () => {

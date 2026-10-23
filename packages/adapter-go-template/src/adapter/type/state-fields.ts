@@ -20,7 +20,7 @@
  *   the field type and the seed consult.
  */
 
-import type { ComponentIR, MemoInfo, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
+import type { ComponentIR, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -31,7 +31,7 @@ import { propsFieldName } from '../lib/props-field-names.ts'
 import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
-import { isBoxedNumericMemoBody, isEvaluatedMemo, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
+import { isBoxedNumericMemoBody, isIntegerValued, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
 import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
@@ -127,48 +127,38 @@ export function signalFieldGoType(
 /**
  * The Go number type of an arithmetic seed over numeric props and literals
  * (`props.n * 2`, `n - 1`), so its evaluated value (#3519) is stored as a
- * number rather than an `interface{}` holding a float64, which the template
- * would print in Go's exponent notation. `float64` when an operand's
- * resolved field type or a literal is fractional, else `int`: a product or
- * difference of integers is an integer. Null for any other seed. `+` (which
- * may concatenate), `/` (a fraction) and `%` (`NaN` for a zero divisor) are
- * left untyped.
+ * `float64` rather than an `interface{}`. Null for any other seed. `+`
+ * (which may concatenate), `/` (a fraction) and `%` (`NaN` for a zero
+ * divisor) are left untyped.
  */
 function numericArithmeticSeedGoType(
   ctx: GoEmitContext,
   parsed: ParsedExpr | undefined,
   propsParamMap: ReadonlyMap<string, StatePropParam>,
-): 'int' | 'float64' | null {
-  let float = false
+): 'float64' | null {
   const leaf = (e: ParsedExpr): boolean => {
     // A defaulted optional prop (`props.n ?? 1`), whose field is nillable
     // for the `??` (#3532), is a number when both sides are.
     if (e.kind === 'logical' && e.op === '??') return leaf(e.left) && leaf(e.right)
-    if (e.kind === 'literal') {
-      if (typeof e.value !== 'number') return false
-      if (!Number.isInteger(e.value)) float = true
-      return true
-    }
+    if (e.kind === 'literal') return typeof e.value === 'number'
     const name =
       e.kind === 'identifier' ? e.name :
       e.kind === 'member' && e.object.kind === 'identifier' && e.object.name === ctx.state.propsObjectName ? e.property :
       null
     const prop = name === null ? undefined : propsParamMap.get(name)
     if (!prop) return false
-    // The prop's resolved field type: `.toFixed()` or a fractional caller
-    // widens an `int` prop to `float64` (`buildPropTypeOverrides`).
+    // The prop's resolved field type, a signal's override included.
     const goType = ctx.state.propTypeOverrides.get(prop.name) ?? typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed)
-    if (goType === 'float64') float = true
-    return goType === 'int' || goType === 'float64'
+    return goType === 'float64'
   }
   const visit = (e: ParsedExpr): boolean => {
     if (e.kind === 'binary' && (e.op === '*' || e.op === '-')) return visit(e.left) && visit(e.right)
-    // `Math.max` / `Math.min` over numbers is a number of the same kind (#3540).
+    // `Math.max` / `Math.min` over numbers is a number (#3540).
     if (isMathMinMax(e)) return e.args.length > 0 && e.args.every(visit)
     return leaf(e)
   }
   if (!parsed || (parsed.kind !== 'binary' && !isMathMinMax(parsed)) || !visit(parsed)) return null
-  return float ? 'float64' : 'int'
+  return 'float64'
 }
 
 /**
@@ -235,11 +225,10 @@ function isNumericArithmeticMemo(
  *    doesn't trip it into `int`. The analyzer classified the body shape
  *    from the arrow AST (`MemoInfo.bodyIsTemplateLiteral`).
  * 3. Arithmetic whose SSR result is `NaN` (#3390) needs a field that can
- *    hold a float64 NaN, whatever the declared `number` type would infer
- *    (`int`).
+ *    hold a float64 NaN.
  * 4. The shared arithmetic runtime returns an integer or float as needed;
  *    keep its boxed result rather than truncating it to an int field.
- * 5. Arithmetic over a number-typed dependency signal → `int`.
+ * 5. Arithmetic over a number-typed dependency signal → `float64`.
  * 6. A string-literal-branch ternary memo (`directionClasses`) is a string
  *    even though its condition has `===`. Decided before the boolean
  *    heuristic so it's typed `string` (zero value `""`), not `interface{}`
@@ -252,8 +241,9 @@ function isNumericArithmeticMemo(
  *    wins.
  * 8. Block-body memo returning a module-const array: the constant's array
  *    type instead of the memo's generic `object`.
- * 9. The memo's declared type. A `number` memo the evaluator computes holds
- *    a boxed JS number, which an `int` field would truncate.
+ * 9. The memo's declared type. A `number` memo whose body is an integer
+ *    whatever its inputs (`items().length`, `isIntegerValued`) keeps the
+ *    `int` its Go value (`bf.Length`) has.
  */
 export function inferMemoType(
   ctx: GoEmitContext,
@@ -266,7 +256,7 @@ export function inferMemoType(
   if (memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) return 'interface{}'
   const propsParams = [...propsParamMap.values()]
   if (isBoxedNumericMemoBody(ctx, memo.parsed, signals, propsParams)) return 'interface{}'
-  if (isNumericArithmeticMemo(ctx, memo, signals, propsParamMap)) return 'int'
+  if (isNumericArithmeticMemo(ctx, memo, signals, propsParamMap)) return 'float64'
   const declaredIsUnknown = typeInfoToGo(ctx, memo.type) === 'interface{}'
   if (declaredIsUnknown && isStringTernaryMemo(ctx, memo.parsed)) return 'string'
   if (declaredIsUnknown && isBooleanMemo(ctx, memo, signals, propsParamMap)) return 'bool'
@@ -275,9 +265,7 @@ export function inferMemoType(
     return typeInfoToGo(ctx, blockReturn.constType)
   }
   const declared = typeInfoToGo(ctx, memo.type)
-  if (declared === 'int' && isEvaluatedMemo(ctx, memo as MemoInfo, signals, propsParams)) {
-    return 'interface{}'
-  }
+  if (declared === 'float64' && memo.parsed && isIntegerValued(memo.parsed)) return 'int'
   return declared
 }
 
