@@ -13,12 +13,12 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
+import { runAdapterConformanceTests, findLimitation } from '@barefootjs/adapter-tests'
 import { XslateAdapter } from '../adapter'
 import { renderXslateComponent, XslateNotAvailableError } from '../test-render'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
-import { renderDivergences } from '../render-divergences'
+import { renderDivergences, dataPointDivergences } from '../render-divergences'
 
 runAdapterConformanceTests({
   name: 'xslate',
@@ -63,7 +63,7 @@ runAdapterConformanceTests({
     // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>(),
+  skipDataPoints: new Set(Object.keys(dataPointDivergences)),
   onRenderError: (err, id) => {
     if (err instanceof XslateNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -94,6 +94,18 @@ function compileAndGenerate(source: string) {
 // =============================================================================
 // Xslate-Specific Tests
 // =============================================================================
+
+describe('dataPointDivergences', () => {
+  for (const [point, { limitation }] of Object.entries(dataPointDivergences)) {
+    test(`[${point}] cites an existing limitation`, () => {
+      expect(
+        findLimitation(limitation),
+        `'${point}' cites limitation '${limitation}', which is not in the registry: ` +
+          'if it graduated, the data point renders like Hono now, so delete this skip too',
+      ).toBeDefined()
+    })
+  }
+})
 
 describe('XslateAdapter - fragment scope comment begin/end pairing (#2289)', () => {
   // A fragment-rooted component's scope comment needs a paired END marker

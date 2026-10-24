@@ -157,7 +157,7 @@ subtest 'index_of / last_index_of — array value-equality search' => sub {
     is $bf->index_of($arr, 'd'),          4,  'last element';
     is $bf->index_of($arr, 'z'),         -1,  'absent → -1';
     is $bf->index_of([], 'a'),           -1,  'empty array → -1';
-    is $bf->index_of('not an array', 'a'), -1, 'non-array → -1';
+    is $bf->index_of({a => 1}, 'a'),     -1,  'hash ref → -1';
 
     is $bf->last_index_of($arr, 'b'),     3,  'duplicated value: LAST match (non-final position)';
     is $bf->last_index_of($arr, 'a'),     0,  'unique value still found';
@@ -184,8 +184,50 @@ subtest 'at — array indexed access with negative-index support' => sub {
     is $bf->at($arr, -4),  undef, 'out of bounds (negative) → undef';
     is $bf->at([],    0),  undef, 'empty array → undef';
     is $bf->at(undef, 0),  undef, 'undef receiver → undef';
-    is $bf->at('not array', 0), undef, 'scalar receiver → undef';
     is $bf->at({a => 1},   0),  undef, 'hash ref receiver → undef';
+};
+
+# String receivers (#3613) count UTF-16 code units, like JS: '本' is one
+# unit, '😀' is two.
+subtest 'string index methods count UTF-16 code units' => sub {
+    is $bf->index_of('banana', 'an'),      1,  'indexOf ascii';
+    is $bf->index_of('日本語', '本'),       1,  'indexOf BMP';
+    is $bf->index_of('a😀b', 'b'),          3,  'indexOf after astral';
+    is $bf->index_of('abc', 'z'),          -1,  'indexOf missing';
+    is $bf->index_of('abc', ''),            0,  'indexOf empty needle';
+    is $bf->index_of('ab', 'abc'),         -1,  'indexOf needle longer than receiver';
+    is $bf->last_index_of('banana', 'an'),  3,  'lastIndexOf ascii';
+    is $bf->last_index_of('a😀b😀', '😀'),   4,  'lastIndexOf astral';
+    is $bf->last_index_of('abc', ''),       3,  'lastIndexOf empty needle';
+    is $bf->last_index_of('aaa', 'aa'),     1,  'lastIndexOf overlapping';
+    is $bf->at('日本語', -1), '語',  'at BMP';
+    is $bf->at('a😀b', -1),   'b',   'at after astral (negative)';
+    is $bf->at('a😀b', 3),    'b',   'at after astral (positive)';
+    is $bf->at('abc', 3),     undef, 'at out of range';
+    is $bf->at('', 0),        undef, 'at empty string';
+    is $bf->at('a😀b', 1),    "\x{FFFD}", 'at half of a surrogate pair → U+FFFD';
+    ok  $bf->starts_with('日本語', '本', 1), 'startsWith BMP position';
+    ok  $bf->starts_with('a😀b', 'b', 3),   'startsWith position after astral';
+    ok !$bf->starts_with('a😀b', 'b', 2),   'startsWith position inside pair';
+    ok  $bf->ends_with('日本語', '本', 2),   'endsWith BMP endPosition';
+    ok  $bf->ends_with('a😀b', '😀', 3),     'endsWith astral endPosition';
+    ok !$bf->ends_with('a😀b', 'a', 2),     'endsWith endPosition inside pair';
+};
+
+# ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
+# ±Infinity is out of range, fractions truncate toward zero.
+subtest 'string index methods read non-finite positions as ToIntegerOrInfinity' => sub {
+    my $inf = 9**9**9;
+    my $nan = $inf - $inf;
+    is $bf->at('abc', $nan),   'a',   'at(NaN) is at(0)';
+    is $bf->at('abc', $inf),   undef, 'at(Infinity) is out of range';
+    is $bf->at('abc', -$inf),  undef, 'at(-Infinity) is out of range';
+    is $bf->at('abc', 1.9),    'b',   'at(1.9) truncates';
+    is $bf->at('abc', -1.5),   'c',   'at(-1.5) truncates toward zero';
+    ok  $bf->starts_with('abc', 'a', $nan), 'startsWith NaN position is 0';
+    ok  $bf->starts_with('abc', '', $inf),  'startsWith Infinity position clamps';
+    ok !$bf->ends_with('abc', 'c', $nan),   'endsWith NaN endPosition is 0';
+    ok  $bf->ends_with('abc', 'c', $inf),   'endsWith Infinity endPosition clamps';
 };
 
 # `Array.prototype.concat(other)` — merges two arrays in order

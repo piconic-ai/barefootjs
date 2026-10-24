@@ -54,10 +54,10 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   pad_end: (s: string, target: number, pad?: string) => s.padEnd(target, pad),
   split: (s: string, sep: string, limit?: number) => s.split(sep, limit),
   len: (v: string | unknown[]) => v.length,
-  at: (a: unknown[], i: number) => a.at(i),
+  at: (a: string | unknown[], i: number) => a.at(i),
   includes: (recv: string | unknown[], x: never) => recv.includes(x),
-  index_of: (a: unknown[], x: unknown) => a.indexOf(x),
-  last_index_of: (a: unknown[], x: unknown) => a.lastIndexOf(x),
+  index_of: (a: string | unknown[], x: never) => a.indexOf(x),
+  last_index_of: (a: string | unknown[], x: never) => a.lastIndexOf(x),
   concat: (a: unknown[], b: unknown[]) => a.concat(b),
   slice: (a: string | unknown[], start: number, end?: number) => a.slice(start, end),
   reverse: (a: unknown[]) => [...a].reverse(),
@@ -436,6 +436,9 @@ export const cases: HelperCase[] = [
   { fn: 'starts_with', args: ['abc', 'b', 1], note: 'position re-anchors the test' },
   { fn: 'starts_with', args: ['abc', 'a', 1], note: 'position moves past the match' },
   { fn: 'starts_with', args: ['abc', '', 5], note: 'position beyond length clamps' },
+  // Positions count UTF-16 code units (#3613): '本' is one unit, '😀' two.
+  { fn: 'starts_with', args: ['日本語', '本', 1], note: 'position counts a BMP character as one unit' },
+  { fn: 'starts_with', args: ['a😀b', 'b', 3], note: 'position counts an astral character as two units' },
 
   { fn: 'ends_with', args: ['hello', 'lo'], note: 'matching suffix' },
   { fn: 'ends_with', args: ['hello', 'he'], note: 'non-suffix substring' },
@@ -443,6 +446,8 @@ export const cases: HelperCase[] = [
   { fn: 'ends_with', args: ['abc', 'b', 2], note: 'endPosition shortens the receiver' },
   { fn: 'ends_with', args: ['abc', 'c', 2], note: 'endPosition excludes the real suffix' },
   { fn: 'ends_with', args: ['abc', 'abcd'], note: 'suffix longer than receiver' },
+  { fn: 'ends_with', args: ['日本語', '本', 2], note: 'endPosition counts a BMP character as one unit' },
+  { fn: 'ends_with', args: ['a😀b', '😀', 3], note: 'endPosition counts an astral character as two units' },
 
   { fn: 'replace', args: ['a-b-a', 'a', 'X'], note: 'first occurrence only' },
   { fn: 'replace', args: ['abc', 'z', 'X'], note: 'pattern not found leaves receiver unchanged' },
@@ -496,6 +501,14 @@ export const cases: HelperCase[] = [
   { fn: 'at', args: [[10, 20, 30], 5], note: 'out of range yields undefined ≡ null' },
   { fn: 'at', args: [[10, 20, 30], -5], note: 'negative out of range yields undefined ≡ null' },
   { fn: 'at', args: [[], 0], note: 'empty array yields undefined ≡ null' },
+  // String receiver (#3613): indexed in UTF-16 code units, like every
+  // string position below. No case lands on half of a surrogate pair — JS
+  // yields a lone surrogate there, which the UTF-8 backends replace with
+  // U+FFFD (limitation `string-at-lone-surrogate`, fixture of that name).
+  { fn: 'at', args: ['日本語', -1], note: 'string: negative index on BMP characters' },
+  { fn: 'at', args: ['a😀b', -1], note: 'string: negative index after an astral character' },
+  { fn: 'at', args: ['a😀b', 3], note: 'string: an astral character spans two units' },
+  { fn: 'at', args: ['abc', 3], note: 'string: out of range yields undefined ≡ null' },
 
   { fn: 'includes', args: [[1, 2, 3], 2], note: 'array contains number' },
   { fn: 'includes', args: [[1, 2, 3], 5], note: 'array missing number' },
@@ -506,8 +519,16 @@ export const cases: HelperCase[] = [
   { fn: 'index_of', args: [[1, 2, 1], 1], note: 'first match wins' },
   { fn: 'index_of', args: [['a', 'b'], 'b'], note: 'string element' },
   { fn: 'index_of', args: [[1, 2, 3], 9], note: 'not found is -1' },
+  { fn: 'index_of', args: ['banana', 'an'], note: 'string: first substring match' },
+  { fn: 'index_of', args: ['日本語', '本'], note: 'string: BMP characters count one unit each' },
+  { fn: 'index_of', args: ['a😀b', 'b'], note: 'string: an astral character counts two units' },
+  { fn: 'index_of', args: ['abc', 'z'], note: 'string: not found is -1' },
+  { fn: 'index_of', args: ['abc', ''], note: 'string: empty search matches at 0' },
   { fn: 'last_index_of', args: [[1, 2, 1], 1], note: 'last match wins' },
   { fn: 'last_index_of', args: [[1, 2, 3], 9], note: 'not found is -1' },
+  { fn: 'last_index_of', args: ['banana', 'an'], note: 'string: last substring match' },
+  { fn: 'last_index_of', args: ['a😀b😀', '😀'], note: 'string: astral match offset in UTF-16 units' },
+  { fn: 'last_index_of', args: ['abc', ''], note: 'string: empty search matches at the length' },
 
   { fn: 'concat', args: [[1, 2], [3]], note: 'order preserved, receiver first' },
   { fn: 'concat', args: [[], [1]], note: 'empty receiver' },

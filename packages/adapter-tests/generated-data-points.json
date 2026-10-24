@@ -9807,6 +9807,87 @@
       }
     }
   ],
+  "string-index-methods": [
+    {
+      "name": "gen:word:empty",
+      "props": {
+        "word": "",
+        "needle": "an"
+      }
+    },
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "word": "<b>&\"'</b>",
+        "needle": "an"
+      }
+    },
+    {
+      "name": "gen:word:multibyte",
+      "props": {
+        "word": "日本語",
+        "needle": "an"
+      }
+    },
+    {
+      "name": "gen:needle:empty",
+      "props": {
+        "word": "banana",
+        "needle": ""
+      }
+    },
+    {
+      "name": "gen:needle:markup",
+      "props": {
+        "word": "banana",
+        "needle": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:needle:multibyte",
+      "props": {
+        "word": "banana",
+        "needle": "日本語"
+      }
+    }
+  ],
+  "string-index-non-finite": [
+    {
+      "name": "gen:word:empty",
+      "props": {
+        "word": "",
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "word": "<b>&\"'</b>",
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:word:multibyte",
+      "props": {
+        "word": "日本語",
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "word": "abc",
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "word": "abc",
+        "zero": 1234567890
+      }
+    }
+  ],
   "string-length-text": [
     {
       "name": "gen:word:markup",

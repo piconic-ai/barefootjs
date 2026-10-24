@@ -7563,6 +7563,64 @@
           }
         }
       },
+      "string-at-lone-surrogate": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "string-at-lone-surrogate"
+          ]
+        }
+      },
+      "string-index-non-finite": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "division-zero-divisor"
+          ]
+        }
+      },
       "tag-cloud": {
         "blade": {
           "kind": "refusal",
@@ -8242,6 +8300,14 @@
         "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref.ts"
       },
+      "string-at-lone-surrogate": {
+        "description": "`.at(i)` on half of a surrogate pair keeps the lone surrogate: halves compare different and rejoin…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-at-lone-surrogate.ts"
+      },
+      "string-index-non-finite": {
+        "description": "String .at / .startsWith / .endsWith read NaN as 0 and ±Infinity as out of range or clamped",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-index-non-finite.ts"
+      },
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
@@ -8761,7 +8827,8 @@
       "actual": "renders `0`: the runtime's division gives `0` for a zero divisor",
       "fixtures": [
         "nullish-operand-division-remainder",
-        "number-division-zero-divisor"
+        "number-division-zero-divisor",
+        "string-index-non-finite"
       ],
       "adapters": [
         "go-template"
@@ -9325,6 +9392,47 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "string-at-lone-surrogate": {
+      "title": "A string `.at(i)` landing on half of a surrogate pair",
+      "kind": "silent",
+      "given": "`.at(i)` on a string where index `i` falls on one half of an astral character's surrogate pair (`'a😀b'.at(1)`), with the result compared or concatenated",
+      "expected": "a lone surrogate: the two halves compare different and concatenating them rebuilds the character (`${w.at(1)}${w.at(2)}` is `'😀'`)",
+      "actual": "renders U+FFFD for each half, since the runtime string cannot hold a lone surrogate, so the halves compare equal and the concatenation renders `��`",
+      "fixtures": [
+        "string-at-lone-surrogate"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "twig",
+        "xslate"
+      ]
+    },
+    "undefined-method-result-attr": {
+      "title": "An attribute bound to a method call that returns undefined",
+      "kind": "silent",
+      "given": "an attribute whose value is an array or string method call that returns `undefined` for the current value (`data-last={props.word.at(-1)}` with `word: ''`)",
+      "expected": "the attribute is omitted, as for any `undefined` attribute value",
+      "actual": "renders the attribute with an empty value (`data-last=\"\"`)",
+      "fixtures": [
+        "string-index-methods"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "unlowerable-loop-filter-predicate": {
