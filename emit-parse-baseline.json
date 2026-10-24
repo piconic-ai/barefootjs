@@ -30,9 +30,6 @@
     "packages/adapter-go-template/src/adapter/lib/loop-row-path.ts": {
       "loopKeyToGoRowExpr": 1
     },
-    "packages/adapter-go-template/src/adapter/memo/memo-compute.ts": {
-      "memoInitialFromParsedBody": 1
-    },
     "packages/adapter-go-template/src/adapter/props/prop-classes.ts": {
       "isBareStringLiteral": 4
     },
