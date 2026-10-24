@@ -127,7 +127,7 @@ import {
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
 import { loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor, type LoopRowBinding, type LoopRowShape } from './lib/loop-row-path.ts'
-import { loopDrivingProp, nestedRowsFieldName, reservedRowsFieldNames } from './lib/nested-rows-field.ts'
+import { allocateRowsFields, loopDrivingProp, nestedRowsFieldName, rowsFieldSiteKey, type RowsFieldSite } from './lib/nested-rows-field.ts'
 
 /** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
 const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
@@ -800,8 +800,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentSignals = ir.metadata.signals ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.currentPropsParams = ir.metadata.propsParams ?? []
-    this.state.rowsFieldReserved = reservedRowsFieldNames(
-      findNestedComponents(ir.root).map(n => n.name),
+    this.state.rowsFields = allocateRowsFields(
+      findNestedComponents(ir.root),
+      this.state.currentPropsParams,
+      ir.metadata.propsObjectName,
       [...(ir.metadata.signals ?? []).map(s => s.getter), ...(ir.metadata.memos ?? []).map(m => m.name)],
     )
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
@@ -930,7 +932,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.scalarWrapperRowLoops = new Set()
     for (const nested of findNestedComponents(ir.root)) {
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
-      if (memoName) this.state.memoBackedLoopSlice.set(memoName, this.nestedRowsField(nested.name, nested.loopArrayParsed))
+      if (memoName) this.state.memoBackedLoopSlice.set(memoName, this.nestedRowsField(nested))
       if (nested.loopMarkerId && this.wrapperRowScalarItemGoType(ir, nested)) {
         this.state.scalarWrapperRowLoops.add(nested.loopMarkerId)
       }
@@ -1601,19 +1603,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * purely name-based, so this is not specific to `Record`: any prop whose
    * capitalized name matches a child's plural hits the same path.
    */
-  /** The Input/Props field holding `<childName>` loop rows (`nestedRowsFieldName`). */
-  private nestedRowsField(childName: string, loopArray: ParsedExpr | undefined): string {
-    return nestedRowsFieldName(
-      childName,
-      loopArray,
-      this.state.currentPropsParams,
-      this.state.propsObjectName,
-      this.state.rowsFieldReserved,
+  /** The Input/Props field holding a child-component loop site's rows (`allocateRowsFields`). */
+  private nestedRowsField(site: RowsFieldSite): string {
+    return (
+      this.state.rowsFields.get(rowsFieldSiteKey(site))?.field ??
+      nestedRowsFieldName(site.name, site.loopArrayParsed, this.state.currentPropsParams, this.state.propsObjectName, new Set(), !!site.bodyChildren?.length)
     )
   }
 
+  /** The constructor local that builds a loop site's rows (`allocateRowsFields`). */
+  private nestedRowsVar(site: RowsFieldSite): string {
+    return this.state.rowsFields.get(rowsFieldSiteKey(site))?.varName ?? `${site.name.charAt(0).toLowerCase()}${site.name.slice(1)}s`
+  }
+
   private propDerivedNestedArrayFields(nestedComponents: readonly NestedComponentInfo[]): Set<string> {
-    return new Set(nestedComponents.filter(n => n.isPropDerived).map(n => this.nestedRowsField(n.name, n.loopArrayParsed)))
+    return new Set(nestedComponents.filter(n => n.isPropDerived).map(n => this.nestedRowsField(n)))
   }
 
   /**
@@ -2244,7 +2248,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Input struct's own field — `nestedRowsField`, read as `in.<field>`
       // throughout this file), but the element TYPE is the child's own cross-file
       // `<Name>Input` struct — see `importAliases`.
-      lines.push(`\t${this.nestedRowsField(nested.name, nested.loopArrayParsed)} []${this.resolveChildName(nested.name)}Input`)
+      lines.push(`\t${this.nestedRowsField(nested)} []${this.resolveChildName(nested.name)}Input`)
     }
 
     // `useContext` consumer fields — settable by an enclosing provider; default
@@ -2555,7 +2559,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Static nested WITHOUT body children.
     for (const nested of staticWithoutBody) {
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const varName = this.nestedRowsVar(nested)
       // #2822 follow-up: the constructor/type names below are cross-file
       // (the child's own `New<Name>Props`/`<Name>Props`/`<Name>Input`) and
       // must resolve to the child's declared name; `varName` (this local)
@@ -2596,7 +2600,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // emitted below once the prop-fallback locals their props may read
       // are declared (`emitPropArrayChildRows`).
       if (this.propArrayLoopRowSource(ir, nested)) continue
-      const rowsField = this.nestedRowsField(nested.name, nested.loopArrayParsed)
+      const rowsField = this.nestedRowsField(nested)
       lines.push(`\t${varName} := make([]${declaredName}Props, len(in.${rowsField}))`)
       lines.push(`\tfor i, item := range in.${rowsField} {`)
       lines.push(`\t\t${varName}[i] = New${declaredName}Props(item)`)
@@ -2804,13 +2808,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Nested component arrays. Static-without-body always emitted; the
     // with-body paths only when their wrapper var was built.
     for (const nested of staticWithoutBody) {
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
-      lines.push(`\t\t${this.nestedRowsField(nested.name, nested.loopArrayParsed)}: ${varName},`)
+      const varName = this.nestedRowsVar(nested)
+      lines.push(`\t\t${this.nestedRowsField(nested)}: ${varName},`)
     }
     for (const nested of [...staticWithBody, ...dynamicWithBody]) {
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const varName = this.nestedRowsVar(nested)
       if (!emittedWrapperVars.has(varName)) continue
-      lines.push(`\t\t${this.nestedRowsField(nested.name, nested.loopArrayParsed)}: ${varName},`)
+      lines.push(`\t\t${this.nestedRowsField(nested)}: ${varName},`)
     }
 
     // Memo initial values (from signal initials). Prop-shadowing memos were
@@ -3049,10 +3053,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Shadowed nested-array props — see method docstring.
     for (const nested of [...staticWithoutBody, ...staticWithBody, ...dynamicWithBody]) {
       if (!nested.isPropDerived) continue
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const varName = this.nestedRowsVar(nested)
       const isBuilt = staticWithoutBody.includes(nested) || emittedWrapperVars.has(varName)
       if (!isBuilt) continue
-      const arrayFieldName = this.nestedRowsField(nested.name, nested.loopArrayParsed)
+      const arrayFieldName = this.nestedRowsField(nested)
       const param = ir.metadata.propsParams.find(
         p => capitalizeFieldName(p.name) === arrayFieldName || capitalizeFieldName(p.sourceName ?? p.name) === arrayFieldName,
       )
@@ -3750,7 +3754,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     lines.push(`// New${componentName}Props creates ${propsTypeName} from ${inputTypeName}.`)
     for (const nested of signalDynamicNested) {
-      const arrayField = this.nestedRowsField(nested.name, nested.loopArrayParsed)
+      const arrayField = this.nestedRowsField(nested)
       // #2822 follow-up: `arrayField` names THIS parent's own field
       // (alias-keyed, stays as-is); the constructor/type names in the
       // example below are the child's own cross-file symbols — resolve
@@ -3914,7 +3918,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (!bakedValue) bakedValue = this.propArrayLoopRowSource(ir, nested)?.goExpr ?? null
       if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
 
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const varName = this.nestedRowsVar(nested)
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
       const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
@@ -3981,7 +3985,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (bakedValue === 'nil' || bakedValue === '0') continue
 
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const varName = this.nestedRowsVar(nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
       const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
       // Child sub-component instances created once (identical scope IDs per row).
@@ -4422,8 +4426,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // ranging over this very prop as `<Child>` rows whose plural is the
     // prop's own field name (`tags.map(t => <Tag/>)`, #2627) owns the field,
     // which then holds `TagInput` rows, not this datum. A sibling loop over
-    // another array never does — its rows field is renamed
-    // (`nestedRowsField`).
+    // another array, or a row forwarding children (#3603), never does — its
+    // rows field is renamed (`allocateRowsFields`).
     if (this.isNestedArrayShadowed(param, this.propDerivedNestedArrayFields(findNestedComponents(ir.root)))) return null
     const arrayType = param.type
     if (arrayType?.kind !== 'array' || !arrayType.elementType) return null
@@ -4604,7 +4608,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     source: { goExpr: string; shape: LoopRowShape },
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): void {
-    const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+    const varName = this.nestedRowsVar(nested)
     const declaredName = this.resolveChildName(nested.name)
     const fields = this.sourceRowChildInputFields(ir, nested, source.shape, propFallbackVars, true) ?? []
     const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
@@ -5027,7 +5031,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const elemType = nested.bodyChildren?.length
         ? this.loopBodyWrapperName(componentName, nested)
         : `${this.resolveChildName(nested.name)}Props`
-      const rowsField = this.nestedRowsField(nested.name, nested.loopArrayParsed)
+      const rowsField = this.nestedRowsField(nested)
       if (nested.isDynamic && !nested.isPropDerived) {
         // Dynamic signal-array loops are template-only.
         lines.push(`\t${rowsField} []${elemType} \`json:"-"\``)
@@ -9773,7 +9777,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // through the parent's once-per-slot instance (see `renderComponent`'s
     // non-wrapper in-loop branch).
     if (loop.childComponent) {
-      goArray = `.${this.nestedRowsField(loop.childComponent.name, loop.arrayParsed)}`
+      goArray = `.${this.nestedRowsField({ name: loop.childComponent.name, loopMarkerId: loop.markerId, loopArrayParsed: loop.arrayParsed, bodyChildren: loop.childComponent.children })}`
     }
 
     // Save/restore rather than plain assign: this loop's own body may contain

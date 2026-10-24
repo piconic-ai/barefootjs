@@ -28,6 +28,7 @@ import type {
   TypeDefinition,
   TypeInfo,
 } from '@barefootjs/jsx'
+import type { RowsFieldAllocation } from './nested-rows-field.ts'
 
 export class CompileState {
   // --- Reset at the start of `generate()` -----------------------------------
@@ -166,8 +167,12 @@ export class CompileState {
    */
   currentPropsParams: IRMetadata['propsParams'] = []
 
-  /** Generated field names a renamed loop-rows field avoids (`reservedRowsFieldNames`). */
-  rowsFieldReserved: ReadonlySet<string> = new Set()
+  /**
+   * Each child-component loop site's rows field and constructor local, by
+   * loop marker (`allocateRowsFields`, #3599). Decided once per component
+   * and read by every site that names the field.
+   */
+  rowsFields: ReadonlyMap<string, RowsFieldAllocation> = new Map()
 
   /**
    * `buildPropTypeOverrides`'s result for the component being compiled,

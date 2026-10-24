@@ -11,7 +11,7 @@ import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
 import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
-import { nestedRowsFieldName, reservedRowsFieldNames } from './adapter/lib/nested-rows-field.ts'
+import { allocateRowsFields, rowsFieldSiteKey } from './adapter/lib/nested-rows-field.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import type { NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
@@ -850,15 +850,18 @@ function buildDynamicChildLoopSeeding(
   const propsParams = ir.metadata.propsParams
   const inputLines: string[] = []
   const propsLines: string[] = []
-  const rowsReserved = reservedRowsFieldNames(
-    findNestedComponents(ir.root).map(n => n.name),
+  const nestedSites = findNestedComponents(ir.root) as NestedComponentInfo[]
+  const rowsFields = allocateRowsFields(
+    nestedSites,
+    propsParams,
+    ir.metadata.propsObjectName,
     [...ir.metadata.signals.map(s => s.getter), ...ir.metadata.memos.map(m => m.name)],
   )
-  for (const nested of findNestedComponents(ir.root) as NestedComponentInfo[]) {
+  for (const nested of nestedSites) {
     if (nested.bodyChildren && nested.bodyChildren.length > 0) continue
     if (!nested.loopParam) continue
     const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
-    const rowsField = nestedRowsFieldName(nested.name, nested.loopArrayParsed, propsParams, ir.metadata.propsObjectName, rowsReserved)
+    const rowsField = rowsFields.get(rowsFieldSiteKey(nested))!.field
     if (!template.includes(`:= .${rowsField}}}`)) continue
 
     if (nested.isPropDerived) {
