@@ -55,11 +55,11 @@ import {
   planAttrExpression,
   planLoop,
   spellDestructureLocals,
+  spellFilteredRow,
   type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  renameFreeIdentifiers,
   rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
@@ -76,7 +76,6 @@ import {
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import type { ParsedExpr } from '@barefootjs/jsx'
 import {
@@ -779,7 +778,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
     const captureAliases = loopPlan.captureAliases
-    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range (#1087).
@@ -856,40 +854,21 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       d => `% my $${d.name} = ${this.convertExpressionToPerl(d.raw, d.valueParsed)};`,
     )
 
-    // Handle filter().map() pattern by wrapping children in if-condition
-    if (loop.filterPredicate) {
-      let filterCond: string
-      if (loop.filterPredicate.predicate) {
-        // The aliases render and type like the enclosing names they keep (#3402).
-        const scopeBeforeAliases = this.scope
-        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
-        try {
-          // The filter's param reads as the loop's row variable (`$t` →
-          // `$todo`), decided by the binding rather than renamed in the text.
-          filterCond = this.renderPerlFilterExpr(
-            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
-            loop.filterPredicate.param,
-            new Map(),
-            `$${param}`,
-          )
-        } finally {
-          this.scope = scopeBeforeAliases
-        }
-      } else {
-        // Phase 1 always attaches the predicate; a missing one is refused,
-        // never stood in for by a truthy constant that renders every row (#3534).
-        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
-        this._recordExprBF101(refusal.message, refusal.suggestion)
-        filterCond = '1'
-      }
-      lines.push(`% if (${filterCond}) {`)
-      lines.push(...preambleLines)
-      lines.push(children)
-      lines.push(`% }`)
-    } else {
-      lines.push(...preambleLines)
-      lines.push(children)
-    }
+    // The row, inside the filter's guard for a filter().map() loop. The plan
+    // renames the predicate's shadowed captures to their aliases (#3402) and
+    // refuses a filter without a predicate (#3534).
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
+      // The filter's param reads as the loop's row variable (`$t` →
+      // `$todo`), decided by the binding rather than renamed in the text.
+      condition: (filter) =>
+        this.renderInScope(this.scope.enterAliases(filter.aliases), () =>
+          this.renderPerlFilterExpr(filter.captured, filter.param, new Map(), `$${param}`),
+        ),
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: '1',
+      open: (condition) => `% if (${condition}) {`,
+      close: '% }',
+    }))
 
     // Body fully rendered — restore the outer (pre-row) scope.
     this.scope = prevScope
