@@ -5,7 +5,7 @@
   "files": {
     "packages/adapter-blade/src/adapter/blade-adapter.ts": {
       "renderLoop": [
-        38
+        30
       ]
     },
     "packages/adapter-blade/src/test-render.ts": {
@@ -18,7 +18,7 @@
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "renderLoop": [
-        52
+        43
       ]
     },
     "packages/adapter-erb/src/test-render.ts": {
@@ -213,7 +213,7 @@
     },
     "packages/adapter-jinja/src/adapter/jinja-adapter.ts": {
       "renderLoop": [
-        35
+        27
       ]
     },
     "packages/adapter-jinja/src/test-render.ts": {
@@ -226,7 +226,7 @@
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
       "renderLoop": [
-        43
+        38
       ]
     },
     "packages/adapter-mojolicious/src/test-render.ts": {
@@ -242,7 +242,7 @@
     },
     "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
       "renderLoop": [
-        44
+        36
       ]
     },
     "packages/adapter-pebble/src/test-render.ts": {
@@ -255,7 +255,7 @@
     },
     "packages/adapter-rust/src/adapter/minijinja-adapter.ts": {
       "renderLoop": [
-        35
+        27
       ]
     },
     "packages/adapter-rust/src/test-render.ts": {
@@ -304,7 +304,7 @@
     },
     "packages/adapter-twig/src/adapter/twig-adapter.ts": {
       "renderLoop": [
-        42
+        34
       ]
     },
     "packages/adapter-twig/src/test-render.ts": {
@@ -317,7 +317,7 @@
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
       "renderLoop": [
-        51
+        45
       ]
     },
     "packages/adapter-xslate/src/test-render.ts": {

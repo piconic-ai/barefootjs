@@ -69,6 +69,7 @@ import {
   planAttrExpression,
   planLoop,
   spellDestructureLocals,
+  spellFilteredRow,
   type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
@@ -89,7 +90,6 @@ import {
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
 import type { ParsedExpr } from '@barefootjs/jsx'
@@ -835,33 +835,19 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
-    // Handle filter().map() pattern by wrapping children in if-condition
-    if (loop.filterPredicate) {
-      let filterCond: string
-      if (loop.filterPredicate.predicate) {
-        // The filter's param reads as the loop's row local (`$t` →
-        // `$todo`), under the row's renamed local when it has one (#3392).
-        filterCond = this.renderKolonFilterExpr(
-          loop.filterPredicate.predicate,
-          loop.filterPredicate.param,
-          new Map(),
-          rowNames.get(param) ?? param,
-        )
-      } else {
-        // Phase 1 always attaches the predicate; a missing one is refused,
-        // never stood in for by a truthy constant that renders every row (#3534).
-        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
-        this._recordExprBF101(refusal.message, refusal.suggestion)
-        filterCond = '1'
-      }
-      lines.push(`: if (${filterCond}) {`)
-      lines.push(...preambleLines)
-      lines.push(bodyChildren)
-      lines.push(`: }`)
-    } else {
-      lines.push(...preambleLines)
-      lines.push(bodyChildren)
-    }
+    // The row, inside the filter's guard for a filter().map() loop; a
+    // filter without a predicate is refused (#3534). Kolon renames a
+    // shadowing row local instead of aliasing the captures, so the
+    // predicate renders as written.
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, bodyChildren], {
+      // The filter's param reads as the loop's row local (`$t` →
+      // `$todo`), under the row's renamed local when it has one (#3392).
+      condition: (filter) => this.renderKolonFilterExpr(filter.predicate, filter.param, new Map(), rowNames.get(param) ?? param),
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: '1',
+      open: (condition) => `: if (${condition}) {`,
+      close: ': }',
+    }))
 
     lines.push(`: }`)
     if (rootAliases.length > 0) lines.push(': }')

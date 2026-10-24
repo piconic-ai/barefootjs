@@ -183,10 +183,18 @@ export { childTemplateName, componentPropKey, isEmptyComponentProps, planCompone
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, ComponentPropsParam, EarlierComponentProps, ResolvedComponentProp, SpelledComponentPropSegment } from './adapters/component-props.ts'
 export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression, unsupportedAttrExpressionError } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
-export { planLoop, spellDestructureLocals } from './adapters/loop-plan.ts'
+export { planLoop, spellDestructureLocals, spellFilteredRow } from './adapters/loop-plan.ts'
 export { computedConstContext, inlineComputedConstAttr, inlineComputedConsts } from './adapters/computed-const.ts'
 export type { ComputedConstContext } from './adapters/computed-const.ts'
-export type { DestructureSpelling, DestructureValue, LoopPlan, LoopPlanContext } from './adapters/loop-plan.ts'
+export type {
+  DestructureSpelling,
+  DestructureValue,
+  LoopFilterPlan,
+  LoopFilterPredicate,
+  LoopFilterSpelling,
+  LoopPlan,
+  LoopPlanContext,
+} from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,

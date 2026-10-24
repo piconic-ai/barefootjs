@@ -4,20 +4,26 @@
  * Every DSL adapter decides the same things about a `.map()` loop before it
  * spells a line of template: whether its destructure pattern lowers (BF104),
  * whether the source is a static literal, whether it names a computed const
- * no template binds (BF101), how its `.sort` comparator lowers, and which
- * filter captures need an alias, and which locals the row binds for its
- * index and its destructure bindings. {@link planLoop} makes those decisions
- * once, against the scope outside the loop. The adapter keeps the spelling:
+ * no template binds (BF101), how its `.sort` comparator lowers, which filter
+ * captures need an alias, how the filter predicate reads on the row, and
+ * which locals the row binds for its index and its destructure bindings.
+ * {@link planLoop} makes those decisions once, against the scope outside the
+ * loop. The adapter keeps the spelling:
  * the loop header, the row bindings, the diagnostics' wording, and the order
  * it emits them in.
  */
 
-import { parseExpression } from '../expression-parser.ts'
+import { type ParsedExpr, parseExpression, renameFreeIdentifiers } from '../expression-parser.ts'
 import { isLowerableLoopDestructure } from '../loop-destructure.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveStaticLoopSource } from '../static-literal.ts'
 import type { ConstantInfo, IRLoop, LoopBindingPathSegment } from '../types.ts'
-import { type CallbackLoweringOptions, type CallbackPlan, lowerCallbackMethod } from './callback-method.ts'
+import {
+  type CallbackLoweringOptions,
+  type CallbackPlan,
+  lowerCallbackMethod,
+  missingFilterPredicateRefusal,
+} from './callback-method.ts'
 import { filterCaptureCollisions } from './filter-capture-collisions.ts'
 
 export interface LoopPlanContext<Spelled> {
@@ -52,6 +58,8 @@ export interface LoopPlan<Spelled> {
   sort: CallbackPlan | null
   /** The filter predicate's captures that a row binding would shadow, each with its alias. */
   captureAliases: Array<{ name: string; alias: string }>
+  /** The `.filter()` predicate of a `.filter().map()` loop, or `null` without one. */
+  filter: LoopFilterPlan | null
   /**
    * The for-target of an array iteration: the param itself, or the synthetic
    * `__bf_item` when the param is not the item (a `.keys()` iteration, whose
@@ -102,6 +110,86 @@ export function spellDestructureLocals(
   })
 }
 
+/**
+ * The `.filter()` predicate a `.filter().map()` loop tests on each row: the
+ * predicate with the names it reads renamed for the row, or the refusal of a
+ * filter whose predicate never reached the IR (BF101, #3534).
+ */
+export type LoopFilterPlan = LoopFilterPredicate | { kind: 'refuse'; message: string; suggestion: string }
+
+export interface LoopFilterPredicate {
+  kind: 'predicate'
+  /** The filter callback's own param. */
+  param: string
+  /** The predicate as written. */
+  predicate: ParsedExpr
+  /**
+   * The predicate with each capture a row binding would shadow renamed to
+   * its alias (`captureAliases`), for an emitter that maps the filter param
+   * itself (#3402).
+   */
+  captured: ParsedExpr
+  /**
+   * `captured` with the filter param renamed to the loop param too: the
+   * predicate read off the row item. The tree is renamed, not the rendered
+   * text, so a string literal or a property key of the same spelling stays
+   * (#3404).
+   */
+  onRow: ParsedExpr
+  /** Each capture alias and the enclosing name it keeps, for the scope the predicate renders under. */
+  aliases: ReadonlyMap<string, string>
+}
+
+/** An adapter's spelling of a {@link LoopFilterPlan}. */
+export interface LoopFilterSpelling {
+  /** The row's condition for a predicate. */
+  condition(filter: LoopFilterPredicate): string
+  /** Record the refusal of a filter without a predicate. */
+  refuse(message: string, suggestion: string): void
+  /** The condition that stands in for a refused predicate, so the template stays valid. */
+  refused: string
+  /** The guard's opening line. */
+  open(condition: string): string
+  /** The guard's closing line. */
+  close: string
+}
+
+/**
+ * The lines of a loop row: `row` itself, or with a filter `row` inside the
+ * guard on the filter's condition.
+ */
+export function spellFilteredRow(filter: LoopFilterPlan | null, row: readonly string[], spelling: LoopFilterSpelling): string[] {
+  if (!filter) return [...row]
+  return [spelling.open(filterCondition(filter, spelling)), ...row, spelling.close]
+}
+
+function filterCondition(filter: LoopFilterPlan, spelling: LoopFilterSpelling): string {
+  if (filter.kind === 'predicate') return spelling.condition(filter)
+  spelling.refuse(filter.message, filter.suggestion)
+  return spelling.refused
+}
+
+function filterPlan(
+  loop: IRLoop,
+  captureAliases: LoopPlan<unknown>['captureAliases'],
+  adapterName: string,
+): LoopFilterPlan | null {
+  const filter = loop.filterPredicate
+  if (!filter) return null
+  if (!filter.predicate) return { kind: 'refuse', ...missingFilterPredicateRefusal(filter.raw, adapterName) }
+  const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
+  const rowRenames = new Map(captureRenames)
+  if (filter.param !== loop.param) rowRenames.set(filter.param, loop.param)
+  return {
+    kind: 'predicate',
+    param: filter.param,
+    predicate: filter.predicate,
+    captured: renameFreeIdentifiers(filter.predicate, captureRenames),
+    onRow: renameFreeIdentifiers(filter.predicate, rowRenames),
+    aliases: new Map(captureAliases.map(({ name, alias }) => [alias, name])),
+  }
+}
+
 /** Plan a loop against the scope outside it. */
 export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): LoopPlan<Spelled> {
   const staticItems = resolveStaticLoopSource(loop.arrayParsed, ctx.localConstants, {
@@ -109,12 +197,14 @@ export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): 
   })
   const staticSource = staticItems !== null ? ctx.spellStatic(staticItems) : null
   const destructure = destructureKind(loop)
+  const captureAliases = filterCaptureCollisions(loop).map((name) => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` }))
   return {
     destructure,
     staticSource,
     unresolvableConst: staticSource === null ? unresolvableConst(loop, ctx) : null,
     sort: loop.sortComparator ? lowerCallbackMethod('sort', loop.sortComparator.arrow, [], ctx.callbackLowering) : null,
-    captureAliases: filterCaptureCollisions(loop).map((name) => ({ name, alias: `__bf_cap_${loop.markerId}_${name}` })),
+    captureAliases,
+    filter: filterPlan(loop, captureAliases, ctx.callbackLowering.adapterName),
     itemVar: loop.iterationShape === 'keys' || destructure === 'lowerable' ? '__bf_item' : loop.param,
     indexLocal: indexLocal(loop),
     destructureLocals: destructure === 'lowerable' ? destructureLocals(loop) : [],

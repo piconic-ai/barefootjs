@@ -84,11 +84,11 @@ import {
   planAttrExpression,
   planLoop,
   spellDestructureLocals,
+  spellFilteredRow,
   type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  renameFreeIdentifiers,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
@@ -102,7 +102,6 @@ import {
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import { isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
@@ -871,7 +870,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // loop's own block binds again would read the block param inside the
     // loop; keep the enclosing value under a loop-scoped local (#3402).
     const captureAliases = loopPlan.captureAliases
-    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same
     // parent each get their own reconciliation range.
@@ -946,62 +944,41 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       d => `<%- ${rubyLocal(d.name)} = ${this.convertExpressionToRuby(d.raw, d.valueParsed)} -%>`,
     )
 
-    // Handle filter().map() pattern by wrapping children in if-condition
-    if (loop.filterPredicate) {
-      let filterCond: string
-      if (loop.filterPredicate.predicate) {
+    // The row, inside the filter's guard for a filter().map() loop. The plan
+    // renames the predicate's shadowed captures to their aliases (#3402) and
+    // refuses a filter without a predicate (#3534).
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
+      condition: (filter) => {
         // The filter predicate's identifiers were parsed against the
-        // FILTER callback's own param (`loop.filterPredicate.param`), which
-        // can differ from the loop's rendered Ruby local (`param`, the MAP
-        // callback's param) whenever the two are named differently —
+        // FILTER callback's own param (`filter.param`), which can differ
+        // from the loop's rendered Ruby local (`param`, the MAP callback's
+        // param) whenever the two are named differently —
         // `todos.filter(t => t.done).map(todo => ...)` (#2245). Ruby's
         // named-block-param model means there's no Mojo-style regex
         // `$filterParam → $loopParam` TEXT rewrite to do, but the
         // DISTINCTION it encoded still matters: match identifiers against
         // the filter's own param, while EMITTING the loop's actual bound
         // local — `ErbFilterEmitter`'s `renderParamAs` carries that split.
-        // `filterPredicate.param` is only ever a bare identifier in
-        // practice (`extractFilterPredicate` in jsx-to-ir.ts refuses a
-        // destructured filter param outright, leaving `filterPredicate`
-        // unset entirely rather than populating it with pattern text — see
-        // its docstring), but guard defensively instead of relying on that
+        // `filter.param` is only ever a bare identifier in practice
+        // (`extractFilterPredicate` in jsx-to-ir.ts refuses a destructured
+        // filter param outright, leaving `filterPredicate` unset entirely
+        // rather than populating it with pattern text — see its
+        // docstring), but guard defensively instead of relying on that
         // invariant: a pattern-text param (leading `[`/`{` — the same
         // prefix check `destructureLoopParam`/#2238 use, NOT an identifier
         // regex, which would misclassify a Unicode param name) falls back
         // to `param`, matching pre-#2245 behavior byte-for-byte.
-        const filterOwnParam = loop.filterPredicate.param
         const matchParam =
-          filterOwnParam && !filterOwnParam.startsWith('[') && !filterOwnParam.startsWith('{')
-            ? filterOwnParam
-            : param
-        // The aliases render and type like the enclosing names they keep (#3402).
-        const scopeBeforeAliases = this.scope
-        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
-        try {
-          filterCond = this.renderRubyFilterExpr(
-            renameFreeIdentifiers(loop.filterPredicate.predicate, captureRenames),
-            matchParam,
-            undefined,
-            rubyLocal(param),
-          )
-        } finally {
-          this.scope = scopeBeforeAliases
-        }
-      } else {
-        // Phase 1 always attaches the predicate; a missing one is refused,
-        // never stood in for by a truthy constant that renders every row (#3534).
-        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
-        this._recordExprBF101(refusal.message, refusal.suggestion)
-        filterCond = 'true'
-      }
-      lines.push(`<%- if bf.truthy?(${filterCond}) -%>`)
-      lines.push(...preambleLines)
-      lines.push(children)
-      lines.push(`<%- end -%>`)
-    } else {
-      lines.push(...preambleLines)
-      lines.push(children)
-    }
+          filter.param && !filter.param.startsWith('[') && !filter.param.startsWith('{') ? filter.param : param
+        return this.renderInScope(this.scope.enterAliases(filter.aliases), () =>
+          this.renderRubyFilterExpr(filter.captured, matchParam, undefined, rubyLocal(param)),
+        )
+      },
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: 'true',
+      open: (condition) => `<%- if bf.truthy?(${condition}) -%>`,
+      close: '<%- end -%>',
+    }))
 
     // Body fully rendered — restore the outer (pre-row) scope.
     this.scope = prevScope

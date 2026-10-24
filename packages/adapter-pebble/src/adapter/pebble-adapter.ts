@@ -237,11 +237,11 @@ import {
   planAttrExpression,
   planLoop,
   spellDestructureLocals,
+  spellFilteredRow,
   type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  renameFreeIdentifiers,
   rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
@@ -258,7 +258,6 @@ import {
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import type { ParsedExpr } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -867,7 +866,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // loop's own row binds again would read the row's item inside the loop;
     // keep the enclosing value under a loop-scoped alias (#3402).
     const captureAliases = loopPlan.captureAliases
-    const captureRenames = new Map(captureAliases.map(({ name, alias }) => [name, alias]))
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
@@ -925,45 +923,22 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     }
     for (const il of indexLocalLines) lines.push(il)
 
-    // Handle filter().map() pattern by wrapping children in if-condition
-    if (loop.filterPredicate) {
-      let filterCond: string
-      if (loop.filterPredicate.predicate) {
-        // The filter param reads the row item, so rename its references in
-        // the parsed predicate to the loop param. Renaming the AST, not the
-        // rendered text, leaves a string literal with the same spelling and
-        // a property key alone (#3404).
-        const filterRenames = new Map(captureRenames)
-        if (loop.filterPredicate.param !== param) filterRenames.set(loop.filterPredicate.param, param)
-        // The aliases render and type like the enclosing names they keep (#3402).
-        const scopeBeforeAliases = this.scope
-        this.scope = this.scope.enterAliases(new Map(captureAliases.map(({ name, alias }) => [alias, name])))
-        try {
-          filterCond = this.renderPebbleFilterExpr(
-            renameFreeIdentifiers(loop.filterPredicate.predicate, filterRenames),
-            param
-          )
-        } finally {
-          this.scope = scopeBeforeAliases
-        }
-        // See the file header, divergence 1: the loop-hoist filter test is a
-        // condition position too.
-        filterCond = truthyTest(loop.filterPredicate.predicate, filterCond)
-      } else {
-        // Phase 1 always attaches the predicate; a missing one is refused,
-        // never stood in for by a truthy constant that renders every row (#3534).
-        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, CALLBACK_LOWERING.adapterName)
-        this._recordExprBF101(refusal.message, refusal.suggestion)
-        filterCond = 'true'
-      }
-      lines.push(`{% if ${filterCond} %}`)
-      lines.push(...preambleLines)
-      lines.push(bodyChildren)
-      lines.push(`{% endif %}`)
-    } else {
-      lines.push(...preambleLines)
-      lines.push(bodyChildren)
-    }
+    // The row, inside the filter's guard for a filter().map() loop. The plan
+    // renames the predicate's shadowed captures to their aliases (#3402) and
+    // refuses a filter without a predicate (#3534).
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, bodyChildren], {
+      // See the file header, divergence 1: the loop-hoist filter test is a
+      // condition position too.
+      condition: (filter) =>
+        truthyTest(
+          filter.predicate,
+          this.renderInScope(this.scope.enterAliases(filter.aliases), () => this.renderPebbleFilterExpr(filter.onRow, param)),
+        ),
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: 'true',
+      open: (condition) => `{% if ${condition} %}`,
+      close: '{% endif %}',
+    }))
 
     lines.push(`{% endfor %}`)
     for (const { local, saved } of savedNames) lines.push(`{% set ${local} = ${saved} %}`)
