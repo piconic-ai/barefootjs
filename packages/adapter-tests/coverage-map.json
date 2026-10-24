@@ -6076,6 +6076,41 @@
         "text"
       ]
     },
+    "loop-row-child-children-handler": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-inner-loop-handler": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-inner-loop-shadow": {
       "kinds": [
         "array-literal",
@@ -6621,6 +6656,24 @@
         "literal:string"
       ],
       "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-nested-child-children-handler": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]

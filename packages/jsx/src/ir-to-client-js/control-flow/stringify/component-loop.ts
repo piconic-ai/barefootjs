@@ -4,7 +4,7 @@
  * Two output shapes (preserved byte-identical from the legacy
  * `emitComponentLoopReconciliation` for the case it covered):
  *
- *   nestedComps.length === 0 AND reactiveEffects === null (simple) —
+ *   nestedComps, rowEvents empty AND reactiveEffects === null (simple) —
  *   two-line renderItem body:
  *     <i>mapArray(() => <arr>, <container>, <keyFn>, (<head>, <idx>, __existing) => {
  *     <i>  <unwrap?>
@@ -19,11 +19,13 @@
  *     <i>  if (__existing) {
  *     <i>    initChild('<C>', __existing, <props>)
  *     <i>    {<each nested initChild + optional createEffect>}
+ *     <i>    {<each row event: qsa + addEventListener>}
  *     <i>    <stringifyReactiveEffects on __existing if reactiveEffects>
  *     <i>    return __existing
  *     <i>  }
  *     <i>  const __csrEl = createComponent('<C>', <props>, <key>)
  *     <i>  {<each nested initChild + optional createEffect>}
+ *     <i>  {<each row event: qsa + addEventListener>}
  *     <i>  <stringifyReactiveEffects on __csrEl if reactiveEffects>
  *     <i>  return __csrEl
  *     <i>})
@@ -35,7 +37,7 @@
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
-import { stringifyChildrenTextEffect } from '../shared.ts'
+import { stringifyChildrenTextEffect, emitRowEventListener } from '../shared.ts'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {
@@ -50,6 +52,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     componentPropsExpr,
     keyExpr,
     nestedComps,
+    rowEvents,
     reactiveEffects,
     profileLoopId,
     mapPreambleWrapped,
@@ -77,7 +80,10 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   // exactly the `<Chip><a href={...}>...</a></Chip>` shape: `<a>` isn't a
   // component, so `nestedComps` was always empty, and the "simple" path
   // never even looked at `reactiveEffects`.
-  if (nestedComps.length === 0 && !reactiveEffects) {
+  //
+  // #3607: the same holds for a handler on a forwarded element — it needs
+  // the row element to attach to.
+  if (nestedComps.length === 0 && !reactiveEffects && rowEvents.length === 0) {
     lines.push(`    if (__existing) { initChild('${scopedComp}', __existing, ${componentPropsExpr}); return __existing }`)
     lines.push(`    return createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
     lines.push(`  }, '${markerId}'${loopBfId})`)
@@ -88,6 +94,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   lines.push(`    if (__existing) {`)
   lines.push(`      initChild('${scopedComp}', __existing, ${componentPropsExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '      ', '__existing', nc)
+  for (const ev of rowEvents) emitRowEventListener(lines, '      ', '__existing', ev)
   if (reactiveEffects) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: '      ', elVar: '__existing' })
   }
@@ -97,6 +104,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   // CSR side
   lines.push(`    const __csrEl = createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '    ', '__csrEl', nc)
+  for (const ev of rowEvents) emitRowEventListener(lines, '    ', '__csrEl', ev)
   if (reactiveEffects) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: '    ', elVar: '__csrEl' })
   }
