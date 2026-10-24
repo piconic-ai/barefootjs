@@ -48,7 +48,28 @@ type HonoRenderCtx = {
   isRootOfClientComponent?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, escapeHtml } from '@barefootjs/shared'
+
+/**
+ * True when an author attribute on a `.map()` row root has the same name as
+ * the row-key attribute the compiler synthesizes for it (`element.keyAttr`,
+ * #2753 mechanism 1) — e.g. `<rect key={b.key} data-key={props.dataKey} />`.
+ *
+ * Emitting both would put the same JSX attribute on the element twice, which
+ * TypeScript rejects (TS17001, the ui corpus gate's `chart` entry, #2573).
+ * At runtime Hono's props object keeps the LAST duplicate — the synthesized
+ * key, which `renderElement` appends after the author attributes — so the
+ * author value never reached the SSR HTML. Dropping it here makes that
+ * existing precedence explicit without changing what renders; the client
+ * still applies the author binding after hydration exactly as before.
+ *
+ * Mechanism 2 (a render root relaying its caller's key) is left alone: it
+ * emits a conditional spread, which is not a duplicate attribute and only
+ * overrides the author value when the caller actually supplied a key.
+ */
+function isShadowedByRowKey(element: IRElement, attrName: string): boolean {
+  return element.keyAttr?.value !== undefined && element.keyAttr.name === attrName
+}
 
 /**
  * The synthetic hydration props every generated component accepts, as one
@@ -1467,6 +1488,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // mismatch where the server renders an attribute the client would
       // re-derive on mount. #1966
       if (attr.clientOnly) continue
+      if (isShadowedByRowKey(element, attr.name)) continue
       // The IR carries the canonical HTML attribute name (#2172:
       // `processAttributes` normalizes `className`→`class`, `htmlFor`→
       // `for`, camelCase aliases → lowercase). This adapter's target
@@ -1491,8 +1513,14 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   private renderComponentProps(comp: IRComponent): string {
     const parts: string[] = []
     let keyValue: string | null = null
+    // A keyed invocation forwards its row key as the `data-key` prop below;
+    // an author `data-key` prop beside it would be a duplicate JSX attribute
+    // (TS17001) that the object-literal props lose anyway — same precedence
+    // as `isShadowedByRowKey` for intrinsic elements (#2573).
+    const hasRowKey = comp.props.some((p) => p.name === 'key')
 
     for (const prop of comp.props) {
+      if (hasRowKey && prop.name === BF_KEY) continue
       if (prop.name === 'key') {
         // JSX key → data-key only. Hono JSX strips `key` from HTML output
         // (delete props["key"]), so emitting key={} is a no-op. We only need

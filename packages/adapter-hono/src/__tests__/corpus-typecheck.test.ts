@@ -36,12 +36,10 @@ const UI_LIB = join(REPO, 'ui/lib')
  * https://github.com/piconic-ai/barefootjs/issues/2573 — see the issue for
  * the per-family mechanisms. Counts are ceilings: shrink them (or delete
  * the entry) when a family is fixed; never raise one to make a new defect
- * pass.
+ * pass. Empty since the last family (`chart TS17001`) was fixed: every
+ * diagnostic in the corpus now fails the gate as NEW.
  */
-const KNOWN_DIAGNOSTICS: Record<string, number> = {
-  // Author `data-key={props.dataKey}` beside the synthesized loop-row `data-key`.
-  'chart TS17001': 6,
-}
+const KNOWN_DIAGNOSTICS: Record<string, number> = {}
 
 describe('ui corpus type-check gate (#2570 / #2573)', () => {
   test('emitted templates introduce no type diagnostics beyond the known debt', () => {
