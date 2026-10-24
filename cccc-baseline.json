@@ -127,9 +127,6 @@
       "collectPropsReadByCtorInit/visit": [
         37
       ],
-      "memoInitialFromParsedBody": [
-        226
-      ],
       "resolveStringConcatChainGo": [
         34
       ]
@@ -172,7 +169,7 @@
     },
     "packages/adapter-go-template/src/adapter/value/parsed-literal-to-go.ts": {
       "parsedLiteralToGo": [
-        68
+        60
       ]
     },
     "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {

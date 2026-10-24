@@ -374,6 +374,38 @@ export function Page() {
 }
 `
 
+/**
+ * #2573's last corpus family (ui `chart`): an author `data-key` on a keyed
+ * `.map()` row root, beside the row-key `data-key` the compiler synthesizes
+ * for it — on an intrinsic row and on a keyed component invocation.
+ */
+const ROW_KEY_SOURCE = `"use client"
+
+function Row(props: { label: string; "data-key"?: string }) {
+  return <span>{props.label}</span>
+}
+
+export function Series({ series, points }: { series: string; points: { id: string; v: number }[] }) {
+  return (
+    <svg>
+      {points.map((p) => (
+        <circle key={p.id} r={String(p.v)} data-key={series} />
+      ))}
+      {points.map((p) => (
+        <Row key={p.id} label={String(p.v)} data-key={series} />
+      ))}
+    </svg>
+  )
+}
+`
+
+const ROW_KEY_SERVER_SOURCE = `import { Series } from './components/Series.tsx'
+
+export function Page() {
+  return <Series series="desktop" points={[{ id: 'a', v: 1 }]} />
+}
+`
+
 describe('consumer program type-check', () => {
   test('a compiled template used as a JSX component type-checks clean (#2559)', () => {
     const result = compileJSX(COMPONENT_SOURCE, '/virtual/Counter.tsx', {
@@ -527,5 +559,22 @@ describe('consumer program type-check', () => {
     expect(clientJs).not.toContain(' as ')
 
     expect(typeCheckConsumer('Widget', template!, TYPED_ATTR_SERVER_SOURCE)).toEqual([])
+  })
+
+  test('an author data-key on a keyed row root is not emitted twice (#2573)', () => {
+    const result = compileJSX(ROW_KEY_SOURCE, '/virtual/Series.tsx', {
+      adapter: new HonoAdapter(),
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content
+
+    // The synthesized row key is what Hono's last-wins props object already
+    // rendered, so it is the one kept; the shadowed author value is dropped.
+    expect(template).toContain('data-key={String(p.id)}')
+    expect(template).toContain('data-key={p.id}')
+    expect(template).not.toContain('data-key={series}')
+
+    // TS17001 = "JSX elements cannot have multiple attributes with the same name."
+    expect(typeCheckConsumer('Series', template!, ROW_KEY_SERVER_SOURCE)).toEqual([])
   })
 })

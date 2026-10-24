@@ -1106,6 +1106,7 @@ import { fixture as loopRowChildSharedWrapper } from './loop-row-child-shared-wr
 import { fixture as loopRowChildSharedWrapperNestedComponent } from './loop-row-child-shared-wrapper-nested-component'
 import { fixture as loopRowChildPropNamedRowPlural } from './loop-row-child-prop-named-row-plural'
 import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
+import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
@@ -1917,6 +1918,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildSharedWrapperNestedComponent,
   loopRowChildPropNamedRowPlural,
   loopRowScalarMemberLength,
+  loopUndefinedElement,
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,
   loopRowChildPropDestinations,

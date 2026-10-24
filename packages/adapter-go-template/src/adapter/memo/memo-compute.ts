@@ -10,14 +10,11 @@
 
 import type { MemoInfo, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 import {
-  arithmeticOperandIsUndefined,
   asCallbackMethodCall,
-  bareGetterCallName,
   freeIdentifiers,
   freeVarsInBody,
   materializeGetterCalls,
   isNullishLiteral,
-  NULL_COERCING_ARITHMETIC_OPS,
   serializeParsedExpr,
 } from '@barefootjs/jsx'
 
@@ -39,17 +36,26 @@ import { defaultedBindingGo, resolvePropGoType } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
+import {
+  BOXED_ARITHMETIC_HELPER,
+  type BoxedArithmeticSeed,
+  classifyBoxedArithmetic,
+  getterCallName,
+  isResolvableLengthRead,
+  lengthReadReceiver,
+  memoArithmeticYieldsNaN,
+  nonNegativeIntLiteral,
+  propNameForPropsBinding,
+  propsMemberName,
+} from './memo-seed-shape.ts'
 import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from './memo-value.ts'
+
+// The boxed-arithmetic decision lives with the seed classification; re-exported
+// for the adapter's existing import.
+export { isBoxedNumericMemoBody } from './memo-seed-shape.ts'
 
 /** Default for the optional `propFallbackVars` argument. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
-
-/** A bare zero-arg getter call (`count()`) → its name, else null. */
-function getterCallName(e: ParsedExpr): string | null {
-  return e.kind === 'call' && e.callee.kind === 'identifier' && e.args.length === 0
-    ? e.callee.name
-    : null
-}
 
 /** Whether `t` is `boolean`, or a `T | undefined`/`T | null` union whose
  *  non-nullish branch is `boolean` (the controlled-signal shape,
@@ -77,66 +83,6 @@ function isBooleanTypedGetter(
   if (signal) return signal.type !== undefined && isBooleanTypeInfo(signal.type)
   const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
   return memo?.type !== undefined && isBooleanTypeInfo(memo.type)
-}
-
-/** A `props.X` member access → the prop name, else null. */
-function propsMemberName(e: ParsedExpr): string | null {
-  return e.kind === 'member' &&
-    !e.computed &&
-    e.object.kind === 'identifier' &&
-    e.object.name === 'props'
-    ? e.property
-    : null
-}
-
-/**
- * A memo-body length read → its receiver, else null. Recognised shapes:
- *
- * - `<recv>.length` (non-optional access);
- * - `<recv>.length ?? 0` / `<recv>?.length ?? 0` (and `|| 0`) — the
- *   nullish-guarded form (`posts()?.length ?? 0`, a `createQuery` value).
- *   A nullish receiver yields `0` in JS, which is exactly what the
- *   constructor's `bf.Length` returns for a nil value, so the guard folds
- *   away. Only a literal `0` fallback folds: any other fallback would need
- *   "absent" told apart from "empty", which a Go nil slice can't carry.
- *
- * A bare `<recv>?.length` (no fallback) is NOT recognised: an absent
- * receiver renders `undefined` (empty text) in JS, not `0`.
- */
-function lengthReadReceiver(e: ParsedExpr): ParsedExpr | null {
-  if (
-    e.kind === 'logical' &&
-    (e.op === '??' || e.op === '||') &&
-    e.right.kind === 'literal' &&
-    e.right.literalType === 'number' &&
-    e.right.value === 0
-  ) {
-    const inner = e.left
-    return inner.kind === 'member' && !inner.computed && inner.property === 'length' ? inner.object : null
-  }
-  return e.kind === 'member' && !e.computed && !e.optional && e.property === 'length' ? e.object : null
-}
-
-/**
- * Whether a length read's receiver is one the constructor can evaluate: a
- * zero-arg getter call naming a signal or memo (`items()`, a `createQuery`
- * value), or a prop reference (`props.items`, a destructured `items`). The
- * structural half of {@link resolveLengthReadGo}, used where the decision
- * must be made without emitting (the memo field's Go type classifier,
- * {@link numericMemoOperands}).
- */
-function isResolvableLengthRead(
-  ctx: GoEmitContext,
-  e: ParsedExpr,
-  signals: { getter: string }[],
-  propsParams: { name: string }[],
-): boolean {
-  const recv = lengthReadReceiver(e)
-  if (!recv) return false
-  const getter = getterCallName(recv)
-  if (getter) return signals.some(s => s.getter === getter) || (ctx.state.currentMemos ?? []).some(m => m.name === getter)
-  const propName = propNameForPropsBinding(ctx, recv)
-  return propName !== null && propsParams.some(p => p.name === propName)
 }
 
 /**
@@ -169,25 +115,6 @@ function resolveLengthReadGo(
     ? resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
     : propRef(propNameForPropsBinding(ctx, recv)!)
   return recvGo === null ? null : `bf.Length(${recvGo})`
-}
-
-/**
- * A prop reference resolved against the component's ACTUAL props-object
- * binding (`ctx.state.propsObjectName` — may be a non-`props` name, or
- * `null` for a destructured signature), else null. Mirrors
- * `collectPresenceCheckedPropNames`'s (prop-types.ts) exact shape so the
- * presence-check codegen branch below can't drift from the collector that
- * decides which props got the nillable flip in the first place — unlike
- * `propsMemberName` (hardcoded to the literal name `props`), which only
- * matches the conventional object-props signature.
- */
-function propNameForPropsBinding(ctx: GoEmitContext, e: ParsedExpr): string | null {
-  const propsObject = ctx.state.propsObjectName
-  if (e.kind === 'member' && !e.computed && e.object.kind === 'identifier' && e.object.name === propsObject) {
-    return e.property
-  }
-  if (!propsObject && e.kind === 'identifier') return e.name
-  return null
 }
 
 /** A `() => props.X.filter((p) => <predicate>)` match: the array prop name,
@@ -256,34 +183,6 @@ export function filterArmEarlierSiblingRefs(
     if (idx >= 0 && idx < currentIndex) refs.push(name)
   }
   return refs
-}
-
-/**
- * Whether a memo body is `-` / `*` / `/` / `%` / `**` arithmetic whose result
- * is `NaN` at SSR: an operand is certainly `undefined`
- * (`arithmeticOperandIsUndefined`, which follows identity memos), is itself
- * such arithmetic, or reads a memo whose body is (`doubled() * 2` with
- * `doubled = () => s() * 2`). JS gives `NaN` whatever the other operand is
- * (#3390); a Go seed would read the undefined signal as `0`.
- */
-export function memoArithmeticYieldsNaN(ctx: GoEmitContext, expr: ParsedExpr): boolean {
-  const nullishCtx = ctx.state.nullishAttrCtx
-  const visiting = new Set<string>()
-  const yieldsNaN = (e: ParsedExpr): boolean => {
-    if (e.kind !== 'binary' || !NULL_COERCING_ARITHMETIC_OPS.has(e.op)) return false
-    return isNaNOperand(e.left) || isNaNOperand(e.right)
-  }
-  const isNaNOperand = (e: ParsedExpr): boolean => {
-    if (arithmeticOperandIsUndefined(e, nullishCtx) || yieldsNaN(e)) return true
-    const getter = e.kind === 'identifier' ? e.name : bareGetterCallName(e)
-    const memo = getter === null ? undefined : nullishCtx.memos.get(getter)
-    if (!memo?.parsed || visiting.has(getter!)) return false
-    visiting.add(getter!)
-    const result = yieldsNaN(memo.parsed)
-    visiting.delete(getter!)
-    return result
-  }
-  return yieldsNaN(expr)
 }
 
 /**
@@ -709,171 +608,39 @@ function isNullishIdentityMemo(
   return isNullishIdentityMemo(ctx, inner, signals, new Set([...resolving, inner.name]))
 }
 
-/** Numeric atoms supported by the shared-runtime memo path. Its result is
- * boxed (`any`), preserving integer and fractional values alike. The field
- * classifier and constructor use this same decision. */
-export function numericMemoOperands(
-  ctx: GoEmitContext,
-  body: ParsedExpr | undefined,
-  signals: { getter: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
-): readonly [ParsedExpr, ParsedExpr] | null {
-  if (!body || body.kind !== 'binary' || !['+', '-', '*'].includes(body.op)) return null
-  const numericAtom = (expr: ParsedExpr): boolean => {
-    if (isResolvableLengthRead(ctx, expr, signals, propsParams)) return true
-    const getter = getterCallName(expr)
-    if (getter) {
-      const type = signals.find(s => s.getter === getter)?.type
-        ?? ctx.state.currentMemos?.find(m => m.name === getter)?.type
-      return type?.kind === 'primitive' && type.primitive === 'number'
-    }
-    const name = propNameForPropsBinding(ctx, expr)
-    const prop = name ? propsParams.find(p => p.name === name) : undefined
-    return prop?.type?.kind === 'primitive' && prop.type.primitive === 'number' && !prop.optional
-  }
-  return numericAtom(body.left) && numericAtom(body.right) ? [body.left, body.right] : null
+/** The signal shape the parsed-body seed arms read. */
+type SeedSignal = { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }
+
+/** The prop-param shape the parsed-body seed arms read. */
+type SeedPropParam = { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr; optional?: boolean }
+
+/** What every {@link memoInitialFromParsedBody} arm reads. */
+interface SeedEmitEnv {
+  readonly ctx: GoEmitContext
+  readonly signals: SeedSignal[]
+  readonly propsParams: SeedPropParam[]
+  readonly propFallbackVars: ReadonlyMap<string, PropFallbackVar>
+  readonly currentMemoName: string
+  readonly resolving: ReadonlySet<string>
+  /** A prop's constructor value: its hoisted fallback var, else its input field. */
+  readonly propRef: (propName: string) => string
 }
 
 /**
- * The dividend of a `<getter()> / N`, `props.X / N` or `<destructured prop> / N`
- * memo body (`N` a positive integer literal), else null. Go's `/` on an int
- * operand truncates where JS yields a fraction (`1234567890 / 8` is
- * `154320986.25`), so such a body computes through the boxed `bf.Div`
- * (#3379). The field classifier ({@link isBoxedNumericMemoBody}) and the
- * constructor ({@link memoInitialFromParsedBody}) share this decision.
+ * One arm's verdict on a memo body: the Go seed, `null` to decline the whole
+ * body (no later arm can resolve it), or `undefined` when the arm's shape
+ * doesn't apply and the next arm runs.
  */
-function literalDivisionDividend(
-  ctx: GoEmitContext,
-  body: ParsedExpr | undefined,
-  propsParams: { name: string }[],
-): ParsedExpr | null {
-  if (!body || body.kind !== 'binary' || body.op !== '/') return null
-  const right = body.right
-  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
-  if (!Number.isInteger(right.value) || right.value <= 0) return null
-  const left = body.left
-  if (getterCallName(left)) return left
-  const propName = propsMemberName(left) ?? (left.kind === 'identifier' ? left.name : null)
-  return propName && propsParams.some(p => p.name === propName) ? left : null
-}
-
-/** `+ - * /` → the shared arithmetic runtime helper that boxes its result. */
-const BOXED_ARITHMETIC_HELPER: Readonly<Record<string, string>> = { '+': 'Add', '-': 'Sub', '*': 'Mul', '/': 'Div' }
-
-/**
- * The memo a `<getter()> <op> <int literal>` body chains onto, when that
- * memo's constructor value is boxed ({@link isBoxedNumericMemoBody}), else
- * null. Such a body can't splice the dep in bare (`bf.Add(…) * 2` is `any *
- * int`), so it goes through the same runtime helper (`bf.Mul(bf.Add(…), 2)`).
- */
-function boxedLiteralArithmeticDep(
-  ctx: GoEmitContext,
-  body: ParsedExpr | undefined,
-  signals: { getter: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
-  seen: ReadonlySet<string>,
-): string | null {
-  if (!body || body.kind !== 'binary' || !(body.op in BOXED_ARITHMETIC_HELPER)) return null
-  const right = body.right
-  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
-  if (!Number.isInteger(right.value) || right.value < 0) return null
-  // JS `x / 0` is `Infinity`; `bf.Div` returns 0. Not the same value.
-  if (body.op === '/' && right.value === 0) return null
-  const dep = getterCallName(body.left)
-  if (!dep || seen.has(dep) || signals.some(s => s.getter === dep)) return null
-  const memo = ctx.state.currentMemos?.find(m => m.name === dep)
-  if (!memo?.parsed) return null
-  return isBoxedNumericMemoBody(ctx, memo.parsed, signals, propsParams, new Set([...seen, dep])) ? dep : null
-}
-
-/**
- * The prop a `props.X <+|-|*> N` or `<destructured prop> <+|-|*> N` memo body
- * reads (`N` a non-negative integer literal), when that prop's input field is
- * nillable only because of how the component consumes it (a `??`, a bare
- * attribute, …; `collectNillablePropNames`), not its declared type. Its field
- * is then `interface{}`, which Go cannot multiply by an int, so the body goes
- * through the shared runtime helper (`bf.Mul(in.N, 2)`). A prop whose declared
- * type already lowers to `interface{}` keeps its `.(int)` assertion.
- */
-function nillablePropArithmeticOperand(
-  ctx: GoEmitContext,
-  body: ParsedExpr | undefined,
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
-): string | null {
-  if (!body || body.kind !== 'binary' || !['+', '-', '*'].includes(body.op)) return null
-  const right = body.right
-  if (right.kind !== 'literal' || right.literalType !== 'number' || typeof right.value !== 'number') return null
-  if (!Number.isInteger(right.value) || right.value < 0) return null
-  const name = propsMemberName(body.left) ?? (body.left.kind === 'identifier' ? body.left.name : null)
-  const param = name ? propsParams.find(p => p.name === name) : undefined
-  if (!param?.type || !ctx.state.nillablePropNames.has(param.name)) return null
-  return typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed) === 'interface{}' ? null : param.name
-}
-
-/**
- * `bf.<Op>(in.Field, N)` for a body {@link nillablePropArithmeticOperand}
- * matches, else null. A hoisted fallback var is a concrete number, so a
- * prop that has one keeps the plain arithmetic.
- */
-function boxedNillablePropArithmetic(
-  ctx: GoEmitContext,
-  body: ParsedExpr,
-  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
-  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-): string | null {
-  const name = nillablePropArithmeticOperand(ctx, body, propsParams)
-  if (name === null || propFallbackVars.has(name) || body.kind !== 'binary') return null
-  const param = propsParams.find(p => p.name === name)
-  const field = capitalizeFieldName(propsMemberName(body.left) ?? param?.sourceName ?? name)
-  return `bf.${BOXED_ARITHMETIC_HELPER[body.op]}(in.${field}, ${String((body.right as { value: number }).value)})`
-}
-
-/**
- * Whether a memo body's constructor value is the shared arithmetic runtime's
- * boxed `any` (`bf.Add` / `bf.Sub` / `bf.Mul` / `bf.Div`) rather than a Go
- * number. Five shapes:
- *
- * - two numeric operands ({@link numericMemoOperands}: `list().length +
- *   count()` → `bf.Add(…)`);
- * - literal arithmetic on a memo that is itself boxed (`total() * 2` →
- *   `bf.Mul(<total>, 2)`), recursively along the memo chain;
- * - division of a number read by a positive integer literal
- *   ({@link literalDivisionDividend}: `props.value / 8` → `bf.Div(…)`);
- * - an identity read of a boxed memo (`() => eighth()`), recursively;
- * - literal arithmetic on a prop whose field is nillable
- *   ({@link nillablePropArithmeticOperand}: `props.n * 2` → `bf.Mul(in.N, 2)`).
- *
- * The one decision both the memo field's Go type (`interface{}`, so the
- * boxed value assigns) and the constructor emission
- * ({@link memoInitialFromParsedBody}) consult, so they can't disagree.
- */
-export function isBoxedNumericMemoBody(
-  ctx: GoEmitContext,
-  body: ParsedExpr | undefined,
-  signals: { getter: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; optional?: boolean }[],
-  seen: ReadonlySet<string> = new Set(),
-): boolean {
-  if (numericMemoOperands(ctx, body, signals, propsParams)) return true
-  if (literalDivisionDividend(ctx, body, propsParams)) return true
-  if (nillablePropArithmeticOperand(ctx, body, propsParams)) return true
-  // An identity memo (`() => eighth()`) passes its dependency's boxed value
-  // through unchanged, so it is boxed exactly when that memo is.
-  const identityDep = body ? getterCallName(body) : null
-  if (identityDep && !seen.has(identityDep) && !signals.some(s => s.getter === identityDep)) {
-    const dep = ctx.state.currentMemos?.find(m => m.name === identityDep)
-    if (dep?.parsed && isBoxedNumericMemoBody(ctx, dep.parsed, signals, propsParams, new Set([...seen, identityDep]))) {
-      return true
-    }
-  }
-  return boxedLiteralArithmeticDep(ctx, body, signals, propsParams, seen) !== null
-}
+type SeedArmResult = string | null | undefined
 
 /**
  * Structural matcher for the common expression-bodied memo shapes, driven by
  * the analyzer-attached `MemoInfo.parsed` (the memo arrow's body): `getter() ===
  * 'lit'`, `props.X ?? false`, `cond() ? A : B`, `<getter()|props.X|var> <*+-/>
- * <int>`, and bare `getter()` / `props.X` / `var`.
+ * <int>`, and bare `getter()` / `props.X` / `var`. Each shape is one arm of
+ * {@link PARSED_BODY_ARMS}, tried in order; the boxed-arithmetic shapes are
+ * classified once ({@link classifyBoxedArithmetic}, the decision the memo
+ * field's Go type also reads) and only spelled here.
  *
  * @returns the Go SSR value, or null when the body is none of these (the caller
  *   then falls through to comparison-ternary / block-body / object-memo handling)
@@ -881,8 +648,8 @@ export function isBoxedNumericMemoBody(
 export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
   body: ParsedExpr,
-  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
-  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr; optional?: boolean }[],
+  signals: SeedSignal[],
+  propsParams: SeedPropParam[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   currentMemoName: string,
   resolving: ReadonlySet<string> = new Set(),
@@ -893,446 +660,501 @@ export function memoInitialFromParsedBody(
     const param = propsParams.find(p => p.name === propName)
     return `in.${capitalizeFieldName(param?.sourceName ?? propName)}`
   }
-  // A request-scoped env-signal read (`searchParams().get('k')`, any local
-  // alias, #1922) → the literal key and the reader's canonical field name,
-  // else null. Constraints: the receiver must be a zero-arg call of a local
-  // bound to a registered env signal (`ctx.state.envSignalReadersByLocal`,
-  // keyed by that reader's own registration — not a hardcoded key); the
-  // method must be one that reader's `methods` set recognises; the key
-  // argument must be a string literal.
-  const envGetKey = (e: ParsedExpr): { key: string; fieldName: string } | null => {
-    if (e.kind !== 'call' || e.callee.kind !== 'member' || e.callee.computed) return null
-    const recvName = getterCallName(e.callee.object)
-    if (recvName === null) return null
-    const reader = ctx.state.envSignalReadersByLocal.get(recvName)
-    if (!reader || !reader.methods.has(e.callee.property)) return null
-    const arg = e.args[0]
-    if (!arg || arg.kind !== 'literal' || arg.literalType !== 'string') return null
-    return { key: String(arg.value), fieldName: capitalizeFieldName(reader.canonicalName) }
+  const env: SeedEmitEnv = { ctx, signals, propsParams, propFallbackVars, currentMemoName, resolving, propRef }
+  for (const arm of PARSED_BODY_ARMS) {
+    const result = arm(env, body)
+    if (result !== undefined) return result
   }
-
-  // () => searchParams().get('k') — a derived memo over the env signal
-  // (#2069). The constructor reads the canonical `in.SearchParams` reader the
-  // handler fills per request, so the memo SSR-computes instead of zero-valuing.
-  {
-    const m = envGetKey(body)
-    if (m !== null) return `in.${m.fieldName}.Get(${JSON.stringify(m.key)})`
-  }
-
-  // () => searchParams().get('k') ?? '<lit>' — the defaulted form. Go's
-  // `SearchParams.Get` returns "" for an absent key (it can't surface JS's
-  // null), so the default fires on "" — the same documented `?? → or`
-  // divergence as the template-position lowering (`or (.SearchParams.Get
-  // "k") "<lit>"`); the two positions stay consistent.
-  if (
-    body.kind === 'logical' &&
-    (body.op === '??' || body.op === '||') &&
-    body.right.kind === 'literal' &&
-    body.right.literalType === 'string'
-  ) {
-    const m = envGetKey(body.left)
-    if (m !== null) {
-      const def = JSON.stringify(String(body.right.value))
-      return `func() string { if v := in.${m.fieldName}.Get(${JSON.stringify(m.key)}); v != "" { return v }; return ${def} }()`
-    }
-  }
-
-  // () => props.X.filter((p) => <predicate>) — a LIST-valued derived memo
-  // chained off a sibling memo the predicate closes over (e.g. a
-  // searchParams()-derived `tag`). Env-signal getters are excluded from the
-  // free-var materialization set: they're per-request READERS, not values,
-  // and the runtime evaluator has no way to invoke one.
-  {
-    const match = matchFilterArmMemo(ctx, body, signals, propsParams)
-    if (match) {
-      const { propName, predJSON, paramName, freeVars } = match
-      const currentIndex = (ctx.state.currentMemos ?? []).findIndex(m => m.name === currentMemoName)
-      const envEntries: string[] = []
-      let unresolved = false
-      for (const name of freeVars) {
-        let goExpr: string | null = null
-        const siblingIndex = (ctx.state.currentMemos ?? []).findIndex(m => m.name === name)
-        if (siblingIndex >= 0) {
-          // Only a sibling declared EARLIER than the memo being computed is
-          // eligible — mirrors JS declaration order and rules out both
-          // self-reference and any mutual pair (at most one direction can
-          // satisfy `earlier`), independent of the resolving-stack guard
-          // below. A hoisted local (the constructor emitted it once already,
-          // #2075/#2077 review finding 3) is reused verbatim instead of
-          // recomputing the expression a second time.
-          const siblingMemo = ctx.state.currentMemos![siblingIndex]
-          const eligible = currentIndex >= 0 && siblingIndex < currentIndex && !resolving.has(siblingMemo.name)
-          if (eligible) {
-            const hoisted = ctx.state.hoistedMemoLocals.get(siblingMemo.name)
-            goExpr = hoisted ?? computeMemoInitialValueOrNull(
-              ctx, siblingMemo, signals, propsParams, propFallbackVars,
-              new Set([...resolving, siblingMemo.name]),
-            )
-          }
-        } else {
-          const sig = signals.find(s => s.getter === name)
-          if (sig) {
-            goExpr = signalSeedValueGo(ctx, sig, propsParams, propFallbackVars, undefined)
-          } else {
-            const p = propsParams.find(pp => pp.name === name)
-            if (p) goExpr = propRef(name)
-          }
-        }
-        if (goExpr === null) {
-          unresolved = true
-          break
-        }
-        envEntries.push(`${JSON.stringify(name)}: ${goExpr}`)
-      }
-      if (!unresolved) {
-        const itemsField = `in.${capitalizeFieldName(propName)}`
-        const envMap = `map[string]any{${envEntries.join(', ')}}`
-        return `bf.FilterEval(${itemsField}, "${escapeGoString(predJSON)}", ${JSON.stringify(paramName)}, ${envMap})`
-      }
-    }
-  }
-
-  // () => !<operand> — a negation memo (`() => !open()`, `() => !tags()`,
-  // `() => !props.label`). JS `!` is `!Boolean(x)`: `bf.Truthy` is the
-  // runtime's `Boolean(x)` (nil/absent falsy, a non-nil EMPTY slice/map
-  // truthy) — the same decision the template-position `!` makes through
-  // `lowerJsNot`'s `not (bf_truthy x)`.
-  if (body.kind === 'unary' && body.op === '!') {
-    const operand = resolveComparisonOperandGo(
-      ctx, body.argument, signals, propsParams, propFallbackVars, new Set([...resolving, currentMemoName]),
-    )
-    if (operand !== null) return `!bf.Truthy(${operand})`
-  }
-
-  // () => getter() === 'lit' / !== 'lit' — a selection memo. Resolves to a Go
-  // bool when the signal's initial value is itself a string literal.
-  if (
-    body.kind === 'binary' &&
-    ['===', '!==', '==', '!='].includes(body.op) &&
-    body.right.kind === 'literal' &&
-    body.right.literalType === 'string'
-  ) {
-    const depName = getterCallName(body.left)
-    if (depName) {
-      const lit = String(body.right.value)
-      const signal = signals.find(sg => sg.getter === depName)
-      const initLit = signal ? /^'([^'\\]*)'$/.exec(signal.initialValue.trim()) : null
-      if (initLit) {
-        const equal = initLit[1] === lit
-        return String(body.op.startsWith('!') ? !equal : equal)
-      }
-    }
-  }
-
-  // () => props.X ?? false — a boolean passthrough memo. Go's bool zero value
-  // IS the `?? false` fallback, so the raw input field carries it exactly.
-  if (
-    body.kind === 'logical' &&
-    body.op === '??' &&
-    body.right.kind === 'literal' &&
-    body.right.value === false
-  ) {
-    const propName = propsMemberName(body.left)
-    if (propName) return propRef(propName)
-  }
-
-  // () => props.X !== undefined (or !=/===/==) — the "controlled component"
-  // idiom's `isControlled` memo (#2260). Distinguishing "caller passed a
-  // value" from "caller omitted the prop" needs the nillable `interface{}`
-  // representation `collectPresenceCheckedPropNames`/`resolvePropGoType`
-  // flip `props.X` to; the input field's Go zero value for `interface{}` IS
-  // `nil`, so a plain nil-check is exact (no `bf_nullish`-style helper
-  // needed — this is presence, not a `??` fallback).
-  if (
-    body.kind === 'binary' &&
-    (body.op === '!==' || body.op === '!=' || body.op === '===' || body.op === '==')
-  ) {
-    const other =
-      body.right.kind === 'identifier' && body.right.name === 'undefined' ? body.left :
-      body.left.kind === 'identifier' && body.left.name === 'undefined' ? body.right : null
-    const propName = other ? propNameForPropsBinding(ctx, other) : null
-    if (propName) {
-      const param = propsParams.find(p => p.name === propName)
-      // Guard on the field ACTUALLY being nillable-flipped — a presence
-      // check against a CONCRETE-typed field (a required prop, or an
-      // optional one this memo's shape didn't trigger the flip for, e.g.
-      // via `collectPresenceCheckedPropNames`'s primitive-only /
-      // no-default gate) can't be tested this way (`x != nil` doesn't even
-      // compile against a `string`/`bool` field) — fall through to the
-      // caller's zero-value default instead of emitting invalid Go. Reads
-      // the RAW `in.<Field>` directly — NOT through `propRef`, which
-      // prefers a hoisted `?? <fallback>` local when one exists: that local
-      // already collapsed "absent" into the fallback value at hoist time,
-      // so it's never nil and testing it here would be nonsensical (and,
-      // being concretely typed, wouldn't compile against `nil` either).
-      if (param && ctx.state.nillablePropNames.has(propName)) {
-        const isNe = body.op === '!==' || body.op === '!='
-        // `nillablePropNames` stays keyed by the LOCAL name (a source-level
-        // set); the emitted field is caller-facing (#2525).
-        return `in.${capitalizeFieldName(param.sourceName ?? propName)} ${isNe ? '!=' : '=='} nil`
-      }
-    }
-  }
-
-  // () => cond() ? A : B where each branch is a module string const or a
-  // string literal, and `cond` is a signal/memo this resolver can evaluate.
-  if (body.kind === 'conditional') {
-    const condName = getterCallName(body.test)
-    if (condName) {
-      const resolveBranch = (b: ParsedExpr): string | null => {
-        if (b.kind === 'literal' && b.literalType === 'string') return JSON.stringify(b.value)
-        if (b.kind === 'identifier') {
-          const constVal = ctx.state.moduleStringConsts.get(b.name)
-          return constVal !== undefined ? JSON.stringify(constVal) : null
-        }
-        return null
-      }
-      const t = resolveBranch(body.consequent)
-      const f = resolveBranch(body.alternate)
-      if (t !== null && f !== null) {
-        let condGo: string | null = null
-        const condSignal = signals.find(sg => sg.getter === condName)
-        if (condSignal) {
-          condGo = signalSeedValueGo(ctx, condSignal, propsParams, propFallbackVars, undefined)
-        } else {
-          const condMemo = (ctx.state.currentMemos ?? []).find(m => m.name === condName)
-          // A condition memo already on the resolution stack (self- or
-          // mutually-referencing ternaries) falls back to null — the same
-          // zero-value default as any other unresolved shape — instead of
-          // recursing forever.
-          if (condMemo && !resolving.has(condMemo.name)) {
-            condGo = computeMemoInitialValueOrNull(
-              ctx, condMemo, signals, propsParams, propFallbackVars,
-              new Set([...resolving, condMemo.name]),
-            )
-          }
-        }
-        if (condGo === 'true') return t
-        if (condGo === 'false') return f
-        if (condGo !== null) {
-          return `func() string { if ${condGo} { return ${t} }; return ${f} }()`
-        }
-      }
-    }
-
-    // () => cond() ? branchA() : branchB() — a ternary whose CONDITION and
-    // BOTH branches are getter calls (signals/memos), not string literals
-    // (#2260's `isPressed = isControlled() ? controlledPressed() :
-    // internalPressed()`). `resolveGetterValueAsGo` resolves each — a
-    // presence-check memo like `isControlled` above already yields a Go
-    // `bool` expression, so the condition needs no extra wrapping.
-    //
-    // GATED to both branches being boolean-typed signals/memos
-    // (`isBooleanTypedGetter`) — `getterCallName` only checks call SHAPE,
-    // not type, so an ungated version would also match a derived
-    // string/number memo (`label = isActive() ? activeLabel() :
-    // inactiveLabel()`) and hardcode an invalid `func() bool { return
-    // "..." }()` (Copilot review finding on the initial version of this
-    // branch).
-    if (condName) {
-      const tName = getterCallName(body.consequent)
-      const fName = getterCallName(body.alternate)
-      if (
-        tName && fName &&
-        isBooleanTypedGetter(ctx, tName, signals) &&
-        isBooleanTypedGetter(ctx, fName, signals)
-      ) {
-        const condGo = resolveGetterValueAsGo(ctx, condName, signals, propsParams, propFallbackVars, resolving)
-        const tGo = resolveGetterValueAsGo(ctx, tName, signals, propsParams, propFallbackVars, resolving)
-        const fGo = resolveGetterValueAsGo(ctx, fName, signals, propsParams, propFallbackVars, resolving)
-        if (condGo !== null && tGo !== null && fGo !== null) {
-          return `func() bool { if ${condGo} { return ${tGo} }; return ${fGo} }()`
-        }
-      }
-    }
-  }
-
-  // () => <ref> <*|+|-|/> <non-negative int>. The operand must be a
-  // non-negative integer literal; float/negative bodies fall through unchanged.
-  if (
-    body.kind === 'binary' &&
-    ['*', '+', '-', '/'].includes(body.op) &&
-    body.right.kind === 'literal' &&
-    body.right.literalType === 'number' &&
-    typeof body.right.value === 'number' &&
-    Number.isInteger(body.right.value) &&
-    body.right.value >= 0
-  ) {
-    const operator = body.op
-    const operand = String(body.right.value)
-
-    // <length read> <*|+|-> N — `bf.Length(...)` is a Go `int` call
-    // expression, a single operand under any binary operator (no grouping
-    // needed). Not `/`: Go's integer division truncates where JS yields a
-    // fraction (`3 / 2` is `1.5`), so that body keeps falling through.
-    if (operator !== '/') {
-      const lengthGo = resolveLengthReadGo(ctx, body.left, signals, propsParams, propFallbackVars, propRef, resolving)
-      if (lengthGo !== null) return `${lengthGo} ${operator} ${operand}`
-    }
-
-    // getter() * N — return the signal's (or, #2168 memo-chain, another
-    // memo's) Go initial value times N. `resolveGetterValueAsGo` checks
-    // `signals` first (unchanged behavior for a signal-derived memo like
-    // `doubled = createMemo(() => count() * 2)`), then falls back to
-    // `ctx.state.currentMemos` and recurses — needed for a memo derived from
-    // ANOTHER memo (`label = createMemo(() => doubled() + 1)`), which this
-    // branch previously couldn't recognize at all (a signals-only lookup),
-    // silently folding to the Go zero value instead of "7".
-    // getter() <op> N over a BOXED memo (`total() * 2` where `total` is
-    // `bf.Add(…)`): Go has no `any * int`, so the shared runtime helper does
-    // the arithmetic (`bf.Mul(<total>, 2)`), matching the `interface{}`
-    // field type `isBoxedNumericMemoBody` gives this memo.
-    const boxedDep = boxedLiteralArithmeticDep(ctx, body, signals, propsParams, new Set())
-    if (boxedDep) {
-      const depInitial = resolveGetterValueAsGo(ctx, boxedDep, signals, propsParams, propFallbackVars, resolving)
-      return depInitial === null ? null : `bf.${BOXED_ARITHMETIC_HELPER[operator]}(${depInitial}, ${operand})`
-    }
-
-    const depName = getterCallName(body.left)
-    if (depName) {
-      const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
-      // `resolveGetterValueAsGo` can return an IIFE (`func() string { ... }()`
-      // / `func() interface{} { ... }()`, e.g. a memo that shadows `props.X
-      // ?? <lit>`, #2075) rather than a plain atom — none of those return
-      // types support Go's `<op>` arithmetic operators, so splicing one in
-      // bare would emit invalid Go (Copilot review, #2200: e.g. `operator
-      // is not defined on interface{}`/`string`). Bail (fall through to the
-      // caller's zero-value default) rather than emit broken arithmetic.
-      // A `/` body computes through `bf.Div`, whose `any` operands accept
-      // any of those forms (#3379, `literalDivisionDividend`).
-      if (depInitial !== null && operator === '/') return `bf.Div(${depInitial}, ${operand})`
-      const isArithmeticSafe = depInitial !== null && !depInitial.startsWith('func(')
-      if (isArithmeticSafe) {
-        // A signal's own initial value is always a simple atom (a literal,
-        // `in.Field`, a hoisted var) — never needs grouping. A MEMO's initial
-        // value can itself be a compound expression from this exact branch
-        // one level up (`"3 * 2"`), and splicing that in bare under a
-        // DIFFERENT outer operator can silently invert precedence (a memo
-        // chain shaped `inner = () => count() + 1` then `outer = () =>
-        // inner() * 2` would fold to `3 + 1 * 2` = 5 in Go, vs JS's `(3+1)*2`
-        // = 8). Parenthesize whenever `depInitial` is compound (contains
-        // whitespace — a simple atom never does) so precedence is
-        // preserved regardless of which operator combination a memo chain
-        // uses. A simple atom is left bare so existing exact-text
-        // expectations (`Doubled: 3 * 2,`) don't gain a no-op paren.
-        const wrapped = /\s/.test(depInitial) ? `(${depInitial})` : depInitial
-        return `${wrapped} ${operator} ${operand}`
-      }
-    }
-
-    // props.X * N — hoisted var if any, else the input field (asserting int
-    // when the field lowers to interface{}).
-    const propName = propsMemberName(body.left)
-    if (propName) {
-      const param = propsParams.find(p => p.name === propName)
-      if (param) {
-        const hoisted = propFallbackVars.get(propName)
-        if (operator === '/') return `bf.Div(${hoisted ? hoisted.varName : `in.${capitalizeFieldName(propName)}`}, ${operand})`
-        if (hoisted) return `${hoisted.varName} ${operator} ${operand}`
-        const fieldName = capitalizeFieldName(propName)
-        if (param.type) {
-          const goType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
-          if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
-        }
-        return `in.${fieldName} ${operator} ${operand}`
-      }
-    }
-
-    // var * N — destructured prop (no hoisted-var lookup).
-    if (body.left.kind === 'identifier') {
-      const varName = body.left.name
-      const param = propsParams.find(p => p.name === varName)
-      if (param) {
-        const fieldName = capitalizeFieldName(param.sourceName ?? varName)
-        if (operator === '/') return `bf.Div(in.${fieldName}, ${operand})`
-        if (param.type) {
-          const goType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
-          if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
-        }
-        return `in.${fieldName} ${operator} ${operand}`
-      }
-    }
-  }
-
-  // () => items().length / items()?.length ?? 0 / props.items.length — the
-  // length of the constructor-time value (`bf.Length(in.Items)`).
-  {
-    const lengthGo = resolveLengthReadGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving)
-    if (lengthGo !== null) return lengthGo
-  }
-
-  // () => getter() — just return the signal's (or another memo's, #2168
-  // memo-chain) Go initial value.
-  const simpleDep = getterCallName(body)
-  if (simpleDep) {
-    const depInitial = resolveGetterValueAsGo(ctx, simpleDep, signals, propsParams, propFallbackVars, resolving)
-    if (depInitial !== null) {
-      return depInitial
-    }
-  }
-
-  // Numeric getter/prop combinations must not fall through to a zero
-  // seed merely because the RHS isn't a literal. Resolve both atoms via
-  // the same getter/prop paths used below; the shared runtime owns JS
-  // arithmetic and safely accepts Go's concrete or interface values.
-  const numericOperands = numericMemoOperands(ctx, body, signals, propsParams)
-  if (numericOperands && body.kind === 'binary') {
-    const resolveAtom = (expr: ParsedExpr): string | null => {
-      const lengthGo = resolveLengthReadGo(ctx, expr, signals, propsParams, propFallbackVars, propRef, resolving)
-      if (lengthGo !== null) return lengthGo
-      const getter = getterCallName(expr)
-      if (getter) {
-        return resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
-      }
-      const propName = propNameForPropsBinding(ctx, expr)
-      return propName ? propRef(propName) : null
-    }
-    const left = resolveAtom(numericOperands[0])
-    const right = resolveAtom(numericOperands[1])
-    if (left !== null && right !== null) {
-      const helper = body.op === '+' ? 'Add' : body.op === '-' ? 'Sub' : 'Mul'
-      return `bf.${helper}(${left}, ${right})`
-    }
-  }
-
-  // () => props.X — return the prop value (hoisted-aware).
-  const simpleProp = propsMemberName(body)
-  if (simpleProp) {
-    const param = propsParams.find(p => p.name === simpleProp)
-    if (param) return propRef(simpleProp)
-  }
-
-  // () => var — destructured prop, return the input field directly.
-  if (body.kind === 'identifier') {
-    const param = propsParams.find(p => p.name === body.name)
-    if (param) return `in.${capitalizeFieldName(param.sourceName ?? body.name)}`
-  }
-
-  // () => <a> + <b> + … — a string-concatenation chain whose every leaf is a
-  // string literal, a prop reference, or a `.map(cb).join(sep)` chain
-  // (#2492's `joined` memo: `title + ':' + items().map((title) =>
-  // title.a).join(',')`). Doesn't grow into a general `binary` catalogue
-  // entry — only fires for a pure `+` tree resolvable end-to-end via
-  // `resolveStringConcatChainGo`; any other leaf shape falls through to the
-  // caller's zero-value default, same as any other unsupported shape.
-  if (body.kind === 'binary' && body.op === '+') {
-    const concatGo = resolveStringConcatChainGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving)
-    if (concatGo !== null) return concatGo
-  }
-
-  // () => <object>.map(cb).join(sep) as the memo's WHOLE body (no `+`
-  // concatenation) — `map-object-literal-body`'s `ids` memo: `rows().map(t
-  // => ({ id: t.id, done: false })).map(r => r.id).join(',')`. The `+`-chain
-  // arm above only reaches `matchMapJoinChain` as ONE leaf of a
-  // concatenation; a bare chain memo never entered it (#2696 review).
-  const bareChain = matchMapJoinChain(body)
-  if (bareChain) {
-    const chainGo = mapJoinChainToGo(ctx, bareChain, signals, propsParams, propFallbackVars)
-    if (chainGo !== null) return chainGo
-  }
-
   return null
 }
+
+/**
+ * A boxed-arithmetic body ({@link classifyBoxedArithmetic}) → its runtime
+ * helper call. The classification is the one `inferMemoType` reads to give
+ * the field `interface{}`, so the seed and the field type can't disagree.
+ */
+function boxedArithmeticArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const seed = classifyBoxedArithmetic(env.ctx, body, env.signals, env.propsParams)
+  return seed === null ? undefined : emitBoxedArithmetic(env, seed)
+}
+
+function emitBoxedArithmetic(env: SeedEmitEnv, seed: BoxedArithmeticSeed): SeedArmResult {
+  switch (seed.kind) {
+    case 'numeric-operands': {
+      // Numeric getter/prop combinations must not fall through to a zero
+      // seed merely because the RHS isn't a literal. The shared runtime owns
+      // JS arithmetic and safely accepts Go's concrete or interface values.
+      const left = resolveNumericAtomGo(env, seed.left)
+      const right = resolveNumericAtomGo(env, seed.right)
+      return left !== null && right !== null ? `bf.${BOXED_ARITHMETIC_HELPER[seed.op]}(${left}, ${right})` : undefined
+    }
+    case 'literal-division':
+      return literalDivisionGo(env, seed.dividend, String(seed.divisor))
+    case 'nillable-prop-literal': {
+      // A hoisted fallback var is a concrete number, so a prop that has one
+      // keeps the plain arithmetic ({@link literalArithmeticArm}).
+      if (env.propFallbackVars.has(seed.propName)) return undefined
+      const param = env.propsParams.find(p => p.name === seed.propName)
+      const field = capitalizeFieldName(propsMemberName(seed.left) ?? param?.sourceName ?? seed.propName)
+      return `bf.${BOXED_ARITHMETIC_HELPER[seed.op]}(in.${field}, ${String(seed.operand)})`
+    }
+    case 'boxed-memo-identity':
+      // The dependency's boxed value passes through ({@link identityGetterArm}).
+      return undefined
+    case 'boxed-memo-literal': {
+      // getter() <op> N over a BOXED memo: Go has no `any * int`, so the
+      // shared runtime helper does the arithmetic (`bf.Mul(<total>, 2)`).
+      const dep = resolveGetterValueAsGo(env.ctx, seed.dep, env.signals, env.propsParams, env.propFallbackVars, env.resolving)
+      return dep === null ? null : `bf.${BOXED_ARITHMETIC_HELPER[seed.op]}(${dep}, ${String(seed.operand)})`
+    }
+  }
+}
+
+/** A numeric operand ({@link classifyBoxedArithmetic}'s `numeric-operands`) → its constructor value. */
+function resolveNumericAtomGo(env: SeedEmitEnv, expr: ParsedExpr): string | null {
+  const { ctx, signals, propsParams, propFallbackVars, propRef, resolving } = env
+  const lengthGo = resolveLengthReadGo(ctx, expr, signals, propsParams, propFallbackVars, propRef, resolving)
+  if (lengthGo !== null) return lengthGo
+  const getter = getterCallName(expr)
+  if (getter) return resolveGetterValueAsGo(ctx, getter, signals, propsParams, propFallbackVars, resolving)
+  const propName = propNameForPropsBinding(ctx, expr)
+  return propName ? propRef(propName) : null
+}
+
+/**
+ * `bf.Div(<dividend>, N)` for a getter call, `props.X` or destructured-prop
+ * dividend, else null. `bf.Div`'s `any` operands accept any constructor value
+ * form, an IIFE included (#3379).
+ */
+function literalDivisionGo(env: SeedEmitEnv, dividend: ParsedExpr, operand: string): string | null {
+  const dep = getterCallName(dividend)
+  if (dep) {
+    const depInitial = resolveGetterValueAsGo(env.ctx, dep, env.signals, env.propsParams, env.propFallbackVars, env.resolving)
+    return depInitial === null ? null : `bf.Div(${depInitial}, ${operand})`
+  }
+  const propName = propsMemberName(dividend)
+  if (propName && env.propsParams.some(p => p.name === propName)) {
+    const hoisted = env.propFallbackVars.get(propName)
+    return `bf.Div(${hoisted ? hoisted.varName : `in.${capitalizeFieldName(propName)}`}, ${operand})`
+  }
+  const param = dividend.kind === 'identifier' ? env.propsParams.find(p => p.name === dividend.name) : undefined
+  return param ? `bf.Div(in.${capitalizeFieldName(param.sourceName ?? param.name)}, ${operand})` : null
+}
+
+/**
+ * A request-scoped env-signal read (`searchParams().get('k')`, any local
+ * alias, #1922) → the literal key and the reader's canonical field name,
+ * else null. Constraints: the receiver must be a zero-arg call of a local
+ * bound to a registered env signal (`ctx.state.envSignalReadersByLocal`,
+ * keyed by that reader's own registration — not a hardcoded key); the
+ * method must be one that reader's `methods` set recognises; the key
+ * argument must be a string literal.
+ */
+function envGetKey(ctx: GoEmitContext, e: ParsedExpr): { key: string; fieldName: string } | null {
+  if (e.kind !== 'call' || e.callee.kind !== 'member' || e.callee.computed) return null
+  const recvName = getterCallName(e.callee.object)
+  if (recvName === null) return null
+  const reader = ctx.state.envSignalReadersByLocal.get(recvName)
+  if (!reader || !reader.methods.has(e.callee.property)) return null
+  const arg = e.args[0]
+  if (!arg || arg.kind !== 'literal' || arg.literalType !== 'string') return null
+  return { key: String(arg.value), fieldName: capitalizeFieldName(reader.canonicalName) }
+}
+
+/**
+ * () => searchParams().get('k') — a derived memo over the env signal
+ * (#2069). The constructor reads the canonical `in.SearchParams` reader the
+ * handler fills per request, so the memo SSR-computes instead of zero-valuing.
+ */
+function envGetArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const m = envGetKey(env.ctx, body)
+  return m === null ? undefined : `in.${m.fieldName}.Get(${JSON.stringify(m.key)})`
+}
+
+/**
+ * () => searchParams().get('k') ?? '<lit>' — the defaulted form. Go's
+ * `SearchParams.Get` returns "" for an absent key (it can't surface JS's
+ * null), so the default fires on "" — the same documented `?? → or`
+ * divergence as the template-position lowering (`or (.SearchParams.Get
+ * "k") "<lit>"`); the two positions stay consistent.
+ */
+function envGetDefaultArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'logical' || (body.op !== '??' && body.op !== '||')) return undefined
+  if (body.right.kind !== 'literal' || body.right.literalType !== 'string') return undefined
+  const m = envGetKey(env.ctx, body.left)
+  if (m === null) return undefined
+  const def = JSON.stringify(String(body.right.value))
+  return `func() string { if v := in.${m.fieldName}.Get(${JSON.stringify(m.key)}); v != "" { return v }; return ${def} }()`
+}
+
+/**
+ * () => props.X.filter((p) => <predicate>) — a LIST-valued derived memo
+ * chained off a sibling memo the predicate closes over (e.g. a
+ * searchParams()-derived `tag`). Env-signal getters are excluded from the
+ * free-var materialization set: they're per-request READERS, not values,
+ * and the runtime evaluator has no way to invoke one.
+ */
+function filterArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const match = matchFilterArmMemo(env.ctx, body, env.signals, env.propsParams)
+  if (!match) return undefined
+  const { propName, predJSON, paramName, freeVars } = match
+  const currentIndex = (env.ctx.state.currentMemos ?? []).findIndex(m => m.name === env.currentMemoName)
+  const envEntries: string[] = []
+  for (const name of freeVars) {
+    const goExpr = filterEnvEntryGo(env, name, currentIndex)
+    if (goExpr === null) return undefined
+    envEntries.push(`${JSON.stringify(name)}: ${goExpr}`)
+  }
+  const itemsField = `in.${capitalizeFieldName(propName)}`
+  const envMap = `map[string]any{${envEntries.join(', ')}}`
+  return `bf.FilterEval(${itemsField}, "${escapeGoString(predJSON)}", ${JSON.stringify(paramName)}, ${envMap})`
+}
+
+/** One free variable of a filter-arm predicate → its constructor value, else null. */
+function filterEnvEntryGo(env: SeedEmitEnv, name: string, currentIndex: number): string | null {
+  const { ctx, signals, propsParams, propFallbackVars, resolving } = env
+  const memos = ctx.state.currentMemos ?? []
+  const siblingIndex = memos.findIndex(m => m.name === name)
+  if (siblingIndex >= 0) {
+    // Only a sibling declared EARLIER than the memo being computed is
+    // eligible — mirrors JS declaration order and rules out both
+    // self-reference and any mutual pair (at most one direction can
+    // satisfy `earlier`), independent of the resolving-stack guard
+    // below. A hoisted local (the constructor emitted it once already,
+    // #2075/#2077 review finding 3) is reused verbatim instead of
+    // recomputing the expression a second time.
+    const siblingMemo = memos[siblingIndex]
+    const eligible = currentIndex >= 0 && siblingIndex < currentIndex && !resolving.has(siblingMemo.name)
+    if (!eligible) return null
+    return ctx.state.hoistedMemoLocals.get(siblingMemo.name) ?? computeMemoInitialValueOrNull(
+      ctx, siblingMemo, signals, propsParams, propFallbackVars,
+      new Set([...resolving, siblingMemo.name]),
+    )
+  }
+  const sig = signals.find(s => s.getter === name)
+  if (sig) return signalSeedValueGo(ctx, sig, propsParams, propFallbackVars, undefined)
+  return propsParams.some(p => p.name === name) ? env.propRef(name) : null
+}
+
+/**
+ * () => !<operand> — a negation memo (`() => !open()`, `() => !tags()`,
+ * `() => !props.label`). JS `!` is `!Boolean(x)`: `bf.Truthy` is the
+ * runtime's `Boolean(x)` (nil/absent falsy, a non-nil EMPTY slice/map
+ * truthy) — the same decision the template-position `!` makes through
+ * `lowerJsNot`'s `not (bf_truthy x)`.
+ */
+function negationArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'unary' || body.op !== '!') return undefined
+  const operand = resolveComparisonOperandGo(
+    env.ctx, body.argument, env.signals, env.propsParams, env.propFallbackVars,
+    new Set([...env.resolving, env.currentMemoName]),
+  )
+  return operand === null ? undefined : `!bf.Truthy(${operand})`
+}
+
+const EQUALITY_OPS: ReadonlySet<string> = new Set(['===', '!==', '==', '!='])
+
+/**
+ * () => getter() === 'lit' / !== 'lit' — a selection memo. Resolves to a Go
+ * bool when the signal's initial value is itself a string literal, read off
+ * the seed's parsed tree whatever its quote style (`"a"`, `'it\'s'`).
+ */
+function selectionArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'binary' || !EQUALITY_OPS.has(body.op)) return undefined
+  if (body.right.kind !== 'literal' || body.right.literalType !== 'string') return undefined
+  const depName = getterCallName(body.left)
+  const seed = depName ? env.signals.find(sg => sg.getter === depName)?.parsed : undefined
+  if (seed?.kind !== 'literal' || seed.literalType !== 'string') return undefined
+  const equal = String(seed.value) === String(body.right.value)
+  return String(body.op.startsWith('!') ? !equal : equal)
+}
+
+/**
+ * () => props.X ?? false — a boolean passthrough memo. Go's bool zero value
+ * IS the `?? false` fallback, so the raw input field carries it exactly.
+ */
+function boolPassthroughArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'logical' || body.op !== '??') return undefined
+  if (body.right.kind !== 'literal' || body.right.value !== false) return undefined
+  const propName = propsMemberName(body.left)
+  return propName ? env.propRef(propName) : undefined
+}
+
+/**
+ * () => props.X !== undefined (or !=/===/==) — the "controlled component"
+ * idiom's `isControlled` memo (#2260). Distinguishing "caller passed a
+ * value" from "caller omitted the prop" needs the nillable `interface{}`
+ * representation `collectPresenceCheckedPropNames`/`resolvePropGoType`
+ * flip `props.X` to; the input field's Go zero value for `interface{}` IS
+ * `nil`, so a plain nil-check is exact (no `bf_nullish`-style helper
+ * needed — this is presence, not a `??` fallback).
+ *
+ * Guarded on the field ACTUALLY being nillable-flipped — a presence check
+ * against a CONCRETE-typed field (a required prop, or an optional one this
+ * memo's shape didn't trigger the flip for, e.g. via
+ * `collectPresenceCheckedPropNames`'s primitive-only / no-default gate)
+ * can't be tested this way (`x != nil` doesn't even compile against a
+ * `string`/`bool` field) — the caller's zero-value default applies instead
+ * of invalid Go. Reads the RAW `in.<Field>` directly — NOT through
+ * `propRef`, which prefers a hoisted `?? <fallback>` local when one exists:
+ * that local already collapsed "absent" into the fallback value at hoist
+ * time, so it's never nil and testing it here would be nonsensical (and,
+ * being concretely typed, wouldn't compile against `nil` either).
+ */
+function presenceCheckArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'binary' || !EQUALITY_OPS.has(body.op)) return undefined
+  const other =
+    body.right.kind === 'identifier' && body.right.name === 'undefined' ? body.left :
+    body.left.kind === 'identifier' && body.left.name === 'undefined' ? body.right : null
+  const propName = other ? propNameForPropsBinding(env.ctx, other) : null
+  const param = propName ? env.propsParams.find(p => p.name === propName) : undefined
+  if (!propName || !param || !env.ctx.state.nillablePropNames.has(propName)) return undefined
+  const isNe = body.op === '!==' || body.op === '!='
+  // `nillablePropNames` stays keyed by the LOCAL name (a source-level
+  // set); the emitted field is caller-facing (#2525).
+  return `in.${capitalizeFieldName(param.sourceName ?? propName)} ${isNe ? '!=' : '=='} nil`
+}
+
+/** A string-literal or module-string-const ternary branch → its Go string literal, else null. */
+function stringBranchGo(ctx: GoEmitContext, b: ParsedExpr): string | null {
+  if (b.kind === 'literal' && b.literalType === 'string') return JSON.stringify(b.value)
+  if (b.kind === 'identifier') {
+    const constVal = ctx.state.moduleStringConsts.get(b.name)
+    return constVal !== undefined ? JSON.stringify(constVal) : null
+  }
+  return null
+}
+
+/**
+ * () => cond() ? A : B where each branch is a module string const or a
+ * string literal, and `cond` is a signal/memo this resolver can evaluate.
+ */
+function stringTernaryArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'conditional') return undefined
+  const condName = getterCallName(body.test)
+  if (!condName) return undefined
+  const t = stringBranchGo(env.ctx, body.consequent)
+  const f = stringBranchGo(env.ctx, body.alternate)
+  if (t === null || f === null) return undefined
+  const condGo = ternaryConditionGo(env, condName)
+  if (condGo === 'true') return t
+  if (condGo === 'false') return f
+  return condGo === null ? undefined : `func() string { if ${condGo} { return ${t} }; return ${f} }()`
+}
+
+/** A string ternary's getter condition → its constructor value, else null. */
+function ternaryConditionGo(env: SeedEmitEnv, condName: string): string | null {
+  const { ctx, signals, propsParams, propFallbackVars, resolving } = env
+  const condSignal = signals.find(sg => sg.getter === condName)
+  if (condSignal) return signalSeedValueGo(ctx, condSignal, propsParams, propFallbackVars, undefined)
+  const condMemo = (ctx.state.currentMemos ?? []).find(m => m.name === condName)
+  // A condition memo already on the resolution stack (self- or
+  // mutually-referencing ternaries) falls back to null — the same
+  // zero-value default as any other unresolved shape — instead of
+  // recursing forever.
+  if (!condMemo || resolving.has(condMemo.name)) return null
+  return computeMemoInitialValueOrNull(
+    ctx, condMemo, signals, propsParams, propFallbackVars,
+    new Set([...resolving, condMemo.name]),
+  )
+}
+
+/**
+ * () => cond() ? branchA() : branchB() — a ternary whose CONDITION and
+ * BOTH branches are getter calls (signals/memos), not string literals
+ * (#2260's `isPressed = isControlled() ? controlledPressed() :
+ * internalPressed()`). `resolveGetterValueAsGo` resolves each — a
+ * presence-check memo like `isControlled` above already yields a Go
+ * `bool` expression, so the condition needs no extra wrapping.
+ *
+ * GATED to both branches being boolean-typed signals/memos
+ * (`isBooleanTypedGetter`) — `getterCallName` only checks call SHAPE,
+ * not type, so an ungated version would also match a derived
+ * string/number memo (`label = isActive() ? activeLabel() :
+ * inactiveLabel()`) and hardcode an invalid `func() bool { return
+ * "..." }()` (Copilot review finding on the initial version of this
+ * branch).
+ */
+function booleanGetterTernaryArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'conditional') return undefined
+  const { ctx, signals, propsParams, propFallbackVars, resolving } = env
+  const condName = getterCallName(body.test)
+  const tName = getterCallName(body.consequent)
+  const fName = getterCallName(body.alternate)
+  if (!condName || !tName || !fName) return undefined
+  if (!isBooleanTypedGetter(ctx, tName, signals) || !isBooleanTypedGetter(ctx, fName, signals)) return undefined
+  const condGo = resolveGetterValueAsGo(ctx, condName, signals, propsParams, propFallbackVars, resolving)
+  const tGo = resolveGetterValueAsGo(ctx, tName, signals, propsParams, propFallbackVars, resolving)
+  const fGo = resolveGetterValueAsGo(ctx, fName, signals, propsParams, propFallbackVars, resolving)
+  if (condGo === null || tGo === null || fGo === null) return undefined
+  return `func() bool { if ${condGo} { return ${tGo} }; return ${fGo} }()`
+}
+
+/**
+ * () => <ref> <*|+|-|/> <non-negative int> over a Go number (a boxed operand
+ * took {@link boxedArithmeticArm}). The operand must be a non-negative
+ * integer literal; float/negative bodies fall through unchanged.
+ */
+function literalArithmeticArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'binary' || !['*', '+', '-', '/'].includes(body.op)) return undefined
+  const value = nonNegativeIntLiteral(body.right)
+  if (value === null) return undefined
+  const operator = body.op
+  const operand = String(value)
+  // A `/` body computes through `bf.Div` whatever the dividend's form.
+  if (operator === '/') return literalDivisionGo(env, body.left, operand) ?? undefined
+  // <length read> <*|+|-> N — `bf.Length(...)` is a Go `int` call
+  // expression, a single operand under any binary operator (no grouping
+  // needed).
+  const { ctx, signals, propsParams, propFallbackVars, propRef, resolving } = env
+  const lengthGo = resolveLengthReadGo(ctx, body.left, signals, propsParams, propFallbackVars, propRef, resolving)
+  if (lengthGo !== null) return `${lengthGo} ${operator} ${operand}`
+  return getterLiteralArithmeticGo(env, body.left, operator, operand)
+    ?? propLiteralArithmeticGo(env, body.left, operator, operand)
+    ?? undefined
+}
+
+/**
+ * getter() <op> N — the signal's (or, #2168 memo-chain, another memo's) Go
+ * initial value <op> N. `resolveGetterValueAsGo` checks `signals` first
+ * (`doubled = createMemo(() => count() * 2)`), then falls back to
+ * `ctx.state.currentMemos` and recurses — needed for a memo derived from
+ * ANOTHER memo (`label = createMemo(() => doubled() + 1)`).
+ */
+function getterLiteralArithmeticGo(env: SeedEmitEnv, left: ParsedExpr, operator: string, operand: string): string | null {
+  const depName = getterCallName(left)
+  if (!depName) return null
+  const depInitial = resolveGetterValueAsGo(env.ctx, depName, env.signals, env.propsParams, env.propFallbackVars, env.resolving)
+  // `resolveGetterValueAsGo` can return an IIFE (`func() string { ... }()`
+  // / `func() interface{} { ... }()`, e.g. a memo that shadows `props.X
+  // ?? <lit>`, #2075) rather than a plain atom — none of those return
+  // types support Go's `<op>` arithmetic operators, so splicing one in
+  // bare would emit invalid Go (Copilot review, #2200: e.g. `operator
+  // is not defined on interface{}`/`string`). Bail (fall through to the
+  // caller's zero-value default) rather than emit broken arithmetic.
+  if (depInitial === null || depInitial.startsWith('func(')) return null
+  // A signal's own initial value is always a simple atom (a literal,
+  // `in.Field`, a hoisted var) — never needs grouping. A MEMO's initial
+  // value can itself be a compound expression from this exact arm one
+  // level up (`"3 * 2"`), and splicing that in bare under a DIFFERENT
+  // outer operator can silently invert precedence (a memo chain shaped
+  // `inner = () => count() + 1` then `outer = () => inner() * 2` would fold
+  // to `3 + 1 * 2` = 5 in Go, vs JS's `(3+1)*2` = 8). Parenthesize whenever
+  // `depInitial` is compound (contains whitespace — a simple atom never
+  // does) so precedence is preserved regardless of which operator
+  // combination a memo chain uses. A simple atom is left bare so existing
+  // exact-text expectations (`Doubled: 3 * 2,`) don't gain a no-op paren.
+  const wrapped = /\s/.test(depInitial) ? `(${depInitial})` : depInitial
+  return `${wrapped} ${operator} ${operand}`
+}
+
+/**
+ * props.X <op> N — hoisted var if any, else the input field (asserting int
+ * when the field lowers to interface{}); var <op> N — a destructured prop's
+ * input field (no hoisted-var lookup).
+ */
+function propLiteralArithmeticGo(env: SeedEmitEnv, left: ParsedExpr, operator: string, operand: string): string | null {
+  const propName = propsMemberName(left)
+  const memberParam = propName ? env.propsParams.find(p => p.name === propName) : undefined
+  if (propName && memberParam) {
+    const hoisted = env.propFallbackVars.get(propName)
+    if (hoisted) return `${hoisted.varName} ${operator} ${operand}`
+    return `${intFieldRead(env.ctx, memberParam, capitalizeFieldName(propName))} ${operator} ${operand}`
+  }
+  const param = left.kind === 'identifier' ? env.propsParams.find(p => p.name === left.name) : undefined
+  if (!param) return null
+  return `${intFieldRead(env.ctx, param, capitalizeFieldName(param.sourceName ?? param.name))} ${operator} ${operand}`
+}
+
+/** `in.<Field>`, asserted `.(int)` when the prop's field lowers to `interface{}`. */
+function intFieldRead(ctx: GoEmitContext, param: SeedPropParam, fieldName: string): string {
+  const boxed = param.type !== undefined && typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed) === 'interface{}'
+  return boxed ? `in.${fieldName}.(int)` : `in.${fieldName}`
+}
+
+/**
+ * () => items().length / items()?.length ?? 0 / props.items.length — the
+ * length of the constructor-time value (`bf.Length(in.Items)`).
+ */
+function lengthReadArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const { ctx, signals, propsParams, propFallbackVars, propRef, resolving } = env
+  return resolveLengthReadGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving) ?? undefined
+}
+
+/**
+ * () => getter() — the signal's (or another memo's, #2168 memo-chain) Go
+ * initial value, a boxed memo's included.
+ */
+function identityGetterArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const simpleDep = getterCallName(body)
+  if (!simpleDep) return undefined
+  return resolveGetterValueAsGo(env.ctx, simpleDep, env.signals, env.propsParams, env.propFallbackVars, env.resolving) ?? undefined
+}
+
+/** () => props.X — the prop value (hoisted-aware). */
+function propReadArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const simpleProp = propsMemberName(body)
+  return simpleProp && env.propsParams.some(p => p.name === simpleProp) ? env.propRef(simpleProp) : undefined
+}
+
+/** () => var — a destructured prop, the input field directly. */
+function destructuredPropReadArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'identifier') return undefined
+  const param = env.propsParams.find(p => p.name === body.name)
+  return param ? `in.${capitalizeFieldName(param.sourceName ?? body.name)}` : undefined
+}
+
+/**
+ * () => <a> + <b> + … — a string-concatenation chain whose every leaf is a
+ * string literal, a prop reference, or a `.map(cb).join(sep)` chain
+ * (#2492's `joined` memo: `title + ':' + items().map((title) =>
+ * title.a).join(',')`). Doesn't grow into a general `binary` catalogue
+ * entry — only fires for a pure `+` tree resolvable end-to-end via
+ * `resolveStringConcatChainGo`; any other leaf shape falls through to the
+ * caller's zero-value default, same as any other unsupported shape.
+ */
+function stringConcatArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  if (body.kind !== 'binary' || body.op !== '+') return undefined
+  const { ctx, signals, propsParams, propFallbackVars, propRef, resolving } = env
+  return resolveStringConcatChainGo(ctx, body, signals, propsParams, propFallbackVars, propRef, resolving) ?? undefined
+}
+
+/**
+ * () => <object>.map(cb).join(sep) as the memo's WHOLE body (no `+`
+ * concatenation) — `map-object-literal-body`'s `ids` memo: `rows().map(t
+ * => ({ id: t.id, done: false })).map(r => r.id).join(',')`. The `+`-chain
+ * arm above only reaches `matchMapJoinChain` as ONE leaf of a
+ * concatenation; a bare chain memo never entered it (#2696 review).
+ */
+function mapJoinChainArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
+  const bareChain = matchMapJoinChain(body)
+  if (!bareChain) return undefined
+  return mapJoinChainToGo(env.ctx, bareChain, env.signals, env.propsParams, env.propFallbackVars) ?? undefined
+}
+
+/**
+ * The parsed-body arms in match order. The first arm whose verdict isn't
+ * `undefined` decides the seed.
+ */
+const PARSED_BODY_ARMS: readonly ((env: SeedEmitEnv, body: ParsedExpr) => SeedArmResult)[] = [
+  boxedArithmeticArm,
+  envGetArm,
+  envGetDefaultArm,
+  filterArm,
+  negationArm,
+  selectionArm,
+  boolPassthroughArm,
+  presenceCheckArm,
+  stringTernaryArm,
+  booleanGetterTernaryArm,
+  literalArithmeticArm,
+  lengthReadArm,
+  identityGetterArm,
+  propReadArm,
+  destructuredPropReadArm,
+  stringConcatArm,
+  mapJoinChainArm,
+]
 
 /**
  * `<expr> + <expr> + …` chain whose every leaf resolves to a Go string
@@ -1455,8 +1277,7 @@ export function computeMemoInitialValueOrNull(
 
   // Expression-bodied memo shapes, matched structurally on `parsed`.
   if (memo.parsed) {
-    const fromParsed = boxedNillablePropArithmetic(ctx, memo.parsed, propsParams, propFallbackVars)
-      ?? memoInitialFromParsedBody(ctx, memo.parsed, signals, propsParams, propFallbackVars, memo.name, resolving)
+    const fromParsed = memoInitialFromParsedBody(ctx, memo.parsed, signals, propsParams, propFallbackVars, memo.name, resolving)
     if (fromParsed !== null) return fromParsed
   }
 
@@ -1567,18 +1388,8 @@ export function computeComparisonTernaryGo(
   const isNe = cond.op === '!==' || cond.op === '!='
   if (!isEq && !isNe) return null
 
-  const branch = (bn: ParsedExpr): string | null => {
-    if (bn.kind === 'literal' && bn.literalType === 'string') {
-      return JSON.stringify(bn.value)
-    }
-    if (bn.kind === 'identifier') {
-      const cv = ctx.state.moduleStringConsts.get(bn.name)
-      return cv !== undefined ? JSON.stringify(cv) : null
-    }
-    return null
-  }
-  const t = branch(parsed.consequent)
-  const f = branch(parsed.alternate)
+  const t = stringBranchGo(ctx, parsed.consequent)
+  const f = stringBranchGo(ctx, parsed.alternate)
   if (t === null || f === null) return null
 
   const condGo = resolveComparisonOperandGo(
