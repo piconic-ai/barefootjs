@@ -6493,6 +6493,17 @@
         "text"
       ]
     },
+    "loop-row-child-prop-named-row-plural": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-renamed-rows-sibling-plural": {
       "kinds": [
         "identifier",
@@ -6536,6 +6547,28 @@
       ]
     },
     "loop-row-child-scalar-row-wrapper-nested-component": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-shared-wrapper": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-shared-wrapper-nested-component": {
       "kinds": [
         "identifier",
         "member"
