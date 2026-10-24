@@ -9,13 +9,19 @@
  * harness's handler stand-in agree on `item.Tone`.
  */
 
-import { parseExpression, type LoopBindingPathSegment, type LoopParamBinding, type ParsedExpr } from '@barefootjs/jsx'
+import { parseExpression, type LoopBindingPathSegment, type LoopParamBinding, type ParsedExpr, type TemplatePart } from '@barefootjs/jsx'
 import { capitalizeFieldName } from './go-naming.ts'
 
 /** The loop callback's row binding: a plain `param`, or a destructure (`paramBindings`, which wins when non-empty). */
 export interface LoopRowBinding {
   param?: string
   paramBindings?: readonly LoopParamBinding[]
+  /**
+   * The callback's index param (`(item, i) => …`), when it binds one. Only
+   * the key lowering reads it (`loopKeyToGoRowExpr`): it is the Go range
+   * index `i` of the constructor's row loop.
+   */
+  index?: string | null
 }
 
 /**
@@ -90,14 +96,118 @@ export function rowReadGoAccessor(expr: ParsedExpr, row: LoopRowBinding, shape: 
  * evaluated against the SOURCE row `item`?" — the datum the `.map()`
  * callback receives, never a child component's `Input` built from it
  * (`item.id` → `item.ID`, `({ id }) => … key={id}` → `item.ID`, a scalar
- * row's `key={i}` → `item`). Null for a key that is not a row read: a
- * computed expression, or the whole row of a struct row (`key={item}`,
- * which JS stringifies as `[object Object]`) — the caller then skips
- * `data-key` rather than emit something that won't compile.
+ * row's `key={i}` → `item`). Beyond a plain row read, the key may be built
+ * from the row and the index param (`key={i}` → the range index `i`) with
+ * `String(x)` / `x.toString()`, a template literal or `+`
+ * (`lowerRowKeyExpr`); the caller stringifies the answer with `bf.String`.
+ * (A key reading a callback-preamble local never gets here: Phase 1
+ * refuses it, since the key is evaluated before the body runs.) Null for anything else — a read of outer state, a struct row
+ * as a whole (`key={item}`, which JS stringifies as `[object Object]`), a
+ * `+` whose operand types aren't known — so the caller can refuse loudly
+ * rather than emit something that won't compile or silently drop the key.
  */
 export function loopKeyToGoRowExpr(key: string | undefined, row: LoopRowBinding, shape: LoopRowShape = {}): string | null {
   if (!key) return null
-  const accessor = rowReadGoAccessor(parseExpression(key), row, shape)
-  if (accessor === 'item' && !shape.scalar) return null
-  return accessor
+  const parsed = parseExpression(key)
+  // `String(x)` is what `bf.String` already does: hand back `x` itself.
+  const stringified = stringCallArgument(parsed)
+  const lowered = lowerRowKeyExpr(stringified ?? parsed, row, shape)
+  return lowered?.go ?? null
+}
+
+/** What a lowered key operand is known to hold, which decides what `+` means. */
+type KeyOperandKind = 'string' | 'number' | 'unknown'
+
+interface LoweredKeyOperand {
+  go: string
+  kind: KeyOperandKind
+}
+
+const NUMERIC_GO_TYPES: ReadonlySet<string> = new Set(['int', 'int64', 'float64'])
+
+/** `String(x)` / `x.toString()` → `x`, else null. */
+function stringCallArgument(expr: ParsedExpr): ParsedExpr | null {
+  if (expr.kind !== 'call') return null
+  if (expr.callee.kind === 'identifier' && expr.callee.name === 'String' && expr.args.length === 1) return expr.args[0]
+  if (expr.callee.kind === 'member' && !expr.callee.computed && !expr.callee.optional && expr.callee.property === 'toString' && expr.args.length === 0) {
+    return expr.callee.object
+  }
+  return null
+}
+
+/**
+ * Lower one operand of a row key to Go code in the constructor's row loop
+ * (`for i, item := range …`), or null when it can't be.
+ */
+function lowerRowKeyExpr(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowShape): LoweredKeyOperand | null {
+  switch (expr.kind) {
+    case 'literal':
+      return lowerKeyLiteral(expr)
+    case 'identifier':
+      if (row.index && expr.name === row.index) return { go: 'i', kind: 'number' }
+      return lowerRowKeyRead(expr, row, shape)
+    case 'member':
+      return lowerRowKeyRead(expr, row, shape)
+    case 'call': {
+      const arg = stringCallArgument(expr)
+      const inner = arg ? lowerRowKeyExpr(arg, row, shape) : null
+      return inner ? asKeyString(inner) : null
+    }
+    case 'template-literal':
+      return lowerKeyTemplate(expr.parts, row, shape)
+    case 'binary':
+      return expr.op === '+' ? lowerKeyPlus(expr.left, expr.right, row, shape) : null
+    default:
+      return null
+  }
+}
+
+function lowerKeyLiteral(expr: Extract<ParsedExpr, { kind: 'literal' }>): LoweredKeyOperand | null {
+  if (expr.literalType === 'string') return { go: JSON.stringify(expr.value), kind: 'string' }
+  if (expr.literalType === 'number') return { go: expr.raw ?? String(expr.value), kind: 'number' }
+  return null
+}
+
+/** `operand` as a Go string: as is when it already is one, else through `bf.String`. */
+function asKeyString(operand: LoweredKeyOperand): LoweredKeyOperand {
+  return operand.kind === 'string' ? operand : { go: `bf.String(${operand.go})`, kind: 'string' }
+}
+
+/** A template literal key: its literal chunks and stringified substitutions, joined. */
+function lowerKeyTemplate(parts: readonly TemplatePart[], row: LoopRowBinding, shape: LoopRowShape): LoweredKeyOperand | null {
+  const pieces: string[] = []
+  for (const part of parts) {
+    if (part.type === 'string') {
+      if (part.value !== '') pieces.push(JSON.stringify(part.value))
+      continue
+    }
+    const inner = lowerRowKeyExpr(part.expr, row, shape)
+    if (!inner) return null
+    pieces.push(asKeyString(inner).go)
+  }
+  return { go: pieces.length === 0 ? '""' : pieces.join(' + '), kind: 'string' }
+}
+
+/**
+ * JS `+` concatenates when either side is a string and adds when both are
+ * numbers; with an operand of unknown type the two can't be told apart, so
+ * it declines.
+ */
+function lowerKeyPlus(leftExpr: ParsedExpr, rightExpr: ParsedExpr, row: LoopRowBinding, shape: LoopRowShape): LoweredKeyOperand | null {
+  const left = lowerRowKeyExpr(leftExpr, row, shape)
+  const right = lowerRowKeyExpr(rightExpr, row, shape)
+  if (!left || !right) return null
+  if (left.kind === 'string' || right.kind === 'string') return { go: `bf.ConcatStr(${left.go}, ${right.go})`, kind: 'string' }
+  if (left.kind === 'number' && right.kind === 'number') return { go: `bf.Add(${left.go}, ${right.go})`, kind: 'number' }
+  return null
+}
+
+/** A plain row read as a key operand; a struct row as a whole declines. */
+function lowerRowKeyRead(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowShape): LoweredKeyOperand | null {
+  const accessor = rowReadGoAccessor(expr, row, shape)
+  if (accessor === null || (accessor === 'item' && !shape.scalar)) return null
+  const path = rowItemPath(expr, row)
+  const goType = path && shape.readGoType ? shape.readGoType(path) : null
+  const kind: KeyOperandKind = goType === 'string' ? 'string' : goType && NUMERIC_GO_TYPES.has(goType) ? 'number' : 'unknown'
+  return { go: accessor, kind }
 }

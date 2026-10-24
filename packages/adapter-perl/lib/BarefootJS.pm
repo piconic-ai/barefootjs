@@ -158,10 +158,12 @@ sub hydration_attrs ($self) {
 # reference, which stamps it on each loop item's scope root. The value is set
 # on the child instance by the child renderer (`register_child_renderer` /
 # `register_components_from_manifest`) from the JSX `key` prop — a reserved
-# prop, never a real template variable.
+# prop, never a real template variable. The key prints as JS `String(key)`
+# does (`string`): a JSON boolean row is `true` / `false`, not `1` / `0`.
 sub data_key_attr ($self) {
     my $k = $self->_data_key;
     return '' unless defined $k;
+    $k = $self->string($k);
     $k =~ s/&/&amp;/g;
     $k =~ s/"/&quot;/g;
     return qq{ data-key="$k"};

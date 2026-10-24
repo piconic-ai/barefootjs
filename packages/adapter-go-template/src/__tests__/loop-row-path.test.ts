@@ -53,4 +53,23 @@ describe('loop-row path resolution (#3313)', () => {
     // A struct row passed whole to a child prop is a row read; only the key declines it.
     expect(rowReadGoAccessor(parseExpression('o'), { param: 'o' }, shape)).toBe('item')
   })
+
+  test('a key built from the row and the index lowers to Go code in the row loop', () => {
+    const row = { param: 'r', index: 'i' }
+    const shape = { readGoType: (segments: readonly unknown[]) => (segments.length === 1 ? 'string' : null) }
+    expect(loopKeyToGoRowExpr('i', row)).toBe('i')
+    expect(loopKeyToGoRowExpr('String(r.id)', row, shape)).toBe('item.ID')
+    expect(loopKeyToGoRowExpr('r.id.toString()', row, shape)).toBe('item.ID')
+    expect(loopKeyToGoRowExpr('`${r.id}-${i}`', row, shape)).toBe('item.ID + "-" + bf.String(i)')
+    expect(loopKeyToGoRowExpr("r.id + '-' + i", row, shape)).toBe('bf.ConcatStr(bf.ConcatStr(item.ID, "-"), i)')
+    expect(loopKeyToGoRowExpr('n + i', { param: 'n', index: 'i' }, { scalar: true, readGoType: () => 'float64' })).toBe('bf.Add(item, i)')
+  })
+
+  test('a key reading outer state, or adding operands of unknown type, declines', () => {
+    const row = { param: 'r', index: 'i' }
+    expect(loopKeyToGoRowExpr('props.prefix + r.id', row)).toBeNull()
+    expect(loopKeyToGoRowExpr('r.a + r.b', row)).toBeNull()
+    expect(loopKeyToGoRowExpr('r.a - i', row)).toBeNull()
+    expect(loopKeyToGoRowExpr('i', { param: 'r' })).toBeNull()
+  })
 })

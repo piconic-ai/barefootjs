@@ -301,4 +301,7 @@ export const conformancePins: ConformancePins = {
   'optional-object-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
   'prop-member-length-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
   'embedded-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'prop-member-chain-signal-seed', unescapable: true }],
+  // A row key reading outer state (`key={props.prefix + n}`) has no lowering
+  // in the constructor loop that builds the rows from the array prop.
+  'loop-row-child-outer-state-key': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-key-outer-state' }],
 }

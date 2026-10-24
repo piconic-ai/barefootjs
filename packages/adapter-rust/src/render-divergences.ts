@@ -42,6 +42,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A string and a number joined with `+` (`r.id + '-' + i`) is emitted as
+  // the template language's own `+`, which raises a type error on a string
+  // plus an integer instead of concatenating.
+  'loop-row-child-concat-index-key': { limitation: 'string-number-plus-concat' },
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
