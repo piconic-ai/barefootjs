@@ -28,6 +28,7 @@ import {
   buildChildRefBindings,
   hasReactiveLoopBindings,
   buildChildrenTextEffect,
+  buildRowEventBinding,
 } from '../shared.ts'
 import { irChildrenToJsExpr, renderPreamble } from '../../html-template.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
@@ -138,6 +139,18 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     : elem.bindings.reactiveTexts
   const hasReactiveEffects = hasReactiveLoopBindings({ ...elem.bindings, reactiveTexts: rowReactiveTexts })
 
+  // #3607: an event on an element forwarded as the root component's own
+  // `children` is collected into `elem.bindings.events` by the same
+  // `collectLoopChildBindings` walk as the reactive attrs/texts above, and
+  // was dropped here the same way they were before #3143. A component-root
+  // loop has no delegation pass (`loopEventDelegationVariant` returns null
+  // for it), so each row attaches its handlers directly, exactly like the
+  // composite row's `outerEvents`. Events inside an inner loop of the
+  // forwarded children (`nestedLoops` non-empty) are not reached here.
+  const rowEvents = elem.bindings.events
+    .filter(ev => ev.nestedLoops.length === 0)
+    .map(ev => buildRowEventBinding(ev, elem.param, elem.paramBindings, elem.index))
+
   return {
     kind: 'component',
     // Rows are createComponent-driven: a lowered HTML-string leaf passed as a
@@ -156,6 +169,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     componentPropsExpr: propsExpr,
     keyExpr,
     nestedComps,
+    rowEvents,
     // Refs on a component element (`<Comp ref={fn} />`) are not currently
     // wired here — the body root is the component, not a DOM element, so
     // the per-item factory has no `__el` handle to invoke. Still required

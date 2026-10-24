@@ -983,6 +983,9 @@ import { fixture as loopRowChildChildrenNestedRowProp } from './loop-row-child-c
 import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child-children-own-reactive-prop'
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
 import { fixture as loopRowChildChildrenInnerLoopShadow } from './loop-row-child-children-inner-loop-shadow'
+import { fixture as loopRowChildChildrenHandler } from './loop-row-child-children-handler'
+import { fixture as loopRowNestedChildChildrenHandler } from './loop-row-nested-child-children-handler'
+import { fixture as loopRowChildChildrenInnerLoopHandler } from './loop-row-child-children-inner-loop-handler'
 import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
 import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
 import { fixture as loopRowChildChildrenNestedRowVarShapes } from './loop-row-child-children-nested-row-var-shapes'
@@ -1097,6 +1100,7 @@ import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row
 import { fixture as loopRowChildScalarRowWrapper } from './loop-row-child-scalar-row-wrapper'
 import { fixture as loopRowChildScalarRowWrapperNestedComponent } from './loop-row-child-scalar-row-wrapper-nested-component'
 import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
+import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
 // A component loop row with forwarded children over an array prop, and its
@@ -1808,6 +1812,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenOwnReactiveProp,
   loopRowChildChildrenNestedIndexProp,
   loopRowChildChildrenInnerLoopShadow,
+  loopRowChildChildrenHandler,
+  loopRowNestedChildChildrenHandler,
+  loopRowChildChildrenInnerLoopHandler,
   signalLoopRowChildChildren,
   loopRowChildChildrenNestedPreambleProp,
   loopRowChildChildrenNestedRowVarShapes,
@@ -1884,6 +1891,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildScalarRowWrapper,
   loopRowChildScalarRowWrapperNestedComponent,
   loopRowScalarMemberLength,
+  stringLengthUtf16Positions,
   loopRowChildKeyShapes,
   loopRowChildPropDestinations,
   loopRowChildChildrenPropArray,

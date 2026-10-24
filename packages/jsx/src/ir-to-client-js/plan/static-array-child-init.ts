@@ -25,6 +25,7 @@
  * shapes were determined by inline branching on the IR.
  */
 
+import type { LoopRowEventBinding } from '../control-flow/plan/loop.ts'
 import type { PreludeStatements } from '../control-flow/plan/inner-loop.ts'
 import type { LoopChildRefBinding } from '../control-flow/plan/loop.ts'
 import type { LoopChildReactiveAttr, LoopChildReactiveText } from '../types.ts'
@@ -71,6 +72,13 @@ export interface SingleCompInitPlan {
   outerPreludeStatements: PreludeStatements
   /** Pre-built props object expression for the child component. */
   propsExpr: PropsExpr
+  /**
+   * Event handlers on elements forwarded as the row component's own
+   * `children`, outside any inner loop (#3607). Attached to each hydrated
+   * row after its `initChild`. Unwrapped: the forEach binds `param` to the
+   * plain item, as for `propsExpr`.
+   */
+  rowEvents: readonly LoopRowEventBinding[]
 }
 
 /** Plan for one depth-0 component inside `loop.nestedComponents`. */

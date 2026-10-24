@@ -12,6 +12,7 @@
  *     <i>    const <param> = <array>[<idx>]
  *     <i>    <outerPreludeStatements*>   // raw outer preamble (#1064)
  *     <i>    initChild('<name>', childScope, <props>)
+ *     <i>    {<each row event: qsa(childScope, …) + addEventListener>}
  *     <i>  })
  *     <i>}
  *
@@ -62,6 +63,7 @@ import { varSlotId } from '../utils.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../emit-reactive.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from '../control-flow/stringify/claim-plan.ts'
 import { emitLoopChildRefs } from '../control-flow/stringify/loop.ts'
+import { emitRowEventListener } from '../control-flow/shared.ts'
 
 export function stringifyStaticArrayChildInits(
   lines: string[],
@@ -90,7 +92,7 @@ function stringifyOne(lines: string[], plan: StaticArrayChildInitPlan): void {
 }
 
 function emitSingleComp(lines: string[], plan: SingleCompInitPlan): void {
-  const { containerVar, componentName, childSelector, arrayExpr, param, indexParam, outerPreludeStatements, propsExpr } = plan
+  const { containerVar, componentName, childSelector, arrayExpr, param, indexParam, outerPreludeStatements, propsExpr, rowEvents } = plan
   lines.push(`  // Initialize static array children (hydrate skips nested instances)`)
   lines.push(`  if (${containerVar}) {`)
   lines.push(`    const __childScopes = qsaChildScopes(${containerVar}, ${childSelector})`)
@@ -103,6 +105,7 @@ function emitSingleComp(lines: string[], plan: SingleCompInitPlan): void {
     lines.push(`      ${stmt}`)
   }
   lines.push(`      initChild('${nameForRegistryRef(componentName)}', childScope, ${propsExpr})`)
+  for (const ev of rowEvents) emitRowEventListener(lines, '      ', 'childScope', ev)
   lines.push(`    })`)
   lines.push(`  }`)
   lines.push('')
