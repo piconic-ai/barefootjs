@@ -109,6 +109,28 @@ export function loopRowType(
   return type?.kind === 'array' ? type.elementType ?? null : null
 }
 
+/**
+ * Whether `expr` is provably an array: its declared type is one (possibly
+ * unioned with `null` / `undefined`), it is an array literal, or it is a
+ * `??` / `||` of two such operands. Its JS `.length` is then the element
+ * count Go's `len` gives. A string, an unknown type or anything else is
+ * false: a string's `.length` counts UTF-16 code units, which only
+ * `bf_length` does (#3609).
+ */
+export function isKnownArray(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): boolean {
+  if (expr.kind === 'array-literal') return true
+  // `(todos() ?? []).length`: either operand is the value, so both must be arrays.
+  if (expr.kind === 'logical' && expr.op !== '&&') {
+    return isKnownArray(ctx, expr.left, scope) && isKnownArray(ctx, expr.right, scope)
+  }
+  const type = valueType(ctx, expr, scope)
+  if (type === null) return false
+  const members = type.kind === 'union' && type.unionTypes
+    ? type.unionTypes.filter(m => !(m.kind === 'primitive' && (m.primitive === 'null' || m.primitive === 'undefined')))
+    : [type]
+  return members.length > 0 && members.every(m => m.kind === 'array')
+}
+
 /** The declared TS type of a value expression; null when it can't be told. */
 function valueType(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): TypeInfo | null {
   switch (expr.kind) {

@@ -12038,6 +12038,29 @@
         "text"
       ]
     },
+    "string-length-utf16-positions": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:<",
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "string-literal-union-alias-shapes": {
       "kinds": [
         "identifier",

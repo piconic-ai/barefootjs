@@ -9753,6 +9753,43 @@
       }
     }
   ],
+  "string-length-utf16-positions": [
+    {
+      "name": "gen:word:empty",
+      "props": {
+        "word": "",
+        "emoji": "😀😀"
+      }
+    },
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "word": "<b>&\"'</b>",
+        "emoji": "😀😀"
+      }
+    },
+    {
+      "name": "gen:emoji:empty",
+      "props": {
+        "word": "日本語",
+        "emoji": ""
+      }
+    },
+    {
+      "name": "gen:emoji:markup",
+      "props": {
+        "word": "日本語",
+        "emoji": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:emoji:multibyte",
+      "props": {
+        "word": "日本語",
+        "emoji": "日本語"
+      }
+    }
+  ],
   "string-padEnd": [
     {
       "name": "gen:value:empty",
