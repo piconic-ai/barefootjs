@@ -4916,6 +4916,14 @@
           ]
         }
       },
+      "loop-row-child-children-ref": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "signal-loop-row-child-children-unseeded"
+          ]
+        }
+      },
       "loop-row-child-scalar-row-wrapper-nested-component": {
         "go-template": {
           "kind": "refusal",
@@ -8074,6 +8082,10 @@
         "description": "An inner loop in a loop-row child's forwarded children shadows the outer row's index, item and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-inner-loop-shadow.ts"
       },
+      "loop-row-child-children-ref": {
+        "description": "A ref callback on an element forwarded as a loop-row child component's children runs with the row…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-ref.ts"
+      },
       "loop-row-child-scalar-row-wrapper-nested-component": {
         "description": "A wrapper component loop row over a string array prop whose forwarded children nest a component…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-scalar-row-wrapper-nested-component.ts"
@@ -9249,6 +9261,7 @@
       "fixtures": [
         "loop-row-child-children-handler",
         "loop-row-child-children-inner-loop-shadow",
+        "loop-row-child-children-ref",
         "signal-loop-row-child-children"
       ],
       "adapters": [

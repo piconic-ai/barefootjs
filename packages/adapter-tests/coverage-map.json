@@ -6427,6 +6427,24 @@
         "text"
       ]
     },
+    "loop-row-child-children-ref": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-untyped-array": {
       "kinds": [
         "array-literal",
