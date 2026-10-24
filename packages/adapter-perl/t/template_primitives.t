@@ -214,6 +214,22 @@ subtest 'string index methods count UTF-16 code units' => sub {
     ok !$bf->ends_with('a😀b', 'a', 2),     'endsWith endPosition inside pair';
 };
 
+# ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
+# ±Infinity is out of range, fractions truncate toward zero.
+subtest 'string index methods read non-finite positions as ToIntegerOrInfinity' => sub {
+    my $inf = 9**9**9;
+    my $nan = $inf - $inf;
+    is $bf->at('abc', $nan),   'a',   'at(NaN) is at(0)';
+    is $bf->at('abc', $inf),   undef, 'at(Infinity) is out of range';
+    is $bf->at('abc', -$inf),  undef, 'at(-Infinity) is out of range';
+    is $bf->at('abc', 1.9),    'b',   'at(1.9) truncates';
+    is $bf->at('abc', -1.5),   'c',   'at(-1.5) truncates toward zero';
+    ok  $bf->starts_with('abc', 'a', $nan), 'startsWith NaN position is 0';
+    ok  $bf->starts_with('abc', '', $inf),  'startsWith Infinity position clamps';
+    ok !$bf->ends_with('abc', 'c', $nan),   'endsWith NaN endPosition is 0';
+    ok  $bf->ends_with('abc', 'c', $inf),   'endsWith Infinity endPosition clamps';
+};
+
 # `Array.prototype.concat(other)` — merges two arrays in order
 # into a new ARRAY ref (#1448 Tier A). Non-array operands collapse
 # to empty (matches the Go `bf_concat` semantic); the result must

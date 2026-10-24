@@ -221,8 +221,8 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.at("a😀b", 3), "b")
         self.assertIsNone(self.bf.at("abc", 3))
         self.assertIsNone(self.bf.at("", 0))
-        # Half of a surrogate pair: U+FFFD (what JS's lone surrogate
-        # becomes once the HTML is encoded as UTF-8).
+        # Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
+        # (pinned divergence, limitation `string-at-lone-surrogate`).
         self.assertEqual(self.bf.at("a😀b", 1), "\ufffd")
         self.assertTrue(self.bf.starts_with("日本語", "本", 1))
         self.assertTrue(self.bf.starts_with("a😀b", "b", 3))
@@ -230,6 +230,20 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertTrue(self.bf.ends_with("日本語", "本", 2))
         self.assertTrue(self.bf.ends_with("a😀b", "😀", 3))
         self.assertFalse(self.bf.ends_with("a😀b", "a", 2))
+
+    def test_string_index_methods_non_finite_positions(self):
+        # ToIntegerOrInfinity: NaN is 0, ±Infinity is out of range,
+        # fractions truncate toward zero -- never a ValueError.
+        nan, inf = float("nan"), float("inf")
+        self.assertEqual(self.bf.at("abc", nan), "a")
+        self.assertIsNone(self.bf.at("abc", inf))
+        self.assertIsNone(self.bf.at("abc", -inf))
+        self.assertEqual(self.bf.at("abc", 1.9), "b")
+        self.assertEqual(self.bf.at("abc", -1.5), "c")
+        self.assertTrue(self.bf.starts_with("abc", "a", nan))
+        self.assertTrue(self.bf.starts_with("abc", "", inf))
+        self.assertFalse(self.bf.ends_with("abc", "c", nan))
+        self.assertTrue(self.bf.ends_with("abc", "c", inf))
 
     def test_concat_mutation_isolation(self):
         self.assertEqual(self.bf.concat(["a", "b"], ["c", "d"]), ["a", "b", "c", "d"])

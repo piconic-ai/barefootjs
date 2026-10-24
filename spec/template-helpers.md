@@ -200,7 +200,8 @@ whitespace sets vary across hosts.
 
 JS `.startsWith(prefix, position?)` / `.endsWith(suffix,
 endPosition?)` → boolean. Empty search string is always `true`; the
-optional position re-anchors, clamped to `[0, length]`. Positions
+optional position re-anchors, clamped to `[0, length]` after
+`ToIntegerOrInfinity` (`NaN` → `0`, `±Infinity` clamps). Positions
 count UTF-16 code units, as in JS (`"a😀b".startsWith("b", 3)` is
 `true`; #3613).
 
@@ -246,10 +247,16 @@ length units differ across hosts otherwise).
 JS `.at(i)` on arrays and strings, receiver-dispatched: negative
 indices count from the end; out of range → `undefined` ≡ `null`. A
 string is indexed in UTF-16 code units (`"a😀b".at(-1)` is `"b"`;
-#3613). An index on half of a surrogate pair yields a lone surrogate
-in JS, which a UTF-8 host can't hold; backends return U+FFFD (what the
-JS reference's lone surrogate becomes once its HTML is UTF-8 encoded),
-and the vectors stay off those positions.
+#3613). An index or position is read with `ToIntegerOrInfinity`:
+`NaN` is `0` (`"abc".at(NaN)` is `"a"`) and `±Infinity` is out of range,
+never an error. An index on half of a surrogate pair yields a lone
+surrogate in JS, a real value before serialization: the halves compare
+different and concatenating them rebuilds the character. Backends whose
+strings can't carry a lone surrogate through concatenation and UTF-8
+output (Go, Perl, Python, Ruby, PHP, Rust) return U+FFFD instead, which
+differs from JS when the result is compared or concatenated; that gap
+is the `string-at-lone-surrogate` limitation. Pebble keeps the lone
+surrogate. The vectors stay off those positions.
 
 ### includes
 

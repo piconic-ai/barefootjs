@@ -3396,8 +3396,8 @@ func TestIndexMethods_StringReceiverUTF16(t *testing.T) {
 		{"abc", -4, nil},
 		{"", 0, nil},
 		// Half of a surrogate pair: JS returns a lone surrogate, which a
-		// Go string can't carry; U+FFFD is what that lone surrogate
-		// becomes in a UTF-8 encoded JS response.
+		// Go string can't carry, so U+FFFD stands in (pinned divergence,
+		// limitation `string-at-lone-surrogate`).
 		{"a😀b", 1, "\uFFFD"},
 		{"a😀b", 2, "\uFFFD"},
 	}
@@ -3405,6 +3405,26 @@ func TestIndexMethods_StringReceiverUTF16(t *testing.T) {
 		if got := At(c.recv, c.index); got != c.want {
 			t.Errorf("At(%q, %d) = %#v, want %#v", c.recv, c.index, got, c.want)
 		}
+	}
+	// Non-finite and fractional indices follow ToIntegerOrInfinity: NaN is
+	// 0, ±Infinity is out of range, fractions truncate toward zero.
+	nonFinite := []struct {
+		index any
+		want  any
+	}{
+		{math.NaN(), "a"},
+		{math.Inf(1), nil},
+		{math.Inf(-1), nil},
+		{1.9, "b"},
+		{-1.5, "c"},
+	}
+	for _, c := range nonFinite {
+		if got := At("abc", c.index); got != c.want {
+			t.Errorf("At(abc, %v) = %#v, want %#v", c.index, got, c.want)
+		}
+	}
+	if !StartsWith("abc", "a", math.NaN()) || !StartsWith("abc", "", math.Inf(1)) || EndsWith("abc", "c", math.NaN()) || !EndsWith("abc", "c", math.Inf(1)) {
+		t.Error("StartsWith / EndsWith must read a non-finite position as ToIntegerOrInfinity")
 	}
 
 	boolCases := []struct {

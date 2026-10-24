@@ -1212,6 +1212,18 @@ sub _array_index_of ($recv, $elem, $reverse) {
     return -1;
 }
 
+# JS `ToIntegerOrInfinity` for a string position or index (#3613): NaN →
+# 0, truncation toward zero, and ±Infinity clamped to ±2**53 so the
+# caller's range check treats it as out of range (a bare `int()` keeps
+# NaN, which then indexes element 0 with a warning).
+sub _to_integer_or_infinity ($self, $value) {
+    my $n = $self->number($value);
+    return 0 if _is_nan($n);
+    return 2**53 if $n >= 2**53;
+    return -(2**53) if $n <= -(2**53);
+    return int($n);
+}
+
 # `$s` as JS sees it: a list of UTF-16 code units. JS string positions
 # (`indexOf`, `at`, `startsWith`'s position, …) count these, so an astral
 # character such as '😀' is two units (#3613).
@@ -1263,15 +1275,19 @@ sub last_index_of ($self, $recv, $elem) {
 # auto-escape renders as the empty string, matching JS's `undefined`).
 # Matches the Go `bf_at` arithmetic (`length + i` for i < 0) so adapter
 # output stays symmetric. A plain-scalar (string) receiver is
-# `String.prototype.at`, indexed in UTF-16 code units (#3613); half of a
-# surrogate pair renders as U+FFFD, which is what JS's lone surrogate
-# becomes in UTF-8 output. Other references return undef.
+# `String.prototype.at`, indexed in UTF-16 code units (#3613). Half of a
+# surrogate pair comes back as U+FFFD, not the lone surrogate JS returns:
+# a Perl string could hold the code point, but two halves concatenated
+# stay two characters (they never rejoin into the astral one) and encode
+# to invalid UTF-8 on output, so the helper keeps its result valid text
+# instead (limitation `string-at-lone-surrogate`). Other references
+# return undef.
 
 sub at ($self, $recv, $i) {
     if (defined $recv && !ref($recv)) {
         return undef if !defined $i;
         my $units = _utf16_units("$recv");
-        my $idx = int($i);
+        my $idx = $self->_to_integer_or_infinity($i);
         $idx += @$units if $idx < 0;
         return undef if $idx < 0 || $idx >= @$units;
         my $u = $units->[$idx];
@@ -1610,7 +1626,7 @@ sub starts_with ($self, $recv, $prefix, $position = undef) {
     if (defined $position) {
         # `position` counts UTF-16 code units, like JS (#3613).
         my $units = _utf16_units($s);
-        my $n = int($position);
+        my $n = $self->_to_integer_or_infinity($position);
         $n = 0 if $n < 0;
         $n = @$units if $n > @$units;
         return _utf16_has_at($units, _utf16_units($p), $n);
@@ -1634,7 +1650,7 @@ sub ends_with ($self, $recv, $suffix, $end_position = undef) {
         # `endPosition` counts UTF-16 code units, like JS (#3613).
         my $units  = _utf16_units($s);
         my $needle = _utf16_units($x);
-        my $e = int($end_position);
+        my $e = $self->_to_integer_or_infinity($end_position);
         $e = 0 if $e < 0;
         $e = @$units if $e > @$units;
         return _utf16_has_at($units, $needle, $e - @$needle);

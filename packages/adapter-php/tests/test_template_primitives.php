@@ -214,8 +214,8 @@ bf_test('string index methods count UTF-16 code units', function () use ($bf) {
     bf_assert_eq($bf->at('a😀b', 3), 'b');
     bf_assert_eq($bf->at('abc', 3), null);
     bf_assert_eq($bf->at('', 0), null);
-    // Half of a surrogate pair: U+FFFD (what JS's lone surrogate becomes
-    // once the HTML is encoded as UTF-8).
+    // Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
+    // (pinned divergence, limitation `string-at-lone-surrogate`).
     bf_assert_eq($bf->at('a😀b', 1), "\u{FFFD}");
     bf_assert_eq($bf->starts_with('日本語', '本', 1), true);
     bf_assert_eq($bf->starts_with('a😀b', 'b', 3), true);
@@ -223,6 +223,21 @@ bf_test('string index methods count UTF-16 code units', function () use ($bf) {
     bf_assert_eq($bf->ends_with('日本語', '本', 2), true);
     bf_assert_eq($bf->ends_with('a😀b', '😀', 3), true);
     bf_assert_eq($bf->ends_with('a😀b', 'a', 2), false);
+});
+
+// ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
+// ±Infinity is out of range (a bare (int) cast would make it 0),
+// fractions truncate toward zero.
+bf_test('string index methods read non-finite positions as ToIntegerOrInfinity', function () use ($bf) {
+    bf_assert_eq($bf->at('abc', NAN), 'a');
+    bf_assert_eq($bf->at('abc', INF), null);
+    bf_assert_eq($bf->at('abc', -INF), null);
+    bf_assert_eq($bf->at('abc', 1.9), 'b');
+    bf_assert_eq($bf->at('abc', -1.5), 'c');
+    bf_assert_eq($bf->starts_with('abc', 'a', NAN), true);
+    bf_assert_eq($bf->starts_with('abc', '', INF), true);
+    bf_assert_eq($bf->ends_with('abc', 'c', NAN), false);
+    bf_assert_eq($bf->ends_with('abc', 'c', INF), true);
 });
 
 // -----------------------------------------------------------------

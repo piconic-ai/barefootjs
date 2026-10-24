@@ -14,9 +14,8 @@ import { createFixture } from '../src/types'
  * is true. The array-receiver lowerings share these helpers, so a
  * backend that only handles arrays renders `-1` / empty here.
  *
- * `.at` positions are chosen so none lands on half of a surrogate pair:
- * a lone surrogate cannot round-trip through UTF-8 output on any
- * backend, so it is not a conformance point. The two-argument
+ * `.at` positions are chosen so none lands on half of a surrogate pair;
+ * that case is its own fixture, `string-at-lone-surrogate`. The two-argument
  * `.indexOf(x, fromIndex)` / `.includes(x, position)` forms are refused
  * by the shared parser (BF101), so they are not exercised here.
  */

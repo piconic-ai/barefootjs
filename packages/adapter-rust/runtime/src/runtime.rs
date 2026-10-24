@@ -1795,8 +1795,10 @@ pub fn is_element(recv: &JsValue) -> bool {
 
 /// `Array.prototype.at(i)` / `String.prototype.at(i)`: negative indices
 /// count from the end, out of range is null. A string is indexed in
-/// UTF-16 code units (#3613); half of a surrogate pair renders as U+FFFD,
-/// which is what JS's lone surrogate becomes in UTF-8 output.
+/// UTF-16 code units (#3613). Half of a surrogate pair, a lone surrogate
+/// in JS, comes back as U+FFFD: a Rust `String` can't hold one, so the
+/// halves compare equal and don't rejoin (limitation
+/// `string-at-lone-surrogate`).
 pub fn at(recv: &JsValue, i: &JsValue) -> JsValue {
     if let JsValue::String(s) = recv {
         if matches!(i, JsValue::Null) {

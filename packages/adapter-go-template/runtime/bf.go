@@ -1951,8 +1951,10 @@ func Len(v any) int {
 // `"日本語".at(-1)` is "語" and `"a😀b".at(-1)` is "b" (the emoji is
 // two units). When the index lands on half of a surrogate pair, JS
 // returns a lone surrogate, which a Go string can't hold as valid
-// UTF-8; the result is U+FFFD instead — the same character a JS server
-// emits for a lone surrogate once it encodes the HTML response as UTF-8.
+// UTF-8; the result is U+FFFD instead. That is observable before
+// serialization — the two halves compare equal and concatenating them
+// renders "\uFFFD\uFFFD" rather than the emoji — and is pinned as the
+// `string-at-lone-surrogate` limitation.
 func At(items any, at any) any {
 	index := integerArg(at)
 	v := reflect.ValueOf(items)

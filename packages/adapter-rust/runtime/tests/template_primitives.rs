@@ -140,8 +140,8 @@ fn string_index_methods_count_utf16_units() {
     assert_eq!(runtime::at(&s("a😀b"), &n(3.0)), s("b"));
     assert_eq!(runtime::at(&s("abc"), &n(3.0)), JsValue::Null);
     assert_eq!(runtime::at(&s(""), &n(0.0)), JsValue::Null);
-    // Half of a surrogate pair: U+FFFD (what JS's lone surrogate becomes
-    // once the HTML is encoded as UTF-8).
+    // Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
+    // (pinned divergence, limitation `string-at-lone-surrogate`).
     assert_eq!(runtime::at(&s("a😀b"), &n(1.0)), s("\u{FFFD}"));
     assert!(runtime::starts_with(&s("日本語"), &s("本"), &n(1.0)));
     assert!(runtime::starts_with(&s("a😀b"), &s("b"), &n(3.0)));
@@ -149,6 +149,21 @@ fn string_index_methods_count_utf16_units() {
     assert!(runtime::ends_with(&s("日本語"), &s("本"), &n(2.0)));
     assert!(runtime::ends_with(&s("a😀b"), &s("😀"), &n(3.0)));
     assert!(!runtime::ends_with(&s("a😀b"), &s("a"), &n(2.0)));
+}
+
+// ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
+// ±Infinity is out of range, fractions truncate toward zero.
+#[test]
+fn string_index_methods_non_finite_positions() {
+    assert_eq!(runtime::at(&s("abc"), &n(f64::NAN)), s("a"));
+    assert_eq!(runtime::at(&s("abc"), &n(f64::INFINITY)), JsValue::Null);
+    assert_eq!(runtime::at(&s("abc"), &n(f64::NEG_INFINITY)), JsValue::Null);
+    assert_eq!(runtime::at(&s("abc"), &n(1.9)), s("b"));
+    assert_eq!(runtime::at(&s("abc"), &n(-1.5)), s("c"));
+    assert!(runtime::starts_with(&s("abc"), &s("a"), &n(f64::NAN)));
+    assert!(runtime::starts_with(&s("abc"), &s(""), &n(f64::INFINITY)));
+    assert!(!runtime::ends_with(&s("abc"), &s("c"), &n(f64::NAN)));
+    assert!(runtime::ends_with(&s("abc"), &s("c"), &n(f64::INFINITY)));
 }
 
 #[test]

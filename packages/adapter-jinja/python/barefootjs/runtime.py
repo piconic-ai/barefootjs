@@ -1452,11 +1452,15 @@ class BarefootJS:
 
     def at(self, recv: Any, i: Any) -> Any:
         # A string receiver is `String.prototype.at`, indexed in UTF-16
-        # code units (#3613). Half of a surrogate pair renders as U+FFFD,
-        # which is what JS's lone surrogate becomes in UTF-8 output.
+        # code units (#3613). Half of a surrogate pair comes back as
+        # U+FFFD, not the lone surrogate JS returns: a Python str could
+        # hold one, but two halves concatenated stay two code points (they
+        # never rejoin into the astral character) and fail UTF-8 output
+        # encoding, so the helper keeps its result valid text instead
+        # (limitation `string-at-lone-surrogate`).
         if isinstance(recv, str) and i is not None:
             units = _utf16_units(recv)
-            idx = int(i)
+            idx = _to_integer_or_infinity(i)
             if idx < 0:
                 idx += len(units)
             if idx < 0 or idx >= len(units):
@@ -1621,7 +1625,7 @@ class BarefootJS:
         if position is not None:
             # `position` counts UTF-16 code units, like JS (#3613).
             units = _utf16_units(s)
-            n = max(0, min(int(position), len(units)))
+            n = max(0, min(_to_integer_or_infinity(position), len(units)))
             return _utf16_has_at(units, _utf16_units(p), n)
         return s.startswith(p)
 
@@ -1631,7 +1635,7 @@ class BarefootJS:
         if end_position is not None:
             # `endPosition` counts UTF-16 code units, like JS (#3613).
             units = _utf16_units(s)
-            e = max(0, min(int(end_position), len(units)))
+            e = max(0, min(_to_integer_or_infinity(end_position), len(units)))
             needle = _utf16_units(x)
             return _utf16_has_at(units, needle, e - len(needle))
         if x == "":
@@ -1891,6 +1895,24 @@ class BarefootJS:
 
     def map_eval(self, recv: Any, proj_json: str, param: str, base_env: Optional[dict] = None) -> list:
         return _evaluator.map_json(recv, proj_json, param, base_env or {})
+
+
+_MAX_SAFE_INDEX = 2**53
+
+
+def _to_integer_or_infinity(value: Any) -> int:
+    """JS `ToIntegerOrInfinity` for a string position or index (#3613):
+    NaN -> 0, truncation toward zero, and +/-Infinity clamped to +/-2**53
+    so the caller's range check treats it as out of range instead of
+    `int()` raising."""
+    n = js_number(value)
+    if math.isnan(n):
+        return 0
+    if n >= _MAX_SAFE_INDEX:
+        return _MAX_SAFE_INDEX
+    if n <= -_MAX_SAFE_INDEX:
+        return -_MAX_SAFE_INDEX
+    return int(n)
 
 
 def _utf16_units(s: str) -> list:

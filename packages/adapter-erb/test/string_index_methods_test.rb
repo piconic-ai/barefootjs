@@ -40,9 +40,23 @@ class BfStringIndexMethodsTest < Minitest::Test
     assert_equal 'b', @bf.at('a😀b', 3)
     assert_nil @bf.at('abc', 3)
     assert_nil @bf.at('', 0)
-    # Half of a surrogate pair: U+FFFD (what JS's lone surrogate becomes
-    # once the HTML is encoded as UTF-8).
+    # Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
+    # (pinned divergence, limitation `string-at-lone-surrogate`).
     assert_equal "�", @bf.at('a😀b', 1)
+  end
+
+  # ToIntegerOrInfinity: NaN is 0, ±Infinity is out of range, fractions
+  # truncate toward zero -- never a FloatDomainError.
+  def test_non_finite_positions
+    assert_equal 'a', @bf.at('abc', Float::NAN)
+    assert_nil @bf.at('abc', Float::INFINITY)
+    assert_nil @bf.at('abc', -Float::INFINITY)
+    assert_equal 'b', @bf.at('abc', 1.9)
+    assert_equal 'c', @bf.at('abc', -1.5)
+    assert @bf.starts_with('abc', 'a', Float::NAN)
+    assert @bf.starts_with('abc', '', Float::INFINITY)
+    refute @bf.ends_with('abc', 'c', Float::NAN)
+    assert @bf.ends_with('abc', 'c', Float::INFINITY)
   end
 
   def test_positions

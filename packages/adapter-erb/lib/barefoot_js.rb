@@ -1050,9 +1050,10 @@ module BarefootJS
 
     # `Array.prototype.at(i)` -- negative indices count from the end;
     # out-of-bounds -> nil (renders as '' via `h`, matching JS `undefined`).
-    # A String receiver is indexed in UTF-16 code units (#3613); half of a
-    # surrogate pair renders as U+FFFD, which is what JS's lone surrogate
-    # becomes in UTF-8 output.
+    # A String receiver is indexed in UTF-16 code units (#3613). Half of a
+    # surrogate pair, a lone surrogate in JS, comes back as U+FFFD: a
+    # UTF-8 Ruby String can't hold one, so the halves compare equal and
+    # don't rejoin (limitation `string-at-lone-surrogate`).
     def at(recv, i)
       return utf16_at(recv, i) if recv.is_a?(String)
       return nil unless recv.is_a?(Array)
@@ -1249,7 +1250,7 @@ module BarefootJS
       # `position` counts UTF-16 code units, like JS (#3613).
       unless position.nil?
         units = utf16_units(s)
-        return utf16_has_at?(units, utf16_units(p), clamp_index(position.to_i, units.length))
+        return utf16_has_at?(units, utf16_units(p), clamp_index(to_integer_or_infinity(position), units.length))
       end
       s.start_with?(p)
     end
@@ -1262,7 +1263,7 @@ module BarefootJS
       unless end_position.nil?
         units = utf16_units(s)
         needle = utf16_units(x)
-        return utf16_has_at?(units, needle, clamp_index(end_position.to_i, units.length) - needle.length)
+        return utf16_has_at?(units, needle, clamp_index(to_integer_or_infinity(end_position), units.length) - needle.length)
       end
       s.end_with?(x)
     end
@@ -1725,6 +1726,21 @@ module BarefootJS
       s.to_s.encode('UTF-16LE', invalid: :replace, undef: :replace).unpack('v*')
     end
 
+    MAX_SAFE_INDEX = 2**53
+
+    # JS `ToIntegerOrInfinity` for a string position or index (#3613): NaN
+    # -> 0, truncation toward zero, and +/-Infinity clamped to +/-2**53 so
+    # the caller's range check treats it as out of range instead of
+    # `Float#to_i` raising FloatDomainError.
+    def to_integer_or_infinity(value)
+      n = number(value)
+      return 0 if n.respond_to?(:nan?) && n.nan?
+      return MAX_SAFE_INDEX if n >= MAX_SAFE_INDEX
+      return -MAX_SAFE_INDEX if n <= -MAX_SAFE_INDEX
+
+      n.to_i
+    end
+
     def utf16_has_at?(hay, needle, at)
       return false if at.negative? || at + needle.length > hay.length
 
@@ -1744,7 +1760,7 @@ module BarefootJS
       return nil if i.nil?
 
       units = utf16_units(recv)
-      idx = i.to_i
+      idx = to_integer_or_infinity(i)
       idx += units.length if idx.negative?
       return nil if idx.negative? || idx >= units.length
 

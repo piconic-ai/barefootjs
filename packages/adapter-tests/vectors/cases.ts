@@ -503,7 +503,8 @@ export const cases: HelperCase[] = [
   { fn: 'at', args: [[], 0], note: 'empty array yields undefined ≡ null' },
   // String receiver (#3613): indexed in UTF-16 code units, like every
   // string position below. No case lands on half of a surrogate pair — JS
-  // yields a lone surrogate there, which no UTF-8 backend can hold.
+  // yields a lone surrogate there, which the UTF-8 backends replace with
+  // U+FFFD (limitation `string-at-lone-surrogate`, fixture of that name).
   { fn: 'at', args: ['日本語', -1], note: 'string: negative index on BMP characters' },
   { fn: 'at', args: ['a😀b', -1], note: 'string: negative index after an astral character' },
   { fn: 'at', args: ['a😀b', 3], note: 'string: an astral character spans two units' },

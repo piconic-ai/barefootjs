@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
+  // lone surrogate, so it returns U+FFFD (halves compare equal, and
+  // rejoining them renders `��` instead of the emoji).
+  'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
