@@ -200,7 +200,7 @@ import {
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
-import { isKnownNonNumber, loopRowType } from "./type/number-read.ts"
+import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, sharedFieldFallbackVar, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
@@ -6660,15 +6660,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * The function a condition's `.length` read lowers to. `len` counts a
    * string's bytes; `bf_length` counts its UTF-16 code units as JS does and
-   * reads nil as 0. A `?.length` receiver can be nil, and a scalar row
-   * (`isScalarRowItem`, or a scalar wrapper row's value) is a string whose
-   * multibyte value `len` would over-count, so both take `bf_length`.
+   * reads nil as 0. Only a receiver whose declared type is an array
+   * (`isKnownArray`) keeps `len`, whose element count is the same answer.
+   * A string (a prop, a signal, a memo, a local, a scalar row), a receiver
+   * of unknown type and a `?.length` receiver, which can be nil, take
+   * `bf_length` (#3609).
    */
   private conditionLengthFn(expr: Extract<ParsedExpr, { kind: 'member' }>): 'len' | 'bf_length' {
-    if (expr.optional || expr.object.kind !== 'identifier') return expr.optional ? 'bf_length' : 'len'
-    const name = expr.object.name
-    const scalarRow = this.isScalarRowItem(name) || (this.isCurrentLoopItem(name) && this.scalarWrapperRowCallSite)
-    return scalarRow ? 'bf_length' : 'len'
+    if (expr.optional) return 'bf_length'
+    return isKnownArray(this.emitCtx, expr.object, this.scope) ? 'len' : 'bf_length'
   }
 
   /**

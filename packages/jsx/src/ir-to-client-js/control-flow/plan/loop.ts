@@ -22,7 +22,7 @@ import type {
   LoopChildReactiveText,
   TopLevelLoop,
 } from '../../types.ts'
-import type { IRLoopChildComponent } from '../../../types.ts'
+import type { IRLoopChildComponent, JsSourceText } from '../../../types.ts'
 import type { SafeHtml } from '../../safe-html.ts'
 import type { SkeletonSlotPaths } from '../../html-template.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
@@ -114,6 +114,22 @@ export interface LoopChildRefBinding {
   callback: string
   /** The callback portals the element out of the row (#3318); see `LoopChildRef.ssrPortalOwner`. */
   ssrPortalOwner?: boolean
+}
+
+/**
+ * A loop-row child event resolved for a direct per-row listener (#3607):
+ * `handler` is already in the form the row binds its item in (wrapped with
+ * the loop-param accessor for a `mapArray` row, plain for a static
+ * `forEach` row), so the stringifier only spells the `qsa` lookup +
+ * `addEventListener` line.
+ */
+export interface LoopRowEventBinding {
+  /** bf slot ID of the element bearing the handler. */
+  childSlotId: string
+  /** JSX event name (`click`, `input`, …); normalised to the DOM name at emit. */
+  eventName: string
+  /** Handler expression, as the row's binding of the item reads it. */
+  handler: JsSourceText
 }
 
 /**
@@ -216,6 +232,14 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
   keyExpr: string
   /** Nested child component initialisers; empty for the simple case. */
   nestedComps: NestedComponentInit[]
+  /**
+   * Event handlers on elements forwarded as the ROOT component's own
+   * `children` (`<Chip><button onClick={...}/></Chip>`, #3607), outside any
+   * inner loop. Attached directly to each row (hydrated and client-built)
+   * the same way the composite row attaches `outerEvents`. Non-empty forces
+   * the SSR/CSR split shape (the simple shape has no row handle).
+   */
+  rowEvents: readonly LoopRowEventBinding[]
   /**
    * Reactive-effects plan for the loop ROOT component's own reactive attrs /
    * texts / conditionals — i.e. bindings on elements forwarded as the root

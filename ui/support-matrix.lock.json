@@ -405,6 +405,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-inner-loop-shadow",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
@@ -5014,6 +5020,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-inner-loop-shadow",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
@@ -7791,6 +7803,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -10613,6 +10631,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-inner-loop-shadow",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
@@ -13329,6 +13353,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-inner-loop-shadow",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
@@ -15168,6 +15198,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
             {
               "fixture": "loop-row-child-children-inner-loop-shadow",
               "limitations": [
@@ -21184,6 +21220,12 @@
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {

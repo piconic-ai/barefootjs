@@ -130,6 +130,13 @@ function buildSingleCompPlan(
     indexParam: elem.index || '__idx',
     outerPreludeStatements: staticPreludeStatements(elem.preamble),
     propsExpr: buildStaticPropsExpr(props),
+    // #3607: the static twin of the component-root loop's `rowEvents` — a
+    // static array has no delegation pass for a component row either
+    // (`loopEventDelegationVariant`), so each hydrated row attaches the
+    // handlers on its forwarded children directly.
+    rowEvents: elem.bindings.events
+      .filter(ev => ev.nestedLoops.length === 0)
+      .map(ev => ({ childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler })),
   }
 }
 

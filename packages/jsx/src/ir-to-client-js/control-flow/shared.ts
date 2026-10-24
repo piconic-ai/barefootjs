@@ -21,7 +21,7 @@ import { spliceChildValue } from '../safe-html.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
-import type { LoopChildRefBinding, PreambleRegionPlan, NestedChildrenTextEffect } from './plan/loop.ts'
+import type { LoopChildRefBinding, LoopRowEventBinding, PreambleRegionPlan, NestedChildrenTextEffect } from './plan/loop.ts'
 import type { PreambleRegionSource } from '../../types.ts'
 import {
   extractFreeIdentifiersFromText,
@@ -383,8 +383,46 @@ function emitEventSetup(
   bodyIsMultiRoot: boolean = false,
   loopIndex?: string | null,
 ): void {
-  const handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings, loopIndex) : ev.handler
-  emitListenerBlock(ls, indent, elVar, ev.childSlotId, '__e', ev.eventName, handler, 'dom', bodyIsMultiRoot)
+  const binding = loopParam
+    ? buildRowEventBinding(ev, loopParam, loopParamBindings, loopIndex)
+    : { childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler }
+  emitRowEventListener(ls, indent, elVar, binding, bodyIsMultiRoot)
+}
+
+/**
+ * Resolve a loop-row child event into the binding a renderItem body attaches
+ * directly to the row's element (`emitRowEventListener`): the handler gets
+ * the same loop-param accessor rewrite as every other per-row read (#2859),
+ * so a row that survives a same-key reorder reads its current item / index.
+ */
+export function buildRowEventBinding(
+  ev: LoopChildEvent,
+  loopParam: string,
+  loopParamBindings: readonly LoopParamBinding[] | undefined,
+  loopIndex?: string | null,
+): LoopRowEventBinding {
+  return {
+    childSlotId: ev.childSlotId,
+    eventName: ev.eventName,
+    handler: wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings, loopIndex),
+  }
+}
+
+/**
+ * Emit the per-row `{ const __e = qsa(<elVar>, '[bf="<slot>"]'); if (__e)
+ * __e.addEventListener(...) }` block for one resolved row event binding.
+ * Shared by the composite row (`emitComponentAndEventSetup`) and the
+ * component-root row (`stringifyComponentLoop`, #3607), so both spell the
+ * direct per-row listener the same way.
+ */
+export function emitRowEventListener(
+  ls: string[],
+  indent: string,
+  elVar: string,
+  binding: LoopRowEventBinding,
+  bodyIsMultiRoot: boolean = false,
+): void {
+  emitListenerBlock(ls, indent, elVar, binding.childSlotId, '__e', binding.eventName, binding.handler, 'dom', bodyIsMultiRoot)
 }
 
 /**
