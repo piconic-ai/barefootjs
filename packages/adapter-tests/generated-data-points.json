@@ -4509,6 +4509,68 @@
       }
     }
   ],
+  "loop-undefined-element": [
+    {
+      "name": "gen:words:empty",
+      "props": {
+        "words": [],
+        "nulls": [
+          "日本",
+          null
+        ],
+        "rows": [
+          {
+            "id": 1,
+            "label": "one"
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:nulls:empty",
+      "props": {
+        "words": [
+          "日本",
+          null,
+          "x"
+        ],
+        "nulls": [],
+        "rows": [
+          {
+            "id": 1,
+            "label": "one"
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "words": [
+          "日本",
+          null,
+          "x"
+        ],
+        "nulls": [
+          "日本",
+          null
+        ],
+        "rows": []
+      }
+    }
+  ],
   "map-array-builder-body": [
     {
       "name": "gen:rows:empty",
