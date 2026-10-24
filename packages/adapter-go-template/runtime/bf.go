@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf16"
 	"unicode/utf8"
 )
 
@@ -1469,41 +1470,33 @@ func Split(recv any, sep string, limit ...any) []any {
 // StartsWith lowers `String.prototype.startsWith(prefix, position?)`
 // (#1448 Tier B). Wraps `strings.HasPrefix`; an empty prefix is always
 // true (JS parity). The optional `position` re-anchors the test to start
-// at that index (clamped to `[0, len]` so it never panics), matching JS
-// `"abc".startsWith("b", 1) === true`.
+// at that index, counted in UTF-16 code units like JS (#3613) and
+// clamped to `[0, len]` so it never panics: `"abc".startsWith("b", 1)`
+// and `"日本語".startsWith("本", 1)` are both true.
 func StartsWith(recv any, prefix string, position ...any) bool {
 	s := String(recv)
-	if len(position) > 0 {
-		p := integerArg(position[0])
-		if p < 0 {
-			p = 0
-		}
-		if p > len(s) {
-			p = len(s)
-		}
-		s = s[p:]
+	if len(position) == 0 {
+		return strings.HasPrefix(s, prefix)
 	}
-	return strings.HasPrefix(s, prefix)
+	units := utf16Units(s)
+	p := clampUnitPos(integerArg(position[0]), len(units))
+	return hasUnitsAt(units, utf16Units(prefix), p)
 }
 
 // EndsWith lowers `String.prototype.endsWith(suffix, endPosition?)`
 // (#1448 Tier B). Wraps `strings.HasSuffix`; an empty suffix is always
 // true (JS parity). The optional `endPosition` treats the string as if
-// it were only that many bytes long (clamped to `[0, len]`), matching JS
-// `"abc".endsWith("b", 2) === true`.
+// it were only that many UTF-16 code units long (#3613; clamped to
+// `[0, len]`), matching JS `"abc".endsWith("b", 2) === true`.
 func EndsWith(recv any, suffix string, endPosition ...any) bool {
 	s := String(recv)
-	if len(endPosition) > 0 {
-		e := integerArg(endPosition[0])
-		if e < 0 {
-			e = 0
-		}
-		if e > len(s) {
-			e = len(s)
-		}
-		s = s[:e]
+	if len(endPosition) == 0 {
+		return strings.HasSuffix(s, suffix)
 	}
-	return strings.HasSuffix(s, suffix)
+	units := utf16Units(s)
+	e := clampUnitPos(integerArg(endPosition[0]), len(units))
+	needle := utf16Units(suffix)
+	return hasUnitsAt(units, needle, e-len(needle))
 }
 
 // Replace lowers the string-pattern form of `String.prototype.replace`
@@ -1948,12 +1941,31 @@ func Len(v any) int {
 	}
 }
 
-// At returns the element at index i from a slice.
-// Supports negative indices (e.g., -1 for last element).
-// Returns nil if index is out of bounds.
+// At lowers `Array.prototype.at(i)` and `String.prototype.at(i)` — the
+// adapter can't tell the receivers apart at compile time, so this
+// dispatches on `reflect.Kind()` like `Includes`. Negative indices count
+// from the end (-1 is the last element); out of range is nil (JS
+// `undefined`).
+//
+// A string receiver is indexed in UTF-16 code units, like JS (#3613):
+// `"日本語".at(-1)` is "語" and `"a😀b".at(-1)` is "b" (the emoji is
+// two units). When the index lands on half of a surrogate pair, JS
+// returns a lone surrogate, which a Go string can't hold as valid
+// UTF-8; the result is U+FFFD instead — the same character a JS server
+// emits for a lone surrogate once it encodes the HTML response as UTF-8.
 func At(items any, at any) any {
 	index := integerArg(at)
 	v := reflect.ValueOf(items)
+	if v.Kind() == reflect.String {
+		units := utf16Units(v.String())
+		if index < 0 {
+			index += len(units)
+		}
+		if index < 0 || index >= len(units) {
+			return nil
+		}
+		return string(utf16.Decode(units[index : index+1]))
+	}
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
 	}
@@ -2025,10 +2037,27 @@ func Includes(recv any, elem any) bool {
 // against scalar / struct items so callers don't have to compose
 // a synthetic predicate.
 //
-// Non-array / non-slice receivers return -1 (matches the JS
-// semantic that `.indexOf` is only defined on Array / TypedArray).
+// A string receiver lowers `String.prototype.indexOf(search)` instead
+// (#3613): the result is a UTF-16 code unit offset, like JS —
+// `"日本語".indexOf("本")` is 1, not the byte offset 3, and
+// `"a😀b".indexOf("b")` is 3, not the code point offset 2. The search
+// value is stringified with `String`. (The two-argument `fromIndex`
+// form is refused by the parser, so it never reaches this helper.)
+//
+// Any other receiver returns -1 (`.indexOf` is only defined on Array /
+// TypedArray / String).
 func IndexOf(items any, elem any) int {
 	v := reflect.ValueOf(items)
+	if v.Kind() == reflect.String {
+		hay := utf16Units(v.String())
+		needle := utf16Units(String(elem))
+		for i := 0; i+len(needle) <= len(hay); i++ {
+			if hasUnitsAt(hay, needle, i) {
+				return i
+			}
+		}
+		return -1
+	}
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return -1
 	}
@@ -2046,8 +2075,21 @@ func IndexOf(items any, elem any) int {
 // only behavioural difference vs `IndexOf` — disambiguating a
 // duplicated value's first vs last position is the canonical
 // reason a JS author reaches for `lastIndexOf`.
+//
+// A string receiver lowers `String.prototype.lastIndexOf(search)` in
+// UTF-16 code units, like `IndexOf` (#3613).
 func LastIndexOf(items any, elem any) int {
 	v := reflect.ValueOf(items)
+	if v.Kind() == reflect.String {
+		hay := utf16Units(v.String())
+		needle := utf16Units(String(elem))
+		for i := len(hay) - len(needle); i >= 0; i-- {
+			if hasUnitsAt(hay, needle, i) {
+				return i
+			}
+		}
+		return -1
+	}
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return -1
 	}
@@ -4373,6 +4415,42 @@ func toInt(v any) int {
 // a TS `number` reaches the template as a float64 field, so a fraction
 // truncates toward zero, NaN is 0, and an infinity clamps to a bound past
 // any length. Go ints pass through.
+// utf16Units returns s as JS sees it: a sequence of UTF-16 code units.
+// String positions in JS (`indexOf`, `at`, `startsWith`'s position, …)
+// count these units, so a BMP character such as '本' is one unit and an
+// astral one such as '😀' is two (#3613). Invalid UTF-8 bytes decode to
+// U+FFFD first.
+func utf16Units(s string) []uint16 {
+	return utf16.Encode([]rune(s))
+}
+
+// clampUnitPos clamps a JS string position to `[0, length]`, the
+// `String.prototype` position rule (unlike arrays, a negative position
+// does not count from the end).
+func clampUnitPos(pos, length int) int {
+	if pos < 0 {
+		return 0
+	}
+	if pos > length {
+		return length
+	}
+	return pos
+}
+
+// hasUnitsAt reports whether `needle` occurs in `hay` starting at unit
+// offset `at`. An out-of-range offset never matches.
+func hasUnitsAt(hay, needle []uint16, at int) bool {
+	if at < 0 || at+len(needle) > len(hay) {
+		return false
+	}
+	for i, u := range needle {
+		if hay[at+i] != u {
+			return false
+		}
+	}
+	return true
+}
+
 func integerArg(v any) int {
 	if isIntLike(v) {
 		return toInt(v)

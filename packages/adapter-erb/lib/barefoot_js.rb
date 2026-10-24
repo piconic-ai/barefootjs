@@ -1034,18 +1034,27 @@ module BarefootJS
     end
 
     # `Array.prototype.indexOf(x)` / `.lastIndexOf(x)` -- value-equality
-    # search. Non-array receivers return -1.
+    # search. A String receiver is `String.prototype.indexOf`, counted in
+    # UTF-16 code units like JS (#3613). Other receivers return -1.
     def index_of(recv, elem)
+      return utf16_index_of(recv, elem, false) if recv.is_a?(String)
+
       array_index_of(recv, elem, false)
     end
 
     def last_index_of(recv, elem)
+      return utf16_index_of(recv, elem, true) if recv.is_a?(String)
+
       array_index_of(recv, elem, true)
     end
 
     # `Array.prototype.at(i)` -- negative indices count from the end;
     # out-of-bounds -> nil (renders as '' via `h`, matching JS `undefined`).
+    # A String receiver is indexed in UTF-16 code units (#3613); half of a
+    # surrogate pair renders as U+FFFD, which is what JS's lone surrogate
+    # becomes in UTF-8 output.
     def at(recv, i)
+      return utf16_at(recv, i) if recv.is_a?(String)
       return nil unless recv.is_a?(Array)
       return nil if i.nil?
 
@@ -1237,9 +1246,10 @@ module BarefootJS
     def starts_with(recv, prefix, position = nil)
       s = recv.nil? ? '' : string(recv)
       p = prefix.nil? ? '' : string(prefix)
+      # `position` counts UTF-16 code units, like JS (#3613).
       unless position.nil?
-        n = clamp_index(position.to_i, s.length)
-        s = s[n..] || ''
+        units = utf16_units(s)
+        return utf16_has_at?(units, utf16_units(p), clamp_index(position.to_i, units.length))
       end
       s.start_with?(p)
     end
@@ -1248,9 +1258,11 @@ module BarefootJS
     def ends_with(recv, suffix, end_position = nil)
       s = recv.nil? ? '' : string(recv)
       x = suffix.nil? ? '' : string(suffix)
+      # `endPosition` counts UTF-16 code units, like JS (#3613).
       unless end_position.nil?
-        e = clamp_index(end_position.to_i, s.length)
-        s = s[0...e]
+        units = utf16_units(s)
+        needle = utf16_units(x)
+        return utf16_has_at?(units, needle, clamp_index(end_position.to_i, units.length) - needle.length)
       end
       s.end_with?(x)
     end
@@ -1704,6 +1716,40 @@ module BarefootJS
         return i if !elem.nil? && item == elem
       end
       -1
+    end
+
+    # `s` as JS sees it: an Array of UTF-16 code units. JS string positions
+    # (`indexOf`, `at`, `startsWith`'s position, ...) count these, so an
+    # astral character such as '😀' is two units (#3613).
+    def utf16_units(s)
+      s.to_s.encode('UTF-16LE', invalid: :replace, undef: :replace).unpack('v*')
+    end
+
+    def utf16_has_at?(hay, needle, at)
+      return false if at.negative? || at + needle.length > hay.length
+
+      hay[at, needle.length] == needle
+    end
+
+    def utf16_index_of(recv, elem, reverse)
+      hay = utf16_units(recv)
+      needle = utf16_units(string(elem))
+      last = hay.length - needle.length
+      indices = reverse ? last.downto(0) : 0.upto(last)
+      indices.each { |i| return i if utf16_has_at?(hay, needle, i) }
+      -1
+    end
+
+    def utf16_at(recv, i)
+      return nil if i.nil?
+
+      units = utf16_units(recv)
+      idx = i.to_i
+      idx += units.length if idx.negative?
+      return nil if idx.negative? || idx >= units.length
+
+      u = units[idx]
+      (0xD800..0xDFFF).cover?(u) ? "\uFFFD" : [u].pack('U')
     end
 
     def clamp_index(n, len)

@@ -1439,12 +1439,30 @@ class BarefootJS:
         return sum(2 if ord(c) > 0xFFFF else 1 for c in js_string(recv))
 
     def index_of(self, recv: Any, elem: Any) -> int:
+        # A string receiver is `String.prototype.indexOf`, counted in
+        # UTF-16 code units like JS (#3613).
+        if isinstance(recv, str):
+            return _utf16_index_of(recv, js_string(elem), reverse=False)
         return _array_index_of(recv, elem, reverse=False)
 
     def last_index_of(self, recv: Any, elem: Any) -> int:
+        if isinstance(recv, str):
+            return _utf16_index_of(recv, js_string(elem), reverse=True)
         return _array_index_of(recv, elem, reverse=True)
 
     def at(self, recv: Any, i: Any) -> Any:
+        # A string receiver is `String.prototype.at`, indexed in UTF-16
+        # code units (#3613). Half of a surrogate pair renders as U+FFFD,
+        # which is what JS's lone surrogate becomes in UTF-8 output.
+        if isinstance(recv, str) and i is not None:
+            units = _utf16_units(recv)
+            idx = int(i)
+            if idx < 0:
+                idx += len(units)
+            if idx < 0 or idx >= len(units):
+                return None
+            u = units[idx]
+            return "\ufffd" if 0xD800 <= u <= 0xDFFF else chr(u)
         if not isinstance(recv, list) or i is None:
             return None
         length = len(recv)
@@ -1601,16 +1619,21 @@ class BarefootJS:
         s = _scalar_or_empty(recv)
         p = js_string(prefix)
         if position is not None:
-            n = max(0, min(int(position), len(s)))
-            s = s[n:]
+            # `position` counts UTF-16 code units, like JS (#3613).
+            units = _utf16_units(s)
+            n = max(0, min(int(position), len(units)))
+            return _utf16_has_at(units, _utf16_units(p), n)
         return s.startswith(p)
 
     def ends_with(self, recv: Any, suffix: Any, end_position: Optional[Any] = None) -> bool:
         s = _scalar_or_empty(recv)
         x = js_string(suffix)
         if end_position is not None:
-            e = max(0, min(int(end_position), len(s)))
-            s = s[:e]
+            # `endPosition` counts UTF-16 code units, like JS (#3613).
+            units = _utf16_units(s)
+            e = max(0, min(int(end_position), len(units)))
+            needle = _utf16_units(x)
+            return _utf16_has_at(units, needle, e - len(needle))
         if x == "":
             return True
         if len(s) < len(x):
@@ -1868,6 +1891,41 @@ class BarefootJS:
 
     def map_eval(self, recv: Any, proj_json: str, param: str, base_env: Optional[dict] = None) -> list:
         return _evaluator.map_json(recv, proj_json, param, base_env or {})
+
+
+def _utf16_units(s: str) -> list:
+    """`s` as JS sees it: a list of UTF-16 code units. JS string positions
+    (`indexOf`, `at`, `startsWith`'s position, ...) count these, so an
+    astral character such as '😀' is two units (#3613)."""
+    units: list = []
+    for c in s:
+        o = ord(c)
+        if o > 0xFFFF:
+            o -= 0x10000
+            units.append(0xD800 + (o >> 10))
+            units.append(0xDC00 + (o & 0x3FF))
+        else:
+            units.append(o)
+    return units
+
+
+def _utf16_has_at(hay: list, needle: list, at: int) -> bool:
+    """Whether `needle` occurs in `hay` at unit offset `at`."""
+    if at < 0 or at + len(needle) > len(hay):
+        return False
+    return hay[at : at + len(needle)] == needle
+
+
+def _utf16_index_of(s: str, search: str, reverse: bool) -> int:
+    """`String.prototype.indexOf` / `.lastIndexOf` over UTF-16 code units."""
+    hay = _utf16_units(s)
+    needle = _utf16_units(search)
+    last = len(hay) - len(needle)
+    idxs = range(last, -1, -1) if reverse else range(0, last + 1)
+    for i in idxs:
+        if _utf16_has_at(hay, needle, i):
+            return i
+    return -1
 
 
 def _array_index_of(recv: Any, elem: Any, reverse: bool) -> int:

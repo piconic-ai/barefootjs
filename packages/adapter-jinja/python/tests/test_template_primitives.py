@@ -183,7 +183,7 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.index_of(arr, "d"), 4)
         self.assertEqual(self.bf.index_of(arr, "z"), -1)
         self.assertEqual(self.bf.index_of([], "a"), -1)
-        self.assertEqual(self.bf.index_of("not an array", "a"), -1)
+        self.assertEqual(self.bf.index_of({"a": 1}, "a"), -1)
 
         self.assertEqual(self.bf.last_index_of(arr, "b"), 3)
         self.assertEqual(self.bf.last_index_of(arr, "a"), 0)
@@ -203,6 +203,33 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertIsNone(self.bf.at([], 0))
         self.assertIsNone(self.bf.at(None, 0))
         self.assertIsNone(self.bf.at({"a": 1}, 0))
+
+    def test_string_index_methods_count_utf16_units(self):
+        # #3613: string receivers count UTF-16 code units, like JS.
+        self.assertEqual(self.bf.index_of("banana", "an"), 1)
+        self.assertEqual(self.bf.index_of("日本語", "本"), 1)
+        self.assertEqual(self.bf.index_of("a😀b", "b"), 3)
+        self.assertEqual(self.bf.index_of("abc", "z"), -1)
+        self.assertEqual(self.bf.index_of("abc", ""), 0)
+        self.assertEqual(self.bf.index_of("ab", "abc"), -1)
+        self.assertEqual(self.bf.last_index_of("banana", "an"), 3)
+        self.assertEqual(self.bf.last_index_of("a😀b😀", "😀"), 4)
+        self.assertEqual(self.bf.last_index_of("abc", ""), 3)
+        self.assertEqual(self.bf.last_index_of("aaa", "aa"), 1)
+        self.assertEqual(self.bf.at("日本語", -1), "語")
+        self.assertEqual(self.bf.at("a😀b", -1), "b")
+        self.assertEqual(self.bf.at("a😀b", 3), "b")
+        self.assertIsNone(self.bf.at("abc", 3))
+        self.assertIsNone(self.bf.at("", 0))
+        # Half of a surrogate pair: U+FFFD (what JS's lone surrogate
+        # becomes once the HTML is encoded as UTF-8).
+        self.assertEqual(self.bf.at("a😀b", 1), "\ufffd")
+        self.assertTrue(self.bf.starts_with("日本語", "本", 1))
+        self.assertTrue(self.bf.starts_with("a😀b", "b", 3))
+        self.assertFalse(self.bf.starts_with("a😀b", "b", 2))
+        self.assertTrue(self.bf.ends_with("日本語", "本", 2))
+        self.assertTrue(self.bf.ends_with("a😀b", "😀", 3))
+        self.assertFalse(self.bf.ends_with("a😀b", "a", 2))
 
     def test_concat_mutation_isolation(self):
         self.assertEqual(self.bf.concat(["a", "b"], ["c", "d"]), ["a", "b", "c", "d"])

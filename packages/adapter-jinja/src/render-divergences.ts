@@ -117,4 +117,7 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // `.at(-1)` on an empty string is `undefined`, which omits the attribute
+  // in JS; the template renders `data-last=""`.
+  'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
 }

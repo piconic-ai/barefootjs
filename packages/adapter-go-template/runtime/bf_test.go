@@ -305,8 +305,8 @@ func TestEndsWith(t *testing.T) {
 	if EndsWith("hi", "longer-than-string") {
 		t.Error(`EndsWith("hi", "longer-than-string") should be false`)
 	}
-	// Optional endPosition treats the string as that many bytes long
-	// (JS `endsWith(s, endPos)`).
+	// Optional endPosition treats the string as that many UTF-16 code
+	// units long (JS `endsWith(s, endPos)`).
 	if !EndsWith("abc", "b", 2) {
 		t.Error(`EndsWith("abc", "b", 2) should be true`)
 	}
@@ -556,8 +556,8 @@ func TestIndexOf(t *testing.T) {
 	if got := IndexOf([]int{1, 2, 3}, 2); got != 1 {
 		t.Errorf("IndexOf([1,2,3], 2) = %d, want 1", got)
 	}
-	if got := IndexOf("not an array", "n"); got != -1 {
-		t.Errorf("IndexOf(string, ...) = %d, want -1 (non-array)", got)
+	if got := IndexOf(map[string]int{"n": 1}, "n"); got != -1 {
+		t.Errorf("IndexOf(map, ...) = %d, want -1 (not an array or string)", got)
 	}
 }
 
@@ -3344,5 +3344,87 @@ func TestLoopRowPortalCompanionDefine(t *testing.T) {
 	}
 	if got, want := string(portals.Render()), `<b title="p">0:0</b>`+"\n"+`<b title="p">1:b</b>`+"\n"; got != want {
 		t.Errorf("outlet = %q, want %q", got, want)
+	}
+}
+
+// String receivers of the index-method helpers (#3613) count UTF-16 code
+// units, like JS: a BMP character ('本') is one unit, an astral one ('😀')
+// is two. Before #3613 `IndexOf` / `LastIndexOf` / `At` returned -1 / -1 /
+// nil for every string, and the `position` of `StartsWith` / `EndsWith`
+// was a byte offset.
+func TestIndexMethods_StringReceiverUTF16(t *testing.T) {
+	intCases := []struct {
+		name string
+		got  int
+		want int
+	}{
+		{"indexOf ascii", IndexOf("banana", "an"), 1},
+		{"indexOf bmp", IndexOf("日本語", "本"), 1},
+		{"indexOf astral counts two units", IndexOf("a😀b", "b"), 3},
+		{"indexOf astral needle", IndexOf("a😀b", "😀"), 1},
+		{"indexOf missing", IndexOf("abc", "z"), -1},
+		{"indexOf empty needle", IndexOf("abc", ""), 0},
+		{"indexOf needle longer than receiver", IndexOf("ab", "abc"), -1},
+		{"indexOf empty receiver and needle", IndexOf("", ""), 0},
+		{"indexOf stringifies the needle", IndexOf("v=42", 42), 2},
+		{"lastIndexOf ascii", LastIndexOf("banana", "an"), 3},
+		{"lastIndexOf bmp", LastIndexOf("日本語本", "本"), 3},
+		{"lastIndexOf astral", LastIndexOf("a😀b😀", "😀"), 4},
+		{"lastIndexOf missing", LastIndexOf("abc", "z"), -1},
+		{"lastIndexOf empty needle", LastIndexOf("abc", ""), 3},
+		{"lastIndexOf overlapping matches", LastIndexOf("aaa", "aa"), 1},
+		{"lastIndexOf needle longer than receiver", LastIndexOf("ab", "abc"), -1},
+	}
+	for _, c := range intCases {
+		if c.got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, c.got, c.want)
+		}
+	}
+
+	atCases := []struct {
+		recv  string
+		index int
+		want  any
+	}{
+		{"banana", -1, "a"},
+		{"日本語", -1, "語"},
+		{"日本語", 1, "本"},
+		{"a😀b", -1, "b"},
+		{"a😀b", 3, "b"},
+		{"a😀b", 0, "a"},
+		{"abc", 3, nil},
+		{"abc", -4, nil},
+		{"", 0, nil},
+		// Half of a surrogate pair: JS returns a lone surrogate, which a
+		// Go string can't carry; U+FFFD is what that lone surrogate
+		// becomes in a UTF-8 encoded JS response.
+		{"a😀b", 1, "\uFFFD"},
+		{"a😀b", 2, "\uFFFD"},
+	}
+	for _, c := range atCases {
+		if got := At(c.recv, c.index); got != c.want {
+			t.Errorf("At(%q, %d) = %#v, want %#v", c.recv, c.index, got, c.want)
+		}
+	}
+
+	boolCases := []struct {
+		name string
+		got  bool
+		want bool
+	}{
+		{"startsWith bmp position", StartsWith("日本語", "本", 1), true},
+		{"startsWith astral position after pair", StartsWith("a😀b", "b", 3), true},
+		{"startsWith astral position at pair", StartsWith("a😀b", "😀", 1), true},
+		{"startsWith astral position inside pair", StartsWith("a😀b", "b", 2), false},
+		{"endsWith bmp endPosition", EndsWith("日本語", "本", 2), true},
+		{"endsWith astral endPosition", EndsWith("a😀b", "😀", 3), true},
+		{"endsWith astral endPosition inside pair", EndsWith("a😀b", "a", 2), false},
+		{"includes bmp", Includes("日本語", "本"), true},
+		{"includes astral", Includes("a😀b", "😀"), true},
+	}
+	for _, c := range boolCases {
+		if c.got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, c.got, c.want)
+		}
 	}
 }

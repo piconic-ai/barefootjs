@@ -282,4 +282,7 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   // An explicit `0` for a prop with a number destructure default (`n = 2`)
   // reads as absent the same way, so the field takes the default.
   'number-prop-fraction-default:gen:n:zero': { limitation: 'defaulted-prop-explicit-empty' },
+  // `.at(-1)` on an empty string is `undefined`, which omits the attribute
+  // in JS; the template renders `data-last=""`.
+  'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
 }

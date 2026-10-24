@@ -993,6 +993,26 @@
       "note": "position beyond length clamps"
     },
     {
+      "fn": "starts_with",
+      "args": [
+        "日本語",
+        "本",
+        1
+      ],
+      "expect": true,
+      "note": "position counts a BMP character as one unit"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "a😀b",
+        "b",
+        3
+      ],
+      "expect": true,
+      "note": "position counts an astral character as two units"
+    },
+    {
       "fn": "ends_with",
       "args": [
         "hello",
@@ -1047,6 +1067,26 @@
       ],
       "expect": false,
       "note": "suffix longer than receiver"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "日本語",
+        "本",
+        2
+      ],
+      "expect": true,
+      "note": "endPosition counts a BMP character as one unit"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "a😀b",
+        "😀",
+        3
+      ],
+      "expect": true,
+      "note": "endPosition counts an astral character as two units"
     },
     {
       "fn": "replace",
@@ -1472,6 +1512,42 @@
       "note": "empty array yields undefined ≡ null"
     },
     {
+      "fn": "at",
+      "args": [
+        "日本語",
+        -1
+      ],
+      "expect": "語",
+      "note": "string: negative index on BMP characters"
+    },
+    {
+      "fn": "at",
+      "args": [
+        "a😀b",
+        -1
+      ],
+      "expect": "b",
+      "note": "string: negative index after an astral character"
+    },
+    {
+      "fn": "at",
+      "args": [
+        "a😀b",
+        3
+      ],
+      "expect": "b",
+      "note": "string: an astral character spans two units"
+    },
+    {
+      "fn": "at",
+      "args": [
+        "abc",
+        3
+      ],
+      "expect": null,
+      "note": "string: out of range yields undefined ≡ null"
+    },
+    {
       "fn": "includes",
       "args": [
         [
@@ -1566,6 +1642,51 @@
       "note": "not found is -1"
     },
     {
+      "fn": "index_of",
+      "args": [
+        "banana",
+        "an"
+      ],
+      "expect": 1,
+      "note": "string: first substring match"
+    },
+    {
+      "fn": "index_of",
+      "args": [
+        "日本語",
+        "本"
+      ],
+      "expect": 1,
+      "note": "string: BMP characters count one unit each"
+    },
+    {
+      "fn": "index_of",
+      "args": [
+        "a😀b",
+        "b"
+      ],
+      "expect": 3,
+      "note": "string: an astral character counts two units"
+    },
+    {
+      "fn": "index_of",
+      "args": [
+        "abc",
+        "z"
+      ],
+      "expect": -1,
+      "note": "string: not found is -1"
+    },
+    {
+      "fn": "index_of",
+      "args": [
+        "abc",
+        ""
+      ],
+      "expect": 0,
+      "note": "string: empty search matches at 0"
+    },
+    {
       "fn": "last_index_of",
       "args": [
         [
@@ -1590,6 +1711,33 @@
       ],
       "expect": -1,
       "note": "not found is -1"
+    },
+    {
+      "fn": "last_index_of",
+      "args": [
+        "banana",
+        "an"
+      ],
+      "expect": 3,
+      "note": "string: last substring match"
+    },
+    {
+      "fn": "last_index_of",
+      "args": [
+        "a😀b😀",
+        "😀"
+      ],
+      "expect": 4,
+      "note": "string: astral match offset in UTF-16 units"
+    },
+    {
+      "fn": "last_index_of",
+      "args": [
+        "abc",
+        ""
+      ],
+      "expect": 3,
+      "note": "string: empty search matches at the length"
     },
     {
       "fn": "concat",

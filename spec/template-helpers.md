@@ -200,8 +200,9 @@ whitespace sets vary across hosts.
 
 JS `.startsWith(prefix, position?)` / `.endsWith(suffix,
 endPosition?)` → boolean. Empty search string is always `true`; the
-optional position re-anchors, clamped to `[0, length]`. Vectors stay
-ASCII (index units differ across hosts on astral planes).
+optional position re-anchors, clamped to `[0, length]`. Positions
+count UTF-16 code units, as in JS (`"a😀b".startsWith("b", 3)` is
+`true`; #3613).
 
 ### replace
 
@@ -242,8 +243,13 @@ length units differ across hosts otherwise).
 
 ### at
 
-JS `.at(i)`: negative indices count from the end; out of range →
-`undefined` ≡ `null`.
+JS `.at(i)` on arrays and strings, receiver-dispatched: negative
+indices count from the end; out of range → `undefined` ≡ `null`. A
+string is indexed in UTF-16 code units (`"a😀b".at(-1)` is `"b"`;
+#3613). An index on half of a surrogate pair yields a lone surrogate
+in JS, which a UTF-8 host can't hold; backends return U+FFFD (what the
+JS reference's lone surrogate becomes once its HTML is UTF-8 encoded),
+and the vectors stay off those positions.
 
 ### includes
 
@@ -255,8 +261,11 @@ their divergence.
 
 ### index_of / last_index_of
 
-JS `.indexOf(x)` / `.lastIndexOf(x)` → position or `-1`. Same
-equality contract as `includes`.
+JS `.indexOf(x)` / `.lastIndexOf(x)` → position or `-1`, on arrays
+(same equality contract as `includes`) and strings (substring search,
+receiver-dispatched). A string position counts UTF-16 code units
+(`"日本語".indexOf("本")` is `1`, `"a😀b".indexOf("b")` is `3`; #3613).
+The two-argument `fromIndex` form is refused upstream.
 
 ### concat
 
