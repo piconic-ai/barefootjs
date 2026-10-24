@@ -134,6 +134,34 @@ export function numberLiteralRawGo(expr: ParsedExpr): string | null {
   return null
 }
 
+function isUndefinedIdentifier(expr: ParsedExpr): boolean {
+  return expr.kind === 'identifier' && expr.name === 'undefined'
+}
+
+/** The array-literal case of `parsedLiteralToGo`. */
+function arrayLiteralToGo(
+  ctx: GoEmitContext,
+  expr: Extract<ParsedExpr, { kind: 'array-literal' }>,
+  typeInfo?: TypeInfo,
+): string | null {
+  // Empty array → null so the field stays nil (JSON-marshals as `null`)
+  // rather than an empty slice.
+  if (expr.elements.length === 0) return null
+  const elemType = typeInfo?.kind === 'array' ? typeInfo.elementType : undefined
+  const sliceHeader = typeInfo?.kind === 'array' ? typeInfoToGo(ctx, typeInfo) : '[]interface{}'
+  const elems: string[] = []
+  for (const el of expr.elements) {
+    // An `undefined` element still occupies a slot: JS iterates it and
+    // renders an empty row, as it does for `null` (#3610).
+    const go = isUndefinedIdentifier(el) ? 'nil' : parsedLiteralToGo(ctx, el, elemType)
+    // Any non-scalar element (object / call / identifier) defers the WHOLE
+    // array — struct-element baking is owned elsewhere.
+    if (go === null) return null
+    elems.push(go)
+  }
+  return `${sliceHeader}{${elems.join(', ')}}`
+}
+
 export function parsedLiteralToGo(
   ctx: GoEmitContext,
   expr: ParsedExpr,
@@ -158,22 +186,7 @@ export function parsedLiteralToGo(
     }
   }
 
-  if (expr.kind === 'array-literal') {
-    // Empty array → null so the field stays nil (JSON-marshals as `null`)
-    // rather than an empty slice.
-    if (expr.elements.length === 0) return null
-    const elemType = typeInfo?.kind === 'array' ? typeInfo.elementType : undefined
-    const sliceHeader = typeInfo?.kind === 'array' ? typeInfoToGo(ctx, typeInfo) : '[]interface{}'
-    const elems: string[] = []
-    for (const el of expr.elements) {
-      const go = parsedLiteralToGo(ctx, el, elemType)
-      // Any non-scalar element (object / call / identifier) defers the WHOLE
-      // array — struct-element baking is owned elsewhere.
-      if (go === null) return null
-      elems.push(go)
-    }
-    return `${sliceHeader}{${elems.join(', ')}}`
-  }
+  if (expr.kind === 'array-literal') return arrayLiteralToGo(ctx, expr, typeInfo)
 
   if (expr.kind === 'object-literal') {
     // Bake against a concrete local struct only. The struct's field map is the
@@ -188,6 +201,9 @@ export function parsedLiteralToGo(
       // struct field against — defer the whole object, same as any other
       // unsupported shape.
       if (prop.kind === 'spread') return null
+      // `key: undefined` reads the same as an absent key, so the field
+      // keeps its Go zero value (#3610).
+      if (!prop.shorthand && isUndefinedIdentifier(prop.value)) continue
       // A shorthand `{ a }` carries an identifier value → lowers to null below
       // and defers the whole object.
       const goField = structFields.get(prop.key)
