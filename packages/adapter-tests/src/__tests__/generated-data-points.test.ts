@@ -22,8 +22,11 @@ const ARTIFACT_PATH = resolve(import.meta.dir, '../../generated-data-points.json
 describe('generated-data-points artifact', () => {
   // Recomputed at registration, not inside the test body — the corpus
   // compile takes ~50s and bun's per-test timeout is 5s (same shape as
-  // coverage-map.test.ts).
-  const recomputed = generateAllDataPoints()
+  // coverage-map.test.ts). Compared in its JSON form, which is what the
+  // committed artifact holds and the conformance suite reads: a fixture
+  // prop's `undefined` array element is carried into the points and
+  // serializes as `null`.
+  const recomputed = JSON.parse(JSON.stringify(generateAllDataPoints()))
 
   test('committed generated-data-points.json is fresh', () => {
     const committed = JSON.parse(readFileSync(ARTIFACT_PATH, 'utf8'))
