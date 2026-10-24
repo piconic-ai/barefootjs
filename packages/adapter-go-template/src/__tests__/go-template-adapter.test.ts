@@ -721,6 +721,25 @@ export function F(props: { items?: number[]; all: number[] }) {
   })
 })
 
+describe('GoTemplateAdapter - condition .length lowering (#3609)', () => {
+  // A string's `.length` counts UTF-16 code units (`bf_length`), not the
+  // UTF-8 bytes Go's `len` counts. Only a receiver declared as an array
+  // keeps `len`, whose element count is the same answer.
+  test('a string or untyped receiver takes bf_length, an array receiver keeps len', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function F(props: { word: string; tags: string[] }) {
+  const [text] = createSignal('日本語')
+  return <p>{props.word.length > 3 ? 'a' : 'b'}{text().length > 3 ? 'c' : 'd'}{props.tags.length > 0 ? 'e' : 'f'}</p>
+}
+`)
+    expect(template).toContain('gt (bf_length .Word) 3')
+    expect(template).toContain('gt (bf_length .Text) 3')
+    expect(template).toContain('gt (len .Tags) 0')
+  })
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {
