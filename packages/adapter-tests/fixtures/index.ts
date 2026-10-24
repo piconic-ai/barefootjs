@@ -1098,6 +1098,9 @@ import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-s
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
 import { fixture as loopRowChildScalarRowWrapper } from './loop-row-child-scalar-row-wrapper'
 import { fixture as loopRowChildScalarRowWrapperNestedComponent } from './loop-row-child-scalar-row-wrapper-nested-component'
+import { fixture as loopRowChildSharedWrapper } from './loop-row-child-shared-wrapper'
+import { fixture as loopRowChildSharedWrapperNestedComponent } from './loop-row-child-shared-wrapper-nested-component'
+import { fixture as loopRowChildPropNamedRowPlural } from './loop-row-child-prop-named-row-plural'
 import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
@@ -1888,6 +1891,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildScalarRowKey,
   loopRowChildScalarRowWrapper,
   loopRowChildScalarRowWrapperNestedComponent,
+  loopRowChildSharedWrapper,
+  loopRowChildSharedWrapperNestedComponent,
+  loopRowChildPropNamedRowPlural,
   loopRowScalarMemberLength,
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,
