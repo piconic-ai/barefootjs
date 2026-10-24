@@ -1194,10 +1194,11 @@ sub is_element ($self, $v) {
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
 # value-equality search (#1448 Tier A). Returns the 0-based position
 # of the first / last matching element, or -1 if not found.
-# Non-array receivers return -1 — matches the JS semantic that
-# `.indexOf` / `.lastIndexOf` are only defined on Array / TypedArray.
-# (The string-position `indexOf` form isn't in Tier A; if it lands
-# later the helper can grow a ref()-dispatch branch like `includes`.)
+# A plain-scalar (string) receiver is `String.prototype.indexOf` /
+# `.lastIndexOf` instead, counted in UTF-16 code units like JS (#3613):
+# `'日本語'.indexOf('本')` is 1 and `'a😀b'.indexOf('b')` is 3. Any other
+# reference returns -1 (`.indexOf` is only defined on Array / TypedArray /
+# String).
 
 sub _array_index_of ($recv, $elem, $reverse) {
     return -1 unless ref($recv) eq 'ARRAY';
@@ -1213,21 +1214,87 @@ sub _array_index_of ($recv, $elem, $reverse) {
     return -1;
 }
 
+# JS `ToIntegerOrInfinity` for a string position or index (#3613): NaN →
+# 0, truncation toward zero, and ±Infinity clamped to ±2**53 so the
+# caller's range check treats it as out of range (a bare `int()` keeps
+# NaN, which then indexes element 0 with a warning).
+sub _to_integer_or_infinity ($self, $value) {
+    my $n = $self->number($value);
+    return 0 if _is_nan($n);
+    return 2**53 if $n >= 2**53;
+    return -(2**53) if $n <= -(2**53);
+    return int($n);
+}
+
+# `$s` as JS sees it: a list of UTF-16 code units. JS string positions
+# (`indexOf`, `at`, `startsWith`'s position, …) count these, so an astral
+# character such as '😀' is two units (#3613).
+sub _utf16_units ($s) {
+    my @units;
+    for my $o (map { ord } split //, $s) {
+        if ($o > 0xFFFF) {
+            $o -= 0x10000;
+            push @units, 0xD800 + ($o >> 10), 0xDC00 + ($o & 0x3FF);
+        } else {
+            push @units, $o;
+        }
+    }
+    return \@units;
+}
+
+# Whether `$needle` (unit list) occurs in `$hay` at unit offset `$at`.
+sub _utf16_has_at ($hay, $needle, $at) {
+    return 0 if $at < 0 || $at + @$needle > @$hay;
+    for my $i (0 .. $#$needle) {
+        return 0 if $hay->[$at + $i] != $needle->[$i];
+    }
+    return 1;
+}
+
+sub _utf16_index_of ($self, $recv, $elem, $reverse) {
+    my $hay    = _utf16_units("$recv");
+    my $needle = _utf16_units($self->string($elem));
+    my $last   = @$hay - @$needle;
+    my @indices = $reverse ? (reverse 0 .. $last) : (0 .. $last);
+    for my $i (@indices) {
+        return $i if _utf16_has_at($hay, $needle, $i);
+    }
+    return -1;
+}
+
 sub index_of ($self, $recv, $elem) {
+    return $self->_utf16_index_of($recv, $elem, 0) if defined $recv && !ref($recv);
     return _array_index_of($recv, $elem, 0);
 }
 
 sub last_index_of ($self, $recv, $elem) {
+    return $self->_utf16_index_of($recv, $elem, 1) if defined $recv && !ref($recv);
     return _array_index_of($recv, $elem, 1);
 }
 
 # `Array.prototype.at(i)` — supports negative indices (`.at(-1)` is
 # the last element); out-of-bounds returns undef (which Mojo's
 # auto-escape renders as the empty string, matching JS's `undefined`).
-# Non-array receivers return undef. Matches the Go `bf_at` arithmetic
-# (`length + i` for i < 0) so adapter output stays symmetric.
+# Matches the Go `bf_at` arithmetic (`length + i` for i < 0) so adapter
+# output stays symmetric. A plain-scalar (string) receiver is
+# `String.prototype.at`, indexed in UTF-16 code units (#3613). Half of a
+# surrogate pair comes back as U+FFFD, not the lone surrogate JS returns:
+# a Perl string could hold the code point, but two halves concatenated
+# stay two characters (they never rejoin into the astral one) and encode
+# to invalid UTF-8 on output, so the helper keeps its result valid text
+# instead (limitation `string-at-lone-surrogate`). Other references
+# return undef.
 
 sub at ($self, $recv, $i) {
+    if (defined $recv && !ref($recv)) {
+        return undef if !defined $i;
+        my $units = _utf16_units("$recv");
+        my $idx = $self->_to_integer_or_infinity($i);
+        $idx += @$units if $idx < 0;
+        return undef if $idx < 0 || $idx >= @$units;
+        my $u = $units->[$idx];
+        return $u >= 0xD800 && $u <= 0xDFFF ? "\x{FFFD}" : chr($u);
+    }
     return undef unless ref($recv) eq 'ARRAY';
     return undef if !defined $i;
     my $len = scalar @$recv;
@@ -1552,17 +1619,19 @@ sub split ($self, $recv, $sep = undef, $limit = undef) {
 # string → boolean (1 / 0). `substr`-anchored literal comparison mirrors
 # Go's `strings.HasPrefix`. An empty prefix is always true (JS parity);
 # undef / non-string receivers coerce to the empty string first. The
-# optional `position` re-anchors the test (clamped to `[0, length]`),
-# matching JS `"abc".startsWith("b", 1)`.
+# optional `position` re-anchors the test (UTF-16 code units, clamped to
+# `[0, length]`), matching JS `"abc".startsWith("b", 1)`.
 
 sub starts_with ($self, $recv, $prefix, $position = undef) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
     my $p = defined $prefix ? "$prefix" : '';
     if (defined $position) {
-        my $n = int($position);
+        # `position` counts UTF-16 code units, like JS (#3613).
+        my $units = _utf16_units($s);
+        my $n = $self->_to_integer_or_infinity($position);
         $n = 0 if $n < 0;
-        $n = CORE::length($s) if $n > CORE::length($s);
-        $s = substr($s, $n);
+        $n = @$units if $n > @$units;
+        return _utf16_has_at($units, _utf16_units($p), $n);
     }
     return substr($s, 0, CORE::length $p) eq $p ? 1 : 0;
 }
@@ -1572,17 +1641,21 @@ sub starts_with ($self, $recv, $prefix, $position = undef) {
 # suffix is always true (JS parity); a suffix longer than the string is
 # false. `substr($s, -length $x)` would mis-read the whole string when
 # `length $x == 0`, so that case short-circuits. The optional
-# `endPosition` treats the string as if it were only that many chars
-# long (clamped to `[0, length]`), matching JS `"abc".endsWith("b", 2)`.
+# `endPosition` treats the string as if it were only that many UTF-16
+# code units long (clamped to `[0, length]`), matching JS
+# `"abc".endsWith("b", 2)`.
 
 sub ends_with ($self, $recv, $suffix, $end_position = undef) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
     my $x = defined $suffix ? "$suffix" : '';
     if (defined $end_position) {
-        my $e = int($end_position);
+        # `endPosition` counts UTF-16 code units, like JS (#3613).
+        my $units  = _utf16_units($s);
+        my $needle = _utf16_units($x);
+        my $e = $self->_to_integer_or_infinity($end_position);
         $e = 0 if $e < 0;
-        $e = CORE::length($s) if $e > CORE::length($s);
-        $s = substr($s, 0, $e);
+        $e = @$units if $e > @$units;
+        return _utf16_has_at($units, $needle, $e - @$needle);
     }
     return 1 if $x eq '';
     return 0 if CORE::length($s) < CORE::length($x);

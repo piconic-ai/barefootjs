@@ -417,6 +417,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -1439,6 +1445,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -1500,6 +1512,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -1585,6 +1603,18 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -1652,6 +1682,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -1725,6 +1761,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -1786,6 +1828,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -1929,6 +1977,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -1990,6 +2044,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -3359,6 +3419,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -3464,6 +3530,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -3661,6 +3733,18 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
+              ]
             }
           ]
         },
@@ -3778,6 +3862,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -3897,6 +3987,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -3996,6 +4092,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -4227,6 +4329,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -4338,6 +4446,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -4616,6 +4730,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -4842,6 +4962,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -5056,6 +5182,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5203,6 +5335,12 @@
               "fixture": "static-nested-loop-ref",
               "limitations": [
                 "signal-read-in-nested-static-loop"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -5450,6 +5588,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -5694,6 +5838,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -5917,6 +6067,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -6414,6 +6570,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -6649,6 +6811,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -7306,6 +7474,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -7592,6 +7766,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -7848,6 +8028,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -8049,6 +8235,18 @@
               "fixture": "static-nested-loop-ref",
               "limitations": [
                 "signal-read-in-nested-static-loop"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -8368,6 +8566,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8684,6 +8888,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -8973,6 +9183,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -9602,6 +9818,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -9903,6 +10125,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -10275,6 +10503,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -10489,6 +10723,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -10697,6 +10937,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -10850,6 +11096,18 @@
               "fixture": "static-nested-loop-ref",
               "limitations": [
                 "signal-read-in-nested-static-loop"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -11073,6 +11331,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -11293,6 +11557,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -11510,6 +11780,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -11947,6 +12223,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -12164,6 +12446,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -13437,6 +13725,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -13602,6 +13896,12 @@
               "fixture": "static-nested-loop-ref",
               "limitations": [
                 "signal-read-in-nested-static-loop"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -15301,6 +15601,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -15562,6 +15868,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -15581,6 +15893,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -15624,6 +15942,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -15643,6 +15967,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -15668,6 +15998,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -15687,6 +16023,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -15734,6 +16076,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -15753,6 +16101,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -15835,6 +16189,12 @@
               "fixture": "remainder-negative-zero-quotient",
               "limitations": [
                 "negative-zero-remainder-quotient"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]
@@ -16124,6 +16484,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -16613,15 +16979,93 @@
     "array-method:at": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        },
         "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
@@ -16665,7 +17109,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -17639,6 +18092,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]
@@ -18802,6 +19261,12 @@
               "limitations": [
                 "negative-zero-remainder-quotient"
               ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
+              ]
             }
           ]
         },
@@ -18916,6 +19381,12 @@
               "limitations": [
                 "off-subset-callback-body"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -18961,6 +19432,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -19038,6 +19515,12 @@
               "limitations": [
                 "off-subset-callback-body"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -19095,6 +19578,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -19154,6 +19643,12 @@
               "limitations": [
                 "off-subset-callback-body"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -19199,6 +19694,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -19316,6 +19817,12 @@
               "limitations": [
                 "off-subset-callback-body"
               ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
             }
           ]
         },
@@ -19373,6 +19880,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             }
           ]
@@ -20014,6 +20527,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -20105,6 +20624,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -20268,6 +20793,18 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -20362,6 +20899,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -20453,6 +20996,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -20559,6 +21108,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -20756,6 +21311,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -20859,6 +21420,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -21035,6 +21602,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -21180,6 +21753,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -21355,6 +21934,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-children-ref",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -21430,6 +22015,18 @@
               "fixture": "static-literal-loop-component-in-row",
               "limitations": [
                 "static-literal-loop-component-row"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             },
             {
@@ -21587,6 +22184,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -21741,6 +22344,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -21892,6 +22501,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -22191,6 +22806,12 @@
               ]
             },
             {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -22342,6 +22963,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "string-at-lone-surrogate",
+              "limitations": [
+                "string-at-lone-surrogate"
               ]
             },
             {
@@ -23422,6 +24049,12 @@
               "fixture": "remainder-negative-zero-quotient",
               "limitations": [
                 "negative-zero-remainder-quotient"
+              ]
+            },
+            {
+              "fixture": "string-index-non-finite",
+              "limitations": [
+                "division-zero-divisor"
               ]
             }
           ]

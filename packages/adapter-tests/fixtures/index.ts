@@ -570,6 +570,9 @@ import { fixture as optionalChainingProp } from './optional-chaining-prop'
 import { fixture as numberToFixed } from './number-tofixed'
 import { fixture as mathMethods } from './math-methods'
 import { fixture as stringLengthText } from './string-length-text'
+import { fixture as stringIndexMethods } from './string-index-methods'
+import { fixture as stringAtLoneSurrogate } from './string-at-lone-surrogate'
+import { fixture as stringIndexNonFinite } from './string-index-non-finite'
 import { fixture as booleanAttrLiterals } from './boolean-attr-literals'
 import { fixture as camelcaseAttributes } from './camelcase-attributes'
 import { fixture as staticAttrEscape } from './static-attr-escape'
@@ -983,6 +986,7 @@ import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
 import { fixture as loopRowChildChildrenInnerLoopShadow } from './loop-row-child-children-inner-loop-shadow'
 import { fixture as loopRowChildChildrenHandler } from './loop-row-child-children-handler'
+import { fixture as loopRowChildChildrenRef } from './loop-row-child-children-ref'
 import { fixture as loopRowNestedChildChildrenHandler } from './loop-row-nested-child-children-handler'
 import { fixture as loopRowChildChildrenInnerLoopHandler } from './loop-row-child-children-inner-loop-handler'
 import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
@@ -1573,6 +1577,9 @@ export const jsxFixtures: JSXFixture[] = [
   numberToFixed,
   mathMethods,
   stringLengthText,
+  stringIndexMethods,
+  stringAtLoneSurrogate,
+  stringIndexNonFinite,
   booleanAttrLiterals,
   camelcaseAttributes,
   staticAttrEscape,
@@ -1825,6 +1832,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedIndexProp,
   loopRowChildChildrenInnerLoopShadow,
   loopRowChildChildrenHandler,
+  loopRowChildChildrenRef,
   loopRowNestedChildChildrenHandler,
   loopRowChildChildrenInnerLoopHandler,
   signalLoopRowChildChildren,
