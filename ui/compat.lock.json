@@ -4836,6 +4836,22 @@
           ]
         }
       },
+      "loop-key-to-string": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "component-row-computed-key-dropped"
+          ]
+        }
+      },
+      "loop-key-to-string-number-component-row": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "component-row-computed-key-dropped"
+          ]
+        }
+      },
       "loop-param-named-props-member": {
         "blade": {
           "kind": "render",
@@ -8124,6 +8140,14 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "loop-key-to-string": {
+        "description": "Loop rows keyed by x.toString() / i.toString() (component and element rows) and n.toString()…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string.ts"
+      },
+      "loop-key-to-string-number-component-row": {
+        "description": "A component loop row over a number array keyed by n.toString() renders data-key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
+      },
       "loop-param-named-props-member": {
         "description": "A .map() row parameter named props reads its own item members, not the component props",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-member.ts"
@@ -8645,6 +8669,20 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "component-row-computed-key-dropped": {
+      "title": "Computed loop key on component rows built from an array prop",
+      "kind": "silent",
+      "given": "a component loop row over an array prop keyed by an expression of the row or the index rather than a bare row read (`props.names.map(x => <Item key={x.toString()} label={x} />)`, `key={i.toString()}`)",
+      "expected": "every row carries the key value as `data-key`",
+      "actual": "drops `data-key` from every row; a row whose child props are all computed (`label={n.toString()}`) is built from caller-supplied child inputs, which the conformance harness does not supply, so no rows render in the harness",
+      "fixtures": [
+        "loop-key-to-string",
+        "loop-key-to-string-number-component-row"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "computed-const-loop-source": {

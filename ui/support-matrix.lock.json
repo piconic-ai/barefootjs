@@ -5140,6 +5140,18 @@
               ]
             },
             {
+              "fixture": "loop-key-to-string",
+              "limitations": [
+                "component-row-computed-key-dropped"
+              ]
+            },
+            {
+              "fixture": "loop-key-to-string-number-component-row",
+              "limitations": [
+                "component-row-computed-key-dropped"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -7977,6 +7989,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-key-to-string",
+              "limitations": [
+                "component-row-computed-key-dropped"
+              ]
+            },
+            {
+              "fixture": "loop-key-to-string-number-component-row",
+              "limitations": [
+                "component-row-computed-key-dropped"
               ]
             },
             {
@@ -13638,6 +13662,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-key-to-string",
+              "limitations": [
+                "component-row-computed-key-dropped"
+              ]
+            },
+            {
+              "fixture": "loop-key-to-string-number-component-row",
+              "limitations": [
+                "component-row-computed-key-dropped"
               ]
             },
             {

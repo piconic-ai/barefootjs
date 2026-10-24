@@ -415,6 +415,20 @@ export function groupObjectLiteralSegments(
 }
 
 /**
+ * The receiver of a zero-arg, non-optional `recv.toString()` call, which
+ * stringifies as `String(recv)` does; `null` for any other expression. A
+ * radix argument (`n.toString(16)`) and an optional call (`x?.toString()`,
+ * `undefined` for a nullish receiver where `String` gives `'undefined'`)
+ * are not this shape.
+ */
+export function asToStringCall(expr: ParsedExpr): ParsedExpr | null {
+  if (expr.kind !== 'call' || expr.args.length !== 0) return null
+  const callee = expr.callee
+  if (callee.kind !== 'member' || callee.computed || callee.optional || callee.property !== 'toString') return null
+  return callee.object
+}
+
+/**
  * Single point of dispatch from `ParsedExpr.kind` to the adapter's
  * method. Adapters call this once at their entry point; the recursion
  * threads the `emit` callback for child nodes.
@@ -445,6 +459,14 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
           if (rendered !== null) return rendered
           break
         }
+      }
+      // `x.toString()` is `String(x)` (#3621): every adapter registers the
+      // `String` template primitive, while a zero-arg method call on a
+      // non-global reaches `call()`'s getter fallback, which reads the
+      // callee `x.toString` as a property and drops the call.
+      const toStringReceiver = asToStringCall(expr)
+      if (toStringReceiver) {
+        return emitter.call({ kind: 'identifier', name: 'String' }, [toStringReceiver], emit)
       }
       // A higher-order callback call (`arr.filter(p)` / `arr.sort(cmp)` / …)
       // routes to the dedicated `callbackMethod` arm; any other call is generic.
