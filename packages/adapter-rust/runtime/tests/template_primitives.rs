@@ -120,6 +120,52 @@ fn index_of_last_index_of() {
     assert_eq!(runtime::array_index_of(&with_nulls, &JsValue::Null, true), 2);
 }
 
+// String receivers (#3613) count UTF-16 code units, like JS: '本' is one
+// unit, '😀' is two.
+#[test]
+fn string_index_methods_count_utf16_units() {
+    assert_eq!(runtime::index_of(&s("banana"), &s("an"), false), 1);
+    assert_eq!(runtime::index_of(&s("日本語"), &s("本"), false), 1);
+    assert_eq!(runtime::index_of(&s("a😀b"), &s("b"), false), 3);
+    assert_eq!(runtime::index_of(&s("abc"), &s("z"), false), -1);
+    assert_eq!(runtime::index_of(&s("abc"), &s(""), false), 0);
+    assert_eq!(runtime::index_of(&s("ab"), &s("abc"), false), -1);
+    assert_eq!(runtime::index_of(&s("banana"), &s("an"), true), 3);
+    assert_eq!(runtime::index_of(&s("a😀b😀"), &s("😀"), true), 4);
+    assert_eq!(runtime::index_of(&s("abc"), &s(""), true), 3);
+    assert_eq!(runtime::index_of(&s("aaa"), &s("aa"), true), 1);
+    assert_eq!(runtime::index_of(&arr(vec![s("a"), s("b")]), &s("b"), false), 1);
+    assert_eq!(runtime::at(&s("日本語"), &n(-1.0)), s("語"));
+    assert_eq!(runtime::at(&s("a😀b"), &n(-1.0)), s("b"));
+    assert_eq!(runtime::at(&s("a😀b"), &n(3.0)), s("b"));
+    assert_eq!(runtime::at(&s("abc"), &n(3.0)), JsValue::Null);
+    assert_eq!(runtime::at(&s(""), &n(0.0)), JsValue::Null);
+    // Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
+    // (pinned divergence, limitation `string-at-lone-surrogate`).
+    assert_eq!(runtime::at(&s("a😀b"), &n(1.0)), s("\u{FFFD}"));
+    assert!(runtime::starts_with(&s("日本語"), &s("本"), &n(1.0)));
+    assert!(runtime::starts_with(&s("a😀b"), &s("b"), &n(3.0)));
+    assert!(!runtime::starts_with(&s("a😀b"), &s("b"), &n(2.0)));
+    assert!(runtime::ends_with(&s("日本語"), &s("本"), &n(2.0)));
+    assert!(runtime::ends_with(&s("a😀b"), &s("😀"), &n(3.0)));
+    assert!(!runtime::ends_with(&s("a😀b"), &s("a"), &n(2.0)));
+}
+
+// ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
+// ±Infinity is out of range, fractions truncate toward zero.
+#[test]
+fn string_index_methods_non_finite_positions() {
+    assert_eq!(runtime::at(&s("abc"), &n(f64::NAN)), s("a"));
+    assert_eq!(runtime::at(&s("abc"), &n(f64::INFINITY)), JsValue::Null);
+    assert_eq!(runtime::at(&s("abc"), &n(f64::NEG_INFINITY)), JsValue::Null);
+    assert_eq!(runtime::at(&s("abc"), &n(1.9)), s("b"));
+    assert_eq!(runtime::at(&s("abc"), &n(-1.5)), s("c"));
+    assert!(runtime::starts_with(&s("abc"), &s("a"), &n(f64::NAN)));
+    assert!(runtime::starts_with(&s("abc"), &s(""), &n(f64::INFINITY)));
+    assert!(!runtime::ends_with(&s("abc"), &s("c"), &n(f64::NAN)));
+    assert!(runtime::ends_with(&s("abc"), &s("c"), &n(f64::INFINITY)));
+}
+
 #[test]
 fn at_helper() {
     let arr_v = arr(vec![s("a"), s("b"), s("c")]);

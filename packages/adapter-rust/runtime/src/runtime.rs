@@ -676,6 +676,40 @@ pub fn flat_map_tuple(recv: &JsValue, specs: &[(String, String)]) -> JsValue {
     JsValue::Array(out)
 }
 
+/// `s` as JS sees it: its UTF-16 code units. JS string positions
+/// (`indexOf`, `at`, `startsWith`'s position, ...) count these, so an
+/// astral character such as '😀' is two units (#3613).
+fn utf16_units(s: &str) -> Vec<u16> {
+    s.encode_utf16().collect()
+}
+
+/// Whether `needle` occurs in `hay` at unit offset `at`.
+fn utf16_has_at(hay: &[u16], needle: &[u16], at: i64) -> bool {
+    if at < 0 || at as usize + needle.len() > hay.len() {
+        return false;
+    }
+    &hay[at as usize..at as usize + needle.len()] == needle
+}
+
+/// `Array.prototype.indexOf` / `.lastIndexOf` (`reverse`), dispatching on
+/// the receiver: a string is `String.prototype.indexOf` / `.lastIndexOf`,
+/// counted in UTF-16 code units like JS (#3613) -- `'日本語'.indexOf('本')`
+/// is 1 and `'a😀b'.indexOf('b')` is 3. Anything else goes through
+/// `array_index_of`.
+pub fn index_of(recv: &JsValue, elem: &JsValue, reverse: bool) -> i64 {
+    let JsValue::String(s) = recv else {
+        return array_index_of(recv, elem, reverse);
+    };
+    let hay = utf16_units(s);
+    let needle = utf16_units(&js_string(elem));
+    let last = hay.len() as i64 - needle.len() as i64;
+    if last < 0 {
+        return -1;
+    }
+    let idxs: Vec<i64> = if reverse { (0..=last).rev().collect() } else { (0..=last).collect() };
+    idxs.into_iter().find(|&i| utf16_has_at(&hay, &needle, i)).unwrap_or(-1)
+}
+
 pub fn array_index_of(recv: &JsValue, elem: &JsValue, reverse: bool) -> i64 {
     let items = match recv.as_array() {
         Some(a) => a,
@@ -1566,8 +1600,8 @@ impl Object for BfInstance {
             "get" => Ok(js_to_mj(&evaluator::read_index(a(0), a(1)))),
             "is_element" => Ok(MjValue::from(is_element(a(0)))),
             "style_object" => Ok(safe(style_object(&js_args))),
-            "index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), false))),
-            "last_index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), true))),
+            "index_of" => Ok(MjValue::from(index_of(a(0), a(1), false))),
+            "last_index_of" => Ok(MjValue::from(index_of(a(0), a(1), true))),
             "at" => Ok(js_to_mj(&at(a(0), a(1)))),
             "concat" => Ok(js_to_mj(&concat(a(0), a(1)))),
             "slice" => Ok(js_to_mj(&slice(a(0), a(1), a(2)))),
@@ -1759,7 +1793,26 @@ pub fn is_element(recv: &JsValue) -> bool {
     }
 }
 
+/// `Array.prototype.at(i)` / `String.prototype.at(i)`: negative indices
+/// count from the end, out of range is null. A string is indexed in
+/// UTF-16 code units (#3613). Half of a surrogate pair, a lone surrogate
+/// in JS, comes back as U+FFFD: a Rust `String` can't hold one, so the
+/// halves compare equal and don't rejoin (limitation
+/// `string-at-lone-surrogate`).
 pub fn at(recv: &JsValue, i: &JsValue) -> JsValue {
+    if let JsValue::String(s) = recv {
+        if matches!(i, JsValue::Null) {
+            return JsValue::Null;
+        }
+        let units = utf16_units(s);
+        let length = units.len() as i64;
+        let idx = num::to_f64(i) as i64;
+        let idx = if idx < 0 { length + idx } else { idx };
+        if idx < 0 || idx >= length {
+            return JsValue::Null;
+        }
+        return JsValue::String(String::from_utf16_lossy(&units[idx as usize..idx as usize + 1]));
+    }
     let items = match recv.as_array() {
         Some(a) => a,
         None => return JsValue::Null,
@@ -1902,24 +1955,29 @@ pub fn split(recv: &JsValue, sep: Option<&JsValue>, limit: Option<i64>) -> JsVal
     JsValue::Array(parts.into_iter().map(JsValue::String).collect())
 }
 
+/// `String.prototype.startsWith(prefix, position?)`; `position` counts
+/// UTF-16 code units, like JS (#3613).
 pub fn starts_with(recv: &JsValue, prefix: &JsValue, position: &JsValue) -> bool {
-    let mut s = scalar_or_empty(recv);
+    let s = scalar_or_empty(recv);
     let p = js_string(prefix);
     if !matches!(position, JsValue::Null) {
-        let len = char_len(&s);
-        let n = (num::to_f64(position).max(0.0) as usize).min(len);
-        s = char_slice_from(&s, n);
+        let units = utf16_units(&s);
+        let n = (num::to_f64(position).max(0.0) as usize).min(units.len());
+        return utf16_has_at(&units, &utf16_units(&p), n as i64);
     }
     s.starts_with(&p)
 }
 
+/// `String.prototype.endsWith(suffix, endPosition?)`; `endPosition` counts
+/// UTF-16 code units, like JS (#3613).
 pub fn ends_with(recv: &JsValue, suffix: &JsValue, end_position: &JsValue) -> bool {
-    let mut s = scalar_or_empty(recv);
+    let s = scalar_or_empty(recv);
     let x = js_string(suffix);
     if !matches!(end_position, JsValue::Null) {
-        let len = char_len(&s);
-        let e = (num::to_f64(end_position).max(0.0) as usize).min(len);
-        s = char_slice_to(&s, e);
+        let units = utf16_units(&s);
+        let needle = utf16_units(&x);
+        let e = (num::to_f64(end_position).max(0.0) as usize).min(units.len());
+        return utf16_has_at(&units, &needle, e as i64 - needle.len() as i64);
     }
     if x.is_empty() {
         return true;

@@ -12037,6 +12037,27 @@
         "text"
       ]
     },
+    "string-at-lone-surrogate": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "string-concat-plus": {
       "kinds": [
         "binary",
@@ -12126,6 +12147,59 @@
       "axes": [
         "array-method:includes",
         "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "string-index-methods": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:at",
+        "array-method:endsWith",
+        "array-method:includes",
+        "array-method:indexOf",
+        "array-method:lastIndexOf",
+        "array-method:startsWith",
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "string-index-non-finite": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:at",
+        "array-method:endsWith",
+        "array-method:startsWith",
+        "binary:/",
+        "literal:number",
+        "literal:string",
+        "unary:-"
       ],
       "contexts": [
         "condition",

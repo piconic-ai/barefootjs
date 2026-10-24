@@ -107,6 +107,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // is held in the `Children` field the parent's children populate, not in a
 // never-set field named after the local (`Kids`).
 export const renderDivergences: RenderDivergences = {
+  // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
+  // lone surrogate, so it returns U+FFFD (halves compare equal, and
+  // rejoining them renders `��` instead of the emoji).
+  'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
@@ -149,6 +153,9 @@ export const renderDivergences: RenderDivergences = {
   // `-Infinity` / `NaN`, a `null` divisor and a `-0` remainder included.
   'number-division-zero-divisor': { limitation: 'division-zero-divisor' },
   'nullish-operand-division-remainder': { limitation: 'division-zero-divisor' },
+  // The same `bf_div` gives `0` for `±1 / zero` and `zero / zero`, so a
+  // string index computed that way reads index 0 instead of Infinity / NaN.
+  'string-index-non-finite': { limitation: 'division-zero-divisor' },
   'remainder-negative-zero-quotient': { limitation: 'negative-zero-remainder-quotient' },
   // `remainder-nan-operand` used to sit here: `bf_mod` converted both
   // operands to `int`, so `NaN % 2` rendered an integer. It now computes
@@ -284,4 +291,7 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   // An explicit `0` for a prop with a number destructure default (`n = 2`)
   // reads as absent the same way, so the field takes the default.
   'number-prop-fraction-default:gen:n:zero': { limitation: 'defaulted-prop-explicit-empty' },
+  // `.at(-1)` on an empty string is `undefined`, which omits the attribute
+  // in JS; the template renders `data-last=""`.
+  'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
 }

@@ -41,6 +41,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // same way `module-const-arrow-helper` / `module-function-helper-chain`
 // already do — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
+  // lone surrogate, so it returns U+FFFD (halves compare equal, and
+  // rejoining them renders `��` instead of the emoji).
+  'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
@@ -122,4 +126,7 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // `.at(-1)` on an empty string is `undefined`, which omits the attribute
+  // in JS; the template renders `data-last=""`.
+  'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
 }

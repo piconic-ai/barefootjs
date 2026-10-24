@@ -172,7 +172,7 @@ bf_test('index_of / last_index_of', function () use ($bf) {
     bf_assert_eq($bf->index_of($arr, 'd'), 4);
     bf_assert_eq($bf->index_of($arr, 'z'), -1);
     bf_assert_eq($bf->index_of([], 'a'), -1);
-    bf_assert_eq($bf->index_of('not an array', 'a'), -1);
+    bf_assert_eq($bf->index_of(['a' => 1], 'a'), -1);
 
     bf_assert_eq($bf->last_index_of($arr, 'b'), 3);
     bf_assert_eq($bf->last_index_of($arr, 'a'), 0);
@@ -193,6 +193,51 @@ bf_test('at', function () use ($bf) {
     bf_assert_eq($bf->at([], 0), null);
     bf_assert_eq($bf->at(null, 0), null);
     bf_assert_eq($bf->at(['a' => 1], 0), null);
+});
+
+// String receivers (#3613) count UTF-16 code units, like JS: '本' is one
+// unit, '😀' is two.
+bf_test('string index methods count UTF-16 code units', function () use ($bf) {
+    bf_assert_eq($bf->index_of('banana', 'an'), 1);
+    bf_assert_eq($bf->index_of('日本語', '本'), 1);
+    bf_assert_eq($bf->index_of('a😀b', 'b'), 3);
+    bf_assert_eq($bf->index_of('abc', 'z'), -1);
+    bf_assert_eq($bf->index_of('abc', ''), 0);
+    bf_assert_eq($bf->index_of('ab', 'abc'), -1);
+    bf_assert_eq($bf->index_of('', ''), 0);
+    bf_assert_eq($bf->last_index_of('banana', 'an'), 3);
+    bf_assert_eq($bf->last_index_of('a😀b😀', '😀'), 4);
+    bf_assert_eq($bf->last_index_of('abc', ''), 3);
+    bf_assert_eq($bf->last_index_of('aaa', 'aa'), 1);
+    bf_assert_eq($bf->at('日本語', -1), '語');
+    bf_assert_eq($bf->at('a😀b', -1), 'b');
+    bf_assert_eq($bf->at('a😀b', 3), 'b');
+    bf_assert_eq($bf->at('abc', 3), null);
+    bf_assert_eq($bf->at('', 0), null);
+    // Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
+    // (pinned divergence, limitation `string-at-lone-surrogate`).
+    bf_assert_eq($bf->at('a😀b', 1), "\u{FFFD}");
+    bf_assert_eq($bf->starts_with('日本語', '本', 1), true);
+    bf_assert_eq($bf->starts_with('a😀b', 'b', 3), true);
+    bf_assert_eq($bf->starts_with('a😀b', 'b', 2), false);
+    bf_assert_eq($bf->ends_with('日本語', '本', 2), true);
+    bf_assert_eq($bf->ends_with('a😀b', '😀', 3), true);
+    bf_assert_eq($bf->ends_with('a😀b', 'a', 2), false);
+});
+
+// ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
+// ±Infinity is out of range (a bare (int) cast would make it 0),
+// fractions truncate toward zero.
+bf_test('string index methods read non-finite positions as ToIntegerOrInfinity', function () use ($bf) {
+    bf_assert_eq($bf->at('abc', NAN), 'a');
+    bf_assert_eq($bf->at('abc', INF), null);
+    bf_assert_eq($bf->at('abc', -INF), null);
+    bf_assert_eq($bf->at('abc', 1.9), 'b');
+    bf_assert_eq($bf->at('abc', -1.5), 'c');
+    bf_assert_eq($bf->starts_with('abc', 'a', NAN), true);
+    bf_assert_eq($bf->starts_with('abc', '', INF), true);
+    bf_assert_eq($bf->ends_with('abc', 'c', NAN), false);
+    bf_assert_eq($bf->ends_with('abc', 'c', INF), true);
 });
 
 // -----------------------------------------------------------------

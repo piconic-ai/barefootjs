@@ -1389,19 +1389,111 @@ final class BarefootJS
         return -1;
     }
 
+    /**
+     * `$s` as JS sees it: a list of UTF-16 code units. JS string positions
+     * (`indexOf`, `at`, `startsWith`'s position, ...) count these, so an
+     * astral character such as '😀' is two units (#3613).
+     *
+     * @return list<int>
+     */
+    private static function utf16Units(string $s): array
+    {
+        if ($s === '') {
+            return [];
+        }
+        return array_values(unpack('v*', mb_convert_encoding($s, 'UTF-16LE', 'UTF-8')));
+    }
+
+    /**
+     * JS `ToIntegerOrInfinity` for a string position or index (#3613): NaN
+     * -> 0, truncation toward zero, and +/-Infinity clamped to +/-2**53 so
+     * the caller's range check treats it as out of range (a bare `(int)`
+     * cast turns Infinity into 0).
+     */
+    private function toIntegerOrInfinity($value): int
+    {
+        $n = $this->number($value);
+        if (is_nan($n)) {
+            return 0;
+        }
+        if ($n >= 9007199254740992) {
+            return 9007199254740992;
+        }
+        if ($n <= -9007199254740992) {
+            return -9007199254740992;
+        }
+        return (int) $n;
+    }
+
+    /** Whether `$needle` occurs in `$hay` (unit lists) at unit offset `$at`. */
+    private static function utf16HasAt(array $hay, array $needle, int $at): bool
+    {
+        $n = count($needle);
+        if ($at < 0 || $at + $n > count($hay)) {
+            return false;
+        }
+        return array_slice($hay, $at, $n) === $needle;
+    }
+
+    private function utf16IndexOf(string $recv, $elem, bool $reverse): int
+    {
+        $hay = self::utf16Units($recv);
+        $needle = self::utf16Units($this->string($elem));
+        $last = count($hay) - count($needle);
+        if ($last < 0) {
+            return -1;
+        }
+        $indices = $reverse ? range($last, 0) : range(0, $last);
+        foreach ($indices as $i) {
+            if (self::utf16HasAt($hay, $needle, $i)) {
+                return $i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * `Array.prototype.indexOf(x)`; a string receiver is
+     * `String.prototype.indexOf`, counted in UTF-16 code units like JS
+     * (#3613).
+     */
     public function index_of($recv, $elem): int
     {
+        if (is_string($recv)) {
+            return $this->utf16IndexOf($recv, $elem, false);
+        }
         return $this->arrayIndexOf($recv, $elem, false);
     }
 
     public function last_index_of($recv, $elem): int
     {
+        if (is_string($recv)) {
+            return $this->utf16IndexOf($recv, $elem, true);
+        }
         return $this->arrayIndexOf($recv, $elem, true);
     }
 
-    /** `Array.prototype.at(i)` -- supports negative indices. */
+    /**
+     * `Array.prototype.at(i)` -- supports negative indices. A string
+     * receiver is indexed in UTF-16 code units (#3613). Half of a
+     * surrogate pair, a lone surrogate in JS, comes back as U+FFFD: a
+     * UTF-8 PHP string can't hold one, so the halves compare equal and
+     * don't rejoin (limitation `string-at-lone-surrogate`).
+     */
     public function at($recv, $i)
     {
+        if (is_string($recv) && $i !== null) {
+            $units = self::utf16Units($recv);
+            $idx = $this->toIntegerOrInfinity($i);
+            if ($idx < 0) {
+                $idx += count($units);
+            }
+            if ($idx < 0 || $idx >= count($units)) {
+                return null;
+            }
+            $u = $units[$idx];
+            return ($u >= 0xD800 && $u <= 0xDFFF) ? "\u{FFFD}" : mb_chr($u, 'UTF-8');
+        }
         if (!Evaluator::isJsArray($recv) || $i === null) {
             return null;
         }
@@ -1727,9 +1819,10 @@ final class BarefootJS
         $s = $this->scalarOrEmpty($recv);
         $p = $this->string($prefix);
         if ($position !== null) {
-            $len = mb_strlen($s, 'UTF-8');
-            $n = max(0, min((int) $position, $len));
-            $s = mb_substr($s, $n, null, 'UTF-8');
+            // `position` counts UTF-16 code units, like JS (#3613).
+            $units = self::utf16Units($s);
+            $n = max(0, min($this->toIntegerOrInfinity($position), count($units)));
+            return self::utf16HasAt($units, self::utf16Units($p), $n);
         }
         return str_starts_with($s, $p);
     }
@@ -1739,9 +1832,11 @@ final class BarefootJS
         $s = $this->scalarOrEmpty($recv);
         $x = $this->string($suffix);
         if ($endPosition !== null) {
-            $len = mb_strlen($s, 'UTF-8');
-            $e = max(0, min((int) $endPosition, $len));
-            $s = mb_substr($s, 0, $e, 'UTF-8');
+            // `endPosition` counts UTF-16 code units, like JS (#3613).
+            $units = self::utf16Units($s);
+            $needle = self::utf16Units($x);
+            $e = max(0, min($this->toIntegerOrInfinity($endPosition), count($units)));
+            return self::utf16HasAt($units, $needle, $e - count($needle));
         }
         if ($x === '') {
             return true;
