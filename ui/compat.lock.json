@@ -4886,6 +4886,21 @@
           ]
         }
       },
+      "loop-row-child-caller-rows-outer-state-key": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-key-outer-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "loop-row-child-caller-rows-outer-state-key-client"
+          }
+        }
+      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -8163,6 +8178,10 @@
         "description": "A .map() row parameter named props reads its own item members, not the component props",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-member.ts"
       },
+      "loop-row-child-caller-rows-outer-state-key": {
+        "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
+      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
@@ -8430,6 +8449,10 @@
       "flatmap-typeof-projection-client": {
         "description": "Off-subset `.flatMap()` projection deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection-client.ts"
+      },
+      "loop-row-child-caller-rows-outer-state-key-client": {
+        "description": "A component loop row with a computed prop, keyed by an expression reading outer state, deferred to…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key-client.ts"
       },
       "loop-row-child-outer-state-key-client": {
         "description": "A component loop row keyed by an expression reading outer state, deferred to the client via /*…",
@@ -9014,6 +9037,7 @@
       "expected": "every row carries the key value as `data-key`",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "loop-row-child-caller-rows-outer-state-key",
         "loop-row-child-outer-state-key"
       ],
       "adapters": [

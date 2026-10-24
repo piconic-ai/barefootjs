@@ -1585,6 +1585,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-caller-rows-outer-state-key",
+              "limitations": [
+                "loop-row-key-outer-state"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3666,6 +3672,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-caller-rows-outer-state-key",
+              "limitations": [
+                "loop-row-key-outer-state"
               ]
             },
             {
@@ -8007,6 +8019,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-caller-rows-outer-state-key",
+              "limitations": [
+                "loop-row-key-outer-state"
               ]
             },
             {
@@ -13713,6 +13731,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-caller-rows-outer-state-key",
+              "limitations": [
+                "loop-row-key-outer-state"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-handler",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
@@ -18312,6 +18336,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "loop-row-child-caller-rows-outer-state-key",
+              "limitations": [
+                "loop-row-key-outer-state"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -19018,6 +19048,12 @@
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-caller-rows-outer-state-key",
+              "limitations": [
+                "loop-row-key-outer-state"
               ]
             },
             {

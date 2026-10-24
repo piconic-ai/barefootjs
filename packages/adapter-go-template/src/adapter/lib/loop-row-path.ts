@@ -99,20 +99,32 @@ export function rowReadGoAccessor(expr: ParsedExpr, row: LoopRowBinding, shape: 
  * row's `key={i}` → `item`). Beyond a plain row read, the key may be built
  * from the row and the index param (`key={i}` → the range index `i`) with
  * `String(x)` / `x.toString()`, a template literal or `+`
- * (`lowerRowKeyExpr`); the caller stringifies the answer with `bf.String`.
- * (A key reading a callback-preamble local never gets here: Phase 1
- * refuses it, since the key is evaluated before the body runs.) Null for anything else — a read of outer state, a struct row
- * as a whole (`key={item}`, which JS stringifies as `[object Object]`), a
- * `+` whose operand types aren't known — so the caller can refuse loudly
- * rather than emit something that won't compile or silently drop the key.
+ * (`lowerRowKeyExpr`); the caller stringifies `go` with `bf.String`.
+ * `readsRow` says whether the key reads the row variable `item`, so a
+ * caller deciding whether to bind it asks the lowering, never the emitted
+ * text (a literal like `` `item-${i}` `` names no row).
+ *
+ * A key reading a callback-preamble local never gets here: Phase 1 refuses
+ * it, since the key is evaluated before the body runs. Null for anything
+ * else — a read of outer state, a struct row as a whole (`key={item}`,
+ * which JS stringifies as `[object Object]`), a `+` whose operand types
+ * aren't known — so the caller can refuse loudly rather than emit something
+ * that won't compile or silently drop the key.
  */
-export function loopKeyToGoRowExpr(key: string | undefined, row: LoopRowBinding, shape: LoopRowShape = {}): string | null {
+export function loopKeyToGoRowExpr(key: string | undefined, row: LoopRowBinding, shape: LoopRowShape = {}): LoweredLoopKey | null {
   if (!key) return null
   const parsed = parseExpression(key)
   // `String(x)` is what `bf.String` already does: hand back `x` itself.
   const stringified = stringCallArgument(parsed)
   const lowered = lowerRowKeyExpr(stringified ?? parsed, row, shape)
-  return lowered?.go ?? null
+  return lowered ? { go: lowered.go, readsRow: lowered.readsRow } : null
+}
+
+/** A loop key lowered to Go code in the row loop (`loopKeyToGoRowExpr`). */
+export interface LoweredLoopKey {
+  go: string
+  /** Whether `go` reads the row variable `item`. */
+  readsRow: boolean
 }
 
 /** What a lowered key operand is known to hold, which decides what `+` means. */
@@ -121,6 +133,7 @@ type KeyOperandKind = 'string' | 'number' | 'unknown'
 interface LoweredKeyOperand {
   go: string
   kind: KeyOperandKind
+  readsRow: boolean
 }
 
 const NUMERIC_GO_TYPES: ReadonlySet<string> = new Set(['int', 'int64', 'float64'])
@@ -144,7 +157,7 @@ function lowerRowKeyExpr(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowSh
     case 'literal':
       return lowerKeyLiteral(expr)
     case 'identifier':
-      if (row.index && expr.name === row.index) return { go: 'i', kind: 'number' }
+      if (row.index && expr.name === row.index) return { go: 'i', kind: 'number', readsRow: false }
       return lowerRowKeyRead(expr, row, shape)
     case 'member':
       return lowerRowKeyRead(expr, row, shape)
@@ -163,19 +176,20 @@ function lowerRowKeyExpr(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowSh
 }
 
 function lowerKeyLiteral(expr: Extract<ParsedExpr, { kind: 'literal' }>): LoweredKeyOperand | null {
-  if (expr.literalType === 'string') return { go: JSON.stringify(expr.value), kind: 'string' }
-  if (expr.literalType === 'number') return { go: expr.raw ?? String(expr.value), kind: 'number' }
+  if (expr.literalType === 'string') return { go: JSON.stringify(expr.value), kind: 'string', readsRow: false }
+  if (expr.literalType === 'number') return { go: expr.raw ?? String(expr.value), kind: 'number', readsRow: false }
   return null
 }
 
 /** `operand` as a Go string: as is when it already is one, else through `bf.String`. */
 function asKeyString(operand: LoweredKeyOperand): LoweredKeyOperand {
-  return operand.kind === 'string' ? operand : { go: `bf.String(${operand.go})`, kind: 'string' }
+  return operand.kind === 'string' ? operand : { ...operand, go: `bf.String(${operand.go})`, kind: 'string' }
 }
 
 /** A template literal key: its literal chunks and stringified substitutions, joined. */
 function lowerKeyTemplate(parts: readonly TemplatePart[], row: LoopRowBinding, shape: LoopRowShape): LoweredKeyOperand | null {
   const pieces: string[] = []
+  let readsRow = false
   for (const part of parts) {
     if (part.type === 'string') {
       if (part.value !== '') pieces.push(JSON.stringify(part.value))
@@ -184,8 +198,9 @@ function lowerKeyTemplate(parts: readonly TemplatePart[], row: LoopRowBinding, s
     const inner = lowerRowKeyExpr(part.expr, row, shape)
     if (!inner) return null
     pieces.push(asKeyString(inner).go)
+    readsRow ||= inner.readsRow
   }
-  return { go: pieces.length === 0 ? '""' : pieces.join(' + '), kind: 'string' }
+  return { go: pieces.length === 0 ? '""' : pieces.join(' + '), kind: 'string', readsRow }
 }
 
 /**
@@ -197,8 +212,9 @@ function lowerKeyPlus(leftExpr: ParsedExpr, rightExpr: ParsedExpr, row: LoopRowB
   const left = lowerRowKeyExpr(leftExpr, row, shape)
   const right = lowerRowKeyExpr(rightExpr, row, shape)
   if (!left || !right) return null
-  if (left.kind === 'string' || right.kind === 'string') return { go: `bf.ConcatStr(${left.go}, ${right.go})`, kind: 'string' }
-  if (left.kind === 'number' && right.kind === 'number') return { go: `bf.Add(${left.go}, ${right.go})`, kind: 'number' }
+  const readsRow = left.readsRow || right.readsRow
+  if (left.kind === 'string' || right.kind === 'string') return { go: `bf.ConcatStr(${left.go}, ${right.go})`, kind: 'string', readsRow }
+  if (left.kind === 'number' && right.kind === 'number') return { go: `bf.Add(${left.go}, ${right.go})`, kind: 'number', readsRow }
   return null
 }
 
@@ -209,5 +225,5 @@ function lowerRowKeyRead(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowSh
   const path = rowItemPath(expr, row)
   const goType = path && shape.readGoType ? shape.readGoType(path) : null
   const kind: KeyOperandKind = goType === 'string' ? 'string' : goType && NUMERIC_GO_TYPES.has(goType) ? 'number' : 'unknown'
-  return { go: accessor, kind }
+  return { go: accessor, kind, readsRow: true }
 }

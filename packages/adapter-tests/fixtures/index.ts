@@ -1120,6 +1120,9 @@ import { fixture as loopRowChildChildrenComputedKey } from './loop-row-child-chi
 import { fixture as loopRowChildBooleanKey } from './loop-row-child-boolean-key'
 import { fixture as loopRowChildOuterStateKey } from './loop-row-child-outer-state-key'
 import { fixture as loopRowChildOuterStateKeyClient } from './loop-row-child-outer-state-key-client'
+import { fixture as loopRowChildCallerRowsOuterStateKey } from './loop-row-child-caller-rows-outer-state-key'
+import { fixture as loopRowChildCallerRowsOuterStateKeyClient } from './loop-row-child-caller-rows-outer-state-key-client'
+import { fixture as loopRowChildLiteralItemKey } from './loop-row-child-literal-item-key'
 // A component loop row with forwarded children over an array prop, and its
 // sibling shapes (destructured prop, nested row field, row prop, empty /
 // absent array, a sibling loop whose plural is the prop's name).
@@ -1925,6 +1928,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildBooleanKey,
   loopRowChildOuterStateKey,
   loopRowChildOuterStateKeyClient,
+  loopRowChildCallerRowsOuterStateKey,
+  loopRowChildCallerRowsOuterStateKeyClient,
+  loopRowChildLiteralItemKey,
   loopRowChildChildrenPropArray,
   loopRowChildChildrenPropArrayShapes,
   loopRowChildChildrenPropArraySiblingPlural,

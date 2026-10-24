@@ -930,7 +930,7 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t\tprops.${rowsField}[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
     propsLines.push(`\t\tprops.${rowsField}[i].BfParent = props.ScopeID`)
     propsLines.push(`\t\tprops.${rowsField}[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
-    const keyField = loopKeyToGoRowExpr(nested.loopKey, { ...row, index: nested.loopIndex })
+    const keyField = loopKeyToGoRowExpr(nested.loopKey, { ...row, index: nested.loopIndex })?.go
     if (keyField) {
       propsLines.push(`\t\tprops.${rowsField}[i].BfDataKey = bf.String(${keyField})`)
     }

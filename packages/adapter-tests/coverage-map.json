@@ -6034,6 +6034,38 @@
         "text"
       ]
     },
+    "loop-row-child-caller-rows-outer-state-key": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-caller-rows-outer-state-key-client": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-attrs": {
       "kinds": [
         "array-literal",
@@ -6585,6 +6617,18 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-literal-item-key": {
+      "kinds": [
+        "identifier",
+        "member",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
         "loop",
         "text"
       ]

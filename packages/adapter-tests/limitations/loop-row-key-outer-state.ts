@@ -6,5 +6,5 @@ export default defineLimitation({
   given: 'a component loop row over an array prop keyed by an expression that reads outer state as well as the row (`key={props.prefix + n}`)',
   expected: 'every row carries the key value as `data-key`',
   diagnostic: 'BF101',
-  fixtures: ['loop-row-child-outer-state-key'],
+  fixtures: ['loop-row-child-outer-state-key', 'loop-row-child-caller-rows-outer-state-key'],
 })

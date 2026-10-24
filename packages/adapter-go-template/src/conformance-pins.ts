@@ -304,4 +304,7 @@ export const conformancePins: ConformancePins = {
   // A row key reading outer state (`key={props.prefix + n}`) has no lowering
   // in the constructor loop that builds the rows from the array prop.
   'loop-row-child-outer-state-key': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-key-outer-state' }],
+  // The same key on rows built from caller-supplied Input values (a child
+  // prop computed from the row), where the key can't be read either.
+  'loop-row-child-caller-rows-outer-state-key': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-key-outer-state' }],
 }
