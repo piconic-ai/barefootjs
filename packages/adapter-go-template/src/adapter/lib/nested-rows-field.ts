@@ -60,9 +60,12 @@ export function reservedRowsFieldNames(
  * plural (`Items` for `<Item>`), unless a props param already claims that
  * Go field name for different data — then `<childName>Rows`, numbered when
  * a prop or another generated field (`reserved`, `reservedRowsFieldNames`)
- * already has that name. A loop that ranges over the very prop owning the
- * plural (`tags.map(t => <Tag …/>)`, #2627) keeps the plural: there the
- * field IS that prop's data, re-shaped into rows.
+ * already has that name. A bodyless loop that ranges over the very prop
+ * owning the plural (`tags.map(t => <Tag …/>)`, #2627) keeps the plural:
+ * there the field IS that prop's data, re-shaped into rows. A row that
+ * forwards children (`forwardsChildren`) doesn't: its wrapper rows are
+ * built FROM the prop (`propArrayLoopRowSource`), so the prop keeps its own
+ * field and the rows field is renamed (#3603).
  */
 export function nestedRowsFieldName(
   childName: string,
@@ -70,12 +73,79 @@ export function nestedRowsFieldName(
   propsParams: readonly PropsParamLike[],
   propsObjectName: string | null | undefined,
   reserved: ReadonlySet<string> = new Set(),
+  forwardsChildren = false,
 ): string {
   const plural = `${childName}s`
   const owner = propsParams.find(p => propFieldNames(p).includes(plural))
-  if (!owner || loopDrivingProp(loopArray, propsParams, propsObjectName) === owner) return plural
-  const taken = new Set([...propsParams.flatMap(propFieldNames), ...reserved])
+  if (!owner) return plural
+  if (!forwardsChildren && loopDrivingProp(loopArray, propsParams, propsObjectName) === owner) return plural
+  return numberedRowsField(childName, new Set([...propsParams.flatMap(propFieldNames), ...reserved]))
+}
+
+/** `<childName>Rows`, numbered past every name in `taken`. */
+function numberedRowsField(childName: string, taken: ReadonlySet<string>): string {
   let name = `${childName}Rows`
   for (let n = 2; taken.has(name); n++) name = `${childName}Rows${n}`
   return name
+}
+
+/** One child-component loop site, as `findNestedComponents` reports it. */
+export interface RowsFieldSite {
+  readonly name: string
+  readonly loopMarkerId?: string
+  readonly loopArrayParsed?: ParsedExpr
+  readonly bodyChildren?: readonly unknown[]
+}
+
+/** A loop site's rows field and the constructor local that builds it. */
+export interface RowsFieldAllocation {
+  readonly field: string
+  readonly varName: string
+}
+
+/** The key `allocateRowsFields` files a loop site under. */
+export function rowsFieldSiteKey(site: Pick<RowsFieldSite, 'name' | 'loopMarkerId'>): string {
+  return site.loopMarkerId ?? site.name
+}
+
+function lowerFirst(name: string): string {
+  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`
+}
+
+/**
+ * The rows field of every child-component loop site in one component,
+ * decided once and read by the struct, constructor and template emitters
+ * and by the conformance harness (#3599). Each loop site gets its own
+ * field: the first loop over `<Chip>` keeps `nestedRowsFieldName`'s name
+ * (`Chips`), and a later loop over the same component — which ranges over
+ * other data and forwards other children — takes `ChipRows` (numbered past
+ * every prop, state and already-allocated field). The constructor local
+ * follows the field (`chips`, `chipRows`).
+ */
+export function allocateRowsFields(
+  sites: readonly RowsFieldSite[],
+  propsParams: readonly PropsParamLike[],
+  propsObjectName: string | null | undefined,
+  stateFieldNames: Iterable<string>,
+): Map<string, RowsFieldAllocation> {
+  const reserved = reservedRowsFieldNames(
+    sites.map(s => s.name),
+    stateFieldNames,
+  )
+  const taken = new Set([...propsParams.flatMap(propFieldNames), ...reserved])
+  const allocated = new Map<string, RowsFieldAllocation>()
+  const seenChildren = new Set<string>()
+  for (const site of sites) {
+    const key = rowsFieldSiteKey(site)
+    if (allocated.has(key)) continue
+    const forwardsChildren = !!site.bodyChildren?.length
+    const first = !seenChildren.has(site.name)
+    seenChildren.add(site.name)
+    const field = first
+      ? nestedRowsFieldName(site.name, site.loopArrayParsed, propsParams, propsObjectName, reserved, forwardsChildren)
+      : numberedRowsField(site.name, taken)
+    taken.add(field)
+    allocated.set(key, { field, varName: first ? lowerFirst(`${site.name}s`) : lowerFirst(field) })
+  }
+  return allocated
 }

@@ -127,28 +127,29 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[], sc
   if (node.type === 'loop') {
     const loop = node as IRLoop
     const rowScope = scope.enterLoopRow(loop)
+    // One entry per loop SITE, not per component: two loops over the same
+    // row component range over different data and forward different
+    // children, so each gets its own rows field (`allocateRowsFields`, #3599).
     if (loop.childComponent) {
-      if (!result.some(c => c.name === loop.childComponent!.name)) {
-        const hasBodyChildren = loop.childComponent.children.length > 0
-        result.push({
-          ...loop.childComponent,
-          isDynamic: !loop.isStaticArray,
-          isPropDerived: !!loop.isPropDerivedArray,
-          clientOnly: loop.clientOnly,
-          loopKey: loop.key ?? undefined,
-          loopParam: loop.param ?? undefined,
-          loopParamBindings: loop.paramBindings,
-          bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,
-          loopArray: loop.array,
-          loopArrayParsed: loop.arrayParsed,
-          loopMarkerId: loop.markerId,
-          loopItemType: loop.itemType,
-          rowScope,
-          // `childComponent` is set only when the body is exactly this one
-          // component, so `loop.children[0]` is its full IR node.
-          rowProps: (loop.children[0] as IRComponent).props,
-        })
-      }
+      const hasBodyChildren = loop.childComponent.children.length > 0
+      result.push({
+        ...loop.childComponent,
+        isDynamic: !loop.isStaticArray,
+        isPropDerived: !!loop.isPropDerivedArray,
+        clientOnly: loop.clientOnly,
+        loopKey: loop.key ?? undefined,
+        loopParam: loop.param ?? undefined,
+        loopParamBindings: loop.paramBindings,
+        bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,
+        loopArray: loop.array,
+        loopArrayParsed: loop.arrayParsed,
+        loopMarkerId: loop.markerId,
+        loopItemType: loop.itemType,
+        rowScope,
+        // `childComponent` is set only when the body is exactly this one
+        // component, so `loop.children[0]` is its full IR node.
+        rowProps: (loop.children[0] as IRComponent).props,
+      })
     }
     for (const child of loop.children) {
       collectNestedComponents(child, result, rowScope)

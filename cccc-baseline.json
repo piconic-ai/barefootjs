@@ -31,7 +31,7 @@
     },
     "packages/adapter-go-template/src/adapter/analysis/component-tree.ts": {
       "collectNestedComponents": [
-        37
+        33
       ],
       "hasEventsInTree": [
         39
@@ -165,7 +165,7 @@
     },
     "packages/adapter-go-template/src/adapter/type/state-fields.ts": {
       "collectPropFallbackVars": [
-        46
+        45
       ]
     },
     "packages/adapter-go-template/src/adapter/type/type-codegen.ts": {

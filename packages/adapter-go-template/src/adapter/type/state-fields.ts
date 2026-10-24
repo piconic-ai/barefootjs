@@ -270,6 +270,19 @@ export function inferMemoType(
 }
 
 /**
+ * The constructor locals a hoisted prop fallback must not reuse: `scopeID`
+ * and every loop site's rows local (`allocateRowsFields`).
+ */
+function constructorRowsLocals(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const taken = new Set(['scopeID'])
+  for (const nested of findNestedComponents(ir.root)) {
+    taken.add(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
+  }
+  for (const { varName } of ctx.state.rowsFields.values()) taken.add(varName)
+  return taken
+}
+
+/**
  * Walk signals to collect prop fallbacks: `createSignal(props.X ?? N)`
  * hoists `N` as a local so the signal, any derived memo, and a prop field the
  * signal shares ({@link sharedFieldFallbackVar}) share one fallback-applied
@@ -280,10 +293,7 @@ export function inferMemoType(
  */
 export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Map<string, PropFallbackVar> {
   const result = new Map<string, PropFallbackVar>()
-  const localTaken = new Set(['scopeID'])
-  for (const nested of findNestedComponents(ir.root)) {
-    localTaken.add(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
-  }
+  const localTaken = constructorRowsLocals(ctx, ir)
 
   const propTypeOverrides = buildPropTypeOverrides(ctx, ir)
   for (const signal of ir.metadata.signals) {
