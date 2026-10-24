@@ -31,7 +31,8 @@ import { propsFieldName } from '../lib/props-field-names.ts'
 import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
-import { isBoxedNumericMemoBody, isIntegerValued, memoArithmeticYieldsNaN } from '../memo/memo-compute.ts'
+import { isIntegerValued } from '../memo/memo-compute.ts'
+import { memoSeedRepresentation } from '../memo/memo-seed-shape.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
 import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
@@ -253,9 +254,9 @@ export function inferMemoType(
 ): string {
   if (isListFilterMemo(memo)) return '[]any'
   if (memo.bodyIsTemplateLiteral) return 'string'
-  if (memo.parsed && memoArithmeticYieldsNaN(ctx, memo.parsed)) return 'interface{}'
-  const propsParams = [...propsParamMap.values()]
-  if (isBoxedNumericMemoBody(ctx, memo.parsed, signals, propsParams)) return 'interface{}'
+  // A NaN or boxed-arithmetic seed: the same classification the constructor
+  // seed is emitted from (memo-seed-shape.ts), so the two agree.
+  if (memoSeedRepresentation(ctx, memo.parsed, signals, [...propsParamMap.values()]) !== null) return 'interface{}'
   if (isNumericArithmeticMemo(ctx, memo, signals, propsParamMap)) return 'float64'
   const declaredIsUnknown = typeInfoToGo(ctx, memo.type) === 'interface{}'
   if (declaredIsUnknown && isStringTernaryMemo(ctx, memo.parsed)) return 'string'
