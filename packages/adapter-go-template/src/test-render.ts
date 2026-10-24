@@ -1214,7 +1214,8 @@ function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string, goTypes?
     }
     if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
     if (typeof v === 'number' || typeof v === 'boolean') return String(v)
-    if (v === null) return 'nil'
+    // An `undefined` element is a slot JS still iterates, like `null` (#3610).
+    if (v === null || v === undefined) return 'nil'
     return goArrayLiteralFromArray(v as unknown[])
   })
   return `[]${elemType}{${entries.join(', ')}}`
@@ -1239,7 +1240,8 @@ function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): stri
     }
     if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
     if (typeof v === 'number' || typeof v === 'boolean') return String(v)
-    if (v === null) return 'nil'
+    // An `undefined` element is a slot JS still iterates, like `null` (#3610).
+    if (v === null || v === undefined) return 'nil'
     return goArrayLiteralFromArray(v as unknown[])
   })
   return `[]${elemType}{${entries.join(', ')}}`
@@ -1379,7 +1381,9 @@ function goArrayLiteralFromArray(arr: unknown[]): string {
     if (typeof v === 'string') entries.push(goStringLit(v))
     else if (typeof v === 'number') entries.push(String(v))
     else if (typeof v === 'boolean') entries.push(String(v))
-    else if (v === null) entries.push('nil')
+    // An `undefined` element is a slot JS still iterates and renders as an
+    // empty row, like `null`; dropping it lost the row (#3610).
+    else if (v === null || v === undefined) entries.push('nil')
     else if (v instanceof Date) entries.push(goStringLit(v.toISOString()))
     else if (Array.isArray(v)) entries.push(goArrayLiteralFromArray(v))
     else if (v && typeof v === 'object') {

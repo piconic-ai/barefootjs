@@ -6730,6 +6730,25 @@
         "text"
       ]
     },
+    "loop-undefined-element": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "map-array-builder-body": {
       "kinds": [
         "identifier",
