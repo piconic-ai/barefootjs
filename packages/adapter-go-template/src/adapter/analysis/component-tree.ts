@@ -140,6 +140,7 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[], sc
         loopKey: loop.key ?? undefined,
         loopParam: loop.param ?? undefined,
         loopParamBindings: loop.paramBindings,
+        loopIndex: loop.index,
         bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,
         loopArray: loop.array,
         loopArrayParsed: loop.arrayParsed,

@@ -70,11 +70,8 @@
       "emitExpression": [
         34
       ],
-      "emitStaticBodyWrappers": [
-        28
-      ],
       "generateNewPropsFunction": [
-        95
+        91
       ],
       "isStringExpr": [
         29
@@ -129,9 +126,6 @@
     "packages/adapter-go-template/src/adapter/memo/memo-compute.ts": {
       "collectPropsReadByCtorInit/visit": [
         37
-      ],
-      "memoInitialFromParsedBody": [
-        226
       ],
       "resolveStringConcatChainGo": [
         34

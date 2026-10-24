@@ -1110,6 +1110,20 @@ import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
+// Component loop rows over array props keyed by the index or by an
+// expression of the row (and outer state), with and without forwarded
+// children, and a boolean row key.
+import { fixture as loopRowChildIndexKey } from './loop-row-child-index-key'
+import { fixture as loopRowChildComputedKey } from './loop-row-child-computed-key'
+import { fixture as loopRowChildConcatIndexKey } from './loop-row-child-concat-index-key'
+import { fixture as loopRowChildChildrenIndexKey } from './loop-row-child-children-index-key'
+import { fixture as loopRowChildChildrenComputedKey } from './loop-row-child-children-computed-key'
+import { fixture as loopRowChildBooleanKey } from './loop-row-child-boolean-key'
+import { fixture as loopRowChildOuterStateKey } from './loop-row-child-outer-state-key'
+import { fixture as loopRowChildOuterStateKeyClient } from './loop-row-child-outer-state-key-client'
+import { fixture as loopRowChildCallerRowsOuterStateKey } from './loop-row-child-caller-rows-outer-state-key'
+import { fixture as loopRowChildCallerRowsOuterStateKeyClient } from './loop-row-child-caller-rows-outer-state-key-client'
+import { fixture as loopRowChildLiteralItemKey } from './loop-row-child-literal-item-key'
 // A component loop row with forwarded children over an array prop, and its
 // sibling shapes (destructured prop, nested row field, row prop, empty /
 // absent array, a sibling loop whose plural is the prop's name).
@@ -1910,6 +1924,17 @@ export const jsxFixtures: JSXFixture[] = [
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,
   loopRowChildPropDestinations,
+  loopRowChildIndexKey,
+  loopRowChildComputedKey,
+  loopRowChildConcatIndexKey,
+  loopRowChildChildrenIndexKey,
+  loopRowChildChildrenComputedKey,
+  loopRowChildBooleanKey,
+  loopRowChildOuterStateKey,
+  loopRowChildOuterStateKeyClient,
+  loopRowChildCallerRowsOuterStateKey,
+  loopRowChildCallerRowsOuterStateKeyClient,
+  loopRowChildLiteralItemKey,
   loopRowChildChildrenPropArray,
   loopRowChildChildrenPropArrayShapes,
   loopRowChildChildrenPropArraySiblingPlural,

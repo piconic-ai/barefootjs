@@ -4902,6 +4902,21 @@
           ]
         }
       },
+      "loop-row-child-caller-rows-outer-state-key": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-key-outer-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "loop-row-child-caller-rows-outer-state-key-client"
+          }
+        }
+      },
       "loop-row-child-children-attrs": {
         "go-template": {
           "kind": "refusal",
@@ -4938,6 +4953,41 @@
           "limitations": [
             "signal-loop-row-child-children-unseeded"
           ]
+        }
+      },
+      "loop-row-child-concat-index-key": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        }
+      },
+      "loop-row-child-outer-state-key": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-key-outer-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "loop-row-child-outer-state-key-client"
+          }
         }
       },
       "loop-row-child-scalar-row-wrapper-nested-component": {
@@ -8152,6 +8202,10 @@
         "description": "A .map() row parameter named props reads its own item members, not the component props",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-member.ts"
       },
+      "loop-row-child-caller-rows-outer-state-key": {
+        "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
+      },
       "loop-row-child-children-attrs": {
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
@@ -8167,6 +8221,14 @@
       "loop-row-child-children-ref": {
         "description": "A ref callback on an element forwarded as a loop-row child component's children runs with the row…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-ref.ts"
+      },
+      "loop-row-child-concat-index-key": {
+        "description": "Component loop rows keyed by a row field concatenated with the index carry the joined string as…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-concat-index-key.ts"
+      },
+      "loop-row-child-outer-state-key": {
+        "description": "A component loop row keyed by an expression reading outer state carries its value as data-key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-outer-state-key.ts"
       },
       "loop-row-child-scalar-row-wrapper-nested-component": {
         "description": "A wrapper component loop row over a string array prop whose forwarded children nest a component…",
@@ -8411,6 +8473,14 @@
       "flatmap-typeof-projection-client": {
         "description": "Off-subset `.flatMap()` projection deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection-client.ts"
+      },
+      "loop-row-child-caller-rows-outer-state-key-client": {
+        "description": "A component loop row with a computed prop, keyed by an expression reading outer state, deferred to…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key-client.ts"
+      },
+      "loop-row-child-outer-state-key-client": {
+        "description": "A component loop row keyed by an expression reading outer state, deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-outer-state-key-client.ts"
       },
       "loop-row-child-untyped-array-mismatched-keys-typed": {
         "description": "An explicit element type with an optional field lets a loop row calling a child component render…",
@@ -8998,6 +9068,23 @@
         "BF101"
       ]
     },
+    "loop-row-key-outer-state": {
+      "title": "Loop row key reading outer state on constructor-built component rows",
+      "kind": "refusal",
+      "given": "a component loop row over an array prop keyed by an expression that reads outer state as well as the row (`key={props.prefix + n}`)",
+      "expected": "every row carries the key value as `data-key`",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "loop-row-child-caller-rows-outer-state-key",
+        "loop-row-child-outer-state-key"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "loop-row-nested-forwarded-children-handler": {
       "title": "An event handler forwarded through a child component nested below a loop row element",
       "kind": "silent",
@@ -9450,6 +9537,21 @@
         "mojolicious",
         "twig",
         "xslate"
+      ]
+    },
+    "string-number-plus-concat": {
+      "title": "String and number joined with `+`",
+      "kind": "silent",
+      "given": "a template expression joining a string and a number with `+` (`r.id + '-' + i`)",
+      "expected": "the number is stringified and concatenated, as JS `+` does (`x-0`)",
+      "actual": "throws at render time: the template language raises a type error adding a string and an integer",
+      "fixtures": [
+        "loop-row-child-concat-index-key"
+      ],
+      "adapters": [
+        "erb",
+        "jinja",
+        "minijinja"
       ]
     },
     "undefined-method-result-attr": {
