@@ -170,11 +170,13 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     keyExpr,
     nestedComps,
     rowEvents,
-    // Refs on a component element (`<Comp ref={fn} />`) are not currently
-    // wired here — the body root is the component, not a DOM element, so
-    // the per-item factory has no `__el` handle to invoke. Still required
-    // by the type so the structural invariant (every variant has a
-    // `childRefs`) is preserved; populated as empty.
+    // #3612: refs on elements forwarded as the root component's own
+    // `children` (`<Chip><input ref={el => …} /></Chip>`), collected by the
+    // same `collectLoopChildBindings` walk as `rowEvents` above and resolved
+    // with the same loop-param accessor rewrite. Each row (hydrated and
+    // client-built) invokes them against its own element. A `ref` on the
+    // root component element itself (`<Chip ref={fn} />`) is a prop, not a
+    // binding here: it goes to the component through `componentPropsExpr`.
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings, elem.index),
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
     reactiveEffects: hasReactiveEffects

@@ -983,6 +983,7 @@ import { fixture as loopRowChildChildrenOwnReactiveProp } from './loop-row-child
 import { fixture as loopRowChildChildrenNestedIndexProp } from './loop-row-child-children-nested-index-prop'
 import { fixture as loopRowChildChildrenInnerLoopShadow } from './loop-row-child-children-inner-loop-shadow'
 import { fixture as loopRowChildChildrenHandler } from './loop-row-child-children-handler'
+import { fixture as loopRowChildChildrenRef } from './loop-row-child-children-ref'
 import { fixture as loopRowNestedChildChildrenHandler } from './loop-row-nested-child-children-handler'
 import { fixture as loopRowChildChildrenInnerLoopHandler } from './loop-row-child-children-inner-loop-handler'
 import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
@@ -1098,6 +1099,9 @@ import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-s
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
 import { fixture as loopRowChildScalarRowWrapper } from './loop-row-child-scalar-row-wrapper'
 import { fixture as loopRowChildScalarRowWrapperNestedComponent } from './loop-row-child-scalar-row-wrapper-nested-component'
+import { fixture as loopRowChildSharedWrapper } from './loop-row-child-shared-wrapper'
+import { fixture as loopRowChildSharedWrapperNestedComponent } from './loop-row-child-shared-wrapper-nested-component'
+import { fixture as loopRowChildPropNamedRowPlural } from './loop-row-child-prop-named-row-plural'
 import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
 import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
@@ -1812,6 +1816,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenNestedIndexProp,
   loopRowChildChildrenInnerLoopShadow,
   loopRowChildChildrenHandler,
+  loopRowChildChildrenRef,
   loopRowNestedChildChildrenHandler,
   loopRowChildChildrenInnerLoopHandler,
   signalLoopRowChildChildren,
@@ -1889,6 +1894,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildScalarRowKey,
   loopRowChildScalarRowWrapper,
   loopRowChildScalarRowWrapperNestedComponent,
+  loopRowChildSharedWrapper,
+  loopRowChildSharedWrapperNestedComponent,
+  loopRowChildPropNamedRowPlural,
   loopRowScalarMemberLength,
   loopUndefinedElement,
   stringLengthUtf16Positions,
