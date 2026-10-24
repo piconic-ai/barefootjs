@@ -56,6 +56,8 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
    *  it is a destructure: `loopParam` then holds the raw pattern text, and a
    *  row read resolves through these (`lib/loop-row-path.ts`). */
   loopParamBindings?: readonly LoopParamBinding[]
+  /** The loop callback's index param (`(item, i) => …`), when it binds one. */
+  loopIndex?: string | null
   /** The loop body component's JSX children. Non-empty when those children need
    *  a companion define rendered via `bf_with_children` + `bf_tmpl`. */
   bodyChildren?: IRNode[]

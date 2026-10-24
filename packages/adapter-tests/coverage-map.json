@@ -6018,6 +6018,54 @@
         "text"
       ]
     },
+    "loop-row-child-boolean-key": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-caller-rows-outer-state-key": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-caller-rows-outer-state-key-client": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-attrs": {
       "kinds": [
         "array-literal",
@@ -6034,6 +6082,24 @@
       ],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-computed-key": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
         "loop",
         "text"
       ]
@@ -6088,6 +6154,17 @@
       "axes": [
         "literal:string"
       ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-index-key": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "loop",
         "text"
@@ -6464,6 +6541,51 @@
         "text"
       ]
     },
+    "loop-row-child-computed-key": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-concat-index-key": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-index-key": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-key-not-a-prop": {
       "kinds": [
         "identifier",
@@ -6495,6 +6617,46 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-literal-item-key": {
+      "kinds": [
+        "identifier",
+        "member",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-outer-state-key": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:+"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-outer-state-key-client": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:+"
+      ],
+      "contexts": [
         "loop",
         "text"
       ]

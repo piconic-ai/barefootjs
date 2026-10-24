@@ -70,11 +70,8 @@
       "emitExpression": [
         34
       ],
-      "emitStaticBodyWrappers": [
-        28
-      ],
       "generateNewPropsFunction": [
-        95
+        91
       ],
       "isStringExpr": [
         29
