@@ -232,7 +232,7 @@
     },
     "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
       "renderLoop": [
-        31
+        26
       ]
     },
     "packages/adapter-pebble/src/test-render.ts": {
@@ -285,11 +285,6 @@
     "packages/adapter-tests/src/marker-conformance.ts": {
       "walkIRNode": [
         40
-      ]
-    },
-    "packages/adapter-twig/src/adapter/twig-adapter.ts": {
-      "renderLoop": [
-        29
       ]
     },
     "packages/adapter-twig/src/test-render.ts": {
