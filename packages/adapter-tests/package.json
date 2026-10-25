@@ -39,7 +39,7 @@
     "@barefootjs/twig": "workspace:*",
     "@barefootjs/xslate": "workspace:*",
     "@playwright/test": "^1.57.0",
-    "happy-dom": "^20.11.1",
+    "happy-dom": "^21.0.4",
     "typescript": "^5.0.0"
   }
 }
