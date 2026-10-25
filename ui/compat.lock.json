@@ -4836,6 +4836,21 @@
           ]
         }
       },
+      "loop-key-to-string-number-component-row": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "caller-rows-computed-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "loop-key-to-string-number-component-row-client"
+          }
+        }
+      },
       "loop-param-named-props-member": {
         "blade": {
           "kind": "render",
@@ -8174,6 +8189,10 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "loop-key-to-string-number-component-row": {
+        "description": "A component loop row over a number array keyed by n.toString() renders data-key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
+      },
       "loop-param-named-props-member": {
         "description": "A .map() row parameter named props reads its own item members, not the component props",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-member.ts"
@@ -8450,6 +8469,10 @@
         "description": "Off-subset `.flatMap()` projection deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection-client.ts"
       },
+      "loop-key-to-string-number-component-row-client": {
+        "description": "A component loop row over a number array keyed by n.toString(), deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row-client.ts"
+      },
       "loop-row-child-caller-rows-outer-state-key-client": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, deferred to…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key-client.ts"
@@ -8696,6 +8719,22 @@
         "pebble",
         "twig",
         "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "caller-rows-computed-key": {
+      "title": "Computed loop key on component rows built from caller-supplied child inputs",
+      "kind": "refusal",
+      "given": "a component loop row over an array prop that passes a child prop computed from the row (`label={n.toString()}`), keyed by a computed expression of the row that no child prop carries as a plain row read (`key={n.toString()}`)",
+      "expected": "every row carries the key value as `data-key`",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "loop-key-to-string-number-component-row"
+      ],
+      "adapters": [
+        "go-template"
       ],
       "diagnostics": [
         "BF101"

@@ -68,9 +68,16 @@ export function goItemAccessor(segments: readonly LoopBindingPathSegment[], base
  * answers the Go type of a row read at `segments` (`[]` is the whole row),
  * or null when it can't tell — what a caller assigning the read into
  * another struct's field checks assignability against.
+ *
+ * `boxedNumber` marks a scalar number row whose source slice is
+ * `[]interface{}` rather than `[]float64` (a `number[]` prop, #3310):
+ * `readGoType` still answers `float64`, which is what the row means, but
+ * the range variable `item` holds the number boxed, so a read assigned
+ * into a `float64` field is spelled through `rowReadGoValue`.
  */
 export interface LoopRowShape {
   scalar?: boolean
+  boxedNumber?: boolean
   hasFieldPath?: (segments: readonly LoopBindingPathSegment[]) => boolean
   readGoType?: (segments: readonly LoopBindingPathSegment[]) => string | null
 }
@@ -89,6 +96,16 @@ export function rowReadGoAccessor(expr: ParsedExpr, row: LoopRowBinding, shape: 
   if (shape.scalar) return null
   if (shape.hasFieldPath && !shape.hasFieldPath(path)) return null
   return goItemAccessor(path)
+}
+
+/**
+ * The Go value a row read (`accessor`, from `rowReadGoAccessor`) assigns
+ * into a field of the row's own `readGoType`: the accessor itself, or a
+ * boxed number row unboxed with `bf.ToFloat64` (#3625), which reads both a
+ * JSON-decoded `float64` and a Go caller's `int`.
+ */
+export function rowReadGoValue(accessor: string, shape: LoopRowShape): string {
+  return shape.boxedNumber && accessor === 'item' ? `bf.ToFloat64(${accessor})` : accessor
 }
 
 /**

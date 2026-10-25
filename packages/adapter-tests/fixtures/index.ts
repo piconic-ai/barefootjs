@@ -1100,6 +1100,7 @@ import { fixture as staticLiteralLoopComponentInRowPrecomputed } from './static-
 import { fixture as loopRowChildKeyNotAProp } from './loop-row-child-key-not-a-prop'
 import { fixture as loopRowChildKeyShadowedByProp } from './loop-row-child-key-shadowed-by-prop'
 import { fixture as loopRowChildScalarRowKey } from './loop-row-child-scalar-row-key'
+import { fixture as loopRowChildNumberRowProp } from './loop-row-child-number-row-prop'
 import { fixture as loopRowChildScalarRowWrapper } from './loop-row-child-scalar-row-wrapper'
 import { fixture as loopRowChildScalarRowWrapperNestedComponent } from './loop-row-child-scalar-row-wrapper-nested-component'
 import { fixture as loopRowChildSharedWrapper } from './loop-row-child-shared-wrapper'
@@ -1186,6 +1187,9 @@ import { fixture as reassignedPropStateless } from './reassigned-prop-stateless'
 // destructured-prop reads in the same scope.
 import { fixture as loopParamNamedProps } from './loop-param-named-props'
 import { fixture as loopParamNamedPropsMember } from './loop-param-named-props-member'
+import { fixture as loopKeyToString } from './loop-key-to-string'
+import { fixture as loopKeyToStringNumberComponentRow } from './loop-key-to-string-number-component-row'
+import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-to-string-number-component-row-client'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1912,6 +1916,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildKeyNotAProp,
   loopRowChildKeyShadowedByProp,
   loopRowChildScalarRowKey,
+  loopRowChildNumberRowProp,
   loopRowChildScalarRowWrapper,
   loopRowChildScalarRowWrapperNestedComponent,
   loopRowChildSharedWrapper,
@@ -2036,4 +2041,7 @@ export const jsxFixtures: JSXFixture[] = [
   reassignedPropStateless,
   loopParamNamedProps,
   loopParamNamedPropsMember,
+  loopKeyToString,
+  loopKeyToStringNumberComponentRow,
+  loopKeyToStringNumberComponentRowClient,
 ]

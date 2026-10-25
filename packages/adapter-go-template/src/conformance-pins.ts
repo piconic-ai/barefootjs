@@ -307,4 +307,9 @@ export const conformancePins: ConformancePins = {
   // The same key on rows built from caller-supplied Input values (a child
   // prop computed from the row), where the key can't be read either.
   'loop-row-child-caller-rows-outer-state-key': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-key-outer-state' }],
+  // A computed key of the row (`key={n.toString()}`) on rows built from
+  // caller-supplied Input values (`label={n.toString()}` is computed): no
+  // child prop carries the key as a plain row read, so the Input has no
+  // field to read it from.
+  'loop-key-to-string-number-component-row': [{ code: 'BF101', severity: 'error', limitation: 'caller-rows-computed-key' }],
 }
