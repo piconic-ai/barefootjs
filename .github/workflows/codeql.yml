@@ -1,0 +1,80 @@
+# CodeQL
+#
+# Static analysis of the TypeScript/JavaScript sources and of the workflows
+# themselves. Results go to the Security tab (code scanning) and as PR
+# annotations. Not a required check: alerts are triaged in the Security tab.
+#
+# - javascript-typescript: the compiler, client runtime, CLI, adapters' TS
+#   side, the deployed site, and scripts. Generated fixtures, tests,
+#   benchmarks, and integrations are excluded in .github/codeql/codeql-config.yml.
+# - actions: the workflows and composite actions. release.yml / jsr-publish.yml
+#   publish with OIDC (`id-token: write`) and deploy.yml holds the Cloudflare
+#   token, so expression injection and over-broad permissions matter here.
+#
+# The other languages in the repo are left out: their code is small adapter
+# runtimes and integration samples, and PHP / Perl are not supported by CodeQL.
+#
+# The weekly schedule re-scans main with the latest query packs even when
+# nothing changed.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'site/**'
+      - 'ui/**'
+      - 'scripts/**'
+      - '.github/**'
+  pull_request:
+    # Heavy set: main-based PRs only, default activity types. A stacked PR
+    # (base != main) never runs this; ci-heavy-gate.yml goes red on a PR
+    # retargeted onto main until a push runs it. See AGENTS.md, "CI on
+    # stacked PRs".
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'site/**'
+      - 'ui/**'
+      - 'scripts/**'
+      - '.github/**'
+  schedule:
+    - cron: '23 5 * * 3'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  # Cancel superseded PR runs only; a main run is the baseline PR alerts are
+  # diffed against, so let it finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          category: /language:${{ matrix.language }}
