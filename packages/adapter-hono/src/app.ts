@@ -154,7 +154,8 @@ export function BfDevReload(props: BfDevReloadProps = {}): HtmlEscapedString | n
     }
   }
   if (!endpoint) return null
-  const ep = JSON.stringify(endpoint)
+  // HTML parses script delimiters before JavaScript parses string literals.
+  const ep = JSON.stringify(endpoint).replace(/</g, '\\u003c')
   const snippet = `(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource(${ep});es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();`
   // Tagged-template return type is a union with Promise; the `script`
   // tag has no async children so the actual value is sync.
