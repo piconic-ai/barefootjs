@@ -8,10 +8,11 @@
  *   on every adapter (Jinja, MiniJinja, Pebble, Twig, Blade and Xslate used
  *   to render the children twice and report it twice);
  * - `planLoop`'s gates refuse the same loops on every adapter: an
- *   unlowerable destructure (BF104) and a computed const source no
- *   template binds (BF101), over the loop fixture families (destructure,
- *   entries / keys / values, shadowing, preamble, sort, static and computed
- *   sources, filter chains).
+ *   unlowerable destructure (BF104), a computed const source no
+ *   template binds (BF101) and a sort comparator neither the evaluator nor
+ *   the `{keys: …}` descriptor models (BF101), over the loop fixture
+ *   families (destructure, entries / keys / values, shadowing, preamble,
+ *   sort, static and computed sources, filter chains).
  *
  * The one declared difference: Perl has no boolean literal, so Mojolicious
  * and Xslate cannot spell a static source with a boolean item and refuse it
@@ -79,6 +80,22 @@ export function Loop(props: { seed: number }) {
     }
   }, COMPILE_TIMEOUT_MS)
 
+  test('a loop source sorted by a comparator outside both forms is refused on every adapter', () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Loop() {
+  const [rows, setRows] = createSignal<{ id: string; n: number }[]>([])
+  return <ul>{rows().toSorted((a, b) => Math.sign(a.n - b.n)).map(row => <li key={row.id}>{row.n}</li>)}</ul>
+}
+`
+    for (const adapter of DSL_ADAPTERS) {
+      const { errors } = compileFixtureJSX(source, 'Loop.tsx', { adapter: adapter.make() })
+      const refusals = errors.filter((e) => e.code === 'BF101' && e.message.includes('comparator is outside')).length
+      expect({ adapter: adapter.name, refusals }).toEqual({ adapter: adapter.name, refusals: 1 })
+    }
+  }, COMPILE_TIMEOUT_MS)
+
   for (const fixture of loopFixtures) {
     test(`the loop gates agree: ${fixture.id}`, () => {
       const results = DSL_ADAPTERS.map((adapter) => {
@@ -87,6 +104,7 @@ export function Loop(props: { seed: number }) {
           adapter: adapter.name,
           bf104: errors.filter((e) => e.code === 'BF104').length,
           constSource: errors.filter((e) => e.code === 'BF101' && e.message.startsWith('Loop array `')).length,
+          sortRefusal: errors.filter((e) => e.code === 'BF101' && e.message.includes('comparator is outside')).length,
         }
       })
       const reference = results.find((r) => !PERL_UNSPELLABLE_STATIC[r.adapter])!

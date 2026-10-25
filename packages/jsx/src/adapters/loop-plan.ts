@@ -13,16 +13,18 @@
  * it emits them in.
  */
 
-import { type ParsedExpr, parseExpression, renameFreeIdentifiers } from '../expression-parser.ts'
+import { type ParsedExpr, parseExpression, renameFreeIdentifiers, type SortComparator } from '../expression-parser.ts'
 import { isLowerableLoopDestructure } from '../loop-destructure.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveStaticLoopSource } from '../static-literal.ts'
 import type { ConstantInfo, IRLoop, LoopBindingPathSegment } from '../types.ts'
 import {
+  type CallbackEvalSpelling,
   type CallbackLoweringOptions,
-  type CallbackPlan,
-  lowerCallbackMethod,
+  emitCallbackEval,
+  lowerSortComparator,
   missingFilterPredicateRefusal,
+  type SortPlan,
 } from './callback-method.ts'
 import { filterCaptureCollisions } from './filter-capture-collisions.ts'
 
@@ -54,8 +56,12 @@ export interface LoopPlan<Spelled> {
    * name is the row's value, not the const (#3473).
    */
   unresolvableConst: ConstantInfo | null
-  /** The `.sort` / `.toSorted` comparator's lowering, or `null` without one. */
-  sort: CallbackPlan | null
+  /**
+   * The `.sort` / `.toSorted` comparator's lowering, or `null` without one:
+   * the evaluator, the structured `{keys: …}` descriptor, or BF101, the same
+   * chain as `.sort(cmp)` at an expression position.
+   */
+  sort: SortPlan | null
   /** The filter predicate's captures that a row binding would shadow, each with its alias. */
   captureAliases: Array<{ name: string; alias: string }>
   /** The `.filter()` predicate of a `.filter().map()` loop, or `null` without one. */
@@ -108,6 +114,31 @@ export function spellDestructureLocals(
     if (value.kind === 'omit') return { name, value: spelling.omit(parent, value.exclude) }
     return { name, value: parent }
   })
+}
+
+/** An adapter's spelling of a {@link SortPlan} over the loop source. */
+export interface LoopSortSpelling {
+  /** A captured name's SSR value, for the evaluator's env. */
+  emit(e: ParsedExpr): string
+  /** The evaluator call. */
+  eval: CallbackEvalSpelling
+  /** The structured `bf.sort` call over `recv` with the `{keys: …}` descriptor. */
+  structured(recv: string, comparator: SortComparator): string
+  /** Record the refusal of a comparator neither form models (BF101). */
+  refuse(message: string, suggestion: string): void
+}
+
+/**
+ * The loop source `recv` sorted by the loop's comparator, or `recv` itself
+ * without one. A refused comparator is recorded and leaves `recv` unsorted,
+ * so the template stays valid.
+ */
+export function spellSortedSource(sort: SortPlan | null, recv: string, spelling: LoopSortSpelling): string {
+  if (!sort) return recv
+  if (sort.kind === 'eval') return emitCallbackEval(sort, recv, spelling.emit, spelling.eval)
+  if (sort.kind === 'structured-sort') return spelling.structured(recv, sort.comparator)
+  spelling.refuse(sort.message, sort.suggestion)
+  return recv
 }
 
 /**
@@ -202,7 +233,7 @@ export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): 
     destructure,
     staticSource,
     unresolvableConst: staticSource === null ? unresolvableConst(loop, ctx) : null,
-    sort: loop.sortComparator ? lowerCallbackMethod('sort', loop.sortComparator.arrow, [], ctx.callbackLowering) : null,
+    sort: loop.sortComparator ? lowerSortComparator('sort', loop.sortComparator.arrow, ctx.callbackLowering.adapterName) : null,
     captureAliases,
     filter: filterPlan(loop, captureAliases, ctx.callbackLowering.adapterName),
     itemVar: loop.iterationShape === 'keys' || destructure === 'lowerable' ? '__bf_item' : loop.param,

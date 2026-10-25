@@ -152,6 +152,7 @@ export {
   emitCallbackEval,
   isPredicateMethod,
   lowerCallbackMethod,
+  lowerSortComparator,
   nestedCallbackRefusal,
   filterPredicateShapeRefusal,
   missingFilterPredicateRefusal,
@@ -168,6 +169,7 @@ export type {
   CallbackLoweringOptions,
   CallbackPlan,
   PredicateMethod,
+  SortPlan,
 } from './adapters/callback-method.ts'
 export type {
   ArrayMethodArg,
@@ -183,7 +185,7 @@ export { childTemplateName, componentPropKey, isEmptyComponentProps, planCompone
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, ComponentPropsParam, EarlierComponentProps, ResolvedComponentProp, SpelledComponentPropSegment } from './adapters/component-props.ts'
 export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression, unsupportedAttrExpressionError } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
-export { planLoop, spellDestructureLocals, spellFilteredRow } from './adapters/loop-plan.ts'
+export { planLoop, spellDestructureLocals, spellFilteredRow, spellSortedSource } from './adapters/loop-plan.ts'
 export { computedConstContext, inlineComputedConstAttr, inlineComputedConsts } from './adapters/computed-const.ts'
 export type { ComputedConstContext } from './adapters/computed-const.ts'
 export type {
@@ -194,6 +196,7 @@ export type {
   LoopFilterSpelling,
   LoopPlan,
   LoopPlanContext,
+  LoopSortSpelling,
 } from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
