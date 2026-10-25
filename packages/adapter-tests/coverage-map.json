@@ -5722,6 +5722,43 @@
         "text"
       ]
     },
+    "loop-key-to-string": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-key-to-string-number-component-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-key-to-string-number-component-row-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-named-props": {
       "kinds": [
         "array-literal",

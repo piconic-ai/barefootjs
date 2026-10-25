@@ -1186,6 +1186,9 @@ import { fixture as reassignedPropStateless } from './reassigned-prop-stateless'
 // destructured-prop reads in the same scope.
 import { fixture as loopParamNamedProps } from './loop-param-named-props'
 import { fixture as loopParamNamedPropsMember } from './loop-param-named-props-member'
+import { fixture as loopKeyToString } from './loop-key-to-string'
+import { fixture as loopKeyToStringNumberComponentRow } from './loop-key-to-string-number-component-row'
+import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-to-string-number-component-row-client'
 
 import type { JSXFixture } from '../src/types'
 
@@ -2036,4 +2039,7 @@ export const jsxFixtures: JSXFixture[] = [
   reassignedPropStateless,
   loopParamNamedProps,
   loopParamNamedPropsMember,
+  loopKeyToString,
+  loopKeyToStringNumberComponentRow,
+  loopKeyToStringNumberComponentRowClient,
 ]
