@@ -4836,6 +4836,14 @@
           ]
         }
       },
+      "jsx-prop-template-delimiters": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nested-component-in-jsx-prop"
+          ]
+        }
+      },
       "loop-key-to-string-number-component-row": {
         "go-template": {
           "kind": "refusal",
@@ -8189,6 +8197,10 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "jsx-prop-template-delimiters": {
+        "description": "JSX prop getters preserve static template delimiters alongside a nested component and forwarded…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-template-delimiters.ts"
+      },
       "loop-key-to-string-number-component-row": {
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
@@ -9234,6 +9246,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "nested-component-in-jsx-prop": {
+      "title": "A nested component inside a named JSX prop",
+      "kind": "silent",
+      "given": "a named JSX prop whose element contains a nested component, alongside forwarded children",
+      "expected": "the named prop renders its element and nested component, and the forwarded children render normally",
+      "actual": "throws a missing-child-field error during rendering, or replaces the named prop markup with escaped text during hydration",
+      "fixtures": [
+        "jsx-prop-template-delimiters"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "off-subset-callback-body": {

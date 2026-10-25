@@ -1844,6 +1844,27 @@
         "text"
       ]
     },
+    "client-template-static-delimiters": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "combobox": {
       "kinds": [
         "array-literal",
@@ -5253,6 +5274,16 @@
       "axes": [
         "literal:boolean"
       ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-prop-template-delimiters": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "text"
       ]
