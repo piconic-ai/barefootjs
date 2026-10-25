@@ -1,7 +1,0 @@
----
-"@barefootjs/go-template": patch
----
-
-On Go templates, a prop named like the plural of a bodyless loop row component now keeps its own field and type, and the rows go to a separate field. Before, `props.labels.map(l => <Label key={l} text={l} />)` typed the prop as the row slice `Labels []LabelInput`, so passing the real string array failed `go build`, and the object-row version failed with BF101. Now the Input carries `Labels []string`, and the constructor builds the rows from it into `LabelRows []LabelProps` (`json:"-"`). This matches what #3603 did for rows that forward children. The `bf-p` hydration payload carries the prop's own value, not the rebuilt rows.
-
-**Go caller migration.** If a handler filled the rows through the plural field, it now passes the prop's own data in that field. For example, `ToggleInput{ToggleItems: []ToggleItemInput{{Label: "a"}}}` becomes `ToggleInput{ToggleItems: []ToggleSetting{{Label: "a"}}}`, where `ToggleSetting` is the struct generated from the prop's element type. A TS type whose name ends in `Props` never becomes a Go struct, so an array of it stays `[]interface{}`, and the rows stay caller-supplied under the renamed field (`ToggleItemRows []ToggleItemInput`). Rename such a type to get a typed prop and constructor-built rows. The shared `Toggle` demo now uses `ToggleSetting` for this reason, and the chi/echo/gin/nethttp handlers are migrated.
