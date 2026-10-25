@@ -126,7 +126,7 @@ import {
   slotIdToFieldSuffix,
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
-import { loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor, type LoopRowBinding, type LoopRowShape, type LoweredLoopKey } from './lib/loop-row-path.ts'
+import { loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor, rowReadGoValue, type LoopRowBinding, type LoopRowShape, type LoweredLoopKey } from './lib/loop-row-path.ts'
 import { allocateRowsFields, loopDrivingProp, nestedRowsFieldName, rowsFieldSiteKey, type RowsFieldSite } from './lib/nested-rows-field.ts'
 
 /** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
@@ -4420,10 +4420,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         },
       }
     } else if (SCALAR_ROW_GO_TYPES.has(elementGoType)) {
+      // The prop's own slice type decides what `item` holds: a `number[]`
+      // is `[]interface{}` (#3310), so its float64 row arrives boxed.
+      const boxedNumber = elementGoType === 'float64' && typeInfoToGo(this.emitCtx, arrayType) !== '[]float64'
       source = {
         goExpr,
         itemType: arrayType.elementType,
-        shape: { scalar: true, readGoType: segments => (segments.length === 0 ? elementGoType : null) },
+        shape: { scalar: true, boxedNumber, readGoType: segments => (segments.length === 0 ? elementGoType : null) },
       }
     } else {
       return null
@@ -4500,7 +4503,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // still differ (`int` row field, `float64` `.toFixed()` prop). Anything
       // else keeps the caller-supplied rows.
       if (!this.rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)) return null
-      rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: accessor, readsRow: true })
+      rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: rowReadGoValue(accessor, shape), readsRow: true })
     }
     const errorCount = this.state.errors.length
     const { usesFmt, usesHtmlTemplate } = this.state
