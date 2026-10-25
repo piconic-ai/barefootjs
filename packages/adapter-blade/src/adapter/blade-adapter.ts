@@ -283,6 +283,7 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   planLoop,
+  savedLoopBindings,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
@@ -896,14 +897,11 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // after `@endforeach`. Save each one an enclosing row binds, or that a
     // template-level signal, memo, prop or constant shares (#3391), and
     // restore it after the loop. A root prop with an alias is restored below.
-    const aliasedRootProps = new Set(rootAliases.map(a => a.name))
-    const templateShadowed = [...this.templateLevelNames].filter(name =>
-      this.scope.lookup(name)?.depth === 0 && !prevScope.isBound(name) && !aliasedRootProps.has(name))
-    const savedBindings = [...this.scope.shadowedNames(), ...templateShadowed].map((name, ordinal) => {
-      let temporary = `__bf_saved_${loop.markerId}_${ordinal}`
-      while (this.scope.isBound(temporary) || this.templateLevelNames.has(temporary)) temporary += '_'
-      return { name, temporary }
-    })
+    const savedBindings = savedLoopBindings(
+      { outside: prevScope, row: this.scope, templateLevelNames: this.templateLevelNames },
+      rootAliases.map(a => a.name),
+      (_name, ordinal) => `__bf_saved_${loop.markerId}_${ordinal}`,
+    )
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the

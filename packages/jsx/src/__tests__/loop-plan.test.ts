@@ -6,7 +6,7 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
-import { planLoop, spellDestructureLocals, spellFilteredRow, spellSortedSource, type LoopPlanContext, type LoopSortSpelling } from '../adapters/loop-plan'
+import { loopHeaderTargets, planLoop, savedLoopBindings, spellDestructureLocals, spellFilteredRow, spellSortedSource, type LoopPlanContext, type LoopSortSpelling } from '../adapters/loop-plan'
 import { BindingScope } from '../scope/binding-scope'
 import type { IRLoop, IRNode } from '../types'
 
@@ -230,5 +230,70 @@ describe('planLoop', () => {
   test('an unlowerable destructure binds no locals', () => {
     const refused = plan(`export function Test(props: { rows: { a: string; b: string }[] }) { return <ul>{props.rows.map(({ a, ...rest }) => <li key={a}>{String(rest)}</li>)}</ul> }`)
     expect(refused).toMatchObject({ destructure: 'unlowerable', destructureLocals: [] })
+  })
+})
+
+function loopOf(source: string): IRLoop {
+  return firstLoop(jsxToIR(analyzeComponent(source, 'Test.tsx')))
+}
+
+describe('loopHeaderTargets', () => {
+  test('an array iteration binds its param, unless the param is not the item', () => {
+    const items = loopOf(`export function Test(props: { items: string[] }) { return <ul>{props.items.map((x, i) => <li key={x}>{i}</li>)}</ul> }`)
+    expect(loopHeaderTargets(items, { itemVar: 'x' })).toEqual(['x'])
+    const keys = loopOf(`export function Test(props: { items: string[] }) { return <ul>{props.items.keys().map(k => <li key={k}>{k}</li>)}</ul> }`)
+    expect(loopHeaderTargets(keys, { itemVar: '__bf_item' })).toEqual([])
+  })
+
+  test('an entries object iteration binds its key and value', () => {
+    const entries = loopOf(`export function Test(props: { m: Record<string, string> }) { return <ul>{Object.entries(props.m).map(([k, v]) => <li key={k}>{v}</li>)}</ul> }`)
+    expect(loopHeaderTargets(entries, { itemVar: 'v' })).toEqual(['k', 'v'])
+  })
+})
+
+describe('savedLoopBindings', () => {
+  const source = `export function Test(props: { items: string[] }) {
+    return <ul>{props.items.map((label, i) => { const n = label.length; return <li key={label}>{i}{n}</li> })}</ul>
+  }`
+
+  function saved(outside: BindingScope, templateLevelNames: string[], skip: string[] = []) {
+    const loop = loopOf(source)
+    return savedLoopBindings(
+      { outside, row: outside.enterLoopRow(loop), templateLevelNames: new Set(templateLevelNames) },
+      skip,
+      (name, ordinal) => `held_${ordinal}_${name}`,
+    )
+  }
+
+  test('saves each row binding a template-level name or an enclosing row also binds, in the order the template binds them', () => {
+    const outside = BindingScope.EMPTY.enterCallback(['n'])
+    expect(saved(outside, ['i', 'label', 'other'])).toEqual([
+      { name: 'label', temporary: 'held_0_label' },
+      { name: 'i', temporary: 'held_1_i' },
+      { name: 'n', temporary: 'held_2_n' },
+    ])
+  })
+
+  test('an index local binds before a destructure local', () => {
+    const loop = loopOf(`export function Test(props: { rows: { name: string }[] }) { return <ul>{props.rows.map(({ name }, count) => <li key={name}>{count}</li>)}</ul> }`)
+    const saved = savedLoopBindings(
+      { outside: BindingScope.EMPTY, row: BindingScope.EMPTY.enterLoopRow(loop), templateLevelNames: new Set(['name', 'count']) },
+      [],
+      (_name, ordinal) => `held_${ordinal}`,
+    )
+    expect(saved.map((b) => b.name)).toEqual(['count', 'name'])
+  })
+
+  test('a row binding nothing outside shares is not saved', () => {
+    expect(saved(BindingScope.EMPTY, ['other'])).toEqual([])
+  })
+
+  test('a skipped name is restored by the backend itself', () => {
+    expect(saved(BindingScope.EMPTY, ['label', 'i'], ['label'])).toEqual([{ name: 'i', temporary: 'held_0_i' }])
+  })
+
+  test('a holder that collides with a row binding or a template-level name takes a suffix', () => {
+    expect(saved(BindingScope.EMPTY, ['i', 'held_0_i'])).toEqual([{ name: 'i', temporary: 'held_0_i_' }])
+    expect(saved(BindingScope.EMPTY.enterCallback(['held_0_i']), ['i'])).toEqual([{ name: 'i', temporary: 'held_0_i_' }])
   })
 })

@@ -235,7 +235,9 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
+  loopHeaderTargets,
   planLoop,
+  savedLoopBindings,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
@@ -827,10 +829,11 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // filter/sort callback's own param is a separate `callback` frame,
     // never folded into the `.map()` row.
     const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
+    const rowScope = prevScope.enterLoopRow(loop)
+    this.scope = rowScope
     // Props this row's bindings newly shadow, aliased before the loop header
     // so an explicit `props.X` inside still reads the root value (#3314).
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
+    const rootAliases = rootPropAliasesForLoop(prevScope, rowScope, this.rootPropAliases)
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -892,24 +895,16 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // destructure, entry or preamble local named like a template-level
     // signal, memo or prop (#3386), or like an enclosing row's binding
     // (#3391), overwrites it past the loop (JS scopes the callback param to
-    // the row). Save each such name before the loop and restore it after.
-    // The for-header's own variable is loop-scoped already.
-    const setBoundNames = new Set<string>()
-    if (loop.objectIteration === 'entries') {
-      setBoundNames.add(loop.index ?? param)
-      setBoundNames.add(param)
-    }
-    if (loopPlan.indexLocal) setBoundNames.add(loopPlan.indexLocal)
-    for (const { name } of loopPlan.destructureLocals) setBoundNames.add(name)
-    for (const d of loop.preamble?.declarations ?? []) setBoundNames.add(d.name)
-    const savedNames = [...setBoundNames]
-      .filter(name => this.templateLevelNames.has(name) || prevScope.isBound(name))
-      .map(name => {
-        let saved = `bf_outer_${loop.markerId}_${pebbleIdent(name)}`
-        while (this.scope.isBound(saved) || setBoundNames.has(saved) || this.templateLevelNames.has(saved)) saved += '_'
-        return { local: pebbleIdent(name), saved }
-      })
-    for (const { local, saved } of savedNames) lines.push(`{% set ${saved} = ${local} %}`)
+    // the row). The plan names each such binding; save it before the loop
+    // and restore it after. The for-header's own variable is loop-scoped
+    // already, but an entries header binds only the pair, whose key and
+    // value are `{% set %}` locals.
+    const savedBindings = savedLoopBindings(
+      { outside: prevScope, row: rowScope, templateLevelNames: this.templateLevelNames },
+      loop.objectIteration === 'entries' ? [] : loopHeaderTargets(loop, loopPlan),
+      (name) => `bf_outer_${loop.markerId}_${pebbleIdent(name)}`,
+    )
+    for (const { name, temporary } of savedBindings) lines.push(`{% set ${temporary} = ${pebbleIdent(name)} %}`)
     lines.push(forHeader)
     if (loop.objectIteration === 'entries') {
       lines.push(`{% set ${pebbleIdent(loop.index ?? param)} = ${entryPairVar}[0] %}`)
@@ -935,7 +930,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     }))
 
     lines.push(`{% endfor %}`)
-    for (const { local, saved } of savedNames) lines.push(`{% set ${local} = ${saved} %}`)
+    for (const { name, temporary } of savedBindings) lines.push(`{% set ${pebbleIdent(name)} = ${temporary} %}`)
     lines.push(`{{ bf.comment("/loop:${loop.markerId}") | raw }}`)
 
     return lines.join('\n')

@@ -213,6 +213,11 @@ export class BindingScope {
     return hit ? hit.binding.stringValue === true : outer(name)
   }
 
+  /** The names the innermost frame binds, in binding order. */
+  innermostNames(): readonly string[] {
+    return this.frames[0] ? [...this.frames[0].bindings.keys()] : []
+  }
+
   /** Names this frame shadows in an enclosing callback/row frame. */
   shadowedNames(): readonly string[] {
     if (!this.frames[0]) return []

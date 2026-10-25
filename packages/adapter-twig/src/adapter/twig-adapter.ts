@@ -189,7 +189,9 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
+  loopHeaderTargets,
   planLoop,
+  savedLoopBindings,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
@@ -802,23 +804,13 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     // preamble local) writes the enclosing context: a name it shares with a
     // template-level signal, memo, prop or constant, or with an enclosing
     // row's binding, would keep the last row's value after the loop (#3391;
-    // JS scopes the callback param to the row). Save each such name before
-    // the loop and restore it after.
-    const headerNames = new Set<string>(
-      loop.objectIteration === 'entries'
-        ? [loop.index ?? param, param]
-        : loop.objectIteration || loopPlan.itemVar === param
-          ? [param]
-          : [],
+    // JS scopes the callback param to the row). The plan names each such
+    // binding; save it before the loop and restore it after.
+    const savedBindings = savedLoopBindings(
+      { outside: prevScope, row: this.scope, templateLevelNames: this.templateLevelNames },
+      loopHeaderTargets(loop, loopPlan),
+      (_name, ordinal) => `__bf_saved_${loop.markerId}_${ordinal}`,
     )
-    const savedNames = [...this.templateLevelNames, ...prevScope.boundNames()]
-      .filter((name, i, all) => all.indexOf(name) === i)
-      .filter(name => this.scope.lookup(name)?.depth === 0 && !headerNames.has(name))
-      .map((name, ordinal) => {
-        let saved = `__bf_saved_${loop.markerId}_${ordinal}`
-        while (this.scope.isBound(saved) || this.templateLevelNames.has(saved)) saved += '_'
-        return { name, saved }
-      })
 
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
@@ -854,7 +846,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     // each get their own reconciliation range.
     for (const { name, alias } of rootAliases) lines.push(`{% set ${twigIdent(alias)} = ${twigIdent(name)} %}`)
     for (const { name, alias } of captureAliases) lines.push(`{% set ${twigIdent(alias)} = ${twigIdent(name)} %}`)
-    for (const { name, saved } of savedNames) lines.push(`{% set ${saved} = ${twigIdent(name)} %}`)
+    for (const { name, temporary } of savedBindings) lines.push(`{% set ${temporary} = ${twigIdent(name)} %}`)
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | raw }}`)
     // `objectIteration` (#2168 object-entries-map): Twig's own `for` tag
     // needs a plain PHP array to unpack `key, value` from (it can't iterate
@@ -891,7 +883,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     }))
 
     lines.push(`{% endfor %}`)
-    for (const { name, saved } of savedNames) lines.push(`{% set ${twigIdent(name)} = ${saved} %}`)
+    for (const { name, temporary } of savedBindings) lines.push(`{% set ${twigIdent(name)} = ${temporary} %}`)
     lines.push(`{{ bf.comment("/loop:${loop.markerId}") | raw }}`)
 
     return lines.join('\n')

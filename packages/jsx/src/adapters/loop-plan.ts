@@ -8,14 +8,15 @@
  * captures need an alias, how the filter predicate reads on the row, and
  * which locals the row binds for its index and its destructure bindings.
  * {@link planLoop} makes those decisions once, against the scope outside the
- * loop. The adapter keeps the spelling:
+ * loop; {@link savedLoopBindings} decides, against the row's scope, which
+ * row bindings a backend without loop-scoped `set` saves and restores. The adapter keeps the spelling:
  * the loop header, the row bindings, the diagnostics' wording, and the order
  * it emits them in.
  */
 
 import { type ParsedExpr, parseExpression, renameFreeIdentifiers, type SortComparator } from '../expression-parser.ts'
 import { isLowerableLoopDestructure } from '../loop-destructure.ts'
-import type { BindingScope } from '../scope/binding-scope.ts'
+import type { BindingScope, ScopeBindingSource } from '../scope/binding-scope.ts'
 import { resolveStaticLoopSource } from '../static-literal.ts'
 import type { ConstantInfo, IRLoop, LoopBindingPathSegment } from '../types.ts'
 import {
@@ -139,6 +140,70 @@ export function spellSortedSource(sort: SortPlan | null, recv: string, spelling:
   if (sort.kind === 'structured-sort') return spelling.structured(recv, sort.comparator)
   spelling.refuse(sort.message, sort.suggestion)
   return recv
+}
+
+/**
+ * The names a loop's for-header binds: the key and the value of an
+ * `entries` object iteration, the param of a `keys` / `values` one, and the
+ * item var of an array iteration when it is the param itself. A backend
+ * whose for-header scopes its targets to the loop passes these to
+ * {@link savedLoopBindings} as names it restores itself.
+ */
+export function loopHeaderTargets(loop: IRLoop, plan: Pick<LoopPlan<unknown>, 'itemVar'>): string[] {
+  if (loop.objectIteration === 'entries') return [loop.index ?? loop.param, loop.param]
+  return loop.objectIteration || plan.itemVar === loop.param ? [loop.param] : []
+}
+
+/** Where a loop row sits, for {@link savedLoopBindings}. */
+export interface LoopRowScopes {
+  /** The scope outside the loop. */
+  outside: BindingScope
+  /** `outside.enterLoopRow(loop)`. */
+  row: BindingScope
+  /** The template-level names: signals, memos, props and constants. */
+  templateLevelNames: ReadonlySet<string>
+}
+
+const SAVE_ORDER: readonly ScopeBindingSource[] = ['item', 'index', 'destructure', 'preamble']
+
+/** A row binding a loop saves before its header and restores after its end. */
+export interface SavedLoopBinding {
+  name: string
+  /** The template variable that holds the outer value across the loop. */
+  temporary: string
+}
+
+/**
+ * The row bindings a backend whose `set` is not loop-scoped (Pebble, Twig,
+ * Blade) saves before the loop and restores after it (#3386, #3391): each
+ * name the row binds that already means something outside it, an enclosing
+ * row's binding or a template-level name. JS scopes the callback's bindings
+ * to the row; without the restore the last row's value leaks past the loop.
+ * They come in the order a row binds them in a template: the for-header's
+ * item, the index local, each destructure local, each preamble local.
+ *
+ * `skip` names the bindings the backend restores itself: those its
+ * for-header scopes to the loop ({@link loopHeaderTargets}), or a root prop
+ * it restores through its alias. `temporary` spells the holder of the
+ * `ordinal`-th saved name; a holder that collides with a row binding or a
+ * template-level name gets `_` appended until it does not.
+ */
+export function savedLoopBindings(
+  scopes: LoopRowScopes,
+  skip: Iterable<string>,
+  temporary: (name: string, ordinal: number) => string,
+): SavedLoopBinding[] {
+  const skipped = new Set(skip)
+  const rank = (name: string) => SAVE_ORDER.indexOf(scopes.row.lookup(name)?.binding.source ?? 'param')
+  return scopes.row
+    .innermostNames()
+    .filter((name) => !skipped.has(name) && (scopes.templateLevelNames.has(name) || scopes.outside.isBound(name)))
+    .sort((a, b) => rank(a) - rank(b))
+    .map((name, ordinal) => {
+      let held = temporary(name, ordinal)
+      while (scopes.row.isBound(held) || scopes.templateLevelNames.has(held)) held += '_'
+      return { name, temporary: held }
+    })
 }
 
 /**
