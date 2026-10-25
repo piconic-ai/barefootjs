@@ -59,14 +59,8 @@
       "convertExpressionToGo": [
         27
       ],
-      "emitCallerPropsInit": [
-        28
-      ],
       "emitExpression": [
         34
-      ],
-      "generateNewPropsFunction": [
-        91
       ],
       "isStringExpr": [
         29
@@ -179,7 +173,7 @@
     },
     "packages/adapter-go-template/src/test-render.ts": {
       "buildDynamicChildLoopSeeding": [
-        59
+        55
       ],
       "buildGoPropsInit": [
         32

@@ -56,29 +56,22 @@ export function reservedRowsFieldNames(
 }
 
 /**
- * The rows field of a loop over `<childName>` reading `loopArray`: the
- * plural (`Items` for `<Item>`), unless a props param already claims that
- * Go field name for different data — then `<childName>Rows`, numbered when
- * a prop or another generated field (`reserved`, `reservedRowsFieldNames`)
- * already has that name. A bodyless loop that ranges over the very prop
- * owning the plural (`tags.map(t => <Tag …/>)`, #2627) keeps the plural:
- * there the field IS that prop's data, re-shaped into rows. A row that
- * forwards children (`forwardsChildren`) doesn't: its wrapper rows are
- * built FROM the prop (`propArrayLoopRowSource`), so the prop keeps its own
- * field and the rows field is renamed (#3603).
+ * The rows field of a loop over `<childName>`: the plural (`Items` for
+ * `<Item>`), unless a props param already claims that Go field name — then
+ * `<childName>Rows`, numbered when a prop or another generated field
+ * (`reserved`, `reservedRowsFieldNames`) already has that name. A loop that
+ * ranges over the very prop owning the plural (`tags.map(t => <Tag …/>)`)
+ * is renamed too, whether its row forwards children (#3603) or not (#3616):
+ * the constructor builds the rows FROM the prop (`propArrayLoopRowSource`),
+ * so the prop keeps its own field and type, and the rows go to `TagRows`.
  */
 export function nestedRowsFieldName(
   childName: string,
-  loopArray: ParsedExpr | undefined,
   propsParams: readonly PropsParamLike[],
-  propsObjectName: string | null | undefined,
   reserved: ReadonlySet<string> = new Set(),
-  forwardsChildren = false,
 ): string {
   const plural = `${childName}s`
-  const owner = propsParams.find(p => propFieldNames(p).includes(plural))
-  if (!owner) return plural
-  if (!forwardsChildren && loopDrivingProp(loopArray, propsParams, propsObjectName) === owner) return plural
+  if (!propsParams.some(p => propFieldNames(p).includes(plural))) return plural
   return numberedRowsField(childName, new Set([...propsParams.flatMap(propFieldNames), ...reserved]))
 }
 
@@ -93,8 +86,6 @@ function numberedRowsField(childName: string, taken: ReadonlySet<string>): strin
 export interface RowsFieldSite {
   readonly name: string
   readonly loopMarkerId?: string
-  readonly loopArrayParsed?: ParsedExpr
-  readonly bodyChildren?: readonly unknown[]
 }
 
 /** A loop site's rows field and the constructor local that builds it. */
@@ -125,7 +116,6 @@ function lowerFirst(name: string): string {
 export function allocateRowsFields(
   sites: readonly RowsFieldSite[],
   propsParams: readonly PropsParamLike[],
-  propsObjectName: string | null | undefined,
   stateFieldNames: Iterable<string>,
 ): Map<string, RowsFieldAllocation> {
   const reserved = reservedRowsFieldNames(
@@ -138,11 +128,10 @@ export function allocateRowsFields(
   for (const site of sites) {
     const key = rowsFieldSiteKey(site)
     if (allocated.has(key)) continue
-    const forwardsChildren = !!site.bodyChildren?.length
     const first = !seenChildren.has(site.name)
     seenChildren.add(site.name)
     const field = first
-      ? nestedRowsFieldName(site.name, site.loopArrayParsed, propsParams, propsObjectName, reserved, forwardsChildren)
+      ? nestedRowsFieldName(site.name, propsParams, reserved)
       : numberedRowsField(site.name, taken)
     taken.add(field)
     allocated.set(key, { field, varName: first ? lowerFirst(`${site.name}s`) : lowerFirst(field) })

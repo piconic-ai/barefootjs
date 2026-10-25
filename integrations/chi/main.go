@@ -378,7 +378,7 @@ func counterHandler(w http.ResponseWriter, _ *http.Request) {
 func toggleHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewToggleProps(ToggleInput{
-		ToggleItems: []ToggleItemInput{
+		ToggleItems: []ToggleSetting{
 			{Label: "Setting 1", DefaultOn: true},
 			{Label: "Setting 2", DefaultOn: false},
 			{Label: "Setting 3", DefaultOn: false},

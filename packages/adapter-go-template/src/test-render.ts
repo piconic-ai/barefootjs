@@ -322,7 +322,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     const escapedTemplate = template.replace(/`/g, '` + "`" + `')
 
     // Build props initialization (typed against the generated Input struct so
-    // an array-of-objects prop emits e.g. `[]ToggleItemInput{…}`, not `[]any`).
+    // an array-of-objects prop emits e.g. `[]ToggleSetting{…}`, not `[]any`).
     const propsInit = buildGoPropsInit(componentName, props, ir, goTypes)
 
     // Honour `__instanceId` from props for the root scope id so
@@ -802,14 +802,7 @@ function goOuterSignalExprForLoopProp(parsed: ParsedExpr, signalGetters: Readonl
  *    constructor, `getBakedStaticChildLoop`) — neither dynamic nor
  *    prop-derived;
  *  - a loop whose row has forwarded body children (`emitStaticBodyWrappers`
- *    / `emitDynamicBodyWrappers` build the wrapper rows);
- *  - a prop-backed loop whose driving prop's Go field IS the child's plural
- *    (#2627/#2628 shadowing — `tags` prop → `Tag` component): the real
- *    adapter's `isNestedArrayShadowed` drops the prop's separate field, so
- *    `in.Tags []TagInput` is the one field, already filled with the
- *    caller's rows by `buildGoPropsInit` (which types the literal against
- *    the declared `[]TagInput` element, mapping each row object's keys onto
- *    same-named `TagInput` fields).
+ *    / `emitDynamicBodyWrappers` build the wrapper rows).
  *
  * Deliberately narrow otherwise: only fires for a loop whose (a) array
  * source resolves to a signal getter, or a memo whose seeded Go field is a
@@ -854,7 +847,6 @@ function buildDynamicChildLoopSeeding(
   const rowsFields = allocateRowsFields(
     nestedSites,
     propsParams,
-    ir.metadata.propsObjectName,
     [...ir.metadata.signals.map(s => s.getter), ...ir.metadata.memos.map(m => m.name)],
   )
   for (const nested of nestedSites) {
@@ -872,9 +864,6 @@ function buildDynamicChildLoopSeeding(
       const localName = findLoopPropField(nested.loopArrayParsed)
       const param = localName ? propsParams.find(p => p.name === localName) : undefined
       const datumField = param ? (param.sourceName ?? param.name) : null
-      // (#2627/#2628 shadowing) `in.<Name>s` IS the driving prop's field and
-      // already carries the caller's rows — see the docstring.
-      if (datumField && capitalizeFieldName(datumField) === rowsField) continue
 
       if (datumField) {
         // One hop (#2630): derive each child Input row from the driving
@@ -1100,8 +1089,8 @@ function buildGoPropsInit(
       // actual elements.
       //
       // When the Input field is a typed slice (`ToggleItems
-      // []ToggleItemInput`, a loop-child array prop), emit a matching
-      // typed literal (`[]ToggleItemInput{ToggleItemInput{Label: …}, …}`);
+      // []ToggleSetting`, an array of a named object type), emit a matching
+      // typed literal (`[]ToggleSetting{ToggleSetting{Label: …}, …}`);
       // a bare `[]any{…}` would fail to compile against the typed field.
       // Fall back to `[]any` when the field type is `[]any` / unknown.
       const elemType = goSliceElemType(goTypes, componentName, goField)
@@ -1153,8 +1142,8 @@ function buildGoPropsInit(
 
 /**
  * Look up the element type of a typed slice field on the entry component's
- * `<Component>Input` struct (e.g. `ToggleItems []ToggleItemInput` →
- * `ToggleItemInput`). Returns null when the field is absent, isn't a slice, or
+ * `<Component>Input` struct (e.g. `ToggleItems []ToggleSetting` →
+ * `ToggleSetting`). Returns null when the field is absent, isn't a slice, or
  * is an untyped `[]any` / `[]interface{}` (those keep the generic `[]any`
  * harness literal). (#1297, toggle-shared)
  */
