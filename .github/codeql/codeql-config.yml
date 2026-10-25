@@ -1,0 +1,21 @@
+# CodeQL configuration for .github/workflows/codeql.yml.
+#
+# `paths-ignore` applies to languages analyzed without a build
+# (javascript-typescript and actions here), so it narrows the database to
+# the code that ships or runs: the packages' sources, the deployed site,
+# the UI registry, and the repo scripts. Excluded:
+#   - generated fixtures and snapshots (reviewed through their own drift gates)
+#   - tests and e2e specs (not shipped; findings there are noise)
+#   - benchmarks and integrations (sample/measurement apps, not published)
+name: barefootjs CodeQL config
+
+paths-ignore:
+  - packages/adapter-tests/fixtures
+  - '**/__tests__/**'
+  - '**/__snapshots__/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/e2e/**'
+  - '**/dist/**'
+  - benchmarks
+  - integrations
