@@ -147,6 +147,17 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
    * above and before any diagnostic or rendering.
    */
   protected resetAdapterState(_ir: ComponentIR): void {}
+
+  /** `render()` under `scope`, the current scope restored afterwards. */
+  protected renderInScope<T>(scope: BindingScope, render: () => T): T {
+    const outer = this.scope
+    this.scope = scope
+    try {
+      return render()
+    } finally {
+      this.scope = outer
+    }
+  }
   /** The root `if` statement of a component with conditional returns. */
   protected abstract renderIfStatement(ifStmt: IRIfStatement): string
   /** The script registrations the template starts with. */

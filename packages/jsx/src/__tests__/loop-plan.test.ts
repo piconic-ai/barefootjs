@@ -6,7 +6,7 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
-import { planLoop, spellDestructureLocals, type LoopPlanContext } from '../adapters/loop-plan'
+import { planLoop, spellDestructureLocals, spellFilteredRow, type LoopPlanContext } from '../adapters/loop-plan'
 import { BindingScope } from '../scope/binding-scope'
 import type { IRLoop, IRNode } from '../types'
 
@@ -46,6 +46,7 @@ describe('planLoop', () => {
       unresolvableConst: null,
       sort: null,
       captureAliases: [],
+      filter: null,
       itemVar: 'x',
       indexLocal: null,
       destructureLocals: [],
@@ -103,6 +104,59 @@ describe('planLoop', () => {
       return <ul>{props.items.filter(x => x.id !== id).map(id => <li key={id.id}>{id.id}</li>)}</ul>
     }`)
     expect(captured.captureAliases).toEqual([{ name: 'id', alias: expect.stringMatching(/^__bf_cap_\w+_id$/) }])
+  })
+
+  test('a filter predicate is renamed for the row: captures to their aliases, the filter param to the loop param', () => {
+    const filtered = plan(`export function Test(props: { items: { id: string; label: string }[]; id: string }) {
+      const id = props.id
+      return <ul>{props.items.filter(x => x.id !== id && x.label !== 'x').map(id => <li key={id.id}>{id.id}</li>)}</ul>
+    }`)
+    const alias = filtered.captureAliases[0]!.alias
+    expect(filtered.filter).toMatchObject({ kind: 'predicate', param: 'x', aliases: new Map([[alias, 'id']]) })
+    if (filtered.filter?.kind !== 'predicate') throw new Error('expected a predicate')
+    const names = (e: unknown): string[] => {
+      if (Array.isArray(e)) return e.flatMap(names)
+      if (e === null || typeof e !== 'object') return []
+      const node = e as Record<string, unknown>
+      if (node.kind === 'identifier') return [node.name as string]
+      return Object.values(node).flatMap(names)
+    }
+    expect(names(filtered.filter.predicate)).toEqual(['x', 'id', 'x'])
+    expect(names(filtered.filter.captured)).toEqual(['x', alias, 'x'])
+    expect(names(filtered.filter.onRow)).toEqual(['id', alias, 'id'])
+  })
+
+  test('a filter without a predicate is refused, and a loop without a filter plans none', () => {
+    const loop = (filterPredicate: IRLoop['filterPredicate']): IRLoop => {
+      const ctx = analyzeComponent(`export function Test(props: { items: string[] }) { return <ul>{props.items.map(x => <li key={x}>{x}</li>)}</ul> }`, 'Test.tsx')
+      return { ...firstLoop(jsxToIR(ctx)), filterPredicate }
+    }
+    const ctx: LoopPlanContext<unknown[]> = {
+      scope: BindingScope.EMPTY,
+      localConstants: [],
+      resolveLiteralConst: () => null,
+      callbackLowering: { adapterName: 'Test' },
+      spellStatic: (items) => items,
+    }
+    expect(planLoop(loop(undefined), ctx).filter).toBeNull()
+    expect(planLoop(loop({ param: 'x', raw: 'x => { return x }' }), ctx).filter).toMatchObject({
+      kind: 'refuse',
+      message: expect.stringContaining('no Test loop-filter form'),
+    })
+  })
+
+  test('a filtered row spells inside its guard, a refused one under the stand-in condition', () => {
+    const refusals: string[] = []
+    const spelling = {
+      condition: (f: { param: string }) => `ok(${f.param})`,
+      refuse: (message: string) => refusals.push(message),
+      refused: 'true',
+      open: (condition: string) => `if ${condition}`,
+      close: 'end',
+    }
+    expect(spellFilteredRow(null, ['a', 'b'], spelling)).toEqual(['a', 'b'])
+    expect(spellFilteredRow({ kind: 'refuse', message: 'no form', suggestion: '' }, ['a'], spelling)).toEqual(['if true', 'a', 'end'])
+    expect(refusals).toEqual(['no form'])
   })
 
   test('the row binds its index through a local, except in an object iteration', () => {
