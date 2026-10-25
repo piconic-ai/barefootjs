@@ -14,7 +14,8 @@ import { BF_SCOPE, BF_SLOT, BF_HOST, BF_AT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COM
 export const cssEscape: (s: string) => string =
   typeof CSS !== 'undefined' && (CSS as { escape?: (s: string) => string }).escape
     ? (s) => CSS.escape(s)
-    : (s) => s.replace(/"/g, '\\"')
+    : (s) => s.replace(/[\x00-\x1f\x7f"\\]/g, char =>
+        char === '\0' ? '\uFFFD' : `\\${char.charCodeAt(0).toString(16)} `)
 
 // --- helpers ---
 
