@@ -86,14 +86,22 @@ export interface CallbackEvalPlan {
   captured: string[]
 }
 
-/** A lowered callback method call, as data. */
-export type CallbackPlan =
+/**
+ * A lowered `.sort` / `.toSorted` comparator: the evaluator call, the
+ * structured `{keys: …}` descriptor for a comparator the evaluator cannot
+ * model, or BF101.
+ */
+export type SortPlan =
   | CallbackEvalPlan
   /** A comparator the evaluator cannot model but the `{keys: …}` descriptor can. */
   | { kind: 'structured-sort'; comparator: SortComparator }
+  | { kind: 'refuse'; message: string; suggestion: string }
+
+/** A lowered callback method call, as data. */
+export type CallbackPlan =
+  | SortPlan
   /** A predicate for the adapter's own native form (see `nativePredicate`). */
   | { kind: 'native-predicate'; method: PredicateMethod; param: string; predicate: ParsedExpr }
-  | { kind: 'refuse'; message: string; suggestion: string }
   /** A method outside `CALLBACK_METHODS`; unreachable, as the parser recognises only those. */
   | { kind: 'receiver' }
 
@@ -119,13 +127,7 @@ export function lowerCallbackMethod(
   const { adapterName } = options
   const { body, params } = arrow
   if (isPredicateMethod(method)) return lowerPredicate(method, arrow, options)
-  if (method === 'sort' || method === 'toSorted') {
-    const plan = sortEvalPlan(body, params)
-    if (plan) return plan
-    const comparator = sortComparatorFromArrow(arrow)
-    if (comparator) return { kind: 'structured-sort', comparator }
-    return sortRefusal(method, adapterName)
-  }
+  if (method === 'sort' || method === 'toSorted') return lowerSortComparator(method, arrow, adapterName)
   if (method === 'reduce' || method === 'reduceRight') {
     const init = restArgs[0]
     const plan = init ? reduceEvalPlan(body, params, init, method === 'reduceRight' ? 'right' : 'left') : null
@@ -176,6 +178,19 @@ function lowerPredicate(method: PredicateMethod, arrow: Arrow, options: Callback
     message: `'.${method}(...)' predicate is outside the ${options.adapterName} adapter's evaluable surface`,
     suggestion: `Rewrite the predicate as a pure expression the evaluator can serialize (no nested method-call callbacks), or move this position to a '/* @client */' boundary.`,
   }
+}
+
+/**
+ * Lower a `.sort` / `.toSorted` comparator: the evaluator first, then the
+ * structured `{keys: …}` descriptor, otherwise BF101. A loop source's sort
+ * (`planLoop`) and `.sort(cmp)` at an expression position decide the same.
+ */
+export function lowerSortComparator(method: 'sort' | 'toSorted', arrow: Arrow, adapterName: string): SortPlan {
+  const plan = sortEvalPlan(arrow.body, arrow.params)
+  if (plan) return plan
+  const comparator = sortComparatorFromArrow(arrow)
+  if (comparator) return { kind: 'structured-sort', comparator }
+  return sortRefusal(method, adapterName)
 }
 
 /**

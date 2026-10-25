@@ -6,7 +6,7 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
-import { planLoop, spellDestructureLocals, spellFilteredRow, type LoopPlanContext } from '../adapters/loop-plan'
+import { planLoop, spellDestructureLocals, spellFilteredRow, spellSortedSource, type LoopPlanContext, type LoopSortSpelling } from '../adapters/loop-plan'
 import { BindingScope } from '../scope/binding-scope'
 import type { IRLoop, IRNode } from '../types'
 
@@ -96,6 +96,33 @@ describe('planLoop', () => {
   test('a sort comparator takes the shared callback lowering', () => {
     const sorted = plan(`export function Test(props: { items: { n: number }[] }) { return <ul>{props.items.toSorted((a, b) => a.n - b.n).map(x => <li key={x.n}>{x.n}</li>)}</ul> }`)
     expect(sorted.sort).toMatchObject({ kind: 'eval', helper: 'sort_eval' })
+  })
+
+  test('a comparator outside the evaluator falls back to the structured descriptor', () => {
+    const sorted = plan(`export function Test(props: { items: { name: string }[] }) { return <ul>{props.items.toSorted((a, b) => a.name.localeCompare(b.name)).map(x => <li key={x.name}>{x.name}</li>)}</ul> }`)
+    expect(sorted.sort).toMatchObject({ kind: 'structured-sort', comparator: { keys: [{ key: { kind: 'field', field: 'name' }, type: 'string', direction: 'asc' }] } })
+  })
+
+  test('the sorted source spells each arm of the sort plan', () => {
+    const refusals: string[] = []
+    const spelling: LoopSortSpelling = {
+      emit: (e) => (e.kind === 'identifier' ? `v.${e.name}` : '?'),
+      eval: {
+        call: (helper, operands) => `${helper}(${operands.join(', ')})`,
+        string: (value) => `'${value}'`,
+        boolean: (value) => String(value),
+        env: (entries) => `{${entries.map(([name, value]) => `${name}: ${value}`).join(', ')}}`,
+      },
+      structured: (recv, comparator) => `sort(${recv}, ${comparator.keys.map((k) => (k.key.kind === 'field' ? k.key.field : 'self')).join(',')})`,
+      refuse: (message) => refusals.push(message),
+    }
+    expect(spellSortedSource(null, 'xs', spelling)).toBe('xs')
+    const evaluated = spellSortedSource({ kind: 'eval', helper: 'sort_eval', operands: [{ kind: 'string', value: 'body' }], captured: ['k'] }, 'xs', spelling)
+    expect(evaluated).toBe(`sort_eval(xs, 'body', {k: v.k})`)
+    const structured = plan(`export function Test(props: { items: { name: string }[] }) { return <ul>{props.items.toSorted((a, b) => a.name.localeCompare(b.name)).map(x => <li key={x.name}>{x.name}</li>)}</ul> }`)
+    expect(spellSortedSource(structured.sort, 'xs', spelling)).toBe('sort(xs, name)')
+    expect(spellSortedSource({ kind: 'refuse', message: 'no form', suggestion: '' }, 'xs', spelling)).toBe('xs')
+    expect(refusals).toEqual(['no form'])
   })
 
   test('a filter capture a row binding would shadow gets a per-loop alias', () => {
