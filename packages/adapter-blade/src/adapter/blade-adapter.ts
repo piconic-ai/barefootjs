@@ -285,6 +285,7 @@ import {
   planLoop,
   spellDestructureLocals,
   spellFilteredRow,
+  spellSortedSource,
   type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
@@ -296,7 +297,6 @@ import {
   isBooleanResultExpr,
   isExplicitStringCall,
   hasClientInteractivity,
-  emitCallbackEval,
   arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
@@ -822,22 +822,16 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     }
 
     const rawArray = staticArray ?? this.convertExpressionToBlade(loop.array)
-    // Apply sort if present: wrap the loop array in the shared `$bf->sort`
-    // helper, binding the sorted result to a per-iteration local so the
-    // helper runs once.
-    let array = rawArray
-    if (loop.sortComparator) {
-      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
-      // the same as `.sort(cmp)` at an expression position: the evaluator,
-      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
-      // comparator the descriptor models, so the refusal arm is defensive; it
-      // keeps the array unsorted so the template stays valid.
-      const sortEmit = (e: ParsedExpr) => this.convertExpressionToBlade('', e)
-      const plan = loopPlan.sort!
-      if (plan.kind === 'eval') array = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
-      else if (plan.kind === 'structured-sort') array = renderSortMethod(rawArray, plan.comparator)
-      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
-    }
+    // The source sorted by the loop's comparator, when it has one: the
+    // plan decides the evaluator, the structured `{keys: …}` descriptor or
+    // the refusal, which keeps the source unsorted so the template stays
+    // valid (#3473).
+    const array = spellSortedSource(loopPlan.sort, rawArray, {
+      emit: (e) => this.convertExpressionToBlade('', e),
+      eval: EVAL_SPELLING,
+      structured: renderSortMethod,
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+    })
     const param = loop.param
     // Blade's `@foreach(array as item)` binds the item directly (with the
     // divergence-2 null/undefined guard applied at the call site below). The

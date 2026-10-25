@@ -85,6 +85,7 @@ import {
   planLoop,
   spellDestructureLocals,
   spellFilteredRow,
+  spellSortedSource,
   type DestructureSpelling,
   planSpreadAttr,
   planComponentProps,
@@ -93,7 +94,6 @@ import {
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  emitCallbackEval,
   arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
@@ -875,7 +875,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // parent each get their own reconciliation range.
     lines.push(`<%= bf.comment("loop:${loop.markerId}") %>`)
     for (const { name, alias } of captureAliases) lines.push(`<%- ${alias} = ${rubyLocal(name)} -%>`)
-    if (sortedHoist && loop.sortComparator) {
+    if (sortedHoist) {
       // Evaluator-first: serialize the comparator + emit `bf.sort_eval`;
       // fall back to the structured `bf.sort` for a comparator the
       // evaluator can't model (e.g. `localeCompare`).
@@ -885,23 +885,20 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       // the env — otherwise a captured var that happens to share a
       // loop-param name is blocked from inlining its module const / from
       // reading `v[:name]` and instead resolves to the (out-of-scope) loop
-      // local. Drop back to the outer (pre-row) scope for the sort emit,
-      // then restore the row scope below (a nested loop's own outer
-      // bindings stay in effect throughout, since `prevScope` already
-      // carries them).
-      this.scope = prevScope
-      const sortEmit = (e: ParsedExpr) => this.convertExpressionToRuby('', e)
-      // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`),
-      // the same as `.sort(cmp)` at an expression position: the evaluator,
-      // then the structured `{keys: …}` descriptor. jsx-to-ir only lifts a
-      // comparator the descriptor models, so the refusal arm is defensive; it
-      // keeps the array unsorted so the template stays valid.
-      const plan = loopPlan.sort!
-      let sorted = rawArray
-      if (plan.kind === 'eval') sorted = emitCallbackEval(plan, rawArray, sortEmit, EVAL_SPELLING)
-      else if (plan.kind === 'structured-sort') sorted = renderSortMethod(rawArray, plan.comparator)
-      else if (plan.kind === 'refuse') this._recordExprBF101(plan.message, plan.suggestion)
-      this.scope = prevScope.enterLoopRow(loop)
+      // local. Emit the sort in the outer (pre-row) scope (a nested loop's
+      // own outer bindings stay in effect throughout, since `prevScope`
+      // already carries them).
+      // The plan decides the evaluator, the structured `{keys: …}`
+      // descriptor or the refusal, which keeps the source unsorted so the
+      // template stays valid (#3473).
+      const sorted = this.renderInScope(prevScope, () =>
+        spellSortedSource(loopPlan.sort, rawArray, {
+          emit: (e) => this.convertExpressionToRuby('', e),
+          eval: EVAL_SPELLING,
+          structured: renderSortMethod,
+          refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+        }),
+      )
       lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
     }
     if (loop.objectIteration) {
