@@ -5,6 +5,6 @@ export default defineLimitation({
   title: 'A nested component inside a named JSX prop',
   given: 'a named JSX prop whose element contains a nested component, alongside forwarded children',
   expected: 'the named prop renders its element and nested component, and the forwarded children render normally',
-  actual: 'rendering fails with a missing child field, or hydration replaces the named prop markup with escaped text',
+  actual: 'throws a missing-child-field error during rendering, or replaces the named prop markup with escaped text during hydration',
   fixtures: ['jsx-prop-template-delimiters'],
 })
