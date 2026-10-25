@@ -2,13 +2,16 @@
 
 import { createSignal } from '@barefootjs/client'
 
-type ToggleItemProps = {
+// One toggle row's data. Not named `ToggleItemProps`: on Go every component
+// gets a generated `<Name>Props` struct, so a `*Props` type can't become a
+// Go struct of its own and an array of it types as `[]interface{}`.
+type ToggleSetting = {
   label: string
   defaultOn?: boolean
 }
 
 // Reusable toggle component with label
-function ToggleItem(props: ToggleItemProps) {
+function ToggleItem(props: ToggleSetting) {
   const [on, setOn] = createSignal(props.defaultOn ?? false)
   return (
     <div className="toggle-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0;">
@@ -24,7 +27,7 @@ function ToggleItem(props: ToggleItemProps) {
 }
 
 type ToggleProps = {
-  toggleItems: ToggleItemProps[]
+  toggleItems: ToggleSetting[]
 }
 
 // Settings panel with multiple toggles

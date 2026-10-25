@@ -139,8 +139,7 @@ function propShadowingMemoFallbacks(
  * (`variant = 'default'`) is baked in so a Go zero value can't shadow it, and
  * so is the signal-side fallback (`props.X ?? N`, via the hoisted var) of a
  * signal sharing the field (`sharedFieldFallbackVar`), and a shadowing memo's
- * fallback ({@link propShadowingMemoFallbacks}). `isNestedArrayShadowed` skips
- * a param subsumed by its driving nested-array field.
+ * fallback ({@link propShadowingMemoFallbacks}).
  *
  * Returns the field names emitted, so the signal and memo loops skip a name
  * already emitted as a prop field.
@@ -151,7 +150,6 @@ export function emitPropFieldInits(
   ir: ComponentIR,
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   propTypeOverrides: Map<string, string>,
-  isNestedArrayShadowed: (param: { name: string; sourceName?: string }) => boolean,
 ): Set<string> {
   const memoFallbacks = propShadowingMemoFallbacks(ctx, ir, propTypeOverrides)
 
@@ -164,7 +162,6 @@ export function emitPropFieldInits(
     // (caller-facing), never `in.<fieldName>` (local).
     const fieldName = propsFieldName(param, ir.metadata)
     const inputField = capitalizeFieldName(param.sourceName ?? param.name)
-    if (isNestedArrayShadowed(param)) continue
     const hoisted = sharedFieldFallbackVar(ir, param.name, propFallbackVars)
     if (hoisted) {
       // #2683: a `collisionWrap` entry means this field is ALSO a

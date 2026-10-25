@@ -6055,6 +6055,17 @@
         "text"
       ]
     },
+    "loop-row-child-bodyless-prop-named-row-plural": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-boolean-key": {
       "kinds": [
         "call",

@@ -6338,19 +6338,14 @@ export function Counter({ count: initialCount }: { count: number }) {
     expect((types.match(/json:"count"/g) ?? []).length).toBe(1)
   })
 
-  // #2672 near-miss: a prop-derived dynamic loop's nested-array field is
-  // normally redundant (the client re-derives every row from the real prop
-  // field, e.g. `_p.items`) and gets `json:"-"`. But when the array field's
-  // Go name collides with its OWN driving prop's Go name — `toggleItems`
-  // driving a `.map()` into `<ToggleItem>` both capitalize to `ToggleItems`
-  // — `emitPropsDataFields` already shadows the prop's own field to avoid a
-  // Go redeclaration, so the nested-array field is the ONLY struct field
-  // carrying that prop's data. Flipping it to `-` there would silently drop
-  // caller input from `bf-p` instead of trimming a redundant copy. Caught by
-  // the `hydration-props-inventory` oracle against the `toggle-shared`
-  // fixture (a real `integrations/shared/components/Toggle.tsx` shape)
-  // before landing; this pins the same shape directly.
-  test('a prop-derived nested-array field keeps a real tag when it shadows its own driving prop (#2672)', () => {
+  // #3616: a prop named like its own bodyless row component's plural
+  // (`toggleItems` driving `<ToggleItem>` rows) keeps its own field and
+  // `bf-p` tag. The rows never take that field over; they go to
+  // `ToggleItemRows`, which is `json:"-"` like any prop-derived rows copy.
+  // Here the prop's element type is a `*Props` alias, which never becomes a
+  // Go struct, so the prop is `[]interface{}` and the constructor can't build
+  // the rows from it: `ToggleItemRows` stays caller-supplied on the Input.
+  test('a prop named like its bodyless row component\'s plural keeps its own field and tag (#3616)', () => {
     const result = compileJSX(`
 type ToggleItemProps = { label: string; defaultOn?: boolean }
 function ToggleItem(props: ToggleItemProps) {
@@ -6363,18 +6358,42 @@ export function Toggle({ toggleItems }: ToggleProps) {
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const types = result.files.find(f => f.type === 'types')!.content
-    const togglePropsAndAfter = types.slice(types.indexOf('type ToggleProps struct'))
-    // The shadowed scalar prop field is absent...
-    expect(togglePropsAndAfter.slice(0, togglePropsAndAfter.indexOf('}'))).not.toMatch(/\bItems\b/)
-    // ...and the nested-array field is the sole carrier, with a REAL tag —
-    // not `json:"-"`, which would drop `toggleItems` from `bf-p` entirely.
-    expect((togglePropsAndAfter.match(/json:"toggleItems"/g) ?? []).length).toBe(1)
+    const toggleInput = types.slice(types.indexOf('type ToggleInput struct'), types.indexOf('type ToggleProps struct'))
+    expect(toggleInput).toContain('\tToggleItems []interface{}\n')
+    expect(toggleInput).toContain('\tToggleItemRows []ToggleItemInput\n')
+    const toggleProps = types.slice(types.indexOf('type ToggleProps struct'))
+    expect(toggleProps).toContain('ToggleItems []interface{} `json:"toggleItems"`')
+    expect(toggleProps).toContain('ToggleItemRows []ToggleItemProps `json:"-"`')
+    expect((toggleProps.match(/json:"toggleItems"/g) ?? []).length).toBe(1)
   })
 
-  // The nested-array skip check must union both namings at all four sites
-  // (`isNestedArrayShadowed`) — a one-sided check lets Input and
-  // Props/NewProps disagree on whether an aliased prop's field exists.
-  test('a nested-array field name collision skips the prop everywhere ({ rows: items } direction)', () => {
+  // The same prop with an element type that becomes a Go struct: the
+  // constructor builds the rows from the prop, so the Input carries only the
+  // prop's own field.
+  test('rows over a prop named like the row plural are built from the prop (#3616)', () => {
+    const result = compileJSX(`
+type ToggleSetting = { label: string; defaultOn?: boolean }
+function ToggleItem(props: ToggleSetting) {
+  return <div>{props.label}</div>
+}
+export function Toggle({ toggleItems }: { toggleItems: ToggleSetting[] }) {
+  return <div>{toggleItems.map((item) => <ToggleItem key={item.label} label={item.label} defaultOn={item.defaultOn} />)}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    const toggleInput = types.slice(types.indexOf('type ToggleInput struct'), types.indexOf('type ToggleProps struct'))
+    expect(toggleInput).toContain('\tToggleItems []ToggleSetting\n')
+    expect(toggleInput).not.toContain('ToggleItemRows')
+    expect(types).toContain('ToggleItemRows []ToggleItemProps `json:"-"`')
+    expect(types).toContain('for i, item := range in.ToggleItems {')
+    expect(types).toContain('ToggleItemRows: toggleItems,')
+  })
+
+  // An aliased prop whose caller-facing or local name is the row plural keeps
+  // its field under both namings (Input caller-facing, Props local), and the
+  // rows go to `RowRows` — never a second field or `bf-p` tag of that name.
+  test('a row plural matching an aliased prop renames the rows field ({ rows: items } direction)', () => {
     const result = compileJSX(`
 function Row(props: { label: string }) {
   return <li>{props.label}</li>
@@ -6387,23 +6406,14 @@ export function List({ rows: items }: { rows: { id: number; label: string }[] })
     const types = result.files.find(f => f.type === 'types')!.content
     const listInput = types.slice(types.indexOf('type ListInput struct'), types.indexOf('type ListProps struct'))
     const listPropsAndAfter = types.slice(types.indexOf('type ListProps struct'))
-    // Input carries only the typed nested-array field — no scalar "Items"
-    // field for the aliased prop the LOCAL-only check used to miss.
-    expect(listInput).toContain('Rows []RowInput')
-    expect(listInput).not.toContain('Items')
-    // Props carries exactly ONE `json:"rows"` tag (the nested array's) —
-    // a surviving duplicate would make encoding/json drop both fields.
+    expect(listInput).toContain('\tRows []ListItemsItem\n')
+    expect(listInput).not.toContain('RowRows')
+    expect(listPropsAndAfter).toContain('Items []ListItemsItem `json:"rows"`')
+    expect(listPropsAndAfter).toContain('RowRows []RowProps `json:"-"`')
     expect((listPropsAndAfter.match(/json:"rows"/g) ?? []).length).toBe(1)
-    expect(listPropsAndAfter).not.toContain('Items')
   })
 
-  // Same collision, opposite alias direction: the LOCAL name now matches
-  // the nested-array field (so Props/NewProps's LOCAL-only check happened
-  // to skip it by luck), but the CALLER name doesn't — Input's
-  // caller-facing-only check used to keep a live "Items" field with no
-  // Props counterpart, so a caller's override silently never reached the
-  // constructed Props at all.
-  test('a nested-array field name collision skips the prop everywhere ({ items: rows } direction)', () => {
+  test('a row plural matching an aliased prop renames the rows field ({ items: rows } direction)', () => {
     const result = compileJSX(`
 function Row(props: { label: string }) {
   return <li>{props.label}</li>
@@ -6415,11 +6425,12 @@ export function List({ items: rows }: { items: { id: number; label: string }[] }
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const types = result.files.find(f => f.type === 'types')!.content
     const listInput = types.slice(types.indexOf('type ListInput struct'), types.indexOf('type ListProps struct'))
-    // Input carries only the typed nested-array field — no dead "Items"
-    // field the caller could write to with no effect.
-    expect(listInput).toContain('Rows []RowInput')
-    expect(listInput).not.toContain('Items')
-    expect(types).not.toContain('in.Items')
+    const listPropsAndAfter = types.slice(types.indexOf('type ListProps struct'))
+    expect(listInput).toContain('\tItems []ListRowsItem\n')
+    expect(listInput).not.toMatch(/\t(Row)?Rows /)
+    expect(listPropsAndAfter).toContain('Rows []ListRowsItem `json:"items"`')
+    expect(listPropsAndAfter).toContain('RowRows []RowProps `json:"-"`')
+    expect(types).toContain('Rows: in.Items,')
   })
 
   // `usesSearchParams` gates the field in Input (caller-facing names),
@@ -6496,7 +6507,7 @@ export function C(props: { x?: number; label?: string; name: string }) {
     expect(newProps).toContain('BfCallerProps: bfCallerProps,')
   })
 
-  test('a required nested-array-shadowed prop (#2672/#2525) is carried via its reshaped array local, not silently dropped', () => {
+  test('a required prop named like its row component\'s plural is carried from its own Input field (#3616)', () => {
     const result = compileJSX(`
 type ToggleItemProps = { label: string; defaultOn?: boolean }
 function ToggleItem(props: ToggleItemProps) {
@@ -6510,11 +6521,10 @@ export function Toggle({ toggleItems }: ToggleProps) {
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const types = result.files.find(f => f.type === 'types')!.content
     const newProps = types.slice(types.indexOf('func NewToggleProps'))
-    // The shadowed prop has no `in.ToggleItems` scalar field to read — its
-    // data is carried via the already-built reshaped array local instead.
-    // `toggleItems` is REQUIRED here, so it's unconditional — same
-    // required-stays-unconditional rule as the main loop.
-    expect(newProps).toContain('bfCallerProps["toggleItems"] = toggleItems')
+    // The prop has its own field, so the caller's value is read from it —
+    // not from the rows local. Required, so unconditional.
+    expect(newProps).toContain('bfCallerProps["toggleItems"] = in.ToggleItems')
+    expect(newProps).not.toContain('bfCallerProps["toggleItems"] = toggleItems')
     expect(newProps).not.toContain('if in.ToggleItems != nil {')
   })
 })

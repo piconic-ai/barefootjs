@@ -614,6 +614,12 @@ type TodoItemProps struct {
 	OnFinishEdit interface{} `json:"onFinishEdit"`
 }
 
+// ToggleSetting represents a togglesetting.
+type ToggleSetting struct {
+	Label string `json:"label"`
+	DefaultOn bool `json:"defaultOn"`
+}
+
 // ToggleItemInput is the user-facing input type.
 type ToggleItemInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -644,7 +650,7 @@ type ToggleInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	ToggleItems []ToggleItemInput
+	ToggleItems []ToggleSetting
 }
 
 // ToggleProps is the props type for the Toggle component.
@@ -658,7 +664,8 @@ type ToggleProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	ToggleItems []ToggleItemProps `json:"toggleItems"`
+	ToggleItems []ToggleSetting `json:"toggleItems"`
+	ToggleItemRows []ToggleItemProps `json:"-"`
 }
 
 // LikeButtonInput is the user-facing input type.
@@ -1560,21 +1567,25 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 
 	toggleItems := make([]ToggleItemProps, len(in.ToggleItems))
 	for i, item := range in.ToggleItems {
-		toggleItems[i] = NewToggleItemProps(item)
-		toggleItems[i].BfParent = scopeID
-		toggleItems[i].BfMount = "s0"
+		toggleItems[i] = NewToggleItemProps(ToggleItemInput{
+			BfParent: scopeID,
+			BfMount: "s0",
+			Label: item.Label,
+			DefaultOn: item.DefaultOn,
+		})
 		toggleItems[i].BfDataKey = bf.String(item.Label)
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	bfCallerProps["toggleItems"] = toggleItems
+	bfCallerProps["toggleItems"] = in.ToggleItems
 
 	return ToggleProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
-		ToggleItems: toggleItems,
+		ToggleItems: in.ToggleItems,
+		ToggleItemRows: toggleItems,
 	}
 }
 
