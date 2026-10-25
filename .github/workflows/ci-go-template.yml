@@ -61,7 +61,9 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25'
+          # integrations/echo's go.mod requires 1.26 (labstack/echo v4.16.1);
+          # the runtime and the other integrations still declare 1.25.6.
+          go-version: '1.26'
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
