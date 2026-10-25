@@ -38,6 +38,6 @@
     "@barefootjs/vite": "workspace:*",
     "@happy-dom/global-registrator": "^20.0.11",
     "@types/node": "^22.0.0",
-    "happy-dom": "^20.0.11"
+    "happy-dom": "^21.0.4"
   }
 }
