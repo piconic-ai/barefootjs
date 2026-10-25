@@ -36,6 +36,10 @@ export interface HydrateQuarantineEntry {
 }
 
 export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuarantineEntry>> = {
+  'jsx-prop-template-delimiters': {
+    reason: 'hydration replaces the named JSX prop element with escaped HTML text when it contains a nested component',
+    limitation: 'nested-component-in-jsx-prop',
+  },
   // #3107/#3143: `loop-row-child-children-attrs` used to be quarantined
   // here too — the forwarded `<a>`'s href/data-current attributes never
   // patched after the toggle click, because the component-root loop

@@ -37,6 +37,11 @@ export interface QuarantineEntry {
 }
 
 export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
+  'jsx-prop-template-delimiters': {
+    oracles: ['snap', 'three-point'],
+    reason: 'hydration replaces the named JSX prop element with escaped HTML text when it contains a nested component',
+    limitation: 'nested-component-in-jsx-prop',
+  },
   // ref-effect-computed attribute state never reaches SSR (#2714,
   // direction corrected 2026-08-26): these components hard-code the
   // DEFAULT as a JSX literal (aria-expanded="false" etc.) and compute the

@@ -8028,6 +8028,12 @@
               ]
             },
             {
+              "fixture": "jsx-prop-template-delimiters",
+              "limitations": [
+                "nested-component-in-jsx-prop"
+              ]
+            },
+            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -13740,6 +13746,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-template-delimiters",
+              "limitations": [
+                "nested-component-in-jsx-prop"
               ]
             },
             {
