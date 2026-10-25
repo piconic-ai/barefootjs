@@ -565,21 +565,34 @@ describe('markup slot membership: initial render agrees with the reactive claim 
 
 describe('emitter structure pins (#2795 §4.3)', () => {
   const emitterDir = join(import.meta.dir, '..', 'ir-to-client-js')
-  const count = (file: string, needle: string): number => readFileSync(join(emitterDir, file), 'utf8').split(needle).length - 1
+  function count(file: string, needle: string, kind: 'template' | 'string' = 'template'): number {
+    const source = readFileSync(join(emitterDir, file), 'utf8')
+    const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+    let matches = 0
+    function visit(node: ts.Node): void {
+      // Count emitted literal content, not comments or escaping code's strings.
+      if ((kind === 'template' && ts.isTemplateLiteralToken(node)) || (kind === 'string' && ts.isStringLiteral(node))) {
+        matches += node.text.split(needle).length - 1
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(sf)
+    return matches
+  }
 
   test('html-template.ts writes no child-position hole by hand — only the attribute-side ones remain', () => {
     // 4 in `templateAttrExpr` (boolean / style / data-key / general attr)
     // + 4 `${spreadAttrs(...)}` sites. Every other hole goes through
     // `interp(...)` in `safe-html.ts`. Exact, not "at most": a lower count
     // is progress and the pin should follow it down.
-    expect(count('html-template.ts', '\\${')).toBe(8)
+    expect(count('html-template.ts', '${')).toBe(8)
     // `itemAnchorTemplate` builds its `${escapeCommentText(KEY)}` by
     // concatenation — the one hole the substring above cannot see. Escaped
     // (#2795 follow-up) — see `escapeCommentText`'s docstring.
-    expect(count('html-template.ts', "'${escapeCommentText(' +")).toBe(1)
+    expect(count('html-template.ts', '${escapeCommentText(', 'string')).toBe(1)
   })
 
   test('safe-html.ts has exactly one `${` — the `interp` door', () => {
-    expect(count('safe-html.ts', '\\${')).toBe(1)
+    expect(count('safe-html.ts', '${')).toBe(1)
   })
 })
