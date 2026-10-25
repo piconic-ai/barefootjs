@@ -59,20 +59,31 @@
  * The adapters' `test-render` modules import this file through that
  * narrow subpath, never the package barrel: the barrel loads the fixture
  * corpus, `bun:test` and happy-dom, and imports modules that import
- * `test-render` back (a cycle). Keep this module's imports to
+ * `test-render` back (a cycle). Keep this module's imports to `typescript`,
  * `@barefootjs/jsx` and node builtins so the subpath stays that narrow.
  *
  * ## Requirement: `@barefootjs/client` must be BUILT
  *
  * Type resolution reads `dist/*.d.ts`. An unbuilt `@barefootjs/client`
- * silently regresses every caller back to `any`. Every CI job that runs
- * these tests builds it first (`ci.yml`, `ci-compat.yml`,
- * `update-fixtures.yml`); `harness-program-resolves-brand.test.ts` is the
- * guard that turns a missing build into a red test.
+ * regresses every caller back to `any`, and the emitted templates change
+ * with it: go-template prints an inferred `string[]` signal's row through
+ * `bf_text` instead of bare, and lowers its `.length` to a `.Length` field
+ * read that fails at render time (#3637). Every CI job that runs these
+ * tests builds it first (`ci.yml`, `ci-compat.yml`,
+ * `update-fixtures.yml`).
+ *
+ * `harnessProgramFor` therefore checks, for every Program it builds, that
+ * each `@barefootjs/client` import of the source resolves, and throws
+ * naming the missing build when one does not. Without that check, a
+ * compile run while `dist` was missing (a fresh worktree, or a build
+ * still in progress) produced different output from the same source, and
+ * looked like it depended on which fixtures had been compiled before it.
+ * `harness-program-resolves-brand.test.ts` additionally pins that the
+ * resolved types are the real ones.
  */
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type ts from 'typescript'
+import ts from 'typescript'
 import { compileJSX, createAnchoredProgram } from '@barefootjs/jsx'
 import type { CompileOptionsWithAdapter, CompileResult } from '@barefootjs/jsx'
 
@@ -88,7 +99,50 @@ const ANCHOR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '__
  * would not build a checker for this source at all.
  */
 export function harnessProgramFor(source: string, filename: string): ts.Program | undefined {
-  return createAnchoredProgram(source, filename, ANCHOR)
+  return harnessProgramAt(source, filename, ANCHOR)
+}
+
+/**
+ * `harnessProgramFor` with an explicit anchor directory. Exported for the
+ * guard's own test, which anchors where `@barefootjs/client` cannot
+ * resolve.
+ */
+export function harnessProgramAt(source: string, filename: string, anchorDir: string): ts.Program | undefined {
+  const program = createAnchoredProgram(source, filename, anchorDir)
+  if (!program) return undefined
+  const unresolved = unresolvedClientImports(program, filename, anchorDir)
+  if (unresolved.length > 0) {
+    throw new Error(
+      `harness compile of ${filename}: ${unresolved.join(', ')} does not resolve from ${anchorDir}. ` +
+        'Build it first (`bun run --filter @barefootjs/client build`): without its types every ' +
+        'reactive primitive is typed `any` and adapter output silently changes (#3637).',
+    )
+  }
+  return program
+}
+
+/**
+ * The `@barefootjs/client` specifiers (`@barefootjs/client` or a subpath)
+ * that `filename`'s imports and re-exports name but that do not resolve
+ * to a file under `program`'s compiler options, as seen from `anchorDir`.
+ * Resolved afresh on every call, never cached: a build that removes or
+ * rewrites `dist` must not leave a stale answer behind.
+ */
+export function unresolvedClientImports(program: ts.Program, filename: string, anchorDir: string): string[] {
+  const sourceFile = program.getSourceFile(filename)
+  if (!sourceFile) return []
+  const containingFile = path.join(anchorDir, filename)
+  const unresolved = new Set<string>()
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt) && !ts.isExportDeclaration(stmt)) continue
+    const specifier = stmt.moduleSpecifier
+    if (!specifier || !ts.isStringLiteral(specifier)) continue
+    const name = specifier.text
+    if (name !== '@barefootjs/client' && !name.startsWith('@barefootjs/client/')) continue
+    const resolved = ts.resolveModuleName(name, containingFile, program.getCompilerOptions(), ts.sys)
+    if (!resolved.resolvedModule) unresolved.add(name)
+  }
+  return [...unresolved]
 }
 
 /**

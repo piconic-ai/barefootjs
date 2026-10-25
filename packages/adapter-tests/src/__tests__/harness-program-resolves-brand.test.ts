@@ -16,7 +16,8 @@
  * whether `bun test` was started from the root or from a package.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import ts from 'typescript'
 import {
@@ -27,7 +28,7 @@ import {
 } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../../fixtures'
-import { compileFixtureJSX, harnessProgramFor } from '../harness-program'
+import { compileFixtureJSX, harnessProgramAt, harnessProgramFor, unresolvedClientImports } from '../harness-program'
 import { HARNESS_PROGRAM_REJECTION_EXCEPTIONS, harnessProgramOverbuild } from '../harness-program-ledger'
 
 const REPO_ROOT = path.resolve(import.meta.dir, '../../../..')
@@ -104,6 +105,42 @@ describe('harness Program resolves @barefootjs/client types independent of cwd',
   })
 })
 
+// #3637: a harness compile whose `@barefootjs/client` import does not
+// resolve (an unbuilt `dist`, or a build still writing it) used to compile
+// anyway with every reactive primitive typed `any`, so the same fixture
+// emitted different templates from one run to the next. The harness now
+// refuses to build such a Program. Anchoring in an empty temp directory,
+// which has no `node_modules` above it that holds the package, stands in
+// for the missing build.
+describe('harness Program refuses an unresolvable @barefootjs/client (#3637)', () => {
+  test('the real anchor resolves every @barefootjs/client import', () => {
+    const program = harnessProgramFor(SOURCE, FILENAME)
+    expect(program).toBeDefined()
+    if (!program) return
+    expect(unresolvedClientImports(program, FILENAME, path.join(import.meta.dir, '..', '..', '__virtual__'))).toEqual([])
+  })
+
+  test('an anchor without the package throws, naming the missing build', () => {
+    const anchor = mkdtempSync(path.join(tmpdir(), 'bf-harness-anchor-'))
+    try {
+      expect(() => harnessProgramAt(SOURCE, FILENAME, anchor)).toThrow(
+        /@barefootjs\/client does not resolve .*bun run --filter @barefootjs\/client build/,
+      )
+    } finally {
+      rmSync(anchor, { recursive: true, force: true })
+    }
+  })
+
+  test('a source that needs no Program is not checked', () => {
+    const anchor = mkdtempSync(path.join(tmpdir(), 'bf-harness-anchor-'))
+    try {
+      expect(harnessProgramAt('export function Plain() { return <p>hi</p> }\n', FILENAME, anchor)).toBeUndefined()
+    } finally {
+      rmSync(anchor, { recursive: true, force: true })
+    }
+  })
+})
+
 // The corpus-wide acceptance check lives in the client-JS scope gate
 // (`client-js-scope.test.ts`), which already compiles every entry and
 // `components` source. It compiles children under a sanitised
@@ -158,8 +195,10 @@ function specifierText(node: ts.Node): string {
 // do NOT load the barrel (fixture corpus, `bun:test`, happy-dom, and a
 // cycle back into `test-render`). That only holds while the module itself
 // stays leaf-like, so pin its runtime imports (TS AST walk, not a regex).
+// `typescript` is allowed: `@barefootjs/jsx` loads it anyway, and the
+// client-types resolution check (#3637) needs `ts.resolveModuleName`.
 describe('harness-program.ts stays importable without the barrel', () => {
-  test('its runtime imports, re-exports and dynamic imports are only @barefootjs/jsx and node builtins', () => {
+  test('its runtime imports, re-exports and dynamic imports are only typescript, @barefootjs/jsx and node builtins', () => {
     const file = path.join(import.meta.dir, '..', 'harness-program.ts')
     const sourceFile = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)
     const runtimeImports: string[] = []
@@ -175,6 +214,6 @@ describe('harness-program.ts stays importable without the barrel', () => {
       ts.forEachChild(node, visit)
     }
     visit(sourceFile)
-    expect(runtimeImports.filter(s => s !== '@barefootjs/jsx' && !s.startsWith('node:'))).toEqual([])
+    expect(runtimeImports.filter(s => s !== '@barefootjs/jsx' && s !== 'typescript' && !s.startsWith('node:'))).toEqual([])
   })
 })
