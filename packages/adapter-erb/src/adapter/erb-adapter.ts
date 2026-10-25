@@ -82,7 +82,6 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  planLoop,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
@@ -705,9 +704,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // read (`rest.flag`) or a `{...rest}` spread onto an intrinsic element.
     // Bare-value rest uses, a spread onto a component/provider, and
     // `.filter().map(destructure)` still have no Ruby scalar form → BF104.
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToRuby,
@@ -784,19 +781,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     const indexVar = loop.iterationShape === 'keys'
       ? rubyLocal(param)
       : rubyLocal(loop.index ?? '_i')
-    // This loop's row scope. Guards module-const inlining (and, in ERB, the
-    // fundamental v[:name]-vs-local rendering choice) for the whole body
-    // (children + key + filter) so a same-named loop variable isn't
-    // replaced by the const literal / a vars-Hash read. `IRLoop` already
-    // structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly what this renderLoop's header + preamble locals
-    // introduce (#2482 Stage 2 — replaces the ref-counted `Map` this
-    // adapter used to carry). Restored by reference (immutable — no
-    // ref-count bookkeeping) at the matching pop below, once the WHOLE
-    // body (including the filter predicate) has been rendered — except for
-    // one temporary drop-to-outer window around the hoisted sort-comparator
-    // emission below, since that runs OUTSIDE this loop.
     const preambleDecls = loop.preamble?.declarations ?? []
 
     // Ruby block parameters this loop binds natively (item/value + index /
@@ -849,21 +833,18 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       ? `|${blockParams}; ${[...blockLocals].join(', ')}|`
       : `|${blockParams}|`
 
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
-    const renderedChildren = this.renderChildren(loop.children)
-
-    // Whole-item conditional: prepend an always-present
-    // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
-    // conditional content so the client's `mapArrayAnchored` can hydrate
-    // every SSR-rendered item by its anchor. `bf.comment` prepends `bf-`,
-    // so `"loop-i:" + KEY` yields `<!--bf-loop-i:KEY-->`. `bf.escape_comment_key`
-    // (#2795 follow-up) both stringifies KEY and neutralizes `-` so it can't
-    // spell `-->` and close the comment early — see its doc in `barefoot_js.rb`.
-    const children =
-      loop.bodyIsItemConditional && loop.key
-        ? `<%= bf.comment("loop-i:" + bf.escape_comment_key(${this.convertExpressionToRuby(loop.key)})) %>\n${renderedChildren}`
-        : renderedChildren
+    // The row window (#3473): the row's scope around the preamble locals'
+    // initializers, the children and the whole-item-conditional key anchor.
+    // Per-row preamble locals (#2447) are emitted INSIDE the filter guard
+    // below, matching JS evaluation order: a `.filter(p).map(cb)` chain never
+    // runs `cb`'s body for a filtered-out item. `bf.escape_comment_key`
+    // (#2795 follow-up) both stringifies the key and neutralizes `-` so it
+    // can't spell `-->` and close the comment early — see its doc in
+    // `barefoot_js.rb`.
+    const { row, preamble: preambleLines, body: children } = this.renderLoopRow(loop, {
+      preamble: (d) => `<%- ${rubyLocal(d.name)} = ${this.convertExpressionToRuby(d.raw, d.valueParsed)} -%>`,
+      keyAnchor: (key) => `<%= bf.comment("loop-i:" + bf.escape_comment_key(${this.convertExpressionToRuby(key)})) %>`,
+    })
 
     // A name the filter predicate captures from an enclosing row that this
     // loop's own block binds again would read the block param inside the
@@ -879,25 +860,18 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       // fall back to the structured `bf.sort` for a comparator the
       // evaluator can't model (e.g. `localeCompare`).
       //
-      // The hoisted sort runs OUTSIDE this loop, so this loop's row scope
-      // must not shadow the comparator's captured free vars while emitting
-      // the env — otherwise a captured var that happens to share a
-      // loop-param name is blocked from inlining its module const / from
-      // reading `v[:name]` and instead resolves to the (out-of-scope) loop
-      // local. Emit the sort in the outer (pre-row) scope (a nested loop's
-      // own outer bindings stay in effect throughout, since `prevScope`
-      // already carries them).
+      // The hoisted sort runs OUTSIDE this loop, after the row window has
+      // closed: the comparator's captured free vars resolve against the
+      // outer scope, never against a same-named row binding.
       // The plan decides the evaluator, the structured `{keys: …}`
       // descriptor or the refusal, which keeps the source unsorted so the
       // template stays valid (#3473).
-      const sorted = this.renderInScope(prevScope, () =>
-        spellSortedSource(loopPlan.sort, rawArray, {
-          emit: (e) => this.convertExpressionToRuby('', e),
-          eval: EVAL_SPELLING,
-          structured: renderSortMethod,
-          refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
-        }),
-      )
+      const sorted = spellSortedSource(loopPlan.sort, rawArray, {
+        emit: (e) => this.convertExpressionToRuby('', e),
+        eval: EVAL_SPELLING,
+        structured: renderSortMethod,
+        refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      })
       lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
     }
     if (loop.objectIteration) {
@@ -931,18 +905,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       }
     }
 
-    // Per-row preamble locals (#2447), in source order so a later
-    // initializer sees an earlier local — same as the source block. Emitted
-    // INSIDE the filter guard below, matching JS evaluation order: a
-    // `.filter(p).map(cb)` chain never runs `cb`'s body for a filtered-out
-    // item.
-    const preambleLines = preambleDecls.map(
-      d => `<%- ${rubyLocal(d.name)} = ${this.convertExpressionToRuby(d.raw, d.valueParsed)} -%>`,
-    )
-
     // The row, inside the filter's guard for a filter().map() loop. The plan
     // renames the predicate's shadowed captures to their aliases (#3402) and
-    // refuses a filter without a predicate (#3534).
+    // refuses a filter without a predicate (#3534). Unlike the other DSL
+    // adapters, this one renders the predicate under the row's scope
+    // (`row`), as it always has.
     lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
       condition: (filter) => {
         // The filter predicate's identifiers were parsed against the
@@ -966,7 +933,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         // to `param`, matching pre-#2245 behavior byte-for-byte.
         const matchParam =
           filter.param && !filter.param.startsWith('[') && !filter.param.startsWith('{') ? filter.param : param
-        return this.renderInScope(this.scope.enterAliases(filter.aliases), () =>
+        return this.renderInScope(row.enterAliases(filter.aliases), () =>
           this.renderRubyFilterExpr(filter.captured, matchParam, undefined, rubyLocal(param)),
         )
       },
@@ -975,9 +942,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       open: (condition) => `<%- if bf.truthy?(${condition}) -%>`,
       close: '<%- end -%>',
     }))
-
-    // Body fully rendered — restore the outer (pre-row) scope.
-    this.scope = prevScope
 
     lines.push(`<%- end -%>`)
     lines.push(`<%= bf.comment("/loop:${loop.markerId}") %>`)

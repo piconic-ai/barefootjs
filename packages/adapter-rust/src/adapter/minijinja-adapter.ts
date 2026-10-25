@@ -159,7 +159,6 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  planLoop,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
@@ -167,7 +166,6 @@ import {
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
@@ -261,7 +259,6 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
   templatePrimitives: TemplatePrimitiveRegistry = JINJA_PRIMITIVE_EMIT_MAP
 
   private options: Required<MinijinjaAdapterOptions>
-  private inLoop: boolean = false
 
   constructor(options: MinijinjaAdapterOptions = {}) {
     super()
@@ -638,9 +635,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     // `{...rest}` spread onto an intrinsic element. Bare-value rest uses, a
     // spread onto a component/provider, and `.filter().map(destructure)`
     // still have no Jinja scalar form → BF104.
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToMinijinja,
@@ -743,66 +738,15 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       indexLocalLines.push(`{% set ${minijinjaIdent(name)} = ${value} %}`)
     }
 
-    const prevInLoop = this.inLoop
-    this.inLoop = true
-    // The children render once, under the loop flag (so nested components use
-    // the loop-child naming convention) and the row scope below.
-
-    // This loop's row scope, for the position-accurate shadow guard
-    // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
-    // `IRLoop` already structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly the for-header target(s), each destructure binding,
-    // the index (when present), and the `.map()` preamble's declared
-    // locals, mirroring what THIS renderLoop's for-header + `indexLocalLines`
-    // actually introduce. Restored by reference (immutable — no ref-count
-    // bookkeeping) so nested loops compose for free. Entered BEFORE
-    // `preambleLines`/`bodyChildren` are converted and popped AFTER, not
-    // just around `renderChildren` — Copilot review on #2600 caught that
-    // the narrower window silently regressed the module-const shadow guard
-    // (`_resolveLiteralConst`/`_resolveStaticRecordLiteral`, now
-    // scope-driven instead of the old coarse whole-component set) for two
-    // row-context conversions that sit OUTSIDE `renderChildren`: a
-    // `.map()` preamble local's own initializer (`d.raw`, below) and the
-    // whole-item-conditional `loop-i:` key anchor (`loop.key`, in
-    // `bodyChildren` below) — both genuinely evaluate PER ROW and must see
-    // the row's own bindings. `loop.filterPredicate` deliberately stays
-    // OUTSIDE this window (further down, after the pop): per the Stage 0
-    // design a filter/sort callback's own param is a separate `callback`
-    // frame, never folded into the `.map()` row — and empirically
-    // `JinjaFilterEmitter` (the filter predicate's dedicated,
-    // self-contained emitter) never consults `this.scope` at all, so its
-    // position relative to the pop is inert either way.
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
-    // Props this row's bindings newly shadow, aliased before the loop header
-    // so an explicit `props.X` inside still reads the root value (#3314).
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
-
-    // Per-row locals for a `.map()` callback preamble (#2447), in source
-    // order so a later initializer sees an earlier local — same as the
-    // source block. Phase 1 refuses the loop outright when the preamble
-    // isn't fully declarable, so there is no partial-lowering case: either
-    // every statement is lowered here, or the build already failed.
-    const preambleLines = (loop.preamble?.declarations ?? []).map(
-      d => `{% set ${minijinjaIdent(d.name)} = ${this.convertExpressionToJinja(d.raw, d.valueParsed)} %}`,
-    )
-    const childrenUnderLoop = this.renderChildren(loop.children)
-    this.inLoop = prevInLoop
-
-    // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
-    // anchor before each item's (possibly empty) conditional content so the
-    // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
-    // anchor. Still under the row scope (see above) — `loop.key` is a
-    // per-row expression.
-    // `bf.escape_comment_key` (#2795 follow-up) both stringifies the key and
-    // neutralizes `-` so it can't spell `-->` and close the comment early —
-    // see its doc in `runtime.rs`.
-    const bodyChildren =
-      loop.bodyIsItemConditional && loop.key
-        ? `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToJinja(loop.key)})) | safe }}\n${childrenUnderLoop}`
-        : childrenUnderLoop
-    this.scope = prevScope
+    // The row window (#3473): the row's scope around everything that
+    // evaluates per row (the preamble locals' initializers, the children
+    // under `inLoop`, the whole-item-conditional key anchor). The filter
+    // predicate stays outside it: a filter callback's own param is a
+    // separate frame, never folded into the `.map()` row.
+    const { rootAliases, preamble: preambleLines, body: bodyChildren } = this.renderLoopRow(loop, {
+      preamble: (d) => `{% set ${minijinjaIdent(d.name)} = ${this.convertExpressionToJinja(d.raw, d.valueParsed)} %}`,
+      keyAnchor: (key) => `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToJinja(key)})) | safe }}`,
+    })
 
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;

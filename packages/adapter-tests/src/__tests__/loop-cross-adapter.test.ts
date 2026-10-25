@@ -12,7 +12,12 @@
  *   template binds (BF101) and a sort comparator neither the evaluator nor
  *   the `{keys: …}` descriptor models (BF101), over the loop fixture
  *   families (destructure, entries / keys / values, shadowing, preamble,
- *   sort, static and computed sources, filter chains).
+ *   sort, static and computed sources, filter chains);
+ * - every adapter plans each loop of those fixtures the same: the
+ *   `planLoop` decisions (destructure, static source, unresolvable const,
+ *   sort chain, filter predicate and capture aliases, item var, index local,
+ *   destructure locals) and the row window `renderLoopRow` enters (the
+ *   names the row binds, the root props it newly shadows).
  *
  * The one declared difference: Perl has no boolean literal, so Mojolicious
  * and Xslate cannot spell a static source with a boolean item and refuse it
@@ -21,7 +26,7 @@
 import { describe, test, expect } from 'bun:test'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { CompilerError } from '@barefootjs/jsx'
+import type { CompilerError, IRLoop, LoopPlan, LoopRow } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '../harness-program'
 import type { JSXFixture } from '../types'
 import { DSL_ADAPTERS } from '../dsl-helper-calls'
@@ -43,6 +48,47 @@ const PERL_UNSPELLABLE_STATIC: Record<string, ReadonlySet<string>> = {
 
 // Eight compiles per case.
 const COMPILE_TIMEOUT_MS = 60_000
+
+/** The protected `DslTemplateAdapter` hooks every adapter's `renderLoop` goes through. */
+interface LoopHooks {
+  loopPlanFor(loop: IRLoop, spelling: unknown): LoopPlan<unknown>
+  renderLoopRow(loop: IRLoop, spelling: unknown): LoopRow
+}
+
+/**
+ * Each loop's plan and row window, by marker id, as one adapter decides
+ * them: the spelled parts (the static source's literal, the refusals'
+ * wording) reduce to what was decided.
+ */
+function loopPlansOf(source: string, file: string, adapter: (typeof DSL_ADAPTERS)[number]): Record<string, unknown> {
+  const instance = adapter.make()
+  const hooks = instance as unknown as LoopHooks
+  const plan = hooks.loopPlanFor.bind(instance)
+  const renderRow = hooks.renderLoopRow.bind(instance)
+  const plans: Record<string, Record<string, unknown>> = {}
+  hooks.loopPlanFor = (loop, spelling) => {
+    const p = plan(loop, spelling)
+    plans[loop.markerId] = {
+      destructure: p.destructure,
+      staticSource: p.staticSource !== null,
+      unresolvableConst: p.unresolvableConst?.name ?? null,
+      sort: p.sort?.kind ?? null,
+      captureAliases: p.captureAliases,
+      filter: p.filter && (p.filter.kind === 'predicate' ? { param: p.filter.param, onRow: p.filter.onRow } : p.filter.kind),
+      itemVar: p.itemVar,
+      indexLocal: p.indexLocal,
+      destructureLocals: p.destructureLocals,
+    }
+    return p
+  }
+  hooks.renderLoopRow = (loop, spelling) => {
+    const row = renderRow(loop, spelling)
+    plans[loop.markerId] = { ...plans[loop.markerId], rowNames: row.row.innermostNames(), rootAliases: row.rootAliases }
+    return row
+  }
+  compileFixtureJSX(source, file, { adapter: instance })
+  return plans
+}
 
 function errorsOf(source: string, adapter: (typeof DSL_ADAPTERS)[number]): string[] {
   const result = compileFixtureJSX(source, 'Loop.tsx', { adapter: adapter.make() })
@@ -111,6 +157,46 @@ export function Loop() {
       for (const result of results) {
         const unspellable = PERL_UNSPELLABLE_STATIC[result.adapter]?.has(fixture.id) === true
         expect(result).toEqual({ ...reference, adapter: result.adapter, constSource: unspellable ? 1 : reference.constSource })
+      }
+    }, COMPILE_TIMEOUT_MS)
+  }
+
+  test('the plan hooks see every loop', () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Loop() {
+  const [rows, setRows] = createSignal<{ id: string; tags: string[] }[]>([])
+  return <ul>{rows().map(row => <li key={row.id}>{row.tags.map(tag => <b>{tag}</b>)}</li>)}</ul>
+}
+`
+    for (const adapter of DSL_ADAPTERS) {
+      const plans = Object.values(loopPlansOf(source, 'Loop.tsx', adapter)) as Array<{ rowNames: string[] }>
+      expect({ adapter: adapter.name, rows: plans.map((p) => p.rowNames) }).toEqual({ adapter: adapter.name, rows: [['row'], ['tag']] })
+    }
+  }, COMPILE_TIMEOUT_MS)
+
+  for (const fixture of loopFixtures) {
+    test(`every adapter plans the same loops: ${fixture.id}`, () => {
+      const sources: Record<string, string> = { [`${fixture.id}.tsx`]: fixture.source, ...(fixture.components ?? {}) }
+      for (const [file, source] of Object.entries(sources)) {
+        const results = DSL_ADAPTERS.map((adapter) => ({ adapter: adapter.name, plans: loopPlansOf(source, file, adapter) }))
+        const reference = results.find((r) => !PERL_UNSPELLABLE_STATIC[r.adapter])!
+        for (const result of results) {
+          // A static source Perl cannot spell names a const no template binds (BF101).
+          const unspellable = PERL_UNSPELLABLE_STATIC[result.adapter]?.has(fixture.id) === true
+          const expected = unspellable
+            ? Object.fromEntries(
+                Object.entries(reference.plans).map(([id, p]) => [
+                  id,
+                  (p as { staticSource: boolean }).staticSource
+                    ? { ...(p as object), staticSource: false, unresolvableConst: expect.any(String) }
+                    : p,
+                ]),
+              )
+            : reference.plans
+          expect({ adapter: result.adapter, file, plans: result.plans }).toEqual({ adapter: result.adapter, file, plans: expected })
+        }
       }
     }, COMPILE_TIMEOUT_MS)
   }

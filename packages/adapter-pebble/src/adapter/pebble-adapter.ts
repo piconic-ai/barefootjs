@@ -236,7 +236,6 @@ import {
   isBooleanTypedPropRef,
   planAttrExpression,
   loopHeaderTargets,
-  planLoop,
   savedLoopBindings,
   spellDestructureLocals,
   spellFilteredRow,
@@ -245,7 +244,6 @@ import {
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
@@ -310,7 +308,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
   templatePrimitives: TemplatePrimitiveRegistry = PEBBLE_PRIMITIVE_EMIT_MAP
 
   private options: Required<PebbleAdapterOptions>
-  private inLoop: boolean = false
   /** Names bound at template level (signals, memos, props, local constants):
    * a loop that binds one with `{% set %}` saves and restores it (#3386). */
   private templateLevelNames: Set<string> = new Set()
@@ -701,9 +698,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // a rest spread onto a component/provider, `.filter().map(destructure)`,
     // and `__bf_`-prefixed binding names (would collide with the synthetic
     // per-item var).
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToPebble,
@@ -804,59 +799,15 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       indexLocalLines.push(`{% set ${pebbleIdent(name)} = ${value} %}`)
     }
 
-    const prevInLoop = this.inLoop
-    this.inLoop = true
-    // The children render once, under the loop flag (so nested components use
-    // the loop-child naming convention) and the row scope below.
-
-    // This loop's row scope, for the position-accurate shadow guard
-    // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
-    // `IRLoop` already structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly the for-header target(s), each destructure binding,
-    // the index (when present), and the `.map()` preamble's declared
-    // locals, mirroring what THIS renderLoop's for-header + `indexLocalLines`
-    // actually introduce. Restored by reference (immutable — no ref-count
-    // bookkeeping) so nested loops compose for free. Entered BEFORE
-    // `preambleLines`/`bodyChildren` are converted and popped AFTER, not
-    // just around `renderChildren` — a `.map()` preamble local's own
-    // initializer (`d.raw`, below) and the whole-item-conditional `loop-i:`
-    // key anchor (`loop.key`, in `bodyChildren` below) both genuinely
-    // evaluate PER ROW and must see the row's own bindings.
-    // `loop.filterPredicate` deliberately stays OUTSIDE this window
-    // (further down, after the pop) — per the Stage 0 design a
-    // filter/sort callback's own param is a separate `callback` frame,
-    // never folded into the `.map()` row.
-    const prevScope = this.scope
-    const rowScope = prevScope.enterLoopRow(loop)
-    this.scope = rowScope
-    // Props this row's bindings newly shadow, aliased before the loop header
-    // so an explicit `props.X` inside still reads the root value (#3314).
-    const rootAliases = rootPropAliasesForLoop(prevScope, rowScope, this.rootPropAliases)
-
-    // Per-row locals for a `.map()` callback preamble (#2447), in source
-    // order so a later initializer sees an earlier local — same as the
-    // source block. Phase 1 refuses the loop outright when the preamble
-    // isn't fully declarable, so there is no partial-lowering case: either
-    // every statement is lowered here, or the build already failed.
-    const preambleLines = (loop.preamble?.declarations ?? []).map(
-      d => `{% set ${pebbleIdent(d.name)} = ${this.convertExpressionToPebble(d.raw, d.valueParsed)} %}`,
-    )
-    const childrenUnderLoop = this.renderChildren(loop.children)
-    this.inLoop = prevInLoop
-
-    // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
-    // anchor before each item's (possibly empty) conditional content so the
-    // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
-    // anchor. Still under the row scope (see above) — `loop.key` is a
-    // per-row expression.
-    // `bf.escape_comment_key` both stringifies the key and neutralizes `-`
-    // so it can't spell `-->` and close the comment early.
-    const bodyChildren =
-      loop.bodyIsItemConditional && loop.key
-        ? `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToPebble(loop.key)})) | raw }}\n${childrenUnderLoop}`
-        : childrenUnderLoop
-    this.scope = prevScope
+    // The row window (#3473): the row's scope around everything that
+    // evaluates per row (the preamble locals' initializers, the children
+    // under `inLoop`, the whole-item-conditional key anchor). The filter
+    // predicate stays outside it: a filter callback's own param is a
+    // separate frame, never folded into the `.map()` row.
+    const { outside, row, rootAliases, preamble: preambleLines, body: bodyChildren } = this.renderLoopRow(loop, {
+      preamble: (d) => `{% set ${pebbleIdent(d.name)} = ${this.convertExpressionToPebble(d.raw, d.valueParsed)} %}`,
+      keyAnchor: (key) => `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToPebble(key)})) | raw }}`,
+    })
 
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
@@ -899,7 +850,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // already, but an entries header binds only the pair, whose key and
     // value are `{% set %}` locals.
     const savedBindings = savedLoopBindings(
-      { outside: prevScope, row: rowScope, templateLevelNames: this.templateLevelNames },
+      { outside, row, templateLevelNames: this.templateLevelNames },
       loop.objectIteration === 'entries' ? [] : loopHeaderTargets(loop, loopPlan),
       (name) => `bf_outer_${loop.markerId}_${pebbleIdent(name)}`,
     )

@@ -13,7 +13,7 @@
     },
     "packages/adapter-erb/src/adapter/erb-adapter.ts": {
       "renderLoop": [
-        38
+        35
       ]
     },
     "packages/adapter-erb/src/test-render.ts": {
@@ -207,7 +207,7 @@
     },
     "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
       "renderLoop": [
-        33
+        29
       ]
     },
     "packages/adapter-mojolicious/src/test-render.ts": {
@@ -219,11 +219,6 @@
       ],
       "renderMojoComponent": [
         39
-      ]
-    },
-    "packages/adapter-pebble/src/adapter/pebble-adapter.ts": {
-      "renderLoop": [
-        26
       ]
     },
     "packages/adapter-pebble/src/test-render.ts": {
@@ -288,7 +283,7 @@
     },
     "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
       "renderLoop": [
-        40
+        34
       ]
     },
     "packages/adapter-xslate/src/test-render.ts": {
