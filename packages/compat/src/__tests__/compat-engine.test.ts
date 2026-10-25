@@ -57,6 +57,7 @@ describe('compileForCompat', () => {
           'array-fill',
           'callback-index-param',
           'callback-outside-evaluator',
+          'caller-rows-computed-key',
           'client-only-loop-in-static-loop',
           'computed-const-loop-source',
           'conditional-nested-const-loop-source',

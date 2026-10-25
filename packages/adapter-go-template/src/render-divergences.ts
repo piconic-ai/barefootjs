@@ -111,12 +111,6 @@ export const renderDivergences: RenderDivergences = {
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
-  // A component loop row keyed by a computed expression of the row or index
-  // (`key={x.toString()}`, `key={i.toString()}`): the constructor that builds
-  // the rows from the array prop stamps no `BfDataKey`, so the rows render
-  // without `data-key` (#3621; the constructor-built rows' key is #3604).
-  'loop-key-to-string': { limitation: 'component-row-computed-key-dropped' },
-  'loop-key-to-string-number-component-row': { limitation: 'component-row-computed-key-dropped' },
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },

@@ -27,4 +27,5 @@ export function LoopKeyToStringNumberComponentRow(props: { values: number[] }) {
       <li bf-s="Num_*" bf="s1" class="num" data-key="2.5"><!--bf:s0-->2.5<!--/--></li>
     </ul>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'loop-key-to-string-number-component-row-client' }],
 })
