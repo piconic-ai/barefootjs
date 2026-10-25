@@ -10,7 +10,7 @@
 # Run the Go toolchain natively on the builder host and cross-compile to the
 # target platform. Avoids QEMU emulation, which segfaults the Go compiler when
 # building linux/amd64 on arm64 hosts (Apple Silicon).
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 WORKDIR /src
 
