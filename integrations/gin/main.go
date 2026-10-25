@@ -353,7 +353,7 @@ func counterHandler(c *gin.Context) {
 func toggleHandler(c *gin.Context) {
 	c.Header("Cache-Control", cacheableCacheControl)
 	props := NewToggleProps(ToggleInput{
-		ToggleItems: []ToggleItemInput{
+		ToggleItems: []ToggleSetting{
 			{Label: "Setting 1", DefaultOn: true},
 			{Label: "Setting 2", DefaultOn: false},
 			{Label: "Setting 3", DefaultOn: false},
