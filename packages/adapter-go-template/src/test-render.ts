@@ -1204,7 +1204,7 @@ function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string, goTypes?
     if (v && typeof v === 'object') {
       return goStructLiteral(v as Record<string, unknown>, elemType, goTypes)
     }
-    if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
+    if (typeof v === 'string') return goStringLit(v)
     if (typeof v === 'number' || typeof v === 'boolean') return String(v)
     // An `undefined` element is a slot JS still iterates, like `null` (#3610).
     if (v === null || v === undefined) return 'nil'
@@ -1230,7 +1230,7 @@ function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): stri
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return goMapLiteralFromObject(v as Record<string, unknown>, true)
     }
-    if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
+    if (typeof v === 'string') return goStringLit(v)
     if (typeof v === 'number' || typeof v === 'boolean') return String(v)
     // An `undefined` element is a slot JS still iterates, like `null` (#3610).
     if (v === null || v === undefined) return 'nil'
