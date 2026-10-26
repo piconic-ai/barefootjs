@@ -304,27 +304,19 @@ function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
  * Strips type annotations and default values.
  */
 export function extractFunctionParams(value: string): string {
-  // Match arrow function parameters: (a, b) => ... or async (a, b) => ...
-  const arrowMatch = value.match(/^(?:async\s*)?\(([^)]*)\)\s*(?::\s*[^=]+)?\s*=>/)
-  if (arrowMatch) {
-    return arrowMatch[1]
-      .split(',')
-      .map((p) => p.trim().split(':')[0].split('=')[0].trim())
-      .filter(Boolean)
-      .join(', ')
-  }
-  // Single param arrow function: a => ...
-  const singleMatch = value.match(/^(?:async\s*)?(\w+)\s*=>/)
-  if (singleMatch) {
-    return singleMatch[1]
-  }
-  // Function expression: function(a, b) { ... }
-  const funcMatch = value.match(/^(?:async\s*)?function\s*\w*\s*\(([^)]*)\)/)
-  if (funcMatch) {
-    return funcMatch[1]
-      .split(',')
-      .map((p) => p.trim().split(':')[0].split('=')[0].trim())
-      .filter(Boolean)
+  for (const kind of [ts.ScriptKind.TSX, ts.ScriptKind.TS]) {
+    const source = ts.createSourceFile('function.tsx', `(${value}\n)`, ts.ScriptTarget.Latest, true, kind)
+    const diagnostics = 'parseDiagnostics' in source ? source.parseDiagnostics : undefined
+    if (Array.isArray(diagnostics) && diagnostics.length > 0) continue
+    const statement = source.statements[0]
+    if (!statement || !ts.isExpressionStatement(statement)) return ''
+
+    let expression = statement.expression
+    while (ts.isParenthesizedExpression(expression)) expression = expression.expression
+    if (!ts.isArrowFunction(expression) && !ts.isFunctionExpression(expression)) return ''
+
+    return expression.parameters
+      .map(parameter => `${parameter.dotDotDotToken ? '...' : ''}${parameter.name.getText(source)}`)
       .join(', ')
   }
   return ''
