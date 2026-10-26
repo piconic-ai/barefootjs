@@ -373,7 +373,9 @@ function walkTemplateParts(
   seen: Set<string>,
 ): void {
   for (const part of parts) {
-    if (part.type === 'ternary') {
+    if (part.type === 'expression') {
+      checkExpr(part.parsed, loc, meta, bindings, matchers, errors, seen)
+    } else if (part.type === 'ternary') {
       const trimmed = part.condition.trim()
       if (trimmed) checkExpr(parseExpression(trimmed), loc, meta, bindings, matchers, errors, seen)
     } else if (part.type === 'lookup') {

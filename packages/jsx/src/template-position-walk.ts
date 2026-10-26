@@ -105,7 +105,9 @@ function walkTemplateParts(
     visit({ expr: parseExpression(trimmed), loc, role: 'template-part', attrName })
   }
   for (const part of parts) {
-    if (part.type === 'ternary') {
+    if (part.type === 'expression') {
+      visit({ expr: part.parsed, loc, role: 'template-part', attrName })
+    } else if (part.type === 'ternary') {
       visitText(part.condition)
       visitText(part.whenTrue)
       visitText(part.whenFalse)

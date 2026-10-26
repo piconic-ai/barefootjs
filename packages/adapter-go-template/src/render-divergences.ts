@@ -107,6 +107,7 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // is held in the `Children` field the parent's children populate, not in a
 // never-set field named after the local (`Kids`).
 export const renderDivergences: RenderDivergences = {
+  'template-literal-attribute-quotes': { limitation: 'template-literal-attribute-quotes' },
   'jsx-prop-template-delimiters': { limitation: 'nested-component-in-jsx-prop' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and

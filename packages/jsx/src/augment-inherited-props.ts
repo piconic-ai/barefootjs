@@ -12,7 +12,7 @@
 
 import ts from 'typescript'
 
-import type { ComponentIR, IRMetadata, IRNode, IRElement, TypeInfo } from './types.ts'
+import type { ComponentIR, IRMetadata, IRNode, IRElement, IRTemplatePart, TypeInfo } from './types.ts'
 import { isBooleanAttr } from './html-constants.ts'
 
 /**
@@ -290,10 +290,10 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
     // component renders it. Classify these reads as nillable (`unknown`)
     // unless a `?? <literal>` pins a concrete type.
     for (const prop of (node as unknown as { props?: IRElement['attrs'] }).props ?? []) {
-      const v = prop.value as { kind?: string; expr?: string; parts?: Array<{ type: string } & Record<string, string>> }
+      const v = prop.value as { kind?: string; expr?: string; parts?: IRTemplatePart[] }
       if (v?.parts) {
         for (const part of v.parts) {
-          if (part.type === 'string') scan(part.value)
+          if (part.type === 'expression') scan(part.expr)
           else if (part.type === 'ternary') {
             scan(part.condition)
             scan(part.whenTrue)
@@ -311,11 +311,7 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
         kind?: string
         expr?: string
         presenceOrUndefined?: boolean
-        parts?: Array<
-          | { type: 'string'; value: string }
-          | { type: 'ternary'; condition: string; whenTrue: string; whenFalse: string }
-          | { type: 'lookup'; key: string }
-        >
+        parts?: IRTemplatePart[]
       }
       // Template-literal attr values (`className={\`… \${props.className ??
       // ''}\`}`) carry their `props.X` reads inside the parts structure,
@@ -324,7 +320,7 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
       // textual field of every part shape.
       if (v?.parts) {
         for (const part of v.parts) {
-          if (part.type === 'string') scan(part.value)
+          if (part.type === 'expression') scan(part.expr)
           else if (part.type === 'ternary') {
             scan(part.condition)
             scan(part.whenTrue)

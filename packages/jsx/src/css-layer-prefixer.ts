@@ -174,10 +174,10 @@ function collectAndPrefixAttrs(
           break
         case 'template': {
           prefixIRTemplateParts(attr.value.parts, layerName)
-          // Extract constant references from ${expr} in string parts
+          // Extract constant references from expression parts
           for (const part of attr.value.parts) {
-            if (part.type === 'string' && part.value.includes('${')) {
-              collectConstantRefs(part.value, referencedConstants, constantNames)
+            if (part.type === 'expression') {
+              collectConstantRefs(part.expr, referencedConstants, constantNames)
             }
           }
           break
@@ -211,8 +211,7 @@ function prefixIRTemplateParts(parts: IRTemplatePart[], layerName: string): void
     if (part.type === 'ternary') {
       part.whenTrue = prefixClassString(part.whenTrue, layerName)
       part.whenFalse = prefixClassString(part.whenFalse, layerName)
-    } else if (part.type === 'string' && !part.value.includes('${')) {
-      // Only prefix pure static text (no ${expr} references)
+    } else if (part.type === 'string') {
       part.value = prefixClassString(part.value, layerName)
     }
   }

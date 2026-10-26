@@ -1186,7 +1186,9 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(this.substituteJsInterpolationsToJinja(part.value))
+        parts.push(`'${escapeJinjaSingleQuoted(part.value)}'`)
+      } else if (part.type === 'expression') {
+        parts.push(`bf.string(${this.convertExpressionToJinja(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
         const cond = this.convertConditionToJinja(part.condition)
         parts.push(
@@ -1210,31 +1212,6 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     // string (literal or `bf.string(...)`-wrapped), so `~`'s own `str()`
     // coercion is a no-op here.
     return parts.length === 1 ? parts[0] : parts.join(' ~ ')
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string into
-   * Jinja variable references and concatenate them with the surrounding
-   * literal text. Each interpolated (non-literal) segment routes through
-   * `bf.string(...)` — see the file header, divergence 2.
-   */
-  private substituteJsInterpolationsToJinja(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(`'${escapeJinjaSingleQuoted(s.slice(lastIndex, m.index))}'`)
-      }
-      segments.push(`bf.string(${this.convertExpressionToJinja(m[1].trim())})`)
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(`'${escapeJinjaSingleQuoted(s.slice(lastIndex))}'`)
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' ~ ')})`
   }
 
   /**

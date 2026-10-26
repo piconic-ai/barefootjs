@@ -498,8 +498,8 @@ function splitClassTokens(value: string): string[] {
  *   - `lookup` (`${MAP[KEY]}`) → every case's tokens (PR #2000)
  *   - `ternary` (`cond ? 'on' : 'off'`) → both branches' tokens,
  *     matching the intermediate-const `valueBranches` union (#525)
- *   - `string` spans → literal text, with `${ident}` interpolations
- *     substituted from resolved consts / literal prop defaults
+ *   - `string` spans → literal text; `expression` spans resolve against
+ *     local consts / literal prop defaults, or mark their token unknown
  * For expression attrs the value resolves through local consts (cmap)
  * and literal prop defaults. A bare `className={cond ? a : b}` ternary
  * (no backticks) is walked structurally through the attr's `parsed`
@@ -515,14 +515,7 @@ function splitClassTokens(value: string): string[] {
  */
 function collectClassTokens(attrValue: AttrValue, resolved: string | boolean | null, ctx: ConvertContext): string[] {
   if (attrValue.kind === 'template') {
-    const joined = attrValue.parts
-      .map(part => {
-        if (part.type === 'string') return substituteInterpolations(part.value, ctx)
-        if (part.type === 'ternary') return `${part.whenTrue} ${part.whenFalse}`
-        return Object.values(part.cases).join(' ')
-      })
-      .join('')
-    return splitClassTokens(joined)
+    return collectTemplateClassTokens(attrValue.parts, ctx)
   }
 
   if (typeof resolved !== 'string') return []
@@ -543,6 +536,33 @@ function collectClassTokens(attrValue: AttrValue, resolved: string | boolean | n
     if (value !== null) return splitClassTokens(value)
   }
   return splitClassTokens(resolved)
+}
+
+function collectTemplateClassTokens(parts: TemplateAttr['parts'], ctx: ConvertContext): string[] {
+  const tokens: string[] = []
+  let token = ''
+  let known = true
+  const flush = () => {
+    if (known && token) tokens.push(token)
+    token = ''
+    known = true
+  }
+  for (const part of parts) {
+    const text = part.type === 'expression' ? resolveParsedClass(part.parsed, ctx)
+      : part.type === 'string' ? part.value
+      : part.type === 'ternary' ? `${part.whenTrue} ${part.whenFalse}`
+      : Object.values(part.cases).join(' ')
+    if (text === null) {
+      known = false
+      continue
+    }
+    for (const chunk of text.split(/(\s+)/)) {
+      if (/^\s/.test(chunk)) flush()
+      else token += chunk
+    }
+  }
+  flush()
+  return tokens
 }
 
 /**
@@ -637,7 +657,8 @@ function resolveTemplateAttr(tl: TemplateAttr, ctx: ConvertContext): string {
     .map(part => {
       // `${ident}` interpolations against a literal prop default
       // resolve like local consts do (#2069).
-      if (part.type === 'string') return substituteInterpolations(part.value, ctx)
+      if (part.type === 'string') return part.value
+      if (part.type === 'expression') return resolveParsedClass(part.parsed, ctx) ?? `\${${part.expr}}`
       if (part.type === 'ternary') return `{${part.condition}}`
       // `lookup` (`Record<T, string>[key]`) — the test framework
       // doesn't render against a specific key, so concatenate every

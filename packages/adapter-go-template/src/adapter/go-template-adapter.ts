@@ -114,7 +114,6 @@ import {
   inlineComputedConsts,
   missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
-import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
@@ -5310,14 +5309,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propsParams: { name: string; sourceName?: string }[]
   ): string | null {
     const segments: string[] = []
+    let usesFmt = false
     for (const part of parts) {
       if (part.type === 'string') {
-        // The IR analyzer already inlined identifier references into the
-        // `lookup` part shape. A residual `${ident}` in a `string` part only
-        // occurs when resolution failed (e.g. a destructured prop the analyzer
-        // couldn't trace). Emit verbatim — a Go equivalent that walks the string
-        // and emits `in.FieldName` references isn't yet hit by the conformance
-        // suite.
         segments.push(JSON.stringify(part.value))
         continue
       }
@@ -5339,7 +5333,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // analyzer typed the prop, but a `string` when the shared inherited-prop
         // augmentation synthesised it — a `.(string)` assertion would compile
         // for the former only.
-        this.state.usesFmt = true
+        usesFmt = true
         lines.push(`\t\t\tswitch fmt.Sprint(in.${fieldName}) {`)
         for (const [k, v] of caseEntries) {
           lines.push(`\t\t\tcase ${JSON.stringify(k)}: return ${JSON.stringify(v)}`)
@@ -5354,6 +5348,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // bare-expression path.
       return null
     }
+    if (usesFmt) this.state.usesFmt = true
     if (segments.length === 0) return '""'
     return segments.join(' + ')
   }
@@ -10542,66 +10537,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ])
     return `{{bf_style_object ${args.join(' ')}}}`
   }
-
-  /**
-   * Replace `${EXPR}` interpolations with Go actions (`{{<expr-as-go>}}`) and
-   * HTML-escape the surrounding literal text — UnoCSS arbitrary values
-   * (`[class*="size-"]:size-4`) contain `"` that would otherwise close the
-   * `class="..."` attribute. Brace-depth aware (nested `{...}` skipped to find
-   * the outer `}`); an unterminated `${` falls back to literal text.
-   */
-  private substituteJsInterpolations(s: string): string {
-    let out = ''
-    let i = 0
-    while (i < s.length) {
-      const open = s.indexOf('${', i)
-      if (open === -1) {
-        out += this.escapeAttrText(s.slice(i))
-        break
-      }
-      out += this.escapeAttrText(s.slice(i, open))
-      const close = findInterpolationEnd(s, open + 2)
-      if (close === -1) {
-        // Unterminated `${` — emit the rest as escaped literal rather than
-        // silently dropping content.
-        out += this.escapeAttrText(s.slice(open))
-        break
-      }
-      const inner = s.slice(open + 2, close).trim()
-      if (inner) {
-        // Thread the parsed kind out of `convertExpressionToGo` (reusing its
-        // single parse) so a nested template literal here is handled too.
-        const cls: { parsed?: ParsedExpr } = {}
-        const goExpr = this.convertExpressionToGo(inner, cls)
-        const parsed = cls.parsed
-        if (parsed?.kind === 'template-literal') {
-          // Attribute context: a template literal lowers to literal text
-          // interleaved with `{{...}}` actions. That literal text sits OUTSIDE
-          // any action, so — unlike the actions, which Go escapes for the
-          // attribute context — it bypasses escaping. A `"`, `<`, or `&` in a
-          // UnoCSS arbitrary value (`content-["x"]`) would then break the
-          // surrounding `class="..."`. Escape each string part with
-          // `escapeAttrText`, keeping interpolations as fragment-aware actions.
-          for (const part of parsed.parts) {
-            if (part.type === 'string') {
-              out += this.escapeAttrText(part.value)
-            } else {
-              const e = this.renderParsedExpr(part.expr)
-              out += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${e}}}`
-            }
-          }
-        } else {
-          // Same `isTemplateFragment` guard as `renderExpression`: a ternary
-          // lowers to a complete `{{if}}` action chain — don't re-wrap.
-          out += this.isTemplateFragment(goExpr, parsed?.kind) ? goExpr : `{{${goExpr}}}`
-        }
-      } else {
-        out += s.slice(open, close + 1)
-      }
-      i = close + 1
+  private renderTemplateExpression(expr: JsSourceText, parsed: ParsedExpr): string {
+    if (parsed.kind === 'template-literal') {
+      return parsed.parts.map(part => {
+        if (part.type === 'string') return this.escapeAttrText(part.value)
+        const rendered = this.renderParsedExpr(part.expr)
+        return this.isTemplateFragment(rendered, part.expr.kind) ? rendered : '{{' + rendered + '}}'
+      }).join('')
     }
-    return out
+    const rendered = this.convertExpressionToGo(expr, undefined, parsed)
+    return this.isTemplateFragment(rendered, parsed.kind) ? rendered : '{{' + rendered + '}}'
   }
+
 
   /**
    * HTML-attribute-safe escaping for double-quoted attribute values. `&`/`"`/`<`
@@ -10623,11 +10570,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     let output = ''
     for (const part of parts) {
       if (part.type === 'string') {
-        // String parts can carry unresolved `${expr}` placeholders (e.g. for
-        // function params the IR analyzer couldn't substitute structurally).
-        // Translate each span to a Go template action; static text passes
-        // through as-is.
-        output += this.substituteJsInterpolations(part.value)
+        output += this.escapeAttrText(part.value)
+      } else if (part.type === 'expression') {
+        output += this.renderTemplateExpression(part.expr, part.parsed)
       } else if (part.type === 'ternary') {
         const { condition: goCond, preamble } = this.convertConditionToGo(part.condition)
         output += `${preamble}{{if ${goCond}}}${part.whenTrue}{{else}}${part.whenFalse}{{end}}`
@@ -10650,7 +10595,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const head = i === 0 ? '{{if' : '{{else if'
           // The case value is a static Record<T,string> literal emitted straight
           // into attribute-value text, so HTML-escape it like `string` parts
-          // (via substituteJsInterpolations → escapeAttrText). Otherwise UnoCSS
+          // (via escapeAttrText). Otherwise UnoCSS
           // tokens like `has-[>svg]:px-2.5` would leak a raw `>`.
           return `${head} eq ${keyExpr} ${JSON.stringify(k)}}}${this.escapeAttrText(v)}`
         })

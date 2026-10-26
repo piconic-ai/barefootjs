@@ -12940,6 +12940,16 @@
         "attribute"
       ]
     },
+    "template-literal-attribute-quotes": {
+      "kinds": [
+        "identifier",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "template-literal-multi-interp": {
       "kinds": [
         "call",
@@ -12955,6 +12965,20 @@
       ],
       "contexts": [
         "text"
+      ]
+    },
+    "template-literal-static-delimiters": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "ternary": {
