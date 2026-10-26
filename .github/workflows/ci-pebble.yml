@@ -53,9 +53,10 @@ jobs:
   test:
     if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     runs-on: ubuntu-latest
-    # The adapter's unit + conformance suite alone runs ~11-14 min on a
-    # shared runner, so a 15-minute cap cancels passing runs under load.
-    timeout-minutes: 30
+    # The adapter's unit + conformance suite runs 17-28 min on a shared
+    # runner and grows with the fixture corpus; a 30-minute cap cancelled
+    # a run in the Spring E2E step after the unit tests passed (#3627).
+    timeout-minutes: 45
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
