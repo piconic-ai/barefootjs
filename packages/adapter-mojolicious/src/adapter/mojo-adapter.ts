@@ -72,7 +72,6 @@ import {
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
-  unsupportedAttrExpressionError,
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
@@ -1058,17 +1057,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
-      // Refuse shapes that the regex pipeline silently mangles into
-      // invalid Perl (#1322). Tagged-template-literal call expressions
-      // (`cn\`base \${tone()}\``) have no idiomatic Mojo template form; the Go
-      // adapter raises BF101 here via `convertExpressionToGo` + `isSupported`.
-      // Lift the same gate so the user gets a clear diagnostic instead of
-      // broken output. The check runs before `convertExpressionToPerl` so the
-      // regex pipeline never produces template-text fragments for a shape
-      // we've already rejected.
-      if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
-        return ''
-      }
       const plan = planAttrExpression(value, name, {
         propsObjectName: this.propsObjectName,
         restPropsName: this.restPropsName,
@@ -1134,16 +1122,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // identifier resolves directly. `IRAttribute.slotId` is set by
     // the IR pass but the Mojo adapter ignores it — the slot field
     // exists only for the Go adapter's static-typed Props struct.
-    //
-    // Gate unsupported shapes (object literals, tagged-template
-    // literals, etc.) up front via `refuseUnsupportedAttrExpression`
-    // so a spread like `{...{id: 'x'}}` surfaces BF101 instead of
-    // letting `convertExpressionToPerl` emit invalid Embedded Perl
-    // that would crash at render time (#1413 review).
     emitSpread: (value) => {
-      if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
-        return ''
-      }
       const plan = planSpreadAttr(value, {
         propsObjectName: this.propsObjectName,
         propsParams: this.propsParams,
@@ -1334,29 +1313,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     }
     if (segments.length === 0) return `''`
     return segments.length === 1 ? segments[0] : `(${segments.join(' . ')})`
-  }
-
-  /**
-   * Refuse JS expression shapes that have no idiomatic Mojo template
-   * representation (#1322). Currently catches:
-   *
-   *   - Object literals (`style={{ background: bg(), color: fg() }}`):
-   *     the regex pipeline strips signal calls but leaves the
-   *     surrounding `{ k: v, ... }` syntax intact, producing invalid
-   *     Perl inside `<%= ... %>`.
-   *   - Tagged-template-literal call expressions
-   *     (`className={cn\`base \${tone()}\`}`): regex translation
-   *     produces malformed Perl with no callable target.
-   *
-   * Records `BF101` with the same shape the Go adapter emits via
-   * `convertExpressionToGo`, so cross-adapter diagnostics stay
-   * consistent. Returns `true` when the shape was rejected (caller
-   * should drop the attribute / skip the emit).
-   */
-  private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    const error = unsupportedAttrExpressionError(expr, attrName, this._loweringMatchers, this.componentName, 'Mojo', 'Embedded Perl')
-    if (error) this.errors.push(error)
-    return error !== null
   }
 
   /**

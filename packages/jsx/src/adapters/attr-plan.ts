@@ -10,64 +10,12 @@
  * hash literal.
  */
 
-import { exprToString, isSupported, parseExpression, type ParsedExpr } from '../expression-parser.ts'
-import type { LoweringMatcher } from '../lowering-registry.ts'
+import { exprToString, parseExpression, type ParsedExpr } from '../expression-parser.ts'
 import { attrValueMayBeNullish, nullableSignalAttrGetter, type NullishAttrContext } from '../nullable-signal-attr.ts'
-import type { CompilerError, ConstantInfo, ExpressionAttr, SpreadAttr } from '../types.ts'
+import type { ConstantInfo, ExpressionAttr, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
-
-/**
- * Whether an attribute value is a shape no template lowers: a JS object
- * literal (`style={{…}}` aside, which the adapter lowers first) or a
- * tagged template literal (`cn\`base ${tone()}\``). Returns the refusal, with
- * the support gate's reason when it gives one, or `null` when the value
- * goes on to {@link planAttrExpression}. The adapter reports BF101 in its own
- * words. A value starting with neither shape is never parsed here.
- */
-export function unsupportedAttrExpression(
-  expr: string,
-  loweringMatchers: readonly LoweringMatcher[],
-): { reason: string | undefined } | null {
-  let probe = expr.trim()
-  while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
-  const startsAsObjectLiteral = probe.startsWith('{')
-  const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
-  if (!startsAsObjectLiteral && !hasTaggedTemplate) return null
-  const parsed = parseExpression(expr.trim())
-  const support = isSupported(parsed, { loweringMatchers })
-  if (parsed.kind !== 'unsupported' && support.supported) return null
-  return { reason: support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined) }
-}
-
-/**
- * The BF101 for an attribute value {@link unsupportedAttrExpression}
- * refuses, worded for one adapter (`adapterLabel`, e.g. `Mojo`) and its
- * template language (`languageLabel`, e.g. `Embedded Perl`); `null` when the
- * value goes on to {@link planAttrExpression}.
- */
-export function unsupportedAttrExpressionError(
-  expr: string,
-  attrName: string,
-  loweringMatchers: readonly LoweringMatcher[],
-  componentName: string,
-  adapterLabel: string,
-  languageLabel: string,
-): CompilerError | null {
-  const refusal = unsupportedAttrExpression(expr, loweringMatchers)
-  if (!refusal) return null
-  const reasonLine = refusal.reason ? `\n${refusal.reason}` : ''
-  return {
-    code: 'BF101',
-    severity: 'error',
-    message: `Expression not supported on attribute '${attrName}': ${expr.trim()}${reasonLine}`,
-    loc: { file: componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-    suggestion: {
-      message: `The ${adapterLabel} adapter cannot lower JS object literals or tagged-template-literal expressions into ${languageLabel}. Move the expression into a \`'use client'\` component (so hydration computes it), or expand it into discrete attributes whose values are values the adapter can lower.`,
-    },
-  }
-}
 
 /**
  * The emission of an `{expr}` attribute value.

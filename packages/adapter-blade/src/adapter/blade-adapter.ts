@@ -302,7 +302,6 @@ import {
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
-  unsupportedAttrExpressionError,
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
@@ -1203,12 +1202,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
-      // Refuse shapes that the lowering pipeline can't represent in Blade —
-      // tagged-template-literal call expressions (`cn\`base \${tone()}\``).
-      // Same gate as the Jinja/Twig adapters.
-      if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
-        return ''
-      }
       const plan = planAttrExpression(value, name, {
         propsObjectName: this.propsObjectName,
         restPropsName: this.restPropsName,
@@ -1261,9 +1254,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // Spread attributes (`<div {...attrs()} />`) lower through the
     // `$bf->spread_attrs` runtime helper, mirroring the Jinja/Twig adapters.
     emitSpread: (value) => {
-      if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
-        return ''
-      }
       const plan = planSpreadAttr(value, {
         propsObjectName: this.propsObjectName,
         propsParams: this.propsParams,
@@ -1437,18 +1427,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     }
     if (segments.length === 0) return `''`
     return segments.length === 1 ? segments[0] : `(${segments.join(' . ')})`
-  }
-
-  /**
-   * Refuse JS expression shapes that have no idiomatic Blade representation:
-   * object literals (`style={{...}}`) and tagged-template-literal call
-   * expressions (`cn\`base \${tone()}\``). Records `BF101`. Returns `true`
-   * when the shape was rejected (caller should drop the attribute).
-   */
-  private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    const error = unsupportedAttrExpressionError(expr, attrName, this._loweringMatchers, this.componentName, 'Blade', 'Blade')
-    if (error) this.errors.push(error)
-    return error !== null
   }
 
   /**

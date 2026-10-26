@@ -67,8 +67,7 @@
       "localConstInitializer": 1,
       "nullableBareRead": 2,
       "parseUndefinedAlternateTernary": 1,
-      "planSpreadAttr": 1,
-      "unsupportedAttrExpression": 1
+      "planSpreadAttr": 1
     },
     "packages/jsx/src/adapters/boolean-result.ts": {
       "isBooleanResultExpr": 1,
