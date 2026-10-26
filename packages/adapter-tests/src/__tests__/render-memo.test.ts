@@ -111,6 +111,24 @@ describe('stableKey tells apart what a render can tell apart', () => {
     expect(stableKey(new Map())).toBeUndefined()
     expect(stableKey({ [Symbol('s')]: 1 })).toBeUndefined()
     expect(stableKey(new (class C {})())).toBeUndefined()
+    expect(stableKey(Object.assign([1], { label: 'x' }))).toBeUndefined()
+    expect(stableKey(Object.assign(new Date(0), { tz: 'UTC' }))).toBeUndefined()
+    expect(stableKey(new (class L extends Array {})())).toBeUndefined()
+  })
+
+  test('a cyclic value is not keyed, and its render bypasses the cache', async () => {
+    const cyclic: Record<string, unknown> = {}
+    cyclic.self = cyclic
+    expect(stableKey(cyclic)).toBeUndefined()
+    const { render, calls } = counting()
+    await render(opts({ props: cyclic }))
+    await render(opts({ props: cyclic }))
+    expect(calls()).toBe(2)
+  })
+
+  test('a value reached twice without a cycle is still keyed', () => {
+    const shared = { a: 1 }
+    expect(stableKey({ x: shared, y: shared })).toBe(stableKey({ x: { a: 1 }, y: { a: 1 } }))
   })
 
   test('the adapter instance is not part of the key', () => {

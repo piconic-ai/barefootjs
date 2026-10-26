@@ -57,11 +57,16 @@ export function renderKey(options: RenderOptions): string | undefined {
 /**
  * A serialization that tells apart the values a render can tell apart:
  * `-0` from `0`, a `Date` from its ISO string, an absent key from one set to
- * `undefined`. Object keys are sorted, so key order does not matter.
- * Returns `undefined` for anything else (functions, Maps, class instances,
- * symbol-keyed objects).
+ * `undefined`, an array hole from `undefined`. Object keys are sorted, so key
+ * order does not matter. Returns `undefined` for anything it cannot represent
+ * that faithfully: functions, Maps, class instances, symbol-keyed objects,
+ * arrays or Dates carrying extra own properties, and cyclic values.
  */
 export function stableKey(value: unknown): string | undefined {
+  return keyOf(value, new Set())
+}
+
+function keyOf(value: unknown, path: Set<object>): string | undefined {
   switch (typeof value) {
     case 'undefined':
       return 'u'
@@ -73,30 +78,47 @@ export function stableKey(value: unknown): string | undefined {
       return `i:${value}`
     case 'string':
       return `s:${JSON.stringify(value)}`
-    case 'object':
-      return value === null ? 'n' : objectKey(value)
+    case 'object': {
+      if (value === null) return 'n'
+      if (path.has(value)) return undefined
+      path.add(value)
+      const key = objectKey(value, path)
+      path.delete(value)
+      return key
+    }
     default:
       return undefined
   }
 }
 
-function objectKey(value: object): string | undefined {
-  if (value instanceof Date) return `t:${value.getTime()}`
+function objectKey(value: object, path: Set<object>): string | undefined {
+  if (Object.getOwnPropertySymbols(value).length > 0) return undefined
+  const proto = Object.getPrototypeOf(value)
+  if (value instanceof Date) {
+    return proto === Date.prototype && Object.keys(value).length === 0 ? `t:${value.getTime()}` : undefined
+  }
   if (Array.isArray(value)) {
+    if (proto !== Array.prototype) return undefined
     const items: string[] = []
+    let own = 0
     for (let i = 0; i < value.length; i++) {
-      const item = i in value ? stableKey(value[i]) : 'h'
+      if (!(i in value)) {
+        items.push('h')
+        continue
+      }
+      own++
+      const item = keyOf(value[i], path)
       if (item === undefined) return undefined
       items.push(item)
     }
+    // Own keys beyond the indices (`Object.assign([1], { label })`).
+    if (Object.keys(value).length !== own) return undefined
     return `[${items.join(',')}]`
   }
-  const proto = Object.getPrototypeOf(value)
   if (proto !== Object.prototype && proto !== null) return undefined
-  if (Object.getOwnPropertySymbols(value).length > 0) return undefined
   const entries: string[] = []
   for (const k of Object.keys(value).sort()) {
-    const item = stableKey((value as Record<string, unknown>)[k])
+    const item = keyOf((value as Record<string, unknown>)[k], path)
     if (item === undefined) return undefined
     entries.push(`${JSON.stringify(k)}:${item}`)
   }
