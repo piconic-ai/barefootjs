@@ -116,4 +116,12 @@ describe('stableKey tells apart what a render can tell apart', () => {
   test('the adapter instance is not part of the key', () => {
     expect(renderKey(opts())).toBe(renderKey(opts()))
   })
+
+  test('a RenderOptions field set to undefined keys like an absent one', () => {
+    expect(renderKey(opts({ props: undefined, componentModules: undefined }))).toBe(renderKey(opts()))
+  })
+
+  test('inside props, undefined and absent stay distinct', () => {
+    expect(renderKey(opts({ props: { a: undefined } }))).not.toBe(renderKey(opts({ props: {} })))
+  })
 })

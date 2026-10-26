@@ -41,10 +41,16 @@ export function memoizeRender(render: RenderFn): RenderFn {
 
 /**
  * The cache key for `options` without its adapter, or `undefined` when an
- * input holds a value `stableKey` does not serialize.
+ * input holds a value `stableKey` does not serialize. A `RenderOptions`
+ * field set to `undefined` means the same as an absent one (the suites pass
+ * `props: undefined` where the render contract leaves `props` out), so those
+ * are dropped here. Inside `props` the two stay distinct.
  */
 export function renderKey(options: RenderOptions): string | undefined {
-  const { adapter: _adapter, ...inputs } = options
+  const inputs: Record<string, unknown> = {}
+  for (const [field, value] of Object.entries(options)) {
+    if (field !== 'adapter' && value !== undefined) inputs[field] = value
+  }
   return stableKey(inputs)
 }
 
