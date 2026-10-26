@@ -17,7 +17,6 @@ import type {
   IRFragment,
   IRSlot,
   IRTemplatePart,
-  IRProp,
   TypeInfo,
   TypeDefinition,
   PropertyInfo,
@@ -25,7 +24,6 @@ import type {
   SourceLocation,
   ParsedExpr,
   ObjectLiteralProperty,
-  ParsedStatement,
   SortComparator,
   FlatDepth,
   TemplatePart,
@@ -90,9 +88,7 @@ import {
   evaluateStaticLiteral,
   BindingScope,
   type ScopeFrame,
-  freeIdentifiers,
   isEventHandlerName,
-  isFunctionShapedExpression,
   buildImportAliasMap,
   resolveGetterAliases,
   collectAliasableGetterNames,
@@ -124,11 +120,9 @@ import {
   slotIdToFieldSuffix,
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
-import { loopKeyToGoRowExpr, rowItemPath, rowReadGoAccessor, rowReadGoValue, type LoopRowBinding, type LoopRowShape, type LoweredLoopKey } from './lib/loop-row-path.ts'
+import { loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding, type LoopRowShape, type LoweredLoopKey } from './lib/loop-row-path.ts'
 import { allocateRowsFields, loopDrivingProp, nestedRowsFieldName, rowsFieldSiteKey, type RowsFieldSite } from './lib/nested-rows-field.ts'
 
-/** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
-const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
 /** The wrapper field that carries a scalar wrapper row's bare value (`wrapperRowScalarItemGoType`). */
 const SCALAR_ROW_ITEM_FIELD = 'BfLoopItem'
 
@@ -166,7 +160,6 @@ import {
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
   applyGoFallback,
-  goLiteral,
   goAttrNameToken,
 } from "./lib/go-emit.ts"
 import type {
@@ -179,9 +172,9 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { routesToRestBag, objectBakeTargetFor, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
-import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
-import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
+import { routesToRestBag, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
+import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES } from "./lib/constants.ts"
+import { CompileState, findModuleScopeConst, findValuedLocalConst, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
@@ -193,25 +186,25 @@ import {
   convertInitialValue,
   jsLiteralToGo,
   objectLiteralToGoMap,
-  objectLiteralToGoComposite,
-  unboxToGoScalar,
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
-import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
+import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFieldGoType } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evalExprGo, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { collectPropsSpreadForwardedParams, isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from "./props/props-spread.ts"
+import { collectPropsSpreadForwardedParams } from "./props/props-spread.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
+import { lowerChildInputFields, lowerLoopRowChildInputFields, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
+import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -429,6 +422,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
     resolveModuleConstAsGo: (name, target) => this.resolveModuleConstAsGo(name, target),
+  }
+
+  /** The adapter-owned lookups and renders the child-Input lowering (`props/child-input-fields.ts`) reads. */
+  private readonly childInputHost: ChildInputHost = {
+    ctx: this.emitCtx,
+    childShape: (childName) => this.childComponentShapes.get(this.resolveChildName(childName)),
+    resolveDynamicPropValue: (expr, signals, memos, propsParams, propFallbackVars, nillableDest) =>
+      this.resolveDynamicPropValue(expr, signals, memos, propsParams, propFallbackVars, nillableDest),
+    extractTextChildren: (children) => this.extractTextChildren(children),
+    extractHtmlChildren: (children) => this.extractHtmlChildren(children),
+    extractScopedHtmlChildren: (children) => this.extractScopedHtmlChildren(children),
   }
 
   /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
@@ -2808,7 +2812,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
         }
       }
-      for (const { goField, goValue } of this.lowerChildInputFields(child, ir, propFallbackVars).fields) {
+      for (const { goField, goValue } of lowerChildInputFields(this.childInputHost, child, ir, propFallbackVars).fields) {
         lines.push(`\t\t\t${goField}: ${goValue},`)
       }
       // JSX children → the child slot's `Children` input. Plain text uses
@@ -2831,575 +2835,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Lower one child-component call's props into the fields of its
-   * `New<Child>Props(<Child>Input{...})` composite literal — the ONE place
-   * that decides how a caller-side prop value becomes a constructor-time Go
-   * value. Shared by the non-loop child instances (`emitStaticChildInstances`)
-   * and every loop-row wrapper construction (`lowerLoopRowChildInputFields`:
-   * the loop-body component itself and the components nested in its
-   * forwarded children).
-   *
-   * Returns the `Field: value` pairs in emission order (the rest-bag map, when
-   * any prop routes into it, last) plus `unlowered`: the props that produced
-   * no field and no diagnostic of their own. What an unlowered prop means is
-   * the caller's decision — the non-loop site leaves it to the child's own
-   * default, the loop-row sites refuse it.
-   *
-   * `rowScope` (loop-row sites only) is the row scope enclosing the call; a
-   * prop reading a name bound there is skipped (see the loop below).
-   */
-  private lowerChildInputFields(
-    child: { name: string; props: readonly IRProp[] },
-    ir: ComponentIR,
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-    rowScope?: BindingScope,
-  ): { fields: Array<{ goField: string; goValue: string }>; unlowered: IRProp[] } {
-    const fields: Array<{ goField: string; goValue: string }> = []
-    const unlowered: IRProp[] = []
-    // #2822: cross-file shapes are keyed by the child's own DECLARED name,
-    // not the caller-local alias — see `importAliases`.
-    const declaredName = this.resolveChildName(child.name)
-    // Non-param attrs route into the child's rest bag (see
-    // `childComponentShapes`); `restBagEntries` collects `"jsx-attr-name":
-    // goValue` pairs for that map.
-    const childShape = this.childComponentShapes.get(declaredName)
-    const restBagEntries: string[] = []
-    // A `{...props}` spread, resolved per key by the shared plan (#3530).
-    const call = this.planChildCallProps(child, ir, childShape)
-    const emitChildField = (jsxName: string, writtenValue: string): void => {
-      const goValue = call.passedOr(jsxName, writtenValue)
-      if (routesToRestBag(childShape, jsxName)) {
-        restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
-        return
-      }
-      // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
-      // bag to route it into, has nowhere to go — skip over emitting invalid Go.
-      if (jsxName.includes('-')) return
-      // `<Child>Input{...}` composite literal: Input fields are
-      // caller-facing and `jsxName` IS the caller-facing name, so no
-      // `childPropFieldNames` lookup — that map resolves the child's
-      // LOCAL/Props field for `loopRowChildPropOverrides`'s different
-      // struct.
-      const fieldName = capitalizeFieldName(jsxName)
-      // A `float64` field (a `number` prop) also takes this caller's `int`
-      // value (a `.length` memo, a loop index): `bf.Number` converts any
-      // numeric Go value. A numeric literal assigns as is.
-      const numeric = childShape?.paramGoTypes.get(jsxName) === 'float64' &&
-        !/^-?\d+(\.\d+)?$/.test(goValue) && !goValue.startsWith('bf.Number(')
-      fields.push({ goField: fieldName, goValue: numeric ? `bf.Number(${goValue})` : goValue })
-    }
-    call.paramFields.forEach(field => emitChildField(field.name, field.goValue))
-    for (const prop of call.props) {
-      // A prop reading the row (`tone={o.tone}`) can't be evaluated here: the
-      // constructor runs once, outside the row. It is delivered per row at
-      // template time instead (`loopRowChildPropOverrides`), under the same
-      // `isBound` question that delivery asks of the live scope.
-      if (rowScope && this.propReadsRow(prop, rowScope)) continue
-      switch (prop.value.kind) {
-        case 'literal':
-          emitChildField(prop.name, goLiteral(prop.value.value))
-          break
-        case 'boolean-shorthand':
-        case 'boolean-attr':
-          emitChildField(prop.name, 'true')
-          break
-        case 'expression':
-        case 'spread':
-        case 'template': {
-          // Prefer parsed template parts when present (carried on both
-          // `expression` and `template`): handles the shadcn variant lookup
-          // (`record-index-lookup-via-child-prop`) that
-          // `resolveDynamicPropValue` can't represent.
-          const parts =
-            prop.value.kind === 'template' || prop.value.kind === 'expression'
-              ? prop.value.parts
-              : undefined
-          if (parts) {
-            const goExpr = this.templatePartsToGoCode(parts, ir.metadata.propsParams)
-            if (goExpr !== null) {
-              emitChildField(prop.name, goExpr)
-              break
-            }
-            // Parts opted out (unsupported kind) → bare-expression path below.
-          }
-
-          // `template` kind has no raw expr string (discarded for the parts).
-          const exprText = prop.value.kind === 'template' ? '' : prop.value.expr
-          if (!exprText) {
-            unlowered.push(prop)
-            break
-          }
-          // Inline object literal to a child's object-shaped prop
-          // (`opts={{ align: 'start' }}`, or #2925's `value={{ v: count }}`)
-          // bakes to a Go map or struct literal per the child's registered
-          // shape (`objectBakeTargetFor` — an OPTIONAL object prop's field
-          // is `map[string]interface{}`; a REQUIRED one is a synthesized
-          // struct, #2674). Only an `expression` attr carries `.parsed`.
-          // `resolveIdentifier` resolves a property value that's a bare
-          // local signal/memo getter (`{ v: count }`) against this SAME
-          // component's constructor-time seeding — #2925, the object-
-          // literal-wrapped twin of the bare-getter fix below.
-          const parsedValue =
-            prop.value.kind === 'expression' ? prop.value.parsed : undefined
-          // A ternary whose falsy branch is `undefined`/`null`
-          // (`tag={shown() ? tag() : undefined}`, #3060) has no arm in
-          // `templatePartsToGoCode` (it explicitly opts a `ternary` part
-          // out — see that function's docstring — reserving the shape for
-          // the element-attribute `{{if}}` path) NOR in
-          // `resolveDynamicPropValue` below (which only matches a bare
-          // getter call/comparison/passthrough, never a conditional). Both
-          // silently fell through to no field at all in the generated
-          // `<Child>Input{...}` literal, so the child's rest-bag/named-prop
-          // lookup saw no value on EITHER branch. Bake it as a Go
-          // `interface{}`-valued IIFE evaluated at constructor time — the
-          // same "what does this signal/prop expression evaluate to right
-          // now" question `resolveDynamicPropValue`/`resolveLocalGetterAsGo`
-          // already answer for a bare operand, just wrapped in the ternary's
-          // own test.
-          //
-          // Scoped to a REST-BAG destination on purpose (`routesToRestBag`):
-          // that field is always `map[string]any`-typed (`interface{}`
-          // values), so a `nil` alternate is always valid there. A NAMED
-          // field is concrete-typed (`string`, `int`, …) — a bare `interface{}`
-          // IIFE result fails to compile against it ("need type assertion",
-          // caught by `destructured-props-live`'s `label?: string` ternary
-          // prop, a pre-existing passing shape this must not regress). A
-          // named field's own conditional lowering is out of scope here;
-          // it keeps falling through to the unchanged paths below.
-          if (parsedValue?.kind === 'conditional' && routesToRestBag(childShape, prop.name)) {
-            const isUndef = (e: ParsedExpr): boolean =>
-              (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
-              (e.kind === 'literal' && (e.value === null || e.value === undefined))
-            if (isUndef(parsedValue.alternate) && !isUndef(parsedValue.consequent)) {
-              const testGo = this.resolveTernaryOperandAsGo(
-                parsedValue.test,
-                ir.metadata.signals,
-                ir.metadata.memos,
-                ir.metadata.propsParams,
-                propFallbackVars,
-              )
-              const consequentGo = this.resolveTernaryOperandAsGo(
-                parsedValue.consequent,
-                ir.metadata.signals,
-                ir.metadata.memos,
-                ir.metadata.propsParams,
-                propFallbackVars,
-              )
-              if (testGo !== null && consequentGo !== null) {
-                // Go's `if` takes a `bool` and has no truthiness: a test that
-                // resolves to anything but a bool literal (a string/number
-                // signal seed, `tag={label() ? x : undefined}` over
-                // `createSignal('x')` → `"x"`; a prop field of another
-                // type) would embed `if "x" {` and fail to compile. Mirror
-                // `lowerTernaryTest` (`expr/url-builder.ts`): a resolved
-                // bool literal passes through, everything else goes through
-                // `bf.Truthy` — JS `Boolean(x)` over string / number / bool
-                // / nil, the same coercion the spread-bag conditionals use.
-                const condGo = testGo === 'true' || testGo === 'false' ? testGo : `bf.Truthy(${testGo})`
-                emitChildField(
-                  prop.name,
-                  `func() interface{} { if ${condGo} { return ${consequentGo} }; return nil }()`,
-                )
-                break
-              }
-            }
-          }
-          const objectTarget = objectBakeTargetFor(childShape, prop.name)
-          if (parsedValue && objectTarget) {
-            const goObj = objectLiteralToGoComposite(
-              this.emitCtx,
-              parsedValue,
-              objectTarget,
-              name => this.resolveLocalGetterAsGo(name, ir.metadata.signals, ir.metadata.memos, ir.metadata.propsParams, propFallbackVars),
-            )
-            if (goObj !== null) {
-              emitChildField(prop.name, goObj)
-              break
-            }
-          }
-          // A number/boolean JSX-EXPRESSION literal (`count={5}`,
-          // `active={true}`) — as opposed to a plain quoted string attr
-          // (`label="mail"`, which is `case 'literal':` above, an entirely
-          // different `AttrValue` kind) — is still `kind: 'expression'`
-          // here, since curly braces always parse to an expression
-          // container regardless of what's inside them. #2168
-          // child-primitive-props: `resolveDynamicPropValue` below only
-          // recognizes a getter call or a comparison against one; a bare
-          // `5`/`true` matches neither, so the field was silently OMITTED
-          // and the Badge's `Count`/`Active` fields defaulted to Go's zero
-          // value (`0`/`false`) regardless of the actual literal.
-          //
-          // Route through `parsedLiteralToGo` rather than hand-rolling a
-          // switch on `.value`/`.literalType`: a numeric literal needs its
-          // exact source `raw` token (Copilot review — `String(value)` can
-          // change spelling/precision, e.g. a large integer or `-0`), and
-          // `parsedLiteralToGo` also covers the LEADING-UNARY-MINUS shape
-          // (`count={-5}` parses as `kind: 'unary'` wrapping the literal,
-          // not `kind: 'literal'` itself — a case this branch's earlier
-          // `parsedValue?.kind === 'literal'` gate missed entirely and
-          // would have silently reintroduced the same omitted-field bug
-          // for a negative numeric literal).
-          if (parsedValue) {
-            const goVal = parsedLiteralToGo(this.emitCtx, parsedValue)
-            if (goVal !== null) {
-              emitChildField(prop.name, goVal)
-              break
-            }
-          }
-          const resolvedValue = this.resolveDynamicPropValue(
-            exprText,
-            ir.metadata.signals,
-            ir.metadata.memos,
-            ir.metadata.propsParams,
-            propFallbackVars,
-            childShape?.nillableParamNames.has(prop.name) ?? false,
-          )
-          // Any other value inside the evaluator's surface (`u().name!`, a
-          // member read off an object signal, #3437) is computed by
-          // `bf.EvalExpr` over the seeds it reads and converted to the
-          // child's Input field type.
-          const evaluatedValue = resolvedValue === null && parsedValue
-            ? this.evaluateChildPropValue(parsedValue, prop.name, childShape, ir, propFallbackVars)
-            : null
-          if (resolvedValue !== null) {
-            emitChildField(prop.name, childShape?.nillableParamNames.has(prop.name)
-              ? resolvedValue
-              : this.unboxNillablePropRef(resolvedValue, ir.metadata.propsParams, childShape?.paramGoTypes.get(prop.name)))
-          } else if (evaluatedValue !== null) {
-            emitChildField(prop.name, evaluatedValue)
-          } else if (parsedValue?.kind === 'unary' && parsedValue.op === '!') {
-            // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
-            // recursion still can't lower (e.g. a multi-arg call, a deep
-            // member chain, `!(a && b)`) — refuse loudly instead of
-            // silently omitting the field, which left the child's own
-            // zero value (`false`) masquerading as a real answer at every
-            // call site with no diagnostic.
-            this.state.errors.push({
-              code: 'BF101',
-              severity: 'error',
-              message: `Prop '${prop.name}' on <${child.name}> is a negated expression ('${exprText}') the Go template adapter can't lower to SSR output`,
-              loc: prop.loc,
-              suggestion: {
-                message: `Wrap <${child.name}> in /* @client */ so it renders on the client instead, or compute '${prop.name}' in the parent as its own signal/memo and pass that in as a plain prop.`,
-                escape: [{ kind: 'client-directive' }],
-              },
-            })
-          } else {
-            unlowered.push(prop)
-          }
-          break
-        }
-        case 'jsx-children':
-          // The RESERVED children slot (`comp.children.length > 0 ? comp.children
-          // : resolveJsxChildrenProp(...)`) is handled by the caller via
-          // `child.childrenText` / `child.childrenHtml` and must not be
-          // re-emitted here. A JSX-valued prop under any OTHER name
-          // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) is a
-          // named slot — bake it the same way real children are baked
-          // (`extractTextChildren` / `extractHtmlChildren`) and emit it as
-          // its own struct field, mirroring the caller's `Children` field
-          // text-vs-HTML branching.
-          if (prop.name !== 'children') {
-            const text = this.extractTextChildren(prop.value.children)
-            if (text !== null) {
-              emitChildField(prop.name, JSON.stringify(text))
-            } else {
-              const html = this.extractHtmlChildren(prop.value.children)
-              if (html !== null) {
-                this.state.usesHtmlTemplate = true
-                emitChildField(prop.name, `template.HTML(${JSON.stringify(html)})`)
-              } else {
-                // The value's root needs the PARENT's runtime scope id
-                // (`<strong>` hoisted from the call site inherits the
-                // caller's `bf-s`, not a bake-time constant) — same
-                // needsScope case `childrenScopedHtmlExpr` handles for
-                // the reserved children slot. The returned string is
-                // already a Go concatenation expression (`"..." +
-                // scopeID + "..."`), not a literal to re-quote.
-                const scopedHtml = this.extractScopedHtmlChildren(prop.value.children)
-                if (scopedHtml !== null) {
-                  this.state.usesHtmlTemplate = true
-                  emitChildField(prop.name, `template.HTML(${scopedHtml})`)
-                }
-                // Else: none of the three bake attempts produced a static
-                // Go string — the value contains a template action that
-                // survived (#2746) or is otherwise genuinely dynamic
-                // (#2703). No field is emitted here; `queueDynamicPropDefine`
-                // (called from `renderComponent`'s static-call-site branch)
-                // detects the SAME unbakeable shape and delivers it at
-                // template-execution time via `bf_with_props` + `bf_tmpl`,
-                // mirroring how the reserved `children` field's null case
-                // just above is filled in by `bf_with_children`. A
-                // component nested in a loop-row child's forwarded children
-                // renders through that same static call-site branch inside
-                // its companion define, so it is covered too; the loop-body
-                // component itself (the wrapper-slice call) has no dynamic
-                // named-prop delivery yet.
-              }
-            }
-          }
-          break
-      }
-    }
-    // Rest-bag entries → the child's open-ended bag field
-    // (`Props: map[string]any{...}`).
-    if (childShape?.restBagField && restBagEntries.length > 0) {
-      fields.push({ goField: childShape.restBagField, goValue: `map[string]any{${restBagEntries.join(', ')}}` })
-    }
-    return { fields, unlowered }
-  }
-
-  /**
-   * A child call's props once the shared plan has resolved its `{...props}`
-   * spread one key at a time (`resolvePropsSpreadCall`, #3530):
-   *
-   * - `props`: the props still lowered as written — the spread itself, and
-   *   every prop a later writer of its key replaces, dropped;
-   * - `paramFields`: an `in.<Field>` value for each param the spread carries
-   *   unconditionally and the child takes — a declared param, or any key
-   *   when the child has a rest bag (`emitChildField` routes it there);
-   * - `passedOr`: wraps the value a key would otherwise take in a nil test of
-   *   the param the spread carries only when the caller passed it.
-   *
-   * A call without the spread passes through unchanged.
-   */
-  private planChildCallProps(
-    child: { name: string; props: readonly IRProp[] },
-    ir: ComponentIR,
-    childShape: ChildComponentShape | undefined,
-  ): {
-    props: readonly IRProp[]
-    paramFields: Array<{ name: string; goValue: string }>
-    passedOr: (name: string, value: string) => string
-  } {
-    const call = resolvePropsSpreadCall(this.emitCtx, ir, child.props)
-    if (call === null) return { props: child.props, paramFields: [], passedOr: (_name, value) => value }
-    const spread = child.props.find(p => isPropsObjectSpread(p, this.state.propsObjectName))!
-    const props = child.props.filter(p => p !== spread)
-    if (call.kind === 'unresolved') {
-      this.refusePropsSpreadMerge(child.name, spread, 'the call also spreads an object whose keys are only known at render time')
-      return { props, paramFields: [], passedOr: (_name, value) => value }
-    }
-    const propsParams = ir.metadata.propsParams
-    const paramFields: Array<{ name: string; goValue: string }> = []
-    for (const resolved of call.keys.values()) {
-      const param = resolved.base?.kind === 'props-param' ? propsParams.find(p => p.name === resolved.key) : undefined
-      if (!param) continue
-      // A key the child neither declares nor collects in a rest bag has no
-      // field on its Input: JS hands it over, but the child never reads it.
-      if (childShape && !childShape.restBagField && !childShape.paramNames.has(param.name)) continue
-      const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-      const keepsNil = routesToRestBag(childShape, param.name) || childShape?.nillableParamNames.has(param.name)
-      paramFields.push({
-        name: param.name,
-        goValue: keepsNil ? ref : this.unboxNillablePropRef(ref, propsParams, childShape?.paramGoTypes.get(param.name)),
-      })
-    }
-    return {
-      props: props.filter(p => isFinalPropWriter(p, call.keys)),
-      paramFields,
-      passedOr: (name, value) => {
-        const resolved = call.keys.get(name)
-        if (!resolved || resolved.presentParams.length === 0) return value
-        return this.passedPropsParamOr(resolved.key, value, { childName: child.name, spread, childShape, ir })
-      },
-    }
-  }
-
-  /**
-   * `value` for a key a `{...props}` spread carries only when the caller
-   * passed the param of the same name: the param's own Input field when it is
-   * not nil, `value` otherwise. The field is nillable by construction
-   * (`propsSpreadForwardedPropNames`); a param whose field is not, or a child
-   * field this can't type, is refused rather than overridden unconditionally.
-   */
-  private passedPropsParamOr(
-    name: string,
-    value: string,
-    site: { childName: string; spread: IRProp; childShape: ChildComponentShape | undefined; ir: ComponentIR },
-  ): string {
-    const { childShape } = site
-    const param = site.ir.metadata.propsParams.find(p => p.name === name)
-    const ref = param ? `in.${capitalizeFieldName(param.sourceName ?? param.name)}` : ''
-    const destType = routesToRestBag(childShape, name) || childShape?.nillableParamNames.has(name)
-      ? 'interface{}'
-      : childShape?.paramGoTypes.get(name)
-    const passed = destType === 'interface{}' ? ref : destType ? unboxToGoScalar(ref, destType) : null
-    if (!param || !this.state.nillablePropNames.has(param.name) || passed === null) {
-      this.refusePropsSpreadMerge(
-        site.childName,
-        site.spread,
-        `the Go template adapter can't tell an omitted '${name}' from a passed one here, so it can't keep the value an earlier prop gives it`,
-      )
-      return value
-    }
-    return `func() ${destType} { if ${ref} != nil { return ${passed} }; return ${value} }()`
-  }
-
-  /** BF101 for a `{...props}` spread onto a child the Go constructor can't merge soundly (#3530). */
-  private refusePropsSpreadMerge(childName: string, spread: IRProp, reason: string): void {
-    this.state.errors.push({
-      code: 'BF101',
-      severity: 'error',
-      message: `'{...${this.state.propsObjectName}}' on <${childName}> can't be merged with the other props of the call: ${reason}`,
-      loc: spread.loc,
-      suggestion: {
-        message: `Pass the props to <${childName}> one by one, or wrap <${childName}> in /* @client */ so it renders on the client instead.`,
-        escape: [{ kind: 'client-directive' }],
-      },
-    })
-  }
-
-  /**
-   * Does `prop`'s value read a name `rowScope` binds? Reads the IR-computed
-   * `IRProp.freeIdentifiers` when it is a live `Set` — it does not survive the
-   * debug IR's JSON round trip, which `generateTypes` can be handed — and
-   * otherwise walks the parsed value (`freeIdentifiers`). False when neither
-   * can answer: the prop then goes through the ordinary lowering, which
-   * refuses it loudly at a loop-row site if it can't be lowered.
-   */
-  private propReadsRow(prop: IRProp, rowScope: BindingScope): boolean {
-    const irFree = prop.freeIdentifiers
-    const free: Iterable<string> | null =
-      irFree instanceof Set
-        ? irFree
-        : (prop.value.kind === 'expression' || prop.value.kind === 'spread') && prop.value.parsed
-          ? freeIdentifiers(prop.value.parsed)
-          : null
-    if (free === null) return false
-    for (const name of free) {
-      if (rowScope.isBound(name)) return true
-    }
-    return false
-  }
-
-  /**
-   * `lowerChildInputFields` for a child built once per loop in the parent's
-   * constructor and shared by every row (the loop-body component of a
-   * wrapper-slice loop, and each component nested in its forwarded
-   * children). Row-dependent props are skipped (delivered per row); `key` is
-   * the row's reconciliation key, not a prop. Every other prop goes through
-   * the same lowering as a non-loop call site — a `/* @client *\/` prop
-   * included, which the reference still renders at SSR
-   * (`loop-row-child-children-nested-client-prop`). A prop the constructor
-   * can't lower is refused with BF101 rather than left at the child's zero
-   * value — but only when it is SSR data with somewhere to go
-   * (`isUndeliveredSsrData`).
-   */
-  private lowerLoopRowChildInputFields(
-    child: { name: string; props: readonly IRProp[] },
-    ir: ComponentIR,
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-    rowScope: BindingScope,
-  ): Array<{ goField: string; goValue: string }> {
-    const props = child.props.filter(p => p.name !== 'key')
-    const { fields, unlowered } = this.lowerChildInputFields(
-      { name: child.name, props },
-      ir,
-      propFallbackVars,
-      rowScope,
-    )
-    for (const prop of unlowered) {
-      if (!this.isUndeliveredSsrData(prop, child.name, ir)) continue
-      this.state.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Prop '${prop.name}' on <${child.name}> inside a loop row can't be lowered to an SSR value by the Go template adapter`,
-        loc: prop.loc,
-        suggestion: {
-          message: `Mark the prop /* @client */ so it is applied on the client instead, or compute '${prop.name}' in the parent as its own signal/memo and pass that in.`,
-          escape: [{ kind: 'client-directive' }],
-        },
-      })
-    }
-    return fields
-  }
-
-  /**
-   * Whether an unlowered loop-row child prop is SSR data the child should
-   * have received — the only props the loop-row refusal covers. Everything
-   * else is left out of the constructor silently, exactly as a non-loop
-   * call site leaves every unlowered prop (`emitStaticChildInstances`):
-   *
-   * - a `/* @client *\/` prop: the documented escape — applied on the
-   *   client when SSR can't lower it (it is lowered like any prop when it can);
-   * - `children`: the reserved slot, delivered by `bf_with_children` (the
-   *   forwarded children define), never by the constructor;
-   * - `ref`: a compile-time binding to the child's root element, applied on
-   *   the client (`child-component-ref-prop`);
-   * - an event handler (`isEventHandlerName`) or any other function-valued
-   *   prop (a setter, a callback): behavior, which SSR never invokes;
-   * - a hyphenated name with no rest bag to route into: no Go field can hold
-   *   it (`emitChildField` drops it even when its value lowers);
-   * - an imported binding (`isImportedBindingValue`) passed to a param that
-   *   could hold a function: its value lives in another module, the IR
-   *   records no type for an import, and the adapter has no type checker,
-   *   so nothing here says whether it is a function or data. Refused only
-   *   when the child's declared type for the param can't hold a function
-   *   (`dataTypedParamNames`).
-   */
-  private isUndeliveredSsrData(prop: IRProp, childName: string, ir: ComponentIR): boolean {
-    if (prop.clientOnly) return false
-    if (prop.name === 'children' || prop.name === 'ref') return false
-    if (isEventHandlerName(prop.name)) return false
-    const shape = this.childComponentShapes.get(this.resolveChildName(childName))
-    if (prop.name.includes('-') && !routesToRestBag(shape, prop.name)) return false
-    if (this.isFunctionValuedProp(prop, ir)) return false
-    if (this.isImportedBindingValue(prop, ir)) return shape?.dataTypedParamNames.has(prop.name) ?? false
-    return true
-  }
-
-  /**
-   * Whether a prop's value is an imported binding — a value-imported name
-   * (named, aliased, or default) or a member read off one (`utils.formatTone`
-   * off a namespace import), per `ir.metadata.imports`. A component-local
-   * binding of the same name shadows the import and is not one.
-   */
-  private isImportedBindingValue(prop: IRProp, ir: ComponentIR): boolean {
-    if (prop.value.kind !== 'expression') return false
-    let root = prop.value.parsed
-    while (root?.kind === 'member') root = root.object
-    if (root?.kind !== 'identifier') return false
-    const name = root.name
-    const { signals, memos, localFunctions, propsParams } = ir.metadata
-    if (
-      signals.some(s => s.getter === name || s.setter === name) ||
-      memos.some(m => m.name === name) ||
-      localFunctions.some(f => f.name === name) ||
-      propsParams.some(p => p.name === name) ||
-      this.findValuedLocalConst(name)
-    ) {
-      return false
-    }
-    return ir.metadata.imports.some(imp =>
-      !imp.isTypeOnly && imp.specifiers.some(spec => !spec.isTypeOnly && (spec.alias ?? spec.name) === name),
-    )
-  }
-
-  /**
-   * Whether a prop's value is a function — an inline arrow / function
-   * expression, or a name this component binds to one (a signal setter, a
-   * local function declaration, a const initialized with a function).
-   */
-  private isFunctionValuedProp(prop: IRProp, ir: ComponentIR): boolean {
-    if (prop.value.kind !== 'expression') return false
-    const parsed = prop.value.parsed
-    if (parsed?.kind === 'arrow') return true
-    if (parsed?.kind === 'identifier') {
-      const name = parsed.name
-      const { signals, localFunctions } = ir.metadata
-      if (signals.some(s => s.setter === name)) return true
-      if (localFunctions.some(f => f.name === name)) return true
-      // The shared const lookups, not a new linear scan
-      // (`binding-scope-ratchet.test.ts`'s shrink-only ledger).
-      const constant = this.findValuedLocalConst(name) ?? this.findModuleScopeConst(name)
-      if (!constant?.value) return false
-      return constant.parsed?.kind === 'arrow' || isFunctionShapedExpression(constant.value)
-    }
-    return isFunctionShapedExpression(prop.value.expr)
-  }
-
-  /**
    * The `child_<Field> := New<Child>Props(...)` constructions for the
    * components nested in a loop-body component's forwarded children, built
    * once and shared by every row (identical scope IDs per row). Shared by the
@@ -3417,7 +2852,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
       lines.push(`\t\tBfParent: scopeID,`)
       lines.push(`\t\tBfMount: "${child.slotId}",`)
-      for (const f of this.lowerLoopRowChildInputFields(child, ir, propFallbackVars, child.rowScope)) {
+      for (const f of lowerLoopRowChildInputFields(this.childInputHost, child, ir, propFallbackVars, child.rowScope)) {
         lines.push(`\t\t${f.goField}: ${f.goValue},`)
       }
       lines.push(`\t})`)
@@ -3444,7 +2879,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`\t\t\t\tBfParent: scopeID,`)
     lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
     const own = { name: nested.name, props: nested.rowProps }
-    for (const f of this.lowerLoopRowChildInputFields(own, ir, propFallbackVars, nested.rowScope)) {
+    for (const f of lowerLoopRowChildInputFields(this.childInputHost, own, ir, propFallbackVars, nested.rowScope)) {
       lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
     }
     lines.push(`\t\t\t}),`)
@@ -4146,7 +3581,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } else {
       return null
     }
-    if (!withBody && this.sourceRowChildInputFields(ir, nested, source.shape, collectPropFallbackVars(this.emitCtx, ir), false) === null) {
+    if (!withBody && sourceRowChildInputFields(this.childInputHost, ir, nested, source.shape, collectPropFallbackVars(this.emitCtx, ir), false) === null) {
       return null
     }
     return source
@@ -4170,93 +3605,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       current = { kind: 'interface', raw: field.goType }
     }
     return goType
-  }
-
-  /**
-   * The `<Child>Input` fields of a bodyless prop-array loop's row
-   * (`propArrayLoopRowSource`), each evaluated against the source row
-   * `item`: a prop reading the row lowers to its row accessor
-   * (`label={item.label}` → `Label: item.Label`, a scalar row's `label={i}`
-   * → `Label: item`); any other prop goes through the same constructor-time
-   * lowering as a non-loop call site (`lowerChildInputFields`). `key` is the
-   * row's reconciliation key, not a prop. Null — and nothing recorded —
-   * when an SSR prop (`isUndeliveredSsrData`) can't be lowered that way;
-   * the loop then keeps its caller-supplied `in.<Child>s` rows.
-   *
-   * `emit` false is the decision-only probe: diagnostics and import flags
-   * the lowering raises are rolled back. `readsRow` marks the fields read
-   * off the row, so the caller knows whether to bind `item`.
-   */
-  private sourceRowChildInputFields(
-    ir: ComponentIR,
-    nested: NestedComponentInfo,
-    shape: LoopRowShape,
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-    emit: boolean,
-  ): Array<{ goField: string; goValue: string; readsRow?: true }> | null {
-    const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
-    const childShape = this.childComponentShapes.get(this.resolveChildName(nested.name))
-    const rowFields: Array<{ goField: string; goValue: string; readsRow: true }> = []
-    const rowIndependent: IRProp[] = []
-    for (const prop of nested.rowProps) {
-      if (prop.name === 'key') continue
-      const ssrData = this.isUndeliveredSsrData(prop, nested.name, ir)
-      if (!this.propReadsRow(prop, nested.rowScope)) {
-        rowIndependent.push(prop)
-        continue
-      }
-      const parsed = prop.value.kind === 'expression' ? prop.value.parsed : undefined
-      const accessor = parsed ? rowReadGoAccessor(parsed, row, shape) : null
-      if (accessor === null || prop.name.includes('-') || routesToRestBag(childShape, prop.name)) {
-        if (ssrData) return null
-        continue
-      }
-      // The row's Go value must be assignable to the child's Input field as
-      // is: a struct row (`value={item}`) or an object field
-      // (`meta={item.meta}`) is the PARENT's generated struct, never the
-      // child's (`ListItemsItem` vs `BadgeValue`), and a scalar read can
-      // still differ (`int` row field, `float64` `.toFixed()` prop). Anything
-      // else keeps the caller-supplied rows.
-      if (!this.rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)) return null
-      rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: rowReadGoValue(accessor, shape), readsRow: true })
-    }
-    const errorCount = this.state.errors.length
-    const { usesFmt, usesHtmlTemplate } = this.state
-    const { fields, unlowered } = this.lowerChildInputFields(
-      { name: nested.name, props: rowIndependent },
-      ir,
-      propFallbackVars,
-    )
-    const declined =
-      this.state.errors.length > errorCount || unlowered.some(p => this.isUndeliveredSsrData(p, nested.name, ir))
-    if (declined || !emit) {
-      this.state.errors.length = errorCount
-      this.state.usesFmt = usesFmt
-      this.state.usesHtmlTemplate = usesHtmlTemplate
-    }
-    return declined ? null : [...rowFields, ...fields]
-  }
-
-  /**
-   * Whether the row read `expr` (already accepted by `rowReadGoAccessor`)
-   * can be assigned to the child's `jsxName` Input field without
-   * conversion: a scalar read whose Go type is the field's own. Unknown on
-   * either side answers false — including an `interface{}` answer, which is
-   * what an object-shaped param resolves to before the child synthesizes
-   * its own struct for it (`BadgeValue`).
-   */
-  private rowReadAssignsToChildField(
-    expr: ParsedExpr,
-    row: LoopRowBinding,
-    shape: LoopRowShape,
-    childShape: ChildComponentShape | undefined,
-    jsxName: string,
-  ): boolean {
-    const path = rowItemPath(expr, row)
-    const readGoType = path && shape.readGoType ? shape.readGoType(path) : null
-    const fieldGoType = childShape?.paramGoTypes.get(jsxName)
-    if (!readGoType || !fieldGoType) return false
-    return SCALAR_ROW_GO_TYPES.has(readGoType) && readGoType === fieldGoType
   }
 
   /**
@@ -4404,7 +3752,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     const varName = this.nestedRowsVar(nested)
     const declaredName = this.resolveChildName(nested.name)
-    const fields = this.sourceRowChildInputFields(ir, nested, source.shape, propFallbackVars, true) ?? []
+    const fields = sourceRowChildInputFields(this.childInputHost, ir, nested, source.shape, propFallbackVars, true) ?? []
     const keyExpr = loopKeyToGoRowExpr(nested.loopKey, this.nestedRowBinding(nested), source.shape)
     // Bind `item` only when the key or a field reads the row: an unused
     // range variable doesn't compile.
@@ -4551,16 +3899,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `binding-scope-ratchet.test.ts`'s shrink-only ledger from growing.
    */
   private findModuleScopeConst(name: string): ConstantInfo | undefined {
-    return this.state.localConstants.find(c => c.name === name && c.origin?.scope === 'module')
+    return findModuleScopeConst(this.state, name)
   }
 
-  /**
-   * A non-module local const that has an initializer, by name. The one
-   * lookup shared by `computeDerivedConstFields` and `isStringExpr`, which
-   * used the same predicate at two sites.
-   */
+  /** A non-module local const that has an initializer, by name (`findValuedLocalConst`). */
   private findValuedLocalConst(name: string): ConstantInfo | undefined {
-    return this.state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
+    return findValuedLocalConst(this.state, name)
   }
 
   /**
@@ -5296,63 +4640,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return null
   }
 
-  /**
-   * Convert a template literal's parsed parts into a `string`-typed Go
-   * expression in `NewXxxProps` scope (destructured prop refs → `in.FieldName`),
-   * or null so the caller falls back to `resolveDynamicPropValue`. A `string`
-   * part emits a Go literal; a `lookup` (`${MAP[KEY]}` over a `Record<T,string>`,
-   * key must be a bare prop ident) emits a switch-on-key IIFE. `ternary` opts out
-   * — the element-attribute path handles it via `{{if}}`.
-   */
-  private templatePartsToGoCode(
-    parts: IRTemplatePart[],
-    propsParams: { name: string; sourceName?: string }[]
-  ): string | null {
-    const segments: string[] = []
-    let usesFmt = false
-    for (const part of parts) {
-      if (part.type === 'string') {
-        segments.push(JSON.stringify(part.value))
-        continue
-      }
-      if (part.type === 'lookup') {
-        const keyExpr = part.key.trim()
-        const param = propsParams.find(p => p.name === keyExpr)
-        if (!param) return null
-        // Input field is caller-facing (#2525); `keyExpr` is the LOCAL prop
-        // binding used in the source expression.
-        const fieldName = capitalizeFieldName(param.sourceName ?? keyExpr)
-        const caseEntries = Object.entries(part.cases)
-        if (caseEntries.length === 0) {
-          segments.push('""')
-          continue
-        }
-        const lines: string[] = []
-        lines.push('func() string {')
-        // `fmt.Sprint` is type-tolerant: the key field is `interface{}` when the
-        // analyzer typed the prop, but a `string` when the shared inherited-prop
-        // augmentation synthesised it — a `.(string)` assertion would compile
-        // for the former only.
-        usesFmt = true
-        lines.push(`\t\t\tswitch fmt.Sprint(in.${fieldName}) {`)
-        for (const [k, v] of caseEntries) {
-          lines.push(`\t\t\tcase ${JSON.stringify(k)}: return ${JSON.stringify(v)}`)
-        }
-        lines.push('\t\t\t}')
-        lines.push('\t\t\treturn ""')
-        lines.push('\t\t}()')
-        segments.push(lines.join('\n'))
-        continue
-      }
-      // ternary or future part kinds — opt out so the caller falls back to the
-      // bare-expression path.
-      return null
-    }
-    if (usesFmt) this.state.usesFmt = true
-    if (segments.length === 0) return '""'
-    return segments.join(' + ')
-  }
-
   private resolveDynamicPropValue(
     expr: string,
     signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
@@ -5416,7 +4703,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Signal/memo getter calls (`count()`, `doubled()`).
     const getterMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\(\)$/)
     if (getterMatch) {
-      const resolved = this.resolveLocalGetterAsGo(getterMatch[1], signals, memos, propsParams, propFallbackVars, nillableDest)
+      const resolved = resolveLocalGetterAsGo(this.emitCtx, getterMatch[1], signals, memos, propsParams, propFallbackVars, nillableDest)
       if (resolved !== null) return resolved
       // Neither a signal nor a memo (some other zero-arg call) — fall
       // through to the passthrough checks below, same as before.
@@ -5457,7 +4744,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // name, falls through unresolved, and stays omitted exactly as before
     // this fix.
     if (bareIdentifier !== null) {
-      const resolved = this.resolveLocalGetterAsGo(bareIdentifier, signals, memos, propsParams, propFallbackVars, nillableDest)
+      const resolved = resolveLocalGetterAsGo(this.emitCtx, bareIdentifier, signals, memos, propsParams, propFallbackVars, nillableDest)
       if (resolved !== null) return resolved
     }
     // Plain prefix/suffix check rather than an `expr`-interpolated `RegExp`:
@@ -5503,149 +4790,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // (`barePropAccess`, never aliased) — resolve through the matched
       // param rather than assuming the two coincide.
       return `in.${capitalizeFieldName(passthroughParam.sourceName ?? passthroughParam.name)}`
-    }
-
-    return null
-  }
-
-  /**
-   * `value` unboxed into a child's concrete scalar Input field when it is
-   * the bare `in.<Field>` of a prop this component flipped to `interface{}`
-   * (`resolvePropGoType`, #3422) — reached by a direct passthrough
-   * (`text={props.text}`) or an identity memo over it (`text={relayed()}`).
-   * Any other value, or an unknown / non-scalar destination, is unchanged.
-   */
-  private unboxNillablePropRef(
-    value: string,
-    propsParams: readonly { name: string; sourceName?: string }[],
-    destGoType: string | undefined,
-  ): string {
-    if (!destGoType) return value
-    const param = propsParams.find(p => value === `in.${capitalizeFieldName(p.sourceName ?? p.name)}`)
-    if (!param || !this.state.nillablePropNames.has(param.name)) return value
-    return unboxToGoScalar(value, destGoType) ?? value
-  }
-
-  /**
-   * A child prop read off this component's own rest bag (`rest.tone`, the
-   * per-key form a closed `{...rest}` spread onto a child expands to, #3530):
-   * the bag's entry, nil when the caller omitted the key, so the child sees
-   * the omission. A concrete child field takes the entry converted to its
-   * type. Null for any other value.
-   */
-  private restMemberChildPropValue(
-    value: ParsedExpr,
-    propName: string,
-    childShape: ChildComponentShape | undefined,
-  ): string | null {
-    const restName = this.state.restPropsName
-    if (
-      restName === null || value.kind !== 'member' || value.computed ||
-      value.object.kind !== 'identifier' || value.object.name !== restName
-    ) {
-      return null
-    }
-    const ref = `in.${capitalizeFieldName(restName)}[${JSON.stringify(value.property)}]`
-    if (routesToRestBag(childShape, propName) || childShape?.nillableParamNames.has(propName)) return ref
-    const goType = childShape?.paramGoTypes.get(propName)
-    return goType === undefined ? null : unboxToGoScalar(ref, goType)
-  }
-
-  /**
-   * A child prop value computed by the runtime evaluator over this
-   * component's seeds (`evalExprGo`), typed for its destination: a rest-bag
-   * entry or a nillable Input field takes the `any` result, a concrete field
-   * its JS-coerced Go type (`evaluatedAsGoType`). Null when the value is
-   * outside the evaluator's surface or the destination type can't take it.
-   */
-  private evaluateChildPropValue(
-    value: ParsedExpr,
-    propName: string,
-    childShape: ChildComponentShape | undefined,
-    ir: ComponentIR,
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-  ): string | null {
-    const restRead = this.restMemberChildPropValue(value, propName, childShape)
-    if (restRead !== null) return restRead
-    // A component-scope computed const (`const shown = props.label ?? 'd'`)
-    // is read through its value, not its name (#3507) — a const shadowing a
-    // prop would otherwise read the prop and drop the const's default.
-    const evaluated = evalExprGo(
-      this.emitCtx, inlineComputedConsts(value, this.state.computedConsts), ir.metadata.signals,
-      ir.metadata.propsParams, propFallbackVars, new Set(),
-    )
-    if (evaluated === null) return null
-    if (routesToRestBag(childShape, propName) || childShape?.nillableParamNames.has(propName)) return evaluated
-    const goType = childShape?.paramGoTypes.get(propName)
-    return goType === undefined ? null : evaluatedAsGoType(evaluated, goType)
-  }
-
-  /**
-   * Resolve ONE structural operand of a ternary destined for a child prop
-   * (#3060's `emitChildField` conditional arm) to its Go constructor-time
-   * value: a zero-arg getter call (`shown()`, `tag()`) and a bare identifier
-   * (a local getter, or a passthrough prop reference) both go through
-   * `resolveDynamicPropValue` — the ONE place that already answers "what does
-   * this expression evaluate to at constructor time" for a bare child-prop
-   * value, including its local-shadow guard (a `const label = …` shadowing a
-   * `label` prop must NOT resolve to `in.Label`; #2198's hazard). A literal
-   * goes through `parsedLiteralToGo`. Returns null for any other operand
-   * shape (member expression, nested call, binary/logical) — the caller falls
-   * through to leaving the field unbaked (the pre-existing behavior for a
-   * ternary this narrow arm doesn't cover) rather than guessing.
-   */
-  private resolveTernaryOperandAsGo(
-    node: ParsedExpr,
-    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
-    propsParams: { name: string; sourceName?: string }[],
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-  ): string | null {
-    if (node.kind === 'call' && node.callee.kind === 'identifier' && node.args.length === 0) {
-      return this.resolveDynamicPropValue(`${node.callee.name}()`, signals, memos, propsParams, propFallbackVars)
-    }
-    if (node.kind === 'identifier') {
-      return this.resolveDynamicPropValue(node.name, signals, memos, propsParams, propFallbackVars)
-    }
-    if (node.kind === 'literal') {
-      return parsedLiteralToGo(this.emitCtx, node)
-    }
-    return null
-  }
-
-  /** Infer the Go type for a memo from its computation and dependencies. */
-  /**
-   * Resolve a BARE getter name (a local signal or memo, e.g. `count` in
-   * `<Display value={count} />`) against this component's own constructor-
-   * time seeding — the SAME value the CALLED form (`count()`) already bakes
-   * in `resolveDynamicPropValue`'s `getterMatch` branch, and the signal's own
-   * top-level field (`signalSeedGo` above). `null` when `name` doesn't name a
-   * local signal or memo at all (the caller then tries other resolutions —
-   * a passthrough prop, or gives up and omits the field).
-   *
-   * A memo forwards through `computeMemoInitialValueOrNull` with the REAL
-   * `propFallbackVars` (not `undefined`, unlike this function's one caller
-   * used to pass) so a memo over a `props.X ?? N`-seeded signal sees the
-   * hoisted var too — a strict improvement, not a behavior change for any
-   * memo that doesn't reference such a signal.
-   */
-  private resolveLocalGetterAsGo(
-    name: string,
-    signals: { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }[],
-    memos: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
-    propsParams: { name: string; sourceName?: string }[],
-    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
-    nillableDest = false,
-  ): string | null {
-    const signal = signals.find(s => s.getter === name)
-    if (signal) return signalSeedGo(this.emitCtx, signal, propsParams, propFallbackVars, signal.type, nillableDest)
-
-    const memo = memos.find(m => m.name === name)
-    if (memo) {
-      return (
-        this.state.hoistedMemoLocals.get(memo.name) ??
-        computeMemoInitialValueOrNull(this.emitCtx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]))
-      )
     }
 
     return null

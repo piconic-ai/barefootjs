@@ -23,3 +23,6 @@ export const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.min':       { arity: 2, emit: (args) => `bf_min ${wrapGoArg(args[0])} ${wrapGoArg(args[1])}` },
   'Math.max':       { arity: 2, emit: (args) => `bf_max ${wrapGoArg(args[0])} ${wrapGoArg(args[1])}` },
 }
+
+/** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
+export const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])

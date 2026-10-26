@@ -17,6 +17,7 @@
 import type {
   CompilerError,
   ComputedConstContext,
+  ConstantInfo,
   ContextConsumer,
   EnvSignalReader,
   IRMetadata,
@@ -460,4 +461,18 @@ export function resolveSignalParsedThroughSeedPlan(
     s => s.kind === 'derived' && s.origin === 'signal' && s.name === signal.getter,
   )
   return step?.kind === 'derived' ? step.parsed : signal.parsed
+}
+
+/** A module-scope const, by name. */
+export function findModuleScopeConst(state: CompileState, name: string): ConstantInfo | undefined {
+  return state.localConstants.find(c => c.name === name && c.origin?.scope === 'module')
+}
+
+/**
+ * A non-module local const that has an initializer, by name. The one
+ * lookup shared by `computeDerivedConstFields`, `isStringExpr` and the
+ * child-Input lowering's function/import checks.
+ */
+export function findValuedLocalConst(state: CompileState, name: string): ConstantInfo | undefined {
+  return state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
 }
