@@ -183,7 +183,7 @@ export type {
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { childTemplateName, componentPropKey, isEmptyComponentProps, planComponentProps, propsSpreadParam, resolveComponentPropKeys, spellComponentProps } from './adapters/component-props.ts'
 export type { ComponentPropEntry, ComponentPropSegment, ComponentPropSpelling, ComponentPropsOptions, ComponentPropsParam, EarlierComponentProps, ResolvedComponentProp, SpelledComponentPropSegment } from './adapters/component-props.ts'
-export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, unsupportedAttrExpression, unsupportedAttrExpressionError } from './adapters/attr-plan.ts'
+export { parseUndefinedAlternateTernary, planAttrExpression, planSpreadAttr, } from './adapters/attr-plan.ts'
 export type { AttrExpressionPlan, AttrPlanContext, SpreadAttrPlan, SpreadPlanContext, UndefinedAlternateTernary } from './adapters/attr-plan.ts'
 export { loopHeaderTargets, planLoop, savedLoopBindings, spellDestructureLocals, spellFilteredRow, spellSortedSource } from './adapters/loop-plan.ts'
 export { computedConstContext, inlineComputedConstAttr, inlineComputedConsts } from './adapters/computed-const.ts'

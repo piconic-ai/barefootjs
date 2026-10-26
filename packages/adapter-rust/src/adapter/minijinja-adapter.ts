@@ -178,7 +178,6 @@ import {
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
-  unsupportedAttrExpressionError,
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
@@ -1075,12 +1074,6 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
         const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
-      // Refuse shapes that the lowering pipeline can't represent in Jinja —
-      // tagged-template-literal call expressions (`cn\`base \${tone()}\``).
-      // Same gate as the Xslate adapter.
-      if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
-        return ''
-      }
       const plan = planAttrExpression(value, name, {
         propsObjectName: this.propsObjectName,
         restPropsName: this.restPropsName,
@@ -1134,9 +1127,6 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     // Spread attributes (`<div {...attrs()} />`) lower through the
     // `bf.spread_attrs` runtime helper, mirroring the Xslate adapter.
     emitSpread: (value) => {
-      if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
-        return ''
-      }
       const plan = planSpreadAttr(value, {
         propsObjectName: this.propsObjectName,
         propsParams: this.propsParams,
@@ -1310,18 +1300,6 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     }
     if (segments.length === 0) return `''`
     return segments.length === 1 ? segments[0] : `(${segments.join(' ~ ')})`
-  }
-
-  /**
-   * Refuse JS expression shapes that have no idiomatic Jinja representation:
-   * object literals (`style={{...}}`) and tagged-template-literal call
-   * expressions (`cn\`base \${tone()}\``). Records `BF101`. Returns `true`
-   * when the shape was rejected (caller should drop the attribute).
-   */
-  private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    const error = unsupportedAttrExpressionError(expr, attrName, this._loweringMatchers, this.componentName, 'Jinja', 'Jinja')
-    if (error) this.errors.push(error)
-    return error !== null
   }
 
   /**

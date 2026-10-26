@@ -98,7 +98,6 @@ import {
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
-  unsupportedAttrExpressionError,
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
@@ -1182,14 +1181,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         const css = this.tryLowerStyleObject(value)
         if (css !== null) return `style="${css}"`
       }
-      // Refuse shapes that have no idiomatic ERB template representation.
-      // Tagged-template-literal call expressions (`cn\`base \${tone()}\``)
-      // have no idiomatic ERB template form; the Go adapter raises BF101
-      // here via `convertExpressionToGo` + `isSupported`. Lift the same
-      // gate so the user gets a clear diagnostic instead of broken output.
-      if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
-        return ''
-      }
       const plan = planAttrExpression(value, name, {
         propsObjectName: this.propsObjectName,
         restPropsName: this.restPropsName,
@@ -1245,9 +1236,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // ignores it — the slot field exists only for the Go adapter's
     // static-typed Props struct.
     emitSpread: (value) => {
-      if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
-        return ''
-      }
       const plan = planSpreadAttr(value, {
         propsObjectName: this.propsObjectName,
         propsParams: this.propsParams,
@@ -1459,28 +1447,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     }
     if (segments.length === 0) return `''`
     return segments.length === 1 ? segments[0] : `(${segments.join(' + ')})`
-  }
-
-  /**
-   * Refuse JS expression shapes that have no idiomatic ERB template
-   * representation. Currently catches:
-   *
-   *   - Object literals (`style={{ background: bg(), color: fg() }}`):
-   *     the regex pipeline strips signal calls but leaves the surrounding
-   *     `{ k: v, ... }` syntax intact, producing invalid Ruby inside
-   *     `<%= ... %>`.
-   *   - Tagged-template-literal call expressions
-   *     (`className={cn\`base \${tone()}\`}`): regex translation
-   *     produces malformed Ruby with no callable target.
-   *
-   * Records `BF101` with the same shape the Go/Mojo adapters emit, so
-   * cross-adapter diagnostics stay consistent. Returns `true` when the
-   * shape was rejected (caller should drop the attribute / skip the emit).
-   */
-  private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
-    const error = unsupportedAttrExpressionError(expr, attrName, this._loweringMatchers, this.componentName, 'ERB', 'Embedded Ruby')
-    if (error) this.errors.push(error)
-    return error !== null
   }
 
   /**
