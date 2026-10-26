@@ -12,9 +12,12 @@
  */
 import { describe, expect, test } from 'bun:test'
 import { resolve } from 'node:path'
-import { createAnchoredProgram, SourceFileCache } from '../analyzer'
+import { createAnchoredProgram, SourceFileCache, type SourceFileParse } from '../analyzer'
 
 const ANCHOR = resolve(import.meta.dir, '__virtual__')
+const DISK: SourceFileParse = { setParentNodes: false }
+// `createSignal`'s getter type, as `@barefootjs/client`'s declarations spell it.
+const GETTER_TYPE = 'Reactive<() => number>'
 
 // The `.map(` puts the source behind `needsTypeBasedDetection`'s gate, so
 // `createAnchoredProgram` builds a Program for it.
@@ -63,22 +66,29 @@ describe('createAnchoredProgram SourceFile sharing', () => {
     const file = program.getSourceFile('Counter.tsx')!
     const text = file.text
     const pos = text.indexOf('count()')
-    // The token at `count` is the signal getter: typed by the client's
-    // declarations, not `any`.
+    // The token at `count` is the signal getter, typed by the client's
+    // declarations. Unresolved, it would be `any`.
     const node = findToken(file, pos)
-    expect(checker.typeToString(checker.getTypeAtLocation(node))).not.toBe('any')
+    expect(checker.typeToString(checker.getTypeAtLocation(node))).toBe(GETTER_TYPE)
   })
 })
 
 describe('SourceFileCache', () => {
+  test('keys on how a file is parsed, not only its name and text', () => {
+    const cache = new SourceFileCache()
+    const plain = cache.get('/x/a.d.ts', 99, 'export declare const a: number', DISK)
+    const withParents = cache.get('/x/a.d.ts', 99, 'export declare const a: number', { setParentNodes: true })
+    expect(withParents).not.toBe(plain)
+  })
+
   test('parses each text of a file once', () => {
     const cache = new SourceFileCache()
-    const first = cache.get('/x/a.d.ts', 99, 'export declare const a: number')
-    expect(cache.get('/x/a.d.ts', 99, 'export declare const a: number')).toBe(first)
-    const changed = cache.get('/x/a.d.ts', 99, 'export declare const a: string')
+    const first = cache.get('/x/a.d.ts', 99, 'export declare const a: number', DISK)
+    expect(cache.get('/x/a.d.ts', 99, 'export declare const a: number', DISK)).toBe(first)
+    const changed = cache.get('/x/a.d.ts', 99, 'export declare const a: string', DISK)
     expect(changed).not.toBe(first)
     expect(changed.text).toBe('export declare const a: string')
-    expect(cache.get('/x/a.d.ts', 99, 'export declare const a: number')).toBe(first)
+    expect(cache.get('/x/a.d.ts', 99, 'export declare const a: number', DISK)).toBe(first)
   })
 })
 

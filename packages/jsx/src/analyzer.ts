@@ -145,17 +145,27 @@ function findBrandPackageImportLoc(
  * (`packages/adapter-tests/src/harness-program.ts`) to compile fixtures
  * under a relative virtual name without its type resolution depending on
  * where the process was started (#3220). Omitted, behaviour is unchanged.
- *
- * `hostOptions.sourceFiles` lets Programs built one after another share
- * parsed (and bound) SourceFiles: every file the host serves, `source`
- * included, is taken from it while its text is unchanged, and parsed and
- * stored otherwise. See `SourceFileCache`. Omitted, every Program parses
- * its whole declaration graph again.
  */
 export function createProgramForFile(
   source: string,
   filePath: string,
-  hostOptions: { currentDirectory?: string; sourceFiles?: SourceFileCache } = {}
+  hostOptions: { currentDirectory?: string } = {}
+): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
+  return buildProgramForFile(source, filePath, hostOptions)
+}
+
+/**
+ * `createProgramForFile`, plus `sourceFiles`: Programs built one after
+ * another share parsed (and bound) SourceFiles through it. Every file the
+ * host serves, `source` included, is parsed once per distinct text. Not
+ * exported from the package: every Program built here has the same compiler
+ * options, which is what makes sharing bound SourceFiles between them safe
+ * (see `SourceFileCache`).
+ */
+function buildProgramForFile(
+  source: string,
+  filePath: string,
+  hostOptions: { currentDirectory?: string; sourceFiles?: SourceFileCache },
 ): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
   incrementCounter('programCreations')
   try {
@@ -182,12 +192,12 @@ export function createProgramForFile(
       ...(currentDirectory === undefined ? {} : { getCurrentDirectory: () => currentDirectory }),
       getSourceFile(fileName, languageVersion) {
         if (resolveFrom(fileName) === normalizedPath) {
-          if (sourceFiles) return sourceFiles.get(fileName, languageVersion, source, ts.ScriptKind.TSX)
+          if (sourceFiles) return sourceFiles.get(fileName, languageVersion, source, VIRTUAL_SOURCE_PARSE)
           return ts.createSourceFile(fileName, source, languageVersion, true, ts.ScriptKind.TSX)
         }
         if (sourceFiles) {
           const text = defaultHost.readFile(fileName)
-          return text === undefined ? undefined : sourceFiles.get(fileName, languageVersion, text)
+          return text === undefined ? undefined : sourceFiles.get(fileName, languageVersion, text, DISK_FILE_PARSE)
         }
         return defaultHost.getSourceFile(fileName, languageVersion)
       },
@@ -243,10 +253,14 @@ function rewriteSourceForAnalysis(
  * implementation for every harness that compiles under relative names:
  * the conformance harness (`packages/adapter-tests/src/harness-program.ts`)
  * and the docs-example suite (`doc-examples.test.ts`).
+ *
+ * Every Program it builds draws on one process-wide `SourceFileCache` that
+ * is never evicted, so it suits a test process over a fixed corpus. Do not
+ * call it from a long-running watcher.
  */
 export function createAnchoredProgram(source: string, filename: string, anchorDir: string): ts.Program | undefined {
   if (!needsTypeBasedDetection(source)) return undefined
-  return createProgramForFile(source, filename, { currentDirectory: anchorDir, sourceFiles: anchoredSourceFiles })?.program
+  return buildProgramForFile(source, filename, { currentDirectory: anchorDir, sourceFiles: anchoredSourceFiles })?.program
 }
 
 /**
@@ -277,9 +291,9 @@ export class SourceFileCache {
     fileName: string,
     languageVersion: ts.ScriptTarget | ts.CreateSourceFileOptions,
     text: string,
-    scriptKind?: ts.ScriptKind,
+    parse: SourceFileParse,
   ): ts.SourceFile {
-    const key = `${fileName}\0${parseOptionsKey(languageVersion)}\0${scriptKind ?? ''}`
+    const key = `${fileName}\0${parseOptionsKey(languageVersion)}\0${parse.scriptKind ?? ''}\0${parse.setParentNodes}`
     let byText = this.files.get(key)
     if (!byText) {
       byText = new Map()
@@ -287,14 +301,22 @@ export class SourceFileCache {
     }
     const cached = byText.get(text)
     if (cached) return cached
-    // The virtual source (an explicit `scriptKind`) gets parent pointers, as
-    // `createProgramForFile` always parsed it; a file read from disk is parsed
-    // the way the default compiler host parses it.
-    const parsed = ts.createSourceFile(fileName, text, languageVersion, scriptKind !== undefined, scriptKind)
+    const parsed = ts.createSourceFile(fileName, text, languageVersion, parse.setParentNodes, parse.scriptKind)
     byText.set(text, parsed)
     return parsed
   }
 }
+
+/** How `SourceFileCache` parses a file; part of its key. */
+export interface SourceFileParse {
+  scriptKind?: ts.ScriptKind
+  setParentNodes: boolean
+}
+
+/** The virtual source, parsed as `createProgramForFile` always parsed it. */
+const VIRTUAL_SOURCE_PARSE: SourceFileParse = { scriptKind: ts.ScriptKind.TSX, setParentNodes: true }
+/** A file read from disk, parsed the way the default compiler host parses it. */
+const DISK_FILE_PARSE: SourceFileParse = { setParentNodes: false }
 
 function parseOptionsKey(languageVersion: ts.ScriptTarget | ts.CreateSourceFileOptions): string {
   if (typeof languageVersion === 'number') return String(languageVersion)
