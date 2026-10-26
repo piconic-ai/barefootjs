@@ -474,3 +474,11 @@ export function goLiteral(value: string): string {
   }
   return `"${value}"`
 }
+
+/**
+ * Whether a member access is a numeric index (`row[0]`): an element read on
+ * an array, which Go reaches through `bf_get`, never a `.Field0` field.
+ */
+export function isElementIndex(computed: boolean, property: string): boolean {
+  return computed && /^(0|[1-9]\d*)$/.test(property)
+}

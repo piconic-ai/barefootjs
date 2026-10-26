@@ -150,6 +150,7 @@ import {
   emitFlatMapEval,
   emitMapEval,
   goBinaryHelperCall,
+  isElementIndex,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
@@ -157,6 +158,7 @@ import {
 } from "./lib/go-emit.ts"
 import type {
   GoRenderCtx,
+  HigherOrderShape,
   NestedComponentInfo,
   StaticChildInstance,
   ChildComponentShape,
@@ -199,6 +201,7 @@ import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSig
 import { lowerChildInputFields, lowerLoopRowChildInputFields, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
+import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -214,21 +217,6 @@ const SYNTH_TYPE_LOC: SourceLocation = {
   file: '<synthesized>',
   start: { line: 0, column: 0 },
   end: { line: 0, column: 0 },
-}
-
-/**
- * Local re-materialisation of the (removed) `higher-order` ParsedExpr variant
- * (#2018 P5). Predicate callback methods (`.filter`/`.find`/`.every`/…) now
- * arrive as a generic `call` routed through `callbackMethod`; the structured
- * template-block / `bf_*` fallbacks still want the old destructured shape, so
- * `callbackMethod` rebuilds this from the arrow and threads it through the
- * `renderHigherOrder*` helpers unchanged.
- */
-type HigherOrderShape = {
-  method: HigherOrderMethod
-  object: ParsedExpr
-  param: string
-  predicate: ParsedExpr
 }
 
 /**
@@ -319,14 +307,6 @@ function derivedConstTakenFieldNames(ir: ComponentIR): Set<string> {
     ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
     ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
   ])
-}
-
-/**
- * Whether a member access is a numeric index (`row[0]`): an element read on
- * an array, which Go reaches through `bf_get`, never a `.Field0` field.
- */
-function isElementIndex(computed: boolean, property: string): boolean {
-  return computed && /^(0|[1-9]\d*)$/.test(property)
 }
 
 /**
@@ -6973,7 +6953,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     const arrayExpr = renderArray(expr.object)
     // A refused predicate already reported BF101; `false` keeps the block valid.
-    const condition = this.renderFilterExpr(expr.predicate, expr.param) ?? 'false'
+    const condition = renderFilterExpr(this.conditionExprHost, expr.predicate, expr.param) ?? 'false'
 
     if (expr.method === 'find') {
       const output = propertyAccess ? `{{.${propertyAccess}}}` : '{{.}}'
@@ -7012,7 +6992,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     const arrayExpr = renderArray(expr.object)
     // A refused predicate already reported BF101; `false` keeps the block valid.
-    const condition = this.renderFilterExpr(expr.predicate, expr.param) ?? 'false'
+    const condition = renderFilterExpr(this.conditionExprHost, expr.predicate, expr.param) ?? 'false'
 
     if (expr.method === 'every') {
       const v = `$bf_r${this.state.templateVarCounter++}`
@@ -7081,294 +7061,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * a non-wrapper (plain-element-body) loop, where `.` already IS the datum.
    */
   private renderPredicateCondition(pred: ParsedExpr, param: string, datumField?: string | null, fieldlessParam = false): string {
-    return this.renderFilterExpr(pred, param, new Map(), datumField ?? undefined, fieldlessParam) ?? 'false'
-  }
-
-  /**
-   * Split a rendered template block into preamble + final expression.
-   * The last `{{...}}` must be a variable reference (`$bf_rN` or
-   * `$bf_result`). Control tokens like `{{end}}` or `{{break}}` are
-   * rejected — those template blocks (e.g. find's range/break form)
-   * can't be composed in binary/logical expressions.
-   */
-  private splitPreamble(rendered: string): { preamble: string; expr: string } | null {
-    if (!rendered.includes('{{')) return null
-    const lastOpen = rendered.lastIndexOf('{{')
-    const lastClose = rendered.lastIndexOf('}}')
-    if (lastOpen >= 0 && lastClose > lastOpen) {
-      const candidate = rendered.substring(lastOpen + 2, lastClose)
-      if (!candidate.startsWith('$')) return null
-      return {
-        preamble: rendered.substring(0, lastOpen),
-        expr: candidate,
-      }
-    }
-    return null
-  }
-
-  /**
-   * Render a filter predicate expression (`t => !t.done`, or a block body
-   * normalized to one — #2040). `localVarMap` is a vestigial empty default kept
-   * on the recursion; block-body locals are now inlined upstream, so no caller
-   * populates it. `datumField` (#2228) qualifies a bare `param` reference (and
-   * `param.xxx` member/call access) through the wrapper struct's
-   * datum-carrying field — see `wrapperDatumField` — for a loop whose `.` is a
-   * child-component wrapper Props struct rather than the raw datum itself.
-   * `undefined` for every other caller (non-loop `.filter()`/`.find()`/etc.,
-   * or a plain-element-body loop), which keeps emitting the bare `.`/`.Field`
-   * this method always has.
-   *
-   * `null` means a node had no Go template lowering and was refused with
-   * BF101; every parent propagates it, so no partial predicate is built
-   * around a stand-in (#3542).
-   */
-  private renderFilterExpr(
-    expr: ParsedExpr,
-    param: string,
-    localVarMap: Map<string, string> = new Map(),
-    datumField?: string,
-    fieldlessParam = false,
-  ): string | null {
-    return this.renderFilterExprNode(expr, param, localVarMap, datumField, fieldlessParam)
-  }
-
-  /** One node of {@link renderFilterExpr}; children recurse through it. */
-  private renderFilterExprNode(
-    expr: ParsedExpr,
-    param: string,
-    localVarMap: Map<string, string>,
-    datumField?: string,
-    fieldlessParam = false,
-  ): string | null {
-    // #2228: `paramPrefix` prepends the wrapper's datum-carrying field to a
-    // loop-param access (`.Todo` under a wrapper, `''` otherwise). Two derived
-    // forms because Go template spells "the dot itself" as `.` but "field on
-    // the dot" as `.Field` — a naive shared `'.'` prefix would emit `..Done`
-    // for the non-wrapper member case:
-    //   bare `t`     → `paramDot`             (`.Todo` / `.`)
-    //   `t.done`     → `${paramPrefix}.Done`  (`.Todo.Done` / `.Done`)
-    const paramPrefix = datumField ? `.${datumField}` : ''
-    const paramDot = paramPrefix || '.'
-    // A scalar row's value has no fields (`isFieldlessLoopRow`): `g.length`
-    // goes through the generic member path over `paramDot` (`bf_length .`,
-    // or `bf_length .BfLoopItem` on a scalar wrapper row).
-    const paramHasFields = !fieldlessParam
-    switch (expr.kind) {
-      case 'identifier': {
-        if (expr.name === param) {
-          return paramDot
-        }
-        // A local variable mapped to a signal.
-        const signal = localVarMap.get(expr.name)
-        if (signal) {
-          // Root-scope read (#2700's BF101 gate needs it in
-          // `templateReadRootFields`) — `$.` is hardcoded rather than
-          // routed through `rootFieldRef`'s `this.inLoop`-conditional
-          // prefix because a filter predicate must always escape back to
-          // root regardless of loop nesting; call it only for its
-          // registration side effect and keep the prefix here (pullfrog
-          // review, PR #2818). The field name itself DOES go through
-          // `resolveRootFieldAlias` (#2857) so a getter-alias local
-          // (`const items__alias = items`) still emits the field the
-          // signal itself seeds instead of a phantom `.Items__alias`.
-          return this.filterRootFieldRef(signal)
-        }
-        // An enclosing row's binding (#3396). The predicate always sits inside
-        // the filtered loop's own `{{range}}`, so an enclosing item reads its
-        // `$name` range variable, never the dot or a root field; a destructure
-        // binding reads its accessor; an index or preamble local is `$name`.
-        if (this.scope.lookup(expr.name)) {
-          const captured = this.filterCaptureAliases.get(expr.name)
-          if (captured !== undefined) return `$${captured}`
-          const acc = this.lookupDestructureBinding(expr.name)
-          if (acc !== undefined) return this.noteWrapperRowRead(expr.name, acc)
-          if (this.isOuterRowItem(expr.name) || this.loopVarRefCount.has(expr.name)) return this.rowVarRef(expr.name)
-        }
-        // Any other identifier reaching here is ALSO a root-scope
-        // reference (a memo, a plain derived const, or — #2857 — a
-        // bare-props-form destructured/renamed prop) rather than the
-        // loop's own param, so it needs the same unconditional `$.`
-        // escape as the signal branch above, for the same reason: a
-        // `.filter().map()` JSX loop's `{{if}}` gate (built from
-        // `loop.filterPredicate` a few hundred lines below, via
-        // `renderPredicateCondition` → this method) always sits inside
-        // that loop's own `{{range}}`, never at the template's un-rebound
-        // root, so `rootFieldRef`'s own `this.inLoop`-conditional prefix
-        // would be wrong here even without the alias bug — a bare
-        // `.Field` resolves against the CURRENT LOOP ITEM's type, not
-        // root, and `html/template` panics at execute time (`can't
-        // evaluate field ... in type ...`) the first time such a
-        // reference is exercised.
-        return this.filterRootFieldRef(expr.name)
-      }
-
-      case 'literal':
-        if (expr.literalType === 'string') {
-          return `"${expr.value}"`
-        }
-        if (expr.literalType === 'null') {
-          return 'nil'
-        }
-        return String(expr.value)
-
-      case 'member': {
-        // t.done -> .Done (or .Todo.Done under a wrapper struct, #2228)
-        if (paramHasFields && expr.object.kind === 'identifier' && expr.object.name === param) {
-          if ((expr.optional || expr.computed) && expr.property !== 'length') {
-            return `(${this.renderOptionalMember(paramDot, expr.property)})`
-          }
-          return `${paramPrefix}.${capitalizeFieldName(expr.property)}`
-        }
-        // props.x on a bare-props-form component (#2879): props are
-        // flattened onto the root struct, so this is a root-scope read
-        // (`$.X`), not `.Props.X`. Mirrors `renderConditionExpr`'s own
-        // `propsObjectName` branch; `props.a.b` still reaches root through
-        // the generic recursion below.
-        if (
-          expr.object.kind === 'identifier' &&
-          this.state.propsObjectName &&
-          expr.object.name === this.state.propsObjectName
-        ) {
-          return this.filterRootFieldRef(expr.property)
-        }
-        // `.length` on a higher-order filter result (e.g.
-        // `x.tags.filter(t => t.active).length > 0`). Reuse
-        // `renderFilterLengthExpr` so the inner filter lowers to
-        // `bf_filter <arr> "<field>" <value>` and the outer `.length` wraps it in
-        // `len (...)`. Wrap in parens because the filter-context `binary` /
-        // `unary` arms emit prefix function calls (`gt <l> <r>`) and Go template
-        // would otherwise parse `gt len (bf_filter ...) 0` as four siblings.
-        if (expr.property === 'length') {
-          const innerHO = this.higherOrderShapeOf(expr.object)
-          if (innerHO && innerHO.method === 'filter') {
-            const lenExpr = this.renderFilterLengthExpr(innerHO, e =>
-              this.renderFilterExpr(e, param, localVarMap, datumField, fieldlessParam) ?? 'false',
-            )
-            if (lenExpr) return `(${lenExpr})`
-          }
-        }
-        // Nested member access or local var.prop.
-        const obj = this.renderFilterExpr(expr.object, param, localVarMap, datumField, fieldlessParam)
-        if (obj === null) return null
-        // JS `.length` on a field (`i.name.length`, `i.tags.length`, #3447):
-        // `bf_length` counts a string's UTF-16 code units or a slice's
-        // elements. A `.Length` field read is not defined on either.
-        if (expr.property === 'length' && !expr.computed) {
-          const read = `bf_length ${wrapIfMultiToken(obj)}`
-          return expr.optional ? `(bf_ternary (bf_eq ${wrapIfMultiToken(obj)} nil) nil (${read}))` : `(${read})`
-        }
-        if ((expr.optional || expr.computed) && expr.property !== 'length') {
-          return `(${this.renderOptionalMember(obj, expr.property)})`
-        }
-        return `${obj}.${capitalizeFieldName(expr.property)}`
-      }
-
-      case 'call': {
-        // `t.isDone()` -> `.IsDone` (or `.Todo.IsDone` under a wrapper, #2228)
-        if (paramHasFields && expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
-          return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
-        }
-        // Signal calls: `filter()` -> `$.Filter`. Same registration-only
-        // `rootFieldRef` call — and the same `resolveRootFieldAlias` field
-        // resolution (#2857) — as the `identifier` case above, for the same
-        // reason (#2700's BF101 gate; pullfrog review, PR #2818).
-        if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
-          return this.filterRootFieldRef(expr.callee.name)
-        }
-        // A nested callback method call (`other.some(r => …)`) reaching this
-        // arm has no Go template form in filter context — the fallthrough
-        // below renders only the callee and silently DROPS the arrow argument,
-        // changing predicate semantics (#2038). The one faithful nested shape
-        // (`.filter(cb).length` → `len (bf_filter_eval …)`) is intercepted at
-        // the `member` arm before this node is visited; everything else must
-        // be loud.
-        if (asCallbackMethodCall(expr) !== null) {
-          return this.refuseFilterExprNode(expr)
-        }
-        return this.renderFilterExpr(expr.callee, param, localVarMap, datumField, fieldlessParam)
-      }
-
-      case 'unary': {
-        const arg = this.renderFilterExpr(expr.argument, param, localVarMap, datumField, fieldlessParam)
-        if (arg === null) return null
-        if (expr.op === '!') return lowerJsNot(expr.argument, arg)
-        if (expr.op === '-') {
-          return `bf_neg ${wrapIfMultiToken(arg)}`
-        }
-        return arg
-      }
-
-      case 'binary': {
-        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField, fieldlessParam)
-        if (left === null) return null
-        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField, fieldlessParam)
-        if (right === null) return null
-        // #2873 (pullfrog review, PR #2882): every case below is a prefix
-        // function call (`bf_mod a b`, `eq a b`, …), so a COMPOUND operand —
-        // itself a nested binary result like `bf_mod .N 2` — must be
-        // parenthesised or the template parser folds its tokens into the
-        // outer call's argument list (`eq bf_mod .N 2 0` hands `eq` four
-        // args, and a bare func-name argument like `bf_mod` there is called
-        // with ZERO args instead of nested: `wrong number of args for
-        // bf_mod: want 2 got 0`). Mirrors the general (non-filter) binary
-        // emitter's `wl`/`wr` wrapping (`wrapIfMultiToken`, above) — this
-        // switch had never applied it, so `-`/`*`/`/` had the identical
-        // pre-existing gap for a nested compound operand.
-        const wl = wrapIfMultiToken(left)
-        const wr = wrapIfMultiToken(right)
-
-        const call = goBinaryHelperCall(expr.op, wl, wr, [expr.left, expr.right])
-        if (call !== null) return call
-        switch (expr.op) {
-          case '+':
-            return this._emitPlus(expr.left, expr.right, wl, wr)
-          case '-':
-            return `bf_sub ${wl} ${wr}`
-          case '*':
-            return `bf_mul ${wl} ${wr}`
-          default:
-            return `${left} ${expr.op} ${right}`
-        }
-      }
-
-      case 'logical': {
-        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField, fieldlessParam)
-        if (left === null) return null
-        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField, fieldlessParam)
-        if (right === null) return null
-        if (expr.op === '&&') {
-          return `and (${left}) (${right})`
-        }
-        return `or (${left}) (${right})`
-      }
-
-      default:
-        // The filter predicate body contains a node kind we can't lower to a
-        // Go template action. Shared refusal with the nested-callback guard in
-        // the `call` arm (#2038).
-        return this.refuseFilterExprNode(expr)
-    }
-  }
-
-  /**
-   * Refuse a filter-predicate node that has no Go template lowering: BF101
-   * with the offending expression, and `null` for the parents to propagate
-   * instead of wrapping a stand-in into `false.Length` / `gt false.Length 0`.
-   * The top-level caller substitutes `false` so the emitted template stays
-   * syntactically valid and `text/template` parsing doesn't cascade into
-   * confusing secondary errors.
-   */
-  private refuseFilterExprNode(expr: ParsedExpr): null {
-    this.state.errors.push({
-      code: 'BF101',
-      severity: 'error',
-      message: `Filter predicate contains an expression that cannot be lowered to a Go template action: ${exprToString(expr)}`,
-      loc: this.makeLoc(),
-      suggestion: {
-        message: 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Rewrite the predicate to avoid nested higher-order methods (`.filter()` / `.map()` / etc. inside the predicate body)',
-      },
-    })
-    return null
+    return renderFilterExpr(this.conditionExprHost, pred, param, new Map(), datumField ?? undefined, fieldlessParam) ?? 'false'
   }
 
   /** Convert a JS expression to Go template syntax. */
@@ -7981,301 +7674,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return { condition: `false`, preamble: '' }
     }
 
-    const { preamble, expr: condition } = this.renderConditionExpr(parsed)
+    const { preamble, expr: condition } = renderConditionExpr(this.conditionExprHost, parsed)
     // A bare value read as the whole test (`{tags() ? … : …}`) gets JS
     // truthiness: `{{if}}` alone reads an empty slice or map as false, where
     // JS reads `[]` / `{}` as true. Operator tests (`&&`, comparisons) keep
     // their own lowering.
     return { condition: isBareValueRead(parsed) ? lowerJsTruthyTest(parsed, condition) : condition, preamble }
-  }
-
-  private renderConditionExpr(expr: ParsedExpr): { preamble: string; expr: string } {
-    const plain = (e: string) => ({ preamble: '', expr: e })
-
-    switch (expr.kind) {
-      case 'identifier':
-        {
-          // Destructure-param bindings (`.map(({ id, active }) => active ? …)`):
-          // resolve the binding name to its accessor on the range var the same
-          // way the value path (`identifier` in `ParsedExprEmitter`) does.
-          // Without this, a destructured name falls through to `rootFieldRef`
-          // and the condition emits a ROOT-scope field instead of the row's
-          // (#2486). Innermost-first, and BEFORE module-const inlining so a
-          // binding whose name collides with a module string const still
-          // resolves to the loop item — same ordering as `identifier` above.
-          const acc = this.lookupDestructureBinding(expr.name)
-          if (acc !== undefined) return plain(this.noteWrapperRowRead(expr.name, acc))
-          const inlined = this.resolveModuleStringConst(expr.name) ?? this.resolveLiteralConstAsGo(expr.name)
-          if (inlined !== null) return plain(inlined)
-          if (this.isCurrentLoopItem(expr.name)) {
-            return plain(this.currentLoopItemRef())
-          }
-          // Outer loop value variable (nested loop) → its range var `$name`.
-          if (this.isOuterLoopParam(expr.name) || this.loopVarRefCount.has(expr.name)) {
-            return plain(this.rowVarRef(expr.name))
-          }
-        }
-        return plain(this.rootFieldRef(expr.name))
-
-      case 'literal':
-        if (expr.literalType === 'string') return plain(JSON.stringify(String(expr.value)))
-        if (expr.literalType === 'null') return plain('nil')
-        return plain(String(expr.value))
-
-      case 'call': {
-        if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
-          return plain(this.rootFieldRef(expr.callee.name))
-        }
-        // `isValidElement(x)` — the framework "is this a renderable element
-        // (not plain text)?" predicate. #2266: a passed-through JSX child is
-        // ALSO represented as pre-rendered markup on Go's SSR model, so a
-        // plain non-empty STRING child is truthy but is NOT a valid element
-        // — a bare truthiness check (the pre-#2266 lowering) wrongly took
-        // `Slot`'s element-merge branch and panicked dereferencing
-        // `.Props`/`.Tag` on a string (`can't evaluate field Props in type
-        // interface {}`). `bf_is_element` (bf.go) does a real reflect-based
-        // shape check (map/struct carrying both `tag`+`props` keys/fields,
-        // case-insensitively), matching JS's `'tag' in x && 'props' in x`.
-        // Pre-parenthesised — `call`-kind results aren't covered by
-        // `needsParens`, so an unparenthesised `bf_is_element X` splices as
-        // extra sibling args into an enclosing `and`/`or`.
-        if (
-          expr.callee.kind === 'identifier' &&
-          (identifierPath(expr.callee) ?? expr.callee.name) === 'isValidElement' &&
-          expr.args.length === 1
-        ) {
-          const inner = this.renderConditionExpr(expr.args[0])
-          return { preamble: inner.preamble, expr: `(bf_is_element ${wrapIfMultiToken(inner.expr)})` }
-        }
-        // Any other user-defined predicate call with arguments (e.g.
-        // `isAdmin(user)`) has no server-side evaluator and is not a registered
-        // template primitive. Silently forcing it (to true OR false) is a
-        // correctness hazard — a forced-true could expose auth-gated content, a
-        // forced-false could hide required content. Refuse with a hard BF102 so
-        // the author moves the predicate to a supported primitive or defers it
-        // with `/* @client */`.
-        if (
-          expr.callee.kind === 'identifier' &&
-          !this.templatePrimitives[identifierPath(expr.callee) ?? '']
-        ) {
-          const path = identifierPath(expr.callee) ?? expr.callee.name
-          this.state.errors.push({
-            code: 'BF102',
-            severity: 'error',
-            message:
-              `Predicate '${path}(...)' cannot be evaluated in a Go template. ` +
-              `A server-side template cannot call user-defined JavaScript predicates.`,
-            loc: this.makeLoc(),
-            suggestion: { message: GO_REMEDIATION_OPTIONS },
-          })
-          // Go template actions must be self-contained; emit a literal so the
-          // partial still parses while the build fails on the BF102 error.
-          return plain('false')
-        }
-        // A higher-order callback call (`arr.find(...)`, `arr.some(...)`) lowers
-        // via `renderParsedExpr` → `callbackMethod`, which may emit a
-        // template-block form (`{{$bf_r0 := …}}…{{$bf_r0}}`) whose leading
-        // assignment block must move to the `preamble`. Split it out — mirrors
-        // the (removed) `higher-order` case.
-        if (asCallbackMethodCall(expr)) {
-          const rendered = this.renderParsedExpr(expr)
-          const split = this.splitPreamble(rendered)
-          if (split) return split
-          return plain(rendered)
-        }
-        return plain(this.renderParsedExpr(expr))
-      }
-
-      case 'member': {
-        if (expr.property === 'length') {
-          const innerHO = this.higherOrderShapeOf(expr.object)
-          if (innerHO) {
-            // renderFilterLengthExpr uses bf_filter runtime helpers (not template
-            // blocks), so `.preamble` is always empty here. A future higher-order
-            // method producing preambles through this path would need the callback
-            // to propagate them.
-            const result = this.renderFilterLengthExpr(innerHO, e => this.renderConditionExpr(e).expr)
-            if (result) return plain(result)
-          }
-        }
-
-        if (expr.object.kind === 'identifier' && this.state.propsObjectName && expr.object.name === this.state.propsObjectName) {
-          return plain(this.propKeyFieldRef(expr.property))
-        }
-
-        // A numeric index reads an element, not a field (#3497): it takes the
-        // `bf_get` arm below, the row itself rendering as `.`.
-        const elementIndex = isElementIndex(expr.computed, expr.property)
-        if (expr.object.kind === 'identifier' && this.isCurrentLoopRecord(expr.object.name) && !elementIndex) {
-          return plain(`.${capitalizeFieldName(expr.property)}`)
-        }
-
-        const obj = this.renderConditionExpr(expr.object)
-        if (expr.property === 'length') {
-          // `len` is a prefix builtin like `index`/`and`/`or` above: a
-          // multi-token operand (`or .X bf_arr`, from a `??` object here —
-          // e.g. `(todos()?.length ?? 0)`'s inner `todos()?.length`, or
-          // `(todos() ?? []).length`'s `todos() ?? []`) must be parenthesised
-          // or Go reads it as extra sibling args of `len` (#3249).
-          // A `?.length` receiver can be nil (an absent optional prop is
-          // `interface{}`, #3422), which `len` refuses at execution time;
-          // `bf_length` reads nil as 0, the same falsy answer as `undefined`
-          // (`conditionLengthFn`).
-          return { preamble: obj.preamble, expr: `${this.conditionLengthFn(expr)} ${wrapIfMultiToken(obj.expr)}` }
-        }
-        // A `?.`-written member hop must use the same nil-safe, case-tolerant
-        // runtime getter as the value-position emitter. In particular, an
-        // optional object prop is decoded as a map with JS-cased keys, so
-        // `props.meta?.count` cannot be reached with a capitalized `.Count`
-        // dot access after the direct `props.meta` read has resolved to
-        // `.Meta` (#3275). `bf_get` also preserves optional-chain behavior
-        // when the object itself is absent.
-        // A member of a source-keyed signal seed map (#3353) uses the same
-        // getter, as `member()` does in value position.
-        if (expr.optional || elementIndex || this.isMapSeededSignalChain(expr.object)) {
-          return {
-            preamble: obj.preamble,
-            expr: this.renderOptionalMember(obj.expr, expr.property),
-          }
-        }
-        // Same wrapping rule as the `.length` arm above: a multi-token
-        // object (`or .A .B`, from a `??`/`||` object — e.g.
-        // `(props.a ?? props.b)?.name`) must be parenthesised before the
-        // `.Field` access, or Go reads the unparenthesised tail as an extra
-        // sibling arg of the prefix call (`or .A .B.Name` — silently wrong,
-        // not a panic, since `or`/`and` tolerate extra args).
-        return { preamble: obj.preamble, expr: `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}` }
-      }
-
-      case 'index-access': {
-        // `bf_get $arr $i`, as in value position: Go's `index` builtin
-        // refuses a `float64` index (a TS `number` field) and fails on an
-        // out-of-range one, where JS reads `undefined`. A multi-token operand
-        // (`bf_add $i 1`) must be parenthesised or Go parses it as extra
-        // arguments.
-        const obj = this.renderConditionExpr(expr.object)
-        const idx = this.renderConditionExpr(expr.index)
-        return {
-          preamble: obj.preamble + idx.preamble,
-          expr: `bf_get ${wrapIfMultiToken(obj.expr)} ${wrapIfMultiToken(idx.expr)}`,
-        }
-      }
-
-      case 'binary': {
-        // `wrapIfMultiToken` (whitespace-based, on the RENDERED string) — not
-        // the old `needsParensInGoTemplate` (AST-kind-based: only
-        // member.length/arithmetic-binary/unary-negation) — matches the
-        // `logical`/`unary` arms just below. AST-kind gating missed a `??`
-        // operand here: `(x ?? []).length > 0` renders `expr.left` through
-        // the `logical` arm to `or .X bf_arr` (or `bf_nullish …`), which
-        // `needsParensInGoTemplate` never flagged, so it spliced
-        // unparenthesised into `gt` as extra sibling args — `html/template`
-        // then fails at render time ("wrong number of args"), not at compile
-        // time (#3249).
-        const leftResult = this.renderConditionExpr(expr.left)
-        const left = wrapIfMultiToken(leftResult.expr)
-
-        const rightResult = this.renderConditionExpr(expr.right)
-        const right = wrapIfMultiToken(rightResult.expr)
-
-        const preamble = leftResult.preamble + rightResult.preamble
-
-        let result: string
-        const call = goBinaryHelperCall(expr.op, left, right, [expr.left, expr.right])
-        if (call !== null) {
-          result = call
-        } else switch (expr.op) {
-          case '+':
-            result = this._emitPlus(expr.left, expr.right, left, right); break
-          case '-':
-            result = `bf_sub ${left} ${right}`; break
-          case '*':
-            result = `bf_mul ${left} ${right}`; break
-          default:
-            result = `${left} ${expr.op} ${right}`
-        }
-        return { preamble, expr: result }
-      }
-
-      case 'unary': {
-        const arg = this.renderConditionExpr(expr.argument)
-        // The same `lowerJsNot` as the main `unary()` emitter above: JS
-        // truthiness via `bf_truthy`, multi-token argument parenthesised.
-        if (expr.op === '!') return { preamble: arg.preamble, expr: lowerJsNot(expr.argument, arg.expr) }
-        // Same rule as `!` just above: `bf_neg` is a prefix builtin too, so a
-        // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
-        // parenthesised or Go reads it as extra sibling args (#3249).
-        if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${wrapIfMultiToken(arg.expr)}` }
-        return arg
-      }
-
-      case 'logical': {
-        const leftResult = this.renderConditionExpr(expr.left)
-        const rightResult = this.renderConditionExpr(expr.right)
-        const preamble = leftResult.preamble + rightResult.preamble
-        // `wrapIfMultiToken` (whitespace-based, on the RENDERED string) — not
-        // `needsParens` (AST-kind-based, only `logical`/`unary`/`conditional`)
-        // — matches the main `logical()` emitter's own wrapping. `needsParens`
-        // misses any other multi-token rendering (`len .X`, `bf_add a b`,
-        // `.SearchParams.Get "k"`), which `and`/`or`/`bf_nullish` (all prefix
-        // builtins) would otherwise parse as extra sibling args instead of one
-        // operand.
-        const wrapLeft = wrapIfMultiToken(leftResult.expr)
-        const wrapRight = wrapIfMultiToken(rightResult.expr)
-        // `??` on a nillable prop needs true JS nullish semantics (#2254,
-        // sibling of #2248/#2252's fix for text-expression/signal-seed
-        // positions): Go's `or` is truthiness-based, so a present-but-empty
-        // `""`/`0`/`false` operand wrongly falls back. `bf_nullish` tests
-        // nil-ness only. Mirrors the `logical()` emitter's own gate (used
-        // for non-condition expression positions) — same
-        // `nullishConsumed ∩ nillable` check via `nillablePropNameOf`.
-        const result = expr.op === '&&'
-          ? `and ${wrapLeft} ${wrapRight}`
-          : expr.op === '??' && this.isNillableNullishLeft(expr.left)
-            ? `bf_nullish ${wrapLeft} ${wrapRight}`
-            : `or ${wrapLeft} ${wrapRight}`
-        return { preamble, expr: result }
-      }
-
-      case 'conditional': {
-        // #2335: a ternary used as (part of) a boolean sub-condition —
-        // `(x ? y : z) && w`, `!(a ? b : c)` — must lower FAITHFULLY. The old
-        // code returned only the lowered `test`, silently discarding both
-        // branches (a `(x ? y : z)` collapsed to `x`) — not refused, silently
-        // wrong. Emit the pipeline-position `(bf_ternary <test> <y> <z>)`
-        // value; the enclosing condition (`{{if}}`, `and`/`or`, `not`)
-        // truthiness-checks its result, exactly as it would the JS ternary's.
-        return plain(lowerTernary(this.emitCtx, expr.test, expr.consequent, expr.alternate))
-      }
-
-      case 'template-literal':
-        // #2863 follow-up: fold to one Go value (`bf_concat_str` chain) via
-        // the same door as the `conditional` case just above, instead of
-        // `renderParsedExpr`'s TEXT-position `templateLiteral()` form —
-        // which would leak raw `{{…}}` into THIS condition-expression's own
-        // pipeline position (e.g. `(a === \`${x}-${y}\`) ? … : …`).
-        return plain(lowerTemplateLiteralValue(this.emitCtx, expr.parts))
-
-      case 'arrow':
-        // A standalone arrow has no Go condition form (callbacks reach the
-        // `call` arm via `asCallbackMethodCall`).
-        return plain('[ARROW-FN]')
-
-      case 'regex':
-        return plain(this.renderParsedExpr(expr))
-
-      case 'array-literal':
-        return plain(this.renderParsedExpr(expr))
-
-      case 'array-method':
-        return plain(this.renderParsedExpr(expr))
-
-      case 'unsupported':
-      // `raw` holds the original expression string, so a bare object literal in
-      // a condition lowers to that raw text.
-      case 'object-literal':
-        return plain(expr.raw)
-    }
   }
 
   /**
@@ -9452,6 +8856,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lookupRestExclude: (name) => this.lookupRestExclude(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),
     makeLoc: () => this.makeLoc(),
+  }
+
+  /** The adapter-owned renders and lookups the condition and filter-predicate lowering (`expr/condition-expr.ts`) reads. */
+  private readonly conditionExprHost: ConditionExprHost = {
+    ctx: this.emitCtx,
+    renderParsedExpr: (expr) => this.renderParsedExpr(expr),
+    makeLoc: () => this.makeLoc(),
+    hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
+    filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
+    lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
+    noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),
+    isOuterRowItem: (name) => this.isOuterRowItem(name),
+    hasLoopVarRef: (name) => this.loopVarRefCount.has(name),
+    rowVarRef: (name) => this.rowVarRef(name),
+    filterRootFieldRef: (name) => this.filterRootFieldRef(name),
+    rootFieldRef: (name) => this.rootFieldRef(name),
+    propKeyFieldRef: (key) => this.propKeyFieldRef(key),
+    renderOptionalMember: (object, property) => this.renderOptionalMember(object, property),
+    higherOrderShapeOf: (node) => this.higherOrderShapeOf(node),
+    renderFilterLengthExpr: (filterExpr, renderArray) => this.renderFilterLengthExpr(filterExpr, renderArray),
+    emitPlus: (leftExpr, rightExpr, leftRendered, rightRendered) => this._emitPlus(leftExpr, rightExpr, leftRendered, rightRendered),
+    resolveLiteralConstAsGo: (name) => this.resolveLiteralConstAsGo(name),
+    isCurrentLoopItem: (name) => this.isCurrentLoopItem(name),
+    currentLoopItemRef: () => this.currentLoopItemRef(),
+    isOuterLoopParam: (name) => this.isOuterLoopParam(name),
+    isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
+    conditionLengthFn: (expr) => this.conditionLengthFn(expr),
+    isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
+    isNillableNullishLeft: (expr) => this.isNillableNullishLeft(expr),
+    isTemplatePrimitive: (path) => Boolean(this.templatePrimitives[path]),
   }
 
   renderScopeMarker(_instanceIdExpr: string): string {
