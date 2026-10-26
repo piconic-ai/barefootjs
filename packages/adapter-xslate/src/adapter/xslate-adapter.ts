@@ -71,6 +71,8 @@ import {
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
+  type LoopPlan,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -169,6 +171,19 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: kolonSegmentAccessor,
   slice: (parent, from) => `$bf.slice(${parent}, ${from}, nil)`,
   omit: (parent, keys) => `$bf.omit(${parent}, [${keys.map(kolonStringLiteral).join(', ')}])`,
+}
+
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Xslate adapter cannot lower — see the diagnostic detail for the specific shape.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
+    `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
+    `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  4. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Xslate',
 }
 
 /**
@@ -606,22 +621,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToKolon,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Xslate adapter cannot lower — see the diagnostic detail for the specific shape.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
-            `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
-            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -655,21 +655,6 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // scope's own membership, not a coarse whole-component union.
     const staticArray = loopPlan.staticSource
 
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Xslate adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
-
     const rawArray = staticArray ?? this.convertExpressionToKolon(loop.array)
     // The source sorted by the loop's comparator, when it has one: the
     // plan decides the evaluator, the structured `{keys: …}` descriptor or
@@ -686,10 +671,72 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // needed (`.keys().map(k => ...)` or an explicit `index` param), comes
     // from Text::Xslate's loop variable `$~param.index`.
 
+    const { loopVar, rowNames, locals: indexLocalLines } = this.kolonRowBindings(loop, loopPlan)
+    const my = (name: string) => rowNames.get(name) ?? name
+
+    // The row window (#3473): the row's scope around everything that
+    // evaluates per row (the preamble locals' initializers, the children
+    // under `inLoop`, the whole-item-conditional key anchor). The filter
+    // predicate stays outside it: a filter callback's own param is a
+    // separate frame, never folded into the `.map()` row.
+    const { rootAliases, preamble: preambleLines, body: bodyChildren } = this.renderLoopRow(loop, {
+      // A row local renamed off an enclosing row's binding (#3392) reads
+      // under its new name wherever the row's frame resolves it.
+      enter: (row) => {
+        const [firstRenamed] = rowNames.keys()
+        const rowFrame = firstRenamed !== undefined ? row.lookup(firstRenamed)?.frame : undefined
+        if (rowFrame) this.rowKolonRenames.set(rowFrame, rowNames)
+      },
+      preamble: (d) => `: my $${my(d.name)} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
+      keyAnchor: (key) => `<: $bf.comment("loop-i:" ~ $bf.escape_comment_key(${this.convertExpressionToKolon(key)})) | mark_raw :>`,
+    })
+
+    const lines: string[] = []
+    // Scoped per-call-site marker so sibling `.map()`s under the same parent
+    // each get their own reconciliation range.
+    lines.push(`<: $bf.comment("loop:${loop.markerId}") | mark_raw :>`)
+    if (rootAliases.length > 0) {
+      lines.push(': if (1) {')
+      for (const { name, alias } of rootAliases) lines.push(`: my $${alias} = $${name};`)
+    }
+    lines.push(this.kolonForHeader(loop, array, loopVar))
+    for (const il of indexLocalLines) lines.push(il)
+
+    // The row, inside the filter's guard for a filter().map() loop; a
+    // filter without a predicate is refused (#3534). Kolon renames a
+    // shadowing row local instead of aliasing the captures, so the
+    // predicate renders as written.
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, bodyChildren], {
+      // The filter's param reads as the loop's row local (`$t` →
+      // `$todo`), under the row's renamed local when it has one (#3392).
+      condition: (filter) => this.renderKolonFilterExpr(filter.predicate, filter.param, new Map(), rowNames.get(param) ?? param),
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: '1',
+      open: (condition) => `: if (${condition}) {`,
+      close: ': }',
+    }))
+
+    lines.push(`: }`)
+    if (rootAliases.length > 0) lines.push(': }')
+    lines.push(`<: $bf.comment("/loop:${loop.markerId}") | mark_raw :>`)
+
+    return lines.join('\n')
+  }
+
+  /**
+   * The for-target of `loop` and the row's `: my` locals, with each row
+   * local an enclosing row already binds renamed (#3392): `rowNames` maps a
+   * renamed source name to its row local. Reads the scope outside the loop.
+   */
+  private kolonRowBindings(
+    loop: IRLoop,
+    loopPlan: LoopPlan<unknown>,
+  ): { loopVar: string; rowNames: Map<string, string>; locals: string[] } {
     // An array iteration's for-target is `loopPlan.itemVar`: a throwaway item
     // var when the param is not the item (a `.keys()` param is the index, a
     // lowered destructure's bindings read off the item). An entries iteration
     // walks `.kv()` pairs; `.keys()` / `.values()` yield the param directly.
+    const param = loop.param
     let loopVar = loop.objectIteration === 'entries'
       ? '__bf_pair'
       : loop.objectIteration
@@ -731,68 +778,25 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopVar}`, DESTRUCTURE_SPELLING)) {
       indexLocalLines.push(`: my $${my(name)} = ${value};`)
     }
+    return { loopVar, rowNames, locals: indexLocalLines }
+  }
 
-    // The row window (#3473): the row's scope around everything that
-    // evaluates per row (the preamble locals' initializers, the children
-    // under `inLoop`, the whole-item-conditional key anchor). The filter
-    // predicate stays outside it: a filter callback's own param is a
-    // separate frame, never folded into the `.map()` row.
-    const { rootAliases, preamble: preambleLines, body: bodyChildren } = this.renderLoopRow(loop, {
-      // A row local renamed off an enclosing row's binding (#3392) reads
-      // under its new name wherever the row's frame resolves it.
-      enter: (row) => {
-        const [firstRenamed] = rowNames.keys()
-        const rowFrame = firstRenamed !== undefined ? row.lookup(firstRenamed)?.frame : undefined
-        if (rowFrame) this.rowKolonRenames.set(rowFrame, rowNames)
-      },
-      preamble: (d) => `: my $${my(d.name)} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
-      keyAnchor: (key) => `<: $bf.comment("loop-i:" ~ $bf.escape_comment_key(${this.convertExpressionToKolon(key)})) | mark_raw :>`,
-    })
-
-    const lines: string[] = []
-    // Scoped per-call-site marker so sibling `.map()`s under the same parent
-    // each get their own reconciliation range.
-    lines.push(`<: $bf.comment("loop:${loop.markerId}") | mark_raw :>`)
-    if (rootAliases.length > 0) {
-      lines.push(': if (1) {')
-      for (const { name, alias } of rootAliases) lines.push(`: my $${alias} = $${name};`)
-    }
+  /** The `: for … -> $loopVar {` header that iterates `array` for `loop`. */
+  private kolonForHeader(loop: IRLoop, array: string, loopVar: string): string {
     // `objectIteration` (#2168 object-entries-map): Kolon has no built-in
     // hash-destructure `for` target, so `'entries'` iterates `.kv()`
     // (yielding `{key, value}` pair objects, unpacked via the `: my`
-    // locals above) while `'keys'`/`'values'` iterate `.keys()`/`.values()`
+    // locals of `kolonRowBindings`) while `'keys'`/`'values'` iterate `.keys()`/`.values()`
     // directly. All three are alphabetically sorted by Text::Xslate itself
     // (verified empirically) — not JS insertion order, a documented known
     // limitation for out-of-alphabetical-order data, same as Go/Rust.
-    const forHeader = loop.objectIteration === 'entries'
+    return loop.objectIteration === 'entries'
       ? `: for ${array}.kv() -> $${loopVar} {`
       : loop.objectIteration === 'keys'
         ? `: for ${array}.keys() -> $${loopVar} {`
         : loop.objectIteration === 'values'
           ? `: for ${array}.values() -> $${loopVar} {`
           : `: for ${array} -> $${loopVar} {`
-    lines.push(forHeader)
-    for (const il of indexLocalLines) lines.push(il)
-
-    // The row, inside the filter's guard for a filter().map() loop; a
-    // filter without a predicate is refused (#3534). Kolon renames a
-    // shadowing row local instead of aliasing the captures, so the
-    // predicate renders as written.
-    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, bodyChildren], {
-      // The filter's param reads as the loop's row local (`$t` →
-      // `$todo`), under the row's renamed local when it has one (#3392).
-      condition: (filter) => this.renderKolonFilterExpr(filter.predicate, filter.param, new Map(), rowNames.get(param) ?? param),
-      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
-      refused: '1',
-      open: (condition) => `: if (${condition}) {`,
-      close: ': }',
-    }))
-
-    lines.push(`: }`)
-    if (rootAliases.length > 0) lines.push(': }')
-    lines.push(`<: $bf.comment("/loop:${loop.markerId}") | mark_raw :>`)
-
-    return lines.join('\n')
   }
 
   // ===========================================================================

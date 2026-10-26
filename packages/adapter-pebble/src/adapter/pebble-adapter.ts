@@ -241,6 +241,7 @@ import {
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -292,6 +293,19 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: pebbleAccessorFromSegments,
   slice: (parent, from) => `bf.slice(${parent}, ${from}, null)`,
   omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => pebbleHashKey(k)).join(', ')}])`,
+}
+
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Pebble adapter cannot lower to a native accessor — Pebble \`for item in list\` binds a single loop variable and this shape needs the actual residual value materialized (e.g. a bare object-rest use, or a rest spread onto a component).`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. Rename the parameter to a single name and access tuple/object elements directly in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
+    `  2. If using object rest, only read individual fields off it (\`rest.flag\`) or spread it onto an intrinsic element (\`{...rest}\`) — not as a bare value.\n` +
+    `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  4. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Pebble',
 }
 
 export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<PebbleRenderCtx> {
@@ -703,22 +717,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToPebble,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Pebble adapter cannot lower to a native accessor — Pebble \`for item in list\` binds a single loop variable and this shape needs the actual residual value materialized (e.g. a bare object-rest use, or a rest spread onto a component).`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple/object elements directly in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
-            `  2. If using object rest, only read individual fields off it (\`rest.flag\`) or spread it onto an intrinsic element (\`{...rest}\`) — not as a bare value.\n` +
-            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -748,21 +747,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // Stage 2) — the enclosing loop scope's own membership, not a coarse
     // whole-component union.
     const staticArray = loopPlan.staticSource
-
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Pebble adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
 
     const rawArray = staticArray ?? this.convertExpressionToPebble(loop.array)
     // The source sorted by the loop's comparator, when it has one: the

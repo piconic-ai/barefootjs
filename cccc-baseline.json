@@ -11,11 +11,6 @@
         48
       ]
     },
-    "packages/adapter-erb/src/adapter/erb-adapter.ts": {
-      "renderLoop": [
-        35
-      ]
-    },
     "packages/adapter-erb/src/test-render.ts": {
       "buildRubyProps": [
         50
@@ -205,11 +200,6 @@
         48
       ]
     },
-    "packages/adapter-mojolicious/src/adapter/mojo-adapter.ts": {
-      "renderLoop": [
-        29
-      ]
-    },
     "packages/adapter-mojolicious/src/test-render.ts": {
       "buildChildDefaultsPerl": [
         39
@@ -279,11 +269,6 @@
       ],
       "renderTwigComponent": [
         48
-      ]
-    },
-    "packages/adapter-xslate/src/adapter/xslate-adapter.ts": {
-      "renderLoop": [
-        34
       ]
     },
     "packages/adapter-xslate/src/test-render.ts": {

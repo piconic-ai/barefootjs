@@ -287,6 +287,7 @@ import {
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -339,6 +340,18 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: bladeLoopBindingAccessor,
   slice: (parent, from) => `$bf->slice(${parent}, ${from}, null)`,
   omit: (parent, keys) => `$bf->omit(${parent}, [${keys.map((k) => `'${escapeBladeSingleQuoted(k)}'`).join(', ')}])`,
+}
+
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Blade adapter cannot lower — e.g. an object-rest binding used as a bare value, a \`.filter().map(destructure)\` chain, or a reserved \`__bf_\`-prefixed binding name.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. Read the rest binding via member access (\`rest.flag\`) or spread it onto the element (\`{...rest}\`) instead of using it as a bare value.\n` +
+    `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  3. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Blade',
 }
 
 /**
@@ -751,21 +764,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToBlade,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Blade adapter cannot lower — e.g. an object-rest binding used as a bare value, a \`.filter().map(destructure)\` chain, or a reserved \`__bf_\`-prefixed binding name.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Read the rest binding via member access (\`rest.flag\`) or spread it onto the element (\`{...rest}\`) instead of using it as a bare value.\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -800,21 +799,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
     const staticArray = loopPlan.staticSource
-
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Blade adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
 
     const rawArray = staticArray ?? this.convertExpressionToBlade(loop.array)
     // The source sorted by the loop's comparator, when it has one: the

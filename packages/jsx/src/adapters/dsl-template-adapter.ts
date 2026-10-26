@@ -18,6 +18,7 @@ import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-a
 import type {
   CompilerError,
   ComponentIR,
+  ConstantInfo,
   IRIfStatement,
   IRLoop,
   IRMetadata,
@@ -74,6 +75,23 @@ export type LoopPlanSpelling<Spelled> = Pick<
   LoopPlanContext<Spelled>,
   'resolveLiteralConst' | 'callbackLowering' | 'spellStatic'
 >
+
+/**
+ * An adapter's wording of the refusals a {@link LoopPlan} decides
+ * ({@link DslTemplateAdapter.recordLoopPlanRefusals}).
+ */
+export interface LoopRefusalSpelling {
+  /** The BF104 message for a destructure pattern `param` that no template binds. */
+  destructureMessage(param: string): string
+  /** The BF104 suggestion. */
+  destructureSuggestion: string
+  /**
+   * BF101 for a source naming a const no template binds: the engine name
+   * the shared wording uses ("Jinja", "MiniJinja", …), or the adapter's own
+   * recording of it.
+   */
+  unresolvableConst: string | ((constant: ConstantInfo) => void)
+}
 
 export abstract class DslTemplateAdapter extends BaseAdapter {
   // ===========================================================================
@@ -209,6 +227,42 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   /** {@link planLoop} against the current scope and the component's constants. */
   protected loopPlanFor<Spelled>(loop: IRLoop, spelling: LoopPlanSpelling<Spelled>): LoopPlan<Spelled> {
     return planLoop(loop, { scope: this.scope, localConstants: this.localConstants ?? [], ...spelling })
+  }
+
+  /**
+   * Record the refusals `plan` decided for `loop`, at the loop's location:
+   * BF104 for a destructure pattern no template binds, then BF101 for a
+   * source naming a computed const no template binds (#3473). The plan
+   * decides; the adapter only words them.
+   */
+  protected recordLoopPlanRefusals(loop: IRLoop, plan: LoopPlan<unknown>, spelling: LoopRefusalSpelling): void {
+    const loc = loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
+    if (plan.destructure === 'unlowerable') {
+      this.errors.push({
+        code: 'BF104',
+        severity: 'error',
+        message: spelling.destructureMessage(loop.param),
+        loc,
+        suggestion: { message: spelling.destructureSuggestion },
+      })
+    }
+    const constant = plan.unresolvableConst
+    if (!constant) return
+    if (typeof spelling.unresolvableConst === 'function') {
+      spelling.unresolvableConst(constant)
+      return
+    }
+    this.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Loop array \`${constant.name}\` is a const (module- or function-scope) computed value (\`${constant.value}\`) that the ${spelling.unresolvableConst} adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+      loc,
+      suggestion: {
+        message:
+          'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+        escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+      },
+    })
   }
 
   /**

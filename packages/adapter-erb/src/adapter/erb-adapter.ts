@@ -86,6 +86,8 @@ import {
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
+  type LoopPlan,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -171,6 +173,17 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   // vars-Hash convention: every item Hash is built by
   // `JSON.parse(..., symbolize_names: true)`.
   omit: (parent, keys) => `${parent}.except(${keys.map((k) => rubySymbolLiteral(k)).join(', ')})`,
+}
+
+/** The wording of the BF104 loop refusal the plan decides; BF101 goes through `_recordExprBF101`. */
+const LOOP_REFUSALS: Pick<LoopRefusalSpelling, 'destructureMessage' | 'destructureSuggestion'> = {
+  destructureMessage: (param) =>
+    `Loop callback uses an array/object destructure pattern (\`${param}\`) that the ERB adapter cannot lower — the rest binding is used in a way (bare value, or spread onto a component) that has no native Ruby accessor form.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. Read the rest binding as a member access (\`rest.field\`) or spread it onto an intrinsic element (\`<li {...rest}>\`) instead of using it as a bare value.\n` +
+    `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  3. Move the loop into a primitive that the adapter registers explicitly.`,
 }
 
 /**
@@ -709,21 +722,17 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToRuby,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the ERB adapter cannot lower — the rest binding is used in a way (bare value, or spread onto a component) that has no native Ruby accessor form.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Read the rest binding as a member access (\`rest.field\`) or spread it onto an intrinsic element (\`<li {...rest}>\`) instead of using it as a bare value.\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, {
+      ...LOOP_REFUSALS,
+      // ERB words BF101 like its expression refusals (`_recordExprBF101`),
+      // at the component's location rather than the loop's.
+      unresolvableConst: (constant) =>
+        this._recordExprBF101(
+          `Loop array \`${constant.name}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
+          `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
+          [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        ),
+    })
 
     // Loop array is a bare identifier naming a local const (module- or
     // component-scope, #2946) the adapter has no way to compute at SSR
@@ -755,15 +764,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // enclosing loop scope's own membership.
     const staticArray = loopPlan.staticSource
 
-    if (loopPlan.unresolvableConst) {
-      const arrayName = loopPlan.unresolvableConst.name
-      this._recordExprBF101(
-        `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
-        `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
-        [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-      )
-    }
-
     const rawArray = staticArray ?? this.convertExpressionToRuby(loop.array)
     // Apply sort if present: hoist the (possibly sorted) array into a Ruby
     // local BEFORE the index loop, so both the loop bound and the per-item
@@ -776,62 +776,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       array = sortedHoist
     }
     const param = loop.param
-    // `.keys().map(k => ...)` — the callback param is the index. Use it as
-    // the loop's index local and skip the per-item value assignment.
-    const indexVar = loop.iterationShape === 'keys'
-      ? rubyLocal(param)
-      : rubyLocal(loop.index ?? '_i')
-    const preambleDecls = loop.preamble?.declarations ?? []
-
-    // Ruby block parameters this loop binds natively (item/value + index /
-    // key). A real block parameter always shadows a same-named enclosing
-    // local at every nesting depth — unlike a plain `x = ...` assignment
-    // inside the block, which MUTATES an already-visible enclosing `x`
-    // instead of shadowing it. That distinction is the entire bug in #2922:
-    // `items.map(item => item.children.map(item => ...))` reused the same
-    // Ruby local `item` via assignment at both nesting depths, so the inner
-    // loop's second-plus iteration read the PREVIOUS inner item instead of
-    // the stable outer one. Binding the item as a real `each_with_index`
-    // block parameter (instead of `(0...arr.length).each` + a separate
-    // `item = arr[_i]` assignment) fixes this natively — the receiver
-    // (`array`) is evaluated once, in the ENCLOSING scope, before the block
-    // opens, so a nested loop's own array expression (e.g. `item.children`)
-    // still resolves against the OUTER `item` even when the inner loop binds
-    // a same-named fresh one.
-    const itemParam = loopPlan.destructure === 'lowerable' ? '__bf_item' : rubyLocal(param)
-    const blockParams: string = loop.objectIteration
-      ? loop.objectIteration === 'entries'
-        ? `${rubyLocal(loop.index ?? param)}, ${rubyLocal(param)}`
-        : rubyLocal(param)
-      : loop.iterationShape === 'keys'
-        ? indexVar
-        : `${itemParam}, ${indexVar}`
-    // Ruby locals this loop introduces by PLAIN ASSIGNMENT inside the block
-    // body (destructure bindings off `__bf_item`, `.map()` preamble locals,
-    // #2447) — as opposed to a real block parameter above. Declared as
-    // explicit Ruby block-local variables (`do |params; locals| ... end`)
-    // so each gets fresh per-block scope unconditionally, the same way a
-    // block parameter does — not only when a collision with an enclosing
-    // scope is actually detected, since that's a no-op for a name with no
-    // outer counterpart. Safe here because none of these assignments' RHS
-    // ever reads its own LHS name: a destructure binding's RHS is always an
-    // accessor off `__bf_item` (itself a block parameter above), and a JS
-    // preamble `const x = ...x...` initializer is a TDZ error, so it can
-    // only read an EARLIER preamble local (already block-local by then) or
-    // the param/index (also block parameters).
-    const blockLocals = new Set<string>()
-    if (!loop.objectIteration && loop.iterationShape !== 'keys') {
-      for (const { name } of loopPlan.destructureLocals) blockLocals.add(rubyLocal(name))
-    }
-    for (const d of preambleDecls) blockLocals.add(rubyLocal(d.name))
-    // Never list a name that's ALSO a block parameter above — Ruby rejects
-    // that as `duplicated argument name` (a JS param/index and a preamble
-    // local/destructure binding can never share a name anyway; JS itself
-    // refuses the duplicate declaration).
-    for (const p of blockParams.split(', ')) blockLocals.delete(p)
-    const blockHeader = blockLocals.size > 0
-      ? `|${blockParams}; ${[...blockLocals].join(', ')}|`
-      : `|${blockParams}|`
 
     // The row window (#3473): the row's scope around the preamble locals'
     // initializers, the children and the whole-item-conditional key anchor.
@@ -874,36 +818,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       })
       lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
     }
-    if (loop.objectIteration) {
-      // `objectIteration` (#2168 object-entries-map): Ruby's `Hash`
-      // preserves the source object's insertion order natively (unlike
-      // Go's `map`/Perl's hash), so this bypasses the index-range form
-      // below entirely and uses Ruby's own native block-param binding
-      // (`each_pair`/`each_key`/`each_value`) — no `array[index]` lookup
-      // needed, since the block directly yields the key/value.
-      const method = loop.objectIteration === 'entries'
-        ? 'each_pair'
-        : loop.objectIteration === 'keys' ? 'each_key' : 'each_value'
-      lines.push(`<%- ${array}.${method} do ${blockHeader} -%>`)
-    } else if (loop.iterationShape === 'keys') {
-      // `.keys().map(k => ...)` — the callback param IS the index; no
-      // per-item value binding needed (or possible: there is no `array[i]`
-      // item to bind).
-      lines.push(`<%- (0...${array}.length).each do ${blockHeader} -%>`)
-    } else {
-      // Item + index as REAL Ruby block parameters of `each_with_index`
-      // (rather than an index-range `.each` + a separate `item = arr[_i]`
-      // assignment) — see this method's `blockParams`/`blockLocals` setup
-      // above for why (#2922).
-      lines.push(`<%- ${array}.each_with_index do ${blockHeader} -%>`)
-      // One local per lowered destructure binding, built off its structured
-      // `segments` path (never `b.path` — repo rule: no string-parsing of a
-      // JS-shaped accessor). `__bf_item` itself is the loop's own block
-      // parameter (`itemParam` above).
-      for (const { name, value } of spellDestructureLocals(loopPlan, '__bf_item', DESTRUCTURE_SPELLING)) {
-        lines.push(`<%- ${rubyLocal(name)} = ${value} -%>`)
-      }
-    }
+    lines.push(...this.rubyLoopOpening(loop, loopPlan, array))
 
     // The row, inside the filter's guard for a filter().map() loop. The plan
     // renames the predicate's shadowed captures to their aliases (#3402) and
@@ -947,6 +862,109 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     lines.push(`<%= bf.comment("/loop:${loop.markerId}") %>`)
 
     return lines.join('\n')
+  }
+
+  /**
+   * The opening of the Ruby block that iterates `array` for `loop`: the
+   * iteration method and its block header, then, for an array iteration,
+   * one local per lowered destructure binding.
+   */
+  private rubyLoopOpening(loop: IRLoop, loopPlan: LoopPlan<unknown>, array: string): string[] {
+    const blockHeader = this.rubyBlockHeader(loop, loopPlan)
+    if (loop.objectIteration) {
+      // `objectIteration` (#2168 object-entries-map): Ruby's `Hash`
+      // preserves the source object's insertion order natively (unlike
+      // Go's `map`/Perl's hash), so this bypasses the index-range form
+      // below entirely and uses Ruby's own native block-param binding
+      // (`each_pair`/`each_key`/`each_value`) — no `array[index]` lookup
+      // needed, since the block directly yields the key/value.
+      const method = loop.objectIteration === 'entries'
+        ? 'each_pair'
+        : loop.objectIteration === 'keys' ? 'each_key' : 'each_value'
+      return [`<%- ${array}.${method} do ${blockHeader} -%>`]
+    }
+    if (loop.iterationShape === 'keys') {
+      // `.keys().map(k => ...)` — the callback param IS the index; no
+      // per-item value binding needed (or possible: there is no `array[i]`
+      // item to bind).
+      return [`<%- (0...${array}.length).each do ${blockHeader} -%>`]
+    }
+    // Item + index as REAL Ruby block parameters of `each_with_index`
+    // (rather than an index-range `.each` + a separate `item = arr[_i]`
+    // assignment) — see `rubyBlockHeader`'s `blockParams`/`blockLocals`
+    // setup for why (#2922).
+    const lines = [`<%- ${array}.each_with_index do ${blockHeader} -%>`]
+    // One local per lowered destructure binding, built off its structured
+    // `segments` path (never `b.path` — repo rule: no string-parsing of a
+    // JS-shaped accessor). `__bf_item` itself is the loop's own block
+    // parameter (`itemParam` in `rubyBlockHeader`).
+    for (const { name, value } of spellDestructureLocals(loopPlan, '__bf_item', DESTRUCTURE_SPELLING)) {
+      lines.push(`<%- ${rubyLocal(name)} = ${value} -%>`)
+    }
+    return lines
+  }
+
+  /**
+   * The `|params; locals|` header of a loop's Ruby block: the params the
+   * block binds natively, then the block-local variables it assigns.
+   */
+  private rubyBlockHeader(loop: IRLoop, loopPlan: LoopPlan<unknown>): string {
+    const param = loop.param
+    // `.keys().map(k => ...)` — the callback param is the index. Use it as
+    // the loop's index local and skip the per-item value assignment.
+    const indexVar = loop.iterationShape === 'keys'
+      ? rubyLocal(param)
+      : rubyLocal(loop.index ?? '_i')
+
+    // Ruby block parameters this loop binds natively (item/value + index /
+    // key). A real block parameter always shadows a same-named enclosing
+    // local at every nesting depth — unlike a plain `x = ...` assignment
+    // inside the block, which MUTATES an already-visible enclosing `x`
+    // instead of shadowing it. That distinction is the entire bug in #2922:
+    // `items.map(item => item.children.map(item => ...))` reused the same
+    // Ruby local `item` via assignment at both nesting depths, so the inner
+    // loop's second-plus iteration read the PREVIOUS inner item instead of
+    // the stable outer one. Binding the item as a real `each_with_index`
+    // block parameter (instead of `(0...arr.length).each` + a separate
+    // `item = arr[_i]` assignment) fixes this natively — the receiver
+    // (`array`) is evaluated once, in the ENCLOSING scope, before the block
+    // opens, so a nested loop's own array expression (e.g. `item.children`)
+    // still resolves against the OUTER `item` even when the inner loop binds
+    // a same-named fresh one.
+    const itemParam = loopPlan.destructure === 'lowerable' ? '__bf_item' : rubyLocal(param)
+    const blockParams: string = loop.objectIteration
+      ? loop.objectIteration === 'entries'
+        ? `${rubyLocal(loop.index ?? param)}, ${rubyLocal(param)}`
+        : rubyLocal(param)
+      : loop.iterationShape === 'keys'
+        ? indexVar
+        : `${itemParam}, ${indexVar}`
+    // Ruby locals this loop introduces by PLAIN ASSIGNMENT inside the block
+    // body (destructure bindings off `__bf_item`, `.map()` preamble locals,
+    // #2447) — as opposed to a real block parameter above. Declared as
+    // explicit Ruby block-local variables (`do |params; locals| ... end`)
+    // so each gets fresh per-block scope unconditionally, the same way a
+    // block parameter does — not only when a collision with an enclosing
+    // scope is actually detected, since that's a no-op for a name with no
+    // outer counterpart. Safe here because none of these assignments' RHS
+    // ever reads its own LHS name: a destructure binding's RHS is always an
+    // accessor off `__bf_item` (itself a block parameter above), and a JS
+    // preamble `const x = ...x...` initializer is a TDZ error, so it can
+    // only read an EARLIER preamble local (already block-local by then) or
+    // the param/index (also block parameters).
+    const blockLocals = new Set<string>()
+    if (!loop.objectIteration && loop.iterationShape !== 'keys') {
+      for (const { name } of loopPlan.destructureLocals) blockLocals.add(rubyLocal(name))
+    }
+    for (const d of loop.preamble?.declarations ?? []) blockLocals.add(rubyLocal(d.name))
+    // Never list a name that's ALSO a block parameter above — Ruby rejects
+    // that as `duplicated argument name` (a JS param/index and a preamble
+    // local/destructure binding can never share a name anyway; JS itself
+    // refuses the duplicate declaration).
+    for (const p of blockParams.split(', ')) blockLocals.delete(p)
+    return blockLocals.size > 0
+      ? `|${blockParams}; ${[...blockLocals].join(', ')}|`
+      : `|${blockParams}|`
   }
 
   // ===========================================================================

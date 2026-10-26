@@ -110,6 +110,7 @@ export { BaseAdapter } from './adapters/interface.ts'
 export { DslTemplateAdapter } from './adapters/dsl-template-adapter.ts'
 export type {
   LoopPlanSpelling,
+  LoopRefusalSpelling,
   LoopRow,
   LoopRowSpelling,
   TemplateIdentifierSpelling,

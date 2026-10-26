@@ -57,6 +57,8 @@ import {
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
+  type LoopPlan,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -146,6 +148,19 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: perlSegmentAccessor,
   slice: (parent, from) => `bf->slice(${parent}, ${from}, undef)`,
   omit: (parent, keys) => `bf->omit(${parent}, [${keys.map(perlStringLiteral).join(', ')}])`,
+}
+
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Mojo adapter cannot lower — see the diagnostic detail for the specific shape.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
+    `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
+    `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  4. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Mojo',
 }
 
 /**
@@ -649,22 +664,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToPerl,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Mojo adapter cannot lower — see the diagnostic detail for the specific shape.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
-            `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
-            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -694,21 +694,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // consults for this hazard class (#1749/#2482 Stage 2).
     const staticArray = loopPlan.staticSource
 
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
-
     const rawArray = staticArray ?? this.convertExpressionToPerl(loop.array)
     // Apply sort if present (#1448 Tier B): wrap the loop array in the
     // shared sort helper. The same shared chain (`lowerCallbackMethod`) and
@@ -728,12 +713,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       array = `$${sortedHoist}`
     }
     const param = loop.param
-    // `.keys().map(k => ...)` — the callback param is the index.
-    // Use it as the for-loop variable and skip the per-item value
-    // assignment.
-    const indexVar = loop.iterationShape === 'keys'
-      ? `$${param}`
-      : loop.index ? `$${loop.index}` : '$_i'
     // The row window (#3473): the row's scope around the preamble locals'
     // initializers, the children and the whole-item-conditional key anchor
     // (#1665). Per-row preamble locals (#2447) are emitted INSIDE the filter
@@ -782,35 +761,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       })
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
-    if (loop.objectIteration) {
-      // `objectIteration` (#2168 object-entries-map): a Perl hash has no
-      // native insertion-order guarantee (unlike Ruby's `Hash`/Python's
-      // `dict`) — this codebase's own runtime already works around this
-      // elsewhere with `sort keys %$hash` (`BarefootJS.pm`'s
-      // `spread_attrs`/`_style_to_css`), so this reuses that exact
-      // convention for a deterministic, alphabetically-sorted iteration
-      // (not JS insertion order — a documented known limitation for
-      // out-of-alphabetical-order data, same as Go/Rust/Xslate).
-      const keyVar = loop.objectIteration === 'values' ? '$__bf_k' : `$${loop.index ?? param}`
-      lines.push(`% for my ${keyVar} (sort keys %{${array}}) {`)
-      if (loop.objectIteration === 'entries' || loop.objectIteration === 'values') {
-        lines.push(`% my $${param} = ${array}->{${keyVar}};`)
-      }
-    } else {
-    lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
-    if (loop.iterationShape !== 'keys') {
-      // The row item, under the param or, for a lowered destructure, the
-      // per-item var `$__bf_item` with one `my` local per binding walking
-      // its `segments` path (#2087 Phase B): the full accessor for a fixed
-      // binding, `bf->slice(parent, from, undef)` / `bf->omit(parent, [keys])`
-      // for an array / object rest (the same runtime helpers the `.slice()`
-      // method lowers to), a true residual rather than the whole item aliased.
-      lines.push(`% my $${loopPlan.itemVar} = ${array}->[${indexVar}];`)
-      for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopPlan.itemVar}`, DESTRUCTURE_SPELLING)) {
-        lines.push(`% my $${name} = ${value};`)
-      }
-    }
-    }
+    lines.push(...this.perlLoopOpening(loop, loopPlan, array))
 
     // The row, inside the filter's guard for a filter().map() loop. The plan
     // renames the predicate's shadowed captures to their aliases (#3402) and
@@ -835,6 +786,48 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     lines.push(`<%== bf->comment("/loop:${loop.markerId}") %>`)
 
     return lines.join('\n')
+  }
+
+  /**
+   * The `% for` opening that iterates `array` for `loop`, with the row's
+   * value local: an object iteration walks the sorted keys, an array
+   * iteration the index range with the item (and, for a lowered
+   * destructure, one local per binding) read off it.
+   */
+  private perlLoopOpening(loop: IRLoop, loopPlan: LoopPlan<unknown>, array: string): string[] {
+    const param = loop.param
+    if (loop.objectIteration) {
+      // `objectIteration` (#2168 object-entries-map): a Perl hash has no
+      // native insertion-order guarantee (unlike Ruby's `Hash`/Python's
+      // `dict`) — this codebase's own runtime already works around this
+      // elsewhere with `sort keys %$hash` (`BarefootJS.pm`'s
+      // `spread_attrs`/`_style_to_css`), so this reuses that exact
+      // convention for a deterministic, alphabetically-sorted iteration
+      // (not JS insertion order — a documented known limitation for
+      // out-of-alphabetical-order data, same as Go/Rust/Xslate).
+      const keyVar = loop.objectIteration === 'values' ? '$__bf_k' : `$${loop.index ?? param}`
+      const header = `% for my ${keyVar} (sort keys %{${array}}) {`
+      return loop.objectIteration === 'keys' ? [header] : [header, `% my $${param} = ${array}->{${keyVar}};`]
+    }
+    // `.keys().map(k => ...)` — the callback param is the index.
+    // Use it as the for-loop variable and skip the per-item value
+    // assignment.
+    const indexVar = loop.iterationShape === 'keys'
+      ? `$${param}`
+      : loop.index ? `$${loop.index}` : '$_i'
+    const header = `% for my ${indexVar} (0..$#{${array}}) {`
+    if (loop.iterationShape === 'keys') return [header]
+    // The row item, under the param or, for a lowered destructure, the
+    // per-item var `$__bf_item` with one `my` local per binding walking
+    // its `segments` path (#2087 Phase B): the full accessor for a fixed
+    // binding, `bf->slice(parent, from, undef)` / `bf->omit(parent, [keys])`
+    // for an array / object rest (the same runtime helpers the `.slice()`
+    // method lowers to), a true residual rather than the whole item aliased.
+    const lines = [header, `% my $${loopPlan.itemVar} = ${array}->[${indexVar}];`]
+    for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopPlan.itemVar}`, DESTRUCTURE_SPELLING)) {
+      lines.push(`% my $${name} = ${value};`)
+    }
+    return lines
   }
 
   // ===========================================================================
