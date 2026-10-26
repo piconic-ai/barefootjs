@@ -118,10 +118,32 @@ jobs:
 
       - run: bun install
 
+      # The concurrency group queues runs but each one still checks out the
+      # commit that triggered it. A run that overlaps a "Version Packages"
+      # merge would otherwise version changesets that main has already
+      # consumed and reopen a Version Packages PR for a release that is
+      # already out (#3664). A newer push that changed .changeset/ has its
+      # own run (bot pushes such as the Perl version sync never touch it),
+      # so this run can stand down and leave the work to that one. Checked
+      # right before Changesets, not after checkout: in that incident the
+      # Version Packages PR merged while this job was still installing.
+      - name: Skip if a newer push changed the changesets
+        id: fresh
+        if: github.event_name == 'push'
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          here=$(git rev-parse HEAD:.changeset)
+          tip=$(git rev-parse FETCH_HEAD:.changeset)
+          if [ "$here" != "$tip" ]; then
+            echo "::notice::.changeset/ on main moved past ${GITHUB_SHA::7}; leaving versioning and publishing to the newer run."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # Do not bump this major without @changesets/cli's: v1 pairs with CLI v3
       # silently wrong (it bundles its own v2-era readers) rather than refusing.
       - name: Changesets — version or publish
         id: changesets
+        if: steps.fresh.outputs.stale != 'true'
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
           version-script: bunx changeset version
