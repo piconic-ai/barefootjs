@@ -1,5 +1,12 @@
 # @barefootjs/client
 
+## 0.40.0
+
+### Patch Changes
+
+- 1d0e160: Escape backslashes and control characters in scope selectors when CSS.escape is unavailable.
+- @barefootjs/shared@0.40.0
+
 ## 0.39.9
 
 ### Patch Changes
