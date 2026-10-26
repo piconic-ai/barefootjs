@@ -21,6 +21,9 @@ on:
       - 'packages/cli/**'
       - '.github/workflows/ci-create-barefootjs.yml'
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-create-barefootjs-${{ github.ref }}
   cancel-in-progress: true
