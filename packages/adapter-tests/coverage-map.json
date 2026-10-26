@@ -2651,6 +2651,19 @@
         "text"
       ]
     },
+    "conditional-sibling-roots": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
     "conditional-text-adjacency-shapes": {
       "kinds": [
         "call",
