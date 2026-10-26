@@ -1254,7 +1254,9 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(this.substituteJsInterpolationsToTwig(part.value))
+        parts.push(`'${escapeTwigSingleQuoted(part.value)}'`)
+      } else if (part.type === 'expression') {
+        parts.push(`bf.string(${this.convertExpressionToTwig(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
         const cond = this.convertConditionToTwig(part.condition)
         // Twig's symbolic ternary (see this file's header, divergence tied
@@ -1280,31 +1282,6 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     // string (literal or `bf.string(...)`-wrapped), so `~`'s own coercion
     // is a no-op here.
     return parts.length === 1 ? parts[0] : parts.join(' ~ ')
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string into
-   * Twig variable references and concatenate them with the surrounding
-   * literal text. Each interpolated (non-literal) segment routes through
-   * `bf.string(...)` — see the file header, divergence 2.
-   */
-  private substituteJsInterpolationsToTwig(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(`'${escapeTwigSingleQuoted(s.slice(lastIndex, m.index))}'`)
-      }
-      segments.push(`bf.string(${this.convertExpressionToTwig(m[1].trim())})`)
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(`'${escapeTwigSingleQuoted(s.slice(lastIndex))}'`)
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' ~ ')})`
   }
 
   /**

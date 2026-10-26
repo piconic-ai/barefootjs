@@ -1257,15 +1257,9 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        // The IR producer may leave `${ident}` / `${_p.ident}`
-        // interpolations in `string` parts when it can't statically
-        // inline them (typically a destructured prop the caller will
-        // supply at hydrate time, e.g. `${className}` in shadcn-style
-        // composition). Substitute those to their Perl variable form
-        // before quoting, otherwise the single-quoted literal here
-        // passes the JS-shape interpolation through verbatim into the
-        // rendered HTML.
-        parts.push(this.substituteJsInterpolationsToPerl(part.value))
+        parts.push(perlStringLiteral(part.value))
+      } else if (part.type === 'expression') {
+        parts.push(this.convertExpressionToPerl(part.expr, part.parsed))
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToPerl(part.condition)
         parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
@@ -1286,33 +1280,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     }
     // Join with Perl string concatenation
     return parts.length === 1 ? parts[0] : parts.join(' . ')
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string
-   * into Perl variable references and concatenate them with the
-   * surrounding literal text. Used by `convertTemplateLiteralPartsToPerl`
-   * when a `string` part still carries unresolved interpolations (e.g.
-   * `${className}` from a destructured prop the IR analyzer couldn't
-   * inline statically).
-   */
-  private substituteJsInterpolationsToPerl(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(`'${s.slice(lastIndex, m.index)}'`)
-      }
-      segments.push(this.convertExpressionToPerl(m[1].trim()))
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(`'${s.slice(lastIndex)}'`)
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' . ')})`
   }
 
   /**

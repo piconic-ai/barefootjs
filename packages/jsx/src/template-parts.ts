@@ -14,7 +14,7 @@ import type { IRTemplatePart } from './types.ts'
 
 export interface TemplatePartsToJsOptions {
   /**
-   * Prefer each part's prop-rewritten projection (`templateValue` /
+   * Prefer each part's prop-rewritten projection (`templateExpr` /
    * `templateCondition` / `templateKey`, i.e. destructured props rewritten
    * to `_p.X`) when present. Used by the client-JS / module-registration
    * template emitters, which run outside the component's destructured scope.
@@ -68,7 +68,9 @@ export function templatePartsToJsExpr(
   let result = '`'
   for (const part of parts) {
     if (part.type === 'string') {
-      result += (opts?.useTemplate && part.templateValue) ? part.templateValue : part.value
+      result += part.value.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${').replace(/\r/g, '\\r')
+    } else if (part.type === 'expression') {
+      result += `\${${opts?.useTemplate ? part.templateExpr ?? part.expr : part.expr}}`
     } else if (part.type === 'ternary') {
       const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
       result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`

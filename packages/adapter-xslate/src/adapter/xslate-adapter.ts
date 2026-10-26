@@ -1248,7 +1248,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(this.substituteJsInterpolationsToKolon(part.value))
+        parts.push(kolonStringLiteral(part.value))
+      } else if (part.type === 'expression') {
+        parts.push(this.convertExpressionToKolon(part.expr, part.parsed))
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToKolon(part.condition)
         parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
@@ -1266,30 +1268,6 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     }
     // Join with Kolon string concatenation (`~`).
     return parts.length === 1 ? parts[0] : parts.join(' ~ ')
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string into
-   * Kolon variable references and concatenate them with the surrounding
-   * literal text.
-   */
-  private substituteJsInterpolationsToKolon(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(`'${s.slice(lastIndex, m.index)}'`)
-      }
-      segments.push(this.convertExpressionToKolon(m[1].trim()))
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(`'${s.slice(lastIndex)}'`)
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' ~ ')})`
   }
 
   /**

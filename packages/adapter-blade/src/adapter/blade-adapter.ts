@@ -1374,7 +1374,9 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(this.substituteJsInterpolationsToBlade(part.value))
+        parts.push(`'${escapeBladeSingleQuoted(part.value)}'`)
+      } else if (part.type === 'expression') {
+        parts.push(`$bf->string(${this.convertExpressionToBlade(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
         const cond = this.convertConditionToBlade(part.condition)
         // Symbolic PHP ternary (same syntax as Twig's own — see this file's
@@ -1402,31 +1404,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // string (literal or `$bf->string(...)`-wrapped), so `.`'s own coercion
     // is a no-op here.
     return parts.length === 1 ? parts[0] : parts.join(' . ')
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string into
-   * Blade variable references and concatenate them with the surrounding
-   * literal text. Each interpolated (non-literal) segment routes through
-   * `$bf->string(...)` — see the file header, "Stringification".
-   */
-  private substituteJsInterpolationsToBlade(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(`'${escapeBladeSingleQuoted(s.slice(lastIndex, m.index))}'`)
-      }
-      segments.push(`$bf->string(${this.convertExpressionToBlade(m[1].trim())})`)
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(`'${escapeBladeSingleQuoted(s.slice(lastIndex))}'`)
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' . ')})`
   }
 
   /**

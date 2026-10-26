@@ -636,7 +636,7 @@ function collectTemplateRiskyNames(irRoot: IRNode): Set<string> {
   // Mirror the emitter's input source for each template position
   // (`transformExpr` in html-template.ts uses `templateExpr ?? expr`).
   // The `template*` rewrites — bare prop refs to `_p.X`, plus
-  // `IRTemplateLiteral` parts' `templateValue`/`templateCondition`/
+  // `IRTemplateLiteral` parts' `templateExpr`/`templateCondition`/
   // `templateKey` — are what `transformExpr` actually substitutes
   // through, so the diagnostic gate needs to look at the same string.
   // Reading the raw form would drift from emission and could miss /

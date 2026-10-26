@@ -8292,6 +8292,12 @@
               ]
             },
             {
+              "fixture": "template-literal-attribute-quotes",
+              "limitations": [
+                "template-literal-attribute-quotes"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16006,6 +16012,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "template-literal-attribute-quotes",
+              "limitations": [
+                "template-literal-attribute-quotes"
+              ]
             }
           ]
         },
@@ -16178,10 +16190,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       },
       "example": {
-        "fixture": "flatmap-expression-body",
-        "description": "JSX-returning `.flatMap()` projection — neutral nested-loop IR on every adapter",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-expression-body.ts",
-        "code": "`${it.id}:${tag}`"
+        "fixture": "template-literal-attribute-quotes",
+        "description": "An attribute template expression escapes quotes in outer and nested literal segments",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-literal-attribute-quotes.ts",
+        "code": "`a-[\"y\"] ${tag}`"
       }
     },
     "unary": {

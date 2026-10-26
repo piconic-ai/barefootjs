@@ -213,7 +213,7 @@ export { templatePartsToJsExpr }
  * `boolean-shorthand`, `jsx-children`) — callers must branch on `value.kind`
  * before reaching them.
  *
- * When `opts.useTemplate` is set, prefers `templateExpr` / `templateValue` /
+ * When `opts.useTemplate` is set, prefers `templateExpr` /
  * `templateCondition` / `templateKey` (the prop-rewritten variant) over the
  * raw source form, for use in SSR template-literal interpolation.
  */

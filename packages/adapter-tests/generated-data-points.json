@@ -10350,6 +10350,29 @@
       }
     }
   ],
+  "template-literal-attribute-quotes": [
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "tag": "",
+        "__instanceId": "TemplateLiteralAttributeQuotes_test"
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "tag": "<b>&\"'</b>",
+        "__instanceId": "TemplateLiteralAttributeQuotes_test"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "tag": "日本語",
+        "__instanceId": "TemplateLiteralAttributeQuotes_test"
+      }
+    }
+  ],
   "template-literal-multi-interp": [
     {
       "name": "gen:greeting:markup",
@@ -10361,6 +10384,39 @@
       "name": "gen:greeting:multibyte",
       "props": {
         "greeting": "日本語"
+      }
+    }
+  ],
+  "template-literal-static-delimiters": [
+    {
+      "name": "gen:active:false",
+      "props": {
+        "active": false,
+        "__instanceId": "TemplateLiteralStaticDelimiters_test"
+      }
+    },
+    {
+      "name": "gen:suffix:empty",
+      "props": {
+        "active": true,
+        "__instanceId": "TemplateLiteralStaticDelimiters_test",
+        "suffix": ""
+      }
+    },
+    {
+      "name": "gen:suffix:markup",
+      "props": {
+        "active": true,
+        "__instanceId": "TemplateLiteralStaticDelimiters_test",
+        "suffix": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:suffix:multibyte",
+      "props": {
+        "active": true,
+        "__instanceId": "TemplateLiteralStaticDelimiters_test",
+        "suffix": "日本語"
       }
     }
   ],

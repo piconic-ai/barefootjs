@@ -1326,7 +1326,9 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(this.substituteJsInterpolationsToPebble(part.value))
+        parts.push(pebbleStringLiteral(part.value))
+      } else if (part.type === 'expression') {
+        parts.push(`bf.string(${this.convertExpressionToPebble(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
         const cond = this.convertConditionToPebble(part.condition)
         // Pebble's symbolic ternary (see the file header syntax table) —
@@ -1364,31 +1366,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // string (literal or `bf.string(...)`-wrapped), so `~`'s own coercion
     // is a no-op here.
     return parts.length === 1 ? parts[0] : parts.join(' ~ ')
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string into
-   * Pebble variable references and concatenate them with the surrounding
-   * literal text. Each interpolated (non-literal) segment routes through
-   * `bf.string(...)` — see the file header, divergence 2.
-   */
-  private substituteJsInterpolationsToPebble(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(pebbleStringLiteral(s.slice(lastIndex, m.index)))
-      }
-      segments.push(`bf.string(${this.convertExpressionToPebble(m[1].trim())})`)
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(pebbleStringLiteral(s.slice(lastIndex)))
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' ~ ')})`
   }
 
   /**

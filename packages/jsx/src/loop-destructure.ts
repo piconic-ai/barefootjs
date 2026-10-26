@@ -140,7 +140,10 @@ function restNamesMisused(loop: IRLoop, names: string[]): boolean {
     }
   }
   const part = (p: IRTemplatePart): void => {
-    if (p.type === 'ternary') {
+    if (p.type === 'expression') {
+      check(p.expr)
+      check(p.templateExpr)
+    } else if (p.type === 'ternary') {
       check(p.condition)
       check(p.templateCondition)
       check(p.whenTrue)

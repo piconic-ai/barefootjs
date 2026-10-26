@@ -95,9 +95,6 @@
       "resolveNestedLoopItemTypes": [
         46
       ],
-      "substituteJsInterpolations": [
-        32
-      ],
       "synthesizeStructsFromElements": [
         55
       ]

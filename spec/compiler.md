@@ -273,7 +273,10 @@ Notable fields per variant:
   (the `_p.xxx`-rewritten variant used in SSR template inlining), and an
   optional `presenceOrUndefined` set when the producer peeled an
   `expr || undefined` boolean-presence pattern.
-- `template.parts` reuses `IRTemplatePart` (`string` / `ternary` / `lookup`).
+- `template.parts` reuses `IRTemplatePart` (`string` / `expression` / `ternary` / `lookup`).
+  String parts contain only literal text. Expression parts carry `expr`, its
+  optional prop-rewritten `templateExpr`, and a parsed expression tree; emitters
+  never search literal text for interpolation delimiters.
   Adapters that can run JS at SSR (Hono) re-emit a JS template literal;
   adapters that can't (Go-template, Mojolicious) walk the parts.
 - `spread` keeps the legacy `name === '...'` marker for backward

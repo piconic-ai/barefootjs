@@ -281,9 +281,12 @@ export function Label() {
   // interpolations stay as actions (#1937 review).
   test('attribute-context template-literal interpolation escapes its literal text', () => {
     const adapter = new GoTemplateAdapter()
-    const out = (adapter as unknown as {
-      substituteJsInterpolations(s: string): string
-    }).substituteJsInterpolations('content-["x"] ${`a-["y"] ${tag}`} z')
+    const ir = compileToIR(`
+export function Label({ tag, active }: { tag: string; active: boolean }) {
+  return <div className={\`\${active ? 'on' : 'off'} content-["x"] \${\`a-["y"] \${tag}\`} z\`} />
+}
+`, adapter)
+    const { template: out } = adapter.generate(ir)
     // The `"` from the nested template literal's literal part is escaped, not raw.
     expect(out).toContain('a-[&quot;y&quot;] {{.Tag}}')
     expect(out).not.toContain('a-["y"]')

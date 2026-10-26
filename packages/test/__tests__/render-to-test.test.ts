@@ -815,3 +815,13 @@ export function CommentForm(props: { postId: number }) {
     expect(result.findByText('Saved')).not.toBeNull()
   })
 })
+
+test('structured template classes preserve literal delimiters and drop unresolved whole tokens', () => {
+  const source = [
+    'export function Demo({ active, size }: { active: boolean; size?: string }) {',
+    '  return <div className={`literal-\\${notCode} ${active ? "on" : "off"} w-${size}-wide end`}>x</div>',
+    '}',
+  ].join('\n')
+  const div = renderToTest(source, 'demo.tsx').find({ tag: 'div' })!
+  expect(div.classes).toEqual(['literal-${notCode}', 'on', 'off', 'end'])
+})

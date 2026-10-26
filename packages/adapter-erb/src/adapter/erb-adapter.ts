@@ -1392,14 +1392,9 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        // The IR producer may leave `${ident}` / `${_p.ident}`
-        // interpolations in `string` parts when it can't statically inline
-        // them (typically a destructured prop the caller will supply at
-        // hydrate time, e.g. `${className}` in shadcn-style composition).
-        // Substitute those to their Ruby variable form before quoting,
-        // otherwise the single-quoted literal here passes the JS-shape
-        // interpolation through verbatim into the rendered HTML.
-        parts.push(this.substituteJsInterpolationsToRuby(part.value))
+        parts.push(rubyStringLiteral(part.value))
+      } else if (part.type === 'expression') {
+        parts.push(`bf.string(${this.convertExpressionToRuby(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToRuby(part.condition)
         parts.push(`(bf.truthy?(${cond}) ? ${rubyStringLiteral(part.whenTrue)} : ${rubyStringLiteral(part.whenFalse)})`)
@@ -1420,33 +1415,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     }
     // Join with Ruby string concatenation
     return parts.length === 1 ? parts[0] : `(${parts.join(' + ')})`
-  }
-
-  /**
-   * Translate `${EXPR}` interpolations in a static template-part string
-   * into Ruby variable references and concatenate them with the
-   * surrounding literal text. Used by `convertTemplateLiteralPartsToRuby`
-   * when a `string` part still carries unresolved interpolations (e.g.
-   * `${className}` from a destructured prop the IR analyzer couldn't
-   * inline statically).
-   */
-  private substituteJsInterpolationsToRuby(s: string): string {
-    const segments: string[] = []
-    const re = /\$\{([^}]+)\}/g
-    let lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > lastIndex) {
-        segments.push(rubyStringLiteral(s.slice(lastIndex, m.index)))
-      }
-      segments.push(`bf.string(${this.convertExpressionToRuby(m[1].trim())})`)
-      lastIndex = re.lastIndex
-    }
-    if (lastIndex < s.length) {
-      segments.push(rubyStringLiteral(s.slice(lastIndex)))
-    }
-    if (segments.length === 0) return `''`
-    return segments.length === 1 ? segments[0] : `(${segments.join(' + ')})`
   }
 
   /**

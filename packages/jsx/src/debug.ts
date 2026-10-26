@@ -2365,6 +2365,7 @@ function attrValueToString(value: AttrValue): string | null {
     case 'template':
       return value.parts
         .map(p => {
+          if (p.type === 'expression') return p.expr
           if (p.type === 'ternary') return `${p.condition} ${p.whenTrue} ${p.whenFalse}`
           if (p.type === 'lookup') return p.key
           return ''

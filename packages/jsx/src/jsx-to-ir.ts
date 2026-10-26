@@ -1197,10 +1197,18 @@ function attachParsedAttrValues(
   node: IRNode,
   parse: (trimmed: string) => ParsedExpr,
   parseValue: (trimmed: string) => ParsedExpr,
+  resolve: (parsed: ParsedExpr) => ParsedExpr,
 ): void {
-  const attach = (value: { kind: string; expr?: string; parsed?: ParsedExpr }, spreads: boolean): void => {
-    const trimmed = value.kind === 'expression' || (spreads && value.kind === 'spread') ? value.expr?.trim() : undefined
-    if (trimmed) value.parsed = value.kind === 'spread' ? parse(trimmed) : parseValue(trimmed)
+  const attach = (value: AttrValue, spreads: boolean): void => {
+    if (value.kind === 'template' || value.kind === 'expression') {
+      for (const part of value.parts ?? []) {
+        if (part.type === 'expression') part.parsed = resolve(part.parsed)
+      }
+    }
+    if (value.kind === 'expression' || (spreads && value.kind === 'spread')) {
+      const trimmed = value.expr.trim()
+      if (trimmed) value.parsed = value.kind === 'spread' ? parse(trimmed) : parseValue(trimmed)
+    }
   }
   if (node.type === 'element') {
     for (const attr of node.attrs) attach(attr.value, true)
@@ -1240,7 +1248,8 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, scope:
     const trimmed = node.condition.trim()
     if (trimmed) node.parsedCondition = parse(trimmed)
   }
-  attachParsedAttrValues(node, parse, parseValue)
+  attachParsedAttrValues(node, parse, parseValue,
+    parsed => resolveCallbackMethodFunctionReferences(parsed, analyzer, bound))
   switch (node.type) {
     case 'element':
     case 'component':
@@ -6773,7 +6782,8 @@ function attrValueText(value: AttrValue): string {
   if (value.kind !== 'template') return ''
   const out: string[] = []
   for (const p of value.parts) {
-    if (p.type === 'ternary') out.push(p.condition, p.whenTrue, p.whenFalse)
+    if (p.type === 'expression') out.push(p.expr)
+    else if (p.type === 'ternary') out.push(p.condition, p.whenTrue, p.whenFalse)
     else if (p.type === 'lookup') out.push(p.key)
   }
   return out.join(' ')
@@ -8182,10 +8192,10 @@ function parseTemplateLiteral(
       if (ternary) {
         parts.push(ternary)
       } else {
-        // Fallback: keep as string expression
+        // Preserve the expression as a distinct part.
         const val = ctx.getJS(span.expression)
         const tVal = rewriteBarePropRefs(val, span.expression, ctx)
-        parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
+        parts.push({ type: 'expression', expr: val, templateExpr: tVal, parsed: parseValueExpr(val) })
       }
     } else {
       // Try to resolve `${IDENT}` against local consts (string literal
@@ -8196,10 +8206,10 @@ function parseTemplateLiteral(
       if (resolved) {
         parts.push(...resolved)
       } else {
-        // Non-ternary expression: keep as ${expr}
+        // Preserve unresolved expressions for the target renderer.
         const val = ctx.getJS(span.expression)
         const tVal = rewriteBarePropRefs(val, span.expression, ctx)
-        parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
+        parts.push({ type: 'expression', expr: val, templateExpr: tVal, parsed: parseValueExpr(val) })
       }
     }
 
@@ -8488,7 +8498,7 @@ function tryResolveIdentifierAsTemplateLiteral(
   // substitution or a Record lookup) to bother emitting structured
   // IR — otherwise the existing identifier-text path is more
   // efficient. Spans that don't resolve fall through to a bare
-  // `${expr}` string part (matching `parseTemplateLiteral`'s default).
+  // expression part (matching `parseTemplateLiteral`'s default).
   let resolvedAny = false
   const parts: IRTemplatePart[] = []
   if (ast.head.text) parts.push({ type: 'string', value: ast.head.text })
@@ -8499,15 +8509,14 @@ function tryResolveIdentifierAsTemplateLiteral(
       resolvedAny = true
       parts.push(...resolved)
     } else {
-      // Unresolved span (e.g. a function param like `className`): keep
-      // as a bare ${expr} placeholder so adapters can substitute the
-      // matching prop/param at render time.
+      // Unresolved spans retain their parsed expression for adapter emission.
       const text = astText(span.expression)
       const templateText = rewriteBarePropRefs(text, span.expression, ctx)
       parts.push({
-        type: 'string',
-        value: `\${${text}}`,
-        templateValue: templateText ? `\${${templateText}}` : undefined,
+        type: 'expression',
+        expr: text,
+        templateExpr: templateText,
+        parsed: parseValueExpr(text),
       })
     }
     if (span.literal.text) parts.push({ type: 'string', value: span.literal.text })
@@ -9076,7 +9085,7 @@ function processComponentProps(
     // shorthand (`<X disabled />` → `disabled={true}`).
     if (value.kind === 'template') {
       // Collapse using the raw part values, but also carry the
-      // template-variant projection (parts' `templateValue` /
+      // template-variant projection (parts' `templateExpr` /
       // `templateCondition` / `templateKey`, i.e. destructured-prop refs
       // rewritten to `_p.X`) as `templateExpr`. Without it, the
       // `templateExpr` derivation below walks the ORIGINAL initializer AST
@@ -9895,10 +9904,11 @@ function attrValueReactivityProbe(value: AttrValue): string | null {
       return value.expr
     case 'template':
       return value.parts.map((p: IRTemplatePart) => {
-        if (p.type === 'string') return p.value
+        if (p.type === 'string') return ''
+        if (p.type === 'expression') return p.expr
         if (p.type === 'ternary') return p.condition
         return p.key
-      }).join('')
+      }).join(' ')
     case 'literal':
     case 'boolean-attr':
     case 'boolean-shorthand':

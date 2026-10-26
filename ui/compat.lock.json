@@ -7813,6 +7813,14 @@
           }
         }
       },
+      "template-literal-attribute-quotes": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "template-literal-attribute-quotes"
+          ]
+        }
+      },
       "unlowered-global-call": {
         "blade": {
           "kind": "refusal",
@@ -8404,6 +8412,10 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
+      },
+      "template-literal-attribute-quotes": {
+        "description": "An attribute template expression escapes quotes in outer and nested literal segments",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-literal-attribute-quotes.ts"
       },
       "unlowered-global-call": {
         "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
@@ -9587,6 +9599,19 @@
         "erb",
         "jinja",
         "minijinja"
+      ]
+    },
+    "template-literal-attribute-quotes": {
+      "title": "Quoted literal segments in an attribute template expression",
+      "kind": "silent",
+      "given": "an attribute template expression containing double quotes in outer and nested literal segments",
+      "expected": "the attribute retains its complete string value with literal quotes escaped in HTML",
+      "actual": "emits unescaped literal quotes that break the attribute and cause a template rendering error",
+      "fixtures": [
+        "template-literal-attribute-quotes"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "undefined-method-result-attr": {
