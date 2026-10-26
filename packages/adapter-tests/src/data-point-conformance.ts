@@ -27,6 +27,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect } from 'bun:test'
 import { renderTest } from './render-test'
+import { canSkipRenderError } from './render-error-policy'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import type { TemplateAdapter } from '../../jsx/src/types'
@@ -219,7 +220,7 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
             try {
               html = await opts.render(renderOptions(fixture, opts.factory(), fixture.props))
             } catch (err) {
-              if (opts.onRenderError?.(err as Error, fixture.id)) return 'unavailable'
+              if (canSkipRenderError(err, fixture.id, opts.onRenderError)) return 'unavailable'
               throw err
             }
             // `expectedHtml` presence is enforced by `createFixture` for
@@ -252,7 +253,7 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
               try {
                 adapterHtml = await opts.render(renderOptions(fixture, opts.factory(), point.props))
               } catch (err) {
-                if (opts.onRenderError?.(err as Error, fixture.id)) return
+                if (canSkipRenderError(err, fixture.id, opts.onRenderError)) return
                 throw err
               }
               const oracleHtml = await renderHonoComponent(

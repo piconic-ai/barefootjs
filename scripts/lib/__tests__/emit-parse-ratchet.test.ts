@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import ts from 'typescript'
-import { compareToBaseline, measureSource, measureSourceFile, serializeBaseline } from '../emit-parse-ratchet'
+import { compareToBaseline, internalFunctionParserReferences, measureSource, measureSourceFile, serializeBaseline } from '../emit-parse-ratchet'
 
 const ADAPTER = 'packages/adapter-x/src/adapter/x-adapter.ts'
 const EMITTER = 'packages/jsx/src/ir-to-client-js/x.ts'
@@ -103,4 +103,36 @@ test('serializeBaseline sorts files and functions and drops empty ones', () => {
   const out = JSON.parse(serializeBaseline({ b: { z: 1, a: 2 }, a: { x: 0 } }))
   expect(out).toEqual({ files: { b: { a: 2, z: 1 } } })
   expect(Object.keys(out.files.b)).toEqual(['a', 'z'])
+})
+
+test('rejects internal parser references through aliases and re-exports, not unrelated names', () => {
+  const root = '/virtual/packages/jsx/src/'
+  const files: Record<string, string> = {
+    [`${root}module-exports.ts`]: 'export function extractFunctionParams(value: string) { return value }',
+    [`${root}index.ts`]: "export { extractFunctionParams } from './module-exports'",
+    [`${root}consumer.ts`]: `
+      import { extractFunctionParams as parse } from './index'
+      import * as compiler from './index'
+      const alias = parse
+      alias('x => x')
+      compiler.extractFunctionParams('x => x')
+      compiler['extractFunctionParams']('x => x')
+      function unrelated() {
+        const extractFunctionParams = (x: string) => x
+        return extractFunctionParams('x')
+      }
+    `,
+  }
+  const options: ts.CompilerOptions = { noLib: true, module: ts.ModuleKind.CommonJS }
+  const host = ts.createCompilerHost(options)
+  host.fileExists = file => file in files
+  host.readFile = file => files[file]
+  host.directoryExists = dir => root.startsWith(`${dir}/`) || dir === root.slice(0, -1)
+  host.getSourceFile = (file, version) => files[file] === undefined
+    ? undefined : ts.createSourceFile(file, files[file], version, true)
+  const program = ts.createProgram(Object.keys(files), options, host)
+  const checker = program.getTypeChecker()
+  expect(internalFunctionParserReferences(program.getSourceFile(`${root}consumer.ts`)!, checker)).toHaveLength(3)
+  expect(internalFunctionParserReferences(program.getSourceFile(`${root}index.ts`)!, checker)).toEqual([])
+  expect(internalFunctionParserReferences(program.getSourceFile(`${root}module-exports.ts`)!, checker)).toEqual([])
 })

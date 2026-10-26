@@ -150,6 +150,23 @@ and co-author rules are defined once in `AGENTS.md`, for both Claude and Codex.
 Report the PR link, current-head CI/review outcome, and whether it was merged.
 Leave merging to the user unless explicitly requested.
 
+## Code-scanning follow-through
+
+For code-scanning fixes, record alert numbers, affected refs, and the analysis
+commit. A green CodeQL workflow alone does not prove the alerts closed: inspect
+the PR alert results on the current head. If merging is authorized, verify the
+merged commit's default-branch analysis succeeds, the target alerts become
+`fixed`, and no new open alerts replace them. Alert numbers can change after a
+code move; compare the rule and source location too. If merging is not authorized,
+report this default-branch verification as pending instead of claiming closure.
+
+For a suspected false positive, inspect the reported data flow, establish whether
+the sink is reachable, identify every output context, and reproduce the behavior
+by executing generated code or rendering it in the target runtime. Record that
+evidence with the dismissal when dismissal is authorized; do not broadly disable
+a query or add escaping merely to silence it. A test-only finding outside a
+production boundary is a scoped risk decision, not automatically a false positive.
+
 ## Reusable task prompt
 
 > Follow the shared polish-pr skill for <PR URL>. Address CI and Pullfrog findings

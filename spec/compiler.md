@@ -1546,6 +1546,31 @@ const classes = `btn ${isActive() && 'on'}`  // Uses memo
 const isActive = createMemo(() => selected() === id)
 ```
 
+### Output-context escaping
+
+Encode at each output boundary, according to the syntax that consumes the value.
+An escaped value for one context is not automatically safe in another.
+
+| Destination | Required construction |
+| --- | --- |
+| Complete JavaScript string literal inside an expression | Serialize the entire literal, for example with `JSON.stringify`; do not add another pair of quotes around its result. |
+| Literal segment of a JavaScript template literal | Escape backslashes, backticks and `${` (and preserve line-ending values). Interpolation expressions are separate structured parts, not text to escape or discover. |
+| HTML text or a quoted HTML attribute | Use the corresponding HTML text/attribute encoder. If that HTML is embedded in a JS literal, also encode for the enclosing JS literal. |
+| JavaScript or JSON embedded in an HTML `<script>` element | Preserve JavaScript/JSON semantics while preventing a literal HTML script-closing sequence, for example by encoding `<` as `\u003c` in serialized data. `JSON.stringify` alone does not protect the HTML raw-text boundary. |
+| A backend template-language string literal | Use that backend's complete-literal encoder; do not assume JavaScript's quote or backslash rules apply. |
+
+Apply nested encodings from the inner output language to the outer source
+language. Within JavaScript source, do not HTML-escape complete expressions or
+treat HTML escaping as JavaScript string escaping. In particular, `SafeHtml` below
+vouches for the evaluated HTML value, not arbitrary surrounding source syntax.
+
+Verify each boundary by compiling and executing or rendering the result in its
+actual target runtime. Include backslashes, both quote characters, backticks,
+literal `${...}`, line endings, HTML markup and `</script>` where relevant.
+Assert the recovered value and DOM structure, not only the generated source.
+Backend runtime string semantics can differ even when their quote syntax looks
+alike; Pebble's backslash handling is one such case.
+
 ### Client template escaping: `SafeHtml` and the child-splice door (#2795)
 
 Every client-JS builder in `ir-to-client-js/html-template.ts` assembles a JS template literal whose `${...}` holes are evaluated in the browser and parsed as HTML via `innerHTML`. Whether a hole's value was escaped used to be an **opt-in each builder remembered separately** — an `escapeInClientTemplate` flag on the IR node, a pre-baked `escapeText(...)` string inside `templateExpr`, an `escapeLeafTextExpressions` rewrite pass over preamble leaves, and a hand-written `escapeText` in `buildPreambleRegionPlans` — and a forgotten opt-in shipped raw text twice (#1694; #2765/#2792, where the same miss sat in two builders and only one was patched). All of those are gone. The rule is now inverted and enforced by types, in `ir-to-client-js/safe-html.ts`:
