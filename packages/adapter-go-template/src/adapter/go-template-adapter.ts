@@ -32,7 +32,6 @@ import type {
   IRMetadata,
   TemplatePrimitiveRegistry,
   LoopBindingPathSegment,
-  LoopBindingSource,
   ConstantInfo,
   ImportInfo,
   JsSourceText,
@@ -68,7 +67,6 @@ import {
   emitAttrValue,
   augmentInheritedPropAccesses,
   collectContextConsumers,
-  isLowerableLoopDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
@@ -82,7 +80,6 @@ import {
   evaluateStaticLiteral,
   BindingScope,
   type ScopeFrame,
-  isEventHandlerName,
   buildImportAliasMap,
   resolveGetterAliases,
   collectAliasableGetterNames,
@@ -102,7 +99,6 @@ import {
   computedConstContext,
   inlineComputedConstAttr,
   inlineComputedConsts,
-  missingFilterPredicateRefusal,
 } from '@barefootjs/jsx'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
@@ -114,28 +110,9 @@ import {
   slotIdToFieldSuffix,
   structFieldNamePairs,
 } from "./lib/go-naming.ts"
-import { loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding, type LoopRowShape, type LoweredLoopKey } from './lib/loop-row-path.ts'
+import { isFieldlessRowType, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding, type LoopRowShape, type LoweredLoopKey } from './lib/loop-row-path.ts'
 import { allocateRowsFields, loopDrivingProp, nestedRowsFieldName, rowsFieldSiteKey, type RowsFieldSite } from './lib/nested-rows-field.ts'
 
-/** The wrapper field that carries a scalar wrapper row's bare value (`wrapperRowScalarItemGoType`). */
-const SCALAR_ROW_ITEM_FIELD = 'BfLoopItem'
-
-/** A loop row's value type, structurally (`TypeInfo` or the scope's `LoopValueType`). */
-interface RowValueType {
-  readonly primitive?: string
-  readonly unionTypes?: readonly RowValueType[]
-}
-
-/**
- * A row whose value is a string, number or boolean (or a union of them) has
- * no fields: `g.length` on it reads the value (`bf_length .`), never a
- * `.Length` field of a row record. Unknown types keep the field reading.
- */
-function isFieldlessRowType(type: RowValueType | null | undefined): boolean {
-  if (!type) return false
-  if (type.primitive !== undefined) return true
-  return type.unionTypes !== undefined && type.unionTypes.length > 0 && type.unionTypes.every(isFieldlessRowType)
-}
 import {
   escapeGoString,
   wrapIfMultiToken,
@@ -168,7 +145,7 @@ import type {
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
 import { routesToRestBag, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
-import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES } from "./lib/constants.ts"
+import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
@@ -184,7 +161,7 @@ import {
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
-import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
+import { isKnownArray, isKnownNonNumber } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFieldGoType } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
@@ -202,6 +179,7 @@ import { lowerChildInputFields, lowerLoopRowChildInputFields, sourceRowChildInpu
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
+import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -5439,23 +5417,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return hit !== null && hit.depth === 0 && hit.binding.source === 'item'
   }
 
-  /**
-   * On a scalar wrapper row (`scalarWrapperRowLoops`) the range variable
-   * holds the row wrapper; rebind it to the bare value (`.BfLoopItem`) at the
-   * top of the row, so a `$g` read anywhere in the calling template — a
-   * nested callback in the filter predicate, a preamble local — sees the
-   * value, as `currentLoopItemRef` does for the dot.
-   */
-  private scalarWrapperRowValueDecl(loop: IRLoop, rangeValue: string): string {
-    if (rangeValue === '_' || !this.state.scalarWrapperRowLoops.has(loop.markerId)) return ''
-    return `{{$${rangeValue} := .${SCALAR_ROW_ITEM_FIELD}}}`
-  }
-
-  /** A loop over a primitive-literal array, or a scalar wrapper row (`scalarWrapperRowLoops`). */
-  private isScalarItemLoop(loop: IRLoop): boolean {
-    return this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null || this.state.scalarWrapperRowLoops.has(loop.markerId)
-  }
-
   /** The current row value (`isCurrentLoopItem`): `.`, or `.BfLoopItem` on a scalar wrapper row's call site. */
   private currentLoopItemRef(): string {
     return this.scalarWrapperRowCallSite ? `.${SCALAR_ROW_ITEM_FIELD}` : '.'
@@ -5492,30 +5453,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private conditionLengthFn(expr: Extract<ParsedExpr, { kind: 'member' }>): 'len' | 'bf_length' {
     if (expr.optional) return 'bf_length'
     return isKnownArray(this.emitCtx, expr.object, this.scope) ? 'len' : 'bf_length'
-  }
-
-  /**
-   * The type a rendered loop's row bindings carry: Phase 1's scalar
-   * `itemType` (the callback param's checked type) when present, else the
-   * array's declared element type (`loopRowType`), so a text sink can tell a
-   * string row field from a number (`isKnownNonNumber`). The scalar answer
-   * wins because a declared element type the adapter can't read
-   * (`(string | null)[]`) would otherwise hide that the row is a scalar with
-   * no fields (`isFieldlessRowType`).
-   */
-  private renderLoopRowType(loop: IRLoop): TypeInfo | null {
-    return loop.itemType ?? loopRowType(this.emitCtx, loop, this.scope)
-  }
-
-  /**
-   * The loop's row value has no fields: a scalar wrapper row
-   * (`scalarWrapperRowLoops`), or a row typed as a scalar
-   * (`isFieldlessRowType` of `rowType`, as the row's scope binding is
-   * typed). A fused filter predicate's `w.length` then reads the value, not
-   * a `.Length` field.
-   */
-  private isFieldlessLoopRow(loop: IRLoop, rowType: TypeInfo | null): boolean {
-    return this.state.scalarWrapperRowLoops.has(loop.markerId) || isFieldlessRowType(rowType)
   }
 
   /**
@@ -7051,19 +6988,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `len (bf_filter ${arrayExpr} "${field}" ${value})`
   }
 
-  /**
-   * Render a predicate for use in Go template `{{if}}` conditions, substituting
-   * the loop parameter (e.g. `t` in `t.done`) with dot notation. `datumField`
-   * (#2228) is the wrapper struct's datum-carrying field name (e.g. `"Todo"`)
-   * for a loop whose body is a child component — see `wrapperDatumField` — so
-   * `t.done` qualifies through it (`.Todo.Done`) instead of the bare `.Done`
-   * `html/template` can't resolve on the wrapper Props struct. `undefined` for
-   * a non-wrapper (plain-element-body) loop, where `.` already IS the datum.
-   */
-  private renderPredicateCondition(pred: ParsedExpr, param: string, datumField?: string | null, fieldlessParam = false): string {
-    return renderFilterExpr(this.conditionExprHost, pred, param, new Map(), datumField ?? undefined, fieldlessParam) ?? 'false'
-  }
-
   /** Convert a JS expression to Go template syntax. */
   private convertExpressionToGo(
     jsExpr: string,
@@ -7219,248 +7143,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private isLoopShadowedName(name: string): boolean {
     return this.scope.isBound(name) || this.loopVarRefCount.has(name)
-  }
-
-  /**
-   * Whether `name` reads the innermost enclosing loop's own row: its item
-   * param, or a name destructured from it (#3313). Either is a field of the
-   * row wrapper a forwarded-children define receives as its data.
-   */
-  private isInnermostRowBinding(name: string): boolean {
-    const hit = this.scope.lookup(name)
-    return hit !== null && hit.depth === 0 && (hit.binding.source === 'item' || hit.binding.source === 'destructure')
-  }
-
-  /**
-   * #2445: per-row Go pipeline arguments for a child component nested inside
-   * a COMPOSITE loop row (row root is a plain element — `<li><Badge
-   * text={row.label}/></li>` — as opposed to the wrapper-slice case where the
-   * loop body IS the component). `collectStaticChildInstancesRecursive`
-   * registers such a child as an ordinary once-per-slot instance
-   * (`$.<Name>SlotN`), built ONCE outside `{{range}}` by
-   * `emitStaticChildInstances` — correct for props that don't depend on the
-   * row, but stale for one that does (`text={row.label}` reads the same
-   * value on every row). A loop-dependent prop is therefore re-applied per
-   * row, at template-execution time, via the `bf_with_props` runtime helper
-   * (the props-argument sibling of `bf_with_children`, which already does
-   * this for per-row JSX children on the same shared instance).
-   *
-   * A prop with no loop-bound free identifier (`IRProp.freeIdentifiers`, IR-
-   * build-time computed, #1267) is left on the constructor path — it's
-   * already correct there, and skipping it keeps every currently-passing
-   * fixture's emitted template byte-identical (no fixture in the corpus
-   * reaches this method with a loop-dependent prop today).
-   *
-   * #2448 — `bf_with_props` overrides fields on the ALREADY-CONSTRUCTED
-   * shared instance; it does not re-run `New<Child>Props`. A field the child
-   * derives FROM the overridden prop at construction time (a memo body or a
-   * signal's initial value) would keep whatever the one-shot constructor
-   * computed and never update per row. Two outcomes, decided per child:
-   *
-   * - The child has a generated props rebuilder (`childRepropsReady`): the
-   *   caller emits `bf_reprops` instead, which re-runs the real constructor
-   *   per row so every derived field recomputes. Nothing is refused.
-   * - It does not (its Input can't be reconstructed from Props — see
-   *   `generateRepropsRegistration`'s eligibility gate): BF101 + `continue`,
-   *   exactly like the unsupported-expression refusal a few lines below.
-   *   Refusing beats emitting silently-stale output.
-   *
-   * #2457 — the `"Field"` half of each argument pair is the child's OWN Go
-   * field name (resolved through `childPropFieldNames`), not the JSX
-   * attribute name. For an un-aliased prop those are the same string; for an
-   * aliased destructure (`{ n: count }`) the child's field is `Count` while
-   * the JSX attribute is `n`, and emitting the attribute name left
-   * `bf.WithProps`/`bf.RepropsAssign` with a name the struct has no field
-   * for — silently dropped by the former, an unknown-field error from the
-   * latter. Resolving it here, once, means both helpers only ever see a name
-   * the struct actually has.
-   *
-   * Returns the space-joined `"Field" value …` argument list plus the helper
-   * the caller must wrap it in, or null when nothing needs overriding (caller
-   * keeps the bare `$.<Name>SlotN` reference).
-   */
-  private loopRowChildPropOverrides(
-    comp: IRComponent,
-    rowItemOnly = false,
-  ): {
-    args: string | null
-    helper: 'bf_with_props' | 'bf_reprops'
-    bagEntries: Array<{ bagField: string; key: string; go: string }>
-  } | null {
-    // #2822: every cross-file map below is keyed by the child's own
-    // declared name, not the caller-local alias — see `importAliases`.
-    // Diagnostics still name `comp.name` (what the user actually wrote in
-    // the JSX) since that's the more useful reference for the reader.
-    const declaredName = this.resolveChildName(comp.name)
-    const childShape = this.childComponentShapes.get(declaredName)
-    const args: string[] = []
-    const bagEntries: Array<{ bagField: string; key: string; go: string }> = []
-    // Set by the derived-field check below when at least one overridden prop
-    // feeds a constructor-derived field AND the child can rebuild itself.
-    let needsRebuild = false
-    for (const prop of comp.props) {
-      // `key`/`children` aren't Props-struct fields; event handlers have no
-      // Go field (`isEventHandlerName`); a hyphenated name can't be a Go
-      // field (same guard as `emitChildField`). A `/* @client *\/` prop is
-      // delivered like any other when it lowers — the reference renders it
-      // at SSR — and, being the escape, is skipped silently when it doesn't
-      // (every refusal below checks `escaped`).
-      const escaped = !!prop.clientOnly
-      if (prop.name === 'key' || prop.name === 'children') continue
-      if (isEventHandlerName(prop.name)) continue
-      if (prop.name.includes('-')) continue
-      // A prop that routes into the child's rest bag (`routesToRestBag`,
-      // `emitChildField`'s same routing rule) has no named Go field to
-      // override via `bf_with_props` — routed into `bagEntries` below instead
-      // (#3062), the loop-row delivery `queueDynamicPropDefine`'s static
-      // sibling route (#2805, `bf_with_bag`) didn't reach yet.
-      const isRestBag = routesToRestBag(childShape, prop.name)
-      // `literal` / `boolean-shorthand` / `boolean-attr` carry no runtime
-      // expression to re-evaluate per row; `spread` / `jsx-children` are
-      // handled elsewhere (`emitSpreadBagInits`, `queueLoopBodyChildrenDefine`).
-      if (prop.value.kind !== 'expression') continue
-      const free = prop.freeIdentifiers
-      if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
-      let rebuild = false
-      // `rowItemOnly` (a wrapper-slice row's forwarded-children define): the
-      // define runs as its own template with the row wrapper as its data, so
-      // only the innermost row's fields (`.Field`, or a name destructured
-      // from the row) are reachable there.
-      // An outer row's binding is a `{{range}}` variable of the calling
-      // template the define can't see — such a prop keeps the shared
-      // instance's value.
-      // The calling loop's index and callback locals ARE reachable when the
-      // define rebinds them from the wrapper's `BfRowVars` (`wrapperRowVars`;
-      // a scalar row's define has no wrapper to carry them) — but only for a
-      // prop that reads nothing else: the row wrapper has no field for the
-      // parent's state, so `checked={selected()[index]}` (the data-table
-      // selection demo) would read a field the define's data lacks.
-      if (rowItemOnly) {
-        const rowVars = this.wrapperRowVars?.names
-        const reachable = (name: string): boolean => this.isInnermostRowBinding(name) || !!rowVars?.has(name)
-        const unreachable = [...free].some(name => this.isLoopShadowedName(name) && !reachable(name))
-        const readsRowVar = [...free].some(name => !this.isInnermostRowBinding(name) && !!rowVars?.has(name))
-        if (unreachable || (readsRowVar && ![...free].every(reachable))) continue
-      }
-      // #2448's derived-field staleness check only applies to a NAMED FIELD
-      // override — `bf_with_props` patches struct fields the constructor may
-      // derive OTHER fields from. A rest-bag entry is an opaque
-      // `map[string]any` value nothing derives from, so it never needs a
-      // rebuild and skips this check entirely.
-      if (!isRestBag) {
-        const derived = this.childDerivedFieldDeps.get(declaredName)
-        const overriddenField = capitalizeFieldName(prop.name)
-        const staleField = derived
-          ? [...derived].find(([, deps]) => deps.has(overriddenField))?.[0]
-          : undefined
-        if (staleField && !this.childRepropsReady.has(declaredName)) {
-          if (escaped) continue
-          this.state.errors.push({
-            code: 'BF101',
-            severity: 'error',
-            message: `Prop '${prop.name}' on <${comp.name}> nested inside a dynamic loop row is overridden per row, but <${comp.name}>'s '${staleField}' field is computed from '${prop.name}' when the shared instance is first constructed and won't recompute per row — it would keep the first row's value on every row.`,
-            loc: prop.loc,
-            suggestion: {
-              message: `Mark this loop position '@client' to render <${comp.name}> client-side, or compute '${staleField}' in the parent and pass it to <${comp.name}> as a plain prop instead of deriving it inside <${comp.name}>.`,
-            },
-          })
-          continue
-        }
-        // Claimed below, once the prop's value has actually lowered.
-        rebuild = !!staleField
-      }
-      const exprOut: { parsed?: ParsedExpr } = {}
-      const errorCountBefore = this.state.errors.length
-      let go = this.convertExpressionToGo(prop.value.expr, exprOut, prop.value.parsed)
-      if (this.state.errors.length > errorCountBefore) {
-        if (escaped) {
-          this.state.errors.length = errorCountBefore
-          continue
-        }
-        // `convertExpressionToGo` already pushed its own BF101 for an
-        // unsupported expression and returned the `""` sentinel — using it
-        // here would silently clobber the field with an empty string (or,
-        // for a non-string field, fail at template EXECUTE time instead of
-        // this compile time). Leave the prop on the constructor path; the
-        // reported error already surfaces the real problem. `loc` defaults
-        // to `convertExpressionToGo`'s own `this.makeLoc()` placeholder —
-        // repoint the newly-pushed error(s) at the prop's real source
-        // location, same as the fragment-refusal error below.
-        for (let i = errorCountBefore; i < this.state.errors.length; i++) {
-          this.state.errors[i].loc = prop.loc
-        }
-        continue
-      }
-      // A ternary or template literal (`row.on ? "yes" : "no"`, `` `#${row.id}
-      // ${row.label}` ``) in this ARGUMENT position (a `bf_with_props`/
-      // `bf_reprops` value, not a text position) must lower through the
-      // shared value-operand door (#2863/#2335) — `convertExpressionToGo`'s
-      // generic path returns `templateLiteral()`'s TEXT-position mixed
-      // literal-text-plus-`{{…}}`-actions form for a template literal, which
-      // is not a legal bare pipeline argument (multi-part) or needed an
-      // ad-hoc single-part unwrap here (this replaces both). Recompute from
-      // the already-validated `exprOut.parsed` tree rather than trying to
-      // unwrap or refuse the text-position string after the fact.
-      if (exprOut.parsed?.kind === 'template-literal' || exprOut.parsed?.kind === 'conditional') {
-        go = lowerValueOperand(this.emitCtx, exprOut.parsed)
-      } else if (this.isTemplateFragment(go, exprOut.parsed?.kind)) {
-        // A genuine `{{if}}...{{end}}`-shaped (or other `{{`-leading action)
-        // fragment can't be a bare pipeline argument — refuse loudly rather
-        // than silently dropping the prop (the #2445 bug was exactly a
-        // silent drop one level up).
-        if (escaped) continue
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Prop '${prop.name}' on <${comp.name}> nested inside a dynamic loop row reads the row but can't be lowered to a Go template pipeline argument`,
-          loc: prop.loc,
-        })
-        continue
-      }
-      // #3062: a rest-bag prop has no declared field — deliver its per-row
-      // value through `bf_with_bag` (keyed by the RAW JSX attribute name,
-      // same as `queueDynamicPropDefine`'s static sibling route) instead of
-      // a `bf_with_props` field-name pair. Synced onto EVERY render-consulted
-      // bag field (`restBagOverrideFields` — `Rest` for a `rest.x` member
-      // read, plus any `Spread_N` an element spread of the same binding
-      // renders from), not just `restBagField`, or the override lands on a
-      // field the child's render never reads (#3062's actual failure mode).
-      if (isRestBag) {
-        const wrapped = wrapIfMultiToken(go)
-        for (const bagField of restBagOverrideFields(childShape)) {
-          bagEntries.push({ bagField, key: prop.name, go: wrapped })
-        }
-        continue
-      }
-      // Emit the CHILD's own PROPS field name, not the JSX attribute name —
-      // `bf.WithProps`/`bf.RepropsAssign` patch the constructed PROPS
-      // instance, and passing a name the struct doesn't have (an aliased
-      // `{ n: count }` attribute) is a silent passthrough, not an error
-      // (#2457). Stays LOCAL even though the child's Input field is
-      // caller-facing. Falls back to the capitalized attribute for a
-      // cross-file child this run's pre-pass never registered.
-      const fieldName = this.childPropFieldNames.get(declaredName)?.get(prop.name) ?? capitalizeFieldName(prop.name)
-      if (rebuild) {
-        needsRebuild = true
-        // The rebuilder is emitted into THIS component's type block, not the
-        // child's — only here do we know it is actually needed. First parent
-        // to claim a child owns the registration, so two parents overriding
-        // the same child don't both emit an `init()` for it. Keyed by the
-        // child's DECLARED name (#2822) — `emitRepropsRegistration` below
-        // builds Go type references (`<Name>Props`/`<Name>Input`) from this
-        // same key, and only the declared name has real types to match.
-        if (!this.repropsOwner.has(declaredName)) {
-          this.repropsOwner.set(declaredName, this.state.componentName)
-        }
-      }
-      args.push(`${JSON.stringify(fieldName)} ${wrapIfMultiToken(go)}`)
-    }
-    if (args.length === 0 && bagEntries.length === 0) return null
-    return {
-      args: args.length > 0 ? args.join(' ') : null,
-      helper: needsRebuild ? 'bf_reprops' : 'bf_with_props',
-      bagEntries,
-    }
   }
 
   /**
@@ -7682,71 +7364,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return { condition: isBareValueRead(parsed) ? lowerJsTruthyTest(parsed, condition) : condition, preamble }
   }
 
-  /**
-   * Walk a destructure binding's structured `segments` path (#2087 Phase A) into
-   * a Go accessor over `base`. A `field` step appends `.<GoFieldName>` — dot
-   * access resolves against a struct field OR a map key (Go template's
-   * `evalField` supports both), and `goFieldNameForKey` produces a valid Go
-   * identifier regardless of whether the SOURCE key was one (`cells` → `Cells`,
-   * `data-priority` → `DataPriority`) — Go dot-syntax only requires the EMITTED
-   * name to be a legal identifier, not the original JS key. An `index` step
-   * has no dot-notation form, so it wraps in Go's `index` builtin
-   * (`(index <acc> N)`); the wrap also parenthesises the whole accessor so a
-   * following step or an outer composition (`len (...)`) can't swallow it as
-   * extra call arguments.
-   */
-  private buildSegmentAccessor(base: string, segments: readonly LoopBindingPathSegment[]): string {
-    let acc = base
-    for (const seg of segments) {
-      acc = seg.kind === 'field' ? `${acc}.${goFieldNameForKey(seg.key)}` : `(index ${acc} ${seg.index})`
-    }
-    return acc
-  }
-
-  /**
-   * Map each destructure binding to its Go accessor on the range var (#2087
-   * Phase B — `isLowerableLoopDestructure` admits every shape below):
-   *
-   *   - fixed binding (any depth): the FULL `segments` path over the range var
-   *     (`id` → `$item.Id`, `head` in `cells: [head]` → `(index $item.Cells 0)`,
-   *     `k` in `[k, v]` → `(index $item 0)`).
-   *   - array-rest (`[first, ...tail]`): the PARENT `segments` prefix wrapped in
-   *     `bf_slice` (`tail` → `(bf_slice $item 1)`) — this IS the binding's whole
-   *     value, so it composes correctly both bare and under `.length` (`len
-   *     (bf_slice $item 1)`, via the `member()` emitter's generic `len <obj>`
-   *     arm).
-   *   - object-rest (`{ id, ...rest }`): the bare PARENT accessor, so a member
-   *     read (`rest.flag`) renders `$item.Flag` — the simplest lowering that
-   *     keeps the already-green `rest-destructure-object-in-map` fixture byte-
-   *     exact. A `{...rest}` SPREAD needs the residual (item minus the
-   *     destructured siblings), which this map alone can't express; that case
-   *     is tracked separately in the returned `restExcludes` map and consumed
-   *     by `emitSpread`'s `bf_omit` lowering, not through this binding value.
-   */
-  private buildDestructureBindingMap(
-    loop: IRLoop,
-    rangeVar: string,
-  ): {
-    bindings: Map<string, string>
-    restExcludes: Map<string, { parent: string; excludeKeys: string[] }>
-  } {
-    const bindings = new Map<string, string>()
-    const restExcludes = new Map<string, { parent: string; excludeKeys: string[] }>()
-    const base = `$${rangeVar}`
-    for (const b of loop.paramBindings ?? []) {
-      const parent = this.buildSegmentAccessor(base, b.segments ?? [])
-      if (!b.rest) {
-        bindings.set(b.name, parent)
-      } else if (b.rest.kind === 'array') {
-        bindings.set(b.name, `(bf_slice ${parent} ${b.rest.from})`)
-      } else {
-        bindings.set(b.name, parent)
-        restExcludes.set(b.name, { parent, excludeKeys: b.rest.exclude.map(k => k.key) })
-      }
-    }
-    return { bindings, restExcludes }
-  }
-
   /** The destructure accessor `name` resolves to, or undefined when the
    * nearest binding of `name` in `scope` is not a destructure binding: an
    * inner item, index or preamble local shadows it (#3392). */
@@ -7764,43 +7381,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (info) return info
     }
     return undefined
-  }
-
-  /**
-   * #2228: the Go field name on the wrapper Props struct that carries the
-   * loop datum, for a loop whose body IS a child component (`loop.childComponent`,
-   * e.g. `.TodoItems` ranging over `TodoItemProps`). `{{range}}`'s dot context
-   * for such a loop is the WHOLE wrapper struct (`TodoItemProps{ Todo Todo,
-   * OnToggle ..., ... }`), not the raw per-item datum — so a filter predicate
-   * (`t => !t.done`) referencing the loop param can't lower `t.done` straight
-   * to `.Done` (no such top-level field; `html/template` fails at execute time
-   * with `can't evaluate field Done in type TodoItemProps`). The datum lives
-   * nested under whichever child prop was PASSED the loop param verbatim
-   * (`todo={todo}` → field `Todo`, from `capitalizeFieldName('todo')` — the
-   * SAME derivation `generateInputStruct`/`generatePropsStruct` use for every
-   * other prop-to-field mapping, so this never invents a field name the
-   * generated struct doesn't actually have). Returns `null` for a non-wrapper
-   * loop, or when no prop's value is a bare reference to the loop param (the
-   * datum isn't forwarded at all — nothing to qualify through).
-   */
-  private wrapperDatumField(loop: {
-    childComponent?: IRLoopChildComponent
-    param: string
-    markerId: string
-  }): string | null {
-    if (!loop.childComponent) return null
-    // A scalar wrapper row carries the bare value itself (`scalarWrapperRowLoops`).
-    if (this.state.scalarWrapperRowLoops.has(loop.markerId)) return SCALAR_ROW_ITEM_FIELD
-    for (const prop of loop.childComponent.props) {
-      if (prop.isEventHandler) continue
-      if (prop.value.kind !== 'expression') continue
-      const parsed = prop.value.parsed
-      const isBareParamRef = parsed
-        ? parsed.kind === 'identifier' && parsed.name === loop.param
-        : prop.value.expr.trim() === loop.param
-      if (isBareParamRef) return capitalizeFieldName(prop.name)
-    }
-    return null
   }
 
   /**
@@ -7874,430 +7454,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
+  /** Render a `.map()` loop as a Go `{{range}}` (`loop/render-loop.ts`). */
   renderLoop(loop: IRLoop): string {
-    // clientOnly loops: emit SSR markers so the client can insert DOM nodes. The
-    // marker id disambiguates sibling `.map()` calls under the same parent.
-    if (loop.clientOnly) {
-      return `{{bfComment "loop:${loop.markerId}"}}{{bfComment "/loop:${loop.markerId}"}}`
-    }
-
-    // An array/object-destructure loop param (`([emoji, users]) => ...` or
-    // `({ name, age }) => ...`) requires multi-variable `{{range $k, $v := ...}}`
-    // semantics that Go templates don't provide for arbitrary tuples — the
-    // adapter would otherwise emit `{{range $_, $[emoji, users] := .Entries}}`,
-    // invalid Go template syntax. Surface this at build time instead of shipping
-    // a broken `{{range}}` line.
-    //
-    // Check the IR's structured `paramBindings` field rather than string-matching
-    // `loop.param`: Phase 1 populates it iff the param is a destructure pattern,
-    // and the structured check is robust to formatting variants. `isLowerableLoopDestructure`
-    // (#2087 Phase A/B) admits fixed bindings at ANY depth (`.field`, array-index,
-    // nested combinations of either — `buildSegmentAccessor` walks the structured
-    // `segments` path), array-rest (`[a, ...t]` → `bf_slice`), and object-rest
-    // whose every use is a member read (`rest.flag`) or a `{...rest}` spread onto
-    // an intrinsic element (→ `bf_omit`, see `emitSpread`). Still refused (BF104):
-    // a bare-value object-rest use (`String(rest)`, `{rest}`, spread onto a
-    // component), and a `.filter().map(destructure)` chain — those need either the
-    // actual residual object or a filter-param retarget this lowering doesn't do.
-    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
-    if (destructure && !supportableDestructure) {
-      this.state.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the Go template adapter cannot lower — Go's \`{{range}}\` only supports single-name bindings.`,
-        loc: loop.loc ?? this.makeLoc(),
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple elements with index syntax in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
-
-    // A loop array that's a bare reference to a local const (module- or
-    // function-scope, #2946) with a computed initializer (`const entries =
-    // Object.entries(props.x ?? {}).filter(...)`) can't be bound as a Go
-    // template value: such a local only reaches the template at all via
-    // `computeDerivedConstFields`'s STRING-typed derived-const lowering
-    // (`isStringExpr`) — an array-typed initializer like this one never
-    // qualifies, so `identifier()` would still emit `.Entries` (the naive
-    // `rootFieldRef` fallback) while `generateTypes` emits no such field.
-    // `html/template` resolves struct fields dynamically at EXECUTE time, not
-    // at Go compile time, so left unchecked this fails loudly only when the
-    // template actually runs (`can't evaluate field Entries in type
-    // ...Props`) instead of at build time. Pre-existing, general limitation,
-    // orthogonal to #2087's destructure-binding work — newly reachable in this
-    // adapter's test corpus only because the widened destructure gate (#2087
-    // Phase A/B) no longer refuses `static-array-from-props`'s `([emoji,
-    // users]) => ...` param first. Cross-adapter policy: Jinja / ERB apply the
-    // same narrow check in their own `renderLoop` (see `jinja-adapter.ts`).
-    // #2208: a static-array loop whose body is a single child component
-    // (`loop.childComponent`) with a plain-value prop set can be BAKED —
-    // every per-item prop and data-key resolves to a compile-time-known Go
-    // literal (see `analyzeBakeableStaticChildLoop`), so the constructor
-    // (`generateNewPropsFunction`'s `staticWithoutBody` path) can emit the
-    // child instances directly instead of requiring the loop array bind as
-    // a template variable at all. Memoized by marker id so this gate and
-    // the constructor's later baking agree. A plain-ELEMENT body (no
-    // `childComponent`) is NOT handled by baking and keeps refusing below —
-    // see the go-only follow-up issue for that narrower gap.
-    const bakedChildLoop = loop.childComponent
-      ? this.getBakedStaticChildLoop(loop.markerId, loop.childComponent, loop.arrayParsed, loop.param, loop.key ?? undefined)
-      : null
-
-    // #2224 shape 1: a static-array loop whose body is a plain ELEMENT tree
-    // (no child component) has no `.{Name}s`-shaped template target for
-    // #2208's baking to feed — there's nothing for `{{range}}` to iterate at
-    // all once the array itself can't bind as a template variable. Rather
-    // than synthesizing a Go struct type for the item shape (see the #2224
-    // issue body), unroll the body once per item at template-generation
-    // time instead, substituting each item's statically-known field values
-    // directly — see `analyzeBakeableStaticElementLoop`'s docstring for the
-    // exact (conservative) acceptance gate. `null` here means the shape
-    // isn't (yet) bakeable this way; the existing gates below keep firing
-    // exactly as before.
-    // #2482 Stage 3: `renderLoop` is a live tree-walk, so `this.scope` (not
-    // yet entered for THIS loop's own row — that happens further below)
-    // gives the position-accurate ancestor-shadowing answer directly, unlike
-    // `getBakedStaticChildLoop` above, which is memoized across sites that
-    // run OUTSIDE the tree walk and so must keep its coarse whole-component
-    // shadow-name Set (see that method's own comment).
-    const bakedElementLoop = loop.childComponent
-      ? null
-      : analyzeBakeableStaticElementLoop(
-          loop,
-          this.state.localConstants,
-          { isNameShadowed: this.scope.asShadowPredicate(), bindings: this.staticLoopBindings() },
-        )
-    if (bakedElementLoop) {
-      return this.renderUnrolledStaticElementLoop(loop, bakedElementLoop.items)
-    }
-
-    if (bakedChildLoop === null) this.refuseComputedConstLoopSource(loop)
-
-    // #2224 shape 2: when the body IS a child component, `goArray` gets
-    // unconditionally overwritten to `.${componentName}s` below regardless
-    // of what this call returns — so for an INLINE array-literal source
-    // (`[{ label: 'Alpha' }, ...].map(item => <ListItem .../>)`), calling
-    // `convertExpressionToGo` on the raw literal text here is pure waste at
-    // best. At worst it's actively harmful: an array-literal-of-objects
-    // fails the shared `isSupported` gate (`object-literal` is refused
-    // standalone — expression-parser.ts), so this call would push a BF101
-    // as a side effect even though `bakedChildLoop` above (via
-    // `resolveStaticLoopSource`, which evaluates the literal directly
-    // instead of going through `isSupported`) already resolved the SAME
-    // loop just fine. Skip the call entirely for a child-component body —
-    // baked or not, dynamic `.map()` over a real prop/signal array included
-    // — so no spurious diagnostic is ever recorded for a value nothing ends
-    // up consuming.
-    let goArray = loop.childComponent ? '' : this.convertExpressionToGo(loop.array)
-    const param = loop.param
-    let index = loop.index || '_'
-
-    // `.keys().map(k => ...)` — the callback param is the *index*, not the value.
-    // Swap into the Go range's first binding slot so `{{range $k, $_ := .Arr}}`
-    // makes `$k` the 0-based index.
-    let rangeIndex = index
-    // A supported destructure param can't be the Go range var verbatim
-    // (`$__bf_itemN` is a synthetic single name; bindings resolve against it via
-    // `loopBindingStack`); otherwise the value var is the param itself. The
-    // reserved `__bf_item` prefix avoids colliding with a user binding, and the
-    // nesting-depth suffix keeps an inner destructure loop from shadowing an
-    // outer one's range var.
-    let rangeValue = supportableDestructure ? `__bf_item${this.loopBindingStack.length}` : param
-    if (loop.iterationShape === 'keys') {
-      rangeIndex = param
-      rangeValue = '_'
-    }
-
-    // If the loop body IS a single component, range over `.{ComponentName}s`,
-    // which carries a ScopeID per item (TodoItem → `.TodoItems`). Gate on the
-    // IR's `loop.childComponent` — the SAME condition `findNestedComponents`
-    // uses to generate that slice field — not on a deep search of the body:
-    // a component merely nested inside an element item (`<li><Badge/></li>`)
-    // generates NO `.Badges` slice, so retargeting the range at it 500s at
-    // render with `can't evaluate field Badges in type *XxxProps` (#2130).
-    // Such loops keep iterating the real collection; the nested child renders
-    // through the parent's once-per-slot instance (see `renderComponent`'s
-    // non-wrapper in-loop branch).
-    if (loop.childComponent) {
-      goArray = `.${this.nestedRowsField({ name: loop.childComponent.name, loopMarkerId: loop.markerId })}`
-    }
-
-    // Save/restore rather than plain assign: this loop's own body may contain
-    // a NESTED loop that also flips `inLoop` true→false around itself. Without
-    // saving, the inner loop's exit clobbers `inLoop` to `false` for the
-    // remainder of THIS (outer) loop's body, so any outer-scope content
-    // rendered after the nested loop wrongly takes the non-loop emission arms
-    // (e.g. spread attrs resolve to the component-root slot mechanism instead
-    // of the row-scoped field) (#2487).
-    const wasInLoopOuter = this.inLoop
-    this.inLoop = true
-    // Enter this loop's row scope (#2482 Stage 3). `IRLoop` already
-    // structurally satisfies `LoopBindingSource`, so the plain/destructured
-    // cases pass `loop` straight through — `enterLoopRow` binds
-    // `paramBindings` (destructure) OR `param` (plain item) automatically.
-    // `.keys()` is the one shape `BindingScope`'s generic 'item' semantics
-    // don't fit: the callback param there IS the index, not the row value
-    // (the dot context is the discarded value), so it must never win
-    // `isCurrentLoopItem`'s dot-shortcut — enter with an overridden empty
-    // `param`, mirroring the historical empty-string push onto the old
-    // loop-param stack for the same shape. The key stays reachable only
-    // via `loopVarRefCount`'s `$name` bookkeeping below, unchanged by this
-    // migration.
-    // The keys-shape param is the range *index*, so it binds as `index`: still
-    // the nearest binding for a shadowed outer name (#3392), never the dot.
-    // `rowType` types the row bindings (`renderLoopRowType`).
-    const rowType = this.renderLoopRowType(loop)
-    const scopeLoop: LoopBindingSource =
-      loop.iterationShape === 'keys' ? { ...loop, param: '', index: loop.param } : { ...loop, rowType }
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(scopeLoop)
-    // Track Go template loop variables. The range *index* variable needs
-    // `$name` notation and goes on `loopVarRefCount` (the range *value*
-    // variable's dot-context resolution now comes from `scope` above).
-    // Ref-counting (not a flat Set) keeps nested loops with the same index
-    // var name from clobbering the outer entry on cleanup.
-    const addedLoopVars: string[] = []
-    // A `.map()` callback preamble lowers to one `{{$cls := …}}` per-row
-    // variable per declaration (#2447). Registering the names on
-    // `loopVarRefCount` is what makes `identifier()` resolve each read as
-    // `$cls`; without it the read falls through to `rootFieldRef` and emits
-    // `$.Cls` — a PARENT-struct field, never populated, which rendered the
-    // attribute empty on every row (the same hoisted-to-parent class of
-    // defect as #2445).
-    for (const d of loop.preamble?.declarations ?? []) {
-      this.loopVarRefCount.set(d.name, (this.loopVarRefCount.get(d.name) ?? 0) + 1)
-      addedLoopVars.push(d.name)
-    }
-    let pushedBindingMap = false
-    const outerDestructureRangeVar = this.innermostDestructureRangeVar
-    this.innermostDestructureRangeVar = supportableDestructure ? rangeValue : null
-    if (supportableDestructure) {
-      // Bindings resolve against the synthetic `$__bf_item` range var.
-      const built = this.buildDestructureBindingMap(loop, rangeValue)
-      this.loopBindingStack.push(built.bindings)
-      const rowFrame = (loop.paramBindings ?? []).length > 0
-        ? this.scope.lookup(loop.paramBindings![0].name)?.frame
-        : undefined
-      if (rowFrame) this.destructureAccessors.set(rowFrame, built.bindings)
-      this.loopRestExcludeStack.push(built.restExcludes)
-      pushedBindingMap = true
-      if (rangeIndex !== '_') {
-        this.loopVarRefCount.set(rangeIndex, (this.loopVarRefCount.get(rangeIndex) ?? 0) + 1)
-        addedLoopVars.push(rangeIndex)
-      }
-    } else if (loop.iterationShape === 'keys') {
-      this.loopVarRefCount.set(param, (this.loopVarRefCount.get(param) ?? 0) + 1)
-      addedLoopVars.push(param)
-    } else {
-      if (rangeIndex !== '_') {
-        this.loopVarRefCount.set(rangeIndex, (this.loopVarRefCount.get(rangeIndex) ?? 0) + 1)
-        addedLoopVars.push(rangeIndex)
-      }
-    }
-    // Tell the loop-body component renderer whether this is a scalar-item loop,
-    // so its `bf_tmpl` companion is fed `.BfLoopItem` instead of `.`. Pushed
-    // around the body render only; mirrors the wrapper/constructor
-    // `wrapperRowScalarItemGoType` gate.
-    this.loopScalarItemStack.push(this.isScalarItemLoop(loop))
-    this.loopWrapperStack.push(!!loop.childComponent)
-    const wasScalarWrapperRowCallSite = this.scalarWrapperRowCallSite
-    this.scalarWrapperRowCallSite = this.state.scalarWrapperRowLoops.has(loop.markerId)
-    // Rendered inside the pushed loop scope so each initializer resolves
-    // against the range item (`.Done`), in source order so a later
-    // initializer sees an earlier `$` variable — same as the source block.
-    const preambleAssignments = (loop.preamble?.declarations ?? [])
-      .map(d => `{{$${d.name} := ${this.renderParsedExpr(d.valueParsed)}}}`)
-      .join('')
-    const children = this.renderChildren(loop.children)
-    this.scalarWrapperRowCallSite = wasScalarWrapperRowCallSite
-    this.loopWrapperStack.pop()
-    this.loopScalarItemStack.pop()
-    // Build the per-item anchor marker while the row scope is still active,
-    // so a `bodyIsItemConditional` key expression resolves against the
-    // range item (`.` context) like `data-key` does — restoring first would
-    // rewrite `t.id` to `.T.ID` instead of `.ID`.
-    const itemMarker = this.loopItemMarker(loop)
-    for (const v of addedLoopVars) {
-      const rc = (this.loopVarRefCount.get(v) ?? 1) - 1
-      if (rc <= 0) this.loopVarRefCount.delete(v)
-      else this.loopVarRefCount.set(v, rc)
-    }
-    this.scope = prevScope
-    this.innermostDestructureRangeVar = outerDestructureRangeVar
-    if (pushedBindingMap) {
-      this.loopBindingStack.pop()
-      this.loopRestExcludeStack.pop()
-    }
-    this.inLoop = wasInLoopOuter
-
-    // Apply sort if present: wrap the array in a sort pipeline before `range`.
-    // Evaluator-first (#2018 P3): serialize the comparator body + emit
-    // `bf_sort_eval`, the same path the standalone `callbackMethod` sort arm uses;
-    // fall back to the structured `bf_sort` for a comparator the evaluator
-    // can't model (e.g. `localeCompare`). The sort runs after the loop-scope
-    // cleanup above, so the captured-free-var env renders in the outer scope.
-    if (loop.sortComparator) {
-      const sortEmit = (e: ParsedExpr) => this.renderParsedExpr(e)
-      const cmpArrow = loop.sortComparator.arrow
-      const body = cmpArrow.kind === 'arrow' ? cmpArrow.body : cmpArrow
-      const params = cmpArrow.kind === 'arrow' ? cmpArrow.params : []
-      const sorted =
-        emitSortEval(goArray, body, params, sortEmit) ??
-        emitBfSort(goArray, sortComparatorFromArrow(cmpArrow)!)
-      goArray = `(${sorted})`
-    }
-
-    const rowValueDecl = this.scalarWrapperRowValueDecl(loop, rangeValue)
-
-    // filter().map(): gate the body on an `{{if}}` condition.
-    if (loop.filterPredicate) {
-      let filterCond: string
-      const captureAliases = new Map<string, string>()
-
-      if (loop.filterPredicate.predicate) {
-        // #2228: for a wrapper-slice loop (`.TodoItems` ranging over
-        // TodoItemProps), `.` in the predicate is the WHOLE wrapper struct —
-        // qualify `loop.filterPredicate.param` references through the
-        // datum-carrying field (`.Todo.Done`, not `.Done`) so the emitted
-        // `{{if}}` only ever dereferences fields the wrapper struct actually
-        // has. `wrapperDatumField` returns `null` for a plain-element-body
-        // loop, where `.` already IS the datum — `renderPredicateCondition`
-        // then keeps emitting the bare `.`/`.Field` form unchanged.
-        const datumField = this.wrapperDatumField(loop)
-        // The predicate runs inside this loop's own `{{range}}`, whose
-        // `$item`/`$index` would shadow an enclosing `$name` the predicate
-        // captures (`.filter(t => t === name).map(name => …)`). Keep each such
-        // enclosing value under a loop-scoped variable declared before the
-        // range, and read that in the predicate (#3396).
-        for (const declared of [rangeValue, rangeIndex]) {
-          if (declared === '_' || this.filterCaptureAliases.has(declared)) continue
-          if (this.lookupDestructureBinding(declared) !== undefined) continue
-          if (this.isOuterRowItem(declared) || this.loopVarRefCount.has(declared)) {
-            captureAliases.set(declared, `__bf_cap_${loop.markerId}_${declared}`)
-          }
-        }
-        const prevAliases = this.filterCaptureAliases
-        this.filterCaptureAliases = new Map([...prevAliases, ...captureAliases])
-        try {
-          filterCond = this.renderPredicateCondition(
-            loop.filterPredicate.predicate,
-            loop.filterPredicate.param,
-            datumField,
-            this.isFieldlessLoopRow(loop, rowType),
-          )
-        } finally {
-          this.filterCaptureAliases = prevAliases
-        }
-      } else {
-        // Phase 1 always attaches the predicate; a missing one is refused,
-        // never stood in for by a truthy constant that renders every row (#3534).
-        const refusal = missingFilterPredicateRefusal(loop.filterPredicate.raw, 'Go template')
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: refusal.message,
-          loc: this.makeLoc(),
-          suggestion: { message: refusal.suggestion },
-        })
-        filterCond = 'true'
-      }
-      const captureDecls = [...captureAliases].map(([name, alias]) => `{{$${alias} := ${this.rowVarRef(name)}}}`).join('')
-
-      // The preamble assignments sit INSIDE the `{{if}}`, matching JS
-      // evaluation order: a `.filter(p).map(cb)` chain never runs `cb`'s
-      // body for a filtered-out item.
-      return `{{bfComment "loop:${loop.markerId}"}}${captureDecls}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${rowValueDecl}{{if ${filterCond}}}${preambleAssignments}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
-    }
-
-    return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${rowValueDecl}${preambleAssignments}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
-  }
-
-  /**
-   * #2224 shape 1: render a static-array, plain-element-body loop's per-item
-   * markup ONCE PER ITEM at template-generation time instead of a Go
-   * `{{range}}` — `analyzeBakeableStaticElementLoop` has already verified
-   * every expression in `loop.children` resolves against each item. Keeps
-   * the SAME `<!--bf-loop:id--> ... <!--/bf-loop:id-->` marker pair a
-   * dynamic loop emits (so the CSR-side static `forEach` wiring, compiled by
-   * the separate `ir-to-client-js.ts` pass and untouched by this change,
-   * still finds the same DOM range), and pushes `loop.param` /
-   * `loop.depth` onto the SAME stacks `renderLoop`'s `{{range}}` path uses,
-   * so `data-key`/`data-key-N` attribute-name derivation
-   * (`renderAttributes`) is unaffected by which path rendered the loop. No
-   * `itemMarker` (`loopItemMarker`) call: the analysis gate already refused
-   * `bodyIsMultiRoot` / `bodyIsItemConditional` bodies, so it would always
-   * return `''` here anyway.
-   */
-  private renderUnrolledStaticElementLoop(loop: IRLoop, items: readonly unknown[]): string {
-    // Save/restore, not a plain assign — see the matching comment in
-    // `renderLoop` (#2487): a nested loop inside this unrolled body must not
-    // clobber `inLoop` for the remainder of an outer loop's rendering.
-    const wasInLoopOuter = this.inLoop
-    this.inLoop = true
-    this.loopWrapperStack.push(false)
-    this.loopScalarItemStack.push(this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null)
-    // The bake gate (`analyzeBakeableStaticElementLoop`) already refused a
-    // destructured or `.keys()`-shape param, so `loop` binds via `enterLoopRow`
-    // unadjusted — always a plain item (#2482 Stage 3).
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow({ ...loop, rowType: loopRowType(this.emitCtx, loop, prevScope) })
-
-    let body = ''
-    for (const item of items) {
-      this.staticLoopItemStack.push({ param: loop.param, item })
-      body += this.renderChildren(loop.children)
-      this.staticLoopItemStack.pop()
-      if (this.staticLoopBakeFailed) {
-        // Invariant violation (see `staticLoopBakeFailed`'s docstring): the
-        // gate and this render pass disagreed. Surface it loudly instead of
-        // shipping a template with `""` sentinels silently spliced in.
-        this.staticLoopBakeFailed = false
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Loop array \`${loop.array.trim()}\` could not be fully unrolled — an expression in the loop body did not resolve against every item as the compile-time analysis expected.`,
-          loc: loop.loc ?? this.makeLoc(),
-          suggestion: {
-            message: 'This indicates a bug in the Go adapter\'s static-loop unrolling (#2224) rather than an unsupported source pattern; please file a bug with a reproduction.',
-          },
-        })
-        break
-      }
-    }
-
-    this.scope = prevScope
-    this.loopScalarItemStack.pop()
-    this.loopWrapperStack.pop()
-    this.inLoop = wasInLoopOuter
-
-    return `{{bfComment "loop:${loop.markerId}"}}${body}{{bfComment "/loop:${loop.markerId}"}}`
-  }
-
-  /**
-   * Per-item `<!--bf-loop-i-->` / `<!--bf-loop-i:KEY-->` start marker emitted
-   * inside a `{{range}}` body. Multi-root Fragment items get the bare anchor;
-   * whole-item conditional items get the key-bearing anchor so the client's
-   * `mapArrayAnchored` can hydrate items that render no element.
-   */
-  private loopItemMarker(loop: { bodyIsMultiRoot?: boolean; bodyIsItemConditional?: boolean; key?: string | null }): string {
-    // `bfComment` prepends `bf-`, so the argument is `"loop-i"`, not
-    // `"bf-loop-i"` (which would double the prefix to `<!--bf-bf-loop-i-->`
-    // — the same latent bug #2763's fixture caught on the Hono adapter).
-    if (loop.bodyIsMultiRoot) return `{{bfComment "loop-i"}}`
-    if (loop.bodyIsItemConditional && loop.key) {
-      // `bfComment` prepends `bf-`, so `printf "loop-i:%v"` yields
-      // `<!--bf-loop-i:KEY-->`. The key expression resolves against the current
-      // range item (`.` context), matching `data-key`'s emission.
-      // `bfEscapeCommentKey` (#2795 follow-up) neutralizes `-` so a key can't
-      // spell `-->` and close the comment early — see its doc in `bf.go`.
-      return `{{bfComment (printf "loop-i:%v" (bfEscapeCommentKey ${this.convertExpressionToGo(loop.key)}))}}`
-    }
-    return ''
+    return renderLoopWithHost(this.loopRenderHost, loop)
   }
 
   /**
@@ -8575,7 +7734,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private wrapLoopRowPropOverrides(
     base: string,
     declaredName: string,
-    overrides: ReturnType<GoTemplateAdapter['loopRowChildPropOverrides']>,
+    overrides: ReturnType<typeof loopRowChildPropOverrides>,
   ): string {
     let out = base
     if (overrides?.args) {
@@ -8637,7 +7796,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Only a row with forwarded children has the wrapper (and its
       // embedded `<Name>Props`); a bare child row is its own `<Name>Props`,
       // built per row from its full Input (`loopRowChildInputFields`).
-      const overrides = comp.children.length > 0 ? this.loopRowChildPropOverrides(comp) : null
+      const overrides = comp.children.length > 0 ? loopRowChildPropOverrides(this.loopRenderHost, comp) : null
       const base = overrides
         ? this.wrapLoopRowPropOverrides(`.${declaredName}Props`, declaredName, overrides)
         : '.'
@@ -8676,7 +7835,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // still carries identical child scope IDs across rows — the same
       // contract the wrapper machinery's `bodyChildInstances` already uses.
       const suffix = slotIdToFieldSuffix(comp.slotId)
-      const overrides = this.loopRowChildPropOverrides(comp)
+      const overrides = loopRowChildPropOverrides(this.loopRenderHost, comp)
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, false)
       // `bf_reprops` re-runs the child's constructor and so takes the
       // component name; `bf_with_props` patches fields and doesn't (#2448).
@@ -8727,7 +7886,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // rebuilds the Input from every declared Props field, so a named prop
       // patched just inside it is carried into the re-run constructor.
       if (this.renderingWrapperRowChildren) {
-        base = this.wrapLoopRowPropOverrides(base, declaredName, this.loopRowChildPropOverrides(comp, true))
+        base = this.wrapLoopRowPropOverrides(base, declaredName, loopRowChildPropOverrides(this.loopRenderHost, comp, true))
       }
       templateCall = childrenDefine
         ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${childrenDefine}" .))}}`
@@ -8886,6 +8045,52 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
     isNillableNullishLeft: (expr) => this.isNillableNullishLeft(expr),
     isTemplatePrimitive: (path) => Boolean(this.templatePrimitives[path]),
+  }
+
+  /** The adapter-owned renders, render-position state and lookups the loop lowering (`loop/render-loop.ts`) reads. */
+  private readonly loopRenderHost: LoopRenderHost = {
+    ctx: this.emitCtx,
+    conditionExprHost: this.conditionExprHost,
+    makeLoc: () => this.makeLoc(),
+    renderParsedExpr: (expr) => this.renderParsedExpr(expr),
+    renderChildren: (children) => this.renderChildren(children),
+    scope: () => this.scope,
+    setScope: (scope) => { this.scope = scope },
+    inLoop: () => this.inLoop,
+    setInLoop: (inLoop) => { this.inLoop = inLoop },
+    innermostDestructureRangeVar: () => this.innermostDestructureRangeVar,
+    setInnermostDestructureRangeVar: (rangeVar) => { this.innermostDestructureRangeVar = rangeVar },
+    scalarWrapperRowCallSite: () => this.scalarWrapperRowCallSite,
+    setScalarWrapperRowCallSite: (callSite) => { this.scalarWrapperRowCallSite = callSite },
+    filterCaptureAliases: () => this.filterCaptureAliases,
+    setFilterCaptureAliases: (aliases) => { this.filterCaptureAliases = aliases },
+    staticLoopBakeFailed: () => this.staticLoopBakeFailed,
+    setStaticLoopBakeFailed: (failed) => { this.staticLoopBakeFailed = failed },
+    loopVarRefCount: () => this.loopVarRefCount,
+    loopBindingStack: () => this.loopBindingStack,
+    destructureAccessors: () => this.destructureAccessors,
+    loopRestExcludeStack: () => this.loopRestExcludeStack,
+    loopScalarItemStack: () => this.loopScalarItemStack,
+    loopWrapperStack: () => this.loopWrapperStack,
+    staticLoopItemStack: () => this.staticLoopItemStack,
+    wrapperRowVarNames: () => this.wrapperRowVars?.names,
+    getBakedStaticChildLoop: (markerId, childComponent, arrayParsed, param, key) =>
+      this.getBakedStaticChildLoop(markerId, childComponent, arrayParsed, param, key),
+    staticLoopBindings: () => this.staticLoopBindings(),
+    refuseComputedConstLoopSource: (loop) => this.refuseComputedConstLoopSource(loop),
+    nestedRowsField: (site) => this.nestedRowsField(site),
+    scalarLiteralLoopGoType: (arrayParsed, itemType) => this.scalarLiteralLoopGoType(arrayParsed, itemType),
+    lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
+    isOuterRowItem: (name) => this.isOuterRowItem(name),
+    rowVarRef: (name) => this.rowVarRef(name),
+    isLoopShadowedName: (name) => this.isLoopShadowedName(name),
+    resolveChildName: (name) => this.resolveChildName(name),
+    childShape: (declaredName) => this.childComponentShapes.get(declaredName),
+    childDerivedFieldDeps: (declaredName) => this.childDerivedFieldDeps.get(declaredName),
+    childRepropsReady: (declaredName) => this.childRepropsReady.has(declaredName),
+    childPropFieldName: (declaredName, propName) => this.childPropFieldNames.get(declaredName)?.get(propName),
+    repropsOwner: () => this.repropsOwner,
+    isTemplateFragment: (go, kind) => this.isTemplateFragment(go, kind),
   }
 
   renderScopeMarker(_instanceIdExpr: string): string {

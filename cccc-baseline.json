@@ -57,9 +57,6 @@
       "isStringExpr": [
         29
       ],
-      "loopRowChildPropOverrides": [
-        63
-      ],
       "member": [
         33
       ],
@@ -68,9 +65,6 @@
       ],
       "renderConditional": [
         28
-      ],
-      "renderLoop": [
-        70
       ],
       "resolveDynamicPropValue": [
         40

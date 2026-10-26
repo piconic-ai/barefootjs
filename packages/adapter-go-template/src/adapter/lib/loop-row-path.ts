@@ -244,3 +244,20 @@ function lowerRowKeyRead(expr: ParsedExpr, row: LoopRowBinding, shape: LoopRowSh
   const kind: KeyOperandKind = goType === 'string' ? 'string' : goType && NUMERIC_GO_TYPES.has(goType) ? 'number' : 'unknown'
   return { go: accessor, kind, readsRow: true }
 }
+
+/** A loop row's value type, structurally (`TypeInfo` or the scope's `LoopValueType`). */
+interface RowValueType {
+  readonly primitive?: string
+  readonly unionTypes?: readonly RowValueType[]
+}
+
+/**
+ * A row whose value is a string, number or boolean (or a union of them) has
+ * no fields: `g.length` on it reads the value (`bf_length .`), never a
+ * `.Length` field of a row record. Unknown types keep the field reading.
+ */
+export function isFieldlessRowType(type: RowValueType | null | undefined): boolean {
+  if (!type) return false
+  if (type.primitive !== undefined) return true
+  return type.unionTypes !== undefined && type.unionTypes.length > 0 && type.unionTypes.every(isFieldlessRowType)
+}
