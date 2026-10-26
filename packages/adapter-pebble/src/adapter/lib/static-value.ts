@@ -10,13 +10,13 @@
  * the caller falls back to its existing BF101 refusal instead of guessing.
  */
 
-import { escapePebbleSingleQuoted, pebbleHashKey } from './pebble-naming.ts'
+import { pebbleStringLiteral, pebbleHashKey } from './pebble-naming.ts'
 
 export function staticValueToPebble(value: unknown): string | null {
   if (value === null || value === undefined) return 'null'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
-  if (typeof value === 'string') return `'${escapePebbleSingleQuoted(value)}'`
+  if (typeof value === 'string') return pebbleStringLiteral(value)
   if (Array.isArray(value)) {
     const items: string[] = []
     for (const el of value) {

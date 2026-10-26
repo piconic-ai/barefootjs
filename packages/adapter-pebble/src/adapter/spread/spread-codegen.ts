@@ -22,7 +22,7 @@ import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@ba
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { PebbleSpreadContext } from '../emit-context.ts'
-import { escapePebbleSingleQuoted, pebbleHashKey, pebbleIdent } from '../lib/pebble-naming.ts'
+import { pebbleStringLiteral, pebbleHashKey, pebbleIdent } from '../lib/pebble-naming.ts'
 
 /**
  * Lower a conditional inline-object spread
@@ -165,7 +165,7 @@ export function recordIndexAccessToPebble(ctx: PebbleSpreadContext, val: ParsedE
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =
-      e.value.kind === 'number' ? e.value.text : `'${escapePebbleSingleQuoted(e.value.text)}'`
+      e.value.kind === 'number' ? e.value.text : pebbleStringLiteral(e.value.text)
     return `${pebbleHashKey(e.key)}: ${mapVal}`
   })
   return `bf.get({${entries.join(', ')}}, ${pebbleIdent(parsed.indexPropName)})`

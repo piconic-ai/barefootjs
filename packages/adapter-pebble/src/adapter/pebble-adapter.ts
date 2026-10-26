@@ -270,7 +270,7 @@ import { PEBBLE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import {
   pebbleHashKey,
   pebbleIdent,
-  escapePebbleSingleQuoted,
+  pebbleStringLiteral,
   pebbleAccessorFromSegments,
 } from './lib/pebble-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
@@ -487,7 +487,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     const v = valueProp.value
     if (v.kind === 'literal') {
       if (typeof v.value === 'string') {
-        return `'${escapePebbleSingleQuoted(v.value)}'`
+        return pebbleStringLiteral(v.value)
       }
       if (typeof v.value === 'boolean') return v.value ? 'true' : 'false'
       return String(v.value)
@@ -951,7 +951,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
    * through the map entry list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${pebbleHashKey(name)}: '${escapePebbleSingleQuoted(value.value)}'`,
+    emitLiteral: (value, name) => `${pebbleHashKey(name)}: ${pebbleStringLiteral(value.value)}`,
     emitExpression: (value, name) => {
       if (value.parts) {
         return `${pebbleHashKey(name)}: ${this.convertTemplateLiteralPartsToPebble(value.parts)}`
@@ -1342,7 +1342,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         // Pebble's symbolic ternary (see the file header syntax table) —
         // `(test ? a : b)`.
         parts.push(
-          `(${cond} ? '${escapePebbleSingleQuoted(part.whenTrue)}' : '${escapePebbleSingleQuoted(part.whenFalse)}')`,
+          `(${cond} ? ${pebbleStringLiteral(part.whenTrue)} : ${pebbleStringLiteral(part.whenFalse)})`,
         )
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Pebble
@@ -1365,7 +1365,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         // free.
         const keyExpr = this.convertExpressionToPebble(part.key)
         const entries = Object.entries(part.cases)
-          .map(([k, v]) => `${pebbleHashKey(k)}: '${escapePebbleSingleQuoted(v)}'`)
+          .map(([k, v]) => `${pebbleHashKey(k)}: ${pebbleStringLiteral(v)}`)
           .join(', ')
         parts.push(`bf.string(bf.coalesce(bf.get({${entries}}, ${keyExpr}), ''))`)
       }
@@ -1389,13 +1389,13 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     let m: RegExpExecArray | null
     while ((m = re.exec(s)) !== null) {
       if (m.index > lastIndex) {
-        segments.push(`'${escapePebbleSingleQuoted(s.slice(lastIndex, m.index))}'`)
+        segments.push(pebbleStringLiteral(s.slice(lastIndex, m.index)))
       }
       segments.push(`bf.string(${this.convertExpressionToPebble(m[1].trim())})`)
       lastIndex = re.lastIndex
     }
     if (lastIndex < s.length) {
-      segments.push(`'${escapePebbleSingleQuoted(s.slice(lastIndex))}'`)
+      segments.push(pebbleStringLiteral(s.slice(lastIndex)))
     }
     if (segments.length === 0) return `''`
     return segments.length === 1 ? segments[0] : `(${segments.join(' ~ ')})`
@@ -1624,7 +1624,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'null'
-    return `'${escapePebbleSingleQuoted(lit.text)}'`
+    return pebbleStringLiteral(lit.text)
   }
 
   /**
@@ -1648,7 +1648,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text
-      : `'${escapePebbleSingleQuoted(hit.text)}'`
+      : pebbleStringLiteral(hit.text)
   }
 
   private _resolveModuleStringConst(name: string): string | null {
@@ -1658,7 +1658,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     if (this.inLoop) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
-    return `'${escapePebbleSingleQuoted(value)}'`
+    return pebbleStringLiteral(value)
   }
 
   private _recordExprBF101(message: string, reason?: string): void {
