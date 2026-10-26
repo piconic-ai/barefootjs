@@ -7,6 +7,7 @@
 
 import type {
   BindingScope,
+  HigherOrderMethod,
   IRLoopChildComponent,
   IRNode,
   IRProp,
@@ -373,4 +374,19 @@ export interface GoTemplateAdapterOptions {
 export interface PrimitiveSpec {
   arity: number
   emit: (args: string[]) => string
+}
+
+/**
+ * Local re-materialisation of the (removed) `higher-order` ParsedExpr variant
+ * (#2018 P5). Predicate callback methods (`.filter`/`.find`/`.every`/…) now
+ * arrive as a generic `call` routed through `callbackMethod`; the structured
+ * template-block / `bf_*` fallbacks still want the old destructured shape, so
+ * `callbackMethod` rebuilds this from the arrow and threads it through the
+ * `renderHigherOrder*` helpers unchanged.
+ */
+export type HigherOrderShape = {
+  method: HigherOrderMethod
+  object: ParsedExpr
+  param: string
+  predicate: ParsedExpr
 }
