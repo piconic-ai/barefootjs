@@ -41,6 +41,7 @@ import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { rubySymbolLiteral } from './adapter/lib/ruby-naming.ts'
 
 const RENDER_TEMP_DIR = resolve(import.meta.dir, '../.render-temp')
 // The Ruby runtime (BarefootJS::Context + BarefootJS::Backend::Erb) lives
@@ -418,13 +419,13 @@ function buildChildRenderersRuby(
     const snakeName = toSnakeCase(componentName)
     const restPropsName = childIR.metadata.restPropsName
 
-    lines.push(`defaults_${snakeName} = child_defaults[${rubySymbol(snakeName)}] || {}`)
+    lines.push(`defaults_${snakeName} = child_defaults[${rubySymbolLiteral(snakeName)}] || {}`)
     lines.push(`bf.register_child_renderer(${rubyStringLiteral(snakeName)}, lambda do |child_props, caller_bf|`)
     // `caller_bf` is the instance whose template invoked render_child
     // (#1897) — nested children chain their scope/slot identity off it.
     lines.push(`  host_scope = caller_bf ? caller_bf._scope_id : bf._scope_id`)
     if (restPropsName) {
-      const restSym = rubySymbol(restPropsName)
+      const restSym = rubySymbolLiteral(restPropsName)
       // A child that destructures a rest bag references `v[:<rest>]` in its
       // template; seed it with an empty Hash when the caller didn't pass
       // one so a symbol-key lookup on a missing key still resolves (to nil,
@@ -441,7 +442,7 @@ function buildChildRenderersRuby(
       // (#2524).
       const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name)
       const keep = [...new Set([...paramNames, restPropsName, 'children', 'key', '_bf_slot'])]
-      const keepList = keep.map(rubySymbol).join(', ')
+      const keepList = keep.map(rubySymbolLiteral).join(', ')
       lines.push(`  keep = [${keepList}]`)
       lines.push(`  child_props.keys.each do |k|`)
       lines.push(`    next if keep.include?(k)`)
@@ -497,14 +498,6 @@ function buildChildRenderersRuby(
   }
 
   return lines.join('\n') + '\n'
-}
-
-/** Render `name` as a Ruby symbol literal (`:name` / `:"data-slot"`) for
- *  embedding in the generated `render.rb`. Mirrors the adapter's own
- *  `rubySymbolLiteral` (kept local so the test harness doesn't reach into
- *  adapter internals for a three-line string helper). */
-function rubySymbol(name: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_]*[?!]?$/.test(name) ? `:${name}` : `:"${name.replace(/"/g, '\\"')}"`
 }
 
 /**
