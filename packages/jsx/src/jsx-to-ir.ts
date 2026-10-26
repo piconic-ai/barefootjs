@@ -2665,7 +2665,11 @@ function cleanJsxWhitespace(raw: string): string {
     const isLastLine = i === lines.length - 1
     let line = lines[i].replace(/\t/g, ' ')
     if (!isFirstLine) line = line.replace(/^ +/, '')
-    if (!isLastLine) line = line.replace(/ +$/, '')
+    if (!isLastLine) {
+      let end = line.length
+      while (end > 0 && line[end - 1] === ' ') end--
+      line = line.slice(0, end)
+    }
     if (line !== '') kept.push(line)
   }
   return kept.join(' ')
