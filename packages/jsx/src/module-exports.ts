@@ -304,28 +304,15 @@ function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
  * Strips type annotations and default values.
  */
 export function extractFunctionParams(value: string): string {
-  // Match arrow function parameters: (a, b) => ... or async (a, b) => ...
-  const arrowMatch = value.match(/^(?:async\s*)?\(([^)]*)\)\s*(?::\s*[^=]+)?\s*=>/)
-  if (arrowMatch) {
-    return arrowMatch[1]
-      .split(',')
-      .map((p) => p.trim().split(':')[0].split('=')[0].trim())
-      .filter(Boolean)
-      .join(', ')
-  }
-  // Single param arrow function: a => ...
-  const singleMatch = value.match(/^(?:async\s*)?(\w+)\s*=>/)
-  if (singleMatch) {
-    return singleMatch[1]
-  }
-  // Function expression: function(a, b) { ... }
-  const funcMatch = value.match(/^(?:async\s*)?function\s*\w*\s*\(([^)]*)\)/)
-  if (funcMatch) {
-    return funcMatch[1]
-      .split(',')
-      .map((p) => p.trim().split(':')[0].split('=')[0].trim())
-      .filter(Boolean)
-      .join(', ')
-  }
-  return ''
+  const source = ts.createSourceFile('function.ts', `(${value})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const statement = source.statements[0]
+  if (!statement || !ts.isExpressionStatement(statement)) return ''
+
+  let expression = statement.expression
+  while (ts.isParenthesizedExpression(expression)) expression = expression.expression
+  if (!ts.isArrowFunction(expression) && !ts.isFunctionExpression(expression)) return ''
+
+  return expression.parameters
+    .map(parameter => `${parameter.dotDotDotToken ? '...' : ''}${parameter.name.getText(source)}`)
+    .join(', ')
 }
