@@ -44,16 +44,11 @@
 
 import type { LoopBindingPathSegment } from '@barefootjs/jsx'
 
-/**
- * Escape a string for a Pebble single-quoted literal: backslash first (so it
- * doesn't double-escape the quote we add next), then the quote. Mirrors
- * `escapeJinjaSingleQuoted`/`escapeTwigSingleQuoted` — Pebble's own
- * single-quoted string literal escaping is a Phase 3/4 verification point
- * (the Java runtime doesn't exist yet to check against), but backslash +
- * quote is the universal-enough baseline every sibling DSL adapter uses.
- */
-export function escapePebbleSingleQuoted(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+/** Pebble 4.1.2 unescapes quotes but preserves doubled backslashes. */
+export function pebbleStringLiteral(value: string): string {
+  const parts = value.split('\\').map(part => `'${part.replaceAll("'", "\\'")}'`)
+  if (parts.length === 1) return parts[0]
+  return `(${parts.join(" ~ bf.at('\\\\', 0) ~ ")})`
 }
 
 /**
@@ -62,7 +57,7 @@ export function escapePebbleSingleQuoted(s: string): string {
  * a string key.
  */
 export function pebbleHashKey(name: string): string {
-  return `'${escapePebbleSingleQuoted(name)}'`
+  return pebbleStringLiteral(name)
 }
 
 /**
@@ -152,7 +147,7 @@ export function pebbleAccessorFromSegments(
     } else if (seg.isIdent) {
       acc = `${acc}.${seg.key}`
     } else {
-      acc = `bf.get(${acc}, '${escapePebbleSingleQuoted(seg.key)}')`
+      acc = `bf.get(${acc}, ${pebbleStringLiteral(seg.key)})`
     }
   }
   return acc

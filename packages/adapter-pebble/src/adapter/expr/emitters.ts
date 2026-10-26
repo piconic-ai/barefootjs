@@ -132,7 +132,7 @@ import {
 
 import type { PebbleEmitContext } from '../emit-context.ts'
 import { PEBBLE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { pebbleIdent, escapePebbleSingleQuoted, pebbleHashKey } from '../lib/pebble-naming.ts'
+import { pebbleIdent, pebbleStringLiteral, pebbleHashKey } from '../lib/pebble-naming.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -226,7 +226,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapePebbleSingleQuoted(String(value))}'`
+    if (literalType === 'string') return pebbleStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
@@ -464,7 +464,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapePebbleSingleQuoted(String(value))}'`
+    if (literalType === 'string') return pebbleStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
@@ -706,7 +706,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     for (const part of parts) {
       if (part.type === 'string') {
         if (part.value !== '') {
-          terms.push(`'${escapePebbleSingleQuoted(part.value)}'`)
+          terms.push(pebbleStringLiteral(part.value))
         }
       } else {
         const rendered = emit(part.expr)

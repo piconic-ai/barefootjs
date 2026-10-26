@@ -936,7 +936,9 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       if (childrenEntry) propsEntries.push(childrenEntry)
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
-      const keyArg = keyProp ? `, ${attrValueToString(keyProp.value) ?? 'undefined'}` : ''
+      const keyArg = keyProp
+        ? `, ${transformKeyValue(keyProp.value, (expr, templateExpr) => wrapExpr(templateExpr ?? expr))}`
+        : ''
       // Pass slotId as suffix so $c() can find the child component by slot
       // after branch swap. A loop-item-root component owns a separate scope
       // per iteration (identified by `data-key`) rather than deriving from
