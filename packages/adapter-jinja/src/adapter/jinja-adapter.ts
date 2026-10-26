@@ -134,15 +134,14 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  planLoop,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
@@ -193,6 +192,19 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => jinjaHashKey(k)).join(', ')}])`,
 }
 
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Jinja adapter cannot lower to a native accessor — Jinja \`for item in list\` binds a single loop variable and this shape needs the actual residual value materialized (e.g. a bare object-rest use, or a rest spread onto a component).`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. Rename the parameter to a single name and access tuple/object elements directly in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
+    `  2. If using object rest, only read individual fields off it (\`rest.flag\`) or spread it onto an intrinsic element (\`{...rest}\`) — not as a bare value.\n` +
+    `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  4. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Jinja',
+}
+
 /**
  * The `JinjaAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
@@ -213,7 +225,6 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   templatePrimitives: TemplatePrimitiveRegistry = JINJA_PRIMITIVE_EMIT_MAP
 
   private options: Required<JinjaAdapterOptions>
-  private inLoop: boolean = false
 
   constructor(options: JinjaAdapterOptions = {}) {
     super()
@@ -591,29 +602,12 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     // a rest spread onto a component/provider, `.filter().map(destructure)`,
     // and `__bf_`-prefixed binding names (would collide with the synthetic
     // per-item var).
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToJinja,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Jinja adapter cannot lower to a native accessor — Jinja \`for item in list\` binds a single loop variable and this shape needs the actual residual value materialized (e.g. a bare object-rest use, or a rest spread onto a component).`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple/object elements directly in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
-            `  2. If using object rest, only read individual fields off it (\`rest.flag\`) or spread it onto an intrinsic element (\`{...rest}\`) — not as a bare value.\n` +
-            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -643,21 +637,6 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
     const staticArray = loopPlan.staticSource
-
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Jinja adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
 
     const rawArray = staticArray ?? this.convertExpressionToJinja(loop.array)
     // The source sorted by the loop's comparator, when it has one: the
@@ -692,66 +671,15 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       indexLocalLines.push(`{% set ${jinjaIdent(name)} = ${value} %}`)
     }
 
-    const prevInLoop = this.inLoop
-    this.inLoop = true
-    // The children render once, under the loop flag (so nested components use
-    // the loop-child naming convention) and the row scope below.
-
-    // This loop's row scope, for the position-accurate shadow guard
-    // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
-    // `IRLoop` already structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly the for-header target(s), each destructure binding,
-    // the index (when present), and the `.map()` preamble's declared
-    // locals, mirroring what THIS renderLoop's for-header + `indexLocalLines`
-    // actually introduce. Restored by reference (immutable — no ref-count
-    // bookkeeping) so nested loops compose for free. Entered BEFORE
-    // `preambleLines`/`bodyChildren` are converted and popped AFTER, not
-    // just around `renderChildren` — Copilot review on #2600 caught that
-    // the narrower window silently regressed the module-const shadow guard
-    // (`_resolveLiteralConst`/`_resolveStaticRecordLiteral`, now
-    // scope-driven instead of the old coarse whole-component set) for two
-    // row-context conversions that sit OUTSIDE `renderChildren`: a
-    // `.map()` preamble local's own initializer (`d.raw`, below) and the
-    // whole-item-conditional `loop-i:` key anchor (`loop.key`, in
-    // `bodyChildren` below) — both genuinely evaluate PER ROW and must see
-    // the row's own bindings. `loop.filterPredicate` deliberately stays
-    // OUTSIDE this window (further down, after the pop): per the Stage 0
-    // design a filter/sort callback's own param is a separate `callback`
-    // frame, never folded into the `.map()` row — and empirically
-    // `JinjaFilterEmitter` (the filter predicate's dedicated,
-    // self-contained emitter) never consults `this.scope` at all, so its
-    // position relative to the pop is inert either way.
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
-    // Props this row's bindings newly shadow, aliased before the loop header
-    // so an explicit `props.X` inside still reads the root value (#3314).
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
-
-    // Per-row locals for a `.map()` callback preamble (#2447), in source
-    // order so a later initializer sees an earlier local — same as the
-    // source block. Phase 1 refuses the loop outright when the preamble
-    // isn't fully declarable, so there is no partial-lowering case: either
-    // every statement is lowered here, or the build already failed.
-    const preambleLines = (loop.preamble?.declarations ?? []).map(
-      d => `{% set ${jinjaIdent(d.name)} = ${this.convertExpressionToJinja(d.raw, d.valueParsed)} %}`,
-    )
-    const childrenUnderLoop = this.renderChildren(loop.children)
-    this.inLoop = prevInLoop
-
-    // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
-    // anchor before each item's (possibly empty) conditional content so the
-    // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
-    // anchor. Still under the row scope (see above) — `loop.key` is a
-    // per-row expression.
-    // `bf.escape_comment_key` (#2795 follow-up) both stringifies the key and
-    // neutralizes `-` so it can't spell `-->` and close the comment early —
-    // see its doc in `runtime.py`.
-    const bodyChildren =
-      loop.bodyIsItemConditional && loop.key
-        ? `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToJinja(loop.key)})) | safe }}\n${childrenUnderLoop}`
-        : childrenUnderLoop
-    this.scope = prevScope
+    // The row window (#3473): the row's scope around everything that
+    // evaluates per row (the preamble locals' initializers, the children
+    // under `inLoop`, the whole-item-conditional key anchor). The filter
+    // predicate stays outside it: a filter callback's own param is a
+    // separate frame, never folded into the `.map()` row.
+    const { rootAliases, preamble: preambleLines, body: bodyChildren } = this.renderLoopRow(loop, {
+      preamble: (d) => `{% set ${jinjaIdent(d.name)} = ${this.convertExpressionToJinja(d.raw, d.valueParsed)} %}`,
+      keyAnchor: (key) => `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToJinja(key)})) | safe }}`,
+    })
 
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;

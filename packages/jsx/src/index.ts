@@ -108,7 +108,13 @@ export { generateModuleExports, extractFunctionParams, formatParamWithType, find
 // Adapters
 export { BaseAdapter } from './adapters/interface.ts'
 export { DslTemplateAdapter } from './adapters/dsl-template-adapter.ts'
-export type { TemplateIdentifierSpelling } from './adapters/dsl-template-adapter.ts'
+export type {
+  LoopPlanSpelling,
+  LoopRefusalSpelling,
+  LoopRow,
+  LoopRowSpelling,
+  TemplateIdentifierSpelling,
+} from './adapters/dsl-template-adapter.ts'
 // Dependency-free adapter for tooling that only needs client JS (e.g. the
 // profiler scenario driver) — the client output is adapter-independent.
 export { TestAdapter, testAdapter } from './adapters/test-adapter.ts'

@@ -171,3 +171,73 @@ describe('DslTemplateAdapter.generate (#3475)', () => {
     expect(plain.errors).toEqual([])
   })
 })
+
+// #3473: the loop row window every DSL adapter's `renderLoop` goes through.
+class RowAdapter extends StubAdapter {
+  events: string[] = []
+  row: ReturnType<DslTemplateAdapter['renderLoopRow']> | null = null
+
+  private at(what: string): string {
+    return `${what} inLoop=${this.inLoop} row=${this.scope.isBound('item')}`
+  }
+  override renderNode(node: IRNode): string {
+    if (node.type === 'loop') return this.renderLoop(node as IRLoop)
+    if (node.type === 'expression' || node.type === 'conditional') {
+      this.events.push(this.at('child'))
+      return `{${node.type}}`
+    }
+    return super.renderNode(node)
+  }
+  override renderLoop(loop: IRLoop): string {
+    this.row = this.renderLoopRow(loop, {
+      enter: (row, outside) => {
+        this.events.push(`${this.at('enter')} entered=${this.scope === row} outside=${outside.isBound('item')}`)
+      },
+      preamble: (d) => {
+        this.events.push(this.at(`preamble ${d.name}`))
+        return `[set ${d.name}]`
+      },
+      keyAnchor: (key) => {
+        this.events.push(this.at(`key ${key}`))
+        return `[anchor ${key}]`
+      },
+    })
+    this.events.push(this.at('after'))
+    return this.row.body
+  }
+}
+
+describe('DslTemplateAdapter.renderLoopRow (#3473)', () => {
+  test('the preamble, then the children under inLoop, all under the row scope, restored after', () => {
+    const adapter = new RowAdapter()
+    adapter.generate(componentIR(`
+      export function Test({ items, label }: { items: { id: string; label: string }[]; label: string }) {
+        return <ul>{items.map(item => { const label = item.label; return <li key={item.id}>{label}</li> })}</ul>
+      }
+    `))
+    expect(adapter.events).toEqual([
+      'enter inLoop=false row=true entered=true outside=false',
+      'preamble label inLoop=false row=true',
+      'child inLoop=true row=true',
+      'after inLoop=false row=false',
+    ])
+    expect(adapter.row!.preamble).toEqual(['[set label]'])
+    expect(adapter.row!.row.innermostNames()).toEqual(['item', 'label'])
+    expect(adapter.row!.rootAliases).toEqual([{ name: 'label', alias: '__bf_root_label' }])
+  })
+
+  test('a whole-item-conditional body gets its key anchor after the children, outside inLoop', () => {
+    const adapter = new RowAdapter()
+    const out = adapter.generate(componentIR(`
+      export function Test({ items }: { items: { id: string; on: boolean }[] }) {
+        return <ul>{items.map(item => item.on ? <li key={item.id}>{item.id}</li> : null)}</ul>
+      }
+    `))
+    expect(adapter.events.slice(-3)).toEqual([
+      'child inLoop=true row=true',
+      'key item.id inLoop=false row=true',
+      'after inLoop=false row=false',
+    ])
+    expect(out.template).toContain('[anchor item.id]\n')
+  })
+})

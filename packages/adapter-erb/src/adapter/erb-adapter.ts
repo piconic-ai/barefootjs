@@ -82,11 +82,12 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  planLoop,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
+  type LoopPlan,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
@@ -172,6 +173,17 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   // vars-Hash convention: every item Hash is built by
   // `JSON.parse(..., symbolize_names: true)`.
   omit: (parent, keys) => `${parent}.except(${keys.map((k) => rubySymbolLiteral(k)).join(', ')})`,
+}
+
+/** The wording of the BF104 loop refusal the plan decides; BF101 goes through `_recordExprBF101`. */
+const LOOP_REFUSALS: Pick<LoopRefusalSpelling, 'destructureMessage' | 'destructureSuggestion'> = {
+  destructureMessage: (param) =>
+    `Loop callback uses an array/object destructure pattern (\`${param}\`) that the ERB adapter cannot lower — the rest binding is used in a way (bare value, or spread onto a component) that has no native Ruby accessor form.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. Read the rest binding as a member access (\`rest.field\`) or spread it onto an intrinsic element (\`<li {...rest}>\`) instead of using it as a bare value.\n` +
+    `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  3. Move the loop into a primitive that the adapter registers explicitly.`,
 }
 
 /**
@@ -705,28 +717,22 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // read (`rest.flag`) or a `{...rest}` spread onto an intrinsic element.
     // Bare-value rest uses, a spread onto a component/provider, and
     // `.filter().map(destructure)` still have no Ruby scalar form → BF104.
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToRuby,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the ERB adapter cannot lower — the rest binding is used in a way (bare value, or spread onto a component) that has no native Ruby accessor form.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Read the rest binding as a member access (\`rest.field\`) or spread it onto an intrinsic element (\`<li {...rest}>\`) instead of using it as a bare value.\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, {
+      ...LOOP_REFUSALS,
+      // ERB words BF101 like its expression refusals (`_recordExprBF101`),
+      // at the component's location rather than the loop's.
+      unresolvableConst: (constant) =>
+        this._recordExprBF101(
+          `Loop array \`${constant.name}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
+          `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
+          [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+        ),
+    })
 
     // Loop array is a bare identifier naming a local const (module- or
     // component-scope, #2946) the adapter has no way to compute at SSR
@@ -758,15 +764,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // enclosing loop scope's own membership.
     const staticArray = loopPlan.staticSource
 
-    if (loopPlan.unresolvableConst) {
-      const arrayName = loopPlan.unresolvableConst.name
-      this._recordExprBF101(
-        `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
-        `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
-        [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-      )
-    }
-
     const rawArray = staticArray ?? this.convertExpressionToRuby(loop.array)
     // Apply sort if present: hoist the (possibly sorted) array into a Ruby
     // local BEFORE the index loop, so both the loop bound and the per-item
@@ -779,25 +776,145 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       array = sortedHoist
     }
     const param = loop.param
+
+    // The row window (#3473): the row's scope around the preamble locals'
+    // initializers, the children and the whole-item-conditional key anchor.
+    // Per-row preamble locals (#2447) are emitted INSIDE the filter guard
+    // below, matching JS evaluation order: a `.filter(p).map(cb)` chain never
+    // runs `cb`'s body for a filtered-out item. `bf.escape_comment_key`
+    // (#2795 follow-up) both stringifies the key and neutralizes `-` so it
+    // can't spell `-->` and close the comment early — see its doc in
+    // `barefoot_js.rb`.
+    const { row, preamble: preambleLines, body: children } = this.renderLoopRow(loop, {
+      preamble: (d) => `<%- ${rubyLocal(d.name)} = ${this.convertExpressionToRuby(d.raw, d.valueParsed)} -%>`,
+      keyAnchor: (key) => `<%= bf.comment("loop-i:" + bf.escape_comment_key(${this.convertExpressionToRuby(key)})) %>`,
+    })
+
+    // A name the filter predicate captures from an enclosing row that this
+    // loop's own block binds again would read the block param inside the
+    // loop; keep the enclosing value under a loop-scoped local (#3402).
+    const captureAliases = loopPlan.captureAliases
+    const lines: string[] = []
+    // Scoped per-call-site marker so sibling `.map()`s under the same
+    // parent each get their own reconciliation range.
+    lines.push(`<%= bf.comment("loop:${loop.markerId}") %>`)
+    for (const { name, alias } of captureAliases) lines.push(`<%- ${alias} = ${rubyLocal(name)} -%>`)
+    if (sortedHoist) {
+      // Evaluator-first: serialize the comparator + emit `bf.sort_eval`;
+      // fall back to the structured `bf.sort` for a comparator the
+      // evaluator can't model (e.g. `localeCompare`).
+      //
+      // The hoisted sort runs OUTSIDE this loop, after the row window has
+      // closed: the comparator's captured free vars resolve against the
+      // outer scope, never against a same-named row binding.
+      // The plan decides the evaluator, the structured `{keys: …}`
+      // descriptor or the refusal, which keeps the source unsorted so the
+      // template stays valid (#3473).
+      const sorted = spellSortedSource(loopPlan.sort, rawArray, {
+        emit: (e) => this.convertExpressionToRuby('', e),
+        eval: EVAL_SPELLING,
+        structured: renderSortMethod,
+        refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      })
+      lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
+    }
+    lines.push(...this.rubyLoopOpening(loop, loopPlan, array))
+
+    // The row, inside the filter's guard for a filter().map() loop. The plan
+    // renames the predicate's shadowed captures to their aliases (#3402) and
+    // refuses a filter without a predicate (#3534). Unlike the other DSL
+    // adapters, this one renders the predicate under the row's scope
+    // (`row`), as it always has.
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
+      condition: (filter) => {
+        // The filter predicate's identifiers were parsed against the
+        // FILTER callback's own param (`filter.param`), which can differ
+        // from the loop's rendered Ruby local (`param`, the MAP callback's
+        // param) whenever the two are named differently —
+        // `todos.filter(t => t.done).map(todo => ...)` (#2245). Ruby's
+        // named-block-param model means there's no Mojo-style regex
+        // `$filterParam → $loopParam` TEXT rewrite to do, but the
+        // DISTINCTION it encoded still matters: match identifiers against
+        // the filter's own param, while EMITTING the loop's actual bound
+        // local — `ErbFilterEmitter`'s `renderParamAs` carries that split.
+        // `filter.param` is only ever a bare identifier in practice
+        // (`extractFilterPredicate` in jsx-to-ir.ts refuses a destructured
+        // filter param outright, leaving `filterPredicate` unset entirely
+        // rather than populating it with pattern text — see its
+        // docstring), but guard defensively instead of relying on that
+        // invariant: a pattern-text param (leading `[`/`{` — the same
+        // prefix check `destructureLoopParam`/#2238 use, NOT an identifier
+        // regex, which would misclassify a Unicode param name) falls back
+        // to `param`, matching pre-#2245 behavior byte-for-byte.
+        const matchParam =
+          filter.param && !filter.param.startsWith('[') && !filter.param.startsWith('{') ? filter.param : param
+        return this.renderInScope(row.enterAliases(filter.aliases), () =>
+          this.renderRubyFilterExpr(filter.captured, matchParam, undefined, rubyLocal(param)),
+        )
+      },
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: 'true',
+      open: (condition) => `<%- if bf.truthy?(${condition}) -%>`,
+      close: '<%- end -%>',
+    }))
+
+    lines.push(`<%- end -%>`)
+    lines.push(`<%= bf.comment("/loop:${loop.markerId}") %>`)
+
+    return lines.join('\n')
+  }
+
+  /**
+   * The opening of the Ruby block that iterates `array` for `loop`: the
+   * iteration method and its block header, then, for an array iteration,
+   * one local per lowered destructure binding.
+   */
+  private rubyLoopOpening(loop: IRLoop, loopPlan: LoopPlan<unknown>, array: string): string[] {
+    const blockHeader = this.rubyBlockHeader(loop, loopPlan)
+    if (loop.objectIteration) {
+      // `objectIteration` (#2168 object-entries-map): Ruby's `Hash`
+      // preserves the source object's insertion order natively (unlike
+      // Go's `map`/Perl's hash), so this bypasses the index-range form
+      // below entirely and uses Ruby's own native block-param binding
+      // (`each_pair`/`each_key`/`each_value`) — no `array[index]` lookup
+      // needed, since the block directly yields the key/value.
+      const method = loop.objectIteration === 'entries'
+        ? 'each_pair'
+        : loop.objectIteration === 'keys' ? 'each_key' : 'each_value'
+      return [`<%- ${array}.${method} do ${blockHeader} -%>`]
+    }
+    if (loop.iterationShape === 'keys') {
+      // `.keys().map(k => ...)` — the callback param IS the index; no
+      // per-item value binding needed (or possible: there is no `array[i]`
+      // item to bind).
+      return [`<%- (0...${array}.length).each do ${blockHeader} -%>`]
+    }
+    // Item + index as REAL Ruby block parameters of `each_with_index`
+    // (rather than an index-range `.each` + a separate `item = arr[_i]`
+    // assignment) — see `rubyBlockHeader`'s `blockParams`/`blockLocals`
+    // setup for why (#2922).
+    const lines = [`<%- ${array}.each_with_index do ${blockHeader} -%>`]
+    // One local per lowered destructure binding, built off its structured
+    // `segments` path (never `b.path` — repo rule: no string-parsing of a
+    // JS-shaped accessor). `__bf_item` itself is the loop's own block
+    // parameter (`itemParam` in `rubyBlockHeader`).
+    for (const { name, value } of spellDestructureLocals(loopPlan, '__bf_item', DESTRUCTURE_SPELLING)) {
+      lines.push(`<%- ${rubyLocal(name)} = ${value} -%>`)
+    }
+    return lines
+  }
+
+  /**
+   * The `|params; locals|` header of a loop's Ruby block: the params the
+   * block binds natively, then the block-local variables it assigns.
+   */
+  private rubyBlockHeader(loop: IRLoop, loopPlan: LoopPlan<unknown>): string {
+    const param = loop.param
     // `.keys().map(k => ...)` — the callback param is the index. Use it as
     // the loop's index local and skip the per-item value assignment.
     const indexVar = loop.iterationShape === 'keys'
       ? rubyLocal(param)
       : rubyLocal(loop.index ?? '_i')
-    // This loop's row scope. Guards module-const inlining (and, in ERB, the
-    // fundamental v[:name]-vs-local rendering choice) for the whole body
-    // (children + key + filter) so a same-named loop variable isn't
-    // replaced by the const literal / a vars-Hash read. `IRLoop` already
-    // structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly what this renderLoop's header + preamble locals
-    // introduce (#2482 Stage 2 — replaces the ref-counted `Map` this
-    // adapter used to carry). Restored by reference (immutable — no
-    // ref-count bookkeeping) at the matching pop below, once the WHOLE
-    // body (including the filter predicate) has been rendered — except for
-    // one temporary drop-to-outer window around the hoisted sort-comparator
-    // emission below, since that runs OUTSIDE this loop.
-    const preambleDecls = loop.preamble?.declarations ?? []
 
     // Ruby block parameters this loop binds natively (item/value + index /
     // key). A real block parameter always shadows a same-named enclosing
@@ -839,150 +956,15 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     if (!loop.objectIteration && loop.iterationShape !== 'keys') {
       for (const { name } of loopPlan.destructureLocals) blockLocals.add(rubyLocal(name))
     }
-    for (const d of preambleDecls) blockLocals.add(rubyLocal(d.name))
+    for (const d of loop.preamble?.declarations ?? []) blockLocals.add(rubyLocal(d.name))
     // Never list a name that's ALSO a block parameter above — Ruby rejects
     // that as `duplicated argument name` (a JS param/index and a preamble
     // local/destructure binding can never share a name anyway; JS itself
     // refuses the duplicate declaration).
     for (const p of blockParams.split(', ')) blockLocals.delete(p)
-    const blockHeader = blockLocals.size > 0
+    return blockLocals.size > 0
       ? `|${blockParams}; ${[...blockLocals].join(', ')}|`
       : `|${blockParams}|`
-
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
-    const renderedChildren = this.renderChildren(loop.children)
-
-    // Whole-item conditional: prepend an always-present
-    // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
-    // conditional content so the client's `mapArrayAnchored` can hydrate
-    // every SSR-rendered item by its anchor. `bf.comment` prepends `bf-`,
-    // so `"loop-i:" + KEY` yields `<!--bf-loop-i:KEY-->`. `bf.escape_comment_key`
-    // (#2795 follow-up) both stringifies KEY and neutralizes `-` so it can't
-    // spell `-->` and close the comment early — see its doc in `barefoot_js.rb`.
-    const children =
-      loop.bodyIsItemConditional && loop.key
-        ? `<%= bf.comment("loop-i:" + bf.escape_comment_key(${this.convertExpressionToRuby(loop.key)})) %>\n${renderedChildren}`
-        : renderedChildren
-
-    // A name the filter predicate captures from an enclosing row that this
-    // loop's own block binds again would read the block param inside the
-    // loop; keep the enclosing value under a loop-scoped local (#3402).
-    const captureAliases = loopPlan.captureAliases
-    const lines: string[] = []
-    // Scoped per-call-site marker so sibling `.map()`s under the same
-    // parent each get their own reconciliation range.
-    lines.push(`<%= bf.comment("loop:${loop.markerId}") %>`)
-    for (const { name, alias } of captureAliases) lines.push(`<%- ${alias} = ${rubyLocal(name)} -%>`)
-    if (sortedHoist) {
-      // Evaluator-first: serialize the comparator + emit `bf.sort_eval`;
-      // fall back to the structured `bf.sort` for a comparator the
-      // evaluator can't model (e.g. `localeCompare`).
-      //
-      // The hoisted sort runs OUTSIDE this loop, so this loop's row scope
-      // must not shadow the comparator's captured free vars while emitting
-      // the env — otherwise a captured var that happens to share a
-      // loop-param name is blocked from inlining its module const / from
-      // reading `v[:name]` and instead resolves to the (out-of-scope) loop
-      // local. Emit the sort in the outer (pre-row) scope (a nested loop's
-      // own outer bindings stay in effect throughout, since `prevScope`
-      // already carries them).
-      // The plan decides the evaluator, the structured `{keys: …}`
-      // descriptor or the refusal, which keeps the source unsorted so the
-      // template stays valid (#3473).
-      const sorted = this.renderInScope(prevScope, () =>
-        spellSortedSource(loopPlan.sort, rawArray, {
-          emit: (e) => this.convertExpressionToRuby('', e),
-          eval: EVAL_SPELLING,
-          structured: renderSortMethod,
-          refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
-        }),
-      )
-      lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
-    }
-    if (loop.objectIteration) {
-      // `objectIteration` (#2168 object-entries-map): Ruby's `Hash`
-      // preserves the source object's insertion order natively (unlike
-      // Go's `map`/Perl's hash), so this bypasses the index-range form
-      // below entirely and uses Ruby's own native block-param binding
-      // (`each_pair`/`each_key`/`each_value`) — no `array[index]` lookup
-      // needed, since the block directly yields the key/value.
-      const method = loop.objectIteration === 'entries'
-        ? 'each_pair'
-        : loop.objectIteration === 'keys' ? 'each_key' : 'each_value'
-      lines.push(`<%- ${array}.${method} do ${blockHeader} -%>`)
-    } else if (loop.iterationShape === 'keys') {
-      // `.keys().map(k => ...)` — the callback param IS the index; no
-      // per-item value binding needed (or possible: there is no `array[i]`
-      // item to bind).
-      lines.push(`<%- (0...${array}.length).each do ${blockHeader} -%>`)
-    } else {
-      // Item + index as REAL Ruby block parameters of `each_with_index`
-      // (rather than an index-range `.each` + a separate `item = arr[_i]`
-      // assignment) — see this method's `blockParams`/`blockLocals` setup
-      // above for why (#2922).
-      lines.push(`<%- ${array}.each_with_index do ${blockHeader} -%>`)
-      // One local per lowered destructure binding, built off its structured
-      // `segments` path (never `b.path` — repo rule: no string-parsing of a
-      // JS-shaped accessor). `__bf_item` itself is the loop's own block
-      // parameter (`itemParam` above).
-      for (const { name, value } of spellDestructureLocals(loopPlan, '__bf_item', DESTRUCTURE_SPELLING)) {
-        lines.push(`<%- ${rubyLocal(name)} = ${value} -%>`)
-      }
-    }
-
-    // Per-row preamble locals (#2447), in source order so a later
-    // initializer sees an earlier local — same as the source block. Emitted
-    // INSIDE the filter guard below, matching JS evaluation order: a
-    // `.filter(p).map(cb)` chain never runs `cb`'s body for a filtered-out
-    // item.
-    const preambleLines = preambleDecls.map(
-      d => `<%- ${rubyLocal(d.name)} = ${this.convertExpressionToRuby(d.raw, d.valueParsed)} -%>`,
-    )
-
-    // The row, inside the filter's guard for a filter().map() loop. The plan
-    // renames the predicate's shadowed captures to their aliases (#3402) and
-    // refuses a filter without a predicate (#3534).
-    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
-      condition: (filter) => {
-        // The filter predicate's identifiers were parsed against the
-        // FILTER callback's own param (`filter.param`), which can differ
-        // from the loop's rendered Ruby local (`param`, the MAP callback's
-        // param) whenever the two are named differently —
-        // `todos.filter(t => t.done).map(todo => ...)` (#2245). Ruby's
-        // named-block-param model means there's no Mojo-style regex
-        // `$filterParam → $loopParam` TEXT rewrite to do, but the
-        // DISTINCTION it encoded still matters: match identifiers against
-        // the filter's own param, while EMITTING the loop's actual bound
-        // local — `ErbFilterEmitter`'s `renderParamAs` carries that split.
-        // `filter.param` is only ever a bare identifier in practice
-        // (`extractFilterPredicate` in jsx-to-ir.ts refuses a destructured
-        // filter param outright, leaving `filterPredicate` unset entirely
-        // rather than populating it with pattern text — see its
-        // docstring), but guard defensively instead of relying on that
-        // invariant: a pattern-text param (leading `[`/`{` — the same
-        // prefix check `destructureLoopParam`/#2238 use, NOT an identifier
-        // regex, which would misclassify a Unicode param name) falls back
-        // to `param`, matching pre-#2245 behavior byte-for-byte.
-        const matchParam =
-          filter.param && !filter.param.startsWith('[') && !filter.param.startsWith('{') ? filter.param : param
-        return this.renderInScope(this.scope.enterAliases(filter.aliases), () =>
-          this.renderRubyFilterExpr(filter.captured, matchParam, undefined, rubyLocal(param)),
-        )
-      },
-      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
-      refused: 'true',
-      open: (condition) => `<%- if bf.truthy?(${condition}) -%>`,
-      close: '<%- end -%>',
-    }))
-
-    // Body fully rendered — restore the outer (pre-row) scope.
-    this.scope = prevScope
-
-    lines.push(`<%- end -%>`)
-    lines.push(`<%= bf.comment("/loop:${loop.markerId}") %>`)
-
-    return lines.join('\n')
   }
 
   // ===========================================================================

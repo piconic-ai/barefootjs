@@ -14,12 +14,21 @@ import {
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { rootPropAliasNames } from '../scope/root-prop-alias.ts'
-import type { CompilerError, ComponentIR, IRIfStatement, IRMetadata } from '../types.ts'
+import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
+import type {
+  CompilerError,
+  ComponentIR,
+  ConstantInfo,
+  IRIfStatement,
+  IRLoop,
+  IRMetadata,
+  PreambleValueDeclaration,
+} from '../types.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
 import { BaseAdapter, type AdapterGenerateOptions, type AdapterOutput } from './interface.ts'
+import { type LoopPlan, type LoopPlanContext, planLoop } from './loop-plan.ts'
 import { collectBooleanTypedProps, collectNullableOptionalProps } from './prop-classes.ts'
 import { templateNameCollisionErrors } from './template-name-collisions.ts'
 
@@ -32,6 +41,56 @@ export interface TemplateIdentifierSpelling {
   ident(name: string): string
   /** The engine name in the diagnostic ("Jinja", "MiniJinja", …). */
   label: string
+}
+
+/**
+ * An adapter's spelling of a loop row's window ({@link DslTemplateAdapter.renderLoopRow}).
+ * Each hook runs under the row's scope.
+ */
+export interface LoopRowSpelling {
+  /** Runs first, before anything in the row renders: the adapter's own per-row bookkeeping. */
+  enter?(row: BindingScope, outside: BindingScope): void
+  /** A `.map()` preamble declaration as a per-row local (#2447). */
+  preamble(declaration: PreambleValueDeclaration): string
+  /** The whole-item-conditional `<!--bf-loop-i:KEY-->` anchor for the key expression `key`. */
+  keyAnchor(key: string): string
+}
+
+/** A loop row rendered under its own scope. */
+export interface LoopRow {
+  /** The scope outside the loop, current again once the row is rendered. */
+  outside: BindingScope
+  /** `outside.enterLoopRow(loop)`: the scope the row rendered under. */
+  row: BindingScope
+  /** The props the row's bindings newly shadow, each with its root alias (#3314). */
+  rootAliases: { name: string; alias: string }[]
+  /** One spelled local per preamble declaration, in source order. */
+  preamble: string[]
+  /** The children, after the key anchor of a whole-item-conditional body. */
+  body: string
+}
+
+/** The parts of a {@link LoopPlanContext} each adapter spells. */
+export type LoopPlanSpelling<Spelled> = Pick<
+  LoopPlanContext<Spelled>,
+  'resolveLiteralConst' | 'callbackLowering' | 'spellStatic'
+>
+
+/**
+ * An adapter's wording of the refusals a {@link LoopPlan} decides
+ * ({@link DslTemplateAdapter.recordLoopPlanRefusals}).
+ */
+export interface LoopRefusalSpelling {
+  /** The BF104 message for a destructure pattern `param` that no template binds. */
+  destructureMessage(param: string): string
+  /** The BF104 suggestion. */
+  destructureSuggestion: string
+  /**
+   * BF101 for a source naming a const no template binds: the engine name
+   * the shared wording uses ("Jinja", "MiniJinja", …), or the adapter's own
+   * recording of it.
+   */
+  unresolvableConst: string | ((constant: ConstantInfo) => void)
 }
 
 export abstract class DslTemplateAdapter extends BaseAdapter {
@@ -127,6 +186,12 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   protected importAliases: Map<string, string> = new Map()
   /** Numbers the children captures of a child component that has no slot id. */
   protected childrenCaptureCounter = 0
+  /**
+   * True while a loop row's children render ({@link renderLoopRow}): a
+   * component inside takes the loop-child naming, and a child prop that
+   * needs a per-instance value has none to read.
+   */
+  protected inLoop = false
 
   // ===========================================================================
   // What each adapter supplies
@@ -158,6 +223,82 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
       this.scope = outer
     }
   }
+
+  /** {@link planLoop} against the current scope and the component's constants. */
+  protected loopPlanFor<Spelled>(loop: IRLoop, spelling: LoopPlanSpelling<Spelled>): LoopPlan<Spelled> {
+    return planLoop(loop, { scope: this.scope, localConstants: this.localConstants ?? [], ...spelling })
+  }
+
+  /**
+   * Record the refusals `plan` decided for `loop`, at the loop's location:
+   * BF104 for a destructure pattern no template binds, then BF101 for a
+   * source naming a computed const no template binds (#3473). The plan
+   * decides; the adapter only words them.
+   */
+  protected recordLoopPlanRefusals(loop: IRLoop, plan: LoopPlan<unknown>, spelling: LoopRefusalSpelling): void {
+    const loc = loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
+    if (plan.destructure === 'unlowerable') {
+      this.errors.push({
+        code: 'BF104',
+        severity: 'error',
+        message: spelling.destructureMessage(loop.param),
+        loc,
+        suggestion: { message: spelling.destructureSuggestion },
+      })
+    }
+    const constant = plan.unresolvableConst
+    if (!constant) return
+    if (typeof spelling.unresolvableConst === 'function') {
+      spelling.unresolvableConst(constant)
+      return
+    }
+    this.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Loop array \`${constant.name}\` is a const (module- or function-scope) computed value (\`${constant.value}\`) that the ${spelling.unresolvableConst} adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+      loc,
+      suggestion: {
+        message:
+          'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+        escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+      },
+    })
+  }
+
+  /**
+   * A loop row's window (#3473): the row's scope entered around everything
+   * that evaluates per row (the preamble locals' initializers, the children,
+   * the whole-item-conditional key anchor) and the outer scope restored
+   * after. The children render under `inLoop`; the key anchor, after them,
+   * does not. The preamble converts first, so a later initializer sees an
+   * earlier local, as in the source block.
+   *
+   * What sits outside the window stays the adapter's: the loop header, the
+   * sort, and the filter predicate, which a filter callback's own frame
+   * scopes rather than the `.map()` row.
+   */
+  protected renderLoopRow(loop: IRLoop, spelling: LoopRowSpelling): LoopRow {
+    const outside = this.scope
+    const row = outside.enterLoopRow(loop)
+    return this.renderInScope(row, () => {
+      spelling.enter?.(row, outside)
+      const preamble = (loop.preamble?.declarations ?? []).map(d => spelling.preamble(d))
+      const children = this.renderInLoop(() => this.renderChildren(loop.children))
+      const body = loop.bodyIsItemConditional && loop.key ? `${spelling.keyAnchor(loop.key)}\n${children}` : children
+      return { outside, row, rootAliases: rootPropAliasesForLoop(outside, row, this.rootPropAliases), preamble, body }
+    })
+  }
+
+  private renderInLoop<T>(render: () => T): T {
+    const outer = this.inLoop
+    this.inLoop = true
+    try {
+      return render()
+    } finally {
+      this.inLoop = outer
+    }
+  }
+
   /** The root `if` statement of a component with conditional returns. */
   protected abstract renderIfStatement(ifStmt: IRIfStatement): string
   /** The script registrations the template starts with. */
@@ -236,6 +377,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.computedConsts = computedConstContext(ir.metadata, name => this.scope.isBound(name))
     this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.childrenCaptureCounter = 0
+    this.inLoop = false
     this.errors = []
     this.resetAdapterState(ir)
   }

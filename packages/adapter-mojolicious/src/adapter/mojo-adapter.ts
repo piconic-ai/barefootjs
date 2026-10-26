@@ -53,15 +53,15 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  planLoop,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
+  type LoopPlan,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
@@ -148,6 +148,19 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: perlSegmentAccessor,
   slice: (parent, from) => `bf->slice(${parent}, ${from}, undef)`,
   omit: (parent, keys) => `bf->omit(${parent}, [${keys.map(perlStringLiteral).join(', ')}])`,
+}
+
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Mojo adapter cannot lower — see the diagnostic detail for the specific shape.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
+    `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
+    `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  4. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Mojo',
 }
 
 /**
@@ -646,29 +659,12 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // gate's own jsdoc for the full list); a `.filter().map(destructure)`
     // chain (the filter-param rewrite is out of scope here); and a
     // computed property key (`{ [k]: v }`, refused earlier as BF025).
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToPerl,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Mojo adapter cannot lower — see the diagnostic detail for the specific shape.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
-            `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
-            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -698,21 +694,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // consults for this hazard class (#1749/#2482 Stage 2).
     const staticArray = loopPlan.staticSource
 
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
-
     const rawArray = staticArray ?? this.convertExpressionToPerl(loop.array)
     // Apply sort if present (#1448 Tier B): wrap the loop array in the
     // shared sort helper. The same shared chain (`lowerCallbackMethod`) and
@@ -732,46 +713,21 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       array = `$${sortedHoist}`
     }
     const param = loop.param
-    // `.keys().map(k => ...)` — the callback param is the index.
-    // Use it as the for-loop variable and skip the per-item value
-    // assignment.
-    const indexVar = loop.iterationShape === 'keys'
-      ? `$${param}`
-      : loop.index ? `$${loop.index}` : '$_i'
-    // This loop's row scope. Guards module-const inlining for the whole
-    // body (children + key + filter) so a same-named loop variable isn't
-    // replaced by the const literal (#1749 review). `IRLoop` already
-    // structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly what this renderLoop's header + preamble locals
-    // introduce (#2482 Stage 2 — replaces the ref-counted `Map` this
-    // adapter used to carry). Restored by reference (immutable — no
-    // ref-count bookkeeping) at the matching pop below, once the WHOLE
-    // body (including the filter predicate) has been rendered — except for
-    // one temporary drop-to-outer window around the hoisted sort-comparator
-    // emission below, since that runs OUTSIDE this loop.
-    const preambleDecls = loop.preamble?.declarations ?? []
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
-    const renderedChildren = this.renderChildren(loop.children)
-    // Props this row's bindings newly shadow, aliased in a block around the
-    // loop so an explicit `props.X` inside still reads the root value
-    // (#3314). The block keeps a sibling loop's alias from redeclaring it.
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
-
-    // Whole-item conditional (#1665): prepend an always-present
-    // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
-    // conditional content so the client's `mapArrayAnchored` can hydrate
-    // every SSR-rendered item by its anchor. `bf->comment` prepends `bf-`,
-    // so `"loop-i:" . KEY` yields `<!--bf-loop-i:KEY-->`.
+    // The row window (#3473): the row's scope around the preamble locals'
+    // initializers, the children and the whole-item-conditional key anchor
+    // (#1665). Per-row preamble locals (#2447) are emitted INSIDE the filter
+    // guard below, matching JS evaluation order: a `.filter(p).map(cb)` chain
+    // never runs `cb`'s body for a filtered-out item. The props the row's
+    // bindings newly shadow are aliased in a block around the loop so an
+    // explicit `props.X` inside still reads the root value (#3314); the block
+    // keeps a sibling loop's alias from redeclaring it.
     // `bf->escape_comment_key` (#2795 follow-up) both stringifies the key
-    // (JS `String()` semantics, matching the other adapters) and neutralizes
-    // `-` so it can't spell `-->` and close the comment early — see its doc
-    // in `BarefootJS.pm`.
-    const children =
-      loop.bodyIsItemConditional && loop.key
-        ? `<%== bf->comment("loop-i:" . bf->escape_comment_key(${this.convertExpressionToPerl(loop.key)})) %>\n${renderedChildren}`
-        : renderedChildren
+    // and neutralizes `-` so it can't spell `-->` and close the comment
+    // early — see its doc in `BarefootJS.pm`.
+    const { row, rootAliases, preamble: preambleLines, body: children } = this.renderLoopRow(loop, {
+      preamble: (d) => `% my $${d.name} = ${this.convertExpressionToPerl(d.raw, d.valueParsed)};`,
+      keyAnchor: (key) => `<%== bf->comment("loop-i:" . bf->escape_comment_key(${this.convertExpressionToPerl(key)})) %>`,
+    })
 
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
@@ -791,26 +747,55 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       // `bf->sort_eval`; fall back to the structured `bf->sort` for a
       // comparator the evaluator can't model (e.g. `localeCompare`).
       //
-      // The hoisted sort runs OUTSIDE this loop, so this loop's row scope
-      // must not shadow the comparator's captured free vars while emitting the
-      // env — otherwise a captured var that happens to share a loop-param name
-      // is blocked from inlining its module const and renders as an undefined
-      // `$name` (strict-mode fault, Copilot review #2035). Emit the sort in the
-      // outer (pre-row) scope (a nested loop's own outer bindings stay in
-      // effect throughout, since `prevScope` already carries them).
+      // The hoisted sort runs OUTSIDE this loop, after the row window has
+      // closed: the comparator's captured free vars resolve against the
+      // outer scope, never against a same-named row binding.
       // The plan decides the evaluator, the structured `{keys: …}`
       // descriptor or the refusal, which keeps the source unsorted so the
       // template stays valid (#3473).
-      const sorted = this.renderInScope(prevScope, () =>
-        spellSortedSource(loopPlan.sort, rawArray, {
-          emit: (e) => this.convertExpressionToPerl('', e),
-          eval: EVAL_SPELLING,
-          structured: renderSortMethod,
-          refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
-        }),
-      )
+      const sorted = spellSortedSource(loopPlan.sort, rawArray, {
+        emit: (e) => this.convertExpressionToPerl('', e),
+        eval: EVAL_SPELLING,
+        structured: renderSortMethod,
+        refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      })
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
+    lines.push(...this.perlLoopOpening(loop, loopPlan, array))
+
+    // The row, inside the filter's guard for a filter().map() loop. The plan
+    // renames the predicate's shadowed captures to their aliases (#3402) and
+    // refuses a filter without a predicate (#3534). Unlike the other DSL
+    // adapters, this one renders the predicate under the row's scope
+    // (`row`), as it always has.
+    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
+      // The filter's param reads as the loop's row variable (`$t` →
+      // `$todo`), decided by the binding rather than renamed in the text.
+      condition: (filter) =>
+        this.renderInScope(row.enterAliases(filter.aliases), () =>
+          this.renderPerlFilterExpr(filter.captured, filter.param, new Map(), `$${param}`),
+        ),
+      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
+      refused: '1',
+      open: (condition) => `% if (${condition}) {`,
+      close: '% }',
+    }))
+
+    lines.push(`% }`)
+    if (rootAliases.length > 0) lines.push('% }')
+    lines.push(`<%== bf->comment("/loop:${loop.markerId}") %>`)
+
+    return lines.join('\n')
+  }
+
+  /**
+   * The `% for` opening that iterates `array` for `loop`, with the row's
+   * value local: an object iteration walks the sorted keys, an array
+   * iteration the index range with the item (and, for a lowered
+   * destructure, one local per binding) read off it.
+   */
+  private perlLoopOpening(loop: IRLoop, loopPlan: LoopPlan<unknown>, array: string): string[] {
+    const param = loop.param
     if (loop.objectIteration) {
       // `objectIteration` (#2168 object-entries-map): a Perl hash has no
       // native insertion-order guarantee (unlike Ruby's `Hash`/Python's
@@ -821,59 +806,28 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       // (not JS insertion order — a documented known limitation for
       // out-of-alphabetical-order data, same as Go/Rust/Xslate).
       const keyVar = loop.objectIteration === 'values' ? '$__bf_k' : `$${loop.index ?? param}`
-      lines.push(`% for my ${keyVar} (sort keys %{${array}}) {`)
-      if (loop.objectIteration === 'entries' || loop.objectIteration === 'values') {
-        lines.push(`% my $${param} = ${array}->{${keyVar}};`)
-      }
-    } else {
-    lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
-    if (loop.iterationShape !== 'keys') {
-      // The row item, under the param or, for a lowered destructure, the
-      // per-item var `$__bf_item` with one `my` local per binding walking
-      // its `segments` path (#2087 Phase B): the full accessor for a fixed
-      // binding, `bf->slice(parent, from, undef)` / `bf->omit(parent, [keys])`
-      // for an array / object rest (the same runtime helpers the `.slice()`
-      // method lowers to), a true residual rather than the whole item aliased.
-      lines.push(`% my $${loopPlan.itemVar} = ${array}->[${indexVar}];`)
-      for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopPlan.itemVar}`, DESTRUCTURE_SPELLING)) {
-        lines.push(`% my $${name} = ${value};`)
-      }
+      const header = `% for my ${keyVar} (sort keys %{${array}}) {`
+      return loop.objectIteration === 'keys' ? [header] : [header, `% my $${param} = ${array}->{${keyVar}};`]
     }
+    // `.keys().map(k => ...)` — the callback param is the index.
+    // Use it as the for-loop variable and skip the per-item value
+    // assignment.
+    const indexVar = loop.iterationShape === 'keys'
+      ? `$${param}`
+      : loop.index ? `$${loop.index}` : '$_i'
+    const header = `% for my ${indexVar} (0..$#{${array}}) {`
+    if (loop.iterationShape === 'keys') return [header]
+    // The row item, under the param or, for a lowered destructure, the
+    // per-item var `$__bf_item` with one `my` local per binding walking
+    // its `segments` path (#2087 Phase B): the full accessor for a fixed
+    // binding, `bf->slice(parent, from, undef)` / `bf->omit(parent, [keys])`
+    // for an array / object rest (the same runtime helpers the `.slice()`
+    // method lowers to), a true residual rather than the whole item aliased.
+    const lines = [header, `% my $${loopPlan.itemVar} = ${array}->[${indexVar}];`]
+    for (const { name, value } of spellDestructureLocals(loopPlan, `$${loopPlan.itemVar}`, DESTRUCTURE_SPELLING)) {
+      lines.push(`% my $${name} = ${value};`)
     }
-
-    // Per-row preamble locals (#2447), in source order so a later
-    // initializer sees an earlier local — same as the source block. Emitted
-    // INSIDE the filter guard below, matching JS evaluation order: a
-    // `.filter(p).map(cb)` chain never runs `cb`'s body for a filtered-out
-    // item.
-    const preambleLines = preambleDecls.map(
-      d => `% my $${d.name} = ${this.convertExpressionToPerl(d.raw, d.valueParsed)};`,
-    )
-
-    // The row, inside the filter's guard for a filter().map() loop. The plan
-    // renames the predicate's shadowed captures to their aliases (#3402) and
-    // refuses a filter without a predicate (#3534).
-    lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, children], {
-      // The filter's param reads as the loop's row variable (`$t` →
-      // `$todo`), decided by the binding rather than renamed in the text.
-      condition: (filter) =>
-        this.renderInScope(this.scope.enterAliases(filter.aliases), () =>
-          this.renderPerlFilterExpr(filter.captured, filter.param, new Map(), `$${param}`),
-        ),
-      refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
-      refused: '1',
-      open: (condition) => `% if (${condition}) {`,
-      close: '% }',
-    }))
-
-    // Body fully rendered — restore the outer (pre-row) scope.
-    this.scope = prevScope
-
-    lines.push(`% }`)
-    if (rootAliases.length > 0) lines.push('% }')
-    lines.push(`<%== bf->comment("/loop:${loop.markerId}") %>`)
-
-    return lines.join('\n')
+    return lines
   }
 
   // ===========================================================================

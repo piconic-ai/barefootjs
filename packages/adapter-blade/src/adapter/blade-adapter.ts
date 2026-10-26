@@ -282,16 +282,15 @@ import {
   isEmptyComponentProps,
   isBooleanTypedPropRef,
   planAttrExpression,
-  planLoop,
   savedLoopBindings,
   spellDestructureLocals,
   spellFilteredRow,
   spellSortedSource,
   type DestructureSpelling,
+  type LoopRefusalSpelling,
   planSpreadAttr,
   planComponentProps,
   spellComponentProps,
-  rootPropAliasesForLoop,
   rootPropReadName,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
@@ -343,6 +342,18 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   omit: (parent, keys) => `$bf->omit(${parent}, [${keys.map((k) => `'${escapeBladeSingleQuoted(k)}'`).join(', ')}])`,
 }
 
+/** The wording of the loop refusals the plan decides (BF104 / BF101). */
+const LOOP_REFUSALS: LoopRefusalSpelling = {
+  destructureMessage: (param) =>
+    `Loop callback uses a destructure pattern (\`${param}\`) that the Blade adapter cannot lower — e.g. an object-rest binding used as a bare value, a \`.filter().map(destructure)\` chain, or a reserved \`__bf_\`-prefixed binding name.`,
+  destructureSuggestion:
+    `Options:\n` +
+    `  1. Read the rest binding via member access (\`rest.flag\`) or spread it onto the element (\`{...rest}\`) instead of using it as a bare value.\n` +
+    `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+    `  3. Move the loop into a primitive that the adapter registers explicitly.`,
+  unresolvableConst: 'Blade',
+}
+
 /**
  * The `BladeAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
  *
@@ -363,7 +374,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
   templatePrimitives: TemplatePrimitiveRegistry = BLADE_PRIMITIVE_EMIT_MAP
 
   private options: Required<BladeAdapterOptions>
-  private inLoop: boolean = false
   /** Names bound at template level (signals, memos, props, local constants):
    * a loop whose row binds one saves and restores it (#3391). */
   private templateLevelNames: Set<string> = new Set()
@@ -749,28 +759,12 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // chain (needs the filter-param rewrite to retarget the synthetic
     // per-item var), and a binding name in the reserved `__bf_` namespace
     // (would collide with the synthetic per-item loop var). (#1310, #2087)
-    const loopPlan = planLoop(loop, {
-      scope: this.scope,
-      localConstants: this.localConstants ?? [],
+    const loopPlan = this.loopPlanFor(loop, {
       resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       callbackLowering: CALLBACK_LOWERING,
       spellStatic: staticValueToBlade,
     })
-    if (loopPlan.destructure === 'unlowerable') {
-      this.errors.push({
-        code: 'BF104',
-        severity: 'error',
-        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Blade adapter cannot lower — e.g. an object-rest binding used as a bare value, a \`.filter().map(destructure)\` chain, or a reserved \`__bf_\`-prefixed binding name.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            `Options:\n` +
-            `  1. Read the rest binding via member access (\`rest.flag\`) or spread it onto the element (\`{...rest}\`) instead of using it as a bare value.\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
-        },
-      })
-    }
+    this.recordLoopPlanRefusals(loop, loopPlan, LOOP_REFUSALS)
 
     // A `.map()` loop whose array is a bare identifier bound to a local
     // const (module- or function-scope, #2946) with a non-statically-
@@ -805,21 +799,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // position-accurate predicate (#2482 Stage 2) — the enclosing loop
     // scope's own membership, not a coarse whole-component union.
     const staticArray = loopPlan.staticSource
-
-    const arrayConst = loopPlan.unresolvableConst
-    if (arrayConst) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Loop array \`${arrayConst.name}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Blade adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
-        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message:
-            'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
-          escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
-        },
-      })
-    }
 
     const rawArray = staticArray ?? this.convertExpressionToBlade(loop.array)
     // The source sorted by the loop's comparator, when it has one: the
@@ -856,76 +835,20 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       indexLocalLines.push(`@php(${bladeVar(name)} = ${value})`)
     }
 
-    const prevInLoop = this.inLoop
-    this.inLoop = true
-    // The children render once, under the loop flag (so nested components use
-    // the loop-child naming convention) and the row scope below.
-
-    // This loop's row scope, for the position-accurate shadow guard
-    // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
-    // `IRLoop` already structurally satisfies `LoopBindingSource`
-    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
-    // binds exactly the for-header target(s), each destructure binding,
-    // the index (when present), and the `.map()` preamble's declared
-    // locals, mirroring what THIS renderLoop's for-header + `indexLocalLines`
-    // actually introduce. Restored by reference (immutable — no ref-count
-    // bookkeeping) so nested loops compose for free. Entered BEFORE
-    // `preambleLines`/`bodyChildren` are converted and popped AFTER, not
-    // just around `renderChildren` — Copilot review on #2600 caught that
-    // the narrower window silently regressed the module-const shadow guard
-    // (`_resolveLiteralConst`/`_resolveStaticRecordLiteral`, now
-    // scope-driven instead of the old coarse whole-component set) for two
-    // row-context conversions that sit OUTSIDE `renderChildren`: a
-    // `.map()` preamble local's own initializer (`d.raw`, below) and the
-    // whole-item-conditional `loop-i:` key anchor (`loop.key`, in
-    // `bodyChildren` below) — both genuinely evaluate PER ROW and must see
-    // the row's own bindings. `loop.filterPredicate` deliberately stays
-    // OUTSIDE this window (further down, after the pop): per the Stage 0
-    // design a filter/sort callback's own param is a separate `callback`
-    // frame, never folded into the `.map()` row — and empirically
-    // `BladeFilterEmitter` (the filter predicate's dedicated,
-    // self-contained emitter) never consults `this.scope` at all, so its
-    // position relative to the pop is inert either way.
-    const prevScope = this.scope
-    this.scope = prevScope.enterLoopRow(loop)
-    // Props this row's bindings newly shadow, aliased before the loop header
-    // so an explicit `props.X` inside still reads the root value (#3314).
-    const rootAliases = rootPropAliasesForLoop(prevScope, this.scope, this.rootPropAliases)
-    // PHP `foreach` has no block scope: every name the row binds (item,
-    // index, destructure binding, preamble local) keeps the last row's value
-    // after `@endforeach`. Save each one an enclosing row binds, or that a
-    // template-level signal, memo, prop or constant shares (#3391), and
-    // restore it after the loop. A root prop with an alias is restored below.
+    // The row window (#3473): the row's scope around everything that
+    // evaluates per row (the preamble locals' initializers, the children
+    // under `inLoop`, the whole-item-conditional key anchor). The filter
+    // predicate stays outside it: a filter callback's own param is a
+    // separate frame, never folded into the `.map()` row.
+    const { outside, row, rootAliases, preamble: preambleLines, body: bodyChildren } = this.renderLoopRow(loop, {
+      preamble: (d) => `@php(${bladeVar(d.name)} = ${this.convertExpressionToBlade(d.raw, d.valueParsed)})`,
+      keyAnchor: (key) => `{!! $bf->comment('loop-i:' . $bf->escape_comment_key(${this.convertExpressionToBlade(key)})) !!}`,
+    })
     const savedBindings = savedLoopBindings(
-      { outside: prevScope, row: this.scope, templateLevelNames: this.templateLevelNames },
+      { outside, row, templateLevelNames: this.templateLevelNames },
       rootAliases.map(a => a.name),
       (_name, ordinal) => `__bf_saved_${loop.markerId}_${ordinal}`,
     )
-
-    // Per-row locals for a `.map()` callback preamble (#2447), in source
-    // order so a later initializer sees an earlier local — same as the
-    // source block. Phase 1 refuses the loop outright when the preamble
-    // isn't fully declarable, so there is no partial-lowering case: either
-    // every statement is lowered here, or the build already failed.
-    const preambleLines = (loop.preamble?.declarations ?? []).map(
-      d => `@php(${bladeVar(d.name)} = ${this.convertExpressionToBlade(d.raw, d.valueParsed)})`,
-    )
-    const childrenUnderLoop = this.renderChildren(loop.children)
-    this.inLoop = prevInLoop
-
-    // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
-    // anchor before each item's (possibly empty) conditional content so the
-    // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
-    // anchor. Still under the row scope (see above) — `loop.key` is a
-    // per-row expression.
-    // `$bf->escape_comment_key` (#2795 follow-up) both stringifies the key
-    // and neutralizes `-` so it can't spell `-->` and close the comment
-    // early — see its doc in `BarefootJS.php`.
-    const bodyChildren =
-      loop.bodyIsItemConditional && loop.key
-        ? `{!! $bf->comment('loop-i:' . $bf->escape_comment_key(${this.convertExpressionToBlade(loop.key)})) !!}\n${childrenUnderLoop}`
-        : childrenUnderLoop
-    this.scope = prevScope
 
     // A name the filter predicate captures from an enclosing row that this
     // loop's own row binds again would read the row's item inside the loop;
