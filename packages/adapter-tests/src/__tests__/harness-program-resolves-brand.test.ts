@@ -16,7 +16,7 @@
  * whether `bun test` was started from the root or from a package.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import ts from 'typescript'
@@ -124,7 +124,34 @@ describe('harness Program refuses an unresolvable @barefootjs/client (#3637)', (
     const anchor = mkdtempSync(path.join(tmpdir(), 'bf-harness-anchor-'))
     try {
       expect(() => harnessProgramAt(SOURCE, FILENAME, anchor)).toThrow(
-        /@barefootjs\/client does not resolve .*bun run --filter @barefootjs\/client build/,
+        /@barefootjs\/client does not resolve to type declarations .*bun run --filter @barefootjs\/client build/,
+      )
+    } finally {
+      rmSync(anchor, { recursive: true, force: true })
+    }
+  })
+
+  // The client build runs `build:js` before `build:types`, so for a while
+  // `dist/index.js` exists without `dist/index.d.ts`. Resolution then
+  // falls back to the JavaScript file, and every import is still `any`.
+  test('an anchor whose package has JavaScript but no declarations throws', () => {
+    const anchor = mkdtempSync(path.join(tmpdir(), 'bf-harness-anchor-'))
+    try {
+      const pkgDir = path.join(anchor, 'node_modules', '@barefootjs', 'client')
+      mkdirSync(path.join(pkgDir, 'dist'), { recursive: true })
+      writeFileSync(
+        path.join(pkgDir, 'package.json'),
+        JSON.stringify({
+          name: '@barefootjs/client',
+          type: 'module',
+          main: './dist/index.js',
+          types: './dist/index.d.ts',
+          exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' } },
+        }),
+      )
+      writeFileSync(path.join(pkgDir, 'dist', 'index.js'), 'export function createSignal(v) { return [() => v, () => {}] }\n')
+      expect(() => harnessProgramAt(SOURCE, FILENAME, anchor)).toThrow(
+        /@barefootjs\/client does not resolve to type declarations/,
       )
     } finally {
       rmSync(anchor, { recursive: true, force: true })

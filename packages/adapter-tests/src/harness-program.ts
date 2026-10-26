@@ -73,7 +73,8 @@
  * `update-fixtures.yml`).
  *
  * `harnessProgramFor` therefore checks, for every Program it builds, that
- * each `@barefootjs/client` import of the source resolves, and throws
+ * each `@barefootjs/client` import of the source resolves to type
+ * declarations (not to the JavaScript build alone), and throws
  * naming the missing build when one does not. Without that check, a
  * compile run while `dist` was missing (a fresh worktree, or a build
  * still in progress) produced different output from the same source, and
@@ -113,7 +114,7 @@ export function harnessProgramAt(source: string, filename: string, anchorDir: st
   const unresolved = unresolvedClientImports(program, filename, anchorDir)
   if (unresolved.length > 0) {
     throw new Error(
-      `harness compile of ${filename}: ${unresolved.join(', ')} does not resolve from ${anchorDir}. ` +
+      `harness compile of ${filename}: ${unresolved.join(', ')} does not resolve to type declarations from ${anchorDir}. ` +
         'Build it first (`bun run --filter @barefootjs/client build`): without its types every ' +
         'reactive primitive is typed `any` and adapter output silently changes (#3637).',
     )
@@ -124,7 +125,9 @@ export function harnessProgramAt(source: string, filename: string, anchorDir: st
 /**
  * The `@barefootjs/client` specifiers (`@barefootjs/client` or a subpath)
  * that `filename`'s imports and re-exports name but that do not resolve
- * to a file under `program`'s compiler options, as seen from `anchorDir`.
+ * to type declarations under `program`'s compiler options, as seen from
+ * `anchorDir`. A specifier that resolves only to JavaScript counts as
+ * unresolved.
  * Resolved afresh on every call, never cached: a build that removes or
  * rewrites `dist` must not leave a stale answer behind.
  */
@@ -140,9 +143,31 @@ export function unresolvedClientImports(program: ts.Program, filename: string, a
     const name = specifier.text
     if (name !== '@barefootjs/client' && !name.startsWith('@barefootjs/client/')) continue
     const resolved = ts.resolveModuleName(name, containingFile, program.getCompilerOptions(), ts.sys)
-    if (!resolved.resolvedModule) unresolved.add(name)
+    if (!resolvesToTypes(resolved.resolvedModule)) unresolved.add(name)
   }
   return [...unresolved]
+}
+
+/**
+ * Whether a resolution landed on TypeScript source or declarations. When
+ * `dist/*.d.ts` is missing but `dist/*.js` is not (a client build that has
+ * run `build:js` but not yet `build:types`), resolution falls back to the
+ * JavaScript file, and the checker still types every import `any`.
+ */
+function resolvesToTypes(module: ts.ResolvedModuleFull | undefined): boolean {
+  if (!module) return false
+  switch (module.extension) {
+    case ts.Extension.Ts:
+    case ts.Extension.Tsx:
+    case ts.Extension.Mts:
+    case ts.Extension.Cts:
+    case ts.Extension.Dts:
+    case ts.Extension.Dmts:
+    case ts.Extension.Dcts:
+      return true
+    default:
+      return false
+  }
 }
 
 /**
