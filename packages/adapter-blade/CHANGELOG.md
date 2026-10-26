@@ -1,5 +1,18 @@
 # @barefootjs/blade
 
+## 0.40.0
+
+### Patch Changes
+
+- 9cb7c89: Record a loop plan's refusals in one place across the eight DSL adapters (#3473). `DslTemplateAdapter.recordLoopPlanRefusals` reports BF104 for a destructure pattern no template binds and BF101 for a loop source that names an unresolvable computed const. Each adapter now supplies only the wording, as a `LoopRefusalSpelling`. ERB, Xslate and Mojolicious also move their loop headers into small private methods, which brings every DSL adapter's `renderLoop` to cognitive complexity 25 or below. The generated templates and diagnostics do not change.
+- 5567172: The row bindings that Pebble, Twig and Blade save before a loop and restore after it are now chosen in one place. These backends' `set` is not loop-scoped (#3386, #3391). The new `savedLoopBindings` in `loop-plan.ts` picks each name the row binds that an enclosing row or a template-level name already uses, in the order the template binds them. It also names the temporary that holds the outer value. Each adapter passes only the names it restores itself: the for-header targets from the new `loopHeaderTargets` for Twig and Pebble, and the aliased root props for Blade. It still spells the save and restore lines. Templates and diagnostics are unchanged for every fixture and component source.
+- 807cd26: Share a loop row's window across the eight DSL adapters (#3473). `DslTemplateAdapter.renderLoopRow` now enters the row's scope around the preamble locals, the children and the whole-item-conditional key anchor, sets and restores `inLoop` around the children, and computes the row's root-prop aliases. `DslTemplateAdapter.loopPlanFor` calls `planLoop` against the current scope. Each adapter's `renderLoop` passes only its spelling. The generated templates do not change.
+- 03c85ea: Use the existing parsed-expression support gate for DSL attribute and spread refusals, removing the redundant regex precheck and its unsupportedAttrExpression / unsupportedAttrExpressionError adapter-helper exports.
+- dc65a91: Keep literal template text separate from interpolation expressions in compiler IR, preserving escaped delimiters and lowering expressions without reparsing string placeholders.
+  
+  IR consumers must handle the new `expression` template-part variant (`expr`, optional `templateExpr`, and `parsed`). The `string` variant now contains only literal text and no longer has `templateValue`.
+- @barefootjs/shared@0.40.0
+
 ## 0.39.9
 
 ### Patch Changes

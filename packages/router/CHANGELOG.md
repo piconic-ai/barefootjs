@@ -1,5 +1,11 @@
 # @barefootjs/router
 
+## 0.40.0
+
+### Patch Changes
+
+- @barefootjs/shared@0.40.0
+
 ## 0.39.9
 
 ### Patch Changes

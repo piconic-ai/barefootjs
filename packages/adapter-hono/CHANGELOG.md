@@ -1,5 +1,11 @@
 # @barefootjs/hono
 
+## 0.40.0
+
+### Patch Changes
+
+- 616c580: Preserve dev reload endpoints as script data when they contain HTML script delimiters.
+
 ## 0.39.9
 
 ### Patch Changes

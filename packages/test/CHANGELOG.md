@@ -1,5 +1,24 @@
 # @barefootjs/test
 
+## 0.40.0
+
+### Patch Changes
+
+- dc65a91: Keep literal template text separate from interpolation expressions in compiler IR, preserving escaped delimiters and lowering expressions without reparsing string placeholders.
+  
+  IR consumers must handle the new `expression` template-part variant (`expr`, optional `templateExpr`, and `parsed`). The `string` variant now contains only literal text and no longer has `templateValue`.
+- Updated dependencies [3e220cf]
+- Updated dependencies [bcc56e2]
+- Updated dependencies [446b1ba]
+- Updated dependencies [69187e9]
+- Updated dependencies [9cb7c89]
+- Updated dependencies [5567172]
+- Updated dependencies [807cd26]
+- Updated dependencies [03c85ea]
+- Updated dependencies [38e7bc7]
+- Updated dependencies [dc65a91]
+  - @barefootjs/jsx@0.40.0
+
 ## 0.39.9
 
 ### Patch Changes
