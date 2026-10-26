@@ -95,6 +95,9 @@ connector, or delegated agent is required.
    own dependencies; symlinked `node_modules` can measure a different compiler.
    With unrelated temporary checkouts present, use explicit `./packages/...` test
    paths to avoid accidentally discovering their tests.
+   Fixture smoke checks require backend rendering (`BF_REQUIRE_RENDER=1`); install
+   the runtimes for the selected suites, or explicitly narrow with `--only` and
+   report the omitted backends. Compile-only checks do not replace native rendering.
 7. After adding or editing a fixture, or changing an adapter's render
    divergences, run `bun run fixtures:regen` and commit what it writes. It
    rebuilds the adapters and regenerates `expectedHtml`, `coverage-map.json`,

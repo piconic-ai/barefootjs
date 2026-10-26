@@ -24,6 +24,7 @@ import {
   compareToBaseline,
   formatVerdict,
   growth,
+  internalFunctionParserReferences,
   measureSourceFile,
   serializeBaseline,
 } from '../lib/emit-parse-ratchet'
@@ -61,12 +62,12 @@ function sources(dir: string): string[] {
 }
 
 /**
- * One program over every Phase 2 source, so the checker sees each IR field's
+ * One program over compiler and Phase 2 sources, so the checker sees each IR field's
  * `JsSourceText` type through the workspace imports (`@barefootjs/jsx`
  * resolves to its `src`). Type errors do not matter here; only the types of
  * the expressions the measure asks about.
  */
-function phase2Program(files: string[]): ts.Program {
+function compilerProgram(files: string[]): ts.Program {
   return ts.createProgram(files, {
     target: ts.ScriptTarget.ESNext,
     module: ts.ModuleKind.Preserve,
@@ -82,8 +83,22 @@ function phase2Program(files: string[]): ts.Program {
 
 function measureTree(): TreeCounts {
   const files = phase2Dirs().flatMap(dir => sources(resolve(root, dir)))
-  const program = phase2Program(files)
+  const compilerFiles = sources(resolve(root, 'packages/jsx/src'))
+  const inspectionFiles = [...new Set([...files, ...compilerFiles])]
+  const program = compilerProgram(inspectionFiles)
   const checker = program.getTypeChecker()
+  const forbidden: string[] = []
+  for (const file of inspectionFiles) {
+    const sf = program.getSourceFile(file)
+    if (!sf) throw new Error(`${file} is not in the compiler program`)
+    for (const position of internalFunctionParserReferences(sf, checker)) {
+      const { line } = sf.getLineAndCharacterOfPosition(position)
+      forbidden.push(`${relative(root, file)}:${line + 1}`)
+    }
+  }
+  if (forbidden.length > 0) {
+    throw new Error(`Compiler code must use FunctionInfo.params/typedParams, not extractFunctionParams:\n${forbidden.join('\n')}`)
+  }
   const tree: TreeCounts = {}
   for (const file of files) {
     const path = relative(root, file)

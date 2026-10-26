@@ -361,6 +361,22 @@ runJSXConformanceTests({
 })
 ```
 
+### Required backend rendering in fixture smoke checks
+
+`bun run fixtures:smoke <pattern> [--only <suite,...>]` sets
+`BF_REQUIRE_RENDER=1` for its test subprocesses. The shared JSX and data-point
+conformance runners then propagate render errors instead of accepting an
+`onRenderError` skip. A missing backend runtime or dependency therefore fails
+verification rather than contributing a passing test without rendering.
+
+Use `--only` to select installed backends explicitly, and report that scope.
+For a direct conformance run, set `BF_REQUIRE_RENDER=1 bun test ...` to require
+rendering. Ordinary local test runs retain the optional-runtime behavior.
+This mode does not remove declared limitation pins or expected diagnostics,
+and does not change standalone tests outside the shared conformance runners.
+A successful run of only refused or pinned cases is not evidence of rendering;
+include an accepted fixture and inspect the actual runtime results.
+
 ---
 
 ## Layer 4: CSR Conformance Tests

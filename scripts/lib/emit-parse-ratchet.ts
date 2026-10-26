@@ -308,3 +308,23 @@ export function serializeBaseline(tree: TreeCounts): string {
   }
   return `${JSON.stringify({ files } satisfies EmitParseBaseline, null, 2)}\n`
 }
+
+/** The public string parser is not an alternative to FunctionInfo in compiler code. */
+export function internalFunctionParserReferences(sf: ts.SourceFile, checker: ts.TypeChecker): number[] {
+  const positions: number[] = []
+  const visit = (node: ts.Node): void => {
+    if ((ts.isIdentifier(node) && !ts.isImportSpecifier(node.parent) && !ts.isExportSpecifier(node.parent))
+      || ts.isElementAccessExpression(node)) {
+      let symbol = checker.getSymbolAtLocation(ts.isElementAccessExpression(node) ? node.argumentExpression : node)
+      if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) symbol = checker.getAliasedSymbol(symbol)
+      const declaration = symbol?.valueDeclaration
+      if (declaration && ts.isFunctionDeclaration(declaration)
+        && declaration.name?.text === 'extractFunctionParams'
+        && declaration.getSourceFile().fileName.replaceAll('\\', '/').endsWith('/packages/jsx/src/module-exports.ts')
+        && node !== declaration.name) positions.push(node.getStart(sf))
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return positions
+}

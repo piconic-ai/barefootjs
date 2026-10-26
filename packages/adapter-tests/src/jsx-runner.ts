@@ -7,6 +7,7 @@
 
 import { describe, expect } from 'bun:test'
 import { renderTest } from './render-test'
+import { canSkipRenderError } from './render-error-policy'
 import type { ComponentIR, CompilerError, TemplateAdapter } from '@barefootjs/jsx'
 import { compileFixtureJSX } from './harness-program'
 import { jsxFixtures } from '../fixtures'
@@ -219,7 +220,7 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
             componentName: fixture.componentName,
           })
         } catch (err) {
-          if (options.onRenderError?.(err as Error, fixture.id)) return
+          if (canSkipRenderError(err, fixture.id, options.onRenderError)) return
           throw err
         }
         expect(html).toBeTruthy()

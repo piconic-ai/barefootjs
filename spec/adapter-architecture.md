@@ -15,6 +15,12 @@ backend adapter (Go, Mojolicious, and future languages) should converge on.
    conditionals, loops, dependencies — and *parsed expressions* — are computed
    once in Phase 1 (the analyzer / `jsxToIR`) and stored in the IR. Adapters do
    **not** re-parse JS/TS strings or interpret them with regex at emit time.
+   This applies through helper calls too. Replacing a regex with a new AST parse
+   in a shared utility does not satisfy the rule if emission calls that utility.
+   Inspect its callers and reuse `ParsedExpr` or `FunctionInfo` metadata. The
+   public `extractFunctionParams(string)` utility is for standalone string
+   inputs; compiler and adapter code must not call it. The emit-parse check
+   rejects references to it independently of its parse-count baseline.
 2. **The adapter object holds state but minimal behaviour.** A backend adapter
    is a thin orchestrator that owns only per-compile state and implements the
    shared dispatcher interfaces. Real logic lives in pure free functions,

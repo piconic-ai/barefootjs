@@ -12,6 +12,7 @@
  * the per-adapter CI workflows: one push of a PR against `main` starts
  * about 40 jobs, more than the runner concurrency the repository has.
  *
+ * Requires backend rendering; an unavailable runtime is a failure.
  * Exits non-zero when any suite reports a failure or matches no test.
  */
 
@@ -59,6 +60,7 @@ for (const suite of SUITES) {
   const started = performance.now()
   const proc = Bun.spawnSync(['bun', 'test', suite.file, '-t', pattern], {
     cwd: `${root}/${suite.dir}`,
+    env: { ...process.env, BF_REQUIRE_RENDER: '1' },
     stdout: 'pipe',
     stderr: 'pipe',
   })
@@ -71,6 +73,7 @@ for (const suite of SUITES) {
     if (line.startsWith('(fail)')) failures.push(`${suite.name}: ${line}`)
   }
   if (proc.exitCode !== 0 && fail === 0) failures.push(`${suite.name}: exited ${proc.exitCode} (no test matched, or the suite did not load)`)
+  if (fail > 0 || proc.exitCode !== 0) console.error(out.trim())
   console.log(`${fail > 0 || proc.exitCode !== 0 ? '✖' : '✔'} ${suite.name.padEnd(12)} ${String(pass).padStart(3)} pass ${String(fail).padStart(3)} fail  ${seconds.toFixed(0)}s`)
 }
 
