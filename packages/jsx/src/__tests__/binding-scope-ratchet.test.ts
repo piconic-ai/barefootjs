@@ -132,7 +132,14 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
     // at all), routing it through the same shape-1 shadow-name check as
     // `getBakedStaticChildLoop` below instead — a consolidation onto the
     // existing floor bucket, not a new unguarded use.
-    'localConstants.find(': 6,
+    // Since then the constructor-context lookups (`computeDerivedConstFields`
+    // and its `bakesDerivedConstField` check) call `compile-state.ts`'s
+    // `findValuedLocalConst`, and `resolveNestedLoopItemTypes`'s module-const
+    // lookup calls its `findModuleScopeConst`; those two `.find(` are counted
+    // under that file. The 4 left here are `resolveDynamicPropValue`,
+    // `findModuleConst`, `refuseComputedConstLoopSource` (the loop-array
+    // const lookup) and `resolveLoopArraySourceConst`.
+    'localConstants.find(': 4,
     // #2482 Stage 3: `loopParamStack` eliminated entirely (0, down from 35)
     // — replaced by the threaded `this.scope: BindingScope`. The remaining
     // 3 `staticLoopSourceBoundNames` uses (down from 3, then #3164 added a
@@ -153,7 +160,10 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // file's top-level comment used to carry was reworded in Stage 4 — that
   // stack no longer exists anywhere, so the ledger's last trace of it is
   // gone too).
-  'packages/adapter-go-template/src/adapter/lib/compile-state.ts': { staticLoopSourceBoundNames: 1 },
+  // FLOOR (shape 1 for `localConstants.find(`): `findModuleScopeConst` and
+  // `findValuedLocalConst`, the two lookups moved here from
+  // `go-template-adapter.ts` (its entry above names their callers).
+  'packages/adapter-go-template/src/adapter/lib/compile-state.ts': { staticLoopSourceBoundNames: 1, 'localConstants.find(': 2 },
   // FLOOR (shape 1): `lowerCtorExpr`/`lowerCtorStringArray` lower a derived-
   // state memo's computation into Go CODE evaluated in the `NewXxxProps`
   // constructor — the same no-live-scope bucket as `go-template-adapter.ts`'s

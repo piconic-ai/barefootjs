@@ -151,9 +151,25 @@ export function createProgramForFile(
   filePath: string,
   hostOptions: { currentDirectory?: string } = {}
 ): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
+  return buildProgramForFile(source, filePath, hostOptions)
+}
+
+/**
+ * `createProgramForFile`, plus `sourceFiles`: Programs built one after
+ * another share parsed (and bound) SourceFiles through it. Every file the
+ * host serves, `source` included, is parsed once per distinct text. Not
+ * exported from the package: every Program built here has the same compiler
+ * options, which is what makes sharing bound SourceFiles between them safe
+ * (see `SourceFileCache`).
+ */
+function buildProgramForFile(
+  source: string,
+  filePath: string,
+  hostOptions: { currentDirectory?: string; sourceFiles?: SourceFileCache },
+): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
   incrementCounter('programCreations')
   try {
-    const { currentDirectory } = hostOptions
+    const { currentDirectory, sourceFiles } = hostOptions
     const resolveFrom = (fileName: string): string =>
       currentDirectory === undefined ? path.resolve(fileName) : path.resolve(currentDirectory, fileName)
     const normalizedPath = resolveFrom(filePath)
@@ -176,7 +192,12 @@ export function createProgramForFile(
       ...(currentDirectory === undefined ? {} : { getCurrentDirectory: () => currentDirectory }),
       getSourceFile(fileName, languageVersion) {
         if (resolveFrom(fileName) === normalizedPath) {
+          if (sourceFiles) return sourceFiles.get(fileName, languageVersion, source, VIRTUAL_SOURCE_PARSE)
           return ts.createSourceFile(fileName, source, languageVersion, true, ts.ScriptKind.TSX)
+        }
+        if (sourceFiles) {
+          const text = defaultHost.readFile(fileName)
+          return text === undefined ? undefined : sourceFiles.get(fileName, languageVersion, text, DISK_FILE_PARSE)
         }
         return defaultHost.getSourceFile(fileName, languageVersion)
       },
@@ -232,11 +253,78 @@ function rewriteSourceForAnalysis(
  * implementation for every harness that compiles under relative names:
  * the conformance harness (`packages/adapter-tests/src/harness-program.ts`)
  * and the docs-example suite (`doc-examples.test.ts`).
+ *
+ * Every Program it builds draws on one process-wide `SourceFileCache` that
+ * is never evicted, so it suits a test process over a fixed corpus. Do not
+ * call it from a long-running watcher.
  */
 export function createAnchoredProgram(source: string, filename: string, anchorDir: string): ts.Program | undefined {
   if (!needsTypeBasedDetection(source)) return undefined
-  return createProgramForFile(source, filename, { currentDirectory: anchorDir })?.program
+  return buildProgramForFile(source, filename, { currentDirectory: anchorDir, sourceFiles: anchoredSourceFiles })?.program
 }
+
+/**
+ * Parsed SourceFiles shared by consecutive Programs, keyed by file name, the
+ * parse options the Program asks for, and the text. A file is parsed once per
+ * distinct text: a file that changed on disk (a rebuilt `@barefootjs/client`
+ * `dist`) is parsed again, never served stale, and the many different sources
+ * a harness compiles under one virtual name (`component.tsx`) each keep their
+ * own entry.
+ *
+ * A reused SourceFile also keeps its binding, so a Program built from cached
+ * files costs module resolution and checker setup, not a parse of
+ * `lib.*.d.ts` and every imported declaration (~430 ms → ~30 ms per Program
+ * in the conformance harness, #3666). Sharing SourceFiles between Programs
+ * with the same compiler options is how TypeScript's own DocumentRegistry
+ * serves language services. The Programs themselves are not shared: a
+ * checker assigns type ids in the order it is queried, so one reused across
+ * compiles could make a compile's output depend on what ran before it.
+ *
+ * Only for Programs built with the same compiler options: the cache does not
+ * key on them. Entries are never evicted, which suits a test process over a
+ * fixed corpus, not a long-running watcher.
+ */
+export class SourceFileCache {
+  private readonly files = new Map<string, Map<string, ts.SourceFile>>()
+
+  get(
+    fileName: string,
+    languageVersion: ts.ScriptTarget | ts.CreateSourceFileOptions,
+    text: string,
+    parse: SourceFileParse,
+  ): ts.SourceFile {
+    const key = `${fileName}\0${parseOptionsKey(languageVersion)}\0${parse.scriptKind ?? ''}\0${parse.setParentNodes}`
+    let byText = this.files.get(key)
+    if (!byText) {
+      byText = new Map()
+      this.files.set(key, byText)
+    }
+    const cached = byText.get(text)
+    if (cached) return cached
+    const parsed = ts.createSourceFile(fileName, text, languageVersion, parse.setParentNodes, parse.scriptKind)
+    byText.set(text, parsed)
+    return parsed
+  }
+}
+
+/** How `SourceFileCache` parses a file; part of its key. */
+export interface SourceFileParse {
+  scriptKind?: ts.ScriptKind
+  setParentNodes: boolean
+}
+
+/** The virtual source, parsed as `createProgramForFile` always parsed it. */
+const VIRTUAL_SOURCE_PARSE: SourceFileParse = { scriptKind: ts.ScriptKind.TSX, setParentNodes: true }
+/** A file read from disk, parsed the way the default compiler host parses it. */
+const DISK_FILE_PARSE: SourceFileParse = { setParentNodes: false }
+
+function parseOptionsKey(languageVersion: ts.ScriptTarget | ts.CreateSourceFileOptions): string {
+  if (typeof languageVersion === 'number') return String(languageVersion)
+  return `${languageVersion.languageVersion}:${languageVersion.impliedNodeFormat ?? ''}:${languageVersion.jsDocParsingMode ?? ''}`
+}
+
+/** The cache behind every `createAnchoredProgram` Program in this process. */
+const anchoredSourceFiles = new SourceFileCache()
 
 /**
  * Parse a signal's initializer into the IR, and record which prop it seeds

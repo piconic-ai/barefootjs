@@ -39,6 +39,13 @@
  * a relative import in a fixture (`./child`) can never collide with a real
  * file this package happens to contain.
  *
+ * Every such Program shares parsed SourceFiles with the ones built before
+ * it (`createAnchoredProgram`'s `SourceFileCache`), so building one per
+ * compile parses `lib.*.d.ts`, `@barefootjs/client`'s declarations and each
+ * distinct fixture source once per process, not once per compile (#3666).
+ * Each compile still gets its own Program and checker, so its output cannot
+ * depend on what was compiled before it.
+ *
  * A Program is built only when `needsTypeBasedDetection(source)` is true —
  * exactly when the compiler would otherwise have built its own — so a
  * source the compiler compiles without a checker still compiles without

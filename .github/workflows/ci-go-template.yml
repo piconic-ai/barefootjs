@@ -41,7 +41,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-go-template-${{ github.ref }}
+  # The event name keeps the nightly `schedule` (and manual) runs out of the
+  # `push` group: on `main` both have the same ref, so a merge would cancel
+  # the full-tier run.
+  group: ci-go-template-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -66,6 +69,11 @@ jobs:
           # integrations/echo's go.mod requires 1.26 (labstack/echo v4.16.1);
           # the runtime and the other integrations still declare 1.25.6.
           go-version: '1.26'
+          # Its built-in cache keys on a root go.sum, which does not exist (the
+          # go.sum files are under integrations/*/), so it never saves. Keep it
+          # off rather than fix the key: no cross-run cache that could be
+          # poisoned (see .github/actions/setup-bun).
+          cache: false
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun

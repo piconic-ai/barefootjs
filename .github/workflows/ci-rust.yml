@@ -41,7 +41,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-rust-${{ github.ref }}
+  # The event name keeps the nightly `schedule` (and manual) runs out of the
+  # `push` group: on `main` both have the same ref, so a merge would cancel
+  # the full-tier run.
+  group: ci-rust-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
