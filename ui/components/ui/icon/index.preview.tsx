@@ -5,8 +5,10 @@ import { CheckIcon } from '../check-icon'
 
 export function Default() {
   return (
-    <CheckIcon size="md" />
-    <ChevronDownIcon size="sm" className="text-muted-foreground" />
+    <>
+      <CheckIcon size="md" />
+      <ChevronDownIcon size="sm" className="text-muted-foreground" />
+    </>
   )
 }
 
