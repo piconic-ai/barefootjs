@@ -54,9 +54,6 @@
       "convertExpressionToGo": [
         27
       ],
-      "emitExpression": [
-        34
-      ],
       "isStringExpr": [
         29
       ],
